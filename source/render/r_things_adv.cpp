@@ -524,7 +524,7 @@ void VRenderLevelShadowVolume::RenderMobjShadowMapSprite (VEntity *ent, const un
   // cross product will be between two nearly parallel vectors and
   // starts to approach an undefined state, so we don't draw if the two
   // vectors are less than 1 degree apart
-  //const float dot = viewforward.z; // same as DotProduct(viewforward, sprup), because sprup is 0, 0, 1
+  //const float dot = viewforward.z; // same as viewforward.dot(sprup), because sprup is 0, 0, 1
   //if (fabsf(dot) > 0.999848f) return; // cos(1 degree) = 0.999848f
   const TVec sprup(0.0f, 0.0f, 1.0f);
   TVec sprright = TVec(viewforward.y, -viewforward.x, 0.0f);

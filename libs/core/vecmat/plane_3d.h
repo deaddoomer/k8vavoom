@@ -107,14 +107,14 @@ public:
       // sloped
       normal.normaliseInPlace();
     }
-    dist = DotProduct(point, normal);
+    dist = point.dot(normal);
   }
 
   // initialises "full" plane from point and direction
   // `norm` must be normalized, both vectors must be valid
   VVA_ALWAYS_INLINE void SetPointNormal3D (const TVec &point, const TVec &norm) noexcept {
     normal = norm;
-    dist = DotProduct(point, normal);
+    dist = point.dot(normal);
   }
 
   // initialises "full" plane from point and direction (direction will be normalised)
@@ -122,7 +122,7 @@ public:
     if (dir.isValid() && point.isValid() && !dir.isZero()) {
       normal = dir.normalised();
       if (normal.isValid() && !normal.isZero()) {
-        dist = DotProduct(point, normal);
+        dist = point.dot(normal);
       } else {
         //k8: what to do here?!
         normal = TVec(1.0f, 0.0f, 0.0f);
@@ -143,7 +143,7 @@ public:
   // the normal will point out of the clock for clockwise ordered points
   VVA_ALWAYS_INLINE void SetFromTriangle (const TVec &a, const TVec &b, const TVec &c) noexcept {
     normal = (c-a).cross(b-a).normalised();
-    dist = DotProduct(a, normal);
+    dist = a.dot(normal);
   }
 
   VVA_ALWAYS_INLINE bool isFloor () const noexcept { return (normal.z > 0.0f); }
@@ -172,7 +172,7 @@ public:
   // *signed* distance from point to plane
   // plane must be normalized
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float PointDistance (const TVec &p) const noexcept {
-    return DotProduct(p, normal)-dist;
+    return p.dot(normal)-dist;
   }
 
   // returns intersection time
@@ -305,29 +305,29 @@ public:
 
   // returns side 0 (front) or 1 (back, or on plane)
   VVA_ALWAYS_INLINE VVA_CHECKRESULT int PointOnSide (const TVec &point) const noexcept {
-    return (DotProduct(point, normal)-dist <= 0.0f);
+    return (point.dot(normal)-dist <= 0.0f);
   }
 
   // returns side 0 (front) or 1 (back, or on plane)
   VVA_ALWAYS_INLINE VVA_CHECKRESULT int PointOnSideThreshold (const TVec &point) const noexcept {
-    return (DotProduct(point, normal)-dist < 0.1f);
+    return (point.dot(normal)-dist < 0.1f);
   }
 
   // returns side 0 (front) or 1 (back, or on plane)
   VVA_ALWAYS_INLINE VVA_CHECKRESULT int PointOnSideThreshold (const TVec &point, const float thre) const noexcept {
-    return (DotProduct(point, normal)-dist < thre);
+    return (point.dot(normal)-dist < thre);
   }
 
   // returns side 0 (front, or on plane) or 1 (back)
   // "fri" means "front inclusive"
   VVA_ALWAYS_INLINE VVA_CHECKRESULT int PointOnSideFri (const TVec &point) const noexcept {
-    return (DotProduct(point, normal)-dist < 0.0f);
+    return (point.dot(normal)-dist < 0.0f);
   }
 
   // returns side 0 (front), 1 (back), or 2 (on)
   // used in line tracing (only)
   VVA_ALWAYS_INLINE VVA_CHECKRESULT int PointOnSide2 (const TVec &point) const noexcept {
-    const float dot = DotProduct(point, normal)-dist;
+    const float dot = point.dot(normal)-dist;
     return (dot < -0.1f ? 1 : dot > 0.1f ? 0 : 2);
   }
 

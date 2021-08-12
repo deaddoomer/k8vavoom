@@ -554,7 +554,7 @@ void VEntity::UpdateVelocity (float DeltaTime, bool allowSlopeFriction) {
       // do nothing
     } else if (true /*fnormz <= 0.7f*/) {
       TVec Vel = EFloor.GetNormal();
-      const float dot = DotProduct(Velocity, Vel);
+      const float dot = Velocity.dot(Vel);
       if (dot < 0.0f) {
         /*
         if (IsPlayer()) {

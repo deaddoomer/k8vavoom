@@ -227,7 +227,7 @@ void VRenderLevelShared::RenderPSprite (float SX, float SY, const VAliasModelFra
   Drawer->GLDisableDepthTestSlow();
   Drawer->DrawSpritePolygon((Level ? Level->Time : 0.0f), dv, GTextureManager[lump], ri,
     nullptr, ColorMap, -vfwd,
-    DotProduct(dv[0], -vfwd), saxis, taxis, texorg, VDrawer::SpriteType::SP_PSprite);
+    dv[0].dot(-vfwd), saxis, taxis, texorg, VDrawer::SpriteType::SP_PSprite);
   Drawer->PopDepthMaskSlow();
   Drawer->GLEnableDepthTestSlow();
 }

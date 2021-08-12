@@ -498,10 +498,10 @@ void VPathTraverse::AddLineIntercepts (int mapx, int mapy, vuint32 planeflags, v
     // hit the line
 
     // find the fractional intercept point along the trace line
-    const float den = DotProduct(ld->normal, trace_delta);
+    const float den = ld->normal.dot(trace_delta);
     if (den == 0.0f) continue;
 
-    const float num = ld->dist-DotProduct(trace_org, ld->normal);
+    const float num = ld->dist-trace_org.dot(ld->normal);
     const float frac = num/den;
     if (frac < 0.0f || frac > 1.0f) continue; // behind source or beyond end point
 
@@ -697,7 +697,7 @@ void VPathTraverse::AddThingIntercepts (int mapx, int mapy) {
           #endif
           if (rbfrac >= 0.0f && rbfrac <= max_frac) {
             // yes, use entity center as hit point
-            const float dist = DotProduct((TVec(ent->Origin.x, ent->Origin.y)-trace_org), trace_dir); //dist -= sqrt(ent->radius * ent->radius - dot * dot);
+            const float dist = trace_dir.dot(TVec(ent->Origin.x, ent->Origin.y)-trace_org); //dist -= sqrt(ent->radius * ent->radius - dot * dot);
             #ifdef VV_DEBUG_TRAVERSER
             GCon->Logf(NAME_Debug, "BMCELL: entity %s(%u) CENTER; dist=%g; distance=%g", ent->GetClass()->GetName(), ent->GetUniqueId(), dist, trace_len);
             #endif
@@ -734,7 +734,7 @@ void VPathTraverse::AddThingIntercepts (int mapx, int mapy) {
       if (ent->Radius <= 0.0f || ent->Height <= 0.0f) continue;
       const float dot = trace_plane.PointDistance(ent->Origin);
       if (fabsf(dot) >= ent->Radius) continue; // thing is too far away
-      const float dist = DotProduct((ent->Origin-trace_org), trace_dir); //dist -= sqrt(ent->radius * ent->radius - dot * dot);
+      const float dist = trace_dir.dot(ent->Origin-trace_org); //dist -= sqrt(ent->radius * ent->radius - dot * dot);
       if (dist < 0.0f) continue; // behind source
       const float frac = (trace_len ? dist/trace_len : 0.0f);
       if (frac < 0.0f || frac > 1.0f) continue;

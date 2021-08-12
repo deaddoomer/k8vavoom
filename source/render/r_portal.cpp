@@ -626,11 +626,11 @@ void VMirrorPortal::DrawContents () {
   float Dist = Plane.PointDistance(Drawer->vieworg);
   Drawer->vieworg -= 2.0f*Dist*Plane.normal;
 
-  Dist = DotProduct(Drawer->viewforward, Plane.normal);
+  Dist = Drawer->viewforward.dot(Plane.normal);
   Drawer->viewforward -= 2.0f*Dist*Plane.normal;
-  Dist = DotProduct(Drawer->viewright, Plane.normal);
+  Dist = Drawer->viewright.dot(Plane.normal);
   Drawer->viewright -= 2.0f*Dist*Plane.normal;
-  Dist = DotProduct(Drawer->viewup, Plane.normal);
+  Dist = Drawer->viewup.dot(Plane.normal);
   Drawer->viewup -= 2.0f*Dist*Plane.normal;
 
   // k8: i added this, but i don't know if it is required

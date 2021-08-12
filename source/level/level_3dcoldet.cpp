@@ -66,9 +66,9 @@ float VLevel::SweepLinedefAABB (const line_t *ld, TVec vstart, TVec vend, TVec b
     // line plane normal z is always zero, so don't bother checking it
     const TVec offset = TVec((plane->normal.x < 0.0f ? bmax.x : bmin.x), (plane->normal.y < 0.0f ? bmax.y : bmin.y), /*(plane->normal.z < 0.0f ? bmax.z : bmin.z)*/bmin.z);
     // adjust the plane distance apropriately for mins/maxs
-    const float dist = plane->dist-DotProduct(offset, plane->normal);
-    const float idist = DotProduct(vstart, plane->normal)-dist;
-    const float odist = DotProduct(vend, plane->normal)-dist;
+    const float dist = plane->dist-offset.dot(plane->normal);
+    const float idist = vstart.dot(plane->normal)-dist;
+    const float odist = vend.dot(plane->normal)-dist;
 
     if (idist <= 0.0f && odist <= 0.0f) continue; // doesn't cross this plane, don't bother
 

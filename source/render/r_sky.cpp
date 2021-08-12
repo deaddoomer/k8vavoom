@@ -279,12 +279,12 @@ void VSky::InitOldSky (int Sky1Texture, int Sky2Texture,
       TVec hdir = (j < VDIVS/2 ? surfverts[3].vec()-surfverts[0].vec() : surfverts[2].vec()-surfverts[1].vec());
       TVec vdir = surfverts[0].vec()-surfverts[1].vec();
       TVec normal = CrossProduct(vdir, hdir).normalised();
-      s.plane.Set(normal, DotProduct(surfverts[1].vec(), normal));
+      s.plane.Set(normal, normal.dot(surfverts[1].vec()));
 
-      s.texinfo.saxis = hdir*(1024/HDIVS/DotProduct(hdir, hdir));
+      s.texinfo.saxis = hdir*(1024/HDIVS/hdir.dot(hdir));
       const float tk = skyh/RADIUS;
       s.texinfo.taxis = TVec(0, 0, -tk);
-      s.texinfo.soffs = -DotProduct(s.surf.verts[j < VDIVS/2 ? 0 : 1].vec(), s.texinfo.saxis);
+      s.texinfo.soffs = -s.texinfo.saxis.dot(s.surf.verts[j < VDIVS/2 ? 0 : 1].vec());
       s.texinfo.toffs = skyh;
 
       if (!WasOldSky) {
@@ -301,11 +301,11 @@ void VSky::InitOldSky (int Sky1Texture, int Sky2Texture,
           s.columnOffset2 = -s.columnOffset2;
         }
 
-        mins = DotProduct(surfverts[j < VDIVS/2 ? 3 : 2].vec(), s.texinfo.saxis)+s.texinfo.soffs;
-        maxs = DotProduct(surfverts[j < VDIVS/2 ? 0 : 1].vec(), s.texinfo.saxis)+s.texinfo.soffs;
+        mins = s.texinfo.saxis.dot(surfverts[j < VDIVS/2 ? 3 : 2].vec())+s.texinfo.soffs;
+        maxs = s.texinfo.saxis.dot(surfverts[j < VDIVS/2 ? 0 : 1].vec())+s.texinfo.soffs;
       } else {
-        mins = DotProduct(surfverts[j < VDIVS/2 ? 0 : 1].vec(), s.texinfo.saxis)+s.texinfo.soffs;
-        maxs = DotProduct(surfverts[j < VDIVS/2 ? 3 : 2].vec(), s.texinfo.saxis)+s.texinfo.soffs;
+        mins = s.texinfo.saxis.dot(surfverts[j < VDIVS/2 ? 0 : 1].vec())+s.texinfo.soffs;
+        maxs = s.texinfo.saxis.dot(surfverts[j < VDIVS/2 ? 3 : 2].vec())+s.texinfo.soffs;
       }
 
       int bmins = (int)floorf(mins/16.0f);
@@ -313,8 +313,8 @@ void VSky::InitOldSky (int Sky1Texture, int Sky2Texture,
       s.surf.texturemins[0] = bmins*16;
       s.surf.extents[0] = (bmaxs-bmins)*16;
       //s.surf.extents[0] = 256;
-      mins = DotProduct(surfverts[1].vec(), s.texinfo.taxis)+s.texinfo.toffs;
-      maxs = DotProduct(surfverts[0].vec(), s.texinfo.taxis)+s.texinfo.toffs;
+      mins = s.texinfo.taxis.dot(surfverts[1].vec())+s.texinfo.toffs;
+      maxs = s.texinfo.taxis.dot(surfverts[0].vec())+s.texinfo.toffs;
 
       bmins = (int)floorf(mins/16.0f);
       bmaxs = (int)ceilf(maxs/16.0f);

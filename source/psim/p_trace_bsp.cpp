@@ -140,9 +140,9 @@ static bool BSPCheckLine (TBSPTrace &trace, line_t *line, float tmin, float tmax
   // intercept vector
   // no need to check if den == 0, because then planes are parallel
   // (they will never cross) or it's the same plane (also rejected)
-  const float den = DotProduct(trace.Delta, line->normal);
+  const float den = trace.Delta.dot(line->normal);
   if (den == 0.0f) return true; // ...but just in case
-  const float num = line->dist-DotProduct(trace.Start, line->normal);
+  const float num = line->dist-trace.Start.dot(line->normal);
   const float frac = num/den;
 
   if (frac <= 0.0f || frac >= 1.0f) return true;

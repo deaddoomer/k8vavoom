@@ -85,9 +85,9 @@ bool TPlane::SweepBox3DEx (const float radius, const float height, const TVec &v
   const float bboxext[6] = { -rad, -rad, -halfheight, rad, rad, halfheight };
   const TVec offset = get3DBBoxAcceptPoint(bboxext);
   // adjust the plane distance apropriately
-  const float cdist = dist-DotProduct(offset, normal);
-  const float idist = DotProduct(vstart, normal)-cdist;
-  const float odist = DotProduct(vend, normal)-cdist;
+  const float cdist = dist-offset.dot(normal);
+  const float idist = vstart.dot(normal)-cdist;
+  const float odist = vend.dot(normal)-cdist;
   //GLog.Logf(NAME_Debug, "000: idist=%f; odist=%f", idist, odist);
   if ((idist <= 0.0f && odist <= 0.0f) || // doesn't cross this plane, don't bother
       (idist >= 0.0f && odist >= 0.0f)) // touches, and leaving
@@ -266,8 +266,8 @@ unsigned TPlane::BoxOnPlaneSide (const TVec &emins, const TVec &emaxs) const noe
     }
   }
 
-  const float dist1 = DotProduct(normal, corners[0])-dist;
-  const float dist2 = DotProduct(normal, corners[1])-dist;
+  const float dist1 = normal.dot(corners[0])-dist;
+  const float dist2 = normal.dot(corners[1])-dist;
   unsigned sides = (unsigned)(dist1 >= 0.0f);
   //if (dist1 >= 0.0f) sides = 1;
   if (dist2 < 0.0f) sides |= 2u;
@@ -320,7 +320,7 @@ void TPlane::ClipPoly (ClipWorkData &wdata, const TVec *src, const int vcount,
   bool hasCoplanarSomething = false;
   for (unsigned i = 0; i < (unsigned)vcount; ++i) {
     points[i] = src[i];
-    const float dot = DotProduct(src[i], norm)-pdist;
+    const float dot = norm.dot(src[i])-pdist;
     dots[i] = dot;
          if (dot < -eps) { sides[i] = PlaneBack; hasBackSomething = true; }
     else if (dot > +eps) { sides[i] = PlaneFront; hasFrontSomething = true; }

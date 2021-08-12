@@ -3031,7 +3031,7 @@ func_loop:
               sp -= 3;
               TVec v1(sp[-3].f, sp[-2].f, sp[-1].f);
               sp -= 2;
-              sp[-1].f = DotProduct(v1, v2);
+              sp[-1].f = v1.dot(v2);
               if (!isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("dotproduct result is INF/NAN"); }
               break;
             }
@@ -3041,7 +3041,7 @@ func_loop:
               sp -= 3;
               TVec v1(sp[-3].f, sp[-2].f, sp[-1].f);
               sp -= 2;
-              sp[-1].f = DotProduct2D(v1, v2);
+              sp[-1].f = v1.dot2D(v2);
               if (!isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("dotproduct2d result is INF/NAN"); }
               break;
             }

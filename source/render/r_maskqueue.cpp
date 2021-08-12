@@ -153,8 +153,8 @@ void VRenderLevelShared::QueueTranslucentSurface (surface_t *surf, const RenderS
   TVec mid(0, 0, 0);
   for (int i = 0; i < count; ++i) mid += sv[i].vec();
   mid /= count;
-  //const float dist = fabsf(DotProduct(mid-Drawer->vieworg, Drawer->viewforward));
-  const float dist = LengthSquared(mid-Drawer->vieworg);
+  //const float dist = fabsf(mid-Drawer->vieworg.dot(Drawer->viewforward));
+  const float dist = (mid-Drawer->vieworg).lengthSquared();
 #else
   // select nearest vertex
   //float dist = LengthSquared(sv[0].vec()-Drawer->vieworg);
@@ -162,11 +162,11 @@ void VRenderLevelShared::QueueTranslucentSurface (surface_t *surf, const RenderS
   //float dist = viewplane->PointDistance(sv[0].vec());
   const TVec vfwd = Drawer->viewforward;
   const TVec vorg = Drawer->vieworg;
-  float dist = /*fabsf*/(DotProduct(sv[0].vec()-vorg, vfwd));
+  float dist = /*fabsf*/(vfwd.dot(sv[0].vec()-vorg));
   for (int i = 1; i < count; ++i) {
     //const float nd = LengthSquared(sv[i].vec()-Drawer->vieworg);
     //const float nd = viewplane->PointDistance(sv[i].vec());
-    const float nd = /*fabsf*/(DotProduct(sv[i].vec()-vorg, vfwd));
+    const float nd = /*fabsf*/(vfwd.dot(sv[i].vec()-vorg));
     if (dist > nd) dist = nd;
   }
 #endif
@@ -203,7 +203,7 @@ void VRenderLevelShared::QueueSpritePoly (VEntity *thing, const TVec *sv, int lu
 {
   if (ri.alpha < 0.004f) return;
 
-  const float dist = /*fabsf*/(DotProduct(sprOrigin-Drawer->vieworg, Drawer->viewforward));
+  const float dist = /*fabsf*/(Drawer->viewforward.dot(sprOrigin-Drawer->vieworg));
   //const float dist = LengthSquared(sprOrigin-Drawer->vieworg);
 
   //trans_sprite_t &spr = GetCurrentDLS().DrawSpriteList.alloc();
@@ -237,7 +237,7 @@ void VRenderLevelShared::QueueTranslucentAliasModel (VEntity *mobj, const Render
   if (ri.alpha < 0.004f) return;
   if (ri.flags&RenderStyleInfo::FlagShadow) return;
 
-  const float dist = /*fabsf*/(DotProduct(mobj->Origin-Drawer->vieworg, Drawer->viewforward));
+  const float dist = /*fabsf*/(Drawer->viewforward.dot(mobj->Origin-Drawer->vieworg));
   //const float dist = LengthSquared(mobj->Origin-Drawer->vieworg);
 
   //trans_sprite_t &spr = trans_sprites[traspUsed++];
@@ -460,7 +460,7 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
       // cross product will be between two nearly parallel vectors and
       // starts to approach an undefined state, so we don't draw if the two
       // vectors are less than 1 degree apart
-      dot = Drawer->viewforward.z; // same as DotProduct(Drawer->viewforward, sprup), because sprup is 0, 0, 1
+      dot = Drawer->viewforward.z; // same as Drawer->viewforward.dot(sprup), because sprup is 0, 0, 1
       if (dot > 0.999848f || dot < -0.999848f) return; // cos(1 degree) = 0.999848f
       sprup = TVec(0, 0, 1);
       // CrossProduct(sprup, Drawer->viewforward)
@@ -477,7 +477,7 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
       // starts to approach an undefined state, so we don't draw if the two
       // vectors are less than 1 degree apart
       tvec = (sprorigin-Drawer->vieworg).normalised();
-      dot = tvec.z; // same as DotProduct (tvec, sprup), because sprup is 0, 0, 1
+      dot = tvec.z; // same as tvec.dot(sprup), because sprup is 0, 0, 1
       if (dot > 0.999848f || dot < -0.999848f) return; // cos(1 degree) = 0.999848f
       sprup = TVec(0, 0, 1);
       // CrossProduct(sprup, -sprorigin)
@@ -524,7 +524,7 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
       // up or down, because the cross product will be between two nearly
       // parallel vectors and starts to approach an undefined state, so we
       // don't draw if the two vectors are less than 1 degree apart
-      dot = Drawer->viewforward.z; // same as DotProduct(viewforward, sprup), because sprup is 0, 0, 1
+      dot = Drawer->viewforward.z; // same as viewforward.dot(sprup), because sprup is 0, 0, 1
       if (dot > 0.999848f || dot < -0.999848f) return; // cos(1 degree) = 0.999848f
 
       sr = msin(thing->Angles.roll);
@@ -711,12 +711,12 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
       #if 0
       Drawer->DrawSpritePolygon((Level ? Level->Time : 0.0f), sv, Tex, ri,
         GetTranslation(thing->Translation), ColorMap,
-        -sprforward, DotProduct(sprorigin, -sprforward),
+        -sprforward, sprorigin.dot(-sprforward),
         (flip ? -sprright : sprright)/scaleX,
         -sprup/scaleY, (flip ? sv[2] : sv[1]));
       #else
       QueueSpritePoly(thing, sv, lump, ri, thing->Translation,
-        -sprforward, DotProduct(sprorigin, -sprforward),
+        -sprforward, sprorigin.dot(-sprforward),
         (flip ? -sprright : sprright)/scaleX, -sprup/scaleY,
         (flip ? sv[2] : sv[1]), priority, thing->Origin, thing->ServerUId);
       #endif
@@ -755,7 +755,7 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
           ri.stencilColor = 0xff000000u; // shadows are black-stenciled
           ri.translucency = RenderStyleInfo::Translucent;
           QueueSpritePoly(thing, sv, lump, ri, /*translation*/0,
-            -sprforward, DotProduct(sprorigin, -sprforward),
+            -sprforward, sprorigin.dot(-sprforward),
             (flip ? -sprright : sprright)/scaleX, -sprup/scaleY,
             (flip ? sv[2] : sv[1]), priority, thing->Origin, thing->ServerUId);
         } else if (r_fake_sprite_shadows.asInt() == 2) {
@@ -801,7 +801,7 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
           ri.translucency = RenderStyleInfo::Translucent;
           flip = !flip;
           QueueSpritePoly(thing, sv, lump, ri, /*translation*/0,
-            -sprforward, DotProduct(sprorigin, -sprforward),
+            -sprforward, sprorigin.dot(-sprforward),
             (flip ? -sprright : sprright)/scaleX, -sprup/scaleY,
             (flip ? sv[2] : sv[1]), priority, thing->Origin, thing->ServerUId);
         }

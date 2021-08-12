@@ -260,9 +260,9 @@ VVA_CHECKRESULT TVec AngleVectorPitch (const float pitch) noexcept {
 //
 //==========================================================================
 bool ProjectPointOnPlane (TVec &dst, const TVec &p, const TVec &normal) noexcept {
-  const float inv_denom = 1.0f/DotProduct(normal, normal);
+  const float inv_denom = 1.0f/normal.dot(normal);
   if (!isFiniteF(inv_denom)) { dst = TVec(0.0f, 0.0f, 0.0f); return false; } //k8: what to do here?
-  const float d = DotProduct(normal, p)*inv_denom;
+  const float d = normal.dot(p)*inv_denom;
   dst = p-d*(normal*inv_denom);
   return true;
 }
@@ -420,7 +420,7 @@ void MakeNormalVectors (const TVec &forward, TVec &right, TVec &up) noexcept {
   right[1] = -forward[0];
   right[2] = forward[1];
   right[0] = forward[2];
-  float d = DotProduct(right, forward);
+  float d = right.dot(forward);
   //VectorMA(right, -d, forward, right);
   // (const vec3_t veca, float scale, const vec3_t vecb, vec3_t vecc): vecc = veca+scal*vecb
   right -= forward*d;

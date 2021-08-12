@@ -107,8 +107,8 @@ static inline void SurfRecalcFlatOffset (sec_surface_t *surf, const TSecPlaneRef
   const float cy = spl.splane->PObjCY;
   if (cx || cy) {
     const TVec p(cx, cy);
-    newsoffs -= DotProduct(surf->texinfo.saxis, p);
-    newtoffs -= DotProduct(surf->texinfo.taxis, p);
+    newsoffs -= p.dot(surf->texinfo.saxis);
+    newtoffs -= p.dot(surf->texinfo.taxis);
   }
 
   surf->texinfo.soffs = newsoffs;

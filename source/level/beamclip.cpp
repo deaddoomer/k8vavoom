@@ -915,7 +915,7 @@ void VViewClipper::ClipInitFrustumRange (const TAVec &viewangles, const TVec &vi
     TransPts[i].y = VSUM3(Pts[i].x*viewright.y, Pts[i].y*viewup.y, /*Pts[i].z* */viewforward.y);
     TransPts[i].z = VSUM3(Pts[i].x*viewright.z, Pts[i].y*viewup.z, /*Pts[i].z* */viewforward.z);
 
-    if (DotProduct(TransPts[i], clipforward) <= 0.01f) { // was 0.0f
+    if (TransPts[i].dot(clipforward) <= 0.01f) { // was 0.0f
       //GCon->Logf(NAME_Debug, "  ooops; pitch=%g", viewangles.pitch);
       // player can see behind, use back frustum plane to clip
       return;
@@ -1486,8 +1486,8 @@ static inline bool MirrorCheck (const TPlane *Mirror, const TVec &v1, const TVec
     //if (Mirror->PointOnSideThreshold(v1) && Mirror->PointOnSideThreshold(v2)) return false;
     if (Mirror->PointOnSide2(v1) || Mirror->PointOnSide2(v2)) return false;
     // and clip it while we are here
-    //const float dist1 = DotProduct(v1, Mirror->normal)-Mirror->dist;
-    //const float dist2 = DotProduct(v2, Mirror->normal)-Mirror->dist;
+    //const float dist1 = v1.dot(Mirror->normal)-Mirror->dist;
+    //const float dist2 = v2.dot(Mirror->normal)-Mirror->dist;
     // k8: really?
     /*
          if (dist1 > 0.0f && dist2 <= 0.0f) v2 = v1+(v2-v1)*Dist1/(Dist1-Dist2);

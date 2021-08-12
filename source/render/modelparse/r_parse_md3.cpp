@@ -311,7 +311,7 @@ void VMeshModel::Load_MD3 (const vuint8 *Data, int DataSize) {
       }
       hadError = hadError || reported;
       PlaneNormal = PlaneNormal.normalised();
-      const float PlaneDist = DotProduct(PlaneNormal, v3);
+      const float PlaneDist = PlaneNormal.dot(v3);
       Frame.Planes[j].Set(PlaneNormal, PlaneDist);
       if (reported) {
         ++triIgnored;

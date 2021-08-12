@@ -105,8 +105,8 @@ static TArray<sec_region_t *> uwregs;
 static VVA_OKUNUSED inline void ClipSegToSomething (TVec &v1, TVec &v2, const TVec vieworg) {
   const TVec r1 = vieworg-v1;
   const TVec r2 = vieworg-v2;
-  const float D1 = DotProduct(CrossProduct(r1, r2).normalised(), vieworg);
-  const float D2 = DotProduct(CrossProduct(r2, r1).normalised(), vieworg);
+  const float D1 = vieworg.dot(CrossProduct(r1, r2).normalised());
+  const float D2 = vieworg.dot(CrossProduct(r2, r1).normalised());
   // there might be a better method of doing this, but this one works for now...
        if (D1 > 0.0f && D2 < 0.0f) v2 += ((v2-v1)*D1)/(D1-D2);
   else if (D2 > 0.0f && D1 < 0.0f) v1 += ((v2-v1)*D1)/(D2-D1);

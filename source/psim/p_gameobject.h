@@ -815,7 +815,7 @@ struct TSecPlaneRef {
   inline float GetDist () const noexcept { return (!flipped ? splane->dist : -splane->dist); }
   inline TPlane GetPlane () const noexcept { TPlane res; res.normal = (!flipped ? splane->normal : -splane->normal); res.dist = (!flipped ? splane->dist : -splane->dist); return res; }
 
-  inline float PointDistance (const TVec &p) const noexcept { return (!flipped ? DotProduct(p, splane->normal)-splane->dist : DotProductV2Neg(p, splane->normal)+splane->dist); }
+  inline float PointDistance (const TVec &p) const noexcept { return (!flipped ? p.dot(splane->normal)-splane->dist : p.dotv2neg(splane->normal)+splane->dist); }
 
   // valid only for horizontal planes!
   //inline float GetRealDist () const noexcept { return (!flipped ? splane->dist*splane->normal.z : (-splane->dist)*(-splane->normal.z)); }
@@ -834,7 +834,7 @@ struct TSecPlaneRef {
     return (!flipped ? splane->GetPointZClamped(x, y) : splane->GetPointZRevClamped(x, y));
   }
 
-  inline VVA_CHECKRESULT float DotPoint (const TVec &point) const noexcept { return (!flipped ? DotProduct(point, splane->normal) : DotProductV2Neg(point, splane->normal)); }
+  inline VVA_CHECKRESULT float DotPoint (const TVec &point) const noexcept { return (!flipped ? point.dot(splane->normal) : point.dotv2neg(splane->normal)); }
 
   inline VVA_CHECKRESULT float GetPointZ (const TVec &v) const noexcept { return GetPointZ(v.x, v.y); }
 

@@ -389,8 +389,8 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
 
         // texture offset already taken into account, so we need only offsets for bottom left corner
         //TODO: this is prolly not fully right for flipped decals
-        soffs = -DotProduct(v1, saxis); // horizontal
-        toffs = -DotProduct(TVec(v1.x, v1.y, dcz), taxis); // vertical
+        soffs = -saxis.dot(v1); // horizontal
+        toffs = -taxis.dot(TVec(v1.x, v1.y, dcz)); // vertical
 
         dc->v1 = TVec(v1.x, v1.y, dcz);
         dc->v2 = TVec(v1.x, v1.y, dcz+thgt);
@@ -424,8 +424,8 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
           dc->v3 = (dc->v3-cc)*M+cc;
           dc->v4 = (dc->v4-cc)*M+cc;
           TVec nv1 = (TVec(v1.x, v1.y, dcz)-cc)*M+cc;
-          soffs = -DotProduct(nv1, saxis); // horizontal
-          toffs = -DotProduct(nv1, taxis); // vertical
+          soffs = -saxis.dot(nv1); // horizontal
+          toffs = -taxis.dot(nv1); // vertical
           /*
           GCon->Logf(NAME_Debug, "100: v1=(%g,%g,%g); v2=(%g,%g,%g); v3=(%g,%g,%g); v4=(%g,%g,%g)",
             dc->v1.x, dc->v1.y, dc->v1.z,
@@ -470,8 +470,8 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         if (dc->angle != 0.0f) {
           ROTVEC(ofsv);
         }
-        soffs = -DotProduct(ofsv, saxis); // horizontal
-        toffs = -DotProduct(ofsv, taxis); // vertical
+        soffs = -saxis.dot(ofsv); // horizontal
+        toffs = -taxis.dot(ofsv); // vertical
 
         // floor/ceiling
         // left-bottom

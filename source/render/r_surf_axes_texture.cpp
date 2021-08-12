@@ -124,8 +124,8 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
   if (yflip) texinfo->taxis = -texinfo->taxis;
 
   // basic texture offset, so it will start at `v1`
-  //texinfo->soffs = -DotProduct(*seg->linedef->v1, texinfo->saxis); // horizontal
-  //texinfo->toffs = -DotProduct(TVec(seg->linedef->v1->x, seg->linedef->v1->y, TexZ), texinfo->taxis); // vertical
+  //texinfo->soffs = -texinfo->saxis.dot(*seg->linedef->v1); // horizontal
+  //texinfo->toffs = -texinfo->taxis.dot(TVec(seg->linedef->v1->x, seg->linedef->v1->y, TexZ)); // vertical
   //for long memories... texinfo->soffs += c*seg->offset-seg->offset;
 
   // x offset need not to be modified (i hope)
@@ -167,7 +167,7 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
     v = (seg->side == 0 ? seg->linedef->v1 : seg->linedef->v2);
     ndir = -seg->ndir;
   }
-  texinfo->soffs = -DotProduct(*v, ndir)*TextureSScale(tex)*tparam->ScaleX; // horizontal
+  texinfo->soffs = -ndir.dot(*v)*TextureSScale(tex)*tparam->ScaleX; // horizontal
 
   if (!yflip) {
     texinfo->toffs = TexZ*TextureTScale(tex)*tparam->ScaleY; // vertical
@@ -197,8 +197,8 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
     #else
   {
     TVec p(xofs*TextureOffsetSScale(tex)/tparam->ScaleX, yofs*TextureOffsetTScale(tex)/tparam->ScaleY);
-    texinfo->soffs -= DotProduct(texinfo->saxis, p);
-    texinfo->toffs -= DotProduct(texinfo->taxis, p);
+    texinfo->soffs -= p.dot(texinfo->saxis);
+    texinfo->toffs -= p.dot(texinfo->taxis);
   }
     #endif
   #endif
@@ -209,8 +209,8 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
     const float cx = v->x; //+seg->ndir.x*seg->length/2.0f; //tex->GetWidth()/2.0f;
     const float cy = v->y; //+seg->ndir.y*seg->length/2.0f; //tex->GetHeight()/2.0f;
     TVec p(cx, cy);
-    texinfo->soffs -= DotProduct(texinfo->saxis, p);
-    texinfo->toffs -= DotProduct(texinfo->taxis, p);
+    texinfo->soffs -= p.dot(texinfo->saxis);
+    texinfo->toffs -= p.dot(texinfo->taxis);
   }
   #endif
 }

@@ -150,13 +150,13 @@ void VOpenGLDrawer::DrawSkyPolygon (surface_t *surf, bool bIsSkyBox, VTexture *T
       const float t = CalcSkyTexCoordT(surf->verts[i].vec(), tex);
       SurfDSky.SetTexCoordAttr(s1, t);
         /*
-        (DotProduct(surf->verts[sidx[i]].vec(), tex->saxis)+tex->soffs-offs1)*tex_iw,
-        (DotProduct(surf->verts[i].vec(), tex->taxis)+tex->toffs)*tex_ih);
+        (tex->saxis.dot(surf->verts[sidx[i]].vec())+tex->soffs-offs1)*tex_iw,
+        (tex->taxis.dot(surf->verts[i].vec())+tex->toffs)*tex_ih);
         */
       SurfDSky.SetTexCoord2Attr(s2, t);
         /*
-        (DotProduct(surf->verts[sidx[i]].vec(), tex->saxis)+tex->soffs-offs2)*tex_iw,
-        (DotProduct(surf->verts[i].vec(), tex->taxis)+tex->toffs)*tex_ih);
+        (tex->saxis.dot(surf->verts[sidx[i]].vec())+tex->soffs-offs2)*tex_iw,
+        (tex->taxis.dot(surf->verts[i].vec())+tex->toffs)*tex_ih);
         */
       //SurfDSky.UploadChangedAttrs();
       glVertex(surf->verts[i].vec());
@@ -216,9 +216,9 @@ void VOpenGLDrawer::DoHorizonPolygon (surface_t *surf) {
 
     const TVec Dir1 = (vieworg-surf->verts[1].vec()).normalised();
     const TVec Dir2 = (vieworg-surf->verts[2].vec()).normalised();
-    float Mul1 = 1.0f/DotProduct(HDir, Dir1);
+    float Mul1 = 1.0f/HDir.dot(Dir1);
     v[1] = surf->verts[1].vec()+Dir1*Mul1*Dist;
-    const float Mul2 = 1.0f/DotProduct(HDir, Dir2);
+    const float Mul2 = 1.0f/HDir.dot(Dir2);
     v[2] = surf->verts[2].vec()+Dir2*Mul2*Dist;
     if (v[1].z < v[0].z) {
       v[1] = surf->verts[1].vec()+Dir1*Mul1*Dist*(surf->verts[1].z-surf->verts[0].z)/(surf->verts[1].z-v[1].z);
@@ -231,9 +231,9 @@ void VOpenGLDrawer::DoHorizonPolygon (surface_t *surf) {
 
     const TVec Dir1 = (vieworg-surf->verts[0].vec()).normalised();
     const TVec Dir2 = (vieworg-surf->verts[3].vec()).normalised();
-    const float Mul1 = 1.0f/DotProduct(HDir, Dir1);
+    const float Mul1 = 1.0f/HDir.dot(Dir1);
     v[0] = surf->verts[0].vec()+Dir1*Mul1*Dist;
-    const float Mul2 = 1.0f/DotProduct(HDir, Dir2);
+    const float Mul2 = 1.0f/HDir.dot(Dir2);
     v[3] = surf->verts[3].vec()+Dir2*Mul2*Dist;
     if (v[1].z < v[0].z) {
       v[0] = surf->verts[0].vec()+Dir1*Mul1*Dist*(surf->verts[1].z-surf->verts[0].z)/(v[0].z-surf->verts[0].z);

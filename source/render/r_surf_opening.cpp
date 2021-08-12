@@ -40,8 +40,8 @@ static int CheckQuadLine (const TVec &v0, const TVec &v1, const TSecPlaneRef &pl
     normal = -normal;
     dist = -dist;
   }
-  const float v1distbot = DotProduct(v0, normal)-dist;
-  const float v1disttop = DotProduct(v1, normal)-dist;
+  const float v1distbot = v0.dot(normal)-dist;
+  const float v1disttop = v1.dot(normal)-dist;
   // positive distance means "above"
   if (isFloor) {
     if (v1disttop >= 0.0f && v1distbot >= 0.0f) return VRenderLevelShared::QTop;

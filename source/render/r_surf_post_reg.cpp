@@ -96,8 +96,8 @@ static bool CalcSurfMinMax (surface_t *surf, float &outmins, float &outmaxs, con
       return false;
     }
     // ignore offset, we don't need it anymore
-    //const float dot = DotProduct(*vt, axis)+offs;
-    const float dot = DotProduct(vt->vec(), axis);
+    //const float dot = axis.dot(*vt)+offs;
+    const float dot = axis.dot(vt->vec());
     if (dot < mins) mins = dot;
     if (dot > maxs) maxs = dot;
   }
@@ -174,7 +174,7 @@ static bool SplitSurface (SClipInfo &clip, surface_t *surf, const TVec &axis) {
   bool hasFrontSomething = false;
   bool hasBackSomething = false;
   for (int i = 0; i < surfcount; ++i, ++vt) {
-    //const float dot = DotProduct(vt->vec(), plane.normal)-plane.dist;
+    //const float dot = plane.normal.dot(vt->vec())-plane.dist;
     const float dot = plane.PointDistance(vt->vec());
     dots[i] = dot;
          if (dot < -ON_EPSILON) { sides[i] = PlaneBack; hasBackSomething = true; }

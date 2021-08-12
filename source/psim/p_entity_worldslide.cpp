@@ -133,7 +133,7 @@ TVec VEntity::TraceToWallSmall2D (TVec org, TVec vdelta) {
 //
 //==========================================================================
 TVec VEntity::ClipVelocity (const TVec &in, const TVec &normal, float overbounce) {
-  return in-normal*(DotProduct(in, normal)*overbounce);
+  return in-normal*(in.dot(normal)*overbounce);
 }
 
 

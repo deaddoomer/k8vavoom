@@ -161,16 +161,16 @@ static bool SightPassRegionPlaneTexture (SightTraceInfo &trace, const sec_region
   const float cy = spl.splane->PObjCY;
   if (cx || cy) {
     TVec p(cx, cy);
-    soffs -= DotProduct(saxis, p);
-    toffs -= DotProduct(taxis, p);
+    soffs -= p.dot(saxis);
+    toffs -= p.dot(taxis);
   }
 
   const TVec hitPoint = trace.Start+trace.Delta*frac;
 
-  int texelT = (int)(DotProduct(hitPoint, taxis)+toffs)%thgt;
+  int texelT = (int)(hitPoint.dot(taxis)+toffs)%thgt;
   if (texelT < 0) texelT += thgt;
 
-  int texelS = (int)(DotProduct(hitPoint, saxis)+soffs)%twdt;
+  int texelS = (int)(hitPoint.dot(saxis)+soffs)%twdt;
   if (texelS < 0) texelS += twdt;
 
   // i don't know why i shouldn't reverse Y here
@@ -554,7 +554,7 @@ static bool SightPass2SLine (SightTraceInfo &trace, int iidx, const line_t *line
     toffs += (zOrg+texh)*MTex->TextureTScale()*sidedef->Mid.ScaleY;
   }
 
-  int texelT = (int)(DotProduct(lend, taxis)+toffs)%thgt;
+  int texelT = (int)(lend.dot(taxis)+toffs)%thgt;
   if (texelT < 0) texelT += thgt;
 
   // s axis
@@ -564,14 +564,14 @@ static bool SightPass2SLine (SightTraceInfo &trace, int iidx, const line_t *line
   const TVec saxis = (sidenum == (int)!xflip ? -line->ndir : line->ndir)*MTex->TextureSScale()*sidedef->Mid.ScaleX;
 
   const TVec *v = (sidenum == (int)(!xflip || xbroken) ? line->v2 : line->v1);
-  float soffs = -DotProduct(*v, saxis);
+  float soffs = -saxis.dot(*v);
   float xoffs = sidedef->Mid.TextureOffset;
   if (xoffs != 0.0f) {
     if (xflip) xoffs = -xoffs;
     soffs += xoffs*MTex->TextureOffsetSScale()/sidedef->Mid.ScaleX;
   }
 
-  int texelS = (int)(DotProduct(lend, saxis)+soffs)%twdt;
+  int texelS = (int)(lend.dot(saxis)+soffs)%twdt;
   if (texelS < 0) texelS += twdt;
 
   // i don't know why i shouldn't reverse Y here
@@ -657,9 +657,9 @@ static bool SightPassLine (SightTraceInfo &trace, line_t *ld) {
   }
 
   // signed distance
-  const float den = DotProduct(ld->normal, trace.Delta);
+  const float den = ld->normal.dot(trace.Delta);
   if (den == 0.0f) return true; // wtf?!
-  const float num = ld->dist-DotProduct(trace.Start, ld->normal);
+  const float num = ld->dist-trace.Start.dot(ld->normal);
   const float frac = num/den;
 
   // just in case

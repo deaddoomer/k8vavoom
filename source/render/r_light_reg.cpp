@@ -195,7 +195,7 @@ bool VRenderLevelLightmap::IsStaticLightmapTimeLimitExpired () {
 //==========================================================================
 bool VRenderLevelLightmap::CastStaticRay (float *dist, const subsector_t *srcsubsector, const TVec &p1, const subsector_t *destsubsector, const TVec &p2, const float squaredist, const bool allowTextureCheck) {
   const TVec delta = p2-p1;
-  const float t = DotProduct(delta, delta);
+  const float t = delta.dot(delta);
   if (t >= squaredist) {
     // too far away
     if (dist) *dist = 0.0f;
@@ -285,7 +285,7 @@ bool VRenderLevelLightmap::CalcFaceVectors (LMapTraceInfo &lmi, const surface_t 
   if (!isFiniteF(texnormal.x)) return false; // no need to check other coords
 
   // flip it towards plane normal
-  float distscale = DotProduct(texnormal, surf->GetNormal());
+  float distscale = texnormal.dot(surf->GetNormal());
   if (!distscale) Host_Error("Texture axis perpendicular to face");
   if (distscale < 0.0f) {
     distscale = -distscale;
@@ -300,7 +300,7 @@ bool VRenderLevelLightmap::CalcFaceVectors (LMapTraceInfo &lmi, const surface_t 
   for (unsigned i = 0; i < 2; ++i) {
     const float len = 1.0f/lmi.worldtotex[i].length();
     if (!isFiniteF(len)) return false; // just in case
-    const float dist = DotProduct(lmi.worldtotex[i], surf->GetNormal())*distscale;
+    const float dist = lmi.worldtotex[i].dot(surf->GetNormal())*distscale;
     lmi.textoworld[i] = lmi.worldtotex[i]-texnormal*dist;
     lmi.textoworld[i] = lmi.textoworld[i]*len*len;
   }
@@ -313,7 +313,7 @@ bool VRenderLevelLightmap::CalcFaceVectors (LMapTraceInfo &lmi, const surface_t 
   }
 
   // project back to the face plane
-  const float dist = (DotProduct(lmi.texorg, surf->GetNormal())-surf->GetDist()-1.0f)*distscale;
+  const float dist = (lmi.texorg.dot(surf->GetNormal())-surf->GetDist()-1.0f)*distscale;
   lmi.texorg = lmi.texorg-texnormal*dist;
   */
 
@@ -522,7 +522,7 @@ void VRenderLevelLightmap::SingleLightFace (LMapTraceInfo &lmi, light_t *light, 
     return;
   }
 
-  //float orgdist = DotProduct(light->origin, surf->GetNormal())-surf->GetDist();
+  //float orgdist = light->origin.dot(surf->GetNormal())-surf->GetDist();
   const float orgdist = surf->PointDistance(light->origin);
   // don't bother with lights behind the surface, or too far away
   if (orgdist <= -0.1f || orgdist >= light->radius) return;
@@ -613,7 +613,7 @@ void VRenderLevelLightmap::SingleLightFace (LMapTraceInfo &lmi, light_t *light, 
       }
     }
 
-    float angle = DotProduct(incoming, lnormal);
+    float angle = incoming.dot(lnormal);
     angle = 0.5f+0.5f*angle;
 
     float add = (light->radius-raydist)*angle*attn;
@@ -679,7 +679,7 @@ void VRenderLevelLightmap::SingleLightFace (LMapTraceInfo &lmi, light_t *light, 
             if (!incoming.isValid()) continue;
           }
 
-          float angle = DotProduct(incoming, lnormal);
+          float angle = incoming.dot(lnormal);
           angle = 0.5f+0.5f*angle;
 
           float add = (light->radius-raydist)*angle*0.75f;
@@ -1050,8 +1050,8 @@ void VRenderLevelLightmap::AddDynamicLights (surface_t *surf) {
     const float bmul = dlcolor&255;
 
     TVec local;
-    local.x = DotProduct(impact, tex->saxisLM)/*+tex->soffs*/;
-    local.y = DotProduct(impact, tex->taxisLM)/*+tex->toffs*/;
+    local.x = impact.dot(tex->saxisLM)/*+tex->soffs*/;
+    local.y = impact.dot(tex->taxisLM)/*+tex->toffs*/;
     local.z = 0;
 
     local.x -= /*starts*/surf->texturemins[0];

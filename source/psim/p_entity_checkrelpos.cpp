@@ -165,12 +165,12 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
             #endif
             good = false;
             // find the fractional intercept point along the trace line
-            const float den = DotProduct(ld->normal, tmtrace.End-Pos);
+            const float den = ld->normal.dot(tmtrace.End-Pos);
             if (den == 0.0f) {
               fuckhit = ld;
               lastFrac = 0;
             } else {
-              const float num = ld->dist-DotProduct(Pos, ld->normal);
+              const float num = ld->dist-Pos.dot(ld->normal);
               const float frac = fabsf(num/den);
               if (frac < lastFrac) {
                 fuckhit = ld;
@@ -373,7 +373,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
   }
 
   const float hgt = max2(0.0f, Height);
-  //TVec hitPoint = tmtrace.End-(DotProduct(tmtrace.End, ld->normal)-ld->dist)*ld->normal;
+  //TVec hitPoint = tmtrace.End-(tmtrace.End.dot(ld->normal)-ld->dist)*ld->normal;
   const TVec hitPoint = tmtrace.End-(ld->PointDistance(tmtrace.End)*ld->normal);
 
   // check polyobject

@@ -917,8 +917,8 @@ sec_surface_t *VRenderLevelShared::GetNearestFloor (const subsector_t *sub, cons
 }
 
 // get lightmap
-int s = (int)(DotProduct(p, rfloor->texinfo.saxisLM));
-int t = (int)(DotProduct(p, rfloor->texinfo.taxisLM));
+int s = (int)(p.dot(rfloor->texinfo.saxisLM));
+int t = (int)(p.dot(rfloor->texinfo.taxisLM));
 int ds, dt;
 for (surface_t *surf = rfloor->surfs; surf; surf = surf->next) {
   if (surf->lightmap == nullptr) continue;
@@ -1197,10 +1197,10 @@ void VRenderLevelShared::CalculateSubAmbient (VEntity *lowner, float &l, float &
       // as we are interested only in distance, it is enough to get transformed `z`
       const TVec mp = p-Drawer->vieworg;
       //TVec pp;
-      //pp.x = DotProduct(mp, Drawer->viewright);
-      //pp.y = DotProduct(mp, Drawer->viewup);
-      //pp.z = DotProduct(mp, Drawer->viewforward);
-      const float ppz = DotProduct(mp, Drawer->viewforward);
+      //pp.x = mp.dot(Drawer->viewright);
+      //pp.y = mp.dot(Drawer->viewup);
+      //pp.z = mp.dot(Drawer->viewforward);
+      const float ppz = mp.dot(Drawer->viewforward);
       const float nl = DoomLightingEquation(l, ppz);
       lr = ((SecLightColor>>16)&255)*nl/255.0f;
       lg = ((SecLightColor>>8)&255)*nl/255.0f;
@@ -1214,10 +1214,10 @@ void VRenderLevelShared::CalculateSubAmbient (VEntity *lowner, float &l, float &
     if (!IsShadowVolumeRenderer()) {
       sec_surface_t *rfloor = GetNearestFloor(sub, p);
       if (rfloor) {
-        //int s = (int)(DotProduct(p, rfloor->texinfo.saxis)+rfloor->texinfo.soffs);
-        //int t = (int)(DotProduct(p, rfloor->texinfo.taxis)+rfloor->texinfo.toffs);
-        int s = (int)(DotProduct(p, rfloor->texinfo.saxisLM));
-        int t = (int)(DotProduct(p, rfloor->texinfo.taxisLM));
+        //int s = (int)(p.dot(rfloor->texinfo.saxis)+rfloor->texinfo.soffs);
+        //int t = (int)(p.dot(rfloor->texinfo.taxis)+rfloor->texinfo.toffs);
+        int s = (int)(p.dot(rfloor->texinfo.saxisLM));
+        int t = (int)(p.dot(rfloor->texinfo.taxisLM));
         int ds, dt;
         for (surface_t *surf = rfloor->surfs; surf; surf = surf->next) {
           if (surf->lightmap == nullptr) continue;

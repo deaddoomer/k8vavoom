@@ -521,15 +521,15 @@ void VOpenGLDrawer::DrawTexturedPoly (const texinfo_t *tinfo, TVec light, float 
   if (origverts) {
     for (; vcount--; ++verts, ++origverts) {
       glTexCoord2f(
-        (DotProduct(origverts->vec(), tinfo->saxis)+tinfo->soffs)*tex_iw,
-        (DotProduct(origverts->vec(), tinfo->taxis)+tinfo->toffs)*tex_ih);
+        (tinfo->saxis.dot(origverts->vec())+tinfo->soffs)*tex_iw,
+        (tinfo->taxis.dot(origverts->vec())+tinfo->toffs)*tex_ih);
       glVertex2f(verts->x, verts->y);
     }
   } else {
     for (; vcount--; ++verts) {
       glTexCoord2f(
-        (DotProduct(*verts, tinfo->saxis)+tinfo->soffs)*tex_iw,
-        (DotProduct(*verts, tinfo->taxis)+tinfo->toffs)*tex_ih);
+        (tinfo->saxis.dot(*verts)+tinfo->soffs)*tex_iw,
+        (tinfo->taxis.dot(*verts)+tinfo->toffs)*tex_ih);
       glVertex2f(verts->x, verts->y);
     }
   }
