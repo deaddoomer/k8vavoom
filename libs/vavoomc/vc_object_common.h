@@ -206,6 +206,8 @@
   DECLARE_FUNCTION(GetClassInstanceCount)
   DECLARE_FUNCTION(GetClassInstanceCountWithSub)
 
+  DECLARE_FUNCTION(GetClassInstanceSize)
+
   // state methods
   DECLARE_FUNCTION(GetStateLocationStr)
   DECLARE_FUNCTION(GetFullStateName)

@@ -588,6 +588,15 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
       }
       // bad swizzle or field access, process with normal resolution
     }
+    // struct properties
+    if (VStr::strEquCI(*FieldName, "InstanceSize")) {
+      VStruct *st = op->Type.Struct;
+      // `auto v = vector(a, b, c)` is vector without struct, for example, hence the check
+      if (!st) st = VMemberBase::StaticFindTVec();
+      VExpression *e = new VIntLiteral(op->Type.GetSize(), Loc);
+      delete this;
+      return e->Resolve(ec);
+    }
     // struct method
     /*if (op->Type.Type == TYPE_Struct || op->Type.Type == TYPE_Vector)*/
     {

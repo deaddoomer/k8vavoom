@@ -1439,6 +1439,13 @@ IMPLEMENT_FUNCTION(VObject, GetClassInstanceCountWithSub) {
   RET_INT(SomeClass ? SomeClass->InstanceCountWithSub : 0);
 }
 
+// native static final int GetClassInstanceSize (class C);
+IMPLEMENT_FUNCTION(VObject, GetClassInstanceSize) {
+  VClass *SomeClass;
+  vobjGetParam(SomeClass);
+  RET_INT(SomeClass ? SomeClass->ClassSize : 0);
+}
+
 
 //native final static class FindMObjId (int id, optional int GameFilter);
 IMPLEMENT_FUNCTION(VObject, FindMObjId) {
