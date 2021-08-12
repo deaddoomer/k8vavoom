@@ -401,6 +401,7 @@ static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec operator * (const flo
 
 //static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec abs (const TVec &v1) noexcept { return v1.abs(); }
 
+/*
 static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float Length (const TVec &v) noexcept { return v.length(); }
 static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float length (const TVec &v) noexcept { return v.length(); }
 static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float Length2D (const TVec &v) noexcept { return v.length2D(); }
@@ -410,6 +411,7 @@ static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float LengthSquared (const
 static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float lengthSquared (const TVec &v) noexcept { return v.lengthSquared(); }
 static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float Length2DSquared (const TVec &v) noexcept { return v.length2DSquared(); }
 static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float length2DSquared (const TVec &v) noexcept { return v.length2DSquared(); }
+*/
 
 static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec Normalise (const TVec &v) noexcept { return v.normalised(); }
 //static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec normalise (const TVec &v) noexcept { return v.normalised(); }

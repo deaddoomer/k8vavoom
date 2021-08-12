@@ -507,7 +507,7 @@ dlight_t *VRenderLevelShared::AllocDlight (VThinker *Owner, const TVec &lorg, fl
   if (radius <= 0.0f) radius = 0.0f; else if (radius < 2.0f) return nullptr; // ignore too small lights
   if (lightid < 0) lightid = 0;
 
-  float bestdist = lengthSquared(lorg-cl->ViewOrg);
+  float bestdist = (lorg-cl->ViewOrg).lengthSquared();
 
   // even if filtering is disabled, filter them anyway
   const float coeff = (r_allow_dynamic_light_filter.asBool() ? clampval(r_light_filter_dynamic_coeff.asFloat(), 0.1f, 1.0f) : 0.02f);
@@ -579,14 +579,14 @@ dlight_t *VRenderLevelShared::AllocDlight (VThinker *Owner, const TVec &lorg, fl
       // don't replace player's lights
       if (dl->flags&dlight_t::PlayerLight) continue;
       // replace furthest light
-      const float dist = lengthSquared(dl->origin-cl->ViewOrg);
+      const float dist = (dl->origin-cl->ViewOrg).lengthSquared();
       if (dist > bestdist) {
         bestdist = dist;
         dlbestdist = dl;
       }
       // check if we already have dynamic light around new origin
       if (!isPlr) {
-        const float dd = lengthSquared(dl->origin-lorg);
+        const float dd = (dl->origin-lorg).lengthSquared();
         if (dd <= 6.0f*6.0f) {
           if (radius > 0 && dl->radius >= radius) return nullptr;
           dlreplace = dl;

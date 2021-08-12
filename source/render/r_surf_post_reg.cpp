@@ -151,7 +151,7 @@ static bool SplitSurface (SClipInfo &clip, surface_t *surf, const TVec &axis) {
 
   TPlane plane;
   plane.normal = axis;
-  const float dot0 = Length(plane.normal);
+  const float dot0 = plane.normal.length();
   plane.normal.normaliseInPlace();
   plane.dist = (mins+SUBDIVIDE_SIZE-16)/dot0;
 

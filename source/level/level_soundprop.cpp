@@ -80,7 +80,7 @@ void VLevel::processSoundSector (int validcount, TArray<VEntity *> &elist, secto
     if ((Ent->EntityFlags&hmask)|(Ent->FlagsEx&VEntity::EFEX_NoInteraction)) continue;
     if (Ent == soundtarget) continue; // skip target
     // check max distance
-    if (!distUnlim && length2DSquared(sndorigin-Ent->Origin) > maxdistSq) continue;
+    if (!distUnlim && (sndorigin-Ent->Origin).length2DSquared() > maxdistSq) continue;
     if (!recSoundSectorSeenEnts.put(Ent, true)) {
       // register for processing
       elist.append(Ent);
@@ -133,7 +133,7 @@ void VLevel::processSoundSector (int validcount, TArray<VEntity *> &elist, secto
       //GCon->Logf(NAME_Debug, "  sound to sector: scount=%d; from sector=%d; sector=%d from line %d", sblock, (int)(ptrdiff_t)(sec-&Sectors[0]), (int)(ptrdiff_t)(other-&Sectors[0]), (int)(ptrdiff_t)(line-&Lines[0]));
       // if both vertices are too far, don't travel this line
       if (!distUnlim && gm_compat_better_sound_distance.asBool()) {
-        if (length2DSquared(sndorigin-(*line->v1)) > maxdistSq && length2DSquared(sndorigin-(*line->v2)) > maxdistSq) continue;
+        if ((sndorigin-(*line->v1)).length2DSquared() > maxdistSq && (sndorigin-(*line->v2)).length2DSquared() > maxdistSq) continue;
       }
       // set flags
       other->validcount = validcount;
@@ -159,7 +159,7 @@ void VLevel::processSoundSector (int validcount, TArray<VEntity *> &elist, secto
           if (other->validcount == validcount && other->soundtraversed <= sblock+1) continue;
           /*
           if (!distUnlim && gm_compat_better_sound_distance.asBool()) {
-            if (length2DSquared(sndorigin-(*line->v1)) > maxdistSq && length2DSquared(sndorigin-(*line->v2)) > maxdistSq) continue;
+            if ((sndorigin-(*line->v1)).length2DSquared() > maxdistSq && (sndorigin-(*line->v2)).length2DSquared() > maxdistSq) continue;
           }
           */
           // set flags

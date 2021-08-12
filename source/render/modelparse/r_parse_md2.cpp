@@ -267,7 +267,7 @@ void VMeshModel::Load_MD2 (const vuint8 *Data, int DataSize) {
         TVec d1 = v2-v3;
         TVec d2 = v1-v3;
         PlaneNormal = CrossProduct(d1, d2);
-        if (lengthSquared(PlaneNormal) == 0.0f) {
+        if (PlaneNormal.lengthSquared() == 0.0f) {
           //k8:hack!
           if (mdl_report_errors && !reported) {
             GCon->Logf("Alias model '%s' has degenerate triangle %d; v1=(%f,%f,%f), v2=(%f,%f,%f); v3=(%f,%f,%f); d1=(%f,%f,%f); d2=(%f,%f,%f); cross=(%f,%f,%f)",

@@ -75,7 +75,7 @@ void VRenderLevelShadowVolume::RefilterStaticLights () {
       light_t &nl = Lights[nlidx];
       if (!nl.active) continue; // already filtered out
       if (onlyDecor && !nl.ownerUId) continue;
-      const float distsq = length2DSquared(cl.origin-nl.origin);
+      const float distsq = (cl.origin-nl.origin).length2DSquared();
       if (distsq >= radsq) continue;
 
       // if we cannot trace a line between two lights, they are prolly divided by a wall or a flat

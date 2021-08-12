@@ -581,7 +581,7 @@ void VRenderLevelLightmap::SingleLightFace (LMapTraceInfo &lmi, light_t *light, 
   for (int c = 0; c < lmi.numsurfpt; ++c, ++spt) {
     // check spotlight cone
     if (lmi.spotLight) {
-      if (length2DSquared((*spt)-lorg) > 2*2) {
+      if (((*spt)-lorg).length2DSquared() > 2.0f*2.0f) {
         attn = spt->calcSpotlightAttMult(lorg, lmi.coneDir, lmi.coneAngle);
         if (attn == 0.0f) continue;
       } else {
@@ -1081,7 +1081,7 @@ void VRenderLevelLightmap::AddDynamicLights (surface_t *surf) {
           // check spotlight cone
           if (lmi.spotLight) {
             //spt = lmi.calcTexPoint(starts+s*step, startt+t*step);
-            if (length2DSquared((*spt)-dorg) > 2*2) {
+            if (((*spt)-dorg).length2DSquared() > 2.0f*2.0f) {
               attn = spt->calcSpotlightAttMult(dorg, lmi.coneDir, lmi.coneAngle);
               if (attn == 0.0f) continue;
             } else {
@@ -1095,7 +1095,7 @@ void VRenderLevelLightmap::AddDynamicLights (surface_t *surf) {
           // do more dynlight clipping
           if (needProperTrace) {
             //if (!lmi.spotLight) spt = lmi.calcTexPoint(starts+s*step, startt+t*step);
-            if (length2DSquared((*spt)-dorg) > 2*2) {
+            if (((*spt)-dorg).length2DSquared() > 2.0f*2.0f) {
               const TVec &p2 = *spt;
               //const TVec p2 = (*spt)+surfOffs;
               if (!useBSPTrace) {

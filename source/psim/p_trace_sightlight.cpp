@@ -950,7 +950,7 @@ bool VLevel::CastCanSee (const subsector_t *SubSector, const TVec &org, float my
                          const TVec &dest, float radius, float height, bool skipBaseRegion, const subsector_t *DestSubSector,
                          bool allowBetterSight, bool ignoreBlockAll, bool ignoreFakeFloors)
 {
-  if (lengthSquared(org-dest) <= 2.0f*2.0f) return true; // arbitrary
+  if ((org-dest).lengthSquared() <= 2.0f*2.0f) return true; // arbitrary
 
   // if starting or ending point is out of blockmap bounds, don't bother tracing
   // we can get away with this, because nothing can see anything beyound the map extents
@@ -1048,7 +1048,7 @@ bool VLevel::CastLightRay (bool /*textureCheck*/, const subsector_t *startSubSec
   if (isNotInsideBM(org, this)) return false;
   if (isNotInsideBM(dest, this)) return false;
 
-  if (lengthSquared(org-dest) <= 2.0f) return true;
+  if ((org-dest).lengthSquared() <= 2.0f) return true;
 
   SightTraceInfo trace(this, org, dest, startSubSector, endSubSector);
   trace.lightCheck = true;

@@ -639,7 +639,7 @@ void VAudio::PlaySound (int InSoundId, const TVec &origin, const TVec &velocity,
 
   // calculate the distance before other stuff so that we can throw out sounds that are beyond the hearing range
   int dist = 0;
-  if (origin_id && !LocalPlayerSound && Attenuation > 0 && cl) dist = (int)(Length(origin-cl->ViewOrg)*Attenuation);
+  if (origin_id && !LocalPlayerSound && Attenuation > 0 && cl) dist = (int)((origin-cl->ViewOrg).length()*Attenuation);
   //GCon->Logf("DISTANCE=%d", dist);
   if (dist >= MaxSoundDist) {
     //GCon->Logf("  too far away (%d)", MaxSoundDist);
@@ -1093,7 +1093,7 @@ void VAudio::UpdateSfx () {
 
     if (!cl) continue;
 
-    const int dist = (int)(Length(Channel[i].origin-cl->ViewOrg)*Channel[i].Attenuation);
+    const int dist = (int)((Channel[i].origin-cl->ViewOrg).length()*Channel[i].Attenuation);
     if (dist >= MaxSoundDist) {
       // too far away
       StopChannel(i);

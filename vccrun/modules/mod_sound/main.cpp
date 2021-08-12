@@ -545,7 +545,7 @@ int VAudioPublic::PlaySound (int sound_id, const TVec &origin,
 
   // calculate the distance before other stuff so that we can throw out sounds that are beyond the hearing range
   int dist = 0;
-  if (!localPlayerSound && attenuation > 0) dist = (int)(Length(origin-ListenerOrigin)*attenuation);
+  if (!localPlayerSound && attenuation > 0) dist = (int)((origin-ListenerOrigin).length()*attenuation);
 
   MyThreadLocker lislock(&lockListener);
 
@@ -1265,7 +1265,7 @@ void VAudioPublic::UpdateSfx (float frameDelta) {
 
     // calculate the distance before other stuff so that we can throw out sounds that are beyond the hearing range
     int dist = 0;
-    if (!Channel[i].localPlayerSound && Channel[i].attenuation > 0) dist = (int)(Length(Channel[i].origin-ListenerOrigin)*Channel[i].attenuation);
+    if (!Channel[i].localPlayerSound && Channel[i].attenuation > 0) dist = (int)((Channel[i].origin-ListenerOrigin).length()*Channel[i].attenuation);
 
     // too far away?
     if (dist >= MaxSoundDist) {
