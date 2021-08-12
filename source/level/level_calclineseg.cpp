@@ -69,11 +69,11 @@ void VLevel::CalcSegLenOfs (seg_t *seg) {
   const line_t *ldef = seg->linedef;
   if (ldef) {
     const TVec *vv = (seg->side ? ldef->v2 : ldef->v1);
-    seg->offset = seg->v1->DistanceTo2D(*vv);
+    seg->offset = seg->v1->distanceTo2D(*vv);
   } else {
     seg->offset = 0.0f; // just in case
   }
-  seg->length = seg->v2->DistanceTo2D(*seg->v1);
+  seg->length = seg->v2->distanceTo2D(*seg->v1);
   if (!isFiniteF(seg->length)) seg->length = 0.0f; // just in case
 }
 

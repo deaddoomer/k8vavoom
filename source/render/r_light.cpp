@@ -781,16 +781,16 @@ float VRenderLevelShared::CheckLightPointCone (VEntity *lowner, const TVec &p, c
   if (radius <= 0.0f) {
     if (height <= 0.0f) {
       if (pl.PointOnSide(p)) return 0.0f;
-      return p.CalcSpotlightAttMult(coneOrigin, coneDir, coneAngle);
+      return p.calcSpotlightAttMult(coneOrigin, coneDir, coneAngle);
     } else {
       const TVec p1(p.x, p.y, p.z+height);
       if (pl.PointOnSide(p)) {
         if (pl.PointOnSide(p1)) return 0.0f;
-        return p1.CalcSpotlightAttMult(coneOrigin, coneDir, coneAngle);
+        return p1.calcSpotlightAttMult(coneOrigin, coneDir, coneAngle);
       } else {
-        const float att0 = p.CalcSpotlightAttMult(coneOrigin, coneDir, coneAngle);
+        const float att0 = p.calcSpotlightAttMult(coneOrigin, coneDir, coneAngle);
         if (att0 == 1.0f || pl.PointOnSide(p1)) return att0;
-        const float att1 = p1.CalcSpotlightAttMult(coneOrigin, coneDir, coneAngle);
+        const float att1 = p1.calcSpotlightAttMult(coneOrigin, coneDir, coneAngle);
         return max2(att0, att1);
       }
     }
@@ -804,13 +804,13 @@ float VRenderLevelShared::CheckLightPointCone (VEntity *lowner, const TVec &p, c
   bbox[3+1] = p.y+radius*0.4f;
   bbox[3+2] = p.z+(height > 0.0f ? height : 0.0f);
   if (!pl.checkBox3D(bbox)) return 0.0f;
-  float res = calcLightPoint(p, height).CalcSpotlightAttMult(coneOrigin, coneDir, coneAngle);
+  float res = calcLightPoint(p, height).calcSpotlightAttMult(coneOrigin, coneDir, coneAngle);
   if (res == 1.0f) return res;
   CONST_BBoxVertexIndex;
   for (unsigned bi = 0; bi < 8; ++bi) {
     const TVec vv(bbox[BBoxVertexIndex[bi][0]], bbox[BBoxVertexIndex[bi][1]], bbox[BBoxVertexIndex[bi][2]]);
     if (pl.PointOnSide(vv)) continue;
-    const float attn = vv.CalcSpotlightAttMult(coneOrigin, coneDir, coneAngle);
+    const float attn = vv.calcSpotlightAttMult(coneOrigin, coneDir, coneAngle);
     if (attn > res) {
       res = attn;
       if (res == 1.0f) return 1.0f; // it can't be higher than this
@@ -818,7 +818,7 @@ float VRenderLevelShared::CheckLightPointCone (VEntity *lowner, const TVec &p, c
   }
   // check box midpoint
   {
-    const float attn = TVec((bbox[0+0]+bbox[3+0])/2.0f, (bbox[0+1]+bbox[3+1])/2.0f, (bbox[0+2]+bbox[3+2])/2.0f).CalcSpotlightAttMult(coneOrigin, coneDir, coneAngle);
+    const float attn = TVec((bbox[0+0]+bbox[3+0])/2.0f, (bbox[0+1]+bbox[3+1])/2.0f, (bbox[0+2]+bbox[3+2])/2.0f).calcSpotlightAttMult(coneOrigin, coneDir, coneAngle);
     res = max2(res, attn);
   }
   return res;

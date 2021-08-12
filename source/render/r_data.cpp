@@ -1287,8 +1287,8 @@ static void ParseLightDef (VScriptParser *sc, int LightType) {
       L->ConeDir.y = sc->Float;
       sc->ExpectFloat();
       L->ConeDir.z = sc->Float;
-      L->ConeDir = L->ConeDir.Normalised();
-      if (!L->ConeDir.isValid()) L->ConeDir = TVec(0, 0, 0);
+      L->ConeDir = L->ConeDir.normalised();
+      if (!L->ConeDir.isValid()) L->ConeDir = TVec(0.0f, 0.0f, 0.0f);
       continue;
     }
     // alias

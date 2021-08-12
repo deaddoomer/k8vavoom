@@ -140,11 +140,11 @@ public:
   VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec operator - (const TVec &v2) const noexcept { return TVec(VSUM2(x, (-v2.x)), VSUM2(y, (-v2.y)), VSUM2(z, (-v2.z))); }
 
   VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec operator * (const float s) const noexcept { return TVec(s*x, s*y, s*z); }
-  VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec operator / (float s) noexcept { s = 1.0f/s; if (!isFiniteF(s)) s = 0.0f; return TVec(x*s, y*s, z*s); }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec operator / (float s) const noexcept { s = 1.0f/s; if (!isFiniteF(s)) s = 0.0f; return TVec(x*s, y*s, z*s); }
 
-  //VVA_CHECKRESULT VVA_ALWAYS_INLINE float operator * (const TVec &b) noexcept { return dot(b); }
-  //VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec operator ^ (const TVec &b) noexcept { return cross(b); }
-  //VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec operator % (const TVec &b) noexcept { return cross(b); }
+  //VVA_CHECKRESULT VVA_ALWAYS_INLINE float operator * (const TVec &b) const noexcept { return dot(b); }
+  //VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec operator ^ (const TVec &b) const noexcept { return cross(b); }
+  //VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec operator % (const TVec &b) const noexcept { return cross(b); }
 
 #ifdef USE_FAST_INVSQRT
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float invlength () const noexcept { return fastInvSqrtf(VSUM3(x*x, y*y, z*z)); }

@@ -582,7 +582,7 @@ void VRenderLevelLightmap::SingleLightFace (LMapTraceInfo &lmi, light_t *light, 
     // check spotlight cone
     if (lmi.spotLight) {
       if (length2DSquared((*spt)-lorg) > 2*2) {
-        attn = spt->CalcSpotlightAttMult(lorg, lmi.coneDir, lmi.coneAngle);
+        attn = spt->calcSpotlightAttMult(lorg, lmi.coneDir, lmi.coneAngle);
         if (attn == 0.0f) continue;
       } else {
         attn = 1.0f;
@@ -1082,7 +1082,7 @@ void VRenderLevelLightmap::AddDynamicLights (surface_t *surf) {
           if (lmi.spotLight) {
             //spt = lmi.calcTexPoint(starts+s*step, startt+t*step);
             if (length2DSquared((*spt)-dorg) > 2*2) {
-              attn = spt->CalcSpotlightAttMult(dorg, lmi.coneDir, lmi.coneAngle);
+              attn = spt->calcSpotlightAttMult(dorg, lmi.coneDir, lmi.coneAngle);
               if (attn == 0.0f) continue;
             } else {
               attn = 1.0f;
