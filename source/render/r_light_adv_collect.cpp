@@ -86,8 +86,8 @@ void VRenderLevelShadowVolume::CollectLightShadowSurfaces (bool doShadows) {
 static VVA_OKUNUSED inline void ClipSegToLight (TVec &v1, TVec &v2, const TVec &pos, const float radius) {
   const TVec r1 = pos-v1;
   const TVec r2 = pos-v2;
-  const float d1 = DotProduct(Normalise(CrossProduct(r1, r2)), pos);
-  const float d2 = DotProduct(Normalise(CrossProduct(r2, r1)), pos);
+  const float d1 = DotProduct(CrossProduct(r1, r2).normalised(), pos);
+  const float d2 = DotProduct(CrossProduct(r2, r1).normalised(), pos);
   // there might be a better method of doing this, but this one works for now...
        if (d1 > radius && d2 < -radius) v2 += (v2-v1)*d1/(d1-d2);
   else if (d2 > radius && d1 < -radius) v1 += (v1-v2)*d2/(d2-d1);

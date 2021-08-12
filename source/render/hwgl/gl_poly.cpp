@@ -212,13 +212,13 @@ void VOpenGLDrawer::DoHorizonPolygon (surface_t *surf) {
   if (surf->HorizonPlane->normal.z > 0.0f) {
     v[0] = surf->verts[0].vec();
     v[3] = surf->verts[3].vec();
-    TVec HDir = -surf->GetNormal();
+    const TVec HDir = -surf->GetNormal();
 
-    TVec Dir1 = Normalise(vieworg-surf->verts[1].vec());
-    TVec Dir2 = Normalise(vieworg-surf->verts[2].vec());
+    const TVec Dir1 = (vieworg-surf->verts[1].vec()).normalised();
+    const TVec Dir2 = (vieworg-surf->verts[2].vec()).normalised();
     float Mul1 = 1.0f/DotProduct(HDir, Dir1);
     v[1] = surf->verts[1].vec()+Dir1*Mul1*Dist;
-    float Mul2 = 1.0f/DotProduct(HDir, Dir2);
+    const float Mul2 = 1.0f/DotProduct(HDir, Dir2);
     v[2] = surf->verts[2].vec()+Dir2*Mul2*Dist;
     if (v[1].z < v[0].z) {
       v[1] = surf->verts[1].vec()+Dir1*Mul1*Dist*(surf->verts[1].z-surf->verts[0].z)/(surf->verts[1].z-v[1].z);
@@ -227,13 +227,13 @@ void VOpenGLDrawer::DoHorizonPolygon (surface_t *surf) {
   } else {
     v[1] = surf->verts[1].vec();
     v[2] = surf->verts[2].vec();
-    TVec HDir = -surf->GetNormal();
+    const TVec HDir = -surf->GetNormal();
 
-    TVec Dir1 = Normalise(vieworg-surf->verts[0].vec());
-    TVec Dir2 = Normalise(vieworg-surf->verts[3].vec());
-    float Mul1 = 1.0f/DotProduct(HDir, Dir1);
+    const TVec Dir1 = (vieworg-surf->verts[0].vec()).normalised();
+    const TVec Dir2 = (vieworg-surf->verts[3].vec()).normalised();
+    const float Mul1 = 1.0f/DotProduct(HDir, Dir1);
     v[0] = surf->verts[0].vec()+Dir1*Mul1*Dist;
-    float Mul2 = 1.0f/DotProduct(HDir, Dir2);
+    const float Mul2 = 1.0f/DotProduct(HDir, Dir2);
     v[3] = surf->verts[3].vec()+Dir2*Mul2*Dist;
     if (v[1].z < v[0].z) {
       v[0] = surf->verts[0].vec()+Dir1*Mul1*Dist*(surf->verts[1].z-surf->verts[0].z)/(v[0].z-surf->verts[0].z);

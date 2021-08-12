@@ -413,10 +413,10 @@ static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float Length2DSquared (con
 static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float length2DSquared (const TVec &v) noexcept { return v.length2DSquared(); }
 */
 
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec Normalise (const TVec &v) noexcept { return v.normalised(); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec Normalise (const TVec &v) noexcept { return v.normalised(); }
 //static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec normalise (const TVec &v) noexcept { return v.normalised(); }
 
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec normalise2D (const TVec &v) noexcept { return v.normalised2D(); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec normalise2D (const TVec &v) noexcept { return v.normalised2D(); }
 
 static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float DotProduct (const TVec &v1, const TVec &v2) noexcept { return v1.dot(v2); }
 //static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float dot (const TVec &v1, const TVec &v2) noexcept { return v1.dot(v2); }

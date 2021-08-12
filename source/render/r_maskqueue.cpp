@@ -464,9 +464,9 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
       if (dot > 0.999848f || dot < -0.999848f) return; // cos(1 degree) = 0.999848f
       sprup = TVec(0, 0, 1);
       // CrossProduct(sprup, Drawer->viewforward)
-      sprright = Normalise(TVec(Drawer->viewforward.y, -Drawer->viewforward.x, 0));
+      sprright = TVec(Drawer->viewforward.y, -Drawer->viewforward.x, 0.0f).normalised2D();
       // CrossProduct(sprright, sprup)
-      sprforward = TVec(-sprright.y, sprright.x, 0);
+      sprforward = TVec(-sprright.y, sprright.x, 0.0f);
       break;
 
     case SPR_FACING_UPRIGHT:
@@ -476,14 +476,14 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
       // cross product will be between two nearly parallel vectors and
       // starts to approach an undefined state, so we don't draw if the two
       // vectors are less than 1 degree apart
-      tvec = Normalise(sprorigin-Drawer->vieworg);
+      tvec = (sprorigin-Drawer->vieworg).normalised();
       dot = tvec.z; // same as DotProduct (tvec, sprup), because sprup is 0, 0, 1
       if (dot > 0.999848f || dot < -0.999848f) return; // cos(1 degree) = 0.999848f
       sprup = TVec(0, 0, 1);
       // CrossProduct(sprup, -sprorigin)
-      sprright = Normalise(TVec(tvec.y, -tvec.x, 0));
+      sprright = TVec(tvec.y, -tvec.x, 0.0f).normalised2D();
       // CrossProduct(sprright, sprup)
-      sprforward = TVec(-sprright.y, sprright.x, 0);
+      sprforward = TVec(-sprright.y, sprright.x, 0.0f);
       break;
 
     case SPR_VP_PARALLEL:
@@ -531,9 +531,9 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
       cr = mcos(thing->Angles.roll);
 
       // CrossProduct(TVec(0, 0, 1), Drawer->viewforward)
-      tvec = Normalise(TVec(Drawer->viewforward.y, -Drawer->viewforward.x, 0));
+      tvec = TVec(Drawer->viewforward.y, -Drawer->viewforward.x, 0.0f).normalised2D();
       // CrossProduct(tvec, TVec(0, 0, 1))
-      sprforward = TVec(-tvec.y, tvec.x, 0);
+      sprforward = TVec(-tvec.y, tvec.x, 0.0f);
       // Rotate
       sprright = TVec(tvec.x*cr, tvec.y*cr, tvec.z*cr+sr);
       sprup = TVec(tvec.x*(-sr), tvec.y*(-sr), tvec.z*(-sr)+cr);
@@ -567,8 +567,8 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
       {
         TAVec angs = thing->GetSpriteDrawAngles();
         // dunno if roll should be kept here
-        angs.pitch = 0;
-        angs.roll = 0;
+        angs.pitch = 0.0f;
+        angs.roll = 0.0f;
         // this is what makes the sprite looks like in GZDoom
         angs.yaw = AngleMod(angs.yaw+180.0f);
         // generate the sprite's axes, according to the sprite's world orientation
