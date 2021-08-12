@@ -148,6 +148,8 @@ template <class T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T clamp
 template <class T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T min3 (const T a, const T b, const T c) noexcept { return min2(min2(a, b), c); }
 template <class T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T max3 (const T a, const T b, const T c) noexcept { return max2(max2(a, b), c); }
 
+template <class T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T signval (const T a) noexcept { return (a < (T)0 ? (T)-1 : a > (T)0 ? (T)+1 : (T)0); }
+
 
 //==========================================================================
 //

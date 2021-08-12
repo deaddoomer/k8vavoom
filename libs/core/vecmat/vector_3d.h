@@ -145,32 +145,117 @@ public:
 
   VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec abs () const noexcept { return TVec(fabsf(x), fabsf(y), fabsf(z)); }
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float Length () const noexcept { return sqrtf(VSUM3(x*x, y*y, z*z)); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float length () const noexcept { return sqrtf(VSUM3(x*x, y*y, z*z)); }
-
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float Length2D () const noexcept { return sqrtf(VSUM2(x*x, y*y)); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float length2D () const noexcept { return sqrtf(VSUM2(x*x, y*y)); }
-
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float LengthSquared () const noexcept { return VSUM3(x*x, y*y, z*z); }
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float lengthSquared () const noexcept { return VSUM3(x*x, y*y, z*z); }
 
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float Length2DSquared () const noexcept { return VSUM2(x*x, y*y); }
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float length2DSquared () const noexcept { return VSUM2(x*x, y*y); }
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float DistanceTo (const TVec &v) const noexcept { return sqrtf(VSUM3((x-v.x)*(x-v.x), (y-v.y)*(y-v.y), (z-v.z)*(z-v.z))); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float DistanceTo2D (const TVec &v) const noexcept { return sqrtf(VSUM2((x-v.x)*(x-v.x), (y-v.y)*(y-v.y))); }
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float distanceTo (const TVec &v) const noexcept { return sqrtf(VSUM3((x-v.x)*(x-v.x), (y-v.y)*(y-v.y), (z-v.z)*(z-v.z))); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float distanceTo2D (const TVec &v) const noexcept { return sqrtf(VSUM2((x-v.x)*(x-v.x), (y-v.y)*(y-v.y))); }
+  // this is slightly slower, but better for axis-aligned vectors
 
-  inline void normaliseInPlace () noexcept { const float invlen = invlength(); x *= invlen; y *= invlen; z *= invlen; }
-  inline void normalise2DInPlace () noexcept { const float invlen = invlength2D(); x *= invlen; y *= invlen; z = 0.0f; }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float Length2D () const noexcept { return (x && y ? sqrtf(VSUM2(x*x, y*y)) : fabsf(x+y)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float length2D () const noexcept { return (x && y ? sqrtf(VSUM2(x*x, y*y)) : fabsf(x+y)); }
 
-  inline VVA_CHECKRESULT TVec Normalised () const noexcept { const float invlen = invlength(); return TVec(x*invlen, y*invlen, z*invlen); }
-  inline VVA_CHECKRESULT TVec normalised () const noexcept { const float invlen = invlength(); return TVec(x*invlen, y*invlen, z*invlen); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float Length () const noexcept {
+         if (z) { if (x || y) return sqrtf(VSUM3(x*x, y*y, z*z)); else return fabsf(z); }
+    else if (x && y) return sqrtf(VSUM2(x*x, y*y));
+    else return fabsf(x+y);
+  }
 
-  inline VVA_CHECKRESULT TVec Normalised2D () const noexcept { const float invlen = invlength2D(); return TVec(x*invlen, y*invlen, 0.0f); }
-  inline VVA_CHECKRESULT TVec normalised2D () const noexcept { const float invlen = invlength2D(); return TVec(x*invlen, y*invlen, 0.0f); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float length () const noexcept {
+         if (z) { if (x || y) return sqrtf(VSUM3(x*x, y*y, z*z)); else return fabsf(z); }
+    else if (x && y) return sqrtf(VSUM2(x*x, y*y));
+    else return fabsf(x+y);
+  }
+
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float DistanceTo (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, z-v.z).Length(); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float DistanceTo2D (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, 0.0f).Length2D(); }
+
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float distanceTo (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, z-v.z).length(); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float distanceTo2D (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, 0.0f).length2D(); }
+
+  /*
+  inline void normaliseInPlace () noexcept { if (z) { const float invlen = invlength(); x *= invlen; y *= invlen; z *= invlen; } else normalise2DInPlace(); }
+  inline void normalise2DInPlace () noexcept { if (x && y) { const float invlen = invlength2D(); x *= invlen; y *= invlen; } else { x = signval(x); y = signval(y); } }
+
+  inline VVA_CHECKRESULT TVec Normalised () const noexcept { if (z) { const float invlen = invlength(); return TVec(x*invlen, y*invlen, z*invlen); } else return Normalised2D(); }
+  inline VVA_CHECKRESULT TVec normalised () const noexcept { if (z) { const float invlen = invlength(); return TVec(x*invlen, y*invlen, z*invlen); } else return normalised2D(); }
+
+  inline VVA_CHECKRESULT TVec Normalised2D () const noexcept { if (x && y) { const float invlen = invlength2D(); return TVec(x*invlen, y*invlen, 0.0f); } else return TVec(signval(x), signval(y), 0.0f); }
+  inline VVA_CHECKRESULT TVec normalised2D () const noexcept { if (x && y) { const float invlen = invlength2D(); return TVec(x*invlen, y*invlen, 0.0f); } else return TVec(signval(x), signval(y), 0.0f); }
+  */
+
+  // this is slightly slower, but better for axis-aligned vectors
+
+  inline void normalise2DInPlace () noexcept {
+    if (x && y) {
+      const float invlen = invlength2D();
+      x *= invlen; y *= invlen;
+    } else {
+      // at least one of `x`/`y` is zero here (but both can be zeroes, hence the checks)
+           if (x) x = (x < 0.0f ? -1.0f : 1.0f);
+      else if (y) y = (y < 0.0f ? -1.0f : 1.0f);
+    }
+    z = 0.0f;
+  }
+
+  inline void normaliseInPlace () noexcept {
+    if (z) {
+      if (x || y) {
+        const float invlen = invlength();
+        x *= invlen; y *= invlen; z *= invlen;
+      } else {
+        // `z` is never zero here
+        z = (z < 0.0f ? -1.0f : 1.0f);
+      }
+    } else {
+      normalise2DInPlace();
+    }
+  }
+
+  inline VVA_CHECKRESULT TVec Normalised2D () const noexcept {
+         if (x && y) { const float invlen = invlength2D(); return TVec(x*invlen, y*invlen, 0.0f); }
+    else if (x) return TVec((x < 0.0f ? -1.0f : +1.0f), 0.0f, 0.0f);
+    else if (y) return TVec(0.0f, (y < 0.0f ? -1.0f : +1.0f), 0.0f);
+    else return TVec(0.0f, 0.0f, 0.0f);
+  }
+
+  inline VVA_CHECKRESULT TVec normalised2D () const noexcept {
+         if (x && y) { const float invlen = invlength2D(); return TVec(x*invlen, y*invlen, 0.0f); }
+    else if (x) return TVec((x < 0.0f ? -1.0f : +1.0f), 0.0f, 0.0f);
+    else if (y) return TVec(0.0f, (y < 0.0f ? -1.0f : +1.0f), 0.0f);
+    else return TVec(0.0f, 0.0f, 0.0f);
+  }
+
+  inline VVA_CHECKRESULT TVec Normalised () const noexcept {
+    if (z) {
+      if (x || y) {
+        const float invlen = invlength();
+        return TVec(x*invlen, y*invlen, z*invlen);
+      } else {
+        // `z` is never zero here
+        return TVec(0.0f, 0.0f, (z < 0.0f ? -1.0f : 1.0f));
+      }
+    } else {
+      return Normalised2D();
+    }
+  }
+
+  inline VVA_CHECKRESULT TVec normalised () const noexcept {
+    if (z) {
+      if (x || y) {
+        const float invlen = invlength();
+        return TVec(x*invlen, y*invlen, z*invlen);
+      } else {
+        // `z` is never zero here
+        return TVec(0.0f, 0.0f, (z < 0.0f ? -1.0f : 1.0f));
+      }
+    } else {
+      return Normalised2D();
+    }
+  }
+
 
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float Dot (const TVec &v2) const noexcept { return VSUM3(x*v2.x, y*v2.y, z*v2.z); }
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float dot (const TVec &v2) const noexcept { return VSUM3(x*v2.x, y*v2.y, z*v2.z); }
