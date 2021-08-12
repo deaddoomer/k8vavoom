@@ -83,10 +83,17 @@ vector TVec {
   native TVec closestPointOnDoomBox3D (const TVec origin, const float radius, const float height) const;
   native TVec closestPointOnBox2D (const TVec bmin, const TVec bmax) const;
   native TVec closestPointOnDoomBox2D (const TVec origin, const float radius) const;
+
   native float box3DDistanceSquared (const TVec bmin, const TVec bmax) const;
   native float doomBox3DDistanceSquared (const TVec origin, const float radius, const float height) const;
   native float box2DDistanceSquared (const TVec bmin, const TVec bmax) const;
   native float doomBox2DDistanceSquared (const TVec origin, const float radius) const;
+
+  // `self` gives the direction
+  native TVec box3DSupportPoint (const TVec bmin, const TVec bmax) const;
+  native TVec doomBox3DSupportPoint (const TVec origin, const float radius, const float height) const;
+  native TVec box2DSupportPoint (const TVec bmin, const TVec bmax) const;
+  native TVec doomBox2DSupportPoint (const TVec origin, const float radius) const;
 };
 
 
@@ -223,6 +230,12 @@ struct TPlane {
   native TVec GetBox3DRejectPoint (const TVec bmin, const TVec bmax) const;
   native TVec GetDoomBox2DRejectPoint (const TVec origin, const float radius) const;
   native TVec GetDoomBox3DRejectPoint (const TVec origin, const float radius, const float height) const;
+
+  // box point that is furthest *into* the plane (or closest to it)
+  native TVec GetBox3DSupportPoint (const TVec bmin, const TVec bmax, optional out float pdist) const;
+  native TVec GetBox2DSupportPoint (const TVec bmin, const TVec bmax, optional out float pdist, optional float z/*=0.0f*/) const;
+  native TVec GetDoomBox3DSupportPoint (const TVec origin, const float radius, const float height, optional out float pdist) const;
+  native TVec GetDoomBox2DSupportPoint (const TVec origin, const float radius, optional out float pdist, optional float z/*=0.0f*/) const;
 
   // should be used only for wall planes!
   native float Angle2DToPlane (const ref TPlane to) const;

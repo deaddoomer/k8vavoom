@@ -478,6 +478,10 @@ public:
   //   bit 1 is set if some part of the cube is in back
   VVA_CHECKRESULT unsigned BoxOnPlaneSide (const TVec &emins, const TVec &emaxs) const noexcept;
 
+  // box point that is furthest *into* the plane (or closest to it)
+  VVA_CHECKRESULT TVec get3DBBoxSupportPoint (const float bbox[6], float *pdist=nullptr) const noexcept;
+  VVA_CHECKRESULT TVec get2DBBoxSupportPoint (const float bbox2d[4], float *pdist=nullptr, const float z=0.0f) const noexcept;
+
   // this is used in `ClipPoly`
   // all data is malloced, so you'd better keep this between calls to avoid excessive allocations
   struct ClipWorkData {

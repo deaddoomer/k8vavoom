@@ -37,12 +37,32 @@
     {3+0, 3+1, 3+2}, \
   }
 
+#define CONST_BBoxVertexIndexFlat  \
+  const unsigned BBoxVertexIndexFlat[8*3] = { \
+    0+0, 0+1, 0+2, \
+    3+0, 0+1, 0+2, \
+    0+0, 3+1, 0+2, \
+    3+0, 3+1, 0+2, \
+    0+0, 0+1, 3+2, \
+    3+0, 0+1, 3+2, \
+    0+0, 3+1, 3+2, \
+    3+0, 3+1, 3+2, \
+  }
+
 #define CONST_BBox2DVertexIndex  \
   const unsigned BBox2DVertexIndex[4][2] = { \
     {BOX2D_MINX, BOX2D_MINY}, \
     {BOX2D_MAXX, BOX2D_MINY}, \
     {BOX2D_MINX, BOX2D_MAXY}, \
     {BOX2D_MAXX, BOX2D_MAXY}, \
+  }
+
+#define CONST_BBox2DVertexIndexFlat  \
+  const unsigned BBox2DVertexIndexFlat[4*2] = { \
+    BOX2D_MINX, BOX2D_MINY, \
+    BOX2D_MAXX, BOX2D_MINY, \
+    BOX2D_MINX, BOX2D_MAXY, \
+    BOX2D_MAXX, BOX2D_MAXY, \
   }
 
 #define HUGE_BBOX2D(bbname_)  float bbname_[4] = { /*maxy*/+FLT_MAX, /*miny*/-FLT_MAX, -FLT_MAX/*minx*/, +FLT_MAX/*maxx*/ }
@@ -387,6 +407,21 @@ public:
     const TVec e = pa-n*(c/n.dot2D(n));
 
     return e.dot2D(e);
+  }
+
+  // box point that is furthest in the given direction
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec get3DBBoxSupportPoint (const float bbox[6]) const noexcept {
+    return TVec(
+      bbox[BOX3D_X+(x < 0.0f ? BOX3D_MINIDX : BOX3D_MAXIDX)],
+      bbox[BOX3D_Y+(y < 0.0f ? BOX3D_MINIDX : BOX3D_MAXIDX)],
+      bbox[BOX3D_Z+(z < 0.0f ? BOX3D_MINIDX : BOX3D_MAXIDX)]);
+  }
+
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec get2DBBoxSupportPoint (const float bbox2d[4], const float z=0.0f) const noexcept {
+    return TVec(
+      bbox2d[x < 0.0f ? BOX2D_LEFT : BOX2D_RIGHT],
+      bbox2d[y < 0.0f ? BOX2D_BOTTOM : BOX2D_TOP],
+      z);
   }
 };
 

@@ -278,6 +278,56 @@ unsigned TPlane::BoxOnPlaneSide (const TVec &emins, const TVec &emaxs) const noe
 
 //==========================================================================
 //
+//  TPlane::get3DBBoxSupportPoint
+//
+//  box point that is furthest *into* the plane (or closest to it)
+//
+//==========================================================================
+VVA_CHECKRESULT TVec TPlane::get3DBBoxSupportPoint (const float bbox[6], float *pdist) const noexcept {
+  float bestDist = +INFINITY;
+  TVec bestVec(0.0f, 0.0f, 0.0f);
+  CONST_BBoxVertexIndexFlat;
+  const unsigned *bbp = BBoxVertexIndexFlat;
+  for (unsigned bidx = 0; bidx < 8; ++bidx, bbp += 3) {
+    const TVec bv = TVec(bbox[bbp[0]], bbox[bbp[1]], bbox[bbp[2]]);
+    const float dist = PointDistance(bv);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestVec = bv;
+    }
+  }
+  if (pdist) *pdist = bestDist;
+  return bestVec;
+}
+
+
+//==========================================================================
+//
+//  TPlane::get2DBBoxSupportPoint
+//
+//  box point that is furthest *into* the plane (or closest to it)
+//
+//==========================================================================
+VVA_CHECKRESULT TVec TPlane::get2DBBoxSupportPoint (const float bbox2d[4], float *pdist, const float z) const noexcept {
+  float bestDist = +INFINITY;
+  TVec bestVec(0.0f, 0.0f, 0.0f);
+  CONST_BBox2DVertexIndexFlat;
+  const unsigned *bbp = BBox2DVertexIndexFlat;
+  for (unsigned bidx = 0; bidx < 4; ++bidx, bbp += 2) {
+    const TVec bv = TVec(bbox2d[bbp[0]], bbox2d[bbp[1]], z);
+    const float dist = PointDistance(bv);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestVec = bv;
+    }
+  }
+  if (pdist) *pdist = bestDist;
+  return bestVec;
+}
+
+
+//==========================================================================
+//
 //  TPlane::ClipPoly
 //
 //  clip convex polygon to this plane

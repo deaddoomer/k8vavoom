@@ -2516,6 +2516,48 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TVec, doomBox2DDistanceSquared) {
   RET_FLOAT(Self->bbox2DDistanceSquared(bbox));
 }
 
+//native TVec box3DSupportPoint (const TVec bmin, const TVec bmax) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TVec, box3DSupportPoint) {
+  TVec *Self;
+  TVec bmin, bmax;
+  vobjGetParam(Self, bmin, bmax);
+  Create3DBBoxFromVectors(bbox, bmin, bmax);
+  RET_VEC(Self->get3DBBoxSupportPoint(bbox));
+}
+
+//native TVec doomBox3DSupportPoint (const TVec origin, const float radius, const float height) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TVec, doomBox3DSupportPoint) {
+  TVec *Self;
+  TVec origin;
+  float radius, height;
+  vobjGetParam(Self, origin, radius, height);
+  if (height < 0.0f) { origin.z -= height; height = -height; }
+  radius = fabsf(radius);
+  CreateDoom3DBBox(bbox, origin, radius, height);
+  RET_VEC(Self->get3DBBoxSupportPoint(bbox));
+}
+
+//native TVec box2DSupportPoint (const TVec bmin, const TVec bmax) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TVec, box2DSupportPoint) {
+  TVec *Self;
+  TVec bmin, bmax;
+  vobjGetParam(Self, bmin, bmax);
+  Create2DBBoxFromVectors(bbox, bmin, bmax);
+  RET_VEC(Self->get2DBBoxSupportPoint(bbox));
+}
+
+//native TVec doomBox2DSupportPoint (const TVec origin, const float radius) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TVec, doomBox2DSupportPoint) {
+  TVec *Self;
+  TVec origin;
+  float radius;
+  vobjGetParam(Self, origin, radius);
+  radius = fabsf(radius);
+  CreateDoom2DBBox(bbox, origin, radius);
+  RET_VEC(Self->get2DBBoxSupportPoint(bbox));
+}
+
+
 
 //**************************************************************************
 //
@@ -2949,6 +2991,52 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetDoomBox3DRejectPoint) {
   RET_VEC(Self->get3DBBoxRejectPoint(bbox));
 }
 
+//native TVec GetBox3DSupportPoint (const TVec bmin, const TVec bmax, optional out float pdist) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetBox3DSupportPoint) {
+  TPlane *Self;
+  TVec bmin, bmax;
+  VOptParamPtr<float> pdist(nullptr);
+  vobjGetParam(Self, bmin, bmax, pdist);
+  Create3DBBoxFromVectors(bbox, bmin, bmax);
+  RET_VEC(Self->get3DBBoxSupportPoint(bbox, pdist.value));
+}
+
+//native TVec GetBox2DSupportPoint (const TVec bmin, const TVec bmax, optional out float pdist, optional float z/*=0.0f*/) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetBox2DSupportPoint) {
+  TPlane *Self;
+  TVec bmin, bmax;
+  VOptParamPtr<float> pdist(nullptr);
+  VOptParamFloat z(0.0f);
+  vobjGetParam(Self, bmin, bmax, pdist, z);
+  Create3DBBoxFromVectors(bbox, bmin, bmax);
+  RET_VEC(Self->get2DBBoxSupportPoint(bbox, pdist.value, z.value));
+}
+
+//native TVec GetDoomBox3DSupportPoint (const TVec origin, const float radius, const float height, optional out float pdist) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetDoomBox3DSupportPoint) {
+  TPlane *Self;
+  TVec origin;
+  float radius, height;
+  VOptParamPtr<float> pdist(nullptr);
+  vobjGetParam(Self, origin, radius, height, pdist);
+  if (height < 0.0f) { origin.z -= height; height = -height; }
+  radius = fabsf(radius);
+  CreateDoom3DBBox(bbox, origin, radius, height);
+  RET_VEC(Self->get3DBBoxSupportPoint(bbox, pdist.value));
+}
+
+//native TVec GetDoomBox2DSupportPoint (const TVec origin, const float radius, optional out float pdist, optional float z/*=0.0f*/) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetDoomBox2DSupportPoint) {
+  TPlane *Self;
+  TVec origin;
+  float radius;
+  VOptParamPtr<float> pdist(nullptr);
+  VOptParamFloat z(0.0f);
+  vobjGetParam(Self, origin, radius, pdist, z);
+  radius = fabsf(radius);
+  CreateDoom2DBBox(bbox, origin, radius);
+  RET_VEC(Self->get2DBBoxSupportPoint(bbox, pdist.value, z.value));
+}
 
 //native float Angle2DToPlane (const ref TPlane to) const;
 IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, Angle2DToPlane) {
