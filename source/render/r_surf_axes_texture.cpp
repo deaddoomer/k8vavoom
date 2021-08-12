@@ -115,7 +115,7 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
     msincos(angle, &s, &c);
     // rotate seg direction
     texinfo->taxis = TVec(s*seg->ndir.x, s*seg->ndir.y, -c);
-    texinfo->saxis = CrossProduct(seg->normal, texinfo->taxis).normalised();
+    texinfo->saxis = seg->normal.cross(texinfo->taxis).normalised();
   }
   texinfo->saxis *= TextureSScale(tex)*tparam->ScaleX;
   texinfo->taxis *= TextureTScale(tex)*tparam->ScaleY;

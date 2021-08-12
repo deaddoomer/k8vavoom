@@ -3050,7 +3050,7 @@ func_loop:
               TVec v2(sp[-3].f, sp[-2].f, sp[-1].f);
               sp -= 3;
               TVec v1(sp[-3].f, sp[-2].f, sp[-1].f);
-              v1 = CrossProduct(v1, v2);
+              v1 = v1.cross(v2);
               sp[-1].f = v1.z;
               sp[-2].f = v1.y;
               sp[-3].f = v1.x;
@@ -3063,7 +3063,7 @@ func_loop:
               sp -= 3;
               TVec v1(sp[-3].f, sp[-2].f, sp[-1].f);
               sp -= 2;
-              sp[-1].f = CrossProduct2D(v1, v2);
+              sp[-1].f = v1.cross2D(v2);
               if (!isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("crossproduct2d result is INF/NAN"); }
               break;
             }

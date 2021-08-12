@@ -292,7 +292,7 @@ void VMeshModel::Load_MD3 (const vuint8 *Data, int DataSize) {
 
         TVec d1 = v2-v3;
         TVec d2 = v1-v3;
-        PlaneNormal = CrossProduct(d1, d2);
+        PlaneNormal = d1.cross(d2);
         if (PlaneNormal.lengthSquared() == 0.0f) {
           //k8:hack!
           if (mdl_report_errors && !reported) {

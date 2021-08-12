@@ -222,7 +222,7 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
     ssurf->texinfo.taxis = TVec(s, -c)*(TextureTScale(Tex)*spl.splane->YScale);
   } else {
     ssurf->texinfo.taxisLM = TVec(0.0f, 0.0f, -1.0f);
-    ssurf->texinfo.saxisLM = CrossProduct(spl.GetNormal(), ssurf->texinfo.taxisLM).normalised();
+    ssurf->texinfo.saxisLM = spl.GetNormal().cross(ssurf->texinfo.taxisLM).normalised();
     ssurf->texinfo.taxis = ssurf->texinfo.taxisLM*(TextureTScale(Tex)*spl.splane->YScale);
     ssurf->texinfo.saxis = ssurf->texinfo.saxisLM*(TextureSScale(Tex)*spl.splane->XScale);
   }

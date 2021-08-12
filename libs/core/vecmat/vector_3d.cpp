@@ -349,7 +349,7 @@ void RotatePointAroundVector (TVec &dst, const TVec &dir, const TVec &point, flo
   vf[2] = dir[2];
 
   PerpendicularVector(vr, dir);
-  vup = CrossProduct(vr, vf);
+  vup = vr.cross(vf);
 
   m[0][0] = vr[0];
   m[1][0] = vr[1];
@@ -403,7 +403,7 @@ void RotateAroundDirection (TVec axis[3], float yaw) noexcept {
     RotatePointAroundVector(axis[1], axis[0], temp, yaw);
   }
   // cross to get axis[2]
-  axis[2] = CrossProduct(axis[0], axis[1]);
+  axis[2] = axis[0].cross(axis[1]);
 }
 
 
@@ -425,7 +425,7 @@ void MakeNormalVectors (const TVec &forward, TVec &right, TVec &up) noexcept {
   // (const vec3_t veca, float scale, const vec3_t vecb, vec3_t vecc): vecc = veca+scal*vecb
   right -= forward*d;
   right.normaliseInPlace();
-  up = CrossProduct(right, forward);
+  up = right.cross(forward);
 }
 
 

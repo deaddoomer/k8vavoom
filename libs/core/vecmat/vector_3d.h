@@ -427,11 +427,11 @@ static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float length2DSquared (con
 //static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float DotProduct2D (const TVec &v1, const TVec &v2) noexcept { return v1.dot2D(v2); }
 //static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float dot2D (const TVec &v1, const TVec &v2) noexcept { return v1.dot2D(v2); }
 
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec CrossProduct (const TVec &v1, const TVec &v2) noexcept { return v1.cross(v2); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec CrossProduct (const TVec &v1, const TVec &v2) noexcept { return v1.cross(v2); }
 //static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec cross (const TVec &v1, const TVec &v2) noexcept { return v1.cross(v2); }
 
 // returns signed magnitude of cross-product (z, as x and y are effectively zero in 2d)
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float CrossProduct2D (const TVec &v1, const TVec &v2) noexcept { return v1.cross2D(v2); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float CrossProduct2D (const TVec &v1, const TVec &v2) noexcept { return v1.cross2D(v2); }
 //static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float cross2D (const TVec &v1, const TVec &v2) noexcept { return v1.cross2D(v2); }
 
 static VVA_OKUNUSED VVA_ALWAYS_INLINE VStream &operator << (VStream &Strm, TVec &v) { return Strm << v.x << v.y << v.z; }

@@ -462,10 +462,10 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
       // vectors are less than 1 degree apart
       dot = Drawer->viewforward.z; // same as Drawer->viewforward.dot(sprup), because sprup is 0, 0, 1
       if (dot > 0.999848f || dot < -0.999848f) return; // cos(1 degree) = 0.999848f
-      sprup = TVec(0, 0, 1);
-      // CrossProduct(sprup, Drawer->viewforward)
+      sprup = TVec(0.0f, 0.0f, 1.0f);
+      // sprup.cross(Drawer->viewforward)
       sprright = TVec(Drawer->viewforward.y, -Drawer->viewforward.x, 0.0f).normalised2D();
-      // CrossProduct(sprright, sprup)
+      // sprright.cross(sprup)
       sprforward = TVec(-sprright.y, sprright.x, 0.0f);
       break;
 
@@ -479,10 +479,10 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
       tvec = (sprorigin-Drawer->vieworg).normalised();
       dot = tvec.z; // same as tvec.dot(sprup), because sprup is 0, 0, 1
       if (dot > 0.999848f || dot < -0.999848f) return; // cos(1 degree) = 0.999848f
-      sprup = TVec(0, 0, 1);
-      // CrossProduct(sprup, -sprorigin)
+      sprup = TVec(0.0f, 0.0f, 1.0f);
+      // sprup.cross(-sprorigin)
       sprright = TVec(tvec.y, -tvec.x, 0.0f).normalised2D();
-      // CrossProduct(sprright, sprup)
+      // sprright.cross(sprup)
       sprforward = TVec(-sprright.y, sprright.x, 0.0f);
       break;
 
@@ -530,9 +530,9 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
       sr = msin(thing->Angles.roll);
       cr = mcos(thing->Angles.roll);
 
-      // CrossProduct(TVec(0, 0, 1), Drawer->viewforward)
+      // TVec(0.0f, 0.0f, 1.0f).cross(Drawer->viewforward)
       tvec = TVec(Drawer->viewforward.y, -Drawer->viewforward.x, 0.0f).normalised2D();
-      // CrossProduct(tvec, TVec(0, 0, 1))
+      // tvec.cross(TVec(0.0f, 0.0f, 1.0f))
       sprforward = TVec(-tvec.y, tvec.x, 0.0f);
       // Rotate
       sprright = TVec(tvec.x*cr, tvec.y*cr, tvec.z*cr+sr);
