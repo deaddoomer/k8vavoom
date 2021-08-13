@@ -1792,14 +1792,10 @@ bool VScriptDict::cleanRefs () {
     }
   }
 
-  if (map->count() == 0) {
-    clear(); // deallocate empty map
-    return res;
-  }
-
   // if we need to rehash, recreate the table
   // we need to recreate it because there can be key collisions now
   if (needRehash) {
+    #if 0
     auto newmap = new TMap<VScriptDictElem, VScriptDictElem>;
     for (auto &&oit : map->first()) {
       if (newmap->has(oit.getKey())) {
@@ -1812,6 +1808,14 @@ bool VScriptDict::cleanRefs () {
     map->reset();
     delete map;
     map = newmap;
+    #else
+    map->rehashRekeyLeaveFirst();
+    #endif
+  }
+
+  if (map->count() == 0) {
+    clear(); // deallocate empty map
+    return res;
   }
 
   return res;
