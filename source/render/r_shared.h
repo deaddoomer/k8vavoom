@@ -146,9 +146,9 @@ public:
 
 public:
   VVA_ALWAYS_INLINE GlowParams () noexcept : glowCC(0), glowCF(0), floorZ(0.0f), ceilingZ(0.0f), floorGlowHeight(128.0f), ceilingGlowHeight(128.0f) {}
-  VVA_ALWAYS_INLINE bool isActive () const noexcept { return !!(glowCC|glowCF); }
-  VVA_ALWAYS_INLINE void clear () noexcept { glowCC = glowCF = 0; floorGlowHeight = ceilingGlowHeight = 128; }
-  VVA_ALWAYS_INLINE bool operator = (const GlowParams &other) const noexcept {
+  VVA_ALWAYS_INLINE bool isActive () const noexcept { return (glowCC|glowCF); }
+  VVA_ALWAYS_INLINE void clear () noexcept { glowCC = glowCF = 0; floorGlowHeight = ceilingGlowHeight = 128.0f; }
+  VVA_ALWAYS_INLINE bool operator == (const GlowParams &other) const noexcept {
     return
       glowCC == other.glowCC &&
       glowCF == other.glowCF &&
