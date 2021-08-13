@@ -1007,19 +1007,29 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         auto bad = StateDefNode->FindFirstAttributeOf("index", "last_index", nullptr);
         if (bad) Sys_Error("%s: model '%s' class state definition has invalid attribute '%s' (sprite/index conflict)", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
 
-        VName sprname = VName(*StateDefNode->GetAttribute("sprite"), VName::FindLower);
-        if (sprname == NAME_None) Sys_Error("Model '%s' has invalid state (invalid sprite name '%s')", *Mdl->Name, *StateDefNode->GetAttribute("sprite"));
+        VStr sprnamestr = StateDefNode->GetAttribute("sprite");
+        VName sprname = VName(*sprnamestr, VName::FindLower);
+        if (sprname == NAME_None) {
+          if (sprnamestr.length() != 4) {
+            Sys_Error("%s: Model '%s' has invalid state (empty sprite name '%s')", *StateDefNode->Loc.toStringNoCol(), *Mdl->Name, *sprnamestr);
+          }
+          GCon->Logf(NAME_Warning, "%s: Model '%s' has unknown sprite '%s', state removed", *StateDefNode->Loc.toStringNoCol(), *Mdl->Name, *sprnamestr);
+          //sprname = VName("....", VName::Add);
+        }
         VStr sprframe = StateDefNode->GetAttribute("sprite_frame");
-        if (sprframe.length() != 1) Sys_Error("Model '%s' has invalid state (invalid sprite frame '%s')", *Mdl->Name, *sprframe);
+        if (sprframe.length() != 1) Sys_Error("%s: Model '%s' has invalid state (invalid sprite frame '%s')", *StateDefNode->Loc.toStringNoCol(), *Mdl->Name, *sprframe);
         int sfr = sprframe[0];
         if (sfr >= 'a' && sfr <= 'z') sfr = sfr-'a'+'A';
         sfr -= 'A';
-        if (sfr < 0 || sfr > 31) Sys_Error("Model '%s' has invalid state (invalid sprite frame '%s')", *Mdl->Name, *sprframe);
+        if (sfr < 0 || sfr > 31) Sys_Error("%s: Model '%s' has invalid state (invalid sprite frame '%s')", *StateDefNode->Loc.toStringNoCol(), *Mdl->Name, *sprframe);
         F.Number = -1;
         F.sprite = sprname;
         F.frame = sfr;
         // check sprite frame validity
-        if (Cls->iwadonly || Cls->thiswadonly) {
+        if (sprname == NAME_None) {
+          F.disabled = true;
+          // don't set "hasDisabled", we don't need to disable everything
+        } else if (Cls->iwadonly || Cls->thiswadonly) {
           if (!IsValidSpriteFrame(lump, sprname, F.frame, Cls->iwadonly, Cls->thiswadonly, prevValid)) {
             prevValid = false;
             F.disabled = true;
