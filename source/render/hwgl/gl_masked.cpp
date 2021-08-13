@@ -119,6 +119,8 @@ void VOpenGLDrawer::DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additi
     // this should be a different shader, but meh
     SurfMaskedPolyGlow.SetAlphaRef(onlyTranslucent ? -1.0f : (Additive || isAlphaTrans ? getAlphaThreshold() : 0.666f));
 
+    //GCon->Logf(NAME_Debug, "gp.isActive=%d; lightLevel=%g; Alpha=%g", (int)gp.isActive(), lightLevel, Alpha);
+
     SurfMaskedPolyGlow.SetLightGlobVis(globVis);
     SurfMaskedPolyGlow.SetLightMode(lightMode);
     SurfMaskedPolyGlow.SetAlpha(Alpha);

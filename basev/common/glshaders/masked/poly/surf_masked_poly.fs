@@ -34,9 +34,8 @@ void main () {
   //TexColor *= Light;
 
 #ifdef VV_MASKED_GLOW
-  vec4 lt = calcGlowLLev(Light);
+  vec4 lt = calcGlowLLev/*Ex*/(Light);
 #else
-  //vec4 lt = Light;
   vec4 lt = calcLightLLev(Light);
 #endif
 #ifdef VV_MASKED_BRIGHTMAP
@@ -48,7 +47,8 @@ void main () {
   // convert to premultiplied
   vec4 FinalColor;
 #if 1
-  FinalColor.a = TexColor.a* /*lt.a*/Alpha;
+  FinalColor.a = TexColor.a* /*lt.a*/ Alpha;
+  /*if (TexColor.a < 1.0)*/ //FinalColor.a *= Light.a;
   if (TexColor.a < 0.01) discard;
   FinalColor.rgb = clamp(TexColor.rgb*FinalColor.a, 0.0, 1.0);
 #else

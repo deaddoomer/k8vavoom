@@ -734,12 +734,13 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
         surf->glowFloorColor = glowFloorColor;
         surf->glowCeilingColor = glowCeilingColor;
         Portal->AppendSurface(surf); // Portal->Surfs.Append(surf);
+        //GCon->Logf(NAME_Debug, "  SURF(%d)! norm=(%g,%g,%g); alpha=%g (%g); Fade=0x%08x", (int)doRenderSurf, surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z, SkyBox->GetSkyBoxPlaneAlpha(), alpha, Fade);
         if (!doRenderSurf) continue;
         if (surf->queueframe == currQueueFrame) continue;
         //GCon->Logf("  SURF!");
         if (!SurfPrepareForRender(surf)) continue;
         if (!surf->IsPlVisible()) continue;
-        //GCon->Logf(NAME_Debug, "  SURF! norm=(%g,%g,%g); alpha=%g", surfs->plane.normal.x, surfs->plane.normal.y, surfs->plane.normal.z, SkyBox->GetSkyBoxPlaneAlpha());
+        //GCon->Logf(NAME_Debug, "  SURF! norm=(%g,%g,%g); alpha=%g (%g); Fade=0x%08x", surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z, SkyBox->GetSkyBoxPlaneAlpha(), alpha, Fade);
         //surfs->drawflags |= surface_t::DF_MASKED;
         RenderStyleInfo ri;
         ri.alpha = alpha;

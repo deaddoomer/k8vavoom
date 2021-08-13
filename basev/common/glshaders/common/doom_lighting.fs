@@ -41,6 +41,14 @@ vec4 calcGlowLLev (vec4 lt) {
   //lt.a = 1.0;
   return lt;
 }
+vec4 calcGlowLLevEx (vec4 lt) {
+  float llev = lt.a;
+  if (LightMode > 0) llev = DoomLightingEquation(llev);
+  lt.rgb *= llev;
+  lt = calcGlow(lt.rgb, llev); // `lt.a` is always `1.0`
+  lt.a = llev;
+  return lt;
+}
 #else
 vec4 calcLightLLev (vec4 lt) {
   float llev = lt.a;
