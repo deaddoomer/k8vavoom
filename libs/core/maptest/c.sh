@@ -7,7 +7,13 @@ cd "$mdir"
 rm -rf obj 2>/dev/null
 mkdir obj
 
-g++ -pthread -Wall -Wno-ignored-attributes -o map_test -Wall -O2 map_test.cpp ../zone.cpp ../mimalloc/static.c
+#gcc -c -o zmimalloc.o ../mimalloc/static.c
+#res=$?
+#if [ $res ne 0 ]; then
+#  exit $res
+#fi
+
+g++ -DVAVOOM_DISABLE_MIMALLOC -pthread -Wall -Wno-ignored-attributes -o map_test -Wall -O2 map_test.cpp ../zone.cpp #zmimalloc.o
 
 res=$?
 

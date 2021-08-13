@@ -30,6 +30,11 @@
 //#include "mimalloc/mimalloc.h"
 #include "core.h"
 
+#include <time.h>
+#include <unistd.h>
+#include <sys/types.h>
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -53,7 +58,7 @@ static volatile uint32_t zMimallocAllowed = 0u;
 
 
 #ifdef VAVOOM_USE_MIMALLOC
-static __attribute__((unused)) bool xstrEquCI (const char *s0, const char *s1) noexcept {
+static __attribute__((unused)) bool xstrEquCI (const char *s0, const char *s1) VV_ZONE_NOEXCEPT {
   if (!s0) return !s1;
   if (!s1) return false;
   while (*s0 && ((uint8_t)*s0) <= 32) ++s0;
@@ -71,7 +76,7 @@ static __attribute__((unused)) bool xstrEquCI (const char *s0, const char *s1) n
 }
 
 
-static inline bool zIsMimallocAllowed () noexcept {
+static inline bool zIsMimallocAllowed () VV_ZONE_NOEXCEPT {
   uint32_t v = 0u; // value to compare
   if (__atomic_compare_exchange_n(&zMimallocAllowed, &v, 666u, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
     // `zMimallocAllowed` was zero (now 666u), need to init
@@ -102,14 +107,14 @@ static inline bool zIsMimallocAllowed () noexcept {
 #endif
 
 
-static inline void ZManDeactivate () noexcept {
+static inline void ZManDeactivate () VV_ZONE_NOEXCEPT {
 #ifdef VAVOOM_USE_MIMALLOC
   __atomic_store_n(&zShuttingDown, 1u, __ATOMIC_SEQ_CST);
 #endif
 }
 
 
-static inline bool isZManActive () noexcept {
+static inline bool isZManActive () VV_ZONE_NOEXCEPT {
 #ifdef VAVOOM_USE_MIMALLOC
   return (__atomic_load_n(&zShuttingDown, __ATOMIC_SEQ_CST) == 0u);
 #else
@@ -129,7 +134,7 @@ static inline bool isZManActive () noexcept {
 #endif
 
 
-const char *Z_GetAllocatorType () noexcept {
+const char *Z_GetAllocatorType () VV_ZONE_NOEXCEPT {
 #ifdef VAVOOM_USE_MIMALLOC
   return (zIsMimallocAllowed() ? "mi-malloc" : "standard");
 #else
@@ -139,7 +144,7 @@ const char *Z_GetAllocatorType () noexcept {
 
 
 __attribute__((malloc)) __attribute__((alloc_size(1))) __attribute__((returns_nonnull))
-void *Z_Malloc (size_t size) noexcept {
+void *Z_Malloc (size_t size) VV_ZONE_NOEXCEPT {
 #ifdef VAVOOM_CORE_COUNT_ALLOCS
   ++zone_malloc_call_count;
 #endif
@@ -152,7 +157,7 @@ void *Z_Malloc (size_t size) noexcept {
 
 
 __attribute__((malloc)) __attribute__((alloc_size(1))) __attribute__((returns_nonnull))
-void *Z_MallocNoClear (size_t size) noexcept {
+void *Z_MallocNoClear (size_t size) VV_ZONE_NOEXCEPT {
 #ifdef VAVOOM_CORE_COUNT_ALLOCS
   ++zone_malloc_call_count;
 #endif
@@ -164,7 +169,7 @@ void *Z_MallocNoClear (size_t size) noexcept {
 
 
 __attribute__((malloc)) __attribute__((alloc_size(1))) __attribute__((returns_nonnull))
-void *Z_MallocNoClearNoFail (size_t size) noexcept {
+void *Z_MallocNoClearNoFail (size_t size) VV_ZONE_NOEXCEPT {
 #ifdef VAVOOM_CORE_COUNT_ALLOCS
   ++zone_malloc_call_count;
 #endif
@@ -173,7 +178,7 @@ void *Z_MallocNoClearNoFail (size_t size) noexcept {
 }
 
 
-__attribute__((alloc_size(2))) void *Z_Realloc (void *ptr, size_t size) noexcept {
+__attribute__((alloc_size(2))) void *Z_Realloc (void *ptr, size_t size) VV_ZONE_NOEXCEPT {
 #ifdef VAVOOM_CORE_COUNT_ALLOCS
   ++zone_realloc_call_count;
 #endif
@@ -191,7 +196,7 @@ __attribute__((alloc_size(2))) void *Z_Realloc (void *ptr, size_t size) noexcept
 }
 
 
-__attribute__((alloc_size(2))) void *Z_ReallocNoFail (void *ptr, size_t size) noexcept {
+__attribute__((alloc_size(2))) void *Z_ReallocNoFail (void *ptr, size_t size) VV_ZONE_NOEXCEPT {
 #ifdef VAVOOM_CORE_COUNT_ALLOCS
   ++zone_realloc_call_count;
 #endif
@@ -208,7 +213,7 @@ __attribute__((alloc_size(2))) void *Z_ReallocNoFail (void *ptr, size_t size) no
 
 
 __attribute__((malloc)) __attribute__((alloc_size(1))) __attribute__((returns_nonnull))
-void *Z_Calloc (size_t size) noexcept {
+void *Z_Calloc (size_t size) VV_ZONE_NOEXCEPT {
   size += !size;
 #if !defined(VAVOOM_USE_MIMALLOC)
   void *res = ::calloc(1, size);
@@ -225,7 +230,7 @@ void *Z_Calloc (size_t size) noexcept {
 }
 
 
-void Z_Free (void *ptr) noexcept {
+void Z_Free (void *ptr) VV_ZONE_NOEXCEPT {
   if (!isZManActive()) return; // don't bother
 #ifdef VAVOOM_CORE_COUNT_ALLOCS
   ++zone_free_call_count;
@@ -236,23 +241,59 @@ void Z_Free (void *ptr) noexcept {
 
 
 // call this when exiting a thread function, to reclaim thread heaps
-void Z_ThreadDone () noexcept {
+void Z_ThreadDone () VV_ZONE_NOEXCEPT {
 #if defined(VAVOOM_USE_MIMALLOC)
   if (isZManActive()) ::mi_thread_done();
 #endif
 }
 
 
-void Z_ShuttingDown () noexcept {
+void Z_ShuttingDown () VV_ZONE_NOEXCEPT {
   ZManDeactivate();
 }
 
 
-__attribute__((noreturn)) void Z_Exit (int exitcode) noexcept {
+__attribute__((noreturn)) void Z_Exit (int exitcode) VV_ZONE_NOEXCEPT {
   Z_ShuttingDown();
   exit(exitcode);
 }
 
+
+static uint32_t zoneHashTableSeedCurr = 0u;
+static uint32_t zoneHashTableSeedInited = 0u;
+
+// here, because hashmap tester wants it
+unsigned Z_GetHashTableSeed () VV_ZONE_NOEXCEPT {
+  const uint32_t inited = __sync_val_compare_and_swap(&zoneHashTableSeedInited, 0u, 2u);
+  if (!inited) {
+    // first-time call, initializing
+    #ifdef _WIN32
+      zoneHashTableSeedCurr = (unsigned)GetTickCount();
+    #else
+      zoneHashTableSeedCurr = (unsigned)getpid();
+      //zoneHashTableSeedCurr += (unsigned)time(NULL);
+    #endif
+    unsigned vv = zoneHashTableSeedCurr;
+    vv = (vv^0xdeadbeefU)+(vv<<4);
+    vv = vv^(vv>>10);
+    vv = vv+(vv<<7);
+    vv = vv^(vv>>13);
+    vv = (vv>>16)+(vv&0xffffU);
+    zoneHashTableSeedCurr += (vv<<12);
+      //fprintf(stderr, "Z_GetHashTableSeed: INITED; val=0x%08x\n", zoneHashTableSeedCurr);
+    __atomic_store_n(&zoneHashTableSeedInited, 1u, __ATOMIC_SEQ_CST);
+  } else if (inited == 2u) {
+    // spinlick wailing
+    while (__atomic_load_n(&zoneHashTableSeedInited, __ATOMIC_SEQ_CST) != 1u) {}
+  }
+  unsigned res = __atomic_add_fetch(&zoneHashTableSeedCurr, 1u, __ATOMIC_SEQ_CST);
+    //fprintf(stderr, "Z_GetHashTableSeed: res=0x%08x\n", res);
+  if (!res) {
+    res = 1u;
+    (void)__atomic_add_fetch(&zoneHashTableSeedCurr, 1u, __ATOMIC_SEQ_CST);
+  }
+  return res;
+}
 
 #ifdef __cplusplus
 }

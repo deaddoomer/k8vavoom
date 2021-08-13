@@ -97,6 +97,23 @@ private:
     }
   };
 
+  // key must not be empty!
+  static VVA_ALWAYS_INLINE unsigned calcKeyHash (const TK &akey) noexcept {
+    unsigned khash = GetTypeHash(akey);
+    khash += !khash; // avoid zero hash value
+    return khash;
+  }
+
+#if !defined(TMAP_USE_MULTIPLY)
+  #define TMAP_IMPL_CALC_BUCKET_INDEX(hashval_)  \
+    const unsigned bhigh = (unsigned)(mEBSize-1); \
+    unsigned idx = ((hashval_)^mSeed)&bhigh;
+#else
+  #define TMAP_IMPL_CALC_BUCKET_INDEX(hashval_)  \
+    const unsigned bhigh = (unsigned)(mEBSize-1); \
+    unsigned idx = (unsigned)(((uint64_t)((hashval_)^mSeed)*(uint64_t)bhigh)>>32);
+#endif
+
 private:
   unsigned mEBSize;
   TEntry *mEntries;
@@ -117,6 +134,11 @@ private:
       for (unsigned f = first; f < last; ++f, ++ee) ee->initEntry();
       #endif
     }
+  }
+
+  VVA_ALWAYS_INLINE void genNewSeed () noexcept {
+    mSeedCount = Z_GetHashTableSeed();
+    mSeed = hashU32(mSeedCount);
   }
 
 public:
@@ -269,8 +291,7 @@ private:
         memset(&mBuckets[0], 0, mEBSize*sizeof(TEntry *));
         mEntries = (TEntry *)Z_Malloc(mEBSize*sizeof(TEntry));
         initEntries(0, mEBSize);
-        mSeedCount = (unsigned)(uintptr_t)mEntries;
-        mSeed = hashU32(mSeedCount);
+        genNewSeed();
       }
       // it is guaranteed to have a room for at least one entry here (see `put()`)
       ++mLastEntry;
@@ -280,7 +301,7 @@ private:
       res = mFreeEntryHead;
       mFreeEntryHead = res->nextFree;
       // fix mFirstEntry and mLastEntry
-      int idx = (int)(ptrdiff_t)(res-&mEntries[0]);
+      int idx = (int)(::ptrdiff_t)(res-&mEntries[0]);
       if (mFirstEntry < 0 || idx < mFirstEntry) mFirstEntry = idx;
       if (idx > mLastEntry) mLastEntry = idx;
     }
@@ -293,7 +314,7 @@ private:
   }
 
   void releaseEntry (TEntry *e) noexcept {
-    const int idx = (int)(ptrdiff_t)(e-&mEntries[0]);
+    const int idx = (int)(::ptrdiff_t)(e-&mEntries[0]);
     #if !defined(TMAP_NO_CLEAR)
     e->destroyEntry();
     #endif
@@ -323,7 +344,7 @@ private:
     }
   }
 
-  VVA_ALWAYS_INLINE unsigned distToStIdx (unsigned idx) const noexcept {
+  VVA_ALWAYS_INLINE unsigned distToStIdx (const unsigned idx) const noexcept {
     #ifndef TMAP_USE_MULTIPLY
     unsigned res = (mBuckets[idx]->hash^mSeed)&(unsigned)(mEBSize-1);
     #else
@@ -334,12 +355,7 @@ private:
   }
 
   void putEntryInternal (TEntry *swpe) noexcept {
-    const unsigned bhigh = (unsigned)(mEBSize-1);
-    #ifndef TMAP_USE_MULTIPLY
-    unsigned idx = (swpe->hash^mSeed)&bhigh;
-    #else
-    unsigned idx = (unsigned)(((uint64_t)(swpe->hash^mSeed)*(uint64_t)bhigh)>>32);
-    #endif
+    TMAP_IMPL_CALC_BUCKET_INDEX(swpe->hash)
     unsigned pcur = 0;
     for (unsigned dist = 0; dist <= bhigh; ++dist) {
       if (!mBuckets[idx]) {
@@ -348,7 +364,7 @@ private:
         ++mBucketsUsed;
         return;
       }
-      unsigned pdist = distToStIdx(idx);
+      const unsigned pdist = distToStIdx(idx);
       if (pcur > pdist) {
         // swapping the current bucket with the one to insert
         TEntry *tmpe = mBuckets[idx];
@@ -366,19 +382,14 @@ private:
   bool delInternal (const TK &akey, const unsigned khash) noexcept {
     if (mBucketsUsed == 0) return false;
 
-    const unsigned bhigh = (unsigned)(mEBSize-1);
-    #ifndef TMAP_USE_MULTIPLY
-    unsigned idx = (khash^mSeed)&bhigh;
-    #else
-    unsigned idx = (unsigned)(((uint64_t)(khash^mSeed)*(uint64_t)bhigh)>>32);
-    #endif
+    TMAP_IMPL_CALC_BUCKET_INDEX(khash)
 
     // find key
     if (!mBuckets[idx]) return false; // no key
     bool res = false;
     for (unsigned dist = 0; dist <= bhigh; ++dist) {
       if (!mBuckets[idx]) break;
-      unsigned pdist = distToStIdx(idx);
+      const unsigned pdist = distToStIdx(idx);
       if (dist > pdist) break;
       res = (mBuckets[idx]->hash == khash && mBuckets[idx]->key == akey);
       if (res) break;
@@ -393,7 +404,7 @@ private:
       unsigned idxnext = (idx+1)&bhigh;
       for (unsigned dist = 0; dist <= bhigh; ++dist) {
         if (!mBuckets[idxnext]) { mBuckets[idx] = nullptr; break; }
-        unsigned pdist = distToStIdx(idxnext);
+        const unsigned pdist = distToStIdx(idxnext);
         if (pdist == 0) { mBuckets[idx] = nullptr; break; }
         mBuckets[idx] = mBuckets[idxnext];
         idx = (idx+1)&bhigh;
@@ -417,6 +428,13 @@ public:
 
   VVA_ALWAYS_INLINE ~TMap_Class_Name () noexcept { clear(); }
 
+  bool operator == (const TMap_Class_Name &other) const = delete;
+  bool operator != (const TMap_Class_Name &other) const = delete;
+  bool operator <= (const TMap_Class_Name &other) const = delete;
+  bool operator >= (const TMap_Class_Name &other) const = delete;
+  bool operator < (const TMap_Class_Name &other) const = delete;
+  bool operator > (const TMap_Class_Name &other) const = delete;
+
   TMap_Class_Name &operator = (const TMap_Class_Name &other) noexcept {
     if (&other != this) {
       clear();
@@ -428,11 +446,11 @@ public:
         memset(&mBuckets[0], 0, mEBSize*sizeof(TEntry *));
         mEntries = (TEntry *)Z_Malloc(mEBSize*sizeof(TEntry));
         initEntries(0, mEBSize);
-        if (!mSeedCount) mSeedCount = (unsigned)(uintptr_t)mEntries;
+        genNewSeed();
         mFirstEntry = mLastEntry = -1;
         if (other.mLastEntry >= 0) {
           const unsigned end = (unsigned)other.mLastEntry;
-          unsigned didx = 0;
+          unsigned didx = 0u;
           for (unsigned f = (unsigned)other.mFirstEntry; f <= end; ++f) {
             if (!other.mEntries[f].isEmpty()) {
               #if !defined(TMAP_NO_CLEAR) && !defined(TMAP_CLEAR_INB4)
@@ -478,7 +496,19 @@ public:
     }
   }
 
-  void rehash () noexcept {
+  enum {
+    // don't recompute key hashes
+    RehashDefault = 0u,
+    // recompute key hashes, leave first conflicting record
+    RehashRekey = 1u,
+    // masks, should be bitored with the above
+    // leave first conflicting record
+    RehashLeaveFirst = 0u,
+    // leave last conflicting record
+    RehashLeaveLast = 2u,
+  };
+
+  void rehash (const unsigned flags=RehashDefault) noexcept {
     // clear buckets
     memset(mBuckets, 0, mEBSize*sizeof(TEntry *));
     mBucketsUsed = 0;
@@ -488,8 +518,7 @@ public:
     if (mLastEntry >= 0) {
       // change seed, to minimize pathological cases
       //TODO: use prng to generate new hash
-      if (++mSeedCount == 0) mSeedCount = 1;
-      mSeed = hashU32(mSeedCount);
+      genNewSeed();
       // small optimisation for empty head case
       const unsigned stx = (unsigned)mFirstEntry;
       TEntry *e;
@@ -505,11 +534,48 @@ public:
       // reinsert all alive entries
       const unsigned end = (unsigned)mLastEntry;
       e = &mEntries[stx];
-      for (unsigned idx = stx; idx <= /*mEBSize*/end; ++idx, ++e) {
+      for (unsigned eidx = stx; eidx <= /*mEBSize*/end; ++eidx, ++e) {
         if (!e->isEmpty()) {
-          // no need to recalculate hash
-          putEntryInternal(e);
-        } else {
+          if (flags&RehashRekey) {
+            const unsigned khash = calcKeyHash(e->key);
+            e->hash = khash;
+            TMAP_IMPL_CALC_BUCKET_INDEX(khash)
+            // check if we already have this key
+            TEntry *old = nullptr;
+            if (mBucketsUsed != 0 && mBuckets[idx]) {
+              for (unsigned dist = 0; dist <= bhigh; ++dist) {
+                TEntry *ee = mBuckets[idx];
+                if (!ee) break;
+                const unsigned pdist = distToStIdx(idx);
+                if (dist > pdist) break;
+                if (ee->hash == khash && ee->key == e->key) {
+                  // i found her!
+                  vassert(old != ee);
+                  old = ee;
+                  break;
+                }
+                idx = (idx+1)&bhigh;
+              }
+            }
+            if (old) {
+              if (flags&RehashLeaveLast) {
+                // replace old with new
+                old->destroyEntry();
+                old->key = e->key;
+                old->value = e->value;
+                old->hash = e->hash;
+              }
+              e->destroyEntry();
+            } else {
+              putEntryInternal(e);
+            }
+          } else {
+            // no need to recalculate hash
+            putEntryInternal(e);
+          }
+        }
+        // need additional check, because it may be destroyed
+        if (e->isEmpty()) {
           if (lastfree) lastfree->nextFree = e; else mFreeEntryHead = e;
           lastfree = e;
         }
@@ -517,6 +583,9 @@ public:
       if (lastfree) lastfree->nextFree = nullptr;
     }
   }
+
+  VVA_ALWAYS_INLINE void rehashRekeyLeaveFirst () noexcept { rehash(RehashRekey|RehashLeaveFirst); }
+  VVA_ALWAYS_INLINE void rehashRekeyLeaveLast () noexcept { rehash(RehashRekey|RehashLeaveLast); }
 
   // call this instead of `rehash()` after alot of deletions
   // if `doRealloc` is `false`, force moving all entries to top if entry pool reallocated
@@ -580,20 +649,13 @@ public:
 
   bool has (const TK &akey) const noexcept {
     if (mBucketsUsed == 0) return false;
-    const unsigned bhigh = (unsigned)(mEBSize-1);
-    unsigned khash = GetTypeHash(akey);
-    khash += !khash; // avoid zero hash value
-    //if (!khash) khash = 1; // avoid zero hash value
-    #ifndef TMAP_USE_MULTIPLY
-    unsigned idx = (khash^mSeed)&bhigh;
-    #else
-    unsigned idx = (unsigned)(((uint64_t)(khash^mSeed)*(uint64_t)bhigh)>>32);
-    #endif
+    const unsigned khash = calcKeyHash(akey);
+    TMAP_IMPL_CALC_BUCKET_INDEX(khash)
     if (!mBuckets[idx]) return false;
     bool res = false;
     for (unsigned dist = 0; dist <= bhigh; ++dist) {
       if (!mBuckets[idx]) break;
-      unsigned pdist = distToStIdx(idx);
+      const unsigned pdist = distToStIdx(idx);
       if (dist > pdist) break;
       res = (mBuckets[idx]->hash == khash && mBuckets[idx]->key == akey);
       if (res) break;
@@ -604,19 +666,12 @@ public:
 
   const TV *get (const TK &akey) const noexcept {
     if (mBucketsUsed == 0) return nullptr;
-    const unsigned bhigh = (unsigned)(mEBSize-1);
-    unsigned khash = GetTypeHash(akey);
-    khash += !khash; // avoid zero hash value
-    //if (!khash) khash = 1; // avoid zero hash value
-    #ifndef TMAP_USE_MULTIPLY
-    unsigned idx = (khash^mSeed)&bhigh;
-    #else
-    unsigned idx = (unsigned)(((uint64_t)(khash^mSeed)*(uint64_t)bhigh)>>32);
-    #endif
+    const unsigned khash = calcKeyHash(akey);
+    TMAP_IMPL_CALC_BUCKET_INDEX(khash)
     if (!mBuckets[idx]) return nullptr;
     for (unsigned dist = 0; dist <= bhigh; ++dist) {
       if (!mBuckets[idx]) break;
-      unsigned pdist = distToStIdx(idx);
+      const unsigned pdist = distToStIdx(idx);
       if (dist > pdist) break;
       if (mBuckets[idx]->hash == khash && mBuckets[idx]->key == akey) return &(mBuckets[idx]->value);
       idx = (idx+1)&bhigh;
@@ -626,19 +681,12 @@ public:
 
   TV *get (const TK &akey) noexcept {
     if (mBucketsUsed == 0) return nullptr;
-    const unsigned bhigh = (unsigned)(mEBSize-1);
-    unsigned khash = GetTypeHash(akey);
-    khash += !khash; // avoid zero hash value
-    //if (!khash) khash = 1; // avoid zero hash value
-    #ifndef TMAP_USE_MULTIPLY
-    unsigned idx = (khash^mSeed)&bhigh;
-    #else
-    unsigned idx = (unsigned)(((uint64_t)(khash^mSeed)*(uint64_t)bhigh)>>32);
-    #endif
+    const unsigned khash = calcKeyHash(akey);
+    TMAP_IMPL_CALC_BUCKET_INDEX(khash)
     if (!mBuckets[idx]) return nullptr;
     for (unsigned dist = 0; dist <= bhigh; ++dist) {
       if (!mBuckets[idx]) break;
-      unsigned pdist = distToStIdx(idx);
+      const unsigned pdist = distToStIdx(idx);
       if (dist > pdist) break;
       if (mBuckets[idx]->hash == khash && mBuckets[idx]->key == akey) return &(mBuckets[idx]->value);
       idx = (idx+1)&bhigh;
@@ -662,8 +710,7 @@ public:
   // see http://codecapsule.com/2013/11/17/robin-hood-hashing-backward-shift-deletion/
   VVA_ALWAYS_INLINE bool del (const TK &akey) noexcept {
     if (mBucketsUsed == 0) return false;
-    unsigned khash = GetTypeHash(akey);
-    khash += !khash; // avoid zero hash value
+    const unsigned khash = calcKeyHash(akey);
     return delInternal(akey, khash);
   }
 
@@ -672,22 +719,15 @@ public:
 
   // returns `true` if old value was replaced
   bool put (const TK &akey, const TV &aval) noexcept {
-    const unsigned bhigh = (unsigned)(mEBSize-1);
-    unsigned khash = GetTypeHash(akey);
-    khash += !khash; // avoid zero hash value
-    //if (!khash) khash = 1; // avoid zero hash value
-    #ifndef TMAP_USE_MULTIPLY
-    unsigned idx = (khash^mSeed)&bhigh;
-    #else
-    unsigned idx = (unsigned)(((uint64_t)(khash^mSeed)*(uint64_t)bhigh)>>32);
-    #endif
+    const unsigned khash = calcKeyHash(akey);
+    TMAP_IMPL_CALC_BUCKET_INDEX(khash)
 
     // check if we already have this key
     if (mBucketsUsed != 0 && mBuckets[idx]) {
       for (unsigned dist = 0; dist <= bhigh; ++dist) {
         TEntry *e = mBuckets[idx];
         if (!e) break;
-        unsigned pdist = distToStIdx(idx);
+        const unsigned pdist = distToStIdx(idx);
         if (dist > pdist) break;
         if (e->hash == khash && e->key == akey) {
           // replace element
@@ -734,6 +774,8 @@ public:
   VVA_ALWAYS_INLINE int count () const noexcept { return (int)mBucketsUsed; }
   VVA_ALWAYS_INLINE int length () const noexcept { return (int)mBucketsUsed; }
   VVA_ALWAYS_INLINE int capacity () const noexcept { return (int)mEBSize; }
+
+#undef TMAP_IMPL_CALC_BUCKET_INDEX
 
   #ifdef CORE_MAP_TEST
   int countItems () const noexcept {

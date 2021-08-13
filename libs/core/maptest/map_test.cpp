@@ -25,13 +25,17 @@
 #define EXCESSIVE_CHECKS
 #define EXCESSIVE_CHECKS_ITERATOR
 #define EXCESSIVE_COMPACT
+#define EXCESSIVE_REHASH
 
 #define CORE_MAP_TEST
+
 
 typedef unsigned int vuint32;
 
 
 #include <stdarg.h>
+#include <stdint.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,7 +43,7 @@ typedef unsigned int vuint32;
 #define vassert(cond_)  if (!(cond_)) __builtin_trap()
 
 
-static vuint32 GetTypeHash (int a) noexcept {
+static vuint32 GetTypeHash (const int a) noexcept {
   vuint32 res = (vuint32)a;
   res -= (res<<6);
   res = res^(res>>17);
@@ -193,6 +197,9 @@ int main () {
   testIterator(true);
 
   printf("testing: deletion\n");
+  #ifdef EXCESSIVE_REHASH
+  hash.rehash();
+  #endif
   for (int i = 0; i < MaxItems*8; ++i) {
     int v = rand()%MaxItems;
     //writeln('trying to delete ', v, '; its[v]=', its[v]);

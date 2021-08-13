@@ -87,6 +87,8 @@ void Z_Free (void *ptr) VV_ZONE_NOEXCEPT;
 // call this when exiting a thread function, to reclaim thread heaps
 void Z_ThreadDone () VV_ZONE_NOEXCEPT;
 
+// here, because hashmap tester wants it
+unsigned Z_GetHashTableSeed () VV_ZONE_NOEXCEPT;
 
 #ifdef __cplusplus
 }
