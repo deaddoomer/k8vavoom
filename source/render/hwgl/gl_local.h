@@ -57,6 +57,10 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+#define VV_SHADOWCUBE_DEPTH_TEXTURE
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 extern VCvarB gl_gpu_debug;
 extern VCvarF gl_alpha_threshold;
 extern VCvarB gl_sort_textures;
@@ -447,13 +451,21 @@ protected:
   struct ShadowCubeMap {
     GLuint cubeTexId;
     //GLuint cubeDepthTexId[6];
+    #ifdef VV_SHADOWCUBE_DEPTH_TEXTURE
+    GLuint cubeDepthTexId[6]; // render buffers for depth (we're not doing depth sampling for shadowmaps)
+    #else
     GLuint cubeDepthRBId[6]; // render buffers for depth (we're not doing depth sampling for shadowmaps)
+    #endif
     GLuint cubeFBO;
     unsigned int smapDirty; // bits 0..5
     unsigned int smapCurrentFace;
 
     VMatrix4 proj; // light projection matrix
     VMatrix4 lmpv[6]; // light view+projection matrices
+
+    #ifdef VV_SHADOWCUBE_DEPTH_TEXTURE
+    static bool useDefaultDepth;
+    #endif
 
     inline void setAllDirty () noexcept { smapDirty = 0x3f; }
   };

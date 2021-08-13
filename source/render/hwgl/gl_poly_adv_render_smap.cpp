@@ -59,9 +59,13 @@ void VOpenGLDrawer::ClearShadowMapsInternal () {
   GLSMAP_CLEAR_ERR();
   for (unsigned int fc = 0; fc < 6; ++fc) {
     if (IsShadowMapDirty(fc)) {
-      //p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowCube[smapCurrent].cubeDepthTexId[fc], 0);
-      p_glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, shadowCube[smapCurrent].cubeDepthRBId[fc]);
+      #ifdef VV_SHADOWCUBE_DEPTH_TEXTURE
+      p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowCube[smapCurrent].cubeDepthTexId[fc], 0);
       GLSMAP_ERR("set framebuffer depth texture");
+      #else
+      p_glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, shadowCube[smapCurrent].cubeDepthRBId[fc]);
+      GLSMAP_ERR("set framebuffer depth renderbuffer");
+      #endif
       p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+fc, shadowCube[smapCurrent].cubeTexId, 0);
       GLSMAP_ERR("set cube FBO face");
       //glDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -184,15 +188,23 @@ void VOpenGLDrawer::ActivateShadowMapFace (unsigned int facenum) noexcept {
   // clear next shadowmap face (so it can be done in parallel)
   /*
   if (facenum != 5 && IsShadowMapDirty(facenum+1)) {
+    #ifdef VV_SHADOWCUBE_DEPTH_TEXTURE
+    p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowCube[smapCurrent].cubeDepthTexId[facenum+1], 0);
+    #else
     p_glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, shadowCube[smapCurrent].cubeDepthRBId[facenum+1]);
+    #endif
     p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+facenum+1, shadowCube[smapCurrent].cubeTexId, 0);
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
   }
   */
 
-  //p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowCube[smapCurrent].cubeDepthTexId[facenum], 0);
-  p_glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, shadowCube[smapCurrent].cubeDepthRBId[facenum]);
+  #ifdef VV_SHADOWCUBE_DEPTH_TEXTURE
+  p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowCube[smapCurrent].cubeDepthTexId[facenum], 0);
   GLSMAP_ERR("set framebuffer depth texture");
+  #else
+  p_glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, shadowCube[smapCurrent].cubeDepthRBId[facenum]);
+  GLSMAP_ERR("set framebuffer depth renderbuffer");
+  #endif
 
   //!p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_CUBE_MAP_POSITIVE_X+smapCurrentFace, shadowCube[smapCurrent].cubeTexId, 0);
   //!GLSMAP_ERR("set cube FBO face");
