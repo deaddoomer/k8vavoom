@@ -286,10 +286,11 @@ unsigned TPlane::BoxOnPlaneSide (const TVec &emins, const TVec &emaxs) const noe
 VVA_CHECKRESULT TVec TPlane::get3DBBoxSupportPoint (const float bbox[6], float *pdist) const noexcept {
   float bestDist = +INFINITY;
   TVec bestVec(0.0f, 0.0f, 0.0f);
-  CONST_BBoxVertexIndexFlat;
-  const unsigned *bbp = BBoxVertexIndexFlat;
-  for (unsigned bidx = 0; bidx < 8; ++bidx, bbp += 3) {
-    const TVec bv = TVec(bbox[bbp[0]], bbox[bbp[1]], bbox[bbp[2]]);
+  //CONST_BBoxVertexIndexFlat;
+  //const unsigned *bbp = BBoxVertexIndexFlat;
+  for (unsigned bidx = 0; bidx < 8; ++bidx/*, bbp += 3*/) {
+    //const TVec bv = TVec(bbox[bbp[0]], bbox[bbp[1]], bbox[bbp[2]]);
+    const TVec bv(GetBBox3DCorner(bidx, bbox));
     const float dist = PointDistance(bv);
     if (dist < bestDist) {
       bestDist = dist;
@@ -311,10 +312,11 @@ VVA_CHECKRESULT TVec TPlane::get3DBBoxSupportPoint (const float bbox[6], float *
 VVA_CHECKRESULT TVec TPlane::get2DBBoxSupportPoint (const float bbox2d[4], float *pdist, const float z) const noexcept {
   float bestDist = +INFINITY;
   TVec bestVec(0.0f, 0.0f, 0.0f);
-  CONST_BBox2DVertexIndexFlat;
-  const unsigned *bbp = BBox2DVertexIndexFlat;
-  for (unsigned bidx = 0; bidx < 4; ++bidx, bbp += 2) {
-    const TVec bv = TVec(bbox2d[bbp[0]], bbox2d[bbp[1]], z);
+  //CONST_BBox2DVertexIndexFlat;
+  //const unsigned *bbp = BBox2DVertexIndexFlat;
+  for (unsigned bidx = 0; bidx < 4; ++bidx/*, bbp += 2*/) {
+    //const TVec bv = TVec(bbox2d[bbp[0]], bbox2d[bbp[1]], z);
+    const TVec bv(GetBBox2DCornerEx(bidx, bbox2d, z));
     const float dist = PointDistance(bv);
     if (dist < bestDist) {
       bestDist = dist;

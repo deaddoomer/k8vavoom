@@ -25,28 +25,30 @@
 //**************************************************************************
 
 // ////////////////////////////////////////////////////////////////////////// //
+#if 0
+
 #define CONST_BBoxVertexIndex  \
   const unsigned BBoxVertexIndex[8][3] = { \
-    {0+0, 0+1, 0+2}, \
-    {3+0, 0+1, 0+2}, \
-    {0+0, 3+1, 0+2}, \
-    {3+0, 3+1, 0+2}, \
-    {0+0, 0+1, 3+2}, \
-    {3+0, 0+1, 3+2}, \
-    {0+0, 3+1, 3+2}, \
-    {3+0, 3+1, 3+2}, \
+    {BOX3D_MINX, BOX3D_MINY, BOX3D_MINZ}, \
+    {BOX3D_MAXX, BOX3D_MINY, BOX3D_MINZ}, \
+    {BOX3D_MINX, BOX3D_MAXY, BOX3D_MINZ}, \
+    {BOX3D_MAXX, BOX3D_MAXY, BOX3D_MINZ}, \
+    {BOX3D_MINX, BOX3D_MINY, BOX3D_MAXZ}, \
+    {BOX3D_MAXX, BOX3D_MINY, BOX3D_MAXZ}, \
+    {BOX3D_MINX, BOX3D_MAXY, BOX3D_MAXZ}, \
+    {BOX3D_MAXX, BOX3D_MAXY, BOX3D_MAXZ}, \
   }
 
 #define CONST_BBoxVertexIndexFlat  \
   const unsigned BBoxVertexIndexFlat[8*3] = { \
-    0+0, 0+1, 0+2, \
-    3+0, 0+1, 0+2, \
-    0+0, 3+1, 0+2, \
-    3+0, 3+1, 0+2, \
-    0+0, 0+1, 3+2, \
-    3+0, 0+1, 3+2, \
-    0+0, 3+1, 3+2, \
-    3+0, 3+1, 3+2, \
+    BOX3D_MINX, BOX3D_MINY, BOX3D_MINZ, \
+    BOX3D_MAXX, BOX3D_MINY, BOX3D_MINZ, \
+    BOX3D_MINX, BOX3D_MAXY, BOX3D_MINZ, \
+    BOX3D_MAXX, BOX3D_MAXY, BOX3D_MINZ, \
+    BOX3D_MINX, BOX3D_MINY, BOX3D_MAXZ, \
+    BOX3D_MAXX, BOX3D_MINY, BOX3D_MAXZ, \
+    BOX3D_MINX, BOX3D_MAXY, BOX3D_MAXZ, \
+    BOX3D_MAXX, BOX3D_MAXY, BOX3D_MAXZ, \
   }
 
 #define CONST_BBox2DVertexIndex  \
@@ -64,6 +66,8 @@
     BOX2D_MINX, BOX2D_MAXY, \
     BOX2D_MAXX, BOX2D_MAXY, \
   }
+
+#endif
 
 #define HUGE_BBOX2D(bbname_)  float bbname_[4] = { /*maxy*/+FLT_MAX, /*miny*/-FLT_MAX, -FLT_MAX/*minx*/, +FLT_MAX/*maxx*/ }
 
@@ -470,6 +474,31 @@ static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float length2DSquared (con
 //static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float cross2D (const TVec &v1, const TVec &v2) noexcept { return v1.cross2D(v2); }
 
 static VVA_OKUNUSED VVA_ALWAYS_INLINE VStream &operator << (VStream &Strm, TVec &v) { return Strm << v.x << v.y << v.z; }
+
+
+// idx: [0..7]
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec GetBBox3DCorner (const unsigned index, const float bbox3d[6]) noexcept {
+  return TVec(
+    bbox3d[(index&0x01u ? BOX3D_MAXX : BOX3D_MINX)],
+    bbox3d[(index&0x02u ? BOX3D_MAXY : BOX3D_MINY)],
+    bbox3d[(index&0x04u ? BOX3D_MAXZ : BOX3D_MINZ)]);
+}
+
+// idx: [0..3]
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec GetBBox2DCorner (const unsigned index, const float bbox2d[4]) noexcept {
+  return TVec(
+    bbox2d[(index&0x01u ? BOX2D_MINX : BOX2D_MAXX)],
+    bbox2d[(index&0x02u ? BOX2D_MINY : BOX2D_MAXY)],
+    0.0f);
+}
+
+// idx: [0..3]
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec GetBBox2DCornerEx (const unsigned index, const float bbox2d[4], const float z) noexcept {
+  return TVec(
+    bbox2d[(index&0x01u ? BOX2D_MINX : BOX2D_MAXX)],
+    bbox2d[(index&0x02u ? BOX2D_MINY : BOX2D_MAXY)],
+    z);
+}
 
 
 void AngleVectors (const TAVec &angles, TVec &forward, TVec &right, TVec &up) noexcept;

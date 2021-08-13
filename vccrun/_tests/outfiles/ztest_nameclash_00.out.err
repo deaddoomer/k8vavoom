@@ -1,4 +1,4 @@
-Error: ztest_nameclash_00.vc:4: Field `max` conflicts with method in parent class `Object` at ./engine/Object.vc:597
-Error: ztest_nameclash_00.vc:5: Field `length` conflicts with method in parent class `Object` at ./engine/Object.vc:627
-Error: ztest_nameclash_00.vc:6: Field `length2D` conflicts with method in parent class `Object` at ./engine/Object.vc:638
+Error: ztest_nameclash_00.vc:4: Field `max` conflicts with method in parent class `Object` at ./engine/Object.vc:610
+Error: ztest_nameclash_00.vc:5: Field `length` conflicts with method in parent class `Object` at ./engine/Object.vc:640
+Error: ztest_nameclash_00.vc:6: Field `length2D` conflicts with method in parent class `Object` at ./engine/Object.vc:651
 FATAL: Confused by previous errors, bailing out

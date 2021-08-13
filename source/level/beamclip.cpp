@@ -1741,39 +1741,67 @@ void VViewClipper::ClipAddPObjSegs (const subsector_t *sub, const TPlane *Mirror
 //
 //  VViewClipper::CheckSubsectorLight
 //
+//  returns:
+//    0: the light is outside
+//    1: the box is fully inside the light
+//   -1: the light intersects the box, or the light is fully inside the box
+//
 //==========================================================================
 int VViewClipper::CheckSubsectorLight (subsector_t *sub) const noexcept {
   if (!sub) return 0;
   float bbox[6];
   Level->GetSubsectorBBox(sub, bbox);
 
-  if (bbox[0] <= Origin.x && bbox[3] >= Origin.x &&
-      bbox[1] <= Origin.y && bbox[4] >= Origin.y &&
-      bbox[2] <= Origin.z && bbox[5] >= Origin.z)
+  if (bbox[BOX3D_MINX] >= Origin.x-Radius && bbox[BOX3D_MAXX] <= Origin.x+Radius &&
+      bbox[BOX3D_MINY] >= Origin.y-Radius && bbox[BOX3D_MAXY] <= Origin.y+Radius &&
+      bbox[BOX3D_MINZ] >= Origin.z-Radius && bbox[BOX3D_MAXZ] <= Origin.z+Radius)
   {
-    // inside the box
+    // the box is fully inside the light
     return 1;
   }
 
-  if (!CheckSphereVsAABB(bbox, Origin, Radius)) return 0;
+  if (bbox[BOX3D_MINX] <= Origin.x-Radius && bbox[BOX3D_MAXX] >= Origin.x+Radius &&
+      bbox[BOX3D_MINY] <= Origin.y-Radius && bbox[BOX3D_MAXY] >= Origin.y+Radius &&
+      bbox[BOX3D_MINZ] <= Origin.z-Radius && bbox[BOX3D_MAXZ] >= Origin.z+Radius)
+  {
+    // the light is fully inside the box
+    return -1;
+  }
 
+  // if light origin is inside the box, we have an intersection
+  if (bbox[BOX3D_MINX] <= Origin.x && bbox[BOX3D_MAXX] >= Origin.x &&
+      bbox[BOX3D_MINY] <= Origin.y && bbox[BOX3D_MAXY] >= Origin.y &&
+      bbox[BOX3D_MINZ] <= Origin.z && bbox[BOX3D_MAXZ] >= Origin.z)
+  {
+    // viewer is inside the box
+    return -1;
+  }
+
+  if (!CheckSphereVsAABB(bbox, Origin, Radius)) return 0; // cannot touch
+
+  #if 1
+  // the light is not fully inside the box, but intersects it
+  return -1;
+  #else
   // check if all box vertices are inside a sphere
   // early exit if sphere is smaller than bbox
-  if (Radius < bbox[3+0]-bbox[0]) return -1;
-  if (Radius < bbox[3+1]-bbox[1]) return -1;
-  if (Radius < bbox[3+2]-bbox[2]) return -1;
+  if (Radius < bbox[BOX3D_MAXX]-bbox[BOX3D_MINX]) return -1;
+  if (Radius < bbox[BOX3D_MAXY]-bbox[BOX3D_MINY]) return -1;
+  if (Radius < bbox[BOX3D_MAXZ]-bbox[BOX3D_MINZ]) return -1;
 
   const float xradSq = Radius*Radius;
 
-  CONST_BBoxVertexIndexFlat;
-  const unsigned *bbp = BBoxVertexIndexFlat;
-  for (unsigned bidx = 0; bidx < 8; ++bidx, bbp += 3) {
-    const TVec bv = TVec(bbox[bbp[0]]-Origin.x, bbox[bbp[1]]-Origin.y, bbox[bbp[2]]-Origin.z);
-    if (bv.lengthSquared() > xradSq) return -1; // partially inside
+  //CONST_BBoxVertexIndexFlat;
+  //const unsigned *bbp = BBoxVertexIndexFlat;
+  for (unsigned bidx = 0; bidx < 8; ++bidx/*, bbp += 3*/) {
+    //const TVec bv = TVec(bbox[bbp[0]]-Origin.x, bbox[bbp[1]]-Origin.y, bbox[bbp[2]]-Origin.z);
+    const TVec bv(GetBBox3DCorner(bidx, bbox)-Origin);
+    if (bv.lengthSquared() > xradSq) return -1; // partially inside, because at least one corner is not in the sphere
   }
 
   // fully inside
   return 1;
+  #endif
 }
 
 
@@ -1874,9 +1902,10 @@ bool VViewClipper::ClipLightCheckSubsector (subsector_t *sub, int /*asShadow*/) 
   if (ClipIsFull()) return false;
   const int slight = CheckSubsectorLight(sub);
   if (!slight) return false;
-  if (slight > 0 && ClipIsEmpty()) return true; // no clip nodes yet
+  if (slight > 0 && ClipIsEmpty()) return true; // no clip nodes yet, and the box is fully inside the light
   const seg_t *seg = &Level->Segs[sub->firstline];
   for (int count = sub->numlines; count--; ++seg) {
+    // if the light intersects the box, or fully inside the box, we need to check for touching
     if (slight < 0) {
       if (!seg->SphereTouches(Origin, Radius)) continue;
     }
