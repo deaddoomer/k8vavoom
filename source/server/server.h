@@ -81,7 +81,7 @@ extern server_static_t svs;
 // this is GLevel->TicTime value at which we should start rendering
 extern int serverStartRenderFramesTic;
 
-extern double SV_GetFrameTimeConstant () noexcept;
+extern float SV_GetFrameTimeConstant () noexcept;
 
 
 #endif

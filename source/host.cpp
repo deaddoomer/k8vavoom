@@ -62,6 +62,8 @@
 
 #include "cvar.h"
 
+#define VV_USE_U64_SYSTIME_FOR_FRAME_TIMES
+
 
 extern int fsys_warp_n0;
 extern int fsys_warp_n1;
@@ -126,6 +128,8 @@ double host_time = 0.0; // used in UI and network heartbits; accumulates frame t
 double host_systime = 0.0; // current `Sys_Time()`; used for consistency, updated in `FilterTime()`
 vuint64 host_systime64_msec = 0; // monotonic time, in milliseconds
 int host_framecount = 0;
+
+static vuint64 host_prevsystime64_msec = 0; // monotonic time, in milliseconds
 
 bool host_initialised = false;
 bool host_request_exit = false;
@@ -569,7 +573,7 @@ static void Host_GetConsoleCommands () {
 //
 //==========================================================================
 void Host_ResetSkipFrames () {
-  last_time = host_systime = Sys_Time();
+  last_time = host_systime = Sys_Time_Ex(&host_systime64_msec);
   host_frametime = 0;
   host_framefrac = 0;
   //GCon->Logf("*** Host_ResetSkipFrames; ctime=%f", last_time);
@@ -605,14 +609,64 @@ bool Host_IsDangerousTimeout () {
 //
 //==========================================================================
 static bool FilterTime () {
-  const double curr_time = Sys_Time();
-  // add fractional frame time left from previous tick, so we won't miss it
-  // this gives higher framerate around `cl_framerate 39`, but the game feels much better
-  double timeDelta = curr_time-last_time+host_framefrac;
-  //double timeDelta = curr_time-last_time;
+  const double curr_time = Sys_Time_Ex(&host_systime64_msec);
+  if (!host_prevsystime64_msec) host_prevsystime64_msec = host_systime64_msec;
 
   // update it here, it is used as a substitute for `Sys_Time()` in demo and other code
   host_systime = curr_time;
+
+  #ifdef VV_USE_U64_SYSTIME_FOR_FRAME_TIMES
+  // start of U64 ticker
+  const unsigned msDelta = (unsigned)(host_systime64_msec-host_prevsystime64_msec);
+  if (msDelta < 4) return false; // not more than 250 frames per second
+
+  float timeDelta;
+  if (dbg_frametime < max_fps_cap_float) {
+    #ifdef CLIENT
+    // check for dangerous network timeout
+    if (Host_IsDangerousTimeout()) {
+      const unsigned capfr = (unsigned)clampval(cl_framerate_net_timeout.asInt(), 0, 42);
+      if (capfr > 0) {
+        if (msDelta < 1000u/capfr) return false; // framerate is too high
+      }
+    } else {
+      // cap client fps
+      unsigned ftime;
+      if (GGameInfo->NetMode <= NM_Standalone) {
+        // local game
+        if (cl_cap_framerate.asBool()) {
+          const unsigned frate = (unsigned)clampval(cl_framerate.asInt(), 1, 250);
+          ftime = 1000u/frate+(unsigned)(10000/frate%10 >= 5); // round it
+        } else {
+          ftime = 4; // 250 frames per second
+        }
+      } else {
+        // network game
+        const unsigned frate = (unsigned)clampval(sv_framerate.asInt(), 5, 70);
+        ftime = 1000u/frate+(unsigned)(10000/frate%10 >= 5); // round it
+      }
+      //GCon->Logf("*** FilterTime; lasttime=%g; ctime=%g; time=%g; ftime=%g; cfr=%g", last_time, curr_time, time, ftime, 1.0/(double)ftime);
+      if (msDelta < ftime) return false; // framerate is too high
+    }
+    #else
+    // dedicated server
+    const unsigned frate = (unsigned)clampval(sv_framerate.asInt(), 5, 70);
+    const unsigned ftime = 1000u/frate+(unsigned)(10000/frate%10 >= 5); // round it
+    if (msDelta < ftime) return false; // framerate is too high
+    #endif
+    timeDelta = (float)msDelta/1000.0f;
+  } else {
+    // force ticker time per Doom tick
+    if (msDelta < 29) return false; // one Doom tick is ~28.571428571429 milliseconds
+    timeDelta = dbg_frametime;
+  }
+  // end of U64 ticker
+  #else
+  // start of floating ticker
+  // add fractional frame time left from previous tick, so we won't miss it
+  // this gives higher framerate around `cl_framerate 39`, but the game feels much better
+  float timeDelta = (float)(curr_time-last_time+host_framefrac);
+  //double timeDelta = curr_time-last_time;
 
   if (dbg_frametime < max_fps_cap_float) {
     // freestep mode
@@ -621,24 +675,24 @@ static bool FilterTime () {
     if (Host_IsDangerousTimeout()) {
       int capfr = min2(42, cl_framerate_net_timeout.asInt());
       if (capfr > 0) {
-        if (timeDelta < 1.0/(double)capfr) return false; // framerate is too high
+        if (timeDelta < 1.0f/(float)capfr) return false; // framerate is too high
       }
     } else {
       // cap client fps
-      double ftime;
+      float ftime;
       if (GGameInfo->NetMode <= NM_Standalone) {
         // local game
         if (cl_cap_framerate.asBool()) {
           int cfr = cl_framerate.asInt();
-          if (cfr < 1 || cfr > 200) cfr = 140;
-          ftime = 1.0/(double)cfr;
+          if (cfr < 1 || cfr > 250) cfr = 140;
+          ftime = 1.0f/(float)cfr;
         } else {
-          ftime = max_fps_cap_double;
+          ftime = max_fps_cap_float;
         }
       } else {
         // network game
         const int sfr = clampval(sv_framerate.asInt(), 5, 70);
-        ftime = 1.0/(double)sfr;
+        ftime = 1.0f/(float)sfr;
       }
       //GCon->Logf("*** FilterTime; lasttime=%g; ctime=%g; time=%g; ftime=%g; cfr=%g", last_time, curr_time, time, ftime, 1.0/(double)ftime);
       if (timeDelta < ftime) return false; // framerate is too high
@@ -646,37 +700,40 @@ static bool FilterTime () {
     #else
     // dedicated server
     const int sfr = clampval(sv_framerate.asInt(), 5, 70);
-    if (timeDelta < 1.0/(double)sfr) return false; // framerate is too high
+    if (timeDelta < 1.0f/(float)sfr) return false; // framerate is too high
     //GCon->Logf(NAME_Debug, "headless tick! %g", timeDelta*1000);
     #endif
     //timeDelta += host_framefrac;
   } else {
     // force ticker time per Doom tick
-    if (timeDelta < 1.0/35.0) return false;
+    if (timeDelta < SV_GetFrameTimeConstant()) return false;
     timeDelta = dbg_frametime;
   }
+  // end of floating ticker
+  #endif
 
   // here we can advance our "last success call" mark
   last_time = curr_time;
+  host_prevsystime64_msec = host_systime64_msec;
   //if (host_framefrac >= max_fps_cap_double*0.5) GCon->Logf("FRAC=%g", host_framefrac);
 
   //GCon->Logf(NAME_Debug, "host_framefrac=%g; timeDelta=%g", host_framefrac, timeDelta);
   host_frametime = timeDelta;
-  host_framefrac = 0;
+  host_framefrac = 0.0f;
 
   int ticlimit = host_max_skip_frames;
   if (ticlimit < 3) ticlimit = 3; else if (ticlimit > 256) ticlimit = 256;
 
-  if (dbg_frametime > 0) {
+  if (dbg_frametime > 0.0f) {
     host_frametime = dbg_frametime;
   } else {
     // don't allow really long or short frames
-    double tld = (ticlimit+1)/(double)TICRATE;
+    float tld = (ticlimit+1)/(float)TICRATE;
     if (host_frametime > tld) {
       if (developer) GCon->Logf(NAME_Dev, "*** FRAME TOO LONG: %f (capped to %f)", host_frametime, tld);
       host_frametime = tld;
     }
-    if (host_frametime < max_fps_cap_double) host_frametime = max_fps_cap_double; // just in case
+    if (host_frametime < max_fps_cap_float) host_frametime = max_fps_cap_float; // just in case
   }
 
   {

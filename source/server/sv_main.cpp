@@ -79,8 +79,13 @@ static float FrameTime = 1.0f/35.0f;
 // round a little bit up to prevent "slow motion"
 *(vuint32 *)&FrameTime += 1; // this is 0x1.d41d44p-6
 */
+#if 0
 static constexpr double FrameTime = 0x1.d41d41d41d41ep-6; // see above
 double SV_GetFrameTimeConstant () noexcept { return FrameTime; }
+#else
+static constexpr float FrameTime = 0x1.d41d44p-6; // see above
+float SV_GetFrameTimeConstant () noexcept { return FrameTime; }
+#endif
 
 /*
   float FrameTime = 1.0f/35.0f;
