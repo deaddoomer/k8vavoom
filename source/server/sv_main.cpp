@@ -56,8 +56,6 @@ VCvarB r_models("r_models", true, "Allow 3d models?", 0/*CVAR_Archive*/);
 #endif
 
 
-static VCvarI sv_use_timefrac("sv_use_timefrac", "0", "Accumulate unused frame times? This *may* give slightly more stable capped framerates, but it usually don't. (0:none;1:full;2:oneframe)", CVAR_Archive);
-
 #ifdef CLIENT
 extern VCvarB r_wipe_enabled;
 #endif
@@ -191,8 +189,6 @@ VCvarB sv_disable_mlook("sv_disable_mlook", false, "Disable mouselook?", CVAR_Se
 static VCvarB sv_barrel_respawn("sv_barrel_respawn", false, "Respawn barrels in network game?", CVAR_Archive|/*CVAR_ServerInfo|CVAR_Latch|*/CVAR_PreInit);
 static VCvarB sv_pushable_barrels("sv_pushable_barrels", true, "Pushable barrels?", CVAR_Archive|/*CVAR_ServerInfo|CVAR_Latch|*/CVAR_PreInit);
 VCvarB sv_decoration_block_projectiles("sv_decoration_block_projectiles", false, "Should decoration things block projectiles?", CVAR_Archive|/*CVAR_ServerInfo|CVAR_Latch|*/CVAR_PreInit);
-
-static VCvarB sv_split_frame("sv_split_frame", true, "Splitframe mode?", CVAR_Archive|CVAR_PreInit);
 
 static VCvarI master_heartbeat_time("master_heartbeat_time", "3", "Master server heartbeat interval, minutes.", CVAR_Archive|CVAR_PreInit);
 
@@ -877,73 +873,33 @@ static inline bool svIsInWipe () noexcept {
 //
 //==========================================================================
 static void SV_Ticker () {
-  //double saved_frametime;
-
-  if (host_frametime <= 0) return;
-
-  //saved_frametime = host_frametime;
-
-  const int acctype = sv_use_timefrac.asInt();
-
-  if (acctype > 0 && acctype <= 2) {
-    if (host_frametime < max_fps_cap_double) {
-      host_framefrac += host_frametime;
-      host_frametime = 0;
-      return;
-    }
-  }
+  if (host_frametime <= 0.0f) return;
 
   int scap = host_max_skip_frames;
   if (scap < 3) scap = 3;
 
-  //exec_times = 1;
   // freestep mode
-  if (sv_split_frame && host_frametime > FrameTime) {
-    double i;
-    /*double frc =*/ (void)modf(host_frametime/FrameTime, &i);
-    //GCon->Logf("*** ft=%f; frt=%f; int=%f; frc=%f", host_frametime, FrameTime, i, frc);
-    if (i < 1.0) { GCon->Logf(NAME_Error, "WTF?! i must be at least one, but it is %f", i); i = 1.0; }
-    int exec_times = (i > 0x1fffffff ? 0x1fffffff : (int)i);
-    {
-      bool showExecTimes = (cli_SVShowExecTimes > 0);
-      if (showExecTimes) {
-        if (exec_times <= scap) GCon->Logf("exec_times=%d", exec_times); else GCon->Logf("exec_times=%d (capped to %d)", exec_times, scap);
-      }
-    }
-    // cap
-    if (exec_times > scap) {
-      exec_times = scap;
-      host_frametime = FrameTime*exec_times;
-    }
-  }
-
   if (sv_loading || sv.intermission) {
     GGameInfo->frametime = host_frametime;
     // do not run intermission while wiping
     SV_RunClients();
   } else {
-    double saved_frametime = host_frametime;
+    const float saved_frametime = host_frametime;
     bool frameSkipped = false;
-    bool wasPaused = false;
     bool timeLimitReached = false;
     bool runClientsCalled = false;
     // do main actions
-    double frametimeleft = host_frametime;
+    float frametimeleft = host_frametime;
     int lastTick = GLevel->TicTime;
     while (!sv.intermission && !completed) {
-      if (acctype > 0 && acctype <= 2) {
-        if (frametimeleft < max_fps_cap_double) break;
-      } else {
-        if (frametimeleft <= 0.0) break;
-      }
+      if (frametimeleft <= 0.0f) break;
       if (GLevel->TicTime != lastTick) {
         lastTick = GLevel->TicTime;
         Host_CollectGarbage();
       }
       // calculate frame time
       // do small steps, it seems to work better this way
-      double currframetime = (sv_split_frame && frametimeleft >= FrameTime*0.4 ? 1.0/35.0*0.4 : frametimeleft);
-      if (currframetime > frametimeleft) currframetime = frametimeleft;
+      const float currframetime = (frametimeleft > FrameTime ? FrameTime : frametimeleft);
       // do it this way, because of rounding
       GGameInfo->frametime = currframetime;
       host_frametime = GGameInfo->frametime;
@@ -951,7 +907,6 @@ static void SV_Ticker () {
       if (GGameInfo->IsPaused() && !svIsInWipe()) {
         // no need to do anything more if the game is paused
         if (!frameSkipped) { runClientsCalled = true; SV_RunClients(); }
-        wasPaused = true;
         break;
       }
       // advance player states, so weapons won't slow down on frame skip
@@ -978,7 +933,7 @@ static void SV_Ticker () {
           }
         }
       }
-      frametimeleft -= host_frametime /*currframetime*/; // next step
+      frametimeleft -= currframetime; /*host_frametime*/ /*currframetime*/ // next step
       frameSkipped = true;
     }
     if (!runClientsCalled) SV_RunClients(true);
@@ -1006,23 +961,9 @@ static void SV_Ticker () {
       }
     }
     if (completed) G_DoCompleted(timeLimitReached);
-    // remember fractional frame time
+    // restore frame time (just in case)
     host_frametime = saved_frametime;
-    if (!wasPaused) {
-      if (acctype > 0 && acctype <= 2) {
-        if (!sv.intermission && !completed && frametimeleft > 0 && frametimeleft < max_fps_cap_double) {
-          if (acctype == 1) {
-            host_framefrac += frametimeleft;
-          } else {
-            host_framefrac = frametimeleft;
-          }
-          host_frametime -= frametimeleft;
-        }
-      }
-    }
   }
-
-  //host_frametime = saved_frametime;
 }
 
 

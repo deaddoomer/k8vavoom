@@ -54,15 +54,13 @@ extern bool host_gdb_mode;
 
 
 // no more than 250 FPS
-#define max_fps_cap_double  (1.0/250.0)
+/*#define max_fps_cap_double  (1.0/250.0)*/
 #define max_fps_cap_float   ((float)(1.0f/250.0f))
 
-extern float host_frametime;
-extern float host_framefrac;
-extern double host_time; // used in UI and network heartbits; accumulates frame times
+extern float host_frametime; // time delta for the current frame
 extern double host_systime; // current `Sys_Time()`; used for consistency, updated in `FilterTime()`
 extern vuint64 host_systime64_msec; // monotonic time, in milliseconds
-extern int host_framecount;
+extern int host_framecount; // used in demo playback
 
 extern int cli_ShowEndText;
 

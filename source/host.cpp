@@ -122,14 +122,16 @@ VCvarB k8vavoom_developer_version("k8vavoom_developer_version", CVAR_K8_DEV_VALU
 
 static double hostLastGCTime = 0.0;
 
-float host_frametime = 0.0f;
-float host_framefrac = 0.0f; // unused frame time left from previous `SV_Ticker()` in realtime mode
-double host_time = 0.0; // used in UI and network heartbits; accumulates frame times
+float host_frametime = 0.0f; // time delta for the current frame
 double host_systime = 0.0; // current `Sys_Time()`; used for consistency, updated in `FilterTime()`
 vuint64 host_systime64_msec = 0; // monotonic time, in milliseconds
-int host_framecount = 0;
+int host_framecount = 0; // used in demo playback
 
+#ifdef VV_USE_U64_SYSTIME_FOR_FRAME_TIMES
 static vuint64 host_prevsystime64_msec = 0; // monotonic time, in milliseconds
+#else
+static double last_time = 0.0; // last time `FilterTime()` was returned `true`
+#endif
 
 bool host_initialised = false;
 bool host_request_exit = false;
@@ -154,8 +156,6 @@ static VCvarB host_show_skip_limit("dbg_host_show_skip_limit", false, "Show skip
 static VCvarB host_show_skip_frames("dbg_host_show_skip_frames", false, "Show skipframe hits? (DEBUG CVAR, DON'T USE!)", CVAR_PreInit);
 
 static VCvarF host_gc_timeout("host_gc_timeout", "0.5", "Timeout in seconds between garbage collections.", CVAR_Archive);
-
-static double last_time = 0.0; // last time `FilterTime()` was returned `true`
 
 static VCvarB randomclass("RandomClass", false, "Random player class?"); // checkparm of -randclass
 VCvarB respawnparm("RespawnMonsters", false, "Respawn monsters?", 0/*CVAR_PreInit*/); // checkparm of -respawn
@@ -573,9 +573,13 @@ static void Host_GetConsoleCommands () {
 //
 //==========================================================================
 void Host_ResetSkipFrames () {
-  last_time = host_systime = Sys_Time_Ex(&host_systime64_msec);
-  host_frametime = 0;
-  host_framefrac = 0;
+  host_systime = Sys_Time_Ex(&host_systime64_msec);
+  #ifdef VV_USE_U64_SYSTIME_FOR_FRAME_TIMES
+  host_prevsystime64_msec = host_systime64_msec;
+  #else
+  last_time = host_systime;
+  #endif
+  host_frametime = 0.0f;
   //GCon->Logf("*** Host_ResetSkipFrames; ctime=%f", last_time);
 }
 
@@ -601,6 +605,22 @@ bool Host_IsDangerousTimeout () {
 }
 
 
+#ifdef VV_USE_U64_SYSTIME_FOR_FRAME_TIMES
+//==========================================================================
+//
+//  CalcFrameMSecs
+//
+//==========================================================================
+static VVA_ALWAYS_INLINE unsigned CalcFrameMSecs (const unsigned fps) noexcept {
+  #if 0
+  return 1000u/fps+(unsigned)(10000u/fps%10u >= 5u); // round it
+  #else
+  return 1000u/fps+(unsigned)(10000u/fps%10u >= 8u); // round it
+  #endif
+}
+#endif
+
+
 //==========================================================================
 //
 //  FilterTime
@@ -610,15 +630,14 @@ bool Host_IsDangerousTimeout () {
 //==========================================================================
 static bool FilterTime () {
   const double curr_time = Sys_Time_Ex(&host_systime64_msec);
-  if (!host_prevsystime64_msec) host_prevsystime64_msec = host_systime64_msec;
-
   // update it here, it is used as a substitute for `Sys_Time()` in demo and other code
   host_systime = curr_time;
 
   #ifdef VV_USE_U64_SYSTIME_FOR_FRAME_TIMES
+  if (!host_prevsystime64_msec) host_prevsystime64_msec = host_systime64_msec;
   // start of U64 ticker
   const unsigned msDelta = (unsigned)(host_systime64_msec-host_prevsystime64_msec);
-  if (msDelta < 4) return false; // not more than 250 frames per second
+  if (msDelta < 4u) return false; // no more than 250 frames per second
 
   float timeDelta;
   if (dbg_frametime < max_fps_cap_float) {
@@ -626,8 +645,8 @@ static bool FilterTime () {
     // check for dangerous network timeout
     if (Host_IsDangerousTimeout()) {
       const unsigned capfr = (unsigned)clampval(cl_framerate_net_timeout.asInt(), 0, 42);
-      if (capfr > 0) {
-        if (msDelta < 1000u/capfr) return false; // framerate is too high
+      if (capfr > 0u) {
+        if (msDelta < CalcFrameMSecs(capfr)) return false; // framerate is too high
       }
     } else {
       // cap client fps
@@ -636,14 +655,14 @@ static bool FilterTime () {
         // local game
         if (cl_cap_framerate.asBool()) {
           const unsigned frate = (unsigned)clampval(cl_framerate.asInt(), 1, 250);
-          ftime = 1000u/frate+(unsigned)(10000/frate%10 >= 5); // round it
+          ftime = CalcFrameMSecs(frate);
         } else {
-          ftime = 4; // 250 frames per second
+          ftime = 4u; // no more than 250 frames per second
         }
       } else {
         // network game
         const unsigned frate = (unsigned)clampval(sv_framerate.asInt(), 5, 70);
-        ftime = 1000u/frate+(unsigned)(10000/frate%10 >= 5); // round it
+        ftime = CalcFrameMSecs(frate);
       }
       //GCon->Logf("*** FilterTime; lasttime=%g; ctime=%g; time=%g; ftime=%g; cfr=%g", last_time, curr_time, time, ftime, 1.0/(double)ftime);
       if (msDelta < ftime) return false; // framerate is too high
@@ -651,13 +670,13 @@ static bool FilterTime () {
     #else
     // dedicated server
     const unsigned frate = (unsigned)clampval(sv_framerate.asInt(), 5, 70);
-    const unsigned ftime = 1000u/frate+(unsigned)(10000/frate%10 >= 5); // round it
+    const unsigned ftime = CalcFrameMSecs(frate);
     if (msDelta < ftime) return false; // framerate is too high
     #endif
     timeDelta = (float)msDelta/1000.0f;
   } else {
     // force ticker time per Doom tick
-    if (msDelta < 29) return false; // one Doom tick is ~28.571428571429 milliseconds
+    if (msDelta < 28u) return false; // one Doom tick is ~28.571428571429 milliseconds
     timeDelta = dbg_frametime;
   }
   // end of U64 ticker
@@ -665,8 +684,7 @@ static bool FilterTime () {
   // start of floating ticker
   // add fractional frame time left from previous tick, so we won't miss it
   // this gives higher framerate around `cl_framerate 39`, but the game feels much better
-  float timeDelta = (float)(curr_time-last_time+host_framefrac);
-  //double timeDelta = curr_time-last_time;
+  float timeDelta = (float)(curr_time-last_time);
 
   if (dbg_frametime < max_fps_cap_float) {
     // freestep mode
@@ -703,7 +721,6 @@ static bool FilterTime () {
     if (timeDelta < 1.0f/(float)sfr) return false; // framerate is too high
     //GCon->Logf(NAME_Debug, "headless tick! %g", timeDelta*1000);
     #endif
-    //timeDelta += host_framefrac;
   } else {
     // force ticker time per Doom tick
     if (timeDelta < SV_GetFrameTimeConstant()) return false;
@@ -713,13 +730,14 @@ static bool FilterTime () {
   #endif
 
   // here we can advance our "last success call" mark
-  last_time = curr_time;
+  #ifdef VV_USE_U64_SYSTIME_FOR_FRAME_TIMES
   host_prevsystime64_msec = host_systime64_msec;
-  //if (host_framefrac >= max_fps_cap_double*0.5) GCon->Logf("FRAC=%g", host_framefrac);
+  #else
+  last_time = curr_time;
+  #endif
 
-  //GCon->Logf(NAME_Debug, "host_framefrac=%g; timeDelta=%g", host_framefrac, timeDelta);
+  //GCon->Logf(NAME_Debug, "timeDelta=%g", timeDelta);
   host_frametime = timeDelta;
-  host_framefrac = 0.0f;
 
   int ticlimit = host_max_skip_frames;
   if (ticlimit < 3) ticlimit = 3; else if (ticlimit > 256) ticlimit = 256;
@@ -736,7 +754,7 @@ static bool FilterTime () {
     if (host_frametime < max_fps_cap_float) host_frametime = max_fps_cap_float; // just in case
   }
 
-  {
+  if (host_show_skip_limit || host_show_skip_frames) {
     // freestep mode, check if we want to skip too many frames, and show a warning
     int ftics = (int)(timeDelta*TICRATE); // use it as a temporary variable
     if (ftics > ticlimit) {
@@ -839,7 +857,7 @@ void Host_Frame () {
     GNet->Poll();
 
     // if we perfomed load/save, frame time will be near zero, so do nothing
-    if (host_frametime >= max_fps_cap_double) {
+    if (host_frametime >= max_fps_cap_float) {
       incFrame = true;
 
       #ifdef CLIENT
@@ -859,7 +877,7 @@ void Host_Frame () {
       # endif
       #endif
 
-      host_time += host_frametime;
+      //host_time += host_frametime;
 
       #ifdef CLIENT
       // fetch results from server
