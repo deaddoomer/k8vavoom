@@ -490,7 +490,7 @@ void VRenderLevelShadowVolume::RenderMobjShadowMapSprite (VEntity *ent, const un
   if (sprframe->rotate) {
     float ang = matan(sprorigin.y-CurrLightPos.y, sprorigin.x-CurrLightPos.x);
     if (!isFiniteF(ang)) ang = matan(sprorigin.y-CurrLightPos.y, sprorigin.x-CurrLightPos.x+1);
-    const float angadd = (sprframe->lump[0] == sprframe->lump[1] ? 45.0f/2.0f : 45.0f/4.0f); //k8: is this right?
+    const float angadd = (sprframe->lump[0] == sprframe->lump[1] ? 45.0f*0.5f : 45.0f/4.0f); //k8: is this right?
     ang = AngleMod(ang-ent->GetSpriteDrawAngles().yaw+180.0f+angadd);
     const unsigned rot = (unsigned)(ang*16.0f/360.0f)&15;
     lump = sprframe->lump[rot];

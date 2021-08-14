@@ -403,7 +403,7 @@ void VOpenGLDrawer::BloomDoGaussian () {
   // it needs to stay odd, so it must be incremented by an even number each time
   // choosing a higher increment value reduces the quality of the blur but improves performance
   for (int i = 3; i <= maxscale; i += 2) {
-    float scale = (float)i/2.0f-1.0f;
+    float scale = (float)i*0.5f-1.0f;
     // increasing the repetitions here increases the strength of the blur but hurts performance
     for (int j = 0; j < 2; ++j) {
       glBindTexture(GL_TEXTURE_2D, bloomGetActiveFBO()->getColorTid());

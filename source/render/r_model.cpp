@@ -2265,7 +2265,7 @@ void R_DrawModelFrame (const TVec &Origin, float Angle, VModel *Model,
   rd.y = 0;
   rd.width = Drawer->getWidth();
   rd.height = Drawer->getHeight();
-  rd.fovx = tan(DEG2RADF(90)/2.0f);
+  rd.fovx = tan(DEG2RADF(90)*0.5f);
   rd.fovy = rd.fovx*3.0f/4.0f;
   rd.drawworld = false;
   rd.DrawCamera = false;

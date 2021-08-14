@@ -60,7 +60,7 @@ float advLightGetMaxBias (const unsigned int shadowmapPOT) noexcept {
   }
   switch (shadowmapPOT) {
     case 0: return 0.044f;
-    case 1: return 0.036f/2.0f;
+    case 1: return 0.036f*0.5f;
     case 2: return 0.02f/3.0f;
     case 3:
     default: return 0.001f/4.0f;

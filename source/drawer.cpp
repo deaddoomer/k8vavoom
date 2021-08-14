@@ -237,7 +237,7 @@ void VDrawer::CalcHexVertices (float vx[6], float vy[6], float x0, float y0, flo
   h = h/3.0f*2.0f;
   const float dividery = 3.0f;
   const float hdiv = h/dividery;
-  const float wdiv = w/2.0f;
+  const float wdiv = w*0.5f;
   y0 += hdiv;
   const float yr0 = y0;
   const float yr1 = y0+h;
@@ -336,7 +336,7 @@ void VDrawer::CalcProjectionMatrix (VMatrix4 &ProjMat, /*VRenderLevelDrawer *rle
     // normal
     //glClearDepth(1.0f);
     //glDepthFunc(GL_LEQUAL);
-    // const tanHalfFovy = tan(fovy/2.0f);
+    // const tanHalfFovy = tan(fovy*0.5f);
     // rd->fovx = aspect*tanHalfFovy;
     // rd->fovy = tanHalfFovy;
     ProjMat.SetZero();
@@ -380,7 +380,7 @@ void VDrawer::CalcProjectionMatrix (VMatrix4 &ProjMat, /*VRenderLevelDrawer *rle
 //==========================================================================
 void VDrawer::CalcShadowMapProjectionMatrix (VMatrix4 &ProjMat, float Radius) {
   const float fov = 90.0f;
-  const float fovx = tanf(DEG2RADF(fov)/2.0f);
+  const float fovx = tanf(DEG2RADF(fov)*0.5f);
   //if (aspect <= 0.0f || !isFiniteF(aspect)) aspect = 1.0f;
   const float fovy = fovx;//*aheight/awidth/aspect;
   const float zNear = 1.0f;

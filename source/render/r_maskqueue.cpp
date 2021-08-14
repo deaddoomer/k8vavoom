@@ -598,12 +598,12 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
     float ang = (useCameraPlane ?
       matan(sprorigin.y-Drawer->vieworg.y, sprorigin.x-Drawer->vieworg.x) :
       matan(sprforward.y+Drawer->viewforward.y, sprforward.x+Drawer->viewforward.x));
-    const float angadd = (sprframe->lump[0] == sprframe->lump[1] ? 45.0f/2.0f : 45.0f/4.0f); //k8: is this right?
-    //const float angadd = (useCameraPlane ? 45.0f/2.0f : 45.0f/4.0f);
+    const float angadd = (sprframe->lump[0] == sprframe->lump[1] ? 45.0f*0.5f : 45.0f/4.0f); //k8: is this right?
+    //const float angadd = (useCameraPlane ? 45.0f*0.5f : 45.0f/4.0f);
     /*
     if (sprframe->lump[0] == sprframe->lump[1]) {
       ang = matan(sprorigin.y-Drawer->vieworg.y, sprorigin.x-Drawer->vieworg.x);
-      ang = AngleMod(ang-thing->GetSpriteDrawAngles().yaw+180.0f+45.0f/2.0f);
+      ang = AngleMod(ang-thing->GetSpriteDrawAngles().yaw+180.0f+45.0f*0.5f);
     } else {
       ang = matan(sprforward.y+Drawer->viewforward.y, sprforward.x+Drawer->viewforward.x);
       ang = AngleMod(ang-thing->GetSpriteDrawAngles().yaw+180.0f+45.0f/4.0f);

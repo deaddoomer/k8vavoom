@@ -206,8 +206,8 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
   #if 0
   // rotate around bottom left corner (doesn't work)
   if (angle) {
-    const float cx = v->x; //+seg->ndir.x*seg->length/2.0f; //tex->GetWidth()/2.0f;
-    const float cy = v->y; //+seg->ndir.y*seg->length/2.0f; //tex->GetHeight()/2.0f;
+    const float cx = v->x; //+seg->ndir.x*seg->length*0.5f; //tex->GetWidth()*0.5f;
+    const float cy = v->y; //+seg->ndir.y*seg->length*0.5f; //tex->GetHeight()*0.5f;
     TVec p(cx, cy);
     texinfo->soffs -= p.dot(texinfo->saxis);
     texinfo->toffs -= p.dot(texinfo->taxis);

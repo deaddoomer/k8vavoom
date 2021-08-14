@@ -2112,8 +2112,8 @@ public:
   // returns `false` when iteration is complete
   inline bool next () noexcept { return hive.next(cx, cy); }
 
-  inline float getScreenX () const noexcept { return scrX0+(float)cx/2.0f*scrW; }
-  inline float getScreenY () const noexcept { return scrY0+(float)cy/2.0f*realScrH; }
+  inline float getScreenX () const noexcept { return scrX0+(float)cx*0.5f*scrW; }
+  inline float getScreenY () const noexcept { return scrY0+(float)cy*0.5f*realScrH; }
 
   inline float getCellScrW () const noexcept { return scrW; }
   inline float getCellScrH () const noexcept { return scrH; }
@@ -2122,8 +2122,8 @@ public:
   inline int getPublicY () const noexcept { return hive.yToPublic(cx, cy); }
 
   // the following operates on "public" coords
-  inline float getScreenXAt (int hpx, int hpy) const noexcept { return scrX0+(float)hive.xToInternal(hpx, hpy)/2.0f*scrW; }
-  inline float getScreenYAt (int hpx, int hpy) const noexcept { return scrY0+(float)hive.yToInternal(hpx, hpy)/2.0f*realScrH; }
+  inline float getScreenXAt (int hpx, int hpy) const noexcept { return scrX0+(float)hive.xToInternal(hpx, hpy)*0.5f*scrW; }
+  inline float getScreenYAt (int hpx, int hpy) const noexcept { return scrY0+(float)hive.yToInternal(hpx, hpy)*0.5f*realScrH; }
 
   inline bool isScreenPointInsideCurrentHex (float px, float py) {
     return VDrawer::IsPointInsideHex(px, py, getScreenX(), getScreenY(), getCellScrW(), getCellScrH());

@@ -1350,7 +1350,7 @@ void VRenderLevelShared::ExecuteSetViewSize () {
     //PSpriteOfsAspect -= 42.2f;
     if (fabsf(r_hack_aspect_scale.asFloat()-1.2f) > 0.001f) {
       GCon->Logf(NAME_Debug, "!!! baseAspect=%f; IsAspectTallerThanWide=%d; PSpriteOfsAspect=%f", baseAspect, IsAspectTallerThanWide(baseAspect), PSpriteOfsAspect);
-      PSpriteOfsAspect -= (r_hack_aspect_scale.asFloat()-1.2f)*(97.5f/2.0f)*baseAspect;
+      PSpriteOfsAspect -= (r_hack_aspect_scale.asFloat()-1.2f)*(97.5f*0.5f)*baseAspect;
       GCon->Logf(NAME_Debug, "!!!   fixed PSpriteOfsAspect=%f", PSpriteOfsAspect);
     }
     if (r_hack_psprite_yofs.asFloat()) {
@@ -1370,7 +1370,7 @@ void VRenderLevelShared::ExecuteSetViewSize () {
   refdef.drawworld = true;
 
   AspectFOVX = refdef.fovx;
-  AspectEffectiveFOVX = tanf(DEG2RADF(currentFOV)/2.0f);
+  AspectEffectiveFOVX = tanf(DEG2RADF(currentFOV)*0.5f);
 
   CachedGlobVis = CalcGlobVis();
 

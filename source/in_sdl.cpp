@@ -668,7 +668,7 @@ void VSdlInputDevice::ReadInput () {
                 if (dexp > 4.0f) dexp = 4.0f;
                 if (dexp > 0.0f) {
                   if (ms_rel_expweird.asBool()) {
-                    const float expaccel = max2(0.0f, (dexp-1.0f)/2.0f);
+                    const float expaccel = max2(0.0f, (dexp-1.0f)*0.5f);
                     effsens = powf(movedist, expaccel)*ms_rel_sensitivity.asFloat();
                   } else {
                     effsens = powf(movedist, dexp)*ms_rel_sensscale.asFloat()+ms_rel_sensitivity.asFloat();

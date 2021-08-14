@@ -1448,12 +1448,12 @@ static void ReadMisc (int) {
     if (VStr::strEquCI(String, "Max Armor")) { ArmorBonusClass->SetFieldInt("MaxSaveAmount", value); continue; }
     if (VStr::strEquCI(String, "Green Armor Class")) {
       GreenArmorClass->SetFieldInt("SaveAmount", 100*value);
-      GreenArmorClass->SetFieldFloat("SavePercent", value == 1 ? 1.0f/3.0f : 1.0f/2.0f);
+      GreenArmorClass->SetFieldFloat("SavePercent", value == 1 ? 1.0f/3.0f : 1.0f*0.5f);
       continue;
     }
     if (VStr::strEquCI(String, "Blue Armor Class")) {
       BlueArmorClass->SetFieldInt("SaveAmount", 100*value);
-      BlueArmorClass->SetFieldFloat("SavePercent", value == 1 ? 1.0f/3.0f : 1.0f/2.0f);
+      BlueArmorClass->SetFieldFloat("SavePercent", value == 1 ? 1.0f/3.0f : 1.0f*0.5f);
       continue;
     }
     if (VStr::strEquCI(String, "Max Soulsphere")) { SoulsphereClass->SetFieldInt("MaxAmount", value); continue; }

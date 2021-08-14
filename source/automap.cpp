@@ -456,8 +456,8 @@ static VName lastmakrsmap;
 #define R  (8.0f*PLAYERRADIUS/7.0f)
 static const mline_t player_arrow1[] = {
   { { -R+R/8.0f, 0.0f }, { R, 0.0f } }, // -----
-  { { R, 0.0f }, { R-R/2.0f, R/4.0f } },  // ----->
-  { { R, 0.0f }, { R-R/2.0f, -R/4.0f } },
+  { { R, 0.0f }, { R-R*0.5f, R/4.0f } },  // ----->
+  { { R, 0.0f }, { R-R*0.5f, -R/4.0f } },
   { { -R+R/8.0f, 0.0f }, { -R-R/8.0f, R/4.0f } }, // >---->
   { { -R+R/8.0f, 0.0f }, { -R-R/8.0f, -R/4.0f } },
   { { -R+3.0f*R/8.0f, 0.0f }, { -R+R/8.0f, R/4.0f } }, // >>--->
@@ -556,8 +556,8 @@ static int AM_addMark () {
   // if the player just deleted a mark, reuse its slot
   if (markActive >= 0 && markActive < AM_NUMMARKPOINTS && !markpoints[markActive].isActive()) {
     MarkPoint &mp = markpoints[markActive];
-    mp.x = m_x+m_w/2.0f;
-    mp.y = m_y+m_h/2.0f;
+    mp.x = m_x+m_w*0.5f;
+    mp.y = m_y+m_h*0.5f;
     mp.activate();
     return markActive;
   }
@@ -566,8 +566,8 @@ static int AM_addMark () {
     MarkPoint &mp = markpoints[mn];
     if (!mp.isActive()) {
       if (markActive == mn) markActive = -1;
-      mp.x = m_x+m_w/2.0f;
-      mp.y = m_y+m_h/2.0f;
+      mp.x = m_x+m_w*0.5f;
+      mp.y = m_y+m_h*0.5f;
       mp.activate();
       return mn;
     }
@@ -699,12 +699,12 @@ void AM_ClearAutomap () {
 //
 //==========================================================================
 static void AM_activateNewScale () {
-  m_x += m_w/2.0f;
-  m_y += m_h/2.0f;
+  m_x += m_w*0.5f;
+  m_y += m_h*0.5f;
   m_w = FTOM(f_w);
   m_h = FTOM(f_h);
-  m_x -= m_w/2.0f;
-  m_y -= m_h/2.0f;
+  m_x -= m_w*0.5f;
+  m_y -= m_h*0.5f;
   m_x2 = m_x+m_w;
   m_y2 = m_y+m_h;
 }
@@ -735,8 +735,8 @@ static void AM_restoreScaleAndLoc () {
     m_x = old_m_x;
     m_y = old_m_y;
   } else {
-    m_x = cl->ViewOrg.x-m_w/2.0f;
-    m_y = cl->ViewOrg.y-m_h/2.0f;
+    m_x = cl->ViewOrg.x-m_w*0.5f;
+    m_y = cl->ViewOrg.y-m_h*0.5f;
   }
   m_x2 = m_x+m_w;
   m_y2 = m_y+m_h;
@@ -848,11 +848,11 @@ static void AM_changeWindowLoc () {
   m_x += m_paninc.x;
   m_y += m_paninc.y;
 
-       if (m_x+m_w/2.0f > max_x) m_x = max_x-m_w/2.0f;
-  else if (m_x+m_w/2.0f < min_x) m_x = min_x-m_w/2.0f;
+       if (m_x+m_w*0.5f > max_x) m_x = max_x-m_w*0.5f;
+  else if (m_x+m_w*0.5f < min_x) m_x = min_x-m_w*0.5f;
   // fuck you, gshitcc
-       if (m_y+m_h/2.0f > max_y) m_y = max_y-m_h/2.0f;
-  else if (m_y+m_h/2.0f < min_y) m_y = min_y-m_h/2.0f;
+       if (m_y+m_h*0.5f > max_y) m_y = max_y-m_h*0.5f;
+  else if (m_y+m_h*0.5f < min_y) m_y = min_y-m_h*0.5f;
 
   m_x2 = m_x+m_w;
   m_y2 = m_y+m_h;
@@ -880,8 +880,8 @@ static void AM_initVariables () {
 
   oldplr.x = cl->ViewOrg.x;
   oldplr.y = cl->ViewOrg.y;
-  m_x = cl->ViewOrg.x-m_w/2.0f;
-  m_y = cl->ViewOrg.y-m_h/2.0f;
+  m_x = cl->ViewOrg.x-m_w*0.5f;
+  m_y = cl->ViewOrg.y-m_h*0.5f;
   AM_changeWindowLoc();
 
   // for saving & restoring
@@ -1066,8 +1066,8 @@ void AM_rotatePoint (float *x, float *y) {
 //==========================================================================
 static void AM_doFollowPlayer () {
   if (f_oldloc.x != cl->ViewOrg.x || f_oldloc.y != cl->ViewOrg.y) {
-    m_x = FTOM(MTOF(cl->ViewOrg.x))-m_w/2.0f;
-    m_y = FTOM(MTOF(cl->ViewOrg.y))-m_h/2.0f;
+    m_x = FTOM(MTOF(cl->ViewOrg.x))-m_w*0.5f;
+    m_y = FTOM(MTOF(cl->ViewOrg.y))-m_h*0.5f;
     m_x2 = m_x+m_w;
     m_y2 = m_y+m_h;
     // do the parallax parchment scrolling
@@ -2814,28 +2814,28 @@ bool AM_Responder (event_t *ev) {
     switch (cmdtype) {
       case AM_BIND_PANRIGHT:
         if (!am_follow_player) {
-          m_paninc.x = (kp == AM_PTYPE_RELEASE ? 0.0f : FTOM(F_PANINC/2.0f));
+          m_paninc.x = (kp == AM_PTYPE_RELEASE ? 0.0f : FTOM(F_PANINC*0.5f));
         } else {
           rc = false;
         }
         break;
       case AM_BIND_PANLEFT:
         if (!am_follow_player) {
-          m_paninc.x = (kp == AM_PTYPE_RELEASE ? 0.0f : -FTOM(F_PANINC/2.0f));
+          m_paninc.x = (kp == AM_PTYPE_RELEASE ? 0.0f : -FTOM(F_PANINC*0.5f));
         } else {
           rc = false;
         }
         break;
       case AM_BIND_PANUP:
         if (!am_follow_player) {
-          m_paninc.y = (kp == AM_PTYPE_RELEASE ? 0.0f : FTOM(F_PANINC/2.0f));
+          m_paninc.y = (kp == AM_PTYPE_RELEASE ? 0.0f : FTOM(F_PANINC*0.5f));
         } else {
           rc = false;
         }
         break;
       case AM_BIND_PANDOWN:
         if (!am_follow_player) {
-          m_paninc.y = (kp == AM_PTYPE_RELEASE ? 0.0f : -FTOM(F_PANINC/2.0f));
+          m_paninc.y = (kp == AM_PTYPE_RELEASE ? 0.0f : -FTOM(F_PANINC*0.5f));
         } else {
           rc = false;
         }
