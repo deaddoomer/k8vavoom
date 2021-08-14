@@ -1,0 +1,10 @@
+class Main : Object;
+
+
+void main () {
+  TVec planes[4];
+  TVec mvl;
+
+  float cdot = 1.0;
+  mvl = planes[0]*cdot;
+}
