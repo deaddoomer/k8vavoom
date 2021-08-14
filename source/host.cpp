@@ -739,28 +739,26 @@ static bool FilterTime () {
   //GCon->Logf(NAME_Debug, "timeDelta=%g", timeDelta);
   host_frametime = timeDelta;
 
-  int ticlimit = host_max_skip_frames;
-  if (ticlimit < 3) ticlimit = 3; else if (ticlimit > 256) ticlimit = 256;
+  const int ticlimit = clampval(host_max_skip_frames.asInt(), 3, 256);
 
   if (dbg_frametime > 0.0f) {
     host_frametime = dbg_frametime;
   } else {
     // don't allow really long or short frames
-    float tld = (ticlimit+1)/(float)TICRATE;
+    const float tld = SV_GetFrameTimeConstant()*(float)(ticlimit);
     if (host_frametime > tld) {
       if (developer) GCon->Logf(NAME_Dev, "*** FRAME TOO LONG: %f (capped to %f)", host_frametime, tld);
       host_frametime = tld;
     }
-    if (host_frametime < max_fps_cap_float) host_frametime = max_fps_cap_float; // just in case
   }
+  if (host_frametime < max_fps_cap_float) host_frametime = max_fps_cap_float; // just in case
 
   if (host_show_skip_limit || host_show_skip_frames) {
     // freestep mode, check if we want to skip too many frames, and show a warning
-    int ftics = (int)(timeDelta*TICRATE); // use it as a temporary variable
+    const int ftics = (int)(timeDelta*TICRATE);
     if (ftics > ticlimit) {
            if (host_show_skip_limit) GCon->Logf(NAME_Warning, "want to skip %d tics, but only %d allowed", ftics, ticlimit);
       else if (developer) GCon->Logf(NAME_Dev, "want to skip %d tics, but only %d allowed", ftics, ticlimit);
-      ftics = ticlimit; // don't run too slow
     }
     if (ftics > 1 && host_show_skip_frames) GCon->Logf(NAME_Warning, "processing %d ticframes", ftics);
   }
