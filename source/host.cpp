@@ -120,7 +120,9 @@ VCvarB k8vavoom_developer_version("k8vavoom_developer_version", CVAR_K8_DEV_VALU
 
 static double hostLastGCTime = 0.0;
 
-int host_frametics = 0; // used only in non-realtime mode
+#ifdef VV_ALLOW_LOCKSTEP
+static int host_frametics = 0; // used only in non-realtime mode
+#endif
 double host_frametime = 0.0;
 double host_framefrac = 0.0; // unused frame time left from previous `SV_Ticker()` in realtime mode
 double host_time = 0.0; // used in UI and network heartbits; accumulates frame times
@@ -131,7 +133,9 @@ bool host_initialised = false;
 bool host_request_exit = false;
 bool host_gdb_mode = false;
 
-extern VCvarB real_time;
+#ifdef VV_ALLOW_LOCKSTEP
+extern VCvarB sv_tick_freestep;
+#endif
 
 
 #if defined(_WIN32) || defined(__SWITCH__)
@@ -572,7 +576,9 @@ static void Host_GetConsoleCommands () {
 //==========================================================================
 void Host_ResetSkipFrames () {
   last_time = systime = Sys_Time();
+  #ifdef VV_ALLOW_LOCKSTEP
   host_frametics = 0;
+  #endif
   host_frametime = 0;
   host_framefrac = 0;
   //GCon->Logf("*** Host_ResetSkipFrames; ctime=%f", last_time);
@@ -618,7 +624,11 @@ static bool FilterTime () {
   systime = curr_time;
 
   if (dbg_frametime < max_fps_cap_float) {
-    if (real_time) {
+    #ifdef VV_ALLOW_LOCKSTEP
+    if (sv_tick_freestep)
+    #endif
+    {
+      // freestep mode
       #ifdef CLIENT
       // check for dangerous network timeout
       if (Host_IsDangerousTimeout()) {
@@ -652,9 +662,13 @@ static bool FilterTime () {
       if (timeDelta < 1.0/(double)sfr) return false; // framerate is too high
       //GCon->Logf(NAME_Debug, "headless tick! %g", timeDelta*1000);
       #endif
-    } else {
+    }
+    #ifdef VV_ALLOW_LOCKSTEP
+    else {
+      // lockstep mode
       if (timeDelta < 1.0/35.0) return false; // framerate is too high
     }
+    #endif
     //timeDelta += host_framefrac;
   } else {
     // force ticker time per Doom tick
@@ -685,8 +699,9 @@ static bool FilterTime () {
     if (host_frametime < max_fps_cap_double) host_frametime = max_fps_cap_double; // just in case
   }
 
-  if (!real_time) {
-    // try to use original Doom framerate
+  #ifdef VV_ALLOW_LOCKSTEP
+  if (!sv_tick_freestep) {
+    // try to use original Doom framerate (lockstep mode)
     //k8: this logic seems totally wrong
     static int last_tics = 0;
     int this_tic = (int)(systime*TICRATE);
@@ -699,15 +714,17 @@ static bool FilterTime () {
     }
     if (host_frametics > 1 && host_show_skip_frames) GCon->Logf(NAME_Warning, "processing %d ticframes", host_frametics);
     last_tics = this_tic;
-  } else {
-    // "free" framerate; `host_frametics` doesn't matter here
-    host_frametics = (int)(timeDelta*TICRATE); // use it as a temporary variable
-    if (host_frametics > ticlimit) {
-           if (host_show_skip_limit) GCon->Logf(NAME_Warning, "want to skip %d tics, but only %d allowed", host_frametics, ticlimit);
-      else if (developer) GCon->Logf(NAME_Dev, "want to skip %d tics, but only %d allowed", host_frametics, ticlimit);
-      host_frametics = ticlimit; // don't run too slow
+  } else
+  #endif
+  {
+    // "free" framerate (freestep mode); `host_frametics` doesn't matter here
+    int ftics = (int)(timeDelta*TICRATE); // use it as a temporary variable
+    if (ftics > ticlimit) {
+           if (host_show_skip_limit) GCon->Logf(NAME_Warning, "want to skip %d tics, but only %d allowed", ftics, ticlimit);
+      else if (developer) GCon->Logf(NAME_Dev, "want to skip %d tics, but only %d allowed", ftics, ticlimit);
+      ftics = ticlimit; // don't run too slow
     }
-    if (host_frametics > 1 && host_show_skip_frames) GCon->Logf(NAME_Warning, "processing %d ticframes", host_frametics);
+    if (ftics > 1 && host_show_skip_frames) GCon->Logf(NAME_Warning, "processing %d ticframes", ftics);
   }
 
   return true;
@@ -812,7 +829,11 @@ void Host_Frame () {
       #ifdef SERVER
       if (GGameInfo->NetMode != NM_None && GGameInfo->NetMode != NM_Client) {
         // server operations
+        #ifdef VV_ALLOW_LOCKSTEP
         ServerFrame(host_frametics);
+        #else
+        ServerFrame(0);
+        #endif
       }
       # ifndef CLIENT
       else {

@@ -57,7 +57,6 @@ extern bool host_gdb_mode;
 #define max_fps_cap_double  (1.0/250.0)
 #define max_fps_cap_float   ((float)(1.0f/250.0f))
 
-extern int host_frametics;
 extern double host_frametime;
 extern double host_framefrac;
 extern double host_time; // used in UI and network heartbits; accumulates frame times

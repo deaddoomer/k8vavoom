@@ -124,7 +124,9 @@ static VCvarB dbg_skipframe_player_tick("dbg_skipframe_player_tick", true, "Run 
 static VCvarB dbg_skipframe_player_block_move("dbg_skipframe_player_block_move", false, "Keep moving on skipped player frames (this is wrong)?", CVAR_PreInit);
 static VCvarB dbg_report_orphan_weapons("dbg_report_orphan_weapons", false, "Report orphan weapon assign?", CVAR_Archive|CVAR_PreInit);
 
-VCvarB real_time("real_time", true, "Run server in real time?");
+#ifdef VV_ALLOW_LOCKSTEP
+VCvarB sv_tick_freestep("sv_tick_freestep", true, "Run server in freestep mode?");
+#endif
 
 VCvarB sv_ignore_nojump("sv_ignore_nojump", false, "Ignore \"nojump\" flag in MAPINFO?", CVAR_Archive);
 VCvarB sv_ignore_nocrouch("sv_ignore_nocrouch", false, "Ignore \"nocrouch\" flag in MAPINFO?", CVAR_Archive);
@@ -188,7 +190,9 @@ VCvarB sv_disable_mlook("sv_disable_mlook", false, "Disable mouselook?", CVAR_Se
 static VCvarB sv_barrel_respawn("sv_barrel_respawn", false, "Respawn barrels in network game?", CVAR_Archive|/*CVAR_ServerInfo|CVAR_Latch|*/CVAR_PreInit);
 static VCvarB sv_pushable_barrels("sv_pushable_barrels", true, "Pushable barrels?", CVAR_Archive|/*CVAR_ServerInfo|CVAR_Latch|*/CVAR_PreInit);
 VCvarB sv_decoration_block_projectiles("sv_decoration_block_projectiles", false, "Should decoration things block projectiles?", CVAR_Archive|/*CVAR_ServerInfo|CVAR_Latch|*/CVAR_PreInit);
-static VCvarB split_frame("split_frame", true, "Splitframe mode?", CVAR_Archive|CVAR_PreInit);
+
+static VCvarB sv_split_frame("sv_split_frame", true, "Splitframe mode?", CVAR_Archive|CVAR_PreInit);
+
 static VCvarI master_heartbeat_time("master_heartbeat_time", "3", "Master server heartbeat interval, minutes.", CVAR_Archive|CVAR_PreInit);
 
 VCvarI sv_maxmove("sv_maxmove", "400", "Maximum allowed network movement.", CVAR_Archive);
@@ -852,7 +856,7 @@ static void SV_UpdateMaster () {
 
 //==========================================================================
 //
-//  SV_Ticker
+//  svIsInWipe
 //
 //==========================================================================
 static inline bool svIsInWipe () noexcept {
@@ -892,10 +896,15 @@ static void SV_Ticker () {
   if (scap < 3) scap = 3;
 
   //exec_times = 1;
-  if (!real_time) {
+  #ifdef VV_ALLOW_LOCKSTEP
+  if (!sv_tick_freestep) {
+    // lockstep mode
     // rounded a little bit up to prevent "slow motion"
     host_frametime = FrameTime; //0.02857142857142857142857142857143; //1.0 / 35.0;
-  } else if (split_frame && host_frametime > FrameTime) {
+  } else
+  #endif
+  // freestep mode
+  if (sv_split_frame && host_frametime > FrameTime) {
     double i;
     /*double frc =*/ (void)modf(host_frametime/FrameTime, &i);
     //GCon->Logf("*** ft=%f; frt=%f; int=%f; frc=%f", host_frametime, FrameTime, i, frc);
@@ -939,7 +948,7 @@ static void SV_Ticker () {
       }
       // calculate frame time
       // do small steps, it seems to work better this way
-      double currframetime = (split_frame && frametimeleft >= FrameTime*0.4 ? 1.0/35.0*0.4 : frametimeleft);
+      double currframetime = (sv_split_frame && frametimeleft >= FrameTime*0.4 ? 1.0/35.0*0.4 : frametimeleft);
       if (currframetime > frametimeleft) currframetime = frametimeleft;
       // do it this way, because of rounding
       GGameInfo->frametime = currframetime;
@@ -2331,17 +2340,28 @@ void NET_SendNetworkHeartbeat (bool forced) {
 //
 //==========================================================================
 void ServerFrame (int realtics) {
+  #ifndef VV_ALLOW_LOCKSTEP
+  (void)realtics; // doesn't matter
+  #endif
   const bool haveClients = SV_CheckForNewClients();
 
   // there is no need to tick if we have no active clients
   // no, really
   if (haveClients || sv_loading || sv.intermission) {
-    if (real_time) {
+    #ifdef VV_ALLOW_LOCKSTEP
+    if (sv_tick_freestep)
+    #endif
+    {
+      // freestep mode
       SV_Ticker();
-    } else {
+    }
+    #ifdef VV_ALLOW_LOCKSTEP
+    else {
+      // lockstep mode
       // run the count tics
       while (realtics--) SV_Ticker();
     }
+    #endif
   }
 
   if (mapteleport_issued) {
