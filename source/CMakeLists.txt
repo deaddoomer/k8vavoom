@@ -556,6 +556,7 @@ set(MAIN_OPENGL_SOURCES
   render/hwgl/gl_draw.cpp
   render/hwgl/gl_main.cpp
   render/hwgl/gl_main_ctl.cpp
+  render/hwgl/gl_main_cubemap.cpp
   render/hwgl/gl_main_fbo.cpp
   render/hwgl/gl_main_postprocess.cpp
   render/hwgl/gl_main_scissor.cpp

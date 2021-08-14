@@ -448,7 +448,8 @@ public:
 
 protected:
   // we have two shadowmaps: one for lights with radius less than 1020 (16-bit floats), and one for 1020+ (32-bit floats)
-  struct ShadowCubeMap {
+  struct ShadowCubeMapData {
+    class VOpenGLDrawer *mOwner;
     GLuint cubeTexId;
     //GLuint cubeDepthTexId[6];
     #ifdef VV_SHADOWCUBE_DEPTH_TEXTURE
@@ -456,6 +457,28 @@ protected:
     #else
     GLuint cubeDepthRBId[6]; // render buffers for depth (we're not doing depth sampling for shadowmaps)
     #endif
+    unsigned shift; // 64<<shift is size
+    bool float32;
+
+    #ifdef VV_SHADOWCUBE_DEPTH_TEXTURE
+    static bool useDefaultDepth;
+    #endif
+
+    VVA_ALWAYS_INLINE ShadowCubeMapData () noexcept : mOwner(nullptr), cubeTexId(0), shift(0u), float32(false) {
+      #ifdef VV_SHADOWCUBE_DEPTH_TEXTURE
+      memset((void *)&cubeDepthTexId[0], 0, sizeof(cubeDepthTexId));
+      #else
+      memset((void *)&cubeDepthRBId[0], 0, sizeof(cubeDepthRBId));
+      #endif
+    }
+
+    VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isValid () const noexcept { return (mOwner && cubeTexId != 0); }
+
+    void createTextures (VOpenGLDrawer *aowner, const unsigned ashift, const bool afloat32) noexcept;
+    void destroyTextures () noexcept;
+  };
+
+  struct ShadowCubeMap : public ShadowCubeMapData {
     GLuint cubeFBO;
     unsigned int smapDirty; // bits 0..5
     unsigned int smapCurrentFace;
@@ -463,11 +486,12 @@ protected:
     VMatrix4 proj; // light projection matrix
     VMatrix4 lmpv[6]; // light view+projection matrices
 
-    #ifdef VV_SHADOWCUBE_DEPTH_TEXTURE
-    static bool useDefaultDepth;
-    #endif
+    VVA_ALWAYS_INLINE ShadowCubeMap () noexcept : ShadowCubeMapData(), cubeFBO(0), smapDirty(0x3f), smapCurrentFace(0) {}
 
-    inline void setAllDirty () noexcept { smapDirty = 0x3f; }
+    VVA_ALWAYS_INLINE void setAllDirty () noexcept { smapDirty = 0x3f; }
+
+    void createCube (VOpenGLDrawer *aowner, const unsigned ashift, const bool afloat32) noexcept;
+    void destroyCube () noexcept;
   };
 
   enum {
