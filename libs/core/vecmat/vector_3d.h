@@ -298,7 +298,7 @@ public:
     if (surfaceToLight.lengthSquared() <= 8.0f) { return 1.0f; }
     surfaceToLight.normaliseInPlace();
     const float ltangle = macos(surfaceToLight.dot(dir));
-    return (ltangle < angle ? sinf(midval(0.0f, (angle-ltangle)/angle, 1.0f)*((float)M_PI/2.0f)) : 0.0f);
+    return (ltangle < angle ? sinf(midval(0.0f, (angle-ltangle)/angle, 1.0f)*((float)M_PI*0.5f)) : 0.0f);
   }
 
   // range must be valid

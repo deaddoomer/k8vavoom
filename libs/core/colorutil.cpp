@@ -227,7 +227,7 @@ void M_HslToRgb (float h, float s, float l, float &r, float &g, float &b) {
     b = X;
   }
 
-  float m = l-C/2.0f;
+  float m = l-C*0.5f;
 
   r += m;
   g += m;
@@ -240,7 +240,7 @@ void M_RgbToHsl (float r, float g, float b, float &h, float &s, float &l/*, bool
   float maxColor = max2(max2(r, g), b);
   float minColor = min2(min2(r, g), b);
 
-  float L = (maxColor+minColor)/2.0f;
+  float L = (maxColor+minColor)*0.5f;
 
   /*
   if (useWeightedLightness) {

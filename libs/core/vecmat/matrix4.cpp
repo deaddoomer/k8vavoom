@@ -530,7 +530,7 @@ VMatrix4 VMatrix4::Perspective (float fovY, float aspect, float zNear, float zFa
 //
 //==========================================================================
 VVA_CHECKRESULT VMatrix4 VMatrix4::ProjectionNegOne (float fovY, float aspect, float zNear, float zFar) noexcept {
-  const float thfovy = tanf(RAD2DEGF(fovY)/2.0f);
+  const float thfovy = tanf(RAD2DEGF(fovY)*0.5f);
   VMatrix4 res;
   res.SetZero();
   res[0][0] = 1.0f/(aspect*thfovy);
@@ -554,7 +554,7 @@ VVA_CHECKRESULT VMatrix4 VMatrix4::ProjectionNegOne (float fovY, float aspect, f
 //
 //==========================================================================
 VVA_CHECKRESULT VMatrix4 VMatrix4::ProjectionZeroOne (float fovY, float aspect, float zNear, float zFar) noexcept {
-  const float thfovy = tanf(RAD2DEGF(fovY)/2.0f);
+  const float thfovy = tanf(RAD2DEGF(fovY)*0.5f);
   VMatrix4 res;
   res.SetZero();
   res[0][0] = 1.0f/(aspect*thfovy);
@@ -1428,7 +1428,7 @@ void VMatrix4::toQuaternion (float quat[4]) const noexcept {
   // check the diagonal
   if (tr > 0.0f) {
     float s = sqrtf(tr+1.0f);
-    quat[3] = s/2.0f;
+    quat[3] = s*0.5f;
     s = 0.5f/s;
     quat[0] = VSUM2(m[2][1], -m[1][2])*s;
     quat[1] = VSUM2(m[0][2], -m[2][0])*s;

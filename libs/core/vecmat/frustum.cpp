@@ -44,7 +44,7 @@
 //
 //==========================================================================
 void TClipBase::CalcFovXY (float *outfovx, float *outfovy, const int width, const int height, const float fov, const float pixelAspect) noexcept {
-  const float fovx = tanf(DEG2RADF(fov)/2.0f);
+  const float fovx = tanf(DEG2RADF(fov)*0.5f);
   if (outfovx) *outfovx = fovx;
   if (outfovy) *outfovy = fovx*height/width/pixelAspect;
 }
@@ -58,7 +58,7 @@ void TClipBase::CalcFovXY (float *outfovx, float *outfovy, const int width, cons
 //
 //==========================================================================
 void TClipBase::CalcFovXY (float *outfovx, float *outfovy, const TClipParam &cp) noexcept {
-  const float fovx = tanf(DEG2RADF(cp.fov)/2.0f);
+  const float fovx = tanf(DEG2RADF(cp.fov)*0.5f);
   if (outfovx) *outfovx = fovx;
   if (outfovy) *outfovy = fovx*cp.height/cp.width/cp.pixelAspect;
 }
@@ -95,7 +95,7 @@ void TClipBase::setupFromCookedFOVs (const float afovx, const float afovy) noexc
 void TClipBase::setupFromFOV (float fov) noexcept {
   if (!isFiniteF(fov)) fov = 90.0f;
   fov = clampval(fov, 0.0001f, 179.90f);
-  const float afov = tanf(DEG2RADF(fov)/2.0f);
+  const float afov = tanf(DEG2RADF(fov)*0.5f);
   const float invafov = 1.0f/afov;
   fovx = fovy = afov;
   clipbase[0] = TVec(invafov, 0.0f, 1.0f); // left side clip
