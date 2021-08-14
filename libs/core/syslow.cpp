@@ -55,9 +55,8 @@
 #include <new>
 
 // this will give us a constant time precision
-#define timeOffset  (4294967296.0)
-//double Sys_Time_Offset () { return timeOffset/1000000.0; }
-double Sys_Time_Offset () { return timeOffset; }
+#define timeOffset  (4294967296000.0)
+double Sys_Time_Offset () { return timeOffset/1000.0; }
 
 #if 0
 moved to zone
@@ -778,21 +777,17 @@ double Sys_Time_Ex (vuint64 *msecs) {
     if (clock_gettime(/*CLOCK_MONOTONIC*/CLOCK_MONOTONIC_RAW, &ts) != 0) Sys_Error("clock_gettime failed");
   #endif
   SYSTIME_CHECK_INIT();
-  //return (ts.tv_sec-systimeSecBase)+(timeOffset+ts.tv_nsec)/1000000000.0;
   // we don't actually need nanosecond precision here
   // one second is 1,000,000,000 nanoseconds
   // therefore, one millisecond is 1,000,000 nanoseconds
   const vuint64 msc =
     ((vuint64)(ts.tv_sec-systimeSecBase+1)*(vuint64)1000)+ // seconds->milliseconds
     ((vuint64)ts.tv_nsec/(vuint64)1000000); // nanoseconds->milliseconds
-  //return (ts.tv_sec-systimeSecBase)+(timeOffset+(ts.tv_nsec/1000))/1000000.0; // milliseconds
-  //return (ts.tv_sec-systimeSecBase)+(timeOffset+(ts.tv_nsec/1000000))/1000.0; // nanosecons
 #else
   struct timeval tp;
   struct timezone tzp;
   gettimeofday(&tp, &tzp);
   SYSTIME_CHECK_INIT();
-  //return (tp.tv_sec-systimeSecBase)+(timeOffset+tp.tv_usec)/1000000.0; // milliseconds
   // one second is 1,000,000 microseconds
   // therefore, one millisecond is 1,000 microseconds
   const vuint64 msc =
