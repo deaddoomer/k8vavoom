@@ -469,7 +469,6 @@ public:
   }
 
   // it does the same accept/reject check, but returns this:
-  //   0: Quake source says that this can't happen
   //   1: in front
   //   2: in back
   //   3: in both
@@ -481,6 +480,10 @@ public:
   // box point that is furthest *into* the plane (or closest to it)
   VVA_CHECKRESULT TVec get3DBBoxSupportPoint (const float bbox[6], float *pdist=nullptr) const noexcept;
   VVA_CHECKRESULT TVec get2DBBoxSupportPoint (const float bbox2d[4], float *pdist=nullptr, const float z=0.0f) const noexcept;
+
+  // box point that is furthest *out* *of* the plane (or closest to it)
+  VVA_CHECKRESULT TVec get3DBBoxAntiSupportPoint (const float bbox[6], float *pdist=nullptr) const noexcept;
+  VVA_CHECKRESULT TVec get2DBBoxAntiSupportPoint (const float bbox2d[4], float *pdist=nullptr, const float z=0.0f) const noexcept;
 
   // this is used in `ClipPoly`
   // all data is malloced, so you'd better keep this between calls to avoid excessive allocations

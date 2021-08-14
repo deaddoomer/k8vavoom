@@ -171,82 +171,10 @@ bool TPlane::SweepBox3D (const float bbox[6], const TVec &vdelta, float *time, T
 
 //==========================================================================
 //
-//  TPlane::checkBox3D
-//
-//  returns `false` is box is on the back of the plane
-//  bbox:
-//    [0] is minx
-//    [1] is miny
-//    [2] is minz
-//    [3] is maxx
-//    [4] is maxy
-//    [5] is maxz
-//
-//==========================================================================
-/*
-bool TPlane::checkBox3D (const float bbox[6]) const noexcept {
-#ifdef FRUSTUM_BBOX_CHECKS
-  vassert(bbox[0] <= bbox[3+0]);
-  vassert(bbox[1] <= bbox[3+1]);
-  vassert(bbox[2] <= bbox[3+2]);
-#endif
-#ifdef PLANE_BOX_USE_REJECT_ACCEPT
-  // check reject point
-  return (DotProduct(normal, get3DBBoxRejectPoint(bbox))-dist > 0.0f); // entire box on a back side?
-#else
-  CONST_BBoxVertexIndex;
-  for (unsigned j = 0; j < 8; ++j) {
-    if (!PointOnSide(TVec(bbox[BBoxVertexIndex[j][0]], bbox[BBoxVertexIndex[j][1]], bbox[BBoxVertexIndex[j][2]]))) {
-      return true;
-    }
-  }
-  return false;
-#endif
-}
-*/
-
-
-//==========================================================================
-//
-//  TPlane::checkBox3DEx
-//
-//==========================================================================
-/*
-int TPlane::checkBox3DEx (const float bbox[6]) const noexcept {
-#ifdef FRUSTUM_BBOX_CHECKS
-  vassert(bbox[0] <= bbox[3+0]);
-  vassert(bbox[1] <= bbox[3+1]);
-  vassert(bbox[2] <= bbox[3+2]);
-#endif
-#ifdef PLANE_BOX_USE_REJECT_ACCEPT
-  // check reject point
-  float d = DotProduct(normal, get3DBBoxRejectPoint(bbox))-dist;
-  if (d <= 0.0f) return TFrustum::OUTSIDE; // entire box on a back side
-  // check accept point
-  d = DotProduct(normal, get3DBBoxAcceptPoint(bbox))-dist;
-  return (d < 0.0f ? TFrustum::PARTIALLY : TFrustum::INSIDE); // if accept point on another side (or on plane), assume intersection
-#else
-  CONST_BBoxVertexIndex;
-  unsigned passed = 0;
-  for (unsigned j = 0; j < 8; ++j) {
-    if (!PointOnSide(TVec(bbox[BBoxVertexIndex[j][0]], bbox[BBoxVertexIndex[j][1]], bbox[BBoxVertexIndex[j][2]]))) {
-      ++passed;
-      break;
-    }
-  }
-  return (passed ? (passed == 8 ? TFrustum::INSIDE : TFrustum::PARTIALLY) : TFrustum::OUTSIDE);
-#endif
-}
-*/
-
-
-//==========================================================================
-//
 //  TPlane::BoxOnPlaneSide
 //
 //  this is the slow, general version
 //
-//  0: Quake source says that this can't happen
 //  1: in front
 //  2: in back
 //  3: in both
@@ -257,7 +185,7 @@ unsigned TPlane::BoxOnPlaneSide (const TVec &emins, const TVec &emaxs) const noe
 
   // create the proper leading and trailing verts for the box
   for (int i = 0; i < 3; ++i) {
-    if (normal[i] < 0) {
+    if (normal[i] < 0.0f) {
       corners[0][i] = emins[i];
       corners[1][i] = emaxs[i];
     } else {
@@ -266,10 +194,10 @@ unsigned TPlane::BoxOnPlaneSide (const TVec &emins, const TVec &emaxs) const noe
     }
   }
 
-  const float dist1 = normal.dot(corners[0])-dist;
-  const float dist2 = normal.dot(corners[1])-dist;
+  const float dist1 = PointDistance(corners[0]);
+  const float dist2 = PointDistance(corners[1]);
+
   unsigned sides = (unsigned)(dist1 >= 0.0f);
-  //if (dist1 >= 0.0f) sides = 1;
   if (dist2 < 0.0f) sides |= 2u;
 
   return sides;
@@ -286,10 +214,7 @@ unsigned TPlane::BoxOnPlaneSide (const TVec &emins, const TVec &emaxs) const noe
 VVA_CHECKRESULT TVec TPlane::get3DBBoxSupportPoint (const float bbox[6], float *pdist) const noexcept {
   float bestDist = +INFINITY;
   TVec bestVec(0.0f, 0.0f, 0.0f);
-  //CONST_BBoxVertexIndexFlat;
-  //const unsigned *bbp = BBoxVertexIndexFlat;
-  for (unsigned bidx = 0; bidx < 8; ++bidx/*, bbp += 3*/) {
-    //const TVec bv = TVec(bbox[bbp[0]], bbox[bbp[1]], bbox[bbp[2]]);
+  for (unsigned bidx = 0; bidx < MAX_BBOX3D_CORNERS; ++bidx) {
     const TVec bv(GetBBox3DCorner(bidx, bbox));
     const float dist = PointDistance(bv);
     if (dist < bestDist) {
@@ -312,13 +237,56 @@ VVA_CHECKRESULT TVec TPlane::get3DBBoxSupportPoint (const float bbox[6], float *
 VVA_CHECKRESULT TVec TPlane::get2DBBoxSupportPoint (const float bbox2d[4], float *pdist, const float z) const noexcept {
   float bestDist = +INFINITY;
   TVec bestVec(0.0f, 0.0f, 0.0f);
-  //CONST_BBox2DVertexIndexFlat;
-  //const unsigned *bbp = BBox2DVertexIndexFlat;
-  for (unsigned bidx = 0; bidx < 4; ++bidx/*, bbp += 2*/) {
-    //const TVec bv = TVec(bbox2d[bbp[0]], bbox2d[bbp[1]], z);
+  for (unsigned bidx = 0; bidx < MAX_BBOX2D_CORNERS; ++bidx) {
     const TVec bv(GetBBox2DCornerEx(bidx, bbox2d, z));
     const float dist = PointDistance(bv);
     if (dist < bestDist) {
+      bestDist = dist;
+      bestVec = bv;
+    }
+  }
+  if (pdist) *pdist = bestDist;
+  return bestVec;
+}
+
+
+//==========================================================================
+//
+//  TPlane::get3DBBoxAntiSupportPoint
+//
+//  box point that is furthest *out* *of* the plane (or closest to it)
+//
+//==========================================================================
+VVA_CHECKRESULT TVec TPlane::get3DBBoxAntiSupportPoint (const float bbox[6], float *pdist) const noexcept {
+  float bestDist = -INFINITY;
+  TVec bestVec(0.0f, 0.0f, 0.0f);
+  for (unsigned bidx = 0; bidx < MAX_BBOX3D_CORNERS; ++bidx) {
+    const TVec bv(GetBBox3DCorner(bidx, bbox));
+    const float dist = PointDistance(bv);
+    if (dist > bestDist) {
+      bestDist = dist;
+      bestVec = bv;
+    }
+  }
+  if (pdist) *pdist = bestDist;
+  return bestVec;
+}
+
+
+//==========================================================================
+//
+//  TPlane::get2DBBoxAntiSupportPoint
+//
+//  box point that is furthest *out* *of* the plane (or closest to it)
+//
+//==========================================================================
+VVA_CHECKRESULT TVec TPlane::get2DBBoxAntiSupportPoint (const float bbox2d[4], float *pdist, const float z) const noexcept {
+  float bestDist = -INFINITY;
+  TVec bestVec(0.0f, 0.0f, 0.0f);
+  for (unsigned bidx = 0; bidx < MAX_BBOX2D_CORNERS; ++bidx) {
+    const TVec bv(GetBBox2DCornerEx(bidx, bbox2d, z));
+    const float dist = PointDistance(bv);
+    if (dist > bestDist) {
       bestDist = dist;
       bestVec = bv;
     }

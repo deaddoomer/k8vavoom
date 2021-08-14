@@ -476,6 +476,9 @@ static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float length2DSquared (con
 static VVA_OKUNUSED VVA_ALWAYS_INLINE VStream &operator << (VStream &Strm, TVec &v) { return Strm << v.x << v.y << v.z; }
 
 
+#define MAX_BBOX3D_CORNERS  (8u)
+#define MAX_BBOX2D_CORNERS  (4u)
+
 // idx: [0..7]
 static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec GetBBox3DCorner (const unsigned index, const float bbox3d[6]) noexcept {
   return TVec(
