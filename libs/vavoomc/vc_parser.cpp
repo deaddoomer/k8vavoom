@@ -532,7 +532,7 @@ VLocalDecl *VParser::ParseLocalVar (VExpression *TypeExpr, LocalType lt, VExpres
 //
 //==========================================================================
 VExpression *VParser::ParseExpressionPriority0 () {
-  bool bLocals = CheckForLocal;
+  const bool bLocals = CheckForLocal;
   CheckForLocal = false;
   TLocation l = Lex.Location;
   switch (Lex.Token) {
@@ -779,7 +779,8 @@ VExpression *VParser::ParseExpressionPriority0 () {
 //
 //==========================================================================
 VExpression *VParser::ParseExpressionPriority1 () {
-  VExpression *op = ParseExpressionPriority0();
+  const bool bLocals = CheckForLocal; // we will need it later
+  VExpression *op = ParseExpressionPriority0(); // this resets `CheckForLocal`
   if (!op) return nullptr;
   for (;;) {
     TLocation l = Lex.Location;
@@ -820,8 +821,12 @@ VExpression *VParser::ParseExpressionPriority1 () {
         // second index
         if (Lex.Check(TK_Comma)) ind2 = ParseTernaryExpression();
         Lex.Expect(TK_RBracket, ERR_BAD_ARRAY);
+        // this was buggy with things like: `arr[n]*varname` (because index already parsed, and asterisk took for a pointer declaration)
+        // fixed by using saved `CheckForLocal`; `ParseExpressionPriority0()` always resets it, but
+        // if we got a single name, and locals were allowed, then this looks like a local
+        // we cannot have local slices yet, so don't bother checking that
         // local declaration?
-        if (op->IsSingleName()) {
+        if (bLocals && op->IsSingleName()) {
           int ofs = 0;
           while (Lex.peekTokenType(ofs) == TK_Asterisk) ++ofs; // skip pointer stars
           if (Lex.peekTokenType(ofs) == TK_Identifier) return ParseLocalVar(op, LocalNormal, ind, ind2);
