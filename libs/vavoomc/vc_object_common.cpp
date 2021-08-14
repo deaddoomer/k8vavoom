@@ -2220,6 +2220,41 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, event_t, isMouseButton) {
 
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+// fltconv
+// ugly names are intentional
+//native static final int fltconv_getsign (float v); // -1 or +1
+IMPLEMENT_FUNCTION(VObject, fltconv_getsign) {
+  float f;
+  vobjGetParam(f);
+  RET_INT(fltconv_getsign(f));
+}
+
+//native static final int fltconv_getexponent (float v); // always positive, [0..255]
+IMPLEMENT_FUNCTION(VObject, fltconv_getexponent) {
+  float f;
+  vobjGetParam(f);
+  RET_INT(fltconv_getexponent(f));
+}
+
+//native static final int fltconv_getmantissa (float v); // always positive, [0..0x7f_ffff] (or [0..8388607])
+IMPLEMENT_FUNCTION(VObject, fltconv_getmantissa) {
+  float f;
+  vobjGetParam(f);
+  RET_INT(fltconv_getmantissa(f));
+}
+
+// invalid values leads to NaN with undefined payload and sign
+//native static final float fltconv_constructfloat (int sign, int exponent, int mantissa);
+IMPLEMENT_FUNCTION(VObject, fltconv_constructfloat) {
+  int sign, exponent, mantissa;
+  vobjGetParam(sign, exponent, mantissa);
+  RET_FLOAT(fltconv_constructfloat(sign, exponent, mantissa));
+}
+
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 //#include "vc_zastar.h"
 #include "vc_zastar.cpp"
 
@@ -3038,6 +3073,53 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetDoomBox2DSupportPoint) {
   RET_VEC(Self->get2DBBoxSupportPoint(bbox, pdist.value, z.value));
 }
 
+//native TVec GetBox3DAntiSupportPoint (const TVec bmin, const TVec bmax, optional out float pdist) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetBox3DAntiSupportPoint) {
+  TPlane *Self;
+  TVec bmin, bmax;
+  VOptParamPtr<float> pdist(nullptr);
+  vobjGetParam(Self, bmin, bmax, pdist);
+  Create3DBBoxFromVectors(bbox, bmin, bmax);
+  RET_VEC(Self->get3DBBoxAntiSupportPoint(bbox, pdist.value));
+}
+
+//native TVec GetBox2DAntiSupportPoint (const TVec bmin, const TVec bmax, optional out float pdist, optional float z/*=0.0f*/) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetBox2DAntiSupportPoint) {
+  TPlane *Self;
+  TVec bmin, bmax;
+  VOptParamPtr<float> pdist(nullptr);
+  VOptParamFloat z(0.0f);
+  vobjGetParam(Self, bmin, bmax, pdist, z);
+  Create3DBBoxFromVectors(bbox, bmin, bmax);
+  RET_VEC(Self->get2DBBoxAntiSupportPoint(bbox, pdist.value, z.value));
+}
+
+//native TVec GetDoomBox3DAntiSupportPoint (const TVec origin, const float radius, const float height, optional out float pdist) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetDoomBox3DAntiSupportPoint) {
+  TPlane *Self;
+  TVec origin;
+  float radius, height;
+  VOptParamPtr<float> pdist(nullptr);
+  vobjGetParam(Self, origin, radius, height, pdist);
+  if (height < 0.0f) { origin.z -= height; height = -height; }
+  radius = fabsf(radius);
+  CreateDoom3DBBox(bbox, origin, radius, height);
+  RET_VEC(Self->get3DBBoxAntiSupportPoint(bbox, pdist.value));
+}
+
+//native TVec GetDoomBox2DAntiSupportPoint (const TVec origin, const float radius, optional out float pdist, optional float z/*=0.0f*/) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, GetDoomBox2DAntiSupportPoint) {
+  TPlane *Self;
+  TVec origin;
+  float radius;
+  VOptParamPtr<float> pdist(nullptr);
+  VOptParamFloat z(0.0f);
+  vobjGetParam(Self, origin, radius, pdist, z);
+  radius = fabsf(radius);
+  CreateDoom2DBBox(bbox, origin, radius);
+  RET_VEC(Self->get2DBBoxAntiSupportPoint(bbox, pdist.value, z.value));
+}
+
 //native float Angle2DToPlane (const ref TPlane to) const;
 IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, Angle2DToPlane) {
   TPlane *Self;
@@ -3061,7 +3143,6 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, Angle2DToPlaneFlipTo) {
     RET_FLOAT(PlanesAngle2DFlipTo(Self, To));
   }
 }
-
 
 //native float Angle2DSignedToPlane (const ref TPlane to) const;
 IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, Angle2DSignedToPlane) {

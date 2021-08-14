@@ -237,6 +237,12 @@ struct TPlane {
   native TVec GetDoomBox3DSupportPoint (const TVec origin, const float radius, const float height, optional out float pdist) const;
   native TVec GetDoomBox2DSupportPoint (const TVec origin, const float radius, optional out float pdist, optional float z/*=0.0f*/) const;
 
+  // box point that is furthest *out* *of* the plane (or closest to it)
+  native TVec GetBox3DAntiSupportPoint (const TVec bmin, const TVec bmax, optional out float pdist) const;
+  native TVec GetBox2DAntiSupportPoint (const TVec bmin, const TVec bmax, optional out float pdist, optional float z/*=0.0f*/) const;
+  native TVec GetDoomBox3DAntiSupportPoint (const TVec origin, const float radius, const float height, optional out float pdist) const;
+  native TVec GetDoomBox2DAntiSupportPoint (const TVec origin, const float radius, optional out float pdist, optional float z/*=0.0f*/) const;
+
   // should be used only for wall planes!
   native float Angle2DToPlane (const ref TPlane to) const;
   native float Angle2DToPlaneFlipTo (const ref TPlane to) const;
@@ -759,6 +765,14 @@ native static final bool IsVerticalPlane (const ref TPlane plane);
 
 native static final TVec RayLineIntersection2D (const TVec rayO, const TVec rayE, const TVec vv1, const TVec vv2);
 native static final TVec RayLineIntersection2DDir (const TVec rayO, const TVec rayDir, const TVec vv1, const TVec vv2);
+
+// ugly names are intentional
+native static final int fltconv_getsign (float v); // -1 or +1
+native static final int fltconv_getexponent (float v); // always positive, [0..255]
+native static final int fltconv_getmantissa (float v); // always positive, [0..0x7f_ffff] (or [0..8388607])
+// invalid values leads to NaN with undefined payload and sign
+native static final float fltconv_constructfloat (int sign, int exponent, int mantissa);
+
 
 #ifndef VC_COMPILER_TEST
 //TODO: move to native code?

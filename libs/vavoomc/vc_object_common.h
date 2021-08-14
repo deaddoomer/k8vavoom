@@ -208,6 +208,12 @@
 
   DECLARE_FUNCTION(GetClassInstanceSize)
 
+  // ugly names are intentional
+  DECLARE_FUNCTION(fltconv_getsign)
+  DECLARE_FUNCTION(fltconv_getexponent)
+  DECLARE_FUNCTION(fltconv_getmantissa)
+  DECLARE_FUNCTION(fltconv_constructfloat)
+
   // state methods
   DECLARE_FUNCTION(GetStateLocationStr)
   DECLARE_FUNCTION(GetFullStateName)
