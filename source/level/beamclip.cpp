@@ -1791,10 +1791,7 @@ int VViewClipper::CheckSubsectorLight (subsector_t *sub) const noexcept {
 
   const float xradSq = Radius*Radius;
 
-  //CONST_BBoxVertexIndexFlat;
-  //const unsigned *bbp = BBoxVertexIndexFlat;
-  for (unsigned bidx = 0; bidx < 8; ++bidx/*, bbp += 3*/) {
-    //const TVec bv = TVec(bbox[bbp[0]]-Origin.x, bbox[bbp[1]]-Origin.y, bbox[bbp[2]]-Origin.z);
+  for (unsigned bidx = 0; bidx < MAX_BBOX3D_CORNERS; ++bidx) {
     const TVec bv(GetBBox3DCorner(bidx, bbox)-Origin);
     if (bv.lengthSquared() > xradSq) return -1; // partially inside, because at least one corner is not in the sphere
   }

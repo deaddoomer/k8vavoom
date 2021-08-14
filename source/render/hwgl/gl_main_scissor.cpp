@@ -77,8 +77,6 @@ int VOpenGLDrawer::SetupLightScissor (const TVec &org, float radius, int scoord[
     return 0;
   }
 
-  //CONST_BBoxVertexIndexFlat;
-
   // create light bbox
   float bbox[6];
   bbox[0+0] = inworld.x-radius;
@@ -99,9 +97,7 @@ int VOpenGLDrawer::SetupLightScissor (const TVec &org, float radius, int scoord[
     gbb[4] = geobbox[1].y;
     gbb[5] = geobbox[1].z;
     float trbb[6] = { FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX };
-    //const unsigned *bbp = BBoxVertexIndexFlat;
-    for (unsigned f = 0; f < 8; ++f/*, bbp += 3*/) {
-      //const TVec vtx = vpmats.toWorld(TVec(gbb[bbp[0]], gbb[bbp[1]], gbb[bbp[2]]));
+    for (unsigned f = 0; f < MAX_BBOX3D_CORNERS; ++f) {
       const TVec vtx = vpmats.toWorld(GetBBox3DCorner(f, gbb));
       trbb[0] = min2(trbb[0], vtx.x);
       trbb[1] = min2(trbb[1], vtx.y);
@@ -210,10 +206,8 @@ int VOpenGLDrawer::SetupLightScissor (const TVec &org, float radius, int scoord[
   int maxx = -(scrx0-64), maxy = -(scry0-64);
 
   // transform points, get min and max
-  //const unsigned *bbp = BBoxVertexIndexFlat;
-  for (unsigned f = 0; f < 8; ++f/*, bbp += 3*/) {
+  for (unsigned f = 0; f < MAX_BBOX3D_CORNERS; ++f) {
     int winx, winy;
-    //vpmats.project(TVec(bbox[bbp[0]], bbox[bbp[1]], bbox[bbp[2]]), &winx, &winy);
     vpmats.project(GetBBox3DCorner(f, bbox), &winx, &winy);
 
     if (minx > winx) minx = winx;
