@@ -294,197 +294,6 @@ static void popOldIterator () {
 }
 
 
-//==========================================================================
-//
-//  ExecDictOperator
-//
-//==========================================================================
-static void ExecDictOperator (vuint8 *origip, vuint8 *&/*ip*/, VStack *&sp, VFieldType &KType, VFieldType &VType, vuint8 dcopcode) {
-  VScriptDict *ht;
-  VScriptDictElem e, v, *r;
-  switch (dcopcode) {
-    // clear
-    // [-1]: VScriptDict
-    case OPC_DictDispatch_Clear:
-      ht = (VScriptDict *)sp[-1].p;
-      if (!ht) { cstDump(origip); VPackage::InternalFatalError("uninitialized dictionary"); }
-      ht->clear();
-      --sp;
-      return;
-    // reset
-    // [-1]: VScriptDict
-    case OPC_DictDispatch_Reset:
-      ht = (VScriptDict *)sp[-1].p;
-      if (!ht) { cstDump(origip); VPackage::InternalFatalError("uninitialized dictionary"); }
-      ht->reset();
-      --sp;
-      return;
-    // length
-    // [-1]: VScriptDict
-    case OPC_DictDispatch_Length:
-      ht = (VScriptDict *)sp[-1].p;
-      if (!ht) { cstDump(origip); VPackage::InternalFatalError("uninitialized dictionary"); }
-      sp[-1].i = ht->length();
-      return;
-    // capacity
-    // [-1]: VScriptDict
-    case OPC_DictDispatch_Capacity:
-      ht = (VScriptDict *)sp[-1].p;
-      if (!ht) { cstDump(origip); VPackage::InternalFatalError("uninitialized dictionary"); }
-      sp[-1].i = ht->capacity();
-      return;
-    // find
-    // [-2]: VScriptDict
-    // [-1]: keyptr
-    case OPC_DictDispatch_Find:
-      ht = (VScriptDict *)sp[-2].p;
-      if (!ht) { cstDump(origip); VPackage::InternalFatalError("uninitialized dictionary"); }
-      VScriptDictElem::CreateFromPtr(e, sp[-1].p, KType, true); // calc hash
-      r = ht->find(e);
-      if (r) {
-        if (VType.Type == TYPE_String || VScriptDictElem::isSimpleType(VType)) {
-          sp[-2].p = &r->value;
-        } else {
-          sp[-2].p = r->value;
-        }
-      } else {
-        sp[-2].p = nullptr;
-      }
-      --sp;
-      return;
-    // put
-    // [-3]: VScriptDict
-    // [-2]: keyptr
-    // [-1]: valptr
-    case OPC_DictDispatch_Put:
-      // strings are increfed by loading opcode, so it is ok
-      ht = (VScriptDict *)sp[-3].p;
-      if (!ht) { cstDump(origip); VPackage::InternalFatalError("uninitialized dictionary"); }
-      VScriptDictElem::CreateFromPtr(e, sp[-2].p, KType, true); // calc hash
-      VScriptDictElem::CreateFromPtr(v, sp[-1].p, VType, false); // no hash
-      sp[-3].i = (ht->put(e, v) ? 1 : 0);
-      sp -= 2;
-      return;
-    // delete
-    // [-2]: VScriptDict
-    // [-1]: keyptr
-    case OPC_DictDispatch_Delete:
-      ht = (VScriptDict *)sp[-2].p;
-      if (!ht) { cstDump(origip); VPackage::InternalFatalError("uninitialized dictionary"); }
-      VScriptDictElem::CreateFromPtr(e, sp[-1].p, KType, true); // calc hash
-      sp[-2].i = (ht->del(e) ? 1 : 0);
-      --sp;
-      return;
-    // clear by ptr
-    // [-1]: VScriptDict*
-    case OPC_DictDispatch_ClearPointed:
-      ht = (VScriptDict *)sp[-1].p;
-      if (!ht) { cstDump(origip); VPackage::InternalFatalError("uninitialized dictionary"); }
-      ht->clear();
-      --sp;
-      return;
-    // first index
-    // [-1]: VScriptDict*
-    case OPC_DictDispatch_FirstIndex:
-      ht = (VScriptDict *)sp[-1].p;
-      if (!ht) { cstDump(origip); VPackage::InternalFatalError("uninitialized dictionary"); }
-      sp[-1].i = (ht->map ? ht->map->getFirstIIdx() : -1);
-      return;
-    // is valid index?
-    // [-2]: VScriptDict*
-    // [-1]: index
-    case OPC_DictDispatch_IsValidIndex:
-      ht = (VScriptDict *)sp[-2].p;
-      if (!ht) { cstDump(origip); VPackage::InternalFatalError("uninitialized dictionary"); }
-      sp[-2].i = ((ht->map ? ht->map->isValidIIdx(sp[-1].i) : false) ? 1 : 0);
-      --sp;
-      return;
-    // next index
-    // [-2]: VScriptDict*
-    // [-1]: index
-    case OPC_DictDispatch_NextIndex:
-      ht = (VScriptDict *)sp[-2].p;
-      if (!ht) { cstDump(origip); VPackage::InternalFatalError("uninitialized dictionary"); }
-      sp[-2].i = (ht->map ? ht->map->getNextIIdx(sp[-1].i) : -1);
-      --sp;
-      return;
-    // delete current and next index
-    // [-2]: VScriptDict*
-    // [-1]: index
-    case OPC_DictDispatch_DelAndNextIndex:
-      ht = (VScriptDict *)sp[-2].p;
-      if (!ht) { cstDump(origip); VPackage::InternalFatalError("uninitialized dictionary"); }
-      sp[-2].i = (ht->map ? ht->map->removeCurrAndGetNextIIdx(sp[-1].i) : -1);
-      --sp;
-      return;
-    // key at index
-    // [-2]: VScriptDict
-    // [-1]: index
-    case OPC_DictDispatch_GetKeyAtIndex:
-      ht = (VScriptDict *)sp[-2].p;
-      if (!ht) { cstDump(origip); VPackage::InternalFatalError("uninitialized dictionary"); }
-      {
-        const VScriptDictElem *ep = (ht->map ? ht->map->getKeyIIdx(sp[-1].i) : nullptr);
-        if (ep) {
-          if (KType.Type == TYPE_String) {
-            sp[-2].p = nullptr;
-            *((VStr *)&sp[-2].p) = *((VStr *)&ep->value);
-          } else {
-            sp[-2].p = ep->value;
-          }
-        } else {
-          sp[-2].p = nullptr;
-        }
-      }
-      --sp;
-      return;
-    // value at index
-    // [-2]: VScriptDict
-    // [-1]: index
-    case OPC_DictDispatch_GetValueAtIndex:
-      ht = (VScriptDict *)sp[-2].p;
-      if (!ht) { cstDump(origip); VPackage::InternalFatalError("uninitialized dictionary"); }
-      {
-        VScriptDictElem *ep = (ht->map ? ht->map->getValueIIdx(sp[-1].i) : nullptr);
-        if (ep) {
-          if (VType.Type == TYPE_String || VScriptDictElem::isSimpleType(VType)) {
-            sp[-2].p = &ep->value;
-          } else {
-            sp[-2].p = ep->value;
-          }
-        } else {
-          sp[-2].p = nullptr;
-        }
-      }
-      --sp;
-      return;
-    // compact
-    // [-1]: VScriptDict
-    case OPC_DictDispatch_Compact:
-      ht = (VScriptDict *)sp[-1].p;
-      if (!ht) { cstDump(origip); VPackage::InternalFatalError("uninitialized dictionary"); }
-      if (ht->map) ht->map->compact();
-      --sp;
-      return;
-    // rehash
-    // [-1]: VScriptDict
-    case OPC_DictDispatch_Rehash:
-      ht = (VScriptDict *)sp[-1].p;
-      if (!ht) { cstDump(origip); VPackage::InternalFatalError("uninitialized dictionary"); }
-      if (ht->map) ht->map->rehash();
-      --sp;
-      return;
-    // [-1]: VScriptDict
-    case OPC_DictDispatch_DictToBool:
-      ht = (VScriptDict *)sp[-1].p;
-      sp[-1].i = !!(ht && ht->map && ht->map->length());
-      return;
-  }
-  cstDump(origip);
-  VPackage::InternalFatalError(va("Dictionary opcode %d is not implemented", dcopcode));
-}
-
-
 // ////////////////////////////////////////////////////////////////////////// //
 // WARNING! NO CHECKS!
 struct ProfileTimer {
@@ -635,10 +444,6 @@ static void RunFunction (VMethod *func) {
 
   VM_CHECK_SIGABORT;
 
-  // the main execution loop
-  for (;;) {
-func_loop:
-
 #if USE_COMPUTED_GOTO
     static void *vm_labels[] = {
 # define DECLARE_OPC(name, args) &&Lbl_OPC_ ## name
@@ -646,6 +451,18 @@ func_loop:
 # include "vc_progdefs.h"
     0 };
 #endif
+
+  #define VC_VM_LABEL_TABLE
+  #include "vc_executor_builtins_dynarr.cpp"
+  #include "vc_executor_builtins.cpp"
+  #include "vc_executor_builtins_dict.cpp"
+  #undef VC_VM_LABEL_TABLE
+
+  const vuint8 *origip = nullptr;
+
+  // the main execution loop
+  for (;;) {
+func_loop:
 
 #ifdef VCC_STUPID_TRACER
     fprintf(stderr, "*** %s: %6u: %s (sp=%d)\n", *func->GetFullName(), (unsigned)(ip-func->Statements.Ptr()), StatementInfo[*ip].name, (int)(sp-local_vars));
@@ -2387,7 +2204,7 @@ func_loop:
       // [-1] srcptr
       PR_VM_CASE(OPC_TypeDeepCopy)
         {
-          vuint8 *origip = ip++;
+          origip = ip++;
           VFieldType stp = VFieldType::ReadTypeMem(ip);
           if (!sp[-2].p && !sp[-1].p) {
             sp -= 2;
@@ -2545,183 +2362,7 @@ func_loop:
       // this is always followed by type and opcode
       PR_VM_CASE(OPC_DynArrayDispatch)
         {
-          vuint8 *origip = ip++;
-          VFieldType Type = VFieldType::ReadTypeMem(ip);
-          switch (*ip++) {
-            // [-2]: *dynarray
-            // [-1]: length
-            case OPC_DynArrDispatch_DynArraySetNum:
-              {
-                VScriptArray &A = *(VScriptArray *)sp[-2].p;
-                int newsize = sp[-1].i;
-                // allow clearing for 2d arrays
-                if (A.Is2D() && newsize != 0) { cstDump(origip); VPackage::InternalFatalError("Cannot resize 2D array"); }
-                if (newsize < 0) { cstDump(origip); VPackage::InternalFatalError(va("Array index %d is negative", newsize)); }
-                if (newsize > MaxDynArrayLength) { cstDump(origip); VPackage::InternalFatalError(va("Array index %d is too big", newsize)); }
-                A.SetNum(newsize, Type);
-                sp -= 2;
-              }
-              break;
-            // [-2]: *dynarray
-            // [-1]: delta
-            case OPC_DynArrDispatch_DynArraySetNumMinus:
-              {
-                VScriptArray &A = *(VScriptArray *)sp[-2].p;
-                int newsize = sp[-1].i;
-                // allow clearing for 2d arrays
-                if (A.Is2D() && newsize != 0 && newsize != A.length()) { cstDump(origip); VPackage::InternalFatalError("Cannot resize 2D array"); }
-                if (newsize < 0) { cstDump(origip); VPackage::InternalFatalError(va("Array shrink delta %d is negative", newsize)); }
-                if (newsize > MaxDynArrayLength) { cstDump(origip); VPackage::InternalFatalError(va("Array shrink delta %d is too big", newsize)); }
-                if (A.length() < newsize) { cstDump(origip); VPackage::InternalFatalError(va("Array shrink delta %d is too big (%d)", newsize, A.length())); }
-                if (newsize > 0) A.SetNumMinus(newsize, Type);
-                sp -= 2;
-              }
-              break;
-            // [-2]: *dynarray
-            // [-1]: delta
-            case OPC_DynArrDispatch_DynArraySetNumPlus:
-              {
-                VScriptArray &A = *(VScriptArray *)sp[-2].p;
-                int newsize = sp[-1].i;
-                // allow clearing for 2d arrays
-                if (A.Is2D() && newsize != 0 && newsize != A.length()) { cstDump(origip); VPackage::InternalFatalError("Cannot resize 2D array"); }
-                if (newsize < 0) { cstDump(origip); VPackage::InternalFatalError(va("Array grow delta %d is negative", newsize)); }
-                if (newsize > MaxDynArrayLength) { cstDump(origip); VPackage::InternalFatalError(va("Array grow delta %d is too big", newsize)); }
-                if (A.length() > MaxDynArrayLength || MaxDynArrayLength-A.length() < newsize) { cstDump(origip); VPackage::InternalFatalError(va("Array grow delta %d is too big (%d)", newsize, A.length())); }
-                if (newsize > 0) A.SetNumPlus(newsize, Type);
-                sp -= 2;
-              }
-              break;
-            // [-3]: *dynarray
-            // [-2]: index
-            // [-1]: count
-            case OPC_DynArrDispatch_DynArrayInsert:
-              {
-                VScriptArray &A = *(VScriptArray *)sp[-3].p;
-                if (A.Is2D()) { cstDump(origip); VPackage::InternalFatalError("Cannot insert into 2D array"); }
-                int index = sp[-2].i;
-                int count = sp[-1].i;
-                if (count < 0) { cstDump(origip); VPackage::InternalFatalError(va("Array count %d is negative", count)); }
-                if (index < 0) { cstDump(origip); VPackage::InternalFatalError(va("Array index %d is negative", index)); }
-                if (index > A.length()) { cstDump(origip); VPackage::InternalFatalError(va("Index %d outside the bounds of an array (%d)", index, A.length())); }
-                if (A.length() > MaxDynArrayLength || MaxDynArrayLength-A.length() < count) { cstDump(origip); VPackage::InternalFatalError("Out of memory for dynarray"); }
-                if (count > 0) A.Insert(index, count, Type);
-                sp -= 3;
-              }
-              break;
-            // [-3]: *dynarray
-            // [-2]: index
-            // [-1]: count
-            case OPC_DynArrDispatch_DynArrayRemove:
-              {
-                VScriptArray &A = *(VScriptArray *)sp[-3].p;
-                if (A.Is2D()) { cstDump(origip); VPackage::InternalFatalError("Cannot insert into 2D array"); }
-                int index = sp[-2].i;
-                int count = sp[-1].i;
-                if (count < 0) { cstDump(origip); VPackage::InternalFatalError(va("Array count %d is negative", count)); }
-                if (index < 0) { cstDump(origip); VPackage::InternalFatalError(va("Array index %d is negative", index)); }
-                if (index > A.length()) { cstDump(origip); VPackage::InternalFatalError(va("Index %d outside the bounds of an array (%d)", index, A.length())); }
-                if (count > A.length()-index) { cstDump(origip); VPackage::InternalFatalError(va("Array count %d is too big at %d (%d)", count, index, A.length())); }
-                if (count > 0) A.Remove(index, count, Type);
-                sp -= 3;
-              }
-              break;
-            // [-1]: *dynarray
-            case OPC_DynArrDispatch_DynArrayClear:
-              {
-                VScriptArray &A = *(VScriptArray *)sp[-1].p;
-                A.Reset(Type);
-                --sp;
-              }
-              break;
-            // [-1]: delegate
-            // [-2]: self
-            // [-3]: *dynarray
-            // in code: type
-            case OPC_DynArrDispatch_DynArraySort:
-              //fprintf(stderr, "sp=%p\n", sp);
-              {
-                VScriptArray &A = *(VScriptArray *)sp[-3].p;
-                if (A.Is2D()) { cstDump(origip); VPackage::InternalFatalError("Cannot sort non-flat arrays"); }
-                // get self
-                VObject *dgself = (VObject *)sp[-2].p;
-                // get pointer to the delegate
-                VMethod *dgfunc = (VMethod *)sp[-1].p;
-                if (!dgself) {
-                  if (!dgfunc || (dgfunc->Flags&FUNC_Static) == 0) { cstDump(origip); VPackage::InternalFatalError("Delegate is not initialised"); }
-                }
-                if (!dgfunc) { cstDump(origip); VPackage::InternalFatalError("Delegate is not initialised (empty method)"); }
-                // fix stack, so we can call a delegate properly
-                VObject::pr_stackPtr = sp;
-                cstFixTopIPSP(ip);
-                if (!A.Sort(Type, dgself, dgfunc)) { cstDump(origip); VPackage::InternalFatalError("Internal error in array sorter"); }
-              }
-              //current_func = func;
-              sp = VObject::pr_stackPtr;
-              //fprintf(stderr, "sp=%p\n", sp);
-              sp -= 3;
-              break;
-            // [-1]: idx1
-            // [-2]: idx0
-            // [-3]: *dynarray
-            case OPC_DynArrDispatch_DynArraySwap1D:
-              {
-                VScriptArray &A = *(VScriptArray *)sp[-3].p;
-                if (A.Is2D()) { cstDump(origip); VPackage::InternalFatalError("Cannot swap items of non-flat arrays"); }
-                int idx0 = sp[-2].i;
-                int idx1 = sp[-1].i;
-                if (idx0 < 0 || idx0 >= A.length()) { cstDump(origip); VPackage::InternalFatalError(va("Index %d outside the bounds of an array (%d)", idx0, A.length())); }
-                if (idx1 < 0 || idx1 >= A.length()) { cstDump(origip); VPackage::InternalFatalError(va("Index %d outside the bounds of an array (%d)", idx1, A.length())); }
-                A.SwapElements(idx0, idx1, Type);
-                sp -= 3;
-              }
-              break;
-            // [-2]: *dynarray
-            // [-1]: size
-            case OPC_DynArrDispatch_DynArraySetSize1D:
-              {
-                VScriptArray &A = *(VScriptArray *)sp[-2].p;
-                int newsize = sp[-1].i;
-                if (newsize < 0) { cstDump(origip); VPackage::InternalFatalError(va("Array size %d is negative", newsize)); }
-                if (newsize > MaxDynArrayLength) { cstDump(origip); VPackage::InternalFatalError(va("Array size %d is too big", newsize)); }
-                A.SetNum(newsize, Type); // this will flatten it
-                sp -= 2;
-              }
-              break;
-            // [-3]: *dynarray
-            // [-2]: size1
-            // [-1]: size2
-            case OPC_DynArrDispatch_DynArraySetSize2D:
-              {
-                VScriptArray &A = *(VScriptArray *)sp[-3].p;
-                int newsize1 = sp[-2].i;
-                int newsize2 = sp[-1].i;
-                if (newsize1 < 1) { cstDump(origip); VPackage::InternalFatalError(va("Array size %d is too small", newsize1)); }
-                if (newsize1 > MaxDynArrayLength) { cstDump(origip); VPackage::InternalFatalError(va("Array size %d is too big", newsize1)); }
-                if (newsize2 < 1) { cstDump(origip); VPackage::InternalFatalError(va("Array size %d is too small", newsize2)); }
-                if (newsize2 > MaxDynArrayLength) { cstDump(origip); VPackage::InternalFatalError(va("Array size %d is too big", newsize2)); }
-                A.SetSize2D(newsize1, newsize2, Type);
-                sp -= 3;
-              }
-              break;
-            // [-1]: *dynarray
-            case OPC_DynArrDispatch_DynArrayAlloc:
-              {
-                VScriptArray &A = *(VScriptArray *)sp[-1].p;
-                sp[-1].p = A.Alloc(Type);
-              }
-              break;
-            // [-1]: *dynarray
-            case OPC_DynArrDispatch_DynArrayToBool:
-              {
-                VScriptArray &A = *(VScriptArray *)sp[-1].p;
-                sp[-1].i = !!(A.length());
-              }
-              break;
-            default:
-              cstDump(origip);
-              VPackage::InternalFatalError(va("Dictionary opcode %d is not implemented", ip[-1]));
-          }
+          #include "vc_executor_builtins_dynarr.cpp"
         }
         PR_VM_BREAK;
 
@@ -2801,22 +2442,6 @@ func_loop:
         if (iterStackUsed == 0) { cstDump(ip); VPackage::InternalFatalError("No active iterators (but we should have one)"); }
         popOldIterator();
         ++ip;
-        PR_VM_BREAK;
-
-      PR_VM_CASE(OPC_DoWriteOne)
-        {
-          ++ip;
-          VFieldType Type = VFieldType::ReadTypeMem(ip);
-          VObject::pr_stackPtr = sp;
-          VObject::PR_WriteOne(Type); // this will pop everything
-          if (VObject::pr_stackPtr < pr_stack) { VObject::pr_stackPtr = pr_stack; cstDump(ip); VPackage::InternalFatalError("Stack underflow in `write`"); }
-          sp = VObject::pr_stackPtr;
-        }
-        PR_VM_BREAK;
-
-      PR_VM_CASE(OPC_DoWriteFlush)
-        ++ip;
-        VObject::PR_WriteFlush();
         PR_VM_BREAK;
 
       PR_VM_CASE(OPC_DoPushTypePtr)
@@ -2905,464 +2530,38 @@ func_loop:
         DO_ISA_CLASS_NAME(0, 1);
         PR_VM_BREAK;
 
-      PR_VM_CASE(OPC_Builtin)
-        switch (ReadU8(ip+1)) {
-          case OPC_Builtin_IntAbs: if (sp[-1].i < 0.0f) sp[-1].i = -sp[-1].i; break;
-          case OPC_Builtin_FloatAbs: if (!isNaNF(sp[-1].f)) sp[-1].f = fabsf(sp[-1].f); break;
-          case OPC_Builtin_IntSign: if (sp[-1].i < 0) sp[-1].i = -1; else if (sp[-1].i > 0) sp[-1].i = 1; break;
-          case OPC_Builtin_FloatSign: if (!isNaNF(sp[-1].f)) sp[-1].f = (sp[-1].f < 0.0f ? -1.0f : sp[-1].f > 0.0f ? +1.0f : 0.0f); break;
-          case OPC_Builtin_IntMin: if (sp[-2].i > sp[-1].i) sp[-2].i = sp[-1].i; sp -= 1; break;
-          case OPC_Builtin_IntMax: if (sp[-2].i < sp[-1].i) sp[-2].i = sp[-1].i; sp -= 1; break;
-          case OPC_Builtin_FloatMin:
-            if (!isNaNF(sp[-1].f) && !isNaNF(sp[-2].f)) {
-              if (sp[-2].f > sp[-1].f) sp[-2].f = sp[-1].f;
-            } else {
-              if (!isNaNF(sp[-2].f)) sp[-2].f = sp[-1].f;
-            }
-            sp -= 1;
-            break;
-          case OPC_Builtin_FloatMax:
-            if (!isNaNF(sp[-1].f) && !isNaNF(sp[-2].f)) {
-              if (sp[-2].f < sp[-1].f) sp[-2].f = sp[-1].f;
-            } else {
-              if (!isNaNF(sp[-2].f)) sp[-2].f = sp[-1].f;
-            }
-            sp -= 1;
-            break;
-          case OPC_Builtin_IntClamp: sp[-3].i = clampval(sp[-3].i, sp[-2].i, sp[-1].i); sp -= 2; break;
-          case OPC_Builtin_FloatClamp: sp[-3].f = clampval(sp[-3].f, sp[-2].f, sp[-1].f); sp -= 2; break;
-          case OPC_Builtin_FloatIsNaN: sp[-1].i = (isNaNF(sp[-1].f) ? 1 : 0); break;
-          case OPC_Builtin_FloatIsInf: sp[-1].i = (isInfF(sp[-1].f) ? 1 : 0); break;
-          case OPC_Builtin_FloatIsFinite: sp[-1].i = (isFiniteF(sp[-1].f) ? 1 : 0); break;
-          case OPC_Builtin_DegToRad: sp[-1].f = DEG2RADF(sp[-1].f); break;
-          case OPC_Builtin_RadToDeg: sp[-1].f = RAD2DEGF(sp[-1].f); break;
-          case OPC_Builtin_AngleMod360:
-            if (isFiniteF(sp[-1].f)) {
-              sp[-1].f = AngleMod(sp[-1].f);
-            } else {
-              VObject::VMDumpCallStack();
-              if (isNaNF(sp[-1].f)) VPackage::InternalFatalError("got NAN"); else VPackage::InternalFatalError("got INF");
-            }
-            break;
-          case OPC_Builtin_AngleMod180:
-            if (isFiniteF(sp[-1].f)) {
-              sp[-1].f = AngleMod180(sp[-1].f);
-            } else {
-              VObject::VMDumpCallStack();
-              if (isNaNF(sp[-1].f)) VPackage::InternalFatalError("got NAN"); else VPackage::InternalFatalError("got INF");
-            }
-            break;
-          case OPC_Builtin_Sin: sp[-1].f = msin(sp[-1].f); break;
-          case OPC_Builtin_Cos: sp[-1].f = mcos(sp[-1].f); break;
-          case OPC_Builtin_Tan: sp[-1].f = mtan(sp[-1].f); break;
-          case OPC_Builtin_ASin: sp[-1].f = masin(sp[-1].f); break;
-          case OPC_Builtin_ACos: sp[-1].f = macos(sp[-1].f); break;
-          case OPC_Builtin_ATan: sp[-1].f = RAD2DEGF(atanf(sp[-1].f)); break;
-          case OPC_Builtin_Sqrt: sp[-1].f = sqrtf(sp[-1].f); break;
-          case OPC_Builtin_ATan2: sp[-2].f = matan(sp[-2].f, sp[-1].f); sp -= 1; break;
-          case OPC_Builtin_SinCos: msincos(sp[-3].f, (float *)sp[-2].p, (float *)sp[-1].p); sp -= 3; break;
-          case OPC_Builtin_FMod: sp[-2].f = fmodf(sp[-2].f, sp[-1].f); sp -= 1; break;
-          case OPC_Builtin_FModPos:
-            sp[-2].f = fmodf(sp[-2].f, sp[-1].f);
-            if (isFiniteF(sp[-2].f) && isFiniteF(sp[-1].f) && sp[-2].f < 0.0f) sp[-2].f += fabsf(sp[-1].f);
-            sp -= 1;
-            break;
-          case OPC_Builtin_FPow: sp[-2].f = powf(sp[-2].f, sp[-1].f); sp -= 1; break;
-          case OPC_Builtin_FLog2: sp[-1].f = log2f(sp[-1].f); break;
-          case OPC_Builtin_FloatEquEps: /*GLog.Logf(NAME_Debug, "v0=%f; v1=%f; eps=%f; diff=%f; res=%d", sp[-3].f, sp[-2].f, sp[-1].f, fabsf(sp[-2].f-sp[-3].f), (fabsf(sp[-2].f-sp[-3].f) <= sp[-1].f));*/ sp[-3].i = (fabsf(sp[-2].f-sp[-3].f) <= sp[-1].f); sp -= 2; break;
-          case OPC_Builtin_FloatEquEpsLess: sp[-3].i = (fabsf(sp[-2].f-sp[-3].f) < sp[-1].f); sp -= 2; break;
-          case OPC_Builtin_VecLength:
-            if (!isFiniteF(sp[-1].f) || !isFiniteF(sp[-2].f) || !isFiniteF(sp[-3].f)) { cstDump(ip); VPackage::InternalFatalError("vector is INF/NAN"); }
-            sp[-3].f = sqrtf(VSUM3(sp[-1].f*sp[-1].f, sp[-2].f*sp[-2].f, sp[-3].f*sp[-3].f));
-            sp -= 2;
-            if (!isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("vector length is INF/NAN"); }
-            break;
-          case OPC_Builtin_VecLengthSquared:
-            if (!isFiniteF(sp[-1].f) || !isFiniteF(sp[-2].f) || !isFiniteF(sp[-3].f)) { cstDump(ip); VPackage::InternalFatalError("vector is INF/NAN"); }
-            sp[-3].f = VSUM3(sp[-1].f*sp[-1].f, sp[-2].f*sp[-2].f, sp[-3].f*sp[-3].f);
-            sp -= 2;
-            if (!isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("vector length is INF/NAN"); }
-            break;
-          case OPC_Builtin_VecLength2D:
-            if (!isFiniteF(sp[-1].f) || !isFiniteF(sp[-2].f) || !isFiniteF(sp[-3].f)) { cstDump(ip); VPackage::InternalFatalError("vector is INF/NAN"); }
-            sp[-3].f = sqrtf(VSUM2(sp[-2].f*sp[-2].f, sp[-3].f*sp[-3].f));
-            sp -= 2;
-            if (!isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("vector length2D is INF/NAN"); }
-            break;
-          case OPC_Builtin_VecLength2DSquared:
-            if (!isFiniteF(sp[-1].f) || !isFiniteF(sp[-2].f) || !isFiniteF(sp[-3].f)) { cstDump(ip); VPackage::InternalFatalError("vector is INF/NAN"); }
-            sp[-3].f = VSUM2(sp[-2].f*sp[-2].f, sp[-3].f*sp[-3].f);
-            sp -= 2;
-            if (!isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("vector length2D is INF/NAN"); }
-            break;
-          case OPC_Builtin_VecNormalize:
-            {
-              TVec v(sp[-3].f, sp[-2].f, sp[-1].f);
-              if (!v.isValid() || v.isZero()) {
-                v = TVec(0, 0, 0);
-              } else {
-                v.normaliseInPlace();
-                // normalizing zero vector should produce zero, not nan/inf
-                if (!v.isValid()) v = TVec(0, 0, 0);
-              }
-              sp[-1].f = v.z;
-              sp[-2].f = v.y;
-              sp[-3].f = v.x;
-              break;
-            }
-          case OPC_Builtin_VecNormalize2D:
-            {
-              TVec v(sp[-3].f, sp[-2].f, sp[-1].f);
-              if (!v.isValid() || v.isZero2D()) {
-                v = TVec(0, 0, 0);
-              } else {
-                v.normalise2DInPlace();
-                // normalizing zero vector should produce zero, not nan/inf
-                if (!v.isValid()) v = TVec(0, 0, 0);
-              }
-              sp[-1].f = v.z;
-              sp[-2].f = v.y;
-              sp[-3].f = v.x;
-              break;
-            }
-          case OPC_Builtin_VecDot:
-            {
-              TVec v2(sp[-3].f, sp[-2].f, sp[-1].f);
-              sp -= 3;
-              TVec v1(sp[-3].f, sp[-2].f, sp[-1].f);
-              sp -= 2;
-              sp[-1].f = v1.dot(v2);
-              if (!isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("dotproduct result is INF/NAN"); }
-              break;
-            }
-          case OPC_Builtin_VecDot2D:
-            {
-              TVec v2(sp[-3].f, sp[-2].f, sp[-1].f);
-              sp -= 3;
-              TVec v1(sp[-3].f, sp[-2].f, sp[-1].f);
-              sp -= 2;
-              sp[-1].f = v1.dot2D(v2);
-              if (!isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("dotproduct2d result is INF/NAN"); }
-              break;
-            }
-          case OPC_Builtin_VecCross:
-            {
-              TVec v2(sp[-3].f, sp[-2].f, sp[-1].f);
-              sp -= 3;
-              TVec v1(sp[-3].f, sp[-2].f, sp[-1].f);
-              v1 = v1.cross(v2);
-              sp[-1].f = v1.z;
-              sp[-2].f = v1.y;
-              sp[-3].f = v1.x;
-              if (!v1.isValid()) { cstDump(ip); VPackage::InternalFatalError("crossproduct result is INF/NAN"); }
-              break;
-            }
-          case OPC_Builtin_VecCross2D:
-            {
-              TVec v2(sp[-3].f, sp[-2].f, sp[-1].f);
-              sp -= 3;
-              TVec v1(sp[-3].f, sp[-2].f, sp[-1].f);
-              sp -= 2;
-              sp[-1].f = v1.cross2D(v2);
-              if (!isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("crossproduct2d result is INF/NAN"); }
-              break;
-            }
-          case OPC_Builtin_RoundF2I: sp[-1].i = (int)(roundf(sp[-1].f)); break;
-          case OPC_Builtin_RoundF2F: sp[-1].f = roundf(sp[-1].f); break;
-          case OPC_Builtin_TruncF2I: sp[-1].i = (int)(truncf(sp[-1].f)); break;
-          case OPC_Builtin_TruncF2F: sp[-1].f = truncf(sp[-1].f); break;
-          case OPC_Builtin_FloatCeil: sp[-1].f = ceilf(sp[-1].f); break;
-          case OPC_Builtin_FloatFloor: sp[-1].f = floorf(sp[-1].f); break;
-          // [-3]: a; [-2]: b, [-1]: delta
-          case OPC_Builtin_FloatLerp: sp[-3].f = sp[-3].f+(sp[-2].f-sp[-3].f)*sp[-1].f; sp -= 2; break;
-          case OPC_Builtin_IntLerp: sp[-3].i = (int)roundf(sp[-3].i+(sp[-2].i-sp[-3].i)*sp[-1].f); sp -= 2; break;
-          case OPC_Builtin_FloatSmoothStep: sp[-3].f = smoothstep(sp[-3].f, sp[-2].f, sp[-1].f); sp -= 2; break;
-          case OPC_Builtin_FloatSmoothStepPerlin: sp[-3].f = smoothstepPerlin(sp[-3].f, sp[-2].f, sp[-1].f); sp -= 2; break;
-          case OPC_Builtin_NameToIIndex: break; // no, really, it is THAT easy
-          case OPC_Builtin_VectorClampF:
-            {
-              const float vmin = sp[-2].f;
-              const float vmax = sp[-1].f;
-              sp -= 2;
-              TVec v(sp[-3].f, sp[-2].f, sp[-1].f);
-              if (v.isValid()) {
-                if (isFiniteF(vmin) && isFiniteF(vmax)) {
-                  v.x = clampval(v.x, vmin, vmax);
-                  v.y = clampval(v.y, vmin, vmax);
-                  v.z = clampval(v.z, vmin, vmax);
-                } else if (isFiniteF(vmin)) {
-                  v.x = min2(vmin, v.x);
-                  v.y = min2(vmin, v.y);
-                  v.z = min2(vmin, v.z);
-                } else if (isFiniteF(vmax)) {
-                  v.x = max2(vmax, v.x);
-                  v.y = max2(vmax, v.y);
-                  v.z = max2(vmax, v.z);
-                }
-              }
-              sp[-1].f = v.z;
-              sp[-2].f = v.y;
-              sp[-3].f = v.x;
-              break;
-            }
-          case OPC_Builtin_VectorClampScaleF: // (vval, fabsmax)
-            {
-              const float vabsmax = sp[-1].f;
-              sp -= 1;
-              TVec v(sp[-3].f, sp[-2].f, sp[-1].f);
-              v.clampScaleInPlace(vabsmax);
-              sp[-1].f = v.z;
-              sp[-2].f = v.y;
-              sp[-3].f = v.x;
-              break;
-            }
-          case OPC_Builtin_VectorClampV:
-            {
-              TVec vmax(sp[-3].f, sp[-2].f, sp[-1].f);
-              sp -= 3;
-              TVec vmin(sp[-3].f, sp[-2].f, sp[-1].f);
-              sp -= 3;
-              TVec v(sp[-3].f, sp[-2].f, sp[-1].f);
-              if (v.isValid()) {
-                if (vmin.isValid() && vmax.isValid()) {
-                  v.x = clampval(v.x, vmin.x, vmax.x);
-                  v.y = clampval(v.y, vmin.y, vmax.y);
-                  v.z = clampval(v.z, vmin.z, vmax.z);
-                } else if (vmin.isValid()) {
-                  v.x = min2(vmin.x, v.x);
-                  v.y = min2(vmin.y, v.y);
-                  v.z = min2(vmin.z, v.z);
-                } else if (vmax.isValid()) {
-                  v.x = max2(vmax.x, v.x);
-                  v.y = max2(vmax.y, v.y);
-                  v.z = max2(vmax.z, v.z);
-                }
-              }
-              sp[-1].f = v.z;
-              sp[-2].f = v.y;
-              sp[-3].f = v.x;
-              break;
-            }
-          case OPC_Builtin_VectorMinV:
-            {
-              TVec v2(sp[-3].f, sp[-2].f, sp[-1].f);
-              sp -= 3;
-              if (v2.isValid() && isFiniteF(sp[-1].f) && isFiniteF(sp[-2].f) && isFiniteF(sp[-3].f)) {
-                sp[-1].f = min2(sp[-1].f, v2.z);
-                sp[-2].f = min2(sp[-2].f, v2.y);
-                sp[-3].f = min2(sp[-3].f, v2.x);
-              }
-              break;
-            }
-          case OPC_Builtin_VectorMaxV:
-            {
-              TVec v2(sp[-3].f, sp[-2].f, sp[-1].f);
-              sp -= 3;
-              if (v2.isValid() && isFiniteF(sp[-1].f) && isFiniteF(sp[-2].f) && isFiniteF(sp[-3].f)) {
-                sp[-1].f = max2(sp[-1].f, v2.z);
-                sp[-2].f = max2(sp[-2].f, v2.y);
-                sp[-3].f = max2(sp[-3].f, v2.x);
-              }
-              break;
-            }
-          case OPC_Builtin_VectorMinF:
-            {
-              float vmin = sp[-1].f;
-              sp -= 1;
-              if (isFiniteF(vmin) && isFiniteF(sp[-1].f) && isFiniteF(sp[-2].f) && isFiniteF(sp[-3].f)) {
-                sp[-1].f = min2(vmin, sp[-1].f);
-                sp[-2].f = min2(vmin, sp[-2].f);
-                sp[-3].f = min2(vmin, sp[-3].f);
-              }
-              break;
-            }
-          case OPC_Builtin_VectorMaxF:
-            {
-              float vmax = sp[-1].f;
-              sp -= 1;
-              if (isFiniteF(vmax) && isFiniteF(sp[-1].f) && isFiniteF(sp[-2].f) && isFiniteF(sp[-3].f)) {
-                sp[-1].f = max2(vmax, sp[-1].f);
-                sp[-2].f = max2(vmax, sp[-2].f);
-                sp[-3].f = max2(vmax, sp[-3].f);
-              }
-              break;
-            }
-          case OPC_Builtin_VectorAbs:
-            {
-              TVec v0(sp[-3].f, sp[-2].f, sp[-1].f);
-              if (v0.isValid()) {
-                sp[-1].f = fabsf(v0.z);
-                sp[-2].f = fabsf(v0.y);
-                sp[-3].f = fabsf(v0.x);
-              }
-              break;
-            }
-
-          // cvar getters/setters with runtime-defined names
-          case OPC_Builtin_GetCvarIntRT:
-            {
-              VCvar *vp = GetRTCVar(sp[-1].i);
-              sp[-1].i = vp->asInt();
-              break;
-            }
-          case OPC_Builtin_GetCvarFloatRT:
-            {
-              VCvar *vp = GetRTCVar(sp[-1].i);
-              sp[-1].f = vp->asFloat();
-              break;
-            }
-          case OPC_Builtin_GetCvarStrRT:
-            {
-              VCvar *vp = GetRTCVar(sp[-1].i);
-              sp[-1].p = nullptr;
-              *(VStr *)&sp[-1].p = vp->asStr();
-              break;
-            }
-          case OPC_Builtin_GetCvarBoolRT:
-            {
-              VCvar *vp = GetRTCVar(sp[-1].i);
-              sp[-1].i = (vp->asBool() ? 1 : 0);
-              break;
-            }
-
-          case OPC_Builtin_SetCvarIntRT:
-            {
-              VCvar *vp = GetRTCVar(sp[-2].i);
-              if (!vp->IsReadOnly()) vp->SetInt(sp[-1].i);
-              sp -= 2;
-              break;
-            }
-          case OPC_Builtin_SetCvarFloatRT:
-            {
-              VCvar *vp = GetRTCVar(sp[-2].i);
-              if (!vp->IsReadOnly()) vp->SetFloat(sp[-1].f);
-              sp -= 2;
-              break;
-            }
-          case OPC_Builtin_SetCvarStrRT:
-            {
-              VCvar *vp = GetRTCVar(sp[-2].i);
-              if (!vp->IsReadOnly()) vp->SetStr(*((VStr *)&sp[-1].p));
-              ((VStr *)&sp[-1].p)->clear();
-              sp -= 2;
-              break;
-            }
-          case OPC_Builtin_SetCvarBoolRT:
-            {
-              VCvar *vp = GetRTCVar(sp[-2].i);
-              if (!vp->IsReadOnly()) vp->SetBool(!!sp[-1].i);
-              sp -= 2;
-              break;
-            }
-
-          default:
-            cstDump(ip);
-            VPackage::InternalFatalError(va("Unknown builtin %u", ReadU8(ip+1)));
+      PR_VM_CASE(OPC_DoWriteOne)
+        {
+          ++ip;
+          VFieldType Type = VFieldType::ReadTypeMem(ip);
+          VObject::pr_stackPtr = sp;
+          VObject::PR_WriteOne(Type); // this will pop everything
+          if (VObject::pr_stackPtr < pr_stack) { VObject::pr_stackPtr = pr_stack; cstDump(ip); VPackage::InternalFatalError("Stack underflow in `write`"); }
+          sp = VObject::pr_stackPtr;
         }
-        ip += 2;
         PR_VM_BREAK;
 
+      PR_VM_CASE(OPC_DoWriteFlush)
+        ++ip;
+        VObject::PR_WriteFlush();
+        PR_VM_BREAK;
+
+      PR_VM_CASE(OPC_Builtin)
       PR_VM_CASE(OPC_BuiltinCVar)
-        #ifdef VCC_DEBUG_CVAR_CACHE
         {
-          unsigned n = ReadU8(ip+1);
-          GLog.Logf(NAME_Debug, "OPC_BuiltinCVar: %u", n);
-          for (unsigned f = 0; f <= n; ++f) {
-            if (!StatementBuiltinInfo[f].name) break;
-            if (f == n) {
-              GLog.Logf(NAME_Debug, "   <%s>", StatementBuiltinInfo[f].name);
-              break;
-            }
-          }
+          #include "vc_executor_builtins.cpp"
         }
-        #endif
-        switch (ReadU8(ip+1)) {
-          // ip+2: (vint32) name index
-          // ip+2+4: vcvar ptr (pointer-sized)
-          case OPC_Builtin_GetCvarInt:
-            {
-              VCvar *vp = GetAndCacheCVar(ip);
-              sp[0].i = vp->asInt();
-              ++sp;
-              ip += 4+sizeof(void *);
-              break;
-            }
-          case OPC_Builtin_GetCvarFloat:
-            {
-              VCvar *vp = GetAndCacheCVar(ip);
-              sp[0].f = vp->asFloat();
-              ++sp;
-              ip += 4+sizeof(void *);
-              break;
-            }
-          case OPC_Builtin_GetCvarStr:
-            {
-              VCvar *vp = GetAndCacheCVar(ip);
-              sp[0].p = nullptr;
-              *(VStr *)&sp[0].p = vp->asStr();
-              ++sp;
-              ip += 4+sizeof(void *);
-              break;
-            }
-          case OPC_Builtin_GetCvarBool:
-            {
-              VCvar *vp = GetAndCacheCVar(ip);
-              sp[0].i = (vp->asBool() ? 1 : 0);
-              ++sp;
-              ip += 4+sizeof(void *);
-              break;
-            }
-
-          case OPC_Builtin_SetCvarInt:
-            {
-              VCvar *vp = GetAndCacheCVar(ip);
-              if (!vp->IsReadOnly()) vp->SetInt(sp[-1].i);
-              --sp;
-              ip += 4+sizeof(void *);
-              break;
-            }
-          case OPC_Builtin_SetCvarFloat:
-            {
-              VCvar *vp = GetAndCacheCVar(ip);
-              if (!vp->IsReadOnly()) vp->SetFloat(sp[-1].f);
-              --sp;
-              ip += 4+sizeof(void *);
-              break;
-            }
-          case OPC_Builtin_SetCvarStr:
-            {
-              VCvar *vp = GetAndCacheCVar(ip);
-              if (!vp->IsReadOnly()) vp->SetStr(*((VStr *)&sp[-1].p));
-              ((VStr *)&sp[-1].p)->clear();
-              --sp;
-              ip += 4+sizeof(void *);
-              break;
-            }
-          case OPC_Builtin_SetCvarBool:
-            {
-              VCvar *vp = GetAndCacheCVar(ip);
-              if (!vp->IsReadOnly()) vp->SetBool(!!sp[-1].i);
-              --sp;
-              ip += 4+sizeof(void *);
-              break;
-            }
-            return;
-
-          default:
-            cstDump(ip);
-            VPackage::InternalFatalError(va("Unknown cvar builtin %u", ReadU8(ip+1)));
-        }
-        ip += 2;
         PR_VM_BREAK;
 
       PR_VM_CASE(OPC_DictDispatch)
         {
-          vuint8 *origip = ip;
+          origip = ip;
           ++ip;
           VFieldType KType = VFieldType::ReadTypeMem(ip);
           VFieldType VType = VFieldType::ReadTypeMem(ip);
-          vuint8 dcopcode = *ip++;
-          ExecDictOperator(origip, ip, sp, KType, VType, dcopcode);
+          const vuint8 dcopcode = *ip++;
+          #include "vc_executor_builtins_dict.cpp"
+          //ExecDictOperator(origip, ip, sp, KType, VType, dcopcode);
         }
         PR_VM_BREAK;
 
