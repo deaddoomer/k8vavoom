@@ -60,13 +60,14 @@ VVA_ALWAYS_INLINE bool isDenormalF (const float v) noexcept {
 }
 
 // this turns all nan/inf values into positive zero
-static VVA_OKUNUSED inline void killInfNaNF (float &f) noexcept {
+static VVA_OKUNUSED VVA_ALWAYS_INLINE void killInfNaNF (float &f) noexcept {
   vint32 fi = *(vint32 *)&f;
   fi &= (((fi>>23)&0xff)-0xff)>>31;
 }
 
 
-static VVA_OKUNUSED inline bool isZeroInfNaN (const float f) noexcept {
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
+VVA_ALWAYS_INLINE bool isZeroInfNaN (const float f) noexcept {
   const vuint32 fi = *(const vuint32 *)&f;
   const vuint8 exp = (vuint8)((fi>>23)&0xffu);
   return
@@ -75,10 +76,50 @@ static VVA_OKUNUSED inline bool isZeroInfNaN (const float f) noexcept {
 }
 
 
+// -1 or +1
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
+VVA_ALWAYS_INLINE int fltconv_getsign (const float f) noexcept {
+  const vuint32 t = *(const vuint32 *)(&f);
+  return (t&0x80000000u ? -1 : +1);
+}
+
+// always positive, [0..255]
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
+VVA_ALWAYS_INLINE int fltconv_getexponent (const float f) noexcept {
+  const vuint32 t = *(const vuint32 *)(&f);
+  return ((t>>23)&0xffu);
+}
+
+// always positive, [0..0x7f_ffff] (or [0..8388607])
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
+VVA_ALWAYS_INLINE int fltconv_getmantissa (const float f) noexcept {
+  const vuint32 t = *(const vuint32 *)(&f);
+  return (t&0x7fffff);
+}
+
+// invalid values leads to NaN with undefined payload and sign
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
+VVA_ALWAYS_INLINE float fltconv_constructfloat (const int sign, const int exponent, const int mantissa) noexcept {
+  if ((sign != 1 && sign != -1) ||
+      exponent < 0 || exponent > 255 ||
+      mantissa < 0 || mantissa > 0x7fffff)
+  {
+    return NAN;
+  } else {
+    const vuint32 t =
+      (sign < 0 ? 0x80000000u : 0u)|
+      (((unsigned)(exponent&0xffu))<<23)|
+      ((unsigned)mantissa&0x7fffffu);
+    const float *f = (const float *)&t;
+    return *f;
+  }
+}
+
+
 // `smoothstep` performs smooth Hermite interpolation between 0 and 1 when edge0 < x < edge1
 // results are undefined if edge0 ™ edge1
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-inline float smoothstep (const float edge0, const float edge1, float x) noexcept {
+VVA_ALWAYS_INLINE float smoothstep (const float edge0, const float edge1, float x) noexcept {
   // scale, bias and saturate x to 0..1 range
   x = (x-edge0)/(edge1-edge0);
   if (!isFiniteF(x)) return 1;
@@ -91,7 +132,7 @@ inline float smoothstep (const float edge0, const float edge1, float x) noexcept
 // `smoothstep` performs smooth Hermite interpolation between 0 and 1 when edge0 < x < edge1
 // results are undefined if edge0 ™ edge1
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-inline float smoothstepPerlin (const float edge0, const float edge1, float x) noexcept {
+VVA_ALWAYS_INLINE float smoothstepPerlin (const float edge0, const float edge1, float x) noexcept {
   // scale, bias and saturate x to 0..1 range
   x = (x-edge0)/(edge1-edge0);
   if (!isFiniteF(x)) return 1;
@@ -104,7 +145,7 @@ inline float smoothstepPerlin (const float edge0, const float edge1, float x) no
 extern "C" {
 //k8: this is UB in shitplusplus, but i really can't care less
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-inline float fastInvSqrtf (const float n) {
+VVA_ALWAYS_INLINE float fastInvSqrtf (const float n) {
   union { float f; vuint32 i; } ufi;
   const float ndiv2 = n*0.5f;
   ufi.f = n;
@@ -121,7 +162,7 @@ inline float fastInvSqrtf (const float n) {
 //k8: this is UB in shitplusplus, but i really can't care less
 // k8: meh, i don't care; ~0.0175 as error margin is ok for us
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-inline float fastInvSqrtfLP (const float n) {
+VVA_ALWAYS_INLINE float fastInvSqrtfLP (const float n) {
   union { float f; vuint32 i; } ufi;
   const float ndiv2 = n*0.5f;
   ufi.f = n;
@@ -183,7 +224,7 @@ template <class T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T signv
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT VVA_ALWAYS_INLINE int mround (const float Val) noexcept { return (int)floorf(Val+0.5f); }
 
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-inline int ToPowerOf2 (int val) noexcept {
+VVA_ALWAYS_INLINE int ToPowerOf2 (int val) noexcept {
   /*
   int answer = 1;
   while (answer < val) answer <<= 1;
@@ -205,7 +246,7 @@ inline int ToPowerOf2 (int val) noexcept {
 
 // returns angle normalized to the range [0 <= angle < 360]
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT
-inline float AngleMod (float angle) noexcept {
+VVA_ALWAYS_INLINE float AngleMod (float angle) noexcept {
 #if 1
   angle = fmodf(angle, 360.0f);
   if (angle < 0.0f) angle += 360.0f;
@@ -219,7 +260,7 @@ inline float AngleMod (float angle) noexcept {
 
 // returns angle normalized to the range [-180 < angle <= 180]
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT
-inline float AngleMod180 (float angle) noexcept {
+VVA_ALWAYS_INLINE float AngleMod180 (float angle) noexcept {
   angle = AngleMod(angle);
   if (angle > 180.0f) angle -= 360.0f;
   return angle;
@@ -227,7 +268,7 @@ inline float AngleMod180 (float angle) noexcept {
 
 
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT
-inline double AngleModD (double angle) noexcept {
+VVA_ALWAYS_INLINE double AngleModD (double angle) noexcept {
 #if 1
   angle = fmod(angle, 360.0);
   if (angle < 0.0) angle += 360.0;
@@ -240,7 +281,7 @@ inline double AngleModD (double angle) noexcept {
 #define AngleMod360D AngleModD
 
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT
-inline double AngleMod180D (double angle) noexcept {
+VVA_ALWAYS_INLINE double AngleMod180D (double angle) noexcept {
   angle = AngleModD(angle);
   if (angle > 180.0) angle -= 360.0;
   return angle;
@@ -253,12 +294,12 @@ VVA_ALWAYS_INLINE float AngleDiff (float afrom, float ato) noexcept { return Ang
 #ifdef NO_SINCOS
 
 // TODO: NEON-based impl?
-static VVA_OKUNUSED inline void sincosf_dumb (float x, float *vsin, float *vcos) noexcept {
+static VVA_OKUNUSED VVA_ALWAYS_INLINE void sincosf_dumb (float x, float *vsin, float *vcos) noexcept {
   *vsin = sinf(x);
   *vcos = cosf(x);
 }
 
-static VVA_OKUNUSED inline void sincosd_dumb (double x, double *vsin, double *vcos) noexcept {
+static VVA_OKUNUSED VVA_ALWAYS_INLINE void sincosd_dumb (double x, double *vsin, double *vcos) noexcept {
   *vsin = sin(x);
   *vcos = cos(x);
 }
@@ -372,18 +413,18 @@ protected:
   float currValue; // = 0;
 
 public:
-  inline RunningAverageExp () noexcept : fadeoff(0.1f), currValue(0.0f) {}
-  inline RunningAverageExp (float aFadeoff) noexcept : fadeoff(aFadeoff), currValue(0.0f) {}
+  VVA_ALWAYS_INLINE RunningAverageExp () noexcept : fadeoff(0.1f), currValue(0.0f) {}
+  VVA_ALWAYS_INLINE RunningAverageExp (float aFadeoff) noexcept : fadeoff(aFadeoff), currValue(0.0f) {}
 
-  inline void reset () noexcept { currValue = 0.0f; }
+  VVA_ALWAYS_INLINE void reset () noexcept { currValue = 0.0f; }
 
-  VVA_CHECKRESULT inline float getFadeoff () const noexcept { return fadeoff; }
-  inline void setFadeoff (float aFadeoff) noexcept { fadeoff = aFadeoff; }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE float getFadeoff () const noexcept { return fadeoff; }
+  VVA_ALWAYS_INLINE void setFadeoff (float aFadeoff) noexcept { fadeoff = aFadeoff; }
 
-  inline void update (float newValue) noexcept { currValue = fadeoff*newValue+(1.0f-fadeoff)*currValue; }
+  VVA_ALWAYS_INLINE void update (float newValue) noexcept { currValue = fadeoff*newValue+(1.0f-fadeoff)*currValue; }
 
-  VVA_CHECKRESULT inline float getValue () const noexcept { return currValue; }
-  inline void setValue (float aValue) noexcept { currValue = aValue; }
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE float getValue () const noexcept { return currValue; }
+  VVA_ALWAYS_INLINE void setValue (float aValue) noexcept { currValue = aValue; }
 };
 
 
@@ -394,7 +435,7 @@ public:
 //         http://www.stereopsis.com/sree/fpu2006.html
 //
 // xs_CRoundToInt:  Round toward nearest, but ties round toward even (just like FISTP)
-static VVA_OKUNUSED VVA_CHECKRESULT inline vint32 vxs_CRoundToInt (const double val, const double dmr) noexcept {
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE vint32 vxs_CRoundToInt (const double val, const double dmr) noexcept {
   union vxs_doubleints_ {
     double val;
     vuint32 ival[2];
@@ -409,7 +450,7 @@ static VVA_OKUNUSED VVA_CHECKRESULT inline vint32 vxs_CRoundToInt (const double 
 }
 
 
-static inline VVA_OKUNUSED VVA_CHECKRESULT vint32 vxs_ToFix16_16 (const double val) noexcept {
+static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT vint32 vxs_ToFix16_16 (const double val) noexcept {
   /*static*/ const double vxs_doublemagic_ = double(6755399441055744.0); //2^52*1.5, uses limited precisicion to floor
   return vxs_CRoundToInt(val, vxs_doublemagic_/(1<<16));
 }
