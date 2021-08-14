@@ -124,10 +124,6 @@ static VCvarB dbg_skipframe_player_tick("dbg_skipframe_player_tick", true, "Run 
 static VCvarB dbg_skipframe_player_block_move("dbg_skipframe_player_block_move", false, "Keep moving on skipped player frames (this is wrong)?", CVAR_PreInit);
 static VCvarB dbg_report_orphan_weapons("dbg_report_orphan_weapons", false, "Report orphan weapon assign?", CVAR_Archive|CVAR_PreInit);
 
-#ifdef VV_ALLOW_LOCKSTEP
-VCvarB sv_tick_freestep("sv_tick_freestep", true, "Run server in freestep mode?");
-#endif
-
 VCvarB sv_ignore_nojump("sv_ignore_nojump", false, "Ignore \"nojump\" flag in MAPINFO?", CVAR_Archive);
 VCvarB sv_ignore_nocrouch("sv_ignore_nocrouch", false, "Ignore \"nocrouch\" flag in MAPINFO?", CVAR_Archive);
 VCvarB sv_ignore_nomlook("sv_ignore_nomlook", false, "Ignore \"nofreelook\" flag in MAPINFO?", CVAR_Archive);
@@ -896,13 +892,6 @@ static void SV_Ticker () {
   if (scap < 3) scap = 3;
 
   //exec_times = 1;
-  #ifdef VV_ALLOW_LOCKSTEP
-  if (!sv_tick_freestep) {
-    // lockstep mode
-    // rounded a little bit up to prevent "slow motion"
-    host_frametime = FrameTime; //0.02857142857142857142857142857143; //1.0 / 35.0;
-  } else
-  #endif
   // freestep mode
   if (sv_split_frame && host_frametime > FrameTime) {
     double i;
@@ -2336,32 +2325,17 @@ void NET_SendNetworkHeartbeat (bool forced) {
 
 //==========================================================================
 //
-//  ServerFrame
+//  SV_ServerFrame
 //
 //==========================================================================
-void ServerFrame (int realtics) {
-  #ifndef VV_ALLOW_LOCKSTEP
-  (void)realtics; // doesn't matter
-  #endif
+void SV_ServerFrame () {
   const bool haveClients = SV_CheckForNewClients();
 
   // there is no need to tick if we have no active clients
   // no, really
   if (haveClients || sv_loading || sv.intermission) {
-    #ifdef VV_ALLOW_LOCKSTEP
-    if (sv_tick_freestep)
-    #endif
-    {
-      // freestep mode
-      SV_Ticker();
-    }
-    #ifdef VV_ALLOW_LOCKSTEP
-    else {
-      // lockstep mode
-      // run the count tics
-      while (realtics--) SV_Ticker();
-    }
-    #endif
+    // freestep mode
+    SV_Ticker();
   }
 
   if (mapteleport_issued) {

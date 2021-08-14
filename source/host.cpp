@@ -120,9 +120,6 @@ VCvarB k8vavoom_developer_version("k8vavoom_developer_version", CVAR_K8_DEV_VALU
 
 static double hostLastGCTime = 0.0;
 
-#ifdef VV_ALLOW_LOCKSTEP
-static int host_frametics = 0; // used only in non-realtime mode
-#endif
 double host_frametime = 0.0;
 double host_framefrac = 0.0; // unused frame time left from previous `SV_Ticker()` in realtime mode
 double host_time = 0.0; // used in UI and network heartbits; accumulates frame times
@@ -132,10 +129,6 @@ int host_framecount = 0;
 bool host_initialised = false;
 bool host_request_exit = false;
 bool host_gdb_mode = false;
-
-#ifdef VV_ALLOW_LOCKSTEP
-extern VCvarB sv_tick_freestep;
-#endif
 
 
 #if defined(_WIN32) || defined(__SWITCH__)
@@ -576,9 +569,6 @@ static void Host_GetConsoleCommands () {
 //==========================================================================
 void Host_ResetSkipFrames () {
   last_time = systime = Sys_Time();
-  #ifdef VV_ALLOW_LOCKSTEP
-  host_frametics = 0;
-  #endif
   host_frametime = 0;
   host_framefrac = 0;
   //GCon->Logf("*** Host_ResetSkipFrames; ctime=%f", last_time);
@@ -624,50 +614,39 @@ static bool FilterTime () {
   systime = curr_time;
 
   if (dbg_frametime < max_fps_cap_float) {
-    #ifdef VV_ALLOW_LOCKSTEP
-    if (sv_tick_freestep)
-    #endif
-    {
-      // freestep mode
-      #ifdef CLIENT
-      // check for dangerous network timeout
-      if (Host_IsDangerousTimeout()) {
-        int capfr = min2(42, cl_framerate_net_timeout.asInt());
-        if (capfr > 0) {
-          if (timeDelta < 1.0/(double)capfr) return false; // framerate is too high
+    // freestep mode
+    #ifdef CLIENT
+    // check for dangerous network timeout
+    if (Host_IsDangerousTimeout()) {
+      int capfr = min2(42, cl_framerate_net_timeout.asInt());
+      if (capfr > 0) {
+        if (timeDelta < 1.0/(double)capfr) return false; // framerate is too high
+      }
+    } else {
+      // cap client fps
+      double ftime;
+      if (GGameInfo->NetMode <= NM_Standalone) {
+        // local game
+        if (cl_cap_framerate.asBool()) {
+          int cfr = cl_framerate.asInt();
+          if (cfr < 1 || cfr > 200) cfr = 140;
+          ftime = 1.0/(double)cfr;
+        } else {
+          ftime = max_fps_cap_double;
         }
       } else {
-        // cap client fps
-        double ftime;
-        if (GGameInfo->NetMode <= NM_Standalone) {
-          // local game
-          if (cl_cap_framerate.asBool()) {
-            int cfr = cl_framerate.asInt();
-            if (cfr < 1 || cfr > 200) cfr = 140;
-            ftime = 1.0/(double)cfr;
-          } else {
-            ftime = max_fps_cap_double;
-          }
-        } else {
-          // network game
-          const int sfr = clampval(sv_framerate.asInt(), 5, 70);
-          ftime = 1.0/(double)sfr;
-        }
-        //GCon->Logf("*** FilterTime; lasttime=%g; ctime=%g; time=%g; ftime=%g; cfr=%g", last_time, curr_time, time, ftime, 1.0/(double)ftime);
-        if (timeDelta < ftime) return false; // framerate is too high
+        // network game
+        const int sfr = clampval(sv_framerate.asInt(), 5, 70);
+        ftime = 1.0/(double)sfr;
       }
-      #else
-      // dedicated server
-      const int sfr = clampval(sv_framerate.asInt(), 5, 70);
-      if (timeDelta < 1.0/(double)sfr) return false; // framerate is too high
-      //GCon->Logf(NAME_Debug, "headless tick! %g", timeDelta*1000);
-      #endif
+      //GCon->Logf("*** FilterTime; lasttime=%g; ctime=%g; time=%g; ftime=%g; cfr=%g", last_time, curr_time, time, ftime, 1.0/(double)ftime);
+      if (timeDelta < ftime) return false; // framerate is too high
     }
-    #ifdef VV_ALLOW_LOCKSTEP
-    else {
-      // lockstep mode
-      if (timeDelta < 1.0/35.0) return false; // framerate is too high
-    }
+    #else
+    // dedicated server
+    const int sfr = clampval(sv_framerate.asInt(), 5, 70);
+    if (timeDelta < 1.0/(double)sfr) return false; // framerate is too high
+    //GCon->Logf(NAME_Debug, "headless tick! %g", timeDelta*1000);
     #endif
     //timeDelta += host_framefrac;
   } else {
@@ -699,25 +678,8 @@ static bool FilterTime () {
     if (host_frametime < max_fps_cap_double) host_frametime = max_fps_cap_double; // just in case
   }
 
-  #ifdef VV_ALLOW_LOCKSTEP
-  if (!sv_tick_freestep) {
-    // try to use original Doom framerate (lockstep mode)
-    //k8: this logic seems totally wrong
-    static int last_tics = 0;
-    int this_tic = (int)(systime*TICRATE);
-    host_frametics = this_tic-last_tics;
-    if (host_frametics < 1) return false; // no tics to run
-    if (host_frametics > ticlimit) {
-           if (host_show_skip_limit) GCon->Logf(NAME_Warning, "want to skip %d tics, but only %d allowed", host_frametics, ticlimit);
-      else if (developer) GCon->Logf(NAME_Dev, "want to skip %d tics, but only %d allowed", host_frametics, ticlimit);
-      host_frametics = ticlimit; // don't run too slow
-    }
-    if (host_frametics > 1 && host_show_skip_frames) GCon->Logf(NAME_Warning, "processing %d ticframes", host_frametics);
-    last_tics = this_tic;
-  } else
-  #endif
   {
-    // "free" framerate (freestep mode); `host_frametics` doesn't matter here
+    // freestep mode, check if we want to skip too many frames, and show a warning
     int ftics = (int)(timeDelta*TICRATE); // use it as a temporary variable
     if (ftics > ticlimit) {
            if (host_show_skip_limit) GCon->Logf(NAME_Warning, "want to skip %d tics, but only %d allowed", ftics, ticlimit);
@@ -829,11 +791,7 @@ void Host_Frame () {
       #ifdef SERVER
       if (GGameInfo->NetMode != NM_None && GGameInfo->NetMode != NM_Client) {
         // server operations
-        #ifdef VV_ALLOW_LOCKSTEP
-        ServerFrame(host_frametics);
-        #else
-        ServerFrame(0);
-        #endif
+        SV_ServerFrame();
       }
       # ifndef CLIENT
       else {

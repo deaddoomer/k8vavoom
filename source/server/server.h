@@ -47,7 +47,7 @@ struct server_static_t {
 
 void SV_Init ();
 void SV_Shutdown ();
-void ServerFrame (int realtics);
+void SV_ServerFrame ();
 void SV_ShutdownGame ();
 
 // call this to perform various network bookkeeping
