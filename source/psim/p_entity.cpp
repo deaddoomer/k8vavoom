@@ -617,7 +617,7 @@ bool VEntity::SetState (VState *InState) {
   if (!InState || IsGoingToDie()) {
     if (developer) GCon->Logf(NAME_Dev, "   (00):%s: dead (0x%04x) before state actions, state is %s", *GetClass()->GetFullName(), GetFlags(), (InState ? *InState->Loc.toStringNoCol() : "<none>"));
     State = nullptr;
-    StateTime = -1;
+    StateTime = -1.0f;
     DispSpriteFrame = 0;
     DispSpriteName = NAME_None;
     //GCon->Logf(NAME_Debug, "*** 000: STATE DYING THINKER %u: %s", GetUniqueId(), GetClass()->GetName());
@@ -656,6 +656,11 @@ bool VEntity::SetState (VState *InState) {
 
       State = st;
       StateTime = eventGetStateTime(st, st->Time);
+      if (!isFiniteF(StateTime)) {
+        GCon->Logf(NAME_Error, "invalid state duration in `%s::SetState()` at '%s'!", *GetClass()->GetFullName(), *st->Loc.toStringNoCol());
+        State = nullptr;
+        break;
+      }
       EntityFlags &= ~EF_FullBright;
       //GCon->Logf("%s: loop SetState(%d), time %g, %s", GetClass()->GetName(), setStateWatchCat, StateTime, *State->Loc.toStringNoCol());
 
@@ -682,7 +687,7 @@ bool VEntity::SetState (VState *InState) {
       }
 
       st = State->NextState;
-    } while (!StateTime);
+    } while (StateTime == 0.0f);
     VSLOGF("%s: SetState(%d), done with %s", GetClass()->GetName(), setStateWatchCat, (State ? *State->Loc.toStringNoCol() : "<none>"));
   }
   vassert(setStateWatchCat == 0);
@@ -691,7 +696,7 @@ bool VEntity::SetState (VState *InState) {
     //GCon->Logf(NAME_Debug, "*** 001: STATE DYING THINKER %u: %s from %s", GetUniqueId(), GetClass()->GetName(), (InState ? *InState->Loc.toStringNoCol() : "<none>"));
     DispSpriteFrame = 0;
     DispSpriteName = NAME_None;
-    StateTime = -1;
+    StateTime = -1.0f;
     if (!IsGoingToDie()) DestroyThinker();
     return false;
   }
@@ -712,7 +717,12 @@ void VEntity::SetInitialState (VState *InState) {
   if (InState) {
     UpdateDispFrameFrom(InState);
     StateTime = eventGetStateTime(InState, InState->Time);
-    if (StateTime > 0.0f) StateTime += 0.0002f; //k8: delay it slightly, so spawner may do its business
+    if (!isFiniteF(StateTime)) {
+      GCon->Logf(NAME_Error, "invalid initial state duration in `%s::SetState()` at '%s'!", *GetClass()->GetFullName(), *InState->Loc.toStringNoCol());
+      StateTime = 0.0002f;
+    } else {
+      if (StateTime > 0.0f) StateTime += 0.0002f; //k8: delay it slightly, so spawner may do its business
+    }
     // first state can be a goto; follow it
     if (DispSpriteName == NAME_None && InState->NextState && StateTime <= 0.0f) {
       UpdateDispFrameFrom(InState->NextState);

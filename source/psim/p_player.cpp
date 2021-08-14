@@ -328,7 +328,7 @@ void VBasePlayer::SetViewState (int position, VState *InState) {
               //ViewStates[f].SY = ViewStates[PS_WEAPON].SY;
               ViewStates[f].OvlOfsX = ViewStates[f].OvlOfsY = 0.0f;
               ViewStates[f].State = nullptr;
-              ViewStates[f].StateTime = -1;
+              ViewStates[f].StateTime = -1.0f;
             }
           }
           static VClass *WeaponClass = nullptr;
@@ -359,6 +359,10 @@ void VBasePlayer::SetViewState (int position, VState *InState) {
 
       VSt.State = state;
       VSt.StateTime = state->Time; // could be 0
+      if (!isFiniteF(VSt.StateTime)) {
+        GCon->Logf(NAME_Error, "invalid player state duration at '%s'!", *state->Loc.toStringNoCol());
+        VSt.StateTime = 1.0f; // arbitrary value
+      }
       // flash offset cannot be changed from decorate
       if (position == PS_WEAPON) {
         if (state->Misc1) ViewStateOfsX = state->Misc1;
@@ -396,7 +400,7 @@ void VBasePlayer::SetViewState (int position, VState *InState) {
         }
       }
       state = VSt.State->NextState;
-    } while (!VSt.StateTime);
+    } while (VSt.StateTime == 0.0f);
     VSLOGF("SetViewState(%d): DONE0: watchcat=%d, new %s", position, ViewStates[position].WatchCat, (VSt.State ? *VSt.State->Loc.toStringNoCol() : "<none>"));
   }
   VSLOGF("SetViewState(%d): DONE1: watchcat=%d, new %s", position, ViewStates[position].WatchCat, (VSt.State ? *VSt.State->Loc.toStringNoCol() : "<none>"));
@@ -407,14 +411,14 @@ void VBasePlayer::SetViewState (int position, VState *InState) {
     if (position == PS_WEAPON && developer) GCon->Logf(NAME_Dev, "*** WEAPON removed itself!");
     VSt.DispSpriteFrame = 0;
     VSt.DispSpriteName = NAME_None;
-    VSt.StateTime = -1;
+    VSt.StateTime = -1.0f;
     if (position == PS_WEAPON) {
       LastViewObject = nullptr;
       ViewStateOfsX = ViewStateOfsY = 0.0f;
       ViewStateBobOfsX = ViewStateBobOfsY = 0.0f;
       for (int f = 0; f < NUMPSPRITES; ++f) {
         ViewStates[f].State = nullptr;
-        ViewStates[f].StateTime = -1;
+        ViewStates[f].StateTime = -1.0f;
         //ViewStates[f].SX = ViewStates[f].SY = 0.0f;
         ViewStates[f].OvlOfsX = ViewStates[f].OvlOfsY = 0.0f;
       }
@@ -453,6 +457,10 @@ bool VBasePlayer::AdvanceViewStates (float deltaTime) {
     // null state means not active
     // -1 tic count never changes
     if (!St.State) { if (i == PS_WEAPON) res = true; continue; }
+    if (!isFiniteF(St.StateTime)) {
+      GCon->Logf(NAME_Error, "invalid player state duration at '%s'!", *St.State->Loc.toStringNoCol());
+      St.StateTime = 0.0002f;
+    }
     if (St.StateTime < 0.0f) { if (i == PS_WEAPON) res = true; St.StateTime = -1.0f; continue; } // force `-1` here just in case
     if (dfchecked < 0) dfchecked = (eventCheckDoubleFiringSpeed() ? 1 : 0); // call VM only once
     const float dtime = deltaTime*(dfchecked ? 2.0f : 1.0f); // [BC] Apply double firing speed
