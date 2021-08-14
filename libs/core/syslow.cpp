@@ -1283,7 +1283,7 @@ static DWORD otherAffMask = 0;
 void Sys_PinThread () {
   if (mainAffMask == 0) {
     DWORD pmask = 0, smask = 0;
-    if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, smask)) return;
+    if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask)) return;
     if (!pmask) return;
     // pin to the first avaliable CPU
     DWORD xmask = 1;
