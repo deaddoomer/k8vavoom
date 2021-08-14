@@ -26,11 +26,12 @@
 //#define VCC_DEBUG_COMPILER_LEAKS
 //#define VCC_DEBUG_COMPILER_LEAKS_CHECKS
 //#define VCC_RESOLVE_DEBUG
+//#define VCC_WANT_TYPENAMES
 
 #include "vc_local.h"
 
 
-#if defined(VCC_DEBUG_COMPILER_LEAKS) || defined(VCC_RESOLVE_DEBUG)
+#if defined(VCC_DEBUG_COMPILER_LEAKS) || defined(VCC_RESOLVE_DEBUG) || defined(VCC_WANT_TYPENAMES)
 #include <string>
 #include <cstdlib>
 #include <cxxabi.h>
