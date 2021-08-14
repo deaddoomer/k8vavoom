@@ -1036,9 +1036,9 @@ static final float CD_SweepLineAABBlpl (const ref CD_LinePlanes linePlanes, TVec
     // line plane normal z is always zero, so don't bother checking it
     TVec offset = vector((plane.normal.x < 0.0f ? bmax.x : bmin.x), (plane.normal.y < 0.0f ? bmax.y : bmin.y), /*(plane.normal.z < 0.0f ? bmax.z : bmin.z)*/bmin.z);
     // adjust the plane distance apropriately for mins/maxs
-    float dist = plane.dist-DotProduct(offset, plane.normal);
-    float idist = DotProduct(vstart, plane.normal)-dist;
-    float odist = DotProduct(vend, plane.normal)-dist;
+    float ofsdist = plane.dist-offset.dot(plane.normal);
+    float idist = vstart.dot(plane.normal)-ofsdist;
+    float odist = vend.dot(plane.normal)-ofsdist;
 
     if (idist <= 0.0f && odist <= 0.0f) continue; // doesn't cross this plane, don't bother
 
@@ -1066,7 +1066,7 @@ static final float CD_SweepLineAABBlpl (const ref CD_LinePlanes linePlanes, TVec
 
   // all planes have been checked, and the trace was not completely outside the brush
   if (!startsOut) {
-    // original point was inside brush
+    // original point was inside the brush
     return -1.0f;
   }
 
