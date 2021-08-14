@@ -27,8 +27,6 @@
 //**  Low-level OS-dependent functions
 //**
 //**************************************************************************
-#define SHITDOZE_USE_WINMM
-
 #include "core.h"
 
 #ifdef ANDROID
@@ -36,6 +34,16 @@
 #  include <android/asset_manager_jni.h>
 #  include <SDL.h>
 #  include <jni.h>
+#endif
+
+#ifdef __linux__
+# ifndef ANDROID
+#  ifndef _GNU_SOURCE
+#   define _GNU_SOURCE
+#  endif
+/*#  include <pthread.h>*/
+#  include <sched.h>
+# endif
 #endif
 
 /*
@@ -48,7 +56,8 @@
 
 // this will give us a constant time precision
 #define timeOffset  (4294967296.0)
-double Sys_Time_Offset () { return timeOffset/1000000.0; }
+//double Sys_Time_Offset () { return timeOffset/1000000.0; }
+double Sys_Time_Offset () { return timeOffset; }
 
 #if 0
 moved to zone
@@ -679,34 +688,119 @@ static int systimeSecBase = 0;
 
 #endif
 
+#ifdef __linux__
+# ifndef ANDROID
+static cpu_set_t cpusetOther;
+static int cpuMain = -1;
+# endif
+#endif
+
 
 //==========================================================================
 //
-//  Sys_Time
+//  Sys_PinThread
+//
+//  pin current thread to single CPU
+//
+//==========================================================================
+void Sys_PinThread () {
+#ifdef __linux__
+# ifndef ANDROID
+  if (cpuMain < 0) {
+    CPU_ZERO(&cpusetOther);
+    sched_getaffinity(0/*current thread*/, sizeof(cpu_set_t), &cpusetOther);
+    if (CPU_COUNT(&cpusetOther) < 2) return;
+    #if 0
+    for (int n = 0; n < CPU_SETSIZE; ++n) if (CPU_ISSET(n, &cpusetOther)) fprintf(stderr, "***MAIN THREAD CAN RUN ON CPU #%d\n", n);
+    #endif
+    int cid = 0;
+    while (cid < CPU_SETSIZE && !CPU_ISSET(cid, &cpusetOther)) ++cid;
+    if (cid < CPU_SETSIZE) {
+      cpuMain = cid;
+      CPU_CLR(cid, &cpusetOther);
+    }
+  }
+  if (cpuMain >= 0) {
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(cpuMain, &cpuset);
+    //pthread_setaffinity_np(this_tid, sizeof(cpu_set_t), &cpuset);
+    sched_setaffinity(0/*current thread*/, sizeof(cpu_set_t), &cpuset);
+    #if 0
+    CPU_ZERO(&cpuset);
+    sched_getaffinity(0/*current thread*/, sizeof(cpu_set_t), &cpuset);
+    for (int n = 0; n < CPU_SETSIZE; ++n) if (CPU_ISSET(n, &cpuset)) fprintf(stderr, "***MAIN THREAD CAN RUN ON CPU #%d\n", n);
+    #endif
+  }
+# endif
+#endif
+}
+
+
+//==========================================================================
+//
+//  Sys_PinOtherThread
+//
+//  pin current thread to any CPU except the first one
+//
+//==========================================================================
+void Sys_PinOtherThread () {
+#ifdef __linux__
+# ifndef ANDROID
+  if (cpuMain >= 0) {
+    //pthread_setaffinity_np(this_tid, sizeof(cpu_set_t), &cpuset);
+    sched_setaffinity(0/*current thread*/, sizeof(cpu_set_t), &cpusetOther);
+    #if 0
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    sched_getaffinity(0/*current thread*/, sizeof(cpu_set_t), &cpuset);
+    for (int n = 0; n < CPU_SETSIZE; ++n) if (CPU_ISSET(n, &cpuset)) fprintf(stderr, "***(FINAL)SECONDARY THREAD CAN RUN ON CPU #%d\n", n);
+    #endif
+  }
+# endif
+#endif
+}
+
+
+//==========================================================================
+//
+//  Sys_Time_Ex
 //
 //  return valud should not be zero
 //
 //==========================================================================
-double Sys_Time () {
+double Sys_Time_Ex (vuint64 *msecs) {
 #ifdef __linux__
   struct timespec ts;
-#ifdef ANDROID // CrystaX 10.3.2 supports only this
-  if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) Sys_Error("clock_gettime failed");
-#else
-  if (clock_gettime(/*CLOCK_MONOTONIC*/CLOCK_MONOTONIC_RAW, &ts) != 0) Sys_Error("clock_gettime failed");
-#endif
+  #ifdef ANDROID // CrystaX 10.3.2 supports only this
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) Sys_Error("clock_gettime failed");
+  #else
+    if (clock_gettime(/*CLOCK_MONOTONIC*/CLOCK_MONOTONIC_RAW, &ts) != 0) Sys_Error("clock_gettime failed");
+  #endif
   SYSTIME_CHECK_INIT();
   //return (ts.tv_sec-systimeSecBase)+(timeOffset+ts.tv_nsec)/1000000000.0;
   // we don't actually need nanosecond precision here
-  return (ts.tv_sec-systimeSecBase)+(timeOffset+(ts.tv_nsec/1000))/1000000.0;
-  //return (ts.tv_sec-systimeSecBase)+(timeOffset+(ts.tv_nsec/1000000))/1000.0;
+  // one second is 1,000,000,000 nanoseconds
+  // therefore, one millisecond is 1,000,000 nanoseconds
+  const vuint64 msc =
+    ((vuint64)(ts.tv_sec-systimeSecBase+1)*(vuint64)1000)+ // seconds->milliseconds
+    ((vuint64)ts.tv_nsec/(vuint64)1000000); // nanoseconds->milliseconds
+  //return (ts.tv_sec-systimeSecBase)+(timeOffset+(ts.tv_nsec/1000))/1000000.0; // milliseconds
+  //return (ts.tv_sec-systimeSecBase)+(timeOffset+(ts.tv_nsec/1000000))/1000.0; // nanosecons
 #else
   struct timeval tp;
   struct timezone tzp;
   gettimeofday(&tp, &tzp);
   SYSTIME_CHECK_INIT();
-  return (tp.tv_sec-systimeSecBase)+(timeOffset+tp.tv_usec)/1000000.0;
+  //return (tp.tv_sec-systimeSecBase)+(timeOffset+tp.tv_usec)/1000000.0; // milliseconds
+  // one second is 1,000,000 microseconds
+  // therefore, one millisecond is 1,000 microseconds
+  const vuint64 msc =
+    ((vuint64)(tp.tv_sec-systimeSecBase+1)*(vuint64)1000)+ // seconds->milliseconds
+    ((vuint64)tp.tv_usec/(vuint64)1000); // microseconds->milliseconds
 #endif
+  if (msecs) *msecs = msc;
+  return (timeOffset+(double)msc)/1000.0;
 }
 
 
@@ -714,21 +808,24 @@ double Sys_Time () {
 //
 //  Sys_GetTimeNano
 //
-// get time (start point is arbitrary) in nanoseconds
+//  get time (start point is arbitrary) in nanoseconds
 //
 //==========================================================================
 vuint64 Sys_GetTimeNano () {
 #ifdef __linux__
   struct timespec ts;
-#ifdef ANDROID // CrystaX 10.3.2 supports only this
-  if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) Sys_Error("clock_gettime failed");
-#else
-  if (clock_gettime(/*CLOCK_MONOTONIC*/CLOCK_MONOTONIC_RAW, &ts) != 0) Sys_Error("clock_gettime failed");
-#endif
+  #ifdef ANDROID // CrystaX 10.3.2 supports only this
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) Sys_Error("clock_gettime failed");
+  #else
+    if (clock_gettime(/*CLOCK_MONOTONIC*/CLOCK_MONOTONIC_RAW, &ts) != 0) Sys_Error("clock_gettime failed");
+  #endif
   SYSTIME_CHECK_INIT();
-  return (ts.tv_sec-systimeSecBase+1)*1000000000ULL+ts.tv_nsec;
+  return (vuint64)(ts.tv_sec-systimeSecBase+1)*(vuint64)1000000000ULL+(vuint64)ts.tv_nsec;
 #else
-  return (vuint64)(Sys_Time()*1000000000.0);
+  // in shitdoze, we have millisecond precision at best anyway
+  vuint64 msecs;
+  (void)Sys_Time_Ex(&msecs);
+  return msecs*(vuint64)1000000;
 #endif
 }
 
@@ -743,7 +840,7 @@ static time_t systimeCPUSecBase = 0;
 //
 //  Sys_Time_CPU
 //
-//  return valud should not be zero
+//  return value should not be zero
 //
 //==========================================================================
 double Sys_Time_CPU () {
@@ -753,7 +850,8 @@ double Sys_Time_CPU () {
   if (!systimeCPUInited) { systimeCPUInited = true; systimeCPUSecBase = ts.tv_sec; }
   return (ts.tv_sec-systimeCPUSecBase)+ts.tv_nsec/1000000000.0+1.0;
 #else
-  return Sys_Time();
+  // in shitdoze, we have millisecond precision at best anyway
+  return Sys_Time_Ex(nullptr);
 #endif
 }
 
@@ -1132,7 +1230,7 @@ void Sys_CloseDir (void *adir) {
 }
 
 
-#ifdef SHITDOZE_USE_WINMM
+//WARNING! query-perf-counter is susceptible to CPU throttling! DO NOT USE IT, EVER!
 #include <mmsystem.h>
 static bool shitdozeTimerInited = false;
 static vuint32 shitdozeLastTime = 0;
@@ -1171,14 +1269,59 @@ struct ShitdozeTimerInit {
 
 ShitdozeTimerInit thisIsFuckinShitdozeTimerInitializer;
 
+static DWORD mainAffMask = 0;
+static DWORD otherAffMask = 0;
 
-double Sys_Time () {
+
+//==========================================================================
+//
+//  Sys_PinThread
+//
+//  pin current thread to single CPU
+//
+//==========================================================================
+void Sys_PinThread () {
+  if (mainAffMask == 0) {
+    DWORD pmask = 0, smask = 0;
+    if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, smask)) return;
+    if (!pmask) return;
+    // pin to the first avaliable CPU
+    DWORD xmask = 1;
+    while (xmask && !(pmask&xmask)) xmask = (DWORD)(xmask<<1);
+    if (!xmask) return;
+    if ((DWORD)(pmask&~xmask) == 0) return;
+    mainAffMask = xmask;
+    otherAffMask = (DWORD)(pmask&~xmask);
+  }
+  if (mainAffMask) SetThreadAffinityMask(GetCurrentThread(), mainAffMask);
+}
+
+
+//==========================================================================
+//
+//  Sys_PinOtherThread
+//
+//  pin current thread to any CPU except the first one
+//
+//==========================================================================
+void Sys_PinOtherThread () {
+  if (otherAffMask) SetThreadAffinityMask(GetCurrentThread(), otherAffMask);
+}
+
+
+//==========================================================================
+//
+//  Sys_Time_Ex
+//
+//==========================================================================
+double Sys_Time_Ex (vuint64 *msecs) {
   if (!shitdozeTimerInited) Sys_Error("shitdoze shits itself");
   const vuint32 currtime = (vuint32)timeGetTime();
   // this properly deals with wraparounds
   shitdozeCurrTime += currtime-shitdozeLastTime;
   shitdozeLastTime = currtime;
-  return (timeOffset+shitdozeCurrTime)/1000.0;
+  if (msecs) *msecs = shitdozeCurrTime;
+  return (timeOffset+(double)shitdozeCurrTime)/1000.0;
 }
 
 
@@ -1188,121 +1331,10 @@ double Sys_Time () {
 //
 //==========================================================================
 vuint64 Sys_GetTimeNano () {
-  if (!shitdozeTimerInited) Sys_Error("shitdoze shits itself");
-  vuint32 currtime = (vuint32)timeGetTime();
-  if (currtime > shitdozeLastTime) {
-    shitdozeCurrTime += currtime-shitdozeLastTime;
-  } else {
-    // meh; do nothing on wraparound, this should only happen once
-  }
-  shitdozeLastTime = currtime;
-  return (vuint64)(shitdozeCurrTime+1000)*1000000ULL; // msecs -> nsecs
+  vuint64 msecs;
+  (void)Sys_Time_Ex(&msecs);
+  return (vuint64)(msecs+1000)*1000000ULL; // msecs -> nsecs
 }
-
-
-#else
-int Sys_TimeMinPeriodMS () { return 0; }
-int Sys_TimeMaxPeriodMS () { return 0; }
-
-static bool systimeInited = false;
-
-
-//==========================================================================
-//
-//  Sys_Time
-//
-//==========================================================================
-double Sys_Time () {
-  static double pfreq;
-  static double curtime = 0.0;
-  static double lastcurtime = 0.0;
-  static vuint32 oldtime;
-  static int lowshift;
-
-  if (!systimeInited) {
-    LARGE_INTEGER PerformanceFreq;
-    LARGE_INTEGER PerformanceCount;
-    vuint32 lowpart, highpart;
-
-    if (!QueryPerformanceFrequency(&PerformanceFreq)) Sys_Error("No hardware timer available");
-    // get 32 out of the 64 time bits such that we have around
-    // 1 microsecond resolution
-    lowpart = (vuint32)PerformanceFreq.u.LowPart;
-    highpart = (vuint32)PerformanceFreq.u.HighPart;
-    lowshift = 0;
-    while (highpart || lowpart > 2000000.0) {
-      ++lowshift;
-      lowpart >>= 1;
-      lowpart |= (highpart&1)<<31;
-      highpart >>= 1;
-    }
-
-    pfreq = 1.0 / (double)lowpart;
-
-    // read current time and set old time
-    QueryPerformanceCounter(&PerformanceCount);
-
-    oldtime = ((vuint32)PerformanceCount.u.LowPart>>lowshift)|((vuint32)PerformanceCount.u.HighPart<<(32-lowshift));
-
-    // set start time
-    /*
-    const char *p = GArgs.CheckValue("-starttime");
-    if (p) {
-      curtime = (double)atof(p);
-    } else {
-      curtime = 0.0;
-    }
-    */
-    curtime = 0.0;
-    lastcurtime = curtime;
-    systimeInited = true;
-  }
-
-  static int sametimecount;
-  LARGE_INTEGER PerformanceCount;
-  vuint32 temp, t2;
-  double time;
-
-  QueryPerformanceCounter(&PerformanceCount);
-
-  temp = ((unsigned int)PerformanceCount.u.LowPart>>lowshift)|((unsigned int)PerformanceCount.u.HighPart<<(32-lowshift));
-
-  // check for turnover or backward time
-  if (temp <= oldtime && oldtime-temp < 0x10000000) {
-    oldtime = temp; // so we can't get stuck
-  } else {
-    t2 = temp-oldtime;
-
-    time = (double)t2*pfreq;
-    oldtime = temp;
-
-    curtime += time;
-
-    if (curtime == lastcurtime) {
-      ++sametimecount;
-      if (sametimecount > 100000) {
-        curtime += 1.0;
-        sametimecount = 0;
-      }
-    } else {
-      sametimecount = 0;
-    }
-    lastcurtime = curtime;
-  }
-
-  return curtime+1.0;
-}
-
-
-//==========================================================================
-//
-//  Sys_GetTimeNano
-//
-//==========================================================================
-vuint64 Sys_GetTimeNano () {
-  return (vuint64)(Sys_Time()*1000000000.0);
-}
-#endif
 
 
 //==========================================================================
@@ -1331,7 +1363,7 @@ vuint64 Sys_GetTimeCPUNano () {
 //
 //==========================================================================
 void Sys_Yield () {
-  Sleep(1);
+  Sleep(0);
 }
 
 

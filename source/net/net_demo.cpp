@@ -82,7 +82,7 @@ VDemoPlaybackNetConnection::~VDemoPlaybackNetConnection () {
   if (bTimeDemo) {
     // the first frame didn't count
     int frames = (host_framecount-td_startframe)-1;
-    float time = systime-td_starttime;
+    float time = host_systime-td_starttime;
     if (!time) time = 1;
     GCon->Logf(NAME_DevNet, "%d frames %f seconds %f fps", frames, time, frames/time);
   }
@@ -104,7 +104,7 @@ int VDemoPlaybackNetConnection::GetRawPacket (void *dest, size_t destSize) {
       td_lastframe = host_framecount;
       // if this is the second frame, grab the real  cls.td_starttime
       // so the bogus time on the first frame doesn't count
-      if (host_framecount == td_startframe+1) td_starttime = systime;
+      if (host_framecount == td_startframe+1) td_starttime = host_systime;
     } else if (GClLevel->Time < NextPacketTime) {
       return 0; // don't need another message yet
     }

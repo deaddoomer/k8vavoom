@@ -54,7 +54,8 @@ void Sys_CloseDir (void *adir);
 double Sys_Time_Offset (); // time starting point
 
 double Sys_Time_CPU (); // this tries to return CPU time used by the process; never returns 0
-double Sys_Time (); // never returns 0
+double Sys_Time_Ex (vuint64 *msecs); // never returns 0; returns the same time in msecs in `msecs` (if not nullptr)
+static VVA_ALWAYS_INLINE VVA_OKUNUSED double Sys_Time () { return Sys_Time_Ex(nullptr); } // never returns 0
 void Sys_Yield ();
 
 // has any meaning only for shitdoze, returns 0 otherwise
@@ -79,3 +80,9 @@ vuint32 Sys_GetCurrentTID ();
 // returns system user name suitable for using as player name
 // never returns empty string
 VStr Sys_GetUserName ();
+
+// pin current thread to single CPU
+void Sys_PinThread ();
+
+// pin current thread to any CPU except the first one
+void Sys_PinOtherThread ();

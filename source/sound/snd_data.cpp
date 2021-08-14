@@ -284,6 +284,7 @@ static void releaseSfxData (VSoundManager *sman, int sound_id) {
 //
 //==========================================================================
 static MYTHREAD_RET_TYPE soundLoaderThread (void *adevobj) {
+  Sys_PinOtherThread();
   VSoundManager *sman = (VSoundManager *)adevobj;
 
   mythread_mutex_lock(&sman->loaderLock);

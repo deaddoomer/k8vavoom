@@ -120,10 +120,11 @@ VCvarB k8vavoom_developer_version("k8vavoom_developer_version", CVAR_K8_DEV_VALU
 
 static double hostLastGCTime = 0.0;
 
-double host_frametime = 0.0;
-double host_framefrac = 0.0; // unused frame time left from previous `SV_Ticker()` in realtime mode
+float host_frametime = 0.0f;
+float host_framefrac = 0.0f; // unused frame time left from previous `SV_Ticker()` in realtime mode
 double host_time = 0.0; // used in UI and network heartbits; accumulates frame times
-double systime = 0.0; // current `Sys_Time()`; used for consistency, updated in `FilterTime()`
+double host_systime = 0.0; // current `Sys_Time()`; used for consistency, updated in `FilterTime()`
+vuint64 host_systime64_msec = 0; // monotonic time, in milliseconds
 int host_framecount = 0;
 
 bool host_initialised = false;
@@ -568,7 +569,7 @@ static void Host_GetConsoleCommands () {
 //
 //==========================================================================
 void Host_ResetSkipFrames () {
-  last_time = systime = Sys_Time();
+  last_time = host_systime = Sys_Time();
   host_frametime = 0;
   host_framefrac = 0;
   //GCon->Logf("*** Host_ResetSkipFrames; ctime=%f", last_time);
@@ -587,9 +588,9 @@ bool Host_IsDangerousTimeout () {
   if (!cl || !cl->Net || (GGameInfo->NetMode != NM_Client && GGameInfo->NetMode != NM_ListenServer)) {
     clientBadNetTimoutReleaseTime = 0;
   } else if (CL_IsDangerousTimeout()) {
-    clientBadNetTimoutReleaseTime = systime+15; // slowdown it for 15 seconds
+    clientBadNetTimoutReleaseTime = host_systime+15; // slowdown it for 15 seconds
   }
-  return (clientBadNetTimoutReleaseTime > 0 && clientBadNetTimoutReleaseTime > systime);
+  return (clientBadNetTimoutReleaseTime > 0 && clientBadNetTimoutReleaseTime > host_systime);
   #else
   return false;
   #endif
@@ -611,7 +612,7 @@ static bool FilterTime () {
   //double timeDelta = curr_time-last_time;
 
   // update it here, it is used as a substitute for `Sys_Time()` in demo and other code
-  systime = curr_time;
+  host_systime = curr_time;
 
   if (dbg_frametime < max_fps_cap_float) {
     // freestep mode
@@ -737,12 +738,12 @@ void Host_Frame () {
     if (!FilterTime()) {
       // don't run frames too fast
       // but still process network activity, we may want to re-send packets and such
-      if (lastNetFrameTime > systime) lastNetFrameTime = systime; // just in case
+      if (lastNetFrameTime > host_systime) lastNetFrameTime = host_systime; // just in case
       //const double ctt = Sys_Time();
       const double dtt = (GGameInfo->NetMode >= NM_DedicatedServer ? 1.0/200.0 : 1.0/70.0);
-      if (systime-lastNetFrameTime >= dtt) {
+      if (host_systime-lastNetFrameTime >= dtt) {
         // perform network activity
-        lastNetFrameTime = systime;
+        lastNetFrameTime = host_systime;
         #ifdef CLIENT
         // process client
         CL_NetInterframe(); // this does all necessary checks
@@ -758,7 +759,7 @@ void Host_Frame () {
       return;
     }
 
-    lastNetFrameTime = systime;
+    lastNetFrameTime = host_systime;
 
     if (GSoundManager) GSoundManager->Process();
 

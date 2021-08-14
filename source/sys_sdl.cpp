@@ -344,6 +344,8 @@ int main (int argc, char **argv) {
     }
   }
 
+  Sys_PinThread(); // pin main thread to one CPU
+
   if (host_gdb_mode) {
     mainloop(argc, argv);
   } else {

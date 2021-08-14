@@ -842,10 +842,10 @@ static void SV_UpdateMaster () {
     return;
   }
   const double hbt = clampval(master_heartbeat_time.asInt(), 1, 60)*60.0;
-  if (LastMasterUpdate <= 0.0 || systime-LastMasterUpdate >= hbt) {
+  if (LastMasterUpdate <= 0.0 || host_systime-LastMasterUpdate >= hbt) {
     GNet->UpdateMaster();
     // randomise update time a little
-    LastMasterUpdate = systime+(RandomFull()-RandomFull())*8;
+    LastMasterUpdate = host_systime+(RandomFull()-RandomFull())*8;
   }
 }
 

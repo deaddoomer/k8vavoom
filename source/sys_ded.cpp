@@ -327,6 +327,8 @@ int main (int argc, char **argv) {
       }
     }
 
+    Sys_PinThread(); // pin main thread to one CPU
+
     Host_InitStreamCallbacks();
 
     VObject::StaticInitOptions(GParsedArgs);

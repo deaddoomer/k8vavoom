@@ -24,7 +24,7 @@
 //**
 //**************************************************************************
 #include "../gamedefs.h"
-#include "../host.h"  /* host_time */
+#include "../host.h"  /* host_systime64_msec */
 #include "../screen.h"
 #include "../drawer.h"
 #include "../text.h"
@@ -1845,7 +1845,7 @@ void VWidget::DrawCursor (int cursorColor) {
 //
 //==========================================================================
 void VWidget::DrawCursorAt (int x, int y, int cursorChar, int cursorColor) {
-  if (Font && ((int)(host_time*4)&1)) {
+  if (Font && ((host_systime64_msec/250)&1)) {
     int w;
     bool oldflt = gl_pic_filtering;
     gl_pic_filtering = gl_font_filtering;

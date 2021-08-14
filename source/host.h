@@ -57,11 +57,13 @@ extern bool host_gdb_mode;
 #define max_fps_cap_double  (1.0/250.0)
 #define max_fps_cap_float   ((float)(1.0f/250.0f))
 
-extern double host_frametime;
-extern double host_framefrac;
+extern float host_frametime;
+extern float host_framefrac;
 extern double host_time; // used in UI and network heartbits; accumulates frame times
-extern double systime; // current `Sys_Time()`; used for consistency, updated in `FilterTime()`
+extern double host_systime; // current `Sys_Time()`; used for consistency, updated in `FilterTime()`
+extern vuint64 host_systime64_msec; // monotonic time, in milliseconds
 extern int host_framecount;
+
 extern int cli_ShowEndText;
 
 

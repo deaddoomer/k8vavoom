@@ -183,6 +183,7 @@ void VStreamMusicPlayer::stpThreadSendCommand (STPCommand acmd) {
 //
 //==========================================================================
 MYTHREAD_RET_TYPE VStreamMusicPlayerWorker::streamPlayerThread (void *adevobj) {
+  Sys_PinOtherThread();
   VStreamMusicPlayer *strm = (VStreamMusicPlayer *)adevobj;
   mythread_mutex_lock(&strm->stpPingLock);
   // set sound device context for this thread
