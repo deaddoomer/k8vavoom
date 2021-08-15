@@ -222,7 +222,7 @@ VVA_CHECKRESULT TVec TPlane::get3DBBoxSupportPoint (const float bbox[6], float *
       bestVec = bv;
     }
   }
-  if (pdist) *pdist = bestDist;
+  if (pdist) *pdist = zeroDenormalsF(bestDist);
   return bestVec;
 }
 
@@ -245,7 +245,7 @@ VVA_CHECKRESULT TVec TPlane::get2DBBoxSupportPoint (const float bbox2d[4], float
       bestVec = bv;
     }
   }
-  if (pdist) *pdist = bestDist;
+  if (pdist) *pdist = zeroDenormalsF(bestDist);
   return bestVec;
 }
 
@@ -268,7 +268,7 @@ VVA_CHECKRESULT TVec TPlane::get3DBBoxAntiSupportPoint (const float bbox[6], flo
       bestVec = bv;
     }
   }
-  if (pdist) *pdist = bestDist;
+  if (pdist) *pdist = zeroDenormalsF(bestDist);
   return bestVec;
 }
 
@@ -291,7 +291,7 @@ VVA_CHECKRESULT TVec TPlane::get2DBBoxAntiSupportPoint (const float bbox2d[4], f
       bestVec = bv;
     }
   }
-  if (pdist) *pdist = bestDist;
+  if (pdist) *pdist = zeroDenormalsF(bestDist);
   return bestVec;
 }
 
@@ -417,6 +417,7 @@ void TPlane::ClipPoly (ClipWorkData &wdata, const TVec *src, const int vcount,
       else if (norm[j] == -1.0f) mid[j] = -pdist;
       else mid[j] = p1[j]+idist*(p2[j]-p1[j]);
     }
+    mid.fixDenormalsInPlace();
     if (destfront) destfront[fcount] = mid;
     /*fuckyougcc*/ ++fcount; // not a bug
     if (destback) destback[bcount] = mid;

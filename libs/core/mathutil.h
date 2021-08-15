@@ -227,10 +227,10 @@ static VVA_OKUNUSED VVA_ALWAYS_INLINE void sincosd_dumb (double x, double *vsin,
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT VVA_ALWAYS_INLINE float msin (const float angle) noexcept { return sinf(DEG2RADF(angle)); }
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT VVA_ALWAYS_INLINE float mcos (const float angle) noexcept { return cosf(DEG2RADF(angle)); }
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT VVA_ALWAYS_INLINE float mtan (const float angle) noexcept { return tanf(DEG2RADF(angle)); }
-static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT VVA_ALWAYS_INLINE float masin (const float x) noexcept { return RAD2DEGF(asinf(x)); }
-static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT VVA_ALWAYS_INLINE float macos (const float x) noexcept { return RAD2DEGF(acosf(x)); }
-static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT VVA_ALWAYS_INLINE float matan (const float y, const float x) noexcept { return RAD2DEGF(atan2f(y, x)); }
-static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT VVA_ALWAYS_INLINE double matand (const double y, const double x) noexcept { return RAD2DEGD(atan2(y, x)); }
+static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT VVA_ALWAYS_INLINE float masin (const float x) noexcept { return zeroDenormalsF(RAD2DEGF(asinf(x))); }
+static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT VVA_ALWAYS_INLINE float macos (const float x) noexcept { return zeroDenormalsF(RAD2DEGF(acosf(x))); }
+static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT VVA_ALWAYS_INLINE float matan (const float y, const float x) noexcept { return zeroDenormalsF(RAD2DEGF(atan2f(y, x))); }
+static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT VVA_ALWAYS_INLINE double matand (const double y, const double x) noexcept { return zeroDenormalsF(RAD2DEGD(atan2(y, x))); }
 static VVA_OKUNUSED VVA_ALWAYS_INLINE void msincos (const float angle, float *vsin, float *vcos) noexcept { return sincosf(DEG2RADF(angle), vsin, vcos); }
 static VVA_OKUNUSED VVA_ALWAYS_INLINE void msincosd (const double angle, double *vsin, double *vcos) noexcept { return sincosd(DEG2RADD(angle), vsin, vcos); }
 

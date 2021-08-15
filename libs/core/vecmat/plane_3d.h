@@ -79,7 +79,7 @@ public:
     normal = Anormal;
     dist = Adist;
     NormaliseInPlace();
-    if (!normal.isValid() || normal.isZero()) {
+    if (!normal.toBool()) {
       //k8: what to do here?!
       normal = TVec(1.0f, 0.0f, 0.0f);
       dist = 0.0f;
@@ -99,10 +99,10 @@ public:
         return;
       }
       // vertical
-      normal.y = (normal.y < 0 ? -1.0f : 1.0f);
+      normal.y = floatSign(normal.y);
     } else if (!normal.y) {
       // horizontal
-      normal.x = (normal.x < 0 ? -1.0f : 1.0f);
+      normal.x = floatSign(normal.x);
     } else {
       // sloped
       normal.normaliseInPlace();
@@ -119,9 +119,9 @@ public:
 
   // initialises "full" plane from point and direction (direction will be normalised)
   inline void SetPointNormal3DSafe (const TVec &point, const TVec &dir) noexcept {
-    if (dir.isValid() && point.isValid() && !dir.isZero()) {
+    if (dir.toBool() && point.isValid()) {
       normal = dir.normalised();
-      if (normal.isValid() && !normal.isZero()) {
+      if (normal.toBool()) {
         dist = point.dot(normal);
       } else {
         //k8: what to do here?!
@@ -159,9 +159,10 @@ public:
   VVA_ALWAYS_INLINE void NormaliseInPlace () noexcept {
     const float mag = normal.invlength();
     normal *= mag;
+    normal.fixDenormalsInPlace();
     // multiply by mag too, because we're doing "dot-dist", so
     // if our vector becomes smaller, our dist should become smaller too
-    dist *= mag;
+    dist *= zeroDenormalsF(mag);
   }
 
   VVA_ALWAYS_INLINE void FlipInPlace () noexcept {
@@ -172,7 +173,7 @@ public:
   // *signed* distance from point to plane
   // plane must be normalized
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float PointDistance (const TVec &p) const noexcept {
-    return p.dot(normal)-dist;
+    return zeroDenormalsF(p.dot(normal)-dist);
   }
 
   // returns intersection time
@@ -192,18 +193,18 @@ public:
     const float frac = d1/(d1-d2); // [0..1], from start
     if (!isFiniteF(frac) || frac < 0.0f || frac > 1.0f) return -1.0f; // just in case
 
-    if (currhit) *currhit = linestart+(lineend-linestart)*frac;
-    return frac;
+    if (currhit) *currhit = linestart+(lineend-linestart)*zeroDenormalsF(frac);
+    return zeroDenormalsF(frac);
   }
 
   // get z of point with given x and y coords
   // don't try to use it on a vertical plane
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float GetPointZ (const float x, const float y) const noexcept {
-    return (VSUM3(dist, -(normal.x*x), -(normal.y*y))/normal.z);
+    return zeroNanInfDenormalsF(VSUM3(dist, -(normal.x*x), -(normal.y*y))/normal.z);
   }
 
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float GetPointZRev (const float x, const float y) const noexcept {
-    return (VSUM3(-dist, -(-normal.x*x), -(-normal.y*y))/(-normal.z));
+    return zeroNanInfDenormalsF(VSUM3(-dist, -(-normal.x*x), -(-normal.y*y))/(-normal.z));
   }
 
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float GetPointZ (const TVec &v) const noexcept {
@@ -351,32 +352,32 @@ public:
   // i.e. box point that is furthest from the plane
   VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec get3DBBoxRejectPoint (const float bbox[6]) const noexcept {
     return TVec(
-      bbox[BOX3D_X+(normal.x < 0.0f ? BOX3D_MINIDX : BOX3D_MAXIDX)],
-      bbox[BOX3D_Y+(normal.y < 0.0f ? BOX3D_MINIDX : BOX3D_MAXIDX)],
-      bbox[BOX3D_Z+(normal.z < 0.0f ? BOX3D_MINIDX : BOX3D_MAXIDX)]);
+      bbox[BOX3D_X+(isLessZeroF(normal.x) ? BOX3D_MINIDX : BOX3D_MAXIDX)],
+      bbox[BOX3D_Y+(isLessZeroF(normal.y) ? BOX3D_MINIDX : BOX3D_MAXIDX)],
+      bbox[BOX3D_Z+(isLessZeroF(normal.z) ? BOX3D_MINIDX : BOX3D_MAXIDX)]);
   }
 
   // returns "AABB accept point"
   // i.e. box point that is closest to the plane
   VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec get3DBBoxAcceptPoint (const float bbox[6]) const noexcept {
     return TVec(
-      bbox[BOX3D_X+(normal.x < 0.0f ? BOX3D_MAXIDX : BOX3D_MINIDX)],
-      bbox[BOX3D_Y+(normal.y < 0.0f ? BOX3D_MAXIDX : BOX3D_MINIDX)],
-      bbox[BOX3D_Z+(normal.z < 0.0f ? BOX3D_MAXIDX : BOX3D_MINIDX)]);
+      bbox[BOX3D_X+(isLessZeroF(normal.x) ? BOX3D_MAXIDX : BOX3D_MINIDX)],
+      bbox[BOX3D_Y+(isLessZeroF(normal.y) ? BOX3D_MAXIDX : BOX3D_MINIDX)],
+      bbox[BOX3D_Z+(isLessZeroF(normal.z) ? BOX3D_MAXIDX : BOX3D_MINIDX)]);
   }
 
   VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec get2DBBoxRejectPoint (const float bbox2d[4], const float minz=0.0f, const float maxz=0.0f) const noexcept {
     return TVec(
-      bbox2d[normal.x < 0.0f ? BOX2D_LEFT : BOX2D_RIGHT],
-      bbox2d[normal.y < 0.0f ? BOX2D_BOTTOM : BOX2D_TOP],
-      (normal.z < 0.0f ? minz : maxz));
+      bbox2d[isLessZeroF(normal.x) ? BOX2D_LEFT : BOX2D_RIGHT],
+      bbox2d[isLessZeroF(normal.y) ? BOX2D_BOTTOM : BOX2D_TOP],
+      (isLessZeroF(normal.z) ? minz : maxz));
   }
 
   VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec get2DBBoxAcceptPoint (const float bbox2d[4], const float minz=0.0f, const float maxz=0.0f) const noexcept {
     return TVec(
-      bbox2d[normal.x < 0.0f ? BOX2D_RIGHT : BOX2D_LEFT],
-      bbox2d[normal.y < 0.0f ? BOX2D_TOP : BOX2D_BOTTOM],
-      (normal.z < 0.0f ? maxz : minz));
+      bbox2d[isLessZeroF(normal.x) ? BOX2D_RIGHT : BOX2D_LEFT],
+      bbox2d[isLessZeroF(normal.y) ? BOX2D_TOP : BOX2D_BOTTOM],
+      (isLessZeroF(normal.z) ? maxz : minz));
   }
 
   // returns `false` if the box fully is on the back side of the plane

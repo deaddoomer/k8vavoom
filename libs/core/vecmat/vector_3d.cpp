@@ -58,7 +58,6 @@ void AngleVectors (const TAVec &angles, TVec &forward, TVec &right, TVec &up) no
     msincos(angles.pitch, &sp, &cp);
     if (angles.roll) {
       msincos(angles.roll, &sr, &cr);
-
       forward.x = cp*cy;
       forward.y = cp*sy;
       forward.z = -sp;
@@ -92,6 +91,10 @@ void AngleVectors (const TAVec &angles, TVec &forward, TVec &right, TVec &up) no
     up.y = 0.0f;
     up.z = 1.0f;
   }
+
+  forward.fixDenormalsInPlace();
+  right.fixDenormalsInPlace();
+  up.fixDenormalsInPlace();
 }
 
 
@@ -110,7 +113,6 @@ TVec AnglesRightVector (const TAVec &angles) noexcept {
       float sr, cr;
       msincos(angles.pitch, &sp, &cp);
       msincos(angles.roll, &sr, &cr);
-
       right.x = VSUM2(-sr*sp*cy, cr*sy);
       right.y = VSUM2(-sr*sp*sy, -(cr*cy));
       right.z = -sr*cp;
@@ -126,6 +128,7 @@ TVec AnglesRightVector (const TAVec &angles) noexcept {
     right.y = -cy;
     right.z = 0.0f;
   }
+  right.fixDenormalsInPlace();
   return right;
 }
 
@@ -146,6 +149,7 @@ TVec YawVectorRight (float yaw) noexcept {
   msincos(yaw, &right.x, &right.y);
   right.y = -right.y;
   right.z = 0.0f;
+  right.fixDenormalsInPlace();
   return right;
 }
 
@@ -171,7 +175,6 @@ TVec AngleVector (const TAVec &angles) noexcept {
     float sp, cp;
     msincos(angles.yaw, &sy, &cy);
     msincos(angles.pitch, &sp, &cp);
-
     forward.x = cp*cy;
     forward.y = cp*sy;
     forward.z = -sp;
@@ -180,6 +183,7 @@ TVec AngleVector (const TAVec &angles) noexcept {
     msincos(angles.yaw, &forward.y, &forward.x);
     forward.z = 0.0f;
   }
+  forward.fixDenormalsInPlace();
   return forward;
 }
 
@@ -248,6 +252,7 @@ VVA_CHECKRESULT TVec AngleVectorPitch (const float pitch) noexcept {
   forward.y = 0.0f;
   forward.z = -msin(pitch);
   */
+  forward.fixDenormalsInPlace();
   return forward;
 }
 
@@ -264,6 +269,7 @@ bool ProjectPointOnPlane (TVec &dst, const TVec &p, const TVec &normal) noexcept
   if (!isFiniteF(inv_denom)) { dst = TVec(0.0f, 0.0f, 0.0f); return false; } //k8: what to do here?
   const float d = normal.dot(p)*inv_denom;
   dst = p-d*(normal*inv_denom);
+  dst.fixDenormalsInPlace();
   return true;
 }
 
@@ -307,7 +313,7 @@ void PerpendicularVector (TVec &dst, const TVec &src) noexcept {
 //==========================================================================
 VVA_CHECKRESULT TVec RotateVectorAroundVector (const TVec &Vector, const TVec &Axis, float Angle) noexcept {
   VRotMatrix M(Axis, Angle);
-  return Vector*M;
+  return (Vector*M).noDenormals();
 }
 
 
@@ -385,7 +391,7 @@ void RotatePointAroundVector (TVec &dst, const TVec &dir, const TVec &point, flo
   MatrixMultiply(m, zrot, tmpmat);
   MatrixMultiply(tmpmat, im, rot);
 
-  for (unsigned i = 0; i < 3; ++i) dst[i] = rot[i][0]*point[0]+rot[i][1]*point[1]+rot[i][2]*point[2];
+  for (unsigned i = 0; i < 3; ++i) dst[i] = zeroDenormalsF(rot[i][0]*point[0]+rot[i][1]*point[1]+rot[i][2]*point[2]);
 }
 
 
@@ -403,7 +409,7 @@ void RotateAroundDirection (TVec axis[3], float yaw) noexcept {
     RotatePointAroundVector(axis[1], axis[0], temp, yaw);
   }
   // cross to get axis[2]
-  axis[2] = axis[0].cross(axis[1]);
+  axis[2] = axis[0].cross(axis[1]).noDenormals();
 }
 
 
@@ -426,6 +432,7 @@ void MakeNormalVectors (const TVec &forward, TVec &right, TVec &up) noexcept {
   right -= forward*d;
   right.normaliseInPlace();
   up = right.cross(forward);
+  up.fixDenormalsInPlace();
 }
 
 
@@ -508,7 +515,7 @@ float RayBoxIntersection2D (const TVec &c, const float rad, const TVec &org, con
   // if `tmin` is negative, we're started inside the box
 
   if (tmax < 0.0f || tmin > 1.0f || tmax <= tmin) return -1.0f; // didn't hit
-  return max2(0.0f, tmin);
+  return zeroDenormalsF(max2(0.0f, tmin));
 }
 
 
@@ -571,5 +578,5 @@ float RayBoxIntersection3D (const TVec &c, const float rad, const float hgt, con
   // if `tmin` is negative, we're started inside the box
 
   if (tmax < 0.0f || tmin > 1.0f || tmax <= tmin) return -1.0f; // didn't hit
-  return max2(0.0f, tmin);
+  return zeroDenormalsF(max2(0.0f, tmin));
 }

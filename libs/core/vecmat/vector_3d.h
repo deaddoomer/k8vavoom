@@ -135,22 +135,24 @@ public:
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float &operator [] (const size_t i) noexcept { vassert(i < 3); return (&x)[i]; }
 
   VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isValid () const noexcept { return (isFiniteF(x) && isFiniteF(y) && isFiniteF(z)); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isZero () const noexcept { return (x == 0.0f && y == 0.0f && z == 0.0f); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isZero2D () const noexcept { return (x == 0.0f && y == 0.0f); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isZero () const noexcept { return !(isZeroFU32(x)|isZeroFU32(y)|isZeroFU32(z)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isZero2D () const noexcept { return !(isZeroFU32(x)|isZeroFU32(y)); }
 
   // this is what VavoomC wants: false is either zero, or invalid vector
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool toBool () const noexcept {
-    return
-      isFiniteF(x) && isFiniteF(y) && isFiniteF(z) &&
-      (x != 0.0f || y != 0.0f || z != 0.0f);
-  }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool toBool () const noexcept { return (isValid() && !isZero()); }
+
+  VVA_ALWAYS_INLINE void fixDenormalsInPlace () noexcept { zeroDenormalsFInPlace(&x); zeroDenormalsFInPlace(&y); zeroDenormalsFInPlace(&z); }
+  VVA_ALWAYS_INLINE void fixNanInfDenormalsInPlace () noexcept { zeroNanInfDenormalsFInPlace(&x); zeroNanInfDenormalsFInPlace(&y); zeroNanInfDenormalsFInPlace(&z); }
+
+  VVA_ALWAYS_INLINE void fix2DDenormalsInPlace () noexcept { zeroDenormalsFInPlace(&x); zeroDenormalsFInPlace(&y); z = 0.0f; }
+  VVA_ALWAYS_INLINE void fix2DNanInfDenormalsInPlace () noexcept { zeroNanInfDenormalsFInPlace(&x); zeroNanInfDenormalsFInPlace(&y); z = 0.0f; }
 
   VVA_ALWAYS_INLINE TVec &operator += (const TVec &v) noexcept { x += v.x; y += v.y; z += v.z; return *this; }
   VVA_ALWAYS_INLINE TVec &operator -= (const TVec &v) noexcept { x -= v.x; y -= v.y; z -= v.z; return *this; }
   VVA_ALWAYS_INLINE TVec &operator *= (const float scale) noexcept { x *= scale; y *= scale; z *= scale; return *this; }
   VVA_ALWAYS_INLINE TVec &operator /= (float scale) noexcept {
     scale = 1.0f/scale;
-    if (!isFiniteF(scale)) scale = 0.0f;
+    scale = zeroNanInfDenormalsF(scale); //if (!isFiniteF(scale)) scale = 0.0f;
     x *= scale;
     y *= scale;
     z *= scale;
@@ -187,6 +189,13 @@ public:
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float length2DSquared () const noexcept { return VSUM2(x*x, y*y); }
 
 
+  VVA_ALWAYS_INLINE TVec noDenormals () const noexcept { return TVec(zeroDenormalsF(x), zeroDenormalsF(y), zeroDenormalsF(z)); }
+  VVA_ALWAYS_INLINE TVec noNanInfDenormal () const noexcept { return TVec(zeroNanInfDenormalsF(x), zeroNanInfDenormalsF(y), zeroNanInfDenormalsF(z)); }
+
+  VVA_ALWAYS_INLINE TVec noDenormals2D () const noexcept { return TVec(zeroDenormalsF(x), zeroDenormalsF(y), 0.0f); }
+  VVA_ALWAYS_INLINE TVec noNanInfDenormal2D () const noexcept { return TVec(zeroNanInfDenormalsF(x), zeroNanInfDenormalsF(y), 0.0f); }
+
+
   // this is slightly slower, but better for axis-aligned vectors
 
   //VVA_ALWAYS_INLINE VVA_CHECKRESULT float Length2D () const noexcept { return (x && y ? sqrtf(VSUM2(x*x, y*y)) : fabsf(x+y)); }
@@ -198,11 +207,20 @@ public:
     else return fabsf(x+y);
   }
 
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float length2DNoDenormals () const noexcept { return zeroDenormalsF(x && y ? sqrtf(VSUM2(x*x, y*y)) : fabsf(x+y)); }
+
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float lengthNoDenormals () const noexcept {
+         if (z) { if (x || y) return zeroDenormalsF(sqrtf(VSUM3(x*x, y*y, z*z))); else return zeroDenormalsF(fabsf(z)); }
+    else if (x && y) return zeroDenormalsF(sqrtf(VSUM2(x*x, y*y)));
+    else return zeroDenormalsF(fabsf(x+y));
+  }
+
   //VVA_ALWAYS_INLINE VVA_CHECKRESULT float DistanceTo (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, z-v.z).Length(); }
   //VVA_ALWAYS_INLINE VVA_CHECKRESULT float DistanceTo2D (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, 0.0f).Length2D(); }
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float distanceTo (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, z-v.z).length(); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float distanceTo2D (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, 0.0f).length2D(); }
+  // may return zero distance to very close points
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float distanceTo (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, z-v.z).lengthNoDenormals(); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT float distanceTo2D (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, 0.0f).length2DNoDenormals(); }
 
   /*
   VVA_ALWAYS_INLINE void normaliseInPlace () noexcept { if (z) { const float invlen = invlength(); x *= invlen; y *= invlen; z *= invlen; } else normalise2DInPlace(); }
@@ -218,10 +236,11 @@ public:
     if (x && y) {
       const float invlen = invlength2D();
       x *= invlen; y *= invlen;
+      fix2DDenormalsInPlace();
     } else {
-      // at least one of `x`/`y` is zero here (but both can be zeroes, hence the checks)
-           if (x) x = (x < 0.0f ? -1.0f : 1.0f);
-      else if (y) y = (y < 0.0f ? -1.0f : 1.0f);
+      // at least one of `x`/`y` is zero here (but both can be zeroes)
+      x = floatSign(x);
+      y = floatSign(y);
     }
     z = 0.0f;
   }
@@ -231,9 +250,10 @@ public:
       if (x || y) {
         const float invlen = invlength();
         x *= invlen; y *= invlen; z *= invlen;
+        fixDenormalsInPlace();
       } else {
         // `z` is never zero here
-        z = (z < 0.0f ? -1.0f : 1.0f);
+        z = floatSign(z);
       }
     } else {
       normalise2DInPlace();
@@ -241,20 +261,18 @@ public:
   }
 
   VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec normalised2D () const noexcept {
-         if (x && y) { const float invlen = invlength2D(); return TVec(x*invlen, y*invlen, 0.0f); }
-    else if (x) return TVec((x < 0.0f ? -1.0f : +1.0f), 0.0f, 0.0f);
-    else if (y) return TVec(0.0f, (y < 0.0f ? -1.0f : +1.0f), 0.0f);
-    else return TVec(0.0f, 0.0f, 0.0f);
+    if (x && y) { const float invlen = invlength2D(); return TVec(zeroDenormalsF(x*invlen), zeroDenormalsF(y*invlen), 0.0f); }
+    else return TVec(floatSign(x), floatSign(y), 0.0f);
   }
 
   VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec normalised () const noexcept {
     if (z) {
       if (x || y) {
         const float invlen = invlength();
-        return TVec(x*invlen, y*invlen, z*invlen);
+        return TVec(zeroDenormalsF(x*invlen), zeroDenormalsF(y*invlen), zeroDenormalsF(z*invlen));
       } else {
         // `z` is never zero here
-        return TVec(0.0f, 0.0f, (z < 0.0f ? -1.0f : 1.0f));
+        return TVec(0.0f, 0.0f, floatSign(z));
       }
     } else {
       return normalised2D();
@@ -277,8 +295,8 @@ public:
   VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec mul3 (const float s) const noexcept { return TVec(x*s, y*s, z*s); }
 
   // returns projection of this vector onto `v`
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec projectTo (const TVec &v) const noexcept { return v.mul3(dot(v)/v.lengthSquared()); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec projectTo2D (const TVec &v) const noexcept { return v.mul2(dot2D(v)/v.length2DSquared()); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec projectTo (const TVec &v) const noexcept { return v.mul3(dot(v)/v.lengthSquared()).noDenormals(); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec projectTo2D (const TVec &v) const noexcept { return v.mul2(dot2D(v)/v.length2DSquared()).noDenormals2D(); }
 
   VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec sub2D (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, 0.0f); }
 
@@ -320,6 +338,7 @@ public:
         x *= rngscale;
         y *= rngscale;
         z *= rngscale;
+        fixDenormalsInPlace();
       }
     } else {
       x = y = z = 0.0f;
@@ -391,7 +410,7 @@ public:
     const TVec pa = a-(*this);
     const TVec c = n*(pa.dot2D(n)/n.dot2D(n));
     const TVec d = pa-c;
-    return d.dot2D(d);
+    return zeroDenormalsF(d.dot2D(d));
   }
 
   // http://www.randygaul.net/2014/07/23/distance-point-to-line-segment/
@@ -410,7 +429,7 @@ public:
     // closest point is between a and b
     const TVec e = pa-n*(c/n.dot2D(n));
 
-    return e.dot2D(e);
+    return zeroDenormalsF(e.dot2D(e));
   }
 
   // box point that is furthest in the given direction
