@@ -125,7 +125,7 @@ bool VEntity::CanSeeEx (VEntity *Other, unsigned flags) {
     dirF = dirR = TVec::ZeroVector;
   }
   //if (forShooting) dirR = TVec::ZeroVector; // just in case, lol
-  return XLevel->CastCanSee(BaseSubSector, Origin, Height, dirF, dirR, Other->Origin, Other->Radius, Other->Height,
+  return XLevel->CastCanSee(BaseSubSector, Origin, Height, dirF, dirR, Other->Origin, Other->GetMoveRadius(), Other->Height,
                             !(flags&CSE_CheckBaseRegion)/*skip base region*/, Other->BaseSubSector, /*alwaysBetter*/cbs,
                             !!(flags&CSE_IgnoreBlockAll), !!(flags&CSE_IgnoreFakeFloors));
 }

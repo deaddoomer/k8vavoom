@@ -1205,7 +1205,7 @@ bool VEntity::Check3DPObjLineBlockedInternal (const polyobj_t *po, const line_t 
 //==========================================================================
 bool VEntity::Check3DPObjLineBlocked (const polyobj_t *po, const line_t *ld) const noexcept {
   if (!po || !ld || !po->posector) return false; // just in case
-  if (Height <= 0.0f || Radius <= 0.0f) return false; // just in case
+  if (Height <= 0.0f || GetMoveRadius() <= 0.0f) return false; // just in case
   if (!LineIntersects(ld)) return false;
   return Check3DPObjLineBlockedInternal(po, ld);
 }
@@ -1220,7 +1220,7 @@ bool VEntity::Check3DPObjLineBlocked (const polyobj_t *po, const line_t *ld) con
 //==========================================================================
 bool VEntity::CheckPObjLineBlocked (const polyobj_t *po, const line_t *ld) const noexcept {
   if (!po || !ld) return false; // just in case
-  if (Height <= 0.0f || Radius <= 0.0f) return false; // just in case
+  if (Height <= 0.0f || GetMoveRadius() <= 0.0f) return false; // just in case
   if (!LineIntersects(ld)) return false;
   if (po->posector) {
     if (Origin.z >= po->poceiling.maxz) {
@@ -1252,7 +1252,7 @@ bool VEntity::CheckPObjLineBlocked (const polyobj_t *po, const line_t *ld) const
 //==========================================================================
 bool VEntity::IsRealBlockingLine (const line_t *ld) const noexcept {
   if (!ld) return false;
-  if (Height <= 0.0f || Radius <= 0.0f) return false; // just in case
+  if (Height <= 0.0f || GetMoveRadius() <= 0.0f) return false; // just in case
   if (!ld->backsector || !(ld->flags&ML_TWOSIDED)) return !LineIntersects(ld); // one sided line
   // polyobject line?
   if (ld->pobj()) return CheckPObjLineBlocked(ld->pobj(), ld);

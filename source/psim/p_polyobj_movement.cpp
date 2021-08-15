@@ -158,7 +158,7 @@ static bool CalcPolyUnstuckVector (TArray<UnstuckInfo> &uvlist, polyobj_t *po, V
   uvlist.resetNoDtor();
   //if (!po || !mobj || !po->posector) return false;
 
-  const float rad = mobj->Radius;
+  const float rad = mobj->GetMoveRadius();
   if (rad <= 0.0f || mobj->Height <= 0.0f) return true; // just in case
   const float radext = rad+0.2f;
 
@@ -291,7 +291,7 @@ static bool checkCrushMObj (polyobj_t *po, VEntity *mobj, bool vertical, TVec th
     mobj->Level->eventPolyCrushMobj(mobj, po);
   }
   // just in case: blocked if not crushed
-  return !(mobj->PObjNeedPositionCheck() && mobj->Health > 0 && mobj->Height > 0.0f && mobj->Radius > 0.0f);
+  return !(mobj->PObjNeedPositionCheck() && mobj->Health > 0 && mobj->Height > 0.0f && mobj->GetMoveRadius() > 0.0f);
 }
 
 
@@ -379,7 +379,7 @@ static bool DoUnstuckByAverage (TArray<UnstuckInfo> &uvlist, VEntity *mobj) {
     #endif
 
     // try to move by 1/3 of radius
-    const float maxdist = mobj->Radius/3.0f;
+    const float maxdist = mobj->GetMoveRadius()/3.0f;
     TVec goodPos(0.0f, 0.0f, 0.0f);
     bool goodPosFound = false;
     if (maxdist > 0.0f) {
@@ -793,7 +793,7 @@ static void ProcessStackingAffected () {
     VEntity *mobj = edata.mobj;
     if ((edata.aflags&AFF_VERT) == 0) continue; // not moved
     if ((mobj->EntityFlags&(VEntity::EF_ColideWithThings|VEntity::EF_Solid)) != (VEntity::EF_ColideWithThings|VEntity::EF_Solid)) continue; // cannot collide with things
-    if (mobj->Radius <= 0.0f || mobj->Height <= 0.0f) continue; // cannot collide with things
+    if (mobj->GetMoveRadius() <= 0.0f || mobj->Height <= 0.0f) continue; // cannot collide with things
     // z delta
     const float dz = mobj->Origin.z-edata.Origin.z;
     if (dz == 0.0f) continue; // just in case, for horizontal movement
@@ -893,7 +893,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
             if (!wasVertMovement) {
               wasVertMovement =
                 (mobj->EntityFlags&(VEntity::EF_ColideWithThings|VEntity::EF_Solid)) == (VEntity::EF_ColideWithThings|VEntity::EF_Solid) &&
-                mobj->Radius > 0.0f && mobj->Height > 0.0f;
+                mobj->GetMoveRadius() > 0.0f && mobj->Height > 0.0f;
             }
           }
         } else if (oldz == pofz) {
@@ -904,7 +904,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
           if (!wasVertMovement) {
             wasVertMovement =
               (mobj->EntityFlags&(VEntity::EF_ColideWithThings|VEntity::EF_Solid)) == (VEntity::EF_ColideWithThings|VEntity::EF_Solid) &&
-              mobj->Radius > 0.0f && mobj->Height > 0.0f;
+              mobj->GetMoveRadius() > 0.0f && mobj->Height > 0.0f;
           }
         }
       }
@@ -993,7 +993,7 @@ bool VLevel::MovePolyobj (int num, float x, float y, float z, unsigned flags) {
       const float mz1 = mz0+mobj->Height;
       // check all polyobjects
       for (po = pofirst; po; po = (skipLink ? nullptr : po->polink)) {
-        //if (!IsAABBInside2DBBox(mobj->Origin.x, mobj->Origin.y, max2(0.0f, mobj->Radius), po->bbox2d)) continue;
+        //if (!IsAABBInside2DBBox(mobj->Origin.x, mobj->Origin.y, mobj->GetMoveRadius(), po->bbox2d)) continue;
         const float pz0 = po->pofloor.minz;
         if (mz1 <= pz0) continue;
         // if pobj has no top-blocking textures, it can be skipped if we're above it

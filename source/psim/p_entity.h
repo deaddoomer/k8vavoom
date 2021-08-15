@@ -402,7 +402,7 @@ public:
   VVA_CHECKRESULT inline float GetFloorNormalZ () const noexcept { return EFloor.GetNormalZ(); }
   VVA_CHECKRESULT inline float GetCeilingNormalZ () const noexcept { return ECeiling.GetNormalZ(); }
 
-  VVA_CHECKRESULT inline float GetRenderRadius () const noexcept { return max2(Height, (RenderRadius > 0.0f ? RenderRadius : Radius)); }
+  VVA_CHECKRESULT inline float GetRenderRadius () const noexcept { return max2(Height, (RenderRadius > 0.0f ? RenderRadius : max2(0.0f, Radius))); }
 
   VVA_CHECKRESULT inline bool IsPortalDirty () const noexcept { return (EntityFlags&EF_PortalDirty); }
   inline void SetPortalDirty (bool v) noexcept { if (v) EntityFlags |= EF_PortalDirty; else EntityFlags &= ~EF_PortalDirty; }
@@ -820,17 +820,18 @@ private:
 
 public:
   VVA_ALWAYS_INLINE void Create2DBox (float box2d[4]) const noexcept {
-    box2d[BOX2D_MAXY] = Origin.y+Radius;
-    box2d[BOX2D_MINY] = Origin.y-Radius;
-    box2d[BOX2D_MINX] = Origin.x-Radius;
-    box2d[BOX2D_MAXX] = Origin.x+Radius;
+    const float rad = GetMoveRadius();
+    box2d[BOX2D_MAXY] = Origin.y+rad;
+    box2d[BOX2D_MINY] = Origin.y-rad;
+    box2d[BOX2D_MINX] = Origin.x-rad;
+    box2d[BOX2D_MAXX] = Origin.x+rad;
   }
 
   VVA_ALWAYS_INLINE bool CollisionWithOther (const VEntity *other) const noexcept {
     if (!other) return false;
     if ((EntityFlags&(EF_ColideWithThings|EF_Solid)) != (EF_ColideWithThings|EF_Solid)) return false;
     if ((other->EntityFlags&(EF_ColideWithThings|EF_Solid)) != (EF_ColideWithThings|EF_Solid)) return false;
-    if (Radius <= 0.0f || Height <= 0.0f || other->Radius <= 0.0f || other->Height <= 0.0f) return false;
+    if (GetMoveRadius() <= 0.0f || Height <= 0.0f || other->GetMoveRadius() <= 0.0f || other->Height <= 0.0f) return false;
     // check vertical collision
     if (Origin.z+Height <= other->Origin.z || Origin.z >= other->Origin.z+other->Height) return false;
     // check horizontal collision
@@ -844,13 +845,15 @@ public:
 
   // doesn't check any line flags
   VVA_ALWAYS_INLINE bool LineIntersects (const line_t *ld) const noexcept {
-    if (ld && Radius > 0.0f) {
+    if (!ld) return false;
+    const float rad = GetMoveRadius();
+    if (ld && rad > 0.0f) {
       // this is the order of 2d box points
       const float tmbbox[4] = {
-        Origin.y+Radius, // maxy
-        Origin.y-Radius, // miny
-        Origin.x-Radius, // minx
-        Origin.x+Radius, // maxx
+        Origin.y+rad, // maxy
+        Origin.y-rad, // miny
+        Origin.x-rad, // minx
+        Origin.x+rad, // maxx
       };
       return ld->Box2DHit(tmbbox);
     } else {
@@ -862,7 +865,7 @@ public:
   inline bool PObjNeedPositionCheck () const noexcept {
     if (IsGoingToDie()) return false; // just in case
     if ((FlagsEx&(EFEX_NoInteraction|EFEX_NoTickGrav)) == EFEX_NoInteraction) return false;
-    if (Height <= 0.0f || Radius <= 0.0f) return false;
+    if (Height <= 0.0f || GetMoveRadius() <= 0.0f) return false;
     return
       (EntityFlags&(
         EF_Solid|

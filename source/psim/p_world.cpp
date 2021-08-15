@@ -667,17 +667,17 @@ void VPathTraverse::AddThingIntercepts (int mapx, int mapy) {
       for (auto &&it : Level->allBlockThings(mapx+deltas[dx], mapy+deltas[dy])) {
         VEntity *ent = it.entity();
         #ifdef VV_DEBUG_TRAVERSER_BMCELL
-        GCon->Logf(NAME_Debug, "BMCELL: entity %s(%u) (checked=%d) Height=%g, Radius=%g; cell=(%d,%d)", ent->GetClass()->GetName(), ent->GetUniqueId(), (int)(ent->ValidCount == validcount), ent->Height, ent->Radius, mapx+deltas[dx], mapy+deltas[dy]);
+        GCon->Logf(NAME_Debug, "BMCELL: entity %s(%u) (checked=%d) Height=%g, Radius=%g; cell=(%d,%d)", ent->GetClass()->GetName(), ent->GetUniqueId(), (int)(ent->ValidCount == validcount), ent->Height, ent->GetMoveRadius(), mapx+deltas[dx], mapy+deltas[dy]);
         #endif
         if (ent->ValidCount == validcount) continue;
         ent->ValidCount = validcount;
         if (ent->Height <= 0.0f) continue;
-        const float rad = ent->Radius;
+        const float rad = ent->GetMoveRadius();
         if (rad <= 0.0f) continue;
 
         // fast reject using trace plane
         if (trace_len != 0.0f) {
-          Create2DBBox(bbox, ent->Origin, ent->Radius);
+          Create2DBBox(bbox, ent->Origin, ent->GetMoveRadius());
           if (trace_plane.checkBox2DEx(bbox) != TPlane::PARTIALLY) continue;
         }
 
@@ -731,9 +731,9 @@ void VPathTraverse::AddThingIntercepts (int mapx, int mapy) {
       VEntity *ent = it.entity();
       if (ent->ValidCount == validcount) continue;
       ent->ValidCount = validcount;
-      if (ent->Radius <= 0.0f || ent->Height <= 0.0f) continue;
+      if (ent->GetMoveRadius() <= 0.0f || ent->Height <= 0.0f) continue;
       const float dot = trace_plane.PointDistance(ent->Origin);
-      if (fabsf(dot) >= ent->Radius) continue; // thing is too far away
+      if (fabsf(dot) >= ent->GetMoveRadius()) continue; // thing is too far away
       const float dist = trace_dir.dot(ent->Origin-trace_org); //dist -= sqrt(ent->radius * ent->radius - dot * dot);
       if (dist < 0.0f) continue; // behind source
       const float frac = (trace_len ? dist/trace_len : 0.0f);

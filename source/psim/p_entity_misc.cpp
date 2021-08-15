@@ -319,8 +319,12 @@ float VEntity::GetMoveRadius () const noexcept {
       const float rmult = gm_corpse_radius_mult.asFloat();
       if (isFiniteF(rmult) && rmult > 0.0f && rmult < 1.0f) return Radius*rmult;
     }
+  } else if (EntityFlags&EF_IsPlayer) {
+    if (Radius > 0.0f && Player && Player->MO == this) {
+      return Radius+0.2f; // so the player won't fit into the exact-sized passages
+    }
   }
-  return Radius;
+  return max2(0.0f, Radius);
 }
 
 

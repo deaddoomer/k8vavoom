@@ -1909,7 +1909,8 @@ static void AM_drawThings () {
     if (am_cheating == 3 || am_cheating == 5) {
       if (inSpriteMode) { inSpriteMode = false; Drawer->StartAutomap(am_overlay); }
       //AM_DrawBox(mobj->Origin.x-mobj->Radius, mobj->Origin.y-mobj->Radius, mobj->Origin.x+mobj->Radius, mobj->Origin.y+mobj->Radius, color);
-      AM_DrawBox(morg.x-mobj->Radius, morg.y-mobj->Radius, morg.x+mobj->Radius, morg.y+mobj->Radius, color);
+      const float rad = mobj->GetMoveRadius();
+      AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, color);
     }
   }
 
@@ -2591,7 +2592,7 @@ static void AM_Minimap_DrawThings (VWidget *w, float xc, float yc, float scale, 
       const float mcx = (morgx*c-morgy*s)+halfwdt;
       const float mcy = (morgy*c+morgx*s)+halfhgt;
 
-      const float rad = max2(1.0f, mobj->Radius*scale);
+      const float rad = max2(1.0f, mobj->GetMoveRadius()*scale);
       if (mcx+rad <= 0.0 || mcy+rad <= 0.0f || mcx-rad >= w->GetWidth() || mcy-rad >= w->GetHeight()) continue;
 
       const float sprangle = AngleMod(mobj->/*Angles*/GetInterpolatedDrawAngles().yaw-90.0f+angle); // anyway
@@ -2617,11 +2618,11 @@ static void AM_Minimap_DrawThings (VWidget *w, float xc, float yc, float scale, 
         #if 0
         const int x0 = (int)roundf(mcx);
         const int y0 = (int)roundf(mcy);
-        const int sz = (int)roundf(max2(1.0f, mobj->Radius*scale));
+        const int sz = (int)roundf(max2(1.0f, mobj->GetMoveRadius()*scale));
         w->DrawRect(x0-sz, y0-sz, sz*2, sz*2, color, alpha);
         #else
         //FIXME: rotate rect too
-        const float sz = max2(1.0f, mobj->Radius*scale);
+        const float sz = max2(1.0f, mobj->GetMoveRadius()*scale);
         w->DrawRectF(mcx-sz, mcy-sz, sz*2, sz*2, color, alpha);
         #endif
       }
@@ -2683,7 +2684,7 @@ static void AM_Minimap_DrawKeys (VWidget *w, float xc, float yc, float scale, fl
     const float mcx = (morgx*c-morgy*s)+halfwdt;
     const float mcy = (morgy*c+morgx*s)+halfhgt;
 
-    //const float rad = max2(1.0f, mobj->Radius*scale);
+    //const float rad = max2(1.0f, mobj->GetMoveRadius()*scale);
     //if (mcx+rad <= 0.0 || mcy+rad <= 0.0f || mcx-rad >= w->GetWidth() || mcy-rad >= w->GetHeight()) continue;
 
     vint32 color = 0xffffffff; //temp

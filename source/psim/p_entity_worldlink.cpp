@@ -102,7 +102,7 @@ void VEntity::CreateSecNodeList () {
   // use RenderRadius here, so we can check sectors in renderer instead of going through all objects
   // no, we cannot do this, because touching sector list is used to move objects too
   // we need another list here, if we want to avoid loop in renderer
-  //const float rad = max2(RenderRadius, Radius);
+  //const float rad = max2(GetRenderRadius(), GetMoveRadius());
   const float rad = GetMoveRadius();
 
   XLevel->IncrementValidCount(); // used to make sure we only process a line once

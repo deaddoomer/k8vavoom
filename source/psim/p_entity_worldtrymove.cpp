@@ -94,7 +94,7 @@ bool VEntity::TryMove (tmtrace_t &tmtrace, TVec newPos, bool AllowDropOff, bool 
 
   bool skipEffects = (checkOnly || noPickups);
 
-  TMDbgF("%s: *** trying to move from (%g,%g,%g) to (%g,%g,%g); Height=%g; Radius=%g", GetClass()->GetName(), Origin.x, Origin.y, Origin.z, newPos.x, newPos.y, newPos.z, Height, Radius);
+  TMDbgF("%s: *** trying to move from (%g,%g,%g) to (%g,%g,%g); Height=%g; Radius=%g", GetClass()->GetName(), Origin.x, Origin.y, Origin.z, newPos.x, newPos.y, newPos.z, Height, GetMoveRadius());
   check = CheckRelPosition(tmtrace, newPos, skipEffects);
   tmtrace.TraceFlags &= ~tmtrace_t::TF_FloatOk;
   //if (IsPlayer()) GCon->Logf(NAME_Debug, "trying to move from (%g,%g,%g) to (%g,%g,%g); check=%d", Origin.x, Origin.y, Origin.z, newPos.x, newPos.y, newPos.z, (int)check);

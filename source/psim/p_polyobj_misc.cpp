@@ -118,7 +118,7 @@ static VVA_OKUNUSED void CollectPObjTouchingThingsRoughSectors (TArray<VEntity *
       if (mobj->ValidCount == visCount) continue;
       mobj->ValidCount = visCount;
       // check bounding box
-      if (!IsAABBInside2DBBox(mobj->Origin.x, mobj->Origin.y, max2(0.0f, mobj->Radius), po->bbox2d)) continue;
+      if (!IsAABBInside2DBBox(mobj->Origin.x, mobj->Origin.y, mobj->GetMoveRadius(), po->bbox2d)) continue;
       entList.append(mobj);
     }
   }
