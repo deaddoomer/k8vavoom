@@ -66,9 +66,9 @@ float VLevel::SweepLinedefAABB (const line_t *ld, TVec vstart, TVec vend, TVec b
     // line plane normal z is always zero, so don't bother checking it
     const TVec offset = TVec((plane->normal.x < 0.0f ? bmax.x : bmin.x), (plane->normal.y < 0.0f ? bmax.y : bmin.y), /*(plane->normal.z < 0.0f ? bmax.z : bmin.z)*/bmin.z);
     // adjust the plane distance apropriately for mins/maxs
-    const float dist = plane->dist-offset.dot(plane->normal);
-    const float idist = vstart.dot(plane->normal)-dist;
-    const float odist = vend.dot(plane->normal)-dist;
+    const float ofsdist = plane->dist-offset.dot(plane->normal);
+    const float idist = vstart.dot(plane->normal)-ofsdist;
+    const float odist = vend.dot(plane->normal)-ofsdist;
 
     if (idist <= 0.0f && odist <= 0.0f) continue; // doesn't cross this plane, don't bother
 
@@ -113,7 +113,7 @@ float VLevel::SweepLinedefAABB (const line_t *ld, TVec vstart, TVec vend, TVec b
         CD_HitType httmp = CD_HT_None;
         if (!hitType) hitType = &httmp;
         // check what kind of hit this is
-        if (phit > 1 && !hpl->normal.y) {
+        if (phit > 1 && hpl->normal.y == 0.0f) {
           // left or right side of the box
           *hitType = (hpl->normal.x < 0.0f ? CD_HT_Right : CD_HT_Left);
           if (contactPoint) {
@@ -122,7 +122,7 @@ float VLevel::SweepLinedefAABB (const line_t *ld, TVec vstart, TVec vend, TVec b
                 (*hitType == CD_HT_Right ? *ld->v1 : *ld->v2) :
                 (*hitType == CD_HT_Right ? *ld->v2 : *ld->v1))-(vend-vstart).normalised()*CD_CLIP_EPSILON;
           }
-        } else if (phit > 1 && !hpl->normal.x) {
+        } else if (phit > 1 && hpl->normal.x == 0.0f) {
           // top or down side of the box
           *hitType = (hpl->normal.y < 0.0f ? CD_HT_Bottom : CD_HT_Top);
           if (contactPoint) {
@@ -141,11 +141,11 @@ float VLevel::SweepLinedefAABB (const line_t *ld, TVec vstart, TVec vend, TVec b
               *contactPoint = (*ld->v1)-(vend-vstart).normalised()*CD_CLIP_EPSILON;
             } else {
               bool fixX = false, fixY = false;
-              if (!hpl->normal.x) {
+              if (hpl->normal.x == 0.0f) {
                 // horizontal line
                 *contactPoint = TVec(0.0f, (hpl->normal.y < 0.0f ? bmax.y : hpl->normal.y > 0.0f ? bmin.y : 0.0f), bmin.z);
                 fixX = true;
-              } else if (!hpl->normal.y) {
+              } else if (hpl->normal.y == 0.0f) {
                 // vertical line
                 *contactPoint = TVec((hpl->normal.x < 0.0f ? bmax.x : hpl->normal.x > 0.0f ? bmin.x : 0.0f), 0.0f, bmin.z);
                 fixY = true;
@@ -175,6 +175,69 @@ float VLevel::SweepLinedefAABB (const line_t *ld, TVec vstart, TVec vend, TVec b
   }
 
   return 1.0f;
+}
+
+
+//==========================================================================
+//
+//  VLevel::CalcLineCDPlanes
+//
+//  create collision detection planes (line/reverse line plane, and caps)
+//
+//  [0] is always the line itself
+//  [1] is a reversed line
+//  other possible planes are axis-aligned caps
+//
+//==========================================================================
+void VLevel::CalcLineCDPlanes (line_t *line) {
+  if (line->v1->y == line->v2->y) {
+    // either horizontal line, or a point
+    if (line->v1->x == line->v2->x) {
+      // a point
+      line->cdPlanesCount = 4;
+      // point, create four axial planes to represent it as a box
+      line->cdPlanesArray[0].normal = TVec( 0.0f, -1.0f, 0.0f); line->cdPlanesArray[0].dist = -line->v1->y; // top
+      line->cdPlanesArray[1].normal = TVec( 0.0f,  1.0f, 0.0f); line->cdPlanesArray[1].dist = +line->v1->y; // bottom
+      line->cdPlanesArray[2].normal = TVec(-1.0f,  0.0f, 0.0f); line->cdPlanesArray[2].dist = -line->v1->x; // left
+      line->cdPlanesArray[3].normal = TVec( 1.0f,  0.0f, 0.0f); line->cdPlanesArray[3].dist = +line->v1->x; // right
+    } else {
+      // a horizontal line
+      line->cdPlanesCount = 4;
+      int botidx = (line->v1->x < line->v2->x);
+      line->cdPlanesArray[1-botidx].normal = TVec( 0.0f, -1.0f, 0.0f); line->cdPlanesArray[1-botidx].dist = -line->v1->y; // top
+      line->cdPlanesArray[  botidx].normal = TVec( 0.0f,  1.0f, 0.0f); line->cdPlanesArray[botidx].dist = line->v1->y; // bottom
+      // add left and right bevels
+      line->cdPlanesArray[2].normal = TVec(-1.0f,  0.0f, 0.0f); line->cdPlanesArray[2].dist = -min2(line->v1->x, line->v2->x); // left
+      line->cdPlanesArray[3].normal = TVec( 1.0f,  0.0f, 0.0f); line->cdPlanesArray[3].dist = +max2(line->v1->x, line->v2->x); // right
+    }
+  } else if (line->v1->x == line->v2->x) {
+    // a vertical line
+    line->cdPlanesCount = 4;
+    int rightidx = (line->v1->y > line->v2->y);
+    line->cdPlanesArray[1-rightidx].normal = TVec(-1.0f,  0.0f, 0.0f); line->cdPlanesArray[1-rightidx].dist = -line->v1->x; // left
+    line->cdPlanesArray[  rightidx].normal = TVec( 1.0f,  0.0f, 0.0f); line->cdPlanesArray[  rightidx].dist = +line->v1->x; // right
+    // add top and bottom bevels
+    line->cdPlanesArray[2].normal = TVec( 0.0f, -1.0f, 0.0f); line->cdPlanesArray[2].dist = -min2(line->v1->y, line->v2->y); // top
+    line->cdPlanesArray[3].normal = TVec( 0.0f,  1.0f, 0.0f); line->cdPlanesArray[3].dist = +max2(line->v1->y, line->v2->y); // bottom
+  } else {
+    // ok, not an ortho-axis line, create line planes the old way
+    line->cdPlanesCount = 6;
+    // two line planes
+    // normal
+    line->cdPlanesArray[0].normal = line->normal;
+    line->cdPlanesArray[0].dist = line->dist;
+    // reversed
+    line->cdPlanesArray[1].normal = -line->cdPlanesArray[0].normal;
+    line->cdPlanesArray[1].dist = -line->cdPlanesArray[0].dist;
+    // caps
+    line->cdPlanesArray[2].normal = TVec(-1.0f,  0.0f, 0.0f); line->cdPlanesArray[2].dist = -min2(line->v1->x, line->v2->x); // left
+    line->cdPlanesArray[3].normal = TVec( 1.0f,  0.0f, 0.0f); line->cdPlanesArray[3].dist = +max2(line->v1->x, line->v2->x); // right
+    line->cdPlanesArray[4].normal = TVec( 0.0f, -1.0f, 0.0f); line->cdPlanesArray[4].dist = -min2(line->v1->y, line->v2->y); // top
+    line->cdPlanesArray[5].normal = TVec( 0.0f,  1.0f, 0.0f); line->cdPlanesArray[5].dist = +max2(line->v1->y, line->v2->y); // bottom
+  }
+
+  // VavoomC helper
+  line->cdPlanes = &line->cdPlanesArray[0];
 }
 
 
@@ -312,69 +375,6 @@ bool VLevel::CheckPassPlanes (sector_t *sector, TVec linestart, TVec lineend, un
   } else {
     return true;
   }
-}
-
-
-//==========================================================================
-//
-//  VLevel::CalcLineCDPlanes
-//
-//  create collision detection planes (line/reverse line plane, and caps)
-//
-//  [0] is always the line itself
-//  [1] is a reversed line
-//  other possible planes are axis-aligned caps
-//
-//==========================================================================
-void VLevel::CalcLineCDPlanes (line_t *line) {
-  if (line->v1->y == line->v2->y) {
-    // either horizontal line, or a point
-    if (line->v1->x == line->v2->x) {
-      // a point
-      line->cdPlanesCount = 4;
-      // point, create four axial planes to represent it as a box
-      line->cdPlanesArray[0].normal = TVec( 0, -1, 0); line->cdPlanesArray[0].dist = -line->v1->y; // top
-      line->cdPlanesArray[1].normal = TVec( 0,  1, 0); line->cdPlanesArray[1].dist = +line->v1->y; // bottom
-      line->cdPlanesArray[2].normal = TVec(-1,  0, 0); line->cdPlanesArray[2].dist = -line->v1->x; // left
-      line->cdPlanesArray[3].normal = TVec( 1,  0, 0); line->cdPlanesArray[3].dist = +line->v1->x; // right
-    } else {
-      // a horizontal line
-      line->cdPlanesCount = 4;
-      int botidx = (line->v1->x < line->v2->x);
-      line->cdPlanesArray[1-botidx].normal = TVec( 0, -1, 0); line->cdPlanesArray[1-botidx].dist = -line->v1->y; // top
-      line->cdPlanesArray[botidx].normal = TVec( 0,  1, 0); line->cdPlanesArray[botidx].dist = line->v1->y; // bottom
-      // add left and right bevels
-      line->cdPlanesArray[2].normal = TVec(-1,  0, 0); line->cdPlanesArray[2].dist = -min2(line->v1->x, line->v2->x); // left
-      line->cdPlanesArray[3].normal = TVec( 1,  0, 0); line->cdPlanesArray[3].dist = +max2(line->v1->x, line->v2->x); // right
-    }
-  } else if (line->v1->x == line->v2->x) {
-    // a vertical line
-    line->cdPlanesCount = 4;
-    int rightidx = (line->v1->y > line->v2->y);
-    line->cdPlanesArray[1-rightidx].normal = TVec(-1,  0, 0); line->cdPlanesArray[1-rightidx].dist = -line->v1->x; // left
-    line->cdPlanesArray[  rightidx].normal = TVec( 1,  0, 0); line->cdPlanesArray[  rightidx].dist = +line->v1->x; // right
-    // add top and bottom bevels
-    line->cdPlanesArray[2].normal = TVec( 0, -1, 0); line->cdPlanesArray[2].dist = -min2(line->v1->y, line->v2->y); // top
-    line->cdPlanesArray[3].normal = TVec( 0,  1, 0); line->cdPlanesArray[3].dist = +max2(line->v1->y, line->v2->y); // bottom
-  } else {
-    // ok, not an ortho-axis line, create line planes the old way
-    line->cdPlanesCount = 6;
-    // two line planes
-    // normal
-    line->cdPlanesArray[0].normal = line->normal;
-    line->cdPlanesArray[0].dist = line->dist;
-    // reversed
-    line->cdPlanesArray[1].normal = -line->cdPlanesArray[0].normal;
-    line->cdPlanesArray[1].dist = -line->cdPlanesArray[0].dist;
-    // caps
-    line->cdPlanesArray[2].normal = TVec(-1,  0, 0); line->cdPlanesArray[2].dist = -min2(line->v1->x, line->v2->x); // left
-    line->cdPlanesArray[3].normal = TVec( 1,  0, 0); line->cdPlanesArray[3].dist = +max2(line->v1->x, line->v2->x); // right
-    line->cdPlanesArray[4].normal = TVec( 0, -1, 0); line->cdPlanesArray[4].dist = -min2(line->v1->y, line->v2->y); // top
-    line->cdPlanesArray[5].normal = TVec( 0,  1, 0); line->cdPlanesArray[5].dist = +max2(line->v1->y, line->v2->y); // bottom
-  }
-
-  // VavoomC helper
-  line->cdPlanes = &line->cdPlanesArray[0];
 }
 
 
