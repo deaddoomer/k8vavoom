@@ -118,23 +118,31 @@ VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isInfF (const float v) VV_FLTUTIL_NOEXCEPT {
 
 // this turns all nan/inf values into positive zero
 static VVA_OKUNUSED VVA_ALWAYS_INLINE void killInfNaNFInPlace (float *f) VV_FLTUTIL_NOEXCEPT {
-  int32_t *fi = (int32_t *)f;
+  __attribute__((__may_alias__)) int32_t *fi = (__attribute__((__may_alias__)) int32_t *)f;
   *fi &= ((((*fi)>>23)&0xff)-0xff)>>31;
 }
 
 // this turns all nan/inf values into positive zero
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
 VVA_ALWAYS_INLINE float killInfNaNF (const float f) VV_FLTUTIL_NOEXCEPT {
-  int32_t fi = *(const int32_t *)&f;
+  int32_t fi = *(const __attribute__((__may_alias__)) int32_t *)&f;
   fi &= (((fi>>23)&0xff)-0xff)>>31;
   return *((float *)&fi);
 }
 
 // this turns all nan/inf and denormals to positive zero
 // also, turns negative zero to positive zero
+static VVA_OKUNUSED VVA_ALWAYS_INLINE void zeroDenormalsFInPlace (float *f) VV_FLTUTIL_NOEXCEPT {
+  __attribute__((__may_alias__)) int32_t *fi = (__attribute__((__may_alias__)) int32_t *)f;
+  if (!((*fi)&0x7f800000u)) *fi = 0u; // kill denormals
+  else *fi &= ((((*fi)>>23)&0xff)-0xff)>>31; // kill nan/inf
+}
+
+// this turns all nan/inf and denormals to positive zero
+// also, turns negative zero to positive zero
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
 VVA_ALWAYS_INLINE float zeroDenormalsF (const float f) VV_FLTUTIL_NOEXCEPT {
-  int32_t fi = *(const int32_t *)&f;
+  int32_t fi = *(const __attribute__((__may_alias__)) int32_t *)&f;
   if (!(fi&0x7f800000u)) fi = 0u; // kill denormals
   else fi &= (((fi>>23)&0xff)-0xff)>>31; // kill nan/inf
   return *((float *)&fi);
@@ -150,7 +158,7 @@ VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isDenormalF (const float v) VV_FLTUTIL_NOEXCEP
 
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
 VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isZeroInfNaN (const float f) VV_FLTUTIL_NOEXCEPT {
-  const uint32_t fi = *(const uint32_t *)&f;
+  const uint32_t fi = *(const __attribute__((__may_alias__)) uint32_t *)&f;
   const uint8_t exp = (uint8_t)((fi>>23)&0xffu);
   return
     exp == 0xffu ||
@@ -160,19 +168,19 @@ VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isZeroInfNaN (const float f) VV_FLTUTIL_NOEXCE
 // this ignores sign bit; zero float is all zeroes except the sign bit
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
 VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isZeroF (const float f) VV_FLTUTIL_NOEXCEPT {
-  return !((*(const uint32_t *)&f)&0x7fffffffu);
+  return !((*(const __attribute__((__may_alias__)) uint32_t *)&f)&0x7fffffffu);
 }
 
 // doesn't check for nan/inf
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
 VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isNegativeF (const float f) VV_FLTUTIL_NOEXCEPT {
-  return !!((*(const uint32_t *)&f)&0x80000000u);
+  return !!((*(const __attribute__((__may_alias__)) uint32_t *)&f)&0x80000000u);
 }
 
 // doesn't check for nan/inf
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
 VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isPositiveF (const float f) VV_FLTUTIL_NOEXCEPT {
-  return !((*(const uint32_t *)&f)&0x80000000u);
+  return !((*(const __attribute__((__may_alias__)) uint32_t *)&f)&0x80000000u);
 }
 
 
@@ -181,7 +189,7 @@ VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isPositiveF (const float f) VV_FLTUTIL_NOEXCEP
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
 VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isLessZeroF (const float f) VV_FLTUTIL_NOEXCEPT {
   // all negative numbers (including negative zero) has bit 31 set
-  return ((*(const uint32_t *)&f) > 0x80000000u);
+  return ((*(const __attribute__((__may_alias__)) uint32_t *)&f) > 0x80000000u);
 }
 
 // doesn't check for nan/inf (and can return invalid results for some nans)
@@ -191,7 +199,7 @@ VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isGreatZeroF (const float f) VV_FLTUTIL_NOEXCE
   // all positive numbers has bit 31 reset, positive zero is `0`
   // subtracting 1 will convert positive zero to negative nan
   // yet negative zero will be converted to positive nan
-  return ((*(const uint32_t *)&f)-1u < 0x7fffffffu);
+  return ((*(const __attribute__((__may_alias__)) uint32_t *)&f)-1u < 0x7fffffffu);
 }
 
 // doesn't check for nan/inf (and can return invalid results for some nans)
@@ -201,7 +209,7 @@ VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isLessEquZeroF (const float f) VV_FLTUTIL_NOEX
   // all positive numbers has bit 31 reset, positive zero is `0`
   // subtracting 1 will convert positive zero to negative nan
   // yet negative zero will be converted to positive nan
-  return ((*(const uint32_t *)&f)-1u >= 0x7fffffffu);
+  return ((*(const __attribute__((__may_alias__)) uint32_t *)&f)-1u >= 0x7fffffffu);
 }
 
 // doesn't check for nan/inf (and can return invalid results for some nans)
@@ -209,20 +217,20 @@ VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isLessEquZeroF (const float f) VV_FLTUTIL_NOEX
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
 VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isGreatEquZeroF (const float f) VV_FLTUTIL_NOEXCEPT {
   // `0x80000000u` is "negative zero", all positive numbers has bit 31 reset
-  return ((*(const uint32_t *)&f) <= 0x80000000u);
+  return ((*(const __attribute__((__may_alias__)) uint32_t *)&f) <= 0x80000000u);
 }
 
 
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
 VVA_ALWAYS_INLINE float fltconv_create_positive_zero () VV_FLTUTIL_NOEXCEPT {
   const uint32_t t = 0u;
-  return *((const float *)&t);
+  return *((const __attribute__((__may_alias__)) float *)&t);
 }
 
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
 VVA_ALWAYS_INLINE float fltconv_create_negative_zero () VV_FLTUTIL_NOEXCEPT {
   const uint32_t t = 0x80000000u;
-  return *((const float *)&t);
+  return *((const __attribute__((__may_alias__)) float *)&t);
 }
 
 
@@ -233,19 +241,19 @@ VVA_ALWAYS_INLINE int fltconv_getsign (const float f) VV_FLTUTIL_NOEXCEPT {
   //return ((*(const uint32_t *)&f)&0x80000000u ? -1 : +1);
   // this extends sign bit, and then sets the least significant bit
   // this way we'll get either -1 (if sign bit is set), or 1 (if sign bit is reset)
-  return ((*(const int32_t *)&f)>>31)|0x01;
+  return ((*(const __attribute__((__may_alias__)) int32_t *)&f)>>31)|0x01;
 }
 
 // always positive, [0..255]
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
 VVA_ALWAYS_INLINE int fltconv_getexponent (const float f) VV_FLTUTIL_NOEXCEPT {
-  return (int)(((*(const uint32_t *)&f)>>23)&0xffu);
+  return (int)(((*(const __attribute__((__may_alias__)) uint32_t *)&f)>>23)&0xffu);
 }
 
 // signed and clamped exponent: [-126..127]
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
 VVA_ALWAYS_INLINE int fltconv_getsignedexponent (const float f) VV_FLTUTIL_NOEXCEPT {
-  const int res = (int)(((*(const uint32_t *)&f)>>23)&0xffu)-127;
+  const int res = (int)(((*(const __attribute__((__may_alias__)) uint32_t *)&f)>>23)&0xffu)-127;
   return
     res < -126 ? -126 :
     res > 127 ? 127 :
@@ -255,7 +263,7 @@ VVA_ALWAYS_INLINE int fltconv_getsignedexponent (const float f) VV_FLTUTIL_NOEXC
 // always positive, [0..0x7f_ffff] (or [0..8388607])
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
 VVA_ALWAYS_INLINE int fltconv_getmantissa (const float f) VV_FLTUTIL_NOEXCEPT {
-  return (int)((*(const uint32_t *)&f)&0x7fffffu);
+  return (int)((*(const __attribute__((__may_alias__)) uint32_t *)&f)&0x7fffffu);
 }
 
 
@@ -274,13 +282,13 @@ VVA_ALWAYS_INLINE float fltconv_constructfloat (const int sign, const int expone
       mantissa < 0 || mantissa > 0x7fffff)
   {
     const uint32_t t = 0x7fffffffu;
-    return *((const float *)&t);
+    return *((const __attribute__((__may_alias__)) float *)&t);
   } else {
     const uint32_t t =
       (sign < 0 ? 0x80000000u : 0u)|
       (((unsigned)(exponent&0xffu))<<23)|
       ((unsigned)mantissa&0x7fffffu);
-    return *((const float *)&t);
+    return *((const __attribute__((__may_alias__)) float *)&t);
   }
 }
 
