@@ -416,16 +416,26 @@ public:
   // box point that is furthest in the given direction
   VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec get3DBBoxSupportPoint (const float bbox[6]) const noexcept {
     return TVec(
-      bbox[BOX3D_X+(x < 0.0f ? BOX3D_MINIDX : BOX3D_MAXIDX)],
-      bbox[BOX3D_Y+(y < 0.0f ? BOX3D_MINIDX : BOX3D_MAXIDX)],
-      bbox[BOX3D_Z+(z < 0.0f ? BOX3D_MINIDX : BOX3D_MAXIDX)]);
+      bbox[BOX3D_X+(isLessZeroF(x) ? BOX3D_MINIDX : BOX3D_MAXIDX)],
+      bbox[BOX3D_Y+(isLessZeroF(y) ? BOX3D_MINIDX : BOX3D_MAXIDX)],
+      bbox[BOX3D_Z+(isLessZeroF(z) ? BOX3D_MINIDX : BOX3D_MAXIDX)]);
   }
 
   VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec get2DBBoxSupportPoint (const float bbox2d[4], const float z=0.0f) const noexcept {
     return TVec(
-      bbox2d[x < 0.0f ? BOX2D_LEFT : BOX2D_RIGHT],
-      bbox2d[y < 0.0f ? BOX2D_BOTTOM : BOX2D_TOP],
+      bbox2d[isLessZeroF(x) ? BOX2D_LEFT : BOX2D_RIGHT],
+      bbox2d[isLessZeroF(y) ? BOX2D_BOTTOM : BOX2D_TOP],
       z);
+  }
+
+  // gives the index of the vertex for `GetBBox3DCorner()`
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT unsigned get3DBBoxSupportPointIndex () const noexcept {
+    return (unsigned)isGreatEquZeroF(x)|((unsigned)isGreatEquZeroF(y)<<1)|((unsigned)isGreatEquZeroF(z)<<2);
+  }
+
+  // gives the index of the vertex for `GetBBox2DCorner()`
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT unsigned get2DBBoxSupportPointIndex () const noexcept {
+    return (unsigned)isGreatEquZeroF(x)|((unsigned)isGreatEquZeroF(y)<<1);
   }
 };
 
@@ -487,6 +497,27 @@ static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec GetBBox3DCorner (cons
     bbox3d[(index&0x04u ? BOX3D_MAXZ : BOX3D_MINZ)]);
 }
 
+// returns index of the 2d bbox corner with the same y and z coordinates, but with different x coordinate
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE unsigned GetBBox3DOtherXCorner (const unsigned index) noexcept {
+  return (index^0x01u);
+}
+
+// returns index of the 2d bbox corner with the same x and z coordinates, but with different y coordinate
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE unsigned GetBBox3DOtherYCorner (const unsigned index) noexcept {
+  return (index^0x02u);
+}
+
+// returns index of the 2d bbox corner with the same x and y coordinates, but with different z coordinate
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE unsigned GetBBox3DOtherZCorner (const unsigned index) noexcept {
+  return (index^0x04u);
+}
+
+// returns corner opposite to support corner
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE unsigned GetBBox3DAntiSupportCorner (const unsigned index) noexcept {
+  return (index^0x07u);
+}
+
+
 // idx: [0..3]
 static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec GetBBox2DCorner (const unsigned index, const float bbox2d[4]) noexcept {
   return TVec(
@@ -501,6 +532,21 @@ static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec GetBBox2DCornerEx (co
     bbox2d[(index&0x01u ? BOX2D_MINX : BOX2D_MAXX)],
     bbox2d[(index&0x02u ? BOX2D_MINY : BOX2D_MAXY)],
     z);
+}
+
+// returns index of the 2d bbox corner with the same y coordinate, but with different x coordinate
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE unsigned GetBBox2DOtherXCorner (const unsigned index) noexcept {
+  return (index^0x01u);
+}
+
+// returns index of the 2d bbox corner with the same x coordinate, but with different y coordinate
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE unsigned GetBBox2DOtherYCorner (const unsigned index) noexcept {
+  return (index^0x02u);
+}
+
+// returns corner opposite to support corner
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE unsigned GetBBox2DAntiSupportCorner (const unsigned index) noexcept {
+  return (index^0x03u);
 }
 
 
