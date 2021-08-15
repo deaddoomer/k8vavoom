@@ -64,7 +64,10 @@ float VLevel::SweepLinedefAABB (const line_t *ld, TVec vstart, TVec vend, TVec b
     const TPlane *plane = &ld->cdPlanesArray[pidx];
     // box
     // line plane normal z is always zero, so don't bother checking it
-    const TVec offset = TVec((plane->normal.x < 0.0f ? bmax.x : bmin.x), (plane->normal.y < 0.0f ? bmax.y : bmin.y), /*(plane->normal.z < 0.0f ? bmax.z : bmin.z)*/bmin.z);
+    const TVec offset = TVec(
+      (isLessZeroF(plane->normal.x) ? bmax.x : bmin.x),
+      (isLessZeroF(plane->normal.y) ? bmax.y : bmin.y),
+      /*(isLessZeroF(plane->normal.z) ? bmax.z : bmin.z)*/bmin.z);
     // adjust the plane distance apropriately for mins/maxs
     const float ofsdist = plane->dist-offset.dot(plane->normal);
     const float idist = vstart.dot(plane->normal)-ofsdist;
@@ -102,8 +105,8 @@ float VLevel::SweepLinedefAABB (const line_t *ld, TVec vstart, TVec vend, TVec b
 
   if (ifrac > -1.0f && ifrac < ofrac) {
     // might be exact hit
-    ifrac = clampval(ifrac, 0.0f, 1.0f); // just in case
-    if (/*ifrac == 0.0f ||*/ ifrac == 1.0f) return ifrac; // just in case
+    ifrac = zeroDenormalsF(clampval(ifrac, 0.0f, 1.0f)); // just in case
+    if (ifrac == 0.0f || ifrac == 1.0f) return ifrac; // just in case
     if (hitplanenum) *hitplanenum = phit;
     if (hitPlane || contactPoint || hitType) {
       vassert(phit >= 0);
