@@ -792,9 +792,9 @@ private:
 
   // all sliders will reset `Velocity.z`, so save and restore it if necessary!
   // `SlideMove()` does it automatically
-  void SlideMoveOldest (float StepVelScale, bool noPickups); // vanilla-like
-  void SlideMoveNew (float StepVelScale, bool noPickups); // current
-  void SlideMoveNewest (float StepVelScale, bool noPickups); // q3 experiment, doesn't work yet
+  void SlideMoveVanilla (float StepVelScale, bool noPickups); // vanilla-like
+  void SlideMoveSweep (float StepVelScale, bool noPickups); // current
+  void SlideMoveQ3Like (float StepVelScale, bool noPickups); // q3 experiment
 
   void CreateSecNodeList ();
 

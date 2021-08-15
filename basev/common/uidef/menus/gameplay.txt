@@ -3,6 +3,33 @@ menudef GameplayOptions {
   //selector = MenuSelector_SmallRight;
   Title = "GAMEPLAY OPTIONS";
 
+
+  header "Slide Movement" [k8vavoom_developer_version > 0];
+
+  option enum [k8vavoom_developer_version > 0] {
+    title = "Sliding Code";
+    cvar = gm_slide_code;
+    list {
+      "Vanilla",
+      "Sweep",
+      "Sweep, Q3-Like",
+    }
+    help = "Which sliding code to use?";
+  }
+
+  option bool [k8vavoom_developer_version > 0] {
+    title = "Q3 TimeLeft Method";
+    cvar = gm_q3slide_use_timeleft;
+    help = "Use 'timeleft' method for Q3 sliding code (gives wrong velocities and bumpiness)?";
+  }
+
+  option bool [k8vavoom_developer_version > 0] {
+    title = "Debug Slide Code";
+    cvar = dbg_slide_code;
+    help = "Dump various debug info in sliding code?";
+  }
+
+
   header "Monster AI";
 
   option bool {
