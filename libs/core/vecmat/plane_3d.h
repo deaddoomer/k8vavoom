@@ -270,15 +270,15 @@ public:
 
 
   // intersection of 3 planes, Graphics Gems 1 pg 305
-  // not sure if it should be `dist` or `-dist` here for vavoom planes
+  // it seems that we should use `dist` for vavoom planed
   inline VVA_CHECKRESULT TVec IntersectionPoint (const TPlane &plane2, const TPlane &plane3) const noexcept {
     const float det = normal.cross(plane2.normal).dot(plane3.normal);
     // if the determinant is 0, that means parallel planes, no intersection
-    if (fabsf(det) < 0.001f) return TVec::InvalidVector;
+    if (fabsf(det) < 0.00001f) return TVec::InvalidVector;
     return
-      (plane2.normal.cross(plane3.normal)*(-dist)+
-       plane3.normal.cross(normal)*(-plane2.dist)+
-       normal.cross(plane2.normal)*(-plane3.dist))/det;
+      (plane2.normal.cross(plane3.normal)*dist+
+       plane3.normal.cross(normal)*plane2.dist+
+       normal.cross(plane2.normal)*plane3.dist)/det;
   }
 
 
