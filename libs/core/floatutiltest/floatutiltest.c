@@ -29,14 +29,14 @@ static void dumpFloat (const char *msg, const float f) {
   printf("  sign: %d\n", fltconv_getsign(f));
   printf("  exponent: %u : %d\n", fltconv_getexponent(f), fltconv_getsignedexponent(f));
   printf("  mantissa: 0x%08x (%u)\n", fltconv_getmantissa(f), fltconv_getmantissa(f));
-  printf("  isFiniteF   : %d\n", isFiniteF(f));
-  printf("  isNaNF      : %d\n", isNaNF(f));
-  printf("  isInfF      : %d\n", isInfF(f));
-  printf("  isDenormalF : %d\n", isDenormalF(f));
-  printf("  isZeroInfNaN: %d\n", isZeroInfNaN(f));
-  printf("  isZeroF     : %d : %d\n", isZeroF(f), (int)(f == 0.0f));
-  printf("  isNegativeF : %d : %d\n", isNegativeF(f), (int)(f < 0.0f));
-  printf("  isPositiveF : %d : %d\n", isPositiveF(f), (int)(f > 0.0f));
+  printf("  isFiniteF    : %d\n", isFiniteF(f));
+  printf("  isNaNF       : %d\n", isNaNF(f));
+  printf("  isInfF       : %d\n", isInfF(f));
+  printf("  isDenormalF  : %d\n", isDenormalF(f));
+  printf("  isZeroInfNaNF: %d\n", isZeroInfNaNF(f));
+  printf("  isZeroF      : %d : %d\n", isZeroF(f), (int)(f == 0.0f));
+  printf("  isNegativeF  : %d : %d\n", isNegativeF(f), (int)(f < 0.0f));
+  printf("  isPositiveF  : %d : %d\n", isPositiveF(f), (int)(f > 0.0f));
   printf("  isLessZeroF    : %d : %d%s\n", isLessZeroF(f), (int)(f < 0.0f), (isLessZeroF(f) != (int)(f < 0.0f) ? "  !!!FAIL!!!" : ""));
   printf("  isGreatZeroF   : %d : %d%s\n", isGreatZeroF(f), (int)(f > 0.0f), (isGreatZeroF(f) != (int)(f > 0.0f) ? "  !!!FAIL!!!" : ""));
   printf("  isLessEquZeroF : %d : %d%s\n", isLessEquZeroF(f), (int)(f <= 0.0f), (isLessEquZeroF(f) != (int)(f <= 0.0f) ? "  !!!FAIL!!!" : ""));
@@ -74,5 +74,8 @@ int main () {
   dumpFloat("+FLT_MAX", +FLT_MAX);
   dumpFloat("-FLT_MIN", -FLT_MIN);
   dumpFloat("+FLT_MIN", +FLT_MIN);
+  float tt = +FLT_MAX;
+  tt *= 1000.0f;
+  dumpFloat("+FLT_MAX*1000.0f", tt);
   return 0;
 }

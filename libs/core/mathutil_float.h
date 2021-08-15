@@ -116,6 +116,50 @@ VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isInfF (const float v) VV_FLTUTIL_NOEXCEPT {
 #endif
 
 
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
+VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isNaNFU32 (const uint32_t fv) VV_FLTUTIL_NOEXCEPT {
+  return ((fv<<1) > 0xff000000u);
+}
+
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
+VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isInfFU32 (const uint32_t fv) VV_FLTUTIL_NOEXCEPT {
+  return ((fv<<1) == 0xff000000u);
+}
+
+// this is used in VavoomC VM executor
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
+VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isFiniteFI32 (const int32_t v) VV_FLTUTIL_NOEXCEPT {
+  return ((v&0x7f800000u) != 0x7f800000u);
+}
+
+// this ignores sign bit; zero float is all zeroes except the sign bit
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
+VVA_ALWAYS_INLINE int32_t isNonZeroFI32 (const int32_t v) VV_FLTUTIL_NOEXCEPT {
+  return (v&0x7fffffffu);
+}
+
+// this ignores sign bit; zero float is all zeroes except the sign bit
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
+VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isZeroFI32 (const int32_t v) VV_FLTUTIL_NOEXCEPT {
+  return !(v&0x7fffffffu);
+}
+
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
+VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isZeroInfNaNFI32 (const int32_t fi) VV_FLTUTIL_NOEXCEPT {
+  const uint8_t exp = (uint8_t)((fi>>23)&0xffu);
+  return
+    exp == 0xffu ||
+    (exp == 0x00u && (fi&0x7fffffu) == 0);
+}
+
+
+// this turns all denormals to positive zero
+// also, turns negative zero to positive zero
+static VVA_OKUNUSED VVA_ALWAYS_INLINE void zeroDenormalsFI32InPlace (__attribute__((__may_alias__)) int32_t *fi) VV_FLTUTIL_NOEXCEPT {
+  if (!((*fi)&0x7f800000u)) *fi = 0u; // kill denormals
+}
+
+
 // this turns all nan/inf values into positive zero
 static VVA_OKUNUSED VVA_ALWAYS_INLINE void killInfNaNFInPlace (float *f) VV_FLTUTIL_NOEXCEPT {
   __attribute__((__may_alias__)) int32_t *fi = (__attribute__((__may_alias__)) int32_t *)f;
@@ -173,7 +217,7 @@ VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isDenormalF (const float v) VV_FLTUTIL_NOEXCEP
 }
 
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isZeroInfNaN (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isZeroInfNaNF (const float f) VV_FLTUTIL_NOEXCEPT {
   const uint32_t fi = *(const __attribute__((__may_alias__)) uint32_t *)&f;
   const uint8_t exp = (uint8_t)((fi>>23)&0xffu);
   return
