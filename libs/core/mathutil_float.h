@@ -148,6 +148,22 @@ VVA_ALWAYS_INLINE float zeroDenormalsF (const float f) VV_FLTUTIL_NOEXCEPT {
   return *((float *)&fi);
 }
 
+// this turns all denormals to positive zero
+// also, turns negative zero to positive zero
+static VVA_OKUNUSED VVA_ALWAYS_INLINE void zeroOnlyDenormalsFInPlace (float *f) VV_FLTUTIL_NOEXCEPT {
+  __attribute__((__may_alias__)) int32_t *fi = (__attribute__((__may_alias__)) int32_t *)f;
+  if (!((*fi)&0x7f800000u)) *fi = 0u; // kill denormals
+}
+
+// this turns all denormals to positive zero
+// also, turns negative zero to positive zero
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
+VVA_ALWAYS_INLINE float zeroOnlyDenormalsF (const float f) VV_FLTUTIL_NOEXCEPT {
+  int32_t fi = *(const __attribute__((__may_alias__)) int32_t *)&f;
+  if (!(fi&0x7f800000u)) fi = 0u; // kill denormals
+  return *((float *)&fi);
+}
+
 
 // is float denormalised? (zero is not considered as denormal here)
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
