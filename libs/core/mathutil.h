@@ -26,94 +26,7 @@
 #ifndef VAVOOM_CORELIB_MATHUTIL_H
 #define VAVOOM_CORELIB_MATHUTIL_H
 
-//#define VC_USE_LIBC_FLOAT_CHECKERS
-#include <math.h>
-#ifdef VC_USE_LIBC_FLOAT_CHECKERS
-# define isFiniteF  isfinite
-# define isNaNF     isnan
-# define isInfF     isinf
-#else
-static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE bool isFiniteF (const float v) noexcept {
-  const union { float f; vuint32 x; } u = {v};
-  return ((u.x&0x7f800000u) != 0x7f800000u);
-}
-
-static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE bool isNaNF (const float v) noexcept {
-  const union { float f; vuint32 x; } u = {v};
-  return ((u.x<<1) > 0xff000000u);
-}
-
-static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE bool isInfF (const float v) noexcept {
-  const union { float f; vuint32 x; } u = {v};
-  return ((u.x<<1) == 0xff000000u);
-}
-#endif
-
-// is float denormalised?
-static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE bool isDenormalF (const float v) noexcept {
-  const union { float f; uint32_t x; } u = {v};
-  return ((u.x&0x7f800000u) == 0u && (u.x&0x007fffffu) != 0u);
-}
-
-// this turns all nan/inf values into positive zero
-static VVA_OKUNUSED VVA_ALWAYS_INLINE void killInfNaNF (float &f) noexcept {
-  vint32 fi = *(vint32 *)&f;
-  fi &= (((fi>>23)&0xff)-0xff)>>31;
-}
-
-
-static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE bool isZeroInfNaN (const float f) noexcept {
-  const vuint32 fi = *(const vuint32 *)&f;
-  const vuint8 exp = (vuint8)((fi>>23)&0xffu);
-  return
-    exp == 0xffu ||
-    (exp == 0x00u && (fi&0x7fffffu) == 0);
-}
-
-
-// -1 or +1
-static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE int fltconv_getsign (const float f) noexcept {
-  const vuint32 t = *(const vuint32 *)(&f);
-  return (t&0x80000000u ? -1 : +1);
-}
-
-// always positive, [0..255]
-static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE int fltconv_getexponent (const float f) noexcept {
-  const vuint32 t = *(const vuint32 *)(&f);
-  return ((t>>23)&0xffu);
-}
-
-// always positive, [0..0x7f_ffff] (or [0..8388607])
-static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE int fltconv_getmantissa (const float f) noexcept {
-  const vuint32 t = *(const vuint32 *)(&f);
-  return (t&0x7fffff);
-}
-
-// invalid values leads to NaN with undefined payload and sign
-static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE float fltconv_constructfloat (const int sign, const int exponent, const int mantissa) noexcept {
-  if ((sign != 1 && sign != -1) ||
-      exponent < 0 || exponent > 255 ||
-      mantissa < 0 || mantissa > 0x7fffff)
-  {
-    return NAN;
-  } else {
-    const vuint32 t =
-      (sign < 0 ? 0x80000000u : 0u)|
-      (((unsigned)(exponent&0xffu))<<23)|
-      ((unsigned)mantissa&0x7fffffu);
-    const float *f = (const float *)&t;
-    return *f;
-  }
-}
+#include "mathutil_float.h"
 
 
 // `smoothstep` performs smooth Hermite interpolation between 0 and 1 when edge0 < x < edge1
@@ -142,10 +55,9 @@ VVA_ALWAYS_INLINE float smoothstepPerlin (const float edge0, const float edge1, 
 }
 
 
-extern "C" {
 //k8: this is UB in shitplusplus, but i really can't care less
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE float fastInvSqrtf (const float n) {
+VVA_ALWAYS_INLINE float fastInvSqrtf (const float n) noexcept {
   union { float f; vuint32 i; } ufi;
   const float ndiv2 = n*0.5f;
   ufi.f = n;
@@ -162,7 +74,7 @@ VVA_ALWAYS_INLINE float fastInvSqrtf (const float n) {
 //k8: this is UB in shitplusplus, but i really can't care less
 // k8: meh, i don't care; ~0.0175 as error margin is ok for us
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE float fastInvSqrtfLP (const float n) {
+VVA_ALWAYS_INLINE float fastInvSqrtfLP (const float n) noexcept {
   union { float f; vuint32 i; } ufi;
   const float ndiv2 = n*0.5f;
   ufi.f = n;
@@ -172,7 +84,6 @@ VVA_ALWAYS_INLINE float fastInvSqrtfLP (const float n) {
   // one step of newton algorithm; can be repeated to increase accuracy
   ufi.f = ufi.f*(1.5f-(ndiv2*ufi.f*ufi.f));
   return ufi.f;
-}
 }
 
 
