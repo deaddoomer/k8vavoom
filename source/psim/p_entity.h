@@ -779,11 +779,16 @@ private:
   bool CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials=false);
   void BlockedByLine (line_t *);
   void PushLine (const tmtrace_t &tmtrace, bool checkOnly);
-  void SlidePathTraverseOld (float &BestSlideFrac, line_t *&BestSlideLine, float x, float y, float StepVelScale);
 
   static VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec ClipVelocity (const TVec &in, const TVec &normal, float overbounce=1.0f) noexcept {
     return in-normal*(in.dot(normal)*overbounce);
   }
+
+  void SlidePathTraverseOld (float &BestSlideFrac, line_t *&BestSlideLine, float x, float y, float StepVelScale);
+
+  // returns hit time -- [0..1]
+  // 1 means that we couldn't find any suitable wall
+  float SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal=nullptr, line_t **BestSlideLine=nullptr, bool tryBiggerBlockmap=false);
 
   // all sliders will reset `Velocity.z`, so save and restore it if necessary!
   // `SlideMove()` does it automatically
