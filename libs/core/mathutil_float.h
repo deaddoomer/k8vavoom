@@ -127,7 +127,7 @@ static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
 VVA_ALWAYS_INLINE float killInfNaNF (const float f) VV_FLTUTIL_NOEXCEPT {
   int32_t fi = *(const __attribute__((__may_alias__)) int32_t *)&f;
   fi &= (((fi>>23)&0xff)-0xff)>>31;
-  return *((float *)&fi);
+  return *((__attribute__((__may_alias__)) float *)&fi);
 }
 
 // this turns all nan/inf and denormals to positive zero
@@ -145,7 +145,7 @@ VVA_ALWAYS_INLINE float zeroNanInfDenormalsF (const float f) VV_FLTUTIL_NOEXCEPT
   int32_t fi = *(const __attribute__((__may_alias__)) int32_t *)&f;
   if (!(fi&0x7f800000u)) fi = 0u; // kill denormals
   else fi &= (((fi>>23)&0xff)-0xff)>>31; // kill nan/inf
-  return *((float *)&fi);
+  return *((__attribute__((__may_alias__)) float *)&fi);
 }
 
 // this turns all denormals to positive zero
@@ -161,7 +161,7 @@ static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
 VVA_ALWAYS_INLINE float zeroDenormalsF (const float f) VV_FLTUTIL_NOEXCEPT {
   int32_t fi = *(const __attribute__((__may_alias__)) int32_t *)&f;
   if (!(fi&0x7f800000u)) fi = 0u; // kill denormals
-  return *((float *)&fi);
+  return *((__attribute__((__may_alias__)) float *)&fi);
 }
 
 
@@ -306,6 +306,26 @@ VVA_ALWAYS_INLINE float fltconv_constructfloat (const int sign, const int expone
       ((unsigned)mantissa&0x7fffffu);
     return *((const __attribute__((__may_alias__)) float *)&t);
   }
+}
+
+
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
+VVA_ALWAYS_INLINE uint32_t fltconv_floatasuint (const float f) VV_FLTUTIL_NOEXCEPT {
+  return *(const __attribute__((__may_alias__)) uint32_t *)&f;
+}
+
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
+VVA_ALWAYS_INLINE float fltconv_uintasfloat (const uint32_t fi) VV_FLTUTIL_NOEXCEPT {
+  return *(const __attribute__((__may_alias__)) float *)&fi;
+}
+
+
+// 0, -1 or +1
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
+VVA_ALWAYS_INLINE float floatSign (const float f) VV_FLTUTIL_NOEXCEPT {
+  uint32_t fi = *(const __attribute__((__may_alias__)) int32_t *)&f;
+  fi = (fi&0x7fffffff ? (0x3f800000u/*1.0f*/|(fi&0x80000000u)) : 0u);
+  return *((__attribute__((__may_alias__)) float *)&fi);
 }
 
 

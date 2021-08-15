@@ -25,6 +25,7 @@ static void dumpFloat (const char *msg, const float f) {
   const float f2 = zeroDenormalsF(f);
   const uint32_t t2 = *(const uint32_t *)(&f2);
   printf("=== %s -- float: %s (%s) : 0x%08x (%s : %s) : nodenorm: 0x%08x %s (%s) : onlynodenorm: 0x%08x %s (%s) ===\n", msg, f2s(f, "%f"), f2s(f, "%g"), t, f2s(killInfNaNF(f), "%f"), f2s(killInfNaNF(f), "%g"), t1, f2s(f1, "%f"), f2s(f1, "%g"), t2, f2s(f2, "%f"), f2s(f2, "%g"));
+  printf("  floatsign: %s : %s : 0x%08x\n", f2s(floatSign(f), "%f"), f2s(floatSign(f), "%g"), fltconv_floatasuint(floatSign(f)));
   printf("  sign: %d\n", fltconv_getsign(f));
   printf("  exponent: %u : %d\n", fltconv_getexponent(f), fltconv_getsignedexponent(f));
   printf("  mantissa: 0x%08x (%u)\n", fltconv_getmantissa(f), fltconv_getmantissa(f));
@@ -54,6 +55,8 @@ int main () {
   denorm = fltconv_constructfloat(-1, 0, 1); // very small negative denormal
   dumpFloat("minimum negative denormal", denorm);
   denorm = fltconv_constructfloat(-1, 0, FLTCONV_NAN_MAX_MANTISSA); // maximum positive denornal
+  dumpFloat("maximum negative denormal", denorm);
+  denorm = fltconv_constructfloat(1, 0, FLTCONV_NAN_MAX_MANTISSA); // maximum positive denornal
   dumpFloat("maximum positive denormal", denorm);
   float pz = fltconv_create_positive_zero();
   float nz = fltconv_create_negative_zero();
@@ -65,8 +68,8 @@ int main () {
   dumpFloat("+INFINITY", +INFINITY);
   dumpFloat("-NAN", -NAN);
   dumpFloat("+NAN", +NAN);
-  dumpFloat("-HUGE_VALF", +HUGE_VALF);
-  dumpFloat("+HUGE_VALF", -HUGE_VALF);
+  dumpFloat("-HUGE_VALF", -HUGE_VALF);
+  dumpFloat("+HUGE_VALF", +HUGE_VALF);
   dumpFloat("-FLT_MAX", -FLT_MAX);
   dumpFloat("+FLT_MAX", +FLT_MAX);
   dumpFloat("-FLT_MIN", -FLT_MIN);
