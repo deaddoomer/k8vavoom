@@ -779,8 +779,17 @@ private:
   bool CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials=false);
   void BlockedByLine (line_t *);
   void PushLine (const tmtrace_t &tmtrace, bool checkOnly);
-  static TVec ClipVelocity (const TVec &, const TVec &, float);
-  void SlidePathTraverse (float &, line_t* &, float, float, float);
+  void SlidePathTraverseOld (float &BestSlideFrac, line_t *&BestSlideLine, float x, float y, float StepVelScale);
+
+  static VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec ClipVelocity (const TVec &in, const TVec &normal, float overbounce=1.0f) noexcept {
+    return in-normal*(in.dot(normal)*overbounce);
+  }
+
+  // all sliders will reset `Velocity.z`, so save and restore it if necessary!
+  // `SlideMove()` does it automatically
+  void SlideMoveOldest (float StepVelScale, bool noPickups); // vanilla-like
+  void SlideMoveNew (float StepVelScale, bool noPickups); // current
+  void SlideMoveNewest (float StepVelScale, bool noPickups); // q3 experiment, doesn't work yet
 
   void CreateSecNodeList ();
 
