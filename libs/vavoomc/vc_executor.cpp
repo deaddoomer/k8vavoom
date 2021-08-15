@@ -72,6 +72,17 @@
 // check for returning invalid vector
 //#define CHECK_FOR_NANS_INFS_RETVEC
 
+// we don't really need it
+//#define DENORMALS_PROTECTION
+
+#ifdef DENORMALS_PROTECTION
+# define VM_zeroDenormalsF            zeroDenormalsF
+# define VM_zeroDenormalsFI32InPlace  zeroDenormalsFI32InPlace
+#else
+# define VM_zeroDenormalsF
+# define VM_zeroDenormalsFI32InPlace
+#endif
+
 
 #ifdef VMEXEC_RUNDUMP
 static int k8edIndent = 0;
@@ -1731,13 +1742,13 @@ func_loop:
           #ifdef CHECK_FOR_NANS_INFS_VEC
           if (!isFiniteFI32(sp[-4].i) || !isFiniteFI32(sp[-3].i) || !isFiniteFI32(sp[-2].i) || !isFiniteFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("vecprescale with NAN/INF"); }
           #endif
-          const float scale = zeroDenormalsF(sp[-4].f);
+          const float scale = VM_zeroDenormalsF(sp[-4].f);
           sp[-4].f = scale*sp[-3].f;
           sp[-3].f = scale*sp[-2].f;
           sp[-2].f = scale*sp[-1].f;
-          zeroDenormalsFI32InPlace(&sp[-4].i);
-          zeroDenormalsFI32InPlace(&sp[-3].i);
-          zeroDenormalsFI32InPlace(&sp[-2].i);
+          VM_zeroDenormalsFI32InPlace(&sp[-4].i);
+          VM_zeroDenormalsFI32InPlace(&sp[-3].i);
+          VM_zeroDenormalsFI32InPlace(&sp[-2].i);
           --sp;
           ++ip;
         }
@@ -1748,7 +1759,7 @@ func_loop:
         if (!isFiniteFI32(sp[-4].i) || !isFiniteFI32(sp[-3].i) || !isFiniteFI32(sp[-2].i) || !isFiniteFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("vecscale with NAN/INF"); }
         #endif
         {
-          const float scale = zeroDenormalsF(sp[-1].f);
+          const float scale = VM_zeroDenormalsF(sp[-1].f);
           sp[-4].f *= scale;
           sp[-3].f *= scale;
           sp[-2].f *= scale;
@@ -1758,9 +1769,9 @@ func_loop:
         if (!isFiniteFI32(sp[-4].i) || !isFiniteFI32(sp[-3].i) || !isFiniteFI32(sp[-2].i)) { cstDump(ip); VPackage::InternalFatalError("vecscale vec is NAN/INF (exit)"); }
         #endif
         // also, we may get denormals with multiplication
-        zeroDenormalsFI32InPlace(&sp[-4].i);
-        zeroDenormalsFI32InPlace(&sp[-3].i);
-        zeroDenormalsFI32InPlace(&sp[-2].i);
+        VM_zeroDenormalsFI32InPlace(&sp[-4].i);
+        VM_zeroDenormalsFI32InPlace(&sp[-3].i);
+        VM_zeroDenormalsFI32InPlace(&sp[-2].i);
         --sp;
         ++ip;
         PR_VM_BREAK;
@@ -1777,9 +1788,9 @@ func_loop:
           sp[-2].f /= scale;
         }
         // we cannot get infinity with division, but we may get denormals
-        zeroDenormalsFI32InPlace(&sp[-4].i);
-        zeroDenormalsFI32InPlace(&sp[-3].i);
-        zeroDenormalsFI32InPlace(&sp[-2].i);
+        VM_zeroDenormalsFI32InPlace(&sp[-4].i);
+        VM_zeroDenormalsFI32InPlace(&sp[-3].i);
+        VM_zeroDenormalsFI32InPlace(&sp[-2].i);
         --sp;
         ++ip;
         PR_VM_BREAK;
@@ -1880,7 +1891,7 @@ func_loop:
         ++ip;
         {
           TVec *ptr = (TVec *)sp[-2].p;
-          (*ptr) *= zeroDenormalsF(sp[-1].f);
+          (*ptr) *= VM_zeroDenormalsF(sp[-1].f);
           #ifdef CHECK_FOR_NANS_INFS_VEC
           // we may get infinity with multiplication
           if (!ptr->isValid()) { cstDump(ip); VPackage::InternalFatalError("vecscaledrop vec is NAN/INF (exit)"); }
