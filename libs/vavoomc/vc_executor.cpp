@@ -59,8 +59,18 @@
 
 // debug feature, nan and inf can be used for various purposes
 // but meh...
+
+// check for nan/inf in unary minus
 //#define CHECK_FOR_NANS_INFS
-#define CHECK_FOR_NANS_INFS_RETURN
+
+// check for invalid vectors in various math operations
+#define CHECK_FOR_NANS_INFS_VEC
+
+// loading nan/inf vector from field
+//#define CHECK_FOR_NANS_INFS_VEC_FLD
+
+// check for returning invalid vector
+//#define CHECK_FOR_NANS_INFS_RETVEC
 
 
 #ifdef VMEXEC_RUNDUMP
@@ -396,8 +406,6 @@ static void RunFunction (VMethod *func) {
   vuint8 *ip = nullptr;
   VStack *sp;
   VStack *local_vars;
-  float ftemp;
-  vint32 itemp;
 
   //current_func = func;
 
@@ -605,18 +613,18 @@ func_loop:
       PR_VM_CASE(OPC_Return)
         //vensure(sp == local_vars+func->NumLocals);
         if (sp != local_vars+func->NumLocals) { cstDump(ip); VPackage::InternalFatalError(va("assertion failed: `sp == local_vars+func->NumLocals`: ip=%d; diff=%d; func->NumLocals=%d", (int)(ptrdiff_t)(ip-func->Statements.Ptr()), (int)(ptrdiff_t)(sp-(local_vars+func->NumLocals)), func->NumLocals)); }
-#ifdef VMEXEC_RUNDUMP
+        #ifdef VMEXEC_RUNDUMP
         printIndent(); fprintf(stderr, "LEAVING VC FUNCTION `%s`; sp=%d\n", *func->GetFullName(), (int)(sp-pr_stack)); leaveIndent();
-#endif
+        #endif
         VObject::pr_stackPtr = local_vars;
         cstPop();
         return;
 
       PR_VM_CASE(OPC_ReturnL)
         vensure(sp == local_vars+func->NumLocals+1);
-#ifdef VMEXEC_RUNDUMP
+        #ifdef VMEXEC_RUNDUMP
         printIndent(); fprintf(stderr, "LEAVING VC FUNCTION `%s`; sp=%d\n", *func->GetFullName(), (int)(sp-pr_stack)); leaveIndent();
-#endif
+        #endif
         ((VStack *)local_vars)[0] = sp[-1];
         VObject::pr_stackPtr = local_vars+1;
         cstPop();
@@ -624,12 +632,12 @@ func_loop:
 
       PR_VM_CASE(OPC_ReturnV)
         vensure(sp == local_vars+func->NumLocals+3);
-#ifdef VMEXEC_RUNDUMP
+        #ifdef VMEXEC_RUNDUMP
         printIndent(); fprintf(stderr, "LEAVING VC FUNCTION `%s`; sp=%d\n", *func->GetFullName(), (int)(sp-pr_stack)); leaveIndent();
-#endif
-#ifdef CHECK_FOR_NANS_INFS_RETURN
-        if (!isFiniteF(sp[-3].f) || !isFiniteF(sp[-2].f) || !isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("returning NAN/INF vector"); }
-#endif
+        #endif
+        #ifdef CHECK_FOR_NANS_INFS_RETVEC
+        if (!isFiniteFI32(sp[-3].i) || !isFiniteFI32(sp[-2].i) || !isFiniteFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("returning NAN/INF vector"); }
+        #endif
         ((VStack *)local_vars)[0] = sp[-3];
         ((VStack *)local_vars)[1] = sp[-2];
         ((VStack *)local_vars)[2] = sp[-1];
@@ -940,9 +948,11 @@ func_loop:
         sp[0].f = ((TVec *)&local_vars[ip[1]])->x;
         sp[1].f = ((TVec *)&local_vars[ip[1]])->y;
         sp[2].f = ((TVec *)&local_vars[ip[1]])->z;
-#ifdef CHECK_FOR_NANS_INFS
-        if (!isFiniteF(sp[0].f) || !isFiniteF(sp[1].f) || !isFiniteF(sp[2].f)) { cstDump(ip); VPackage::InternalFatalError("creating NAN/INF vector"); }
-#endif
+        /* nope, this is allowed
+        #ifdef CHECK_FOR_NANS_INFS_VEC
+        if (!isFiniteFI32(sp[0].i) || !isFiniteFI32(sp[1].i) || !isFiniteFI32(sp[2].i)) { cstDump(ip); VPackage::InternalFatalError("creating NAN/INF vector"); }
+        #endif
+        */
         ip += 2;
         sp += 3;
         PR_VM_BREAK;
@@ -981,13 +991,13 @@ func_loop:
       PR_VM_CASE(OPC_VFieldValue)
         if (!sp[-1].p) { cstDump(ip); VPackage::InternalFatalError("Reference not set to an instance of an object"); }
         {
-          TVec *vp = (TVec *)((vuint8 *)sp[-1].p+ReadInt32(ip+1));
+          const TVec *vp = (const TVec *)((vuint8 *)sp[-1].p+ReadInt32(ip+1));
           sp[1].f = vp->z;
           sp[0].f = vp->y;
           sp[-1].f = vp->x;
-#ifdef CHECK_FOR_NANS_INFS
-          if (!isFiniteF(sp[1].f) || !isFiniteF(sp[0].f) || !isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("loading NAN/INF vector"); }
-#endif
+          #ifdef CHECK_FOR_NANS_INFS_VEC_FLD
+          if (!isFiniteFI32(sp[1].i) || !isFiniteFI32(sp[0].i) || !isFiniteFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("loading NAN/INF vector"); }
+          #endif
         }
         sp += 2;
         ip += 5;
@@ -1232,12 +1242,17 @@ func_loop:
 
       PR_VM_CASE(OPC_VPushPointed)
         ++ip;
-        sp[1].f = ((TVec *)sp[-1].p)->z;
-        sp[0].f = ((TVec *)sp[-1].p)->y;
-        sp[-1].f = ((TVec *)sp[-1].p)->x;
-#ifdef CHECK_FOR_NANS_INFS
-        if (!isFiniteF(sp[1].f) || !isFiniteF(sp[0].f) || !isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("pushing NAN/INF vector"); }
-#endif
+        {
+          const TVec *ptr = (const TVec *)sp[-1].p;
+          sp[1].f = ptr->z;
+          sp[0].f = ptr->y;
+          sp[-1].f = ptr->x;
+        }
+        /* nope, this is allowed
+        #ifdef CHECK_FOR_NANS_INFS_VEC
+        if (!isFiniteFI32(sp[1].i) || !isFiniteFI32(sp[0].i) || !isFiniteFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("pushing NAN/INF vector"); }
+        #endif
+        */
         sp += 2;
         PR_VM_BREAK;
 
@@ -1299,34 +1314,15 @@ func_loop:
         ++sp;
         PR_VM_BREAK;
 
-#ifdef CHECK_FOR_NANS_INFS
-    #define BINOP(mem, op) \
-      if (!isFiniteF(sp[-2].mem)) { cstDump(ip); VPackage::InternalFatalError(va("op '%s' first arg is NAN/INF", #op)); } \
-      if (!isFiniteF(sp[-1].mem)) { cstDump(ip); VPackage::InternalFatalError(va("op '%s' second arg is NAN/INF", #op)); } \
-      sp[-2].mem = sp[-2].mem op sp[-1].mem; \
-      if (!isFiniteF(sp[-2].mem)) { cstDump(ip); VPackage::InternalFatalError(va("op '%s' result is NAN/INF", #op)); } \
-      --sp; \
-      ++ip;
-#else
     #define BINOP(mem, op) \
       ++ip; \
       sp[-2].mem = sp[-2].mem op sp[-1].mem; \
       --sp;
-#endif
-#ifdef CHECK_FOR_NANS_INFS
-    #define BINOP_Q(mem, op) \
-      if (!isFiniteF(sp[-2].mem)) { cstDump(ip); VPackage::InternalFatalError(va("op '%s' first arg is NAN/INF", #op)); } \
-      if (!isFiniteF(sp[-1].mem)) { cstDump(ip); VPackage::InternalFatalError(va("op '%s' second arg is NAN/INF", #op)); } \
-      sp[-2].mem op sp[-1].mem; \
-      if (!isFiniteF(sp[-2].mem)) { cstDump(ip); VPackage::InternalFatalError(va("op '%s' result is NAN/INF", #op)); } \
-      --sp; \
-      ++ip;
-#else
+
     #define BINOP_Q(mem, op) \
       ++ip; \
       sp[-2].mem op sp[-1].mem; \
       --sp;
-#endif
 
       PR_VM_CASE(OPC_Add)
         BINOP_Q(i, +=);
@@ -1468,20 +1464,11 @@ func_loop:
         --sp;
         PR_VM_BREAK;
 
-#ifdef CHECK_FOR_NANS_INFS
-    #define ASSIGNOP(type, mem, op) \
-      if (!isFiniteF(*(type *)sp[-2].p)) { cstDump(ip); VPackage::InternalFatalError(va("assign '%s' with NAN/INF (0)", #op)); } \
-      if (!isFiniteF(sp[-1].mem)) { cstDump(ip); VPackage::InternalFatalError(va("assign '%s' with NAN/INF (1)", #op)); } \
-      *(type *)sp[-2].p op sp[-1].mem; \
-      if (!isFiniteF(*(type *)sp[-2].p)) { cstDump(ip); VPackage::InternalFatalError(va("assign '%s' with NAN/INF (3)", #op)); } \
-      sp -= 2; \
-      ++ip;
-#else
     #define ASSIGNOP(type, mem, op) \
       ++ip; \
       *(type *)sp[-2].p op sp[-1].mem; \
       sp -= 2;
-#endif
+
     #define ASSIGNOPNN(type, mem, op) \
       ++ip; \
       *(type *)sp[-2].p op sp[-1].mem; \
@@ -1653,10 +1640,10 @@ func_loop:
         PR_VM_BREAK;
 
       PR_VM_CASE(OPC_FDivide)
-        if (!sp[-1].f) { cstDump(ip); VPackage::InternalFatalError("Division by 0"); }
-#ifdef CHECK_FOR_INF_NAN_DIV
-        if (!isFiniteF(sp[-1].f)) { cstDump(ip); if (isNaNF(sp[-1].f)) VPackage::InternalFatalError("Division by NAN"); else VPackage::InternalFatalError("Division by INF"); }
-#endif
+        if (isZeroFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("Division by 0"); }
+        #ifdef CHECK_FOR_INF_NAN_DIV
+        if (!isFiniteFI32(sp[-1].i)) { cstDump(ip); if (isNaNFU32((uint32_t)sp[-1].i)) VPackage::InternalFatalError("Division by NAN"); else VPackage::InternalFatalError("Division by INF"); }
+        #endif
         BINOP_Q(f, /=);
         PR_VM_BREAK;
 
@@ -1686,10 +1673,11 @@ func_loop:
 
       PR_VM_CASE(OPC_FUnaryMinus)
         ++ip;
-#ifdef CHECK_FOR_NANS_INFS
-        if (!isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("unary with NAN/INF"); }
-#endif
-        sp[-1].f = -sp[-1].f;
+        #ifdef CHECK_FOR_NANS_INFS
+        if (!isFiniteFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("unary with NAN/INF"); }
+        #endif
+        //sp[-1].f = -sp[-1].f;
+        sp[-1].i ^= 0x80000000; // direct modification of float32 sign bit
         PR_VM_BREAK;
 
       PR_VM_CASE(OPC_FAddVarDrop)
@@ -1705,18 +1693,19 @@ func_loop:
         PR_VM_BREAK;
 
       PR_VM_CASE(OPC_FDivVarDrop)
-        if (!sp[-1].f) { cstDump(ip); VPackage::InternalFatalError("Division by 0"); }
-#ifdef CHECK_FOR_INF_NAN_DIV
-        if (!isFiniteF(sp[-1].f)) { cstDump(ip); if (isNaNF(sp[-1].f)) VPackage::InternalFatalError("Division by NAN"); else VPackage::InternalFatalError("Division by INF"); }
-#endif
+        if (isZeroFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("Division by 0"); }
+        #ifdef CHECK_FOR_INF_NAN_DIV
+        if (!isFiniteFI32(sp[-1].i)) { cstDump(ip); if (isNaNFU32((uint32_t)sp[-1].i)) VPackage::InternalFatalError("Division by NAN"); else VPackage::InternalFatalError("Division by INF"); }
+        #endif
         ASSIGNOP(float, f, /=);
         PR_VM_BREAK;
 
       PR_VM_CASE(OPC_VAdd)
-#ifdef CHECK_FOR_NANS_INFS
-        if (!isFiniteF(sp[-6].f) || !isFiniteF(sp[-5].f) || !isFiniteF(sp[-4].f)) { cstDump(ip); VPackage::InternalFatalError("vec+ op0 is NAN/INF"); }
-        if (!isFiniteF(sp[-3].f) || !isFiniteF(sp[-2].f) || !isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("vec+ op1 is NAN/INF"); }
-#endif
+        #ifdef CHECK_FOR_NANS_INFS_VEC
+        //if (!isFiniteFI32(sp[-6].i) || !isFiniteFI32(sp[-5].i) || !isFiniteFI32(sp[-4].i)) { cstDump(ip); VPackage::InternalFatalError("vec+ op0 is NAN/INF"); }
+        //if (!isFiniteFI32(sp[-3].i) || !isFiniteFI32(sp[-2].i) || !isFiniteFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("vec+ op1 is NAN/INF"); }
+        if (!isFiniteFI32(sp[-6].i) || !isFiniteFI32(sp[-5].i) || !isFiniteFI32(sp[-4].i) || !isFiniteFI32(sp[-3].i) || !isFiniteFI32(sp[-2].i) || !isFiniteFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("vec+ with NAN/INF"); }
+        #endif
         sp[-6].f += sp[-3].f;
         sp[-5].f += sp[-2].f;
         sp[-4].f += sp[-1].f;
@@ -1725,10 +1714,11 @@ func_loop:
         PR_VM_BREAK;
 
       PR_VM_CASE(OPC_VSubtract)
-#ifdef CHECK_FOR_NANS_INFS
-        if (!isFiniteF(sp[-6].f) || !isFiniteF(sp[-5].f) || !isFiniteF(sp[-4].f)) { cstDump(ip); VPackage::InternalFatalError("vec- op0 is NAN/INF"); }
-        if (!isFiniteF(sp[-3].f) || !isFiniteF(sp[-2].f) || !isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("vec- op1 is NAN/INF"); }
-#endif
+        #ifdef CHECK_FOR_NANS_INFS_VEC
+        //if (!isFiniteFI32(sp[-6].i) || !isFiniteFI32(sp[-5].i) || !isFiniteFI32(sp[-4].i)) { cstDump(ip); VPackage::InternalFatalError("vec- op0 is NAN/INF"); }
+        //if (!isFiniteFI32(sp[-3].i) || !isFiniteFI32(sp[-2].i) || !isFiniteFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("vec- op1 is NAN/INF"); }
+        if (!isFiniteFI32(sp[-6].i) || !isFiniteFI32(sp[-5].i) || !isFiniteFI32(sp[-4].i) || !isFiniteFI32(sp[-3].i) || !isFiniteFI32(sp[-2].i) || !isFiniteFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("vec- with NAN/INF"); }
+        #endif
         sp[-6].f -= sp[-3].f;
         sp[-5].f -= sp[-2].f;
         sp[-4].f -= sp[-1].f;
@@ -1738,51 +1728,58 @@ func_loop:
 
       PR_VM_CASE(OPC_VPreScale)
         {
-          float scale = sp[-4].f;
-#ifdef CHECK_FOR_INF_NAN_DIV
-          if (!isFiniteF(scale)) { cstDump(ip); VPackage::InternalFatalError("vecprescale scale is NAN/INF"); }
-#endif
-#ifdef CHECK_FOR_NANS_INFS
-          if (!isFiniteF(sp[-4].f) || !isFiniteF(sp[-3].f) || !isFiniteF(sp[-2].f)) { cstDump(ip); VPackage::InternalFatalError("vecprescale vec is NAN/INF"); }
-#endif
+          #ifdef CHECK_FOR_NANS_INFS_VEC
+          if (!isFiniteFI32(sp[-4].i) || !isFiniteFI32(sp[-3].i) || !isFiniteFI32(sp[-2].i) || !isFiniteFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("vecprescale with NAN/INF"); }
+          #endif
+          const float scale = zeroDenormalsF(sp[-4].f);
           sp[-4].f = scale*sp[-3].f;
           sp[-3].f = scale*sp[-2].f;
           sp[-2].f = scale*sp[-1].f;
+          zeroDenormalsFI32InPlace(&sp[-4].i);
+          zeroDenormalsFI32InPlace(&sp[-3].i);
+          zeroDenormalsFI32InPlace(&sp[-2].i);
           --sp;
           ++ip;
         }
         PR_VM_BREAK;
 
       PR_VM_CASE(OPC_VPostScale)
-#ifdef CHECK_FOR_INF_NAN_DIV
-        if (!isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("vecscale scale is NAN/INF"); }
-#endif
-#ifdef CHECK_FOR_NANS_INFS
-        if (!isFiniteF(sp[-4].f) || !isFiniteF(sp[-3].f) || !isFiniteF(sp[-2].f)) { cstDump(ip); VPackage::InternalFatalError("vecscale vec is NAN/INF"); }
-#endif
-        sp[-4].f *= sp[-1].f;
-        sp[-3].f *= sp[-1].f;
-        sp[-2].f *= sp[-1].f;
-#ifdef CHECK_FOR_NANS_INFS
-        if (!isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("vecscale scale is NAN/INF (exit)"); }
-        if (!isFiniteF(sp[-4].f) || !isFiniteF(sp[-3].f) || !isFiniteF(sp[-2].f)) { cstDump(ip); VPackage::InternalFatalError("vecscale vec is NAN/INF (exit)"); }
-#endif
+        #ifdef CHECK_FOR_NANS_INFS_VEC
+        if (!isFiniteFI32(sp[-4].i) || !isFiniteFI32(sp[-3].i) || !isFiniteFI32(sp[-2].i) || !isFiniteFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("vecscale with NAN/INF"); }
+        #endif
+        {
+          const float scale = zeroDenormalsF(sp[-1].f);
+          sp[-4].f *= scale;
+          sp[-3].f *= scale;
+          sp[-2].f *= scale;
+        }
+        #ifdef CHECK_FOR_NANS_INFS_VEC
+        // we may get infinity with multiplication
+        if (!isFiniteFI32(sp[-4].i) || !isFiniteFI32(sp[-3].i) || !isFiniteFI32(sp[-2].i)) { cstDump(ip); VPackage::InternalFatalError("vecscale vec is NAN/INF (exit)"); }
+        #endif
+        // also, we may get denormals with multiplication
+        zeroDenormalsFI32InPlace(&sp[-4].i);
+        zeroDenormalsFI32InPlace(&sp[-3].i);
+        zeroDenormalsFI32InPlace(&sp[-2].i);
         --sp;
         ++ip;
         PR_VM_BREAK;
 
       PR_VM_CASE(OPC_VIScale)
-        if (!isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("veciscale scale is NAN/INF"); }
-#ifdef CHECK_FOR_NANS_INFS
-        if (!isFiniteF(sp[-4].f) || !isFiniteF(sp[-3].f) || !isFiniteF(sp[-2].f)) { cstDump(ip); VPackage::InternalFatalError("veciscale vec is NAN/INF"); }
-#endif
-        sp[-4].f /= sp[-1].f;
-        sp[-3].f /= sp[-1].f;
-        sp[-2].f /= sp[-1].f;
-#ifdef CHECK_FOR_NANS_INFS
-        if (!isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("veciscale scale is NAN/INF (exit)"); }
-        if (!isFiniteF(sp[-4].f) || !isFiniteF(sp[-3].f) || !isFiniteF(sp[-2].f)) { cstDump(ip); VPackage::InternalFatalError("veciscale vec is NAN/INF (exit)"); }
-#endif
+        #ifdef CHECK_FOR_NANS_INFS_VEC
+        if (!isFiniteFI32(sp[-4].i) || !isFiniteFI32(sp[-3].i) || !isFiniteFI32(sp[-2].i) || !isFiniteFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("veciscale with NAN/INF"); }
+        #endif
+        if (isZeroFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("veciscale with zero scale"); }
+        {
+          const float scale = sp[-1].f;
+          sp[-4].f /= scale;
+          sp[-3].f /= scale;
+          sp[-2].f /= scale;
+        }
+        // we cannot get infinity with division, but we may get denormals
+        zeroDenormalsFI32InPlace(&sp[-4].i);
+        zeroDenormalsFI32InPlace(&sp[-3].i);
+        zeroDenormalsFI32InPlace(&sp[-2].i);
         --sp;
         ++ip;
         PR_VM_BREAK;
@@ -1800,12 +1797,20 @@ func_loop:
         PR_VM_BREAK;
 
       PR_VM_CASE(OPC_VUnaryMinus)
-#ifdef CHECK_FOR_NANS_INFS
-        if (!isFiniteF(sp[-3].f) || !isFiniteF(sp[-2].f) || !isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("vecunary vec is NAN/INF"); }
-#endif
+        /* no need to, i believe
+        #ifdef CHECK_FOR_NANS_INFS_VEC
+        if (!isFiniteFI32(sp[-3].i) || !isFiniteFI32(sp[-2].i) || !isFiniteFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("vecunary vec is NAN/INF"); }
+        #endif
+        */
+        /*
         sp[-3].f = -sp[-3].f;
         sp[-2].f = -sp[-2].f;
         sp[-1].f = -sp[-1].f;
+        */
+        // direct manipulation with float32 sign bit
+        sp[-3].i ^= 0x80000000;
+        sp[-2].i ^= 0x80000000;
+        sp[-1].i ^= 0x80000000;
         ++ip;
         PR_VM_BREAK;
 
@@ -1819,17 +1824,17 @@ func_loop:
         }
         PR_VM_BREAK;
 
-#ifdef CHECK_FOR_NANS_INFS
+#ifdef CHECK_FOR_NANS_INFS_VEC
     #define VASSIGNOP(op) \
       { \
         TVec *ptr = (TVec *)sp[-4].p; \
-        if (!isFiniteF(ptr->x) || !isFiniteF(ptr->y) || !isFiniteF(ptr->z)) { cstDump(ip); VPackage::InternalFatalError(va("vassign op '%s' op0 is NAN/INF", #op)); } \
-        if (!isFiniteF(sp[-3].f) || !isFiniteF(sp[-2].f) || !isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError(va("vassign op '%s' op1 is NAN/INF", #op)); } \
+        if (!ptr->isValid()) { cstDump(ip); VPackage::InternalFatalError(va("vassign op '%s' op0 is NAN/INF", #op)); } \
+        if (!isFiniteFI32(sp[-3].i) || !isFiniteFI32(sp[-2].i) || !isFiniteFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError(va("vassign op '%s' op1 is NAN/INF", #op)); } \
         ptr->x op sp[-3].f; \
         ptr->y op sp[-2].f; \
         ptr->z op sp[-1].f; \
-        if (!isFiniteF(ptr->x) || !isFiniteF(ptr->y) || !isFiniteF(ptr->z)) { cstDump(ip); VPackage::InternalFatalError(va("vassign op '%s' op0 is NAN/INF (exit)", #op)); } \
-        if (!isFiniteF(sp[-3].f) || !isFiniteF(sp[-2].f) || !isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError(va("vassign op '%s' op1 is NAN/INF (exit)", #op)); } \
+        if (!ptr->isValid()) { cstDump(ip); VPackage::InternalFatalError(va("vassign op '%s' op0 is NAN/INF (exit)", #op)); } \
+        ptr->fixDenormalsInPlace(); /*just in case*/\
         sp -= 4; \
         ++ip; \
       }
@@ -1841,12 +1846,23 @@ func_loop:
         ptr->x op sp[-3].f; \
         ptr->y op sp[-2].f; \
         ptr->z op sp[-1].f; \
+        ptr->fixDenormalsInPlace(); /*just in case*/\
         sp -= 4; \
       }
 #endif
 
       PR_VM_CASE(OPC_VAssignDrop)
-        VASSIGNOP(=);
+        // cannot use it, because it checks destination vector
+        //VASSIGNOP(=);
+        {
+          TVec *ptr = (TVec *)sp[-4].p;
+          ptr->x = sp[-3].f;
+          ptr->y = sp[-2].f;
+          ptr->z = sp[-1].f;
+          ptr->fixDenormalsInPlace(); /*just in case*/
+        }
+        sp -= 4;
+        ++ip;
         PR_VM_BREAK;
 
       PR_VM_CASE(OPC_VAddVarDrop)
@@ -1858,21 +1874,36 @@ func_loop:
         PR_VM_BREAK;
 
       PR_VM_CASE(OPC_VScaleVarDrop)
-#ifdef CHECK_FOR_INF_NAN_DIV
-        if (!isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("vecscaledrop scale is NAN/INF"); }
-#endif
+        #ifdef CHECK_FOR_NANS_INFS_VEC
+        if (!isFiniteFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("vecscaledrop scale is NAN/INF"); }
+        #endif
         ++ip;
-        *(TVec *)sp[-2].p *= sp[-1].f;
+        {
+          TVec *ptr = (TVec *)sp[-2].p;
+          (*ptr) *= zeroDenormalsF(sp[-1].f);
+          #ifdef CHECK_FOR_NANS_INFS_VEC
+          // we may get infinity with multiplication
+          if (!ptr->isValid()) { cstDump(ip); VPackage::InternalFatalError("vecscaledrop vec is NAN/INF (exit)"); }
+          #endif
+          ptr->fixDenormalsInPlace();
+        }
+        //*(TVec *)sp[-2].p *= sp[-1].f;
         sp -= 2;
         PR_VM_BREAK;
 
       PR_VM_CASE(OPC_VIScaleVarDrop)
-        if (!sp[-1].f) { cstDump(ip); VPackage::InternalFatalError("Vector division by 0"); }
-#ifdef CHECK_FOR_INF_NAN_DIV
-        if (!isFiniteF(sp[-1].f)) { cstDump(ip); if (isNaNF(sp[-1].f)) VPackage::InternalFatalError("Vector division by NAN"); else VPackage::InternalFatalError("Vector division by INF"); }
-#endif
+        if (isZeroFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("Vector division by 0"); }
+        #ifdef CHECK_FOR_NANS_INFS_VEC
+        if (!isFiniteFI32(sp[-1].i)) { cstDump(ip); if (isNaNFU32((uint32_t)sp[-1].i)) VPackage::InternalFatalError("Vector division by NAN"); else VPackage::InternalFatalError("Vector division by INF"); }
+        #endif
         ++ip;
-        *(TVec *)sp[-2].p /= sp[-1].f;
+        {
+          TVec *ptr = (TVec *)sp[-2].p;
+          (*ptr) /= sp[-1].f;
+          // we cannot get infinity with division, but we may get denormals
+          ptr->fixDenormalsInPlace();
+        }
+        //*(TVec *)sp[-2].p /= sp[-1].f;
         sp -= 2;
         PR_VM_BREAK;
 
@@ -1917,14 +1948,16 @@ func_loop:
 
       PR_VM_CASE(OPC_FloatToBool)
         // so inf/nan yields `false`
-        sp[-1].i = (isZeroInfNaN(sp[-1].f) ? 0 : 1);
+        sp[-1].i = !isZeroInfNaNFI32(sp[-1].i);
         ++ip;
         PR_VM_BREAK;
 
       PR_VM_CASE(OPC_VectorToBool)
         // `false` is either zero, or invalid vector
-        sp[-3].i = isFiniteF(sp[-1].f) && isFiniteF(sp[-2].f) && isFiniteF(sp[-3].f) &&
-                   (sp[-1].f != 0.0f || sp[-2].f != 0.0f || sp[-3].f != 0.0f);
+        {
+          const int32_t n = sp[-3].i|sp[-2].i|sp[-1].i;
+          sp[-3].i = ((isFiniteFI32(sp[-3].i) && isFiniteFI32(sp[-2].i) && isFiniteFI32(sp[-1].i)) && !isZeroFI32(n));
+        }
         sp -= 2;
         ++ip;
         PR_VM_BREAK;
@@ -2145,16 +2178,20 @@ func_loop:
 
       PR_VM_CASE(OPC_IntToFloat)
         ++ip;
-        ftemp = (float)sp[-1].i;
-        if (!isFiniteF(ftemp)) { cstDump(ip); VPackage::InternalFatalError("Invalid int->float conversion"); }
-        sp[-1].f = ftemp;
+        {
+          const float fv = (float)sp[-1].i;
+          if (!isFiniteF(fv)) { cstDump(ip); VPackage::InternalFatalError("Invalid int->float conversion"); }
+          sp[-1].f = fv;
+        }
         PR_VM_BREAK;
 
       PR_VM_CASE(OPC_FloatToInt)
         ++ip;
-        if (!isFiniteF(sp[-1].f)) { cstDump(ip); VPackage::InternalFatalError("Invalid float->int conversion"); }
-        itemp = (vint32)sp[-1].f;
-        sp[-1].i = itemp;
+        if (!isFiniteFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("Invalid float->int conversion"); }
+        {
+          const vint32 itemp = (vint32)sp[-1].f;
+          sp[-1].i = itemp;
+        }
         PR_VM_BREAK;
 
       PR_VM_CASE(OPC_StrToName)

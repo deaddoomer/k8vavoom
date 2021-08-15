@@ -307,7 +307,7 @@ VExpression *VFloatToBool::DoResolve (VEmitContext &ec) {
   }
   if (op->IsFloatConst()) {
     // do it inplace
-    VExpression *e = new VIntLiteral((isZeroInfNaN(op->GetFloatConst()) ? 0 : 1), Loc); // so inf/nan yields `false`
+    VExpression *e = new VIntLiteral((isZeroInfNaNF(op->GetFloatConst()) ? 0 : 1), Loc); // so inf/nan yields `false`
     delete this;
     return e->Resolve(ec);
   }
