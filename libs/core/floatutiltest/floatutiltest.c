@@ -22,7 +22,7 @@ static void dumpFloat (const char *msg, const float f) {
   const uint32_t t = *(const uint32_t *)(&f);
   const float f1 = zeroNanInfDenormalsF(f);
   const uint32_t t1 = *(const uint32_t *)(&f1);
-  const float f2 = zeroOnlyDenormalsF(f);
+  const float f2 = zeroDenormalsF(f);
   const uint32_t t2 = *(const uint32_t *)(&f2);
   printf("=== %s -- float: %s (%s) : 0x%08x (%s : %s) : nodenorm: 0x%08x %s (%s) : onlynodenorm: 0x%08x %s (%s) ===\n", msg, f2s(f, "%f"), f2s(f, "%g"), t, f2s(killInfNaNF(f), "%f"), f2s(killInfNaNF(f), "%g"), t1, f2s(f1, "%f"), f2s(f1, "%g"), t2, f2s(f2, "%f"), f2s(f2, "%g"));
   printf("  sign: %d\n", fltconv_getsign(f));

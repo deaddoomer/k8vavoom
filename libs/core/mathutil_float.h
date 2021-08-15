@@ -150,7 +150,7 @@ VVA_ALWAYS_INLINE float zeroNanInfDenormalsF (const float f) VV_FLTUTIL_NOEXCEPT
 
 // this turns all denormals to positive zero
 // also, turns negative zero to positive zero
-static VVA_OKUNUSED VVA_ALWAYS_INLINE void zeroOnlyDenormalsFInPlace (float *f) VV_FLTUTIL_NOEXCEPT {
+static VVA_OKUNUSED VVA_ALWAYS_INLINE void zeroDenormalsFInPlace (float *f) VV_FLTUTIL_NOEXCEPT {
   __attribute__((__may_alias__)) int32_t *fi = (__attribute__((__may_alias__)) int32_t *)f;
   if (!((*fi)&0x7f800000u)) *fi = 0u; // kill denormals
 }
@@ -158,7 +158,7 @@ static VVA_OKUNUSED VVA_ALWAYS_INLINE void zeroOnlyDenormalsFInPlace (float *f) 
 // this turns all denormals to positive zero
 // also, turns negative zero to positive zero
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE float zeroOnlyDenormalsF (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_ALWAYS_INLINE float zeroDenormalsF (const float f) VV_FLTUTIL_NOEXCEPT {
   int32_t fi = *(const __attribute__((__may_alias__)) int32_t *)&f;
   if (!(fi&0x7f800000u)) fi = 0u; // kill denormals
   return *((float *)&fi);
