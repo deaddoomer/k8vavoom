@@ -20,7 +20,7 @@ static const char *f2s (const float f, const char *fmt) {
 
 static void dumpFloat (const char *msg, const float f) {
   const uint32_t t = *(const uint32_t *)(&f);
-  const float f1 = zeroDenormalsF(f);
+  const float f1 = zeroNanInfDenormalsF(f);
   const uint32_t t1 = *(const uint32_t *)(&f1);
   const float f2 = zeroOnlyDenormalsF(f);
   const uint32_t t2 = *(const uint32_t *)(&f2);
