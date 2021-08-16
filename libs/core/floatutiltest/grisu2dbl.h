@@ -49,12 +49,24 @@ DEALINGS IN THE SOFTWARE.
  * }
  *
  */
-#ifndef HEADER_GRISU2_DOUBLES_ONLY
-#define HEADER_GRISU2_DOUBLES_ONLY
+#ifndef HEADER_GRISU2
+#define HEADER_GRISU2
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 // there is no 32-bit fp printer there, so the results are worser for `float` type
-extern int grisu2_dtoa (double fp, char dest[24]);
+// puts trailing zero
+extern int grisu2_dtoa (const double fp, char dest[25]);
+
+// stupid hack by ketmar
+// puts trailing zero
+extern int grisu2_ftoa (const float fp, char dest[25]);
 
 
+#ifdef __cplusplus
+}
+#endif
 #endif

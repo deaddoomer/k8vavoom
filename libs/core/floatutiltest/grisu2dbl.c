@@ -31,7 +31,7 @@ DEALINGS IN THE SOFTWARE.
 #include <stdbool.h>
 #include <string.h>
 
-#include "grisu2dbl.h"
+//#include "grisu2dbl.h"
 
 #define npowers      87
 #define steppowers   8
@@ -45,6 +45,28 @@ typedef struct Fp {
   uint64_t frac;
   int exp;
 } Fp;
+
+
+static Fp multiply (const Fp *a, const Fp *b) {
+  const uint64_t lomask = 0x00000000FFFFFFFF;
+
+  const uint64_t ah_bl = (a->frac>>32)*(b->frac&lomask);
+  const uint64_t al_bh = (a->frac&lomask)*(b->frac>>32);
+  const uint64_t al_bl = (a->frac&lomask)*(b->frac&lomask);
+  const uint64_t ah_bh = (a->frac>>32)*(b->frac>>32);
+
+  uint64_t tmp = (ah_bl&lomask)+(al_bh&lomask)+(al_bl>>32);
+  /* round up */
+  tmp += 1U<<31;
+
+  Fp fp = {
+    ah_bh+(ah_bl>>32)+(al_bh>>32)+(tmp>>32),
+    a->exp+b->exp+64
+  };
+
+  return fp;
+}
+
 
 static const Fp powers_ten[] = {
   { 18054884314459144840U, -1220 }, { 13451937075301367670U, -1193 },
@@ -109,11 +131,22 @@ static Fp find_cachedpow10 (int exp, int *k) {
 }
 
 
-#define fracmask   0x000FFFFFFFFFFFFFU
-#define expmask    0x7FF0000000000000U
-#define hiddenbit  0x0010000000000000U
-#define signmask   0x8000000000000000U
-#define expbias    (1023+52)
+#define dbl_bitsize    (64)
+#define dbl_fracmask   (0x000FFFFFFFFFFFFFU)
+#define dbl_expmask    (0x7FF0000000000000U)
+#define dbl_expshift   (52)
+#define dbl_hiddenbit  (0x0010000000000000U)
+#define dbl_signmask   (0x8000000000000000U)
+#define dbl_expbias    (1023+dbl_expshift)
+
+#define flt_bitsize    (32)
+#define flt_fracmask   (0x007fffffu)
+#define flt_expmask    (0x7F800000U)
+#define flt_expshift   (23)
+#define flt_hiddenbit  (0x00800000U)
+#define flt_signmask   (0x80000000U)
+#define flt_expbias    (127+flt_expshift)
+
 
 #define absv(n)     ((n) < 0 ? -(n) : (n))
 #define minv(a, b)  ((a) < (b) ? (a) : (b))
@@ -129,6 +162,66 @@ static const uint64_t tens[] = {
 };
 
 
+static inline uint32_t get_fbits (const float f) {
+  const union {
+    float flt;
+    uint32_t i;
+  } flt_bits = { f };
+  return flt_bits.i;
+}
+
+
+static Fp build_fp_flt (const float f) {
+  const uint32_t bits = get_fbits(f);
+
+  Fp fp;
+  fp.frac = bits&flt_fracmask;
+  fp.exp = (bits&flt_expmask)>>flt_expshift;
+
+  if (fp.exp) {
+    fp.frac += flt_hiddenbit;
+    fp.exp -= flt_expbias;
+  } else {
+    fp.exp = -flt_expbias+1;
+  }
+
+  return fp;
+}
+
+
+static void normalize_flt (Fp *fp) {
+  while ((fp->frac&flt_hiddenbit) == 0) {
+    fp->frac <<= 1;
+    --fp->exp;
+  }
+  const int shift = flt_bitsize-flt_expshift-1;
+  fp->frac <<= shift;
+  fp->exp -= shift;
+}
+
+
+static void get_normalized_boundaries_flt (const Fp *fp, Fp *lower, Fp *upper) {
+  upper->frac = (fp->frac<<1)+1;
+  upper->exp  = fp->exp-1;
+
+  while ((upper->frac&(flt_hiddenbit<<1)) == 0) {
+    upper->frac <<= 1;
+    --upper->exp;
+  }
+
+  const int u_shift = flt_bitsize-flt_expshift-2;
+  upper->frac <<= u_shift;
+  upper->exp = upper->exp-u_shift;
+
+  const int l_shift = (fp->frac == flt_hiddenbit ? 2 : 1);
+  lower->frac = (fp->frac<<l_shift)-1;
+  lower->exp = fp->exp-l_shift;
+
+  lower->frac <<= lower->exp-upper->exp;
+  lower->exp = upper->exp;
+}
+
+
 static inline uint64_t get_dbits (const double d) {
   const union {
     double dbl;
@@ -138,75 +231,54 @@ static inline uint64_t get_dbits (const double d) {
 }
 
 
-static Fp build_fp (const double d) {
-  uint64_t bits = get_dbits(d);
+static Fp build_fp_dbl (const double d) {
+  const uint64_t bits = get_dbits(d);
 
   Fp fp;
-  fp.frac = bits&fracmask;
-  fp.exp = (bits&expmask)>>52;
+  fp.frac = bits&dbl_fracmask;
+  fp.exp = (bits&dbl_expmask)>>dbl_expshift;
 
   if (fp.exp) {
-    fp.frac += hiddenbit;
-    fp.exp -= expbias;
+    fp.frac += dbl_hiddenbit;
+    fp.exp -= dbl_expbias;
   } else {
-    fp.exp = -expbias+1;
+    fp.exp = -dbl_expbias+1;
   }
 
   return fp;
 }
 
 
-static void normalize (Fp *fp) {
-  while ((fp->frac&hiddenbit) == 0) {
+static void normalize_dbl (Fp *fp) {
+  while ((fp->frac&dbl_hiddenbit) == 0) {
     fp->frac <<= 1;
     --fp->exp;
   }
-  const int shift = 64-52-1;
+  const int shift = dbl_bitsize-dbl_expshift-1;
   fp->frac <<= shift;
   fp->exp -= shift;
 }
 
 
-static void get_normalized_boundaries (Fp *fp, Fp *lower, Fp *upper) {
+static void get_normalized_boundaries_dbl (const Fp *fp, Fp *lower, Fp *upper) {
   upper->frac = (fp->frac<<1)+1;
   upper->exp  = fp->exp-1;
 
-  while ((upper->frac&(hiddenbit<<1)) == 0) {
+  while ((upper->frac&(dbl_hiddenbit<<1)) == 0) {
     upper->frac <<= 1;
     --upper->exp;
   }
 
-  const int u_shift = 64-52-2;
+  const int u_shift = dbl_bitsize-dbl_expshift-2;
   upper->frac <<= u_shift;
   upper->exp = upper->exp-u_shift;
 
-  const int l_shift = (fp->frac == hiddenbit ? 2 : 1);
+  const int l_shift = (fp->frac == dbl_hiddenbit ? 2 : 1);
   lower->frac = (fp->frac<<l_shift)-1;
   lower->exp = fp->exp-l_shift;
 
   lower->frac <<= lower->exp-upper->exp;
   lower->exp = upper->exp;
-}
-
-
-static Fp multiply (Fp *a, Fp *b) {
-  const uint64_t lomask = 0x00000000FFFFFFFF;
-
-  const uint64_t ah_bl = (a->frac>>32)*(b->frac&lomask);
-  const uint64_t al_bh = (a->frac&lomask)*(b->frac>>32);
-  const uint64_t al_bl = (a->frac&lomask)*(b->frac&lomask);
-  const uint64_t ah_bh = (a->frac>>32)*(b->frac>>32);
-
-  uint64_t tmp = (ah_bl&lomask)+(al_bh&lomask)+(al_bl>>32);
-  /* round up */
-  tmp += 1U<<31;
-
-  Fp fp = {
-    ah_bh+(ah_bl>>32)+(al_bh>>32)+(tmp>>32),
-    a->exp+b->exp+64
-  };
-
-  return fp;
 }
 
 
@@ -218,7 +290,7 @@ static void round_digit (char *digits, int ndigits, uint64_t delta, uint64_t rem
 }
 
 
-static int generate_digits (Fp *fp, Fp *upper, Fp *lower, char *digits, int *K) {
+static int generate_digits (const Fp *fp, Fp *upper, Fp *lower, char *digits, int *K) {
   uint64_t wfrac = upper->frac-fp->frac;
   uint64_t delta = upper->frac-lower->frac;
 
@@ -271,27 +343,38 @@ static int generate_digits (Fp *fp, Fp *upper, Fp *lower, char *digits, int *K) 
 }
 
 
-static int grisu2 (double d, char *digits, int *K) {
-  Fp w = build_fp(d);
-
-  Fp lower, upper;
-  get_normalized_boundaries(&w, &lower, &upper);
-
-  normalize(&w);
-
+static int grisu2_common (Fp *w, Fp *lower, Fp *upper, char *digits, int *K) {
   int k;
-  Fp cp = find_cachedpow10(upper.exp, &k);
+  Fp cp = find_cachedpow10(upper->exp, &k);
 
-  w = multiply(&w, &cp);
-  upper = multiply(&upper, &cp);
-  lower = multiply(&lower, &cp);
+  *w = multiply(w, &cp);
+  *upper = multiply(upper, &cp);
+  *lower = multiply(lower, &cp);
 
-  ++lower.frac;
-  --upper.frac;
+  ++lower->frac;
+  --upper->frac;
 
   *K = -k;
 
-  return generate_digits(&w, &upper, &lower, digits, K);
+  return generate_digits(w, upper, lower, digits, K);
+}
+
+
+static int grisu2_dbl (const double d, char *digits, int *K) {
+  Fp w = build_fp_dbl(d);
+  Fp lower, upper;
+  get_normalized_boundaries_dbl(&w, &lower, &upper);
+  normalize_dbl(&w);
+  return grisu2_common(&w, &lower, &upper, digits, K);
+}
+
+
+static int grisu2_flt (const float d, char *digits, int *K) {
+  Fp w = build_fp_flt(d);
+  Fp lower, upper;
+  get_normalized_boundaries_flt(&w, &lower, &upper);
+  normalize_flt(&w);
+  return grisu2_common(&w, &lower, &upper, digits, K);
 }
 
 
@@ -363,57 +446,83 @@ static int emit_digits (char *digits, int ndigits, char *dest, int K, bool neg) 
 }
 
 
-static int filter_special (double fp, char *dest) {
-  if (fp == 0.0) {
+int grisu2_dtoa (const double d, char dest[25]) {
+  if (d == 0.0) {
     dest[0] = '0';
+    dest[1] = 0;
     return 1;
   }
 
-  uint64_t bits = get_dbits(fp);
+  const uint64_t bits = get_dbits(d);
+  const bool neg = !!(bits&dbl_signmask);;
 
-  const bool nan = ((bits&expmask) == expmask);
-  if (!nan) return 0;
-
-  if (bits&fracmask) {
-    dest[0] = 'n';
-    dest[1] = 'a';
+  if ((bits&dbl_expmask) == dbl_expmask) {
+    // not a finite number
+    if (bits&dbl_fracmask) {
+      dest[0] = 'N';
+      dest[1] = 'a';
+      dest[2] = 'N';
+      dest[3] = 0;
+      return 3;
+    }
+    dest[0] = (neg ? '-' : '+');
+    dest[1] = 'I';
     dest[2] = 'n';
-  } else {
-    dest[0] = 'i';
-    dest[1] = 'n';
-    dest[2] = 'f';
+    dest[3] = 'f';
+    dest[4] = 0;
+    return 4;
   }
 
-  return 3;
+  int str_len = 0;
+  if (neg) dest[str_len++] = '-';
+
+  char digits[18];
+  int K = 0;
+  const int ndigits = grisu2_dbl(d, digits, &K);
+
+  str_len += emit_digits(digits, ndigits, dest+str_len, K, neg);
+  dest[str_len] = 0;
+
+  return str_len;
 }
 
 
-int grisu2_dtoa (double d, char dest[24]) {
-  char digits[18];
+int grisu2_ftoa (const float f, char dest[25]) {
+  if (f == 0.0f) {
+    dest[0] = '0';
+    dest[1] = 0;
+    return 1;
+  }
+
+  const uint32_t bits = get_fbits(f);
+  const bool neg = !!(get_fbits(f)&flt_signmask);
+
+  if ((bits&flt_expmask) == flt_expmask) {
+    // not a finite number
+    if (bits&flt_fracmask) {
+      dest[0] = 'N';
+      dest[1] = 'a';
+      dest[2] = 'N';
+      dest[3] = 0;
+      return 3;
+    }
+    dest[0] = (neg ? '-' : '+');
+    dest[1] = 'I';
+    dest[2] = 'n';
+    dest[3] = 'f';
+    dest[4] = 0;
+    return 4;
+  }
 
   int str_len = 0;
-  bool neg = false;
+  if (neg) dest[str_len++] = '-';
 
-  if (get_dbits(d)&signmask) {
-    dest[0] = '-';
-    ++str_len;
-    neg = true;
-  }
-
-  int spec = filter_special(d, dest+str_len);
-  if (spec) {
-    // negative zero?
-    if (neg && spec == 1) {
-      dest[str_len-1] = dest[str_len];
-      --str_len;
-    }
-    return str_len+spec;
-  }
-
+  char digits[18];
   int K = 0;
-  const int ndigits = grisu2(d, digits, &K);
+  const int ndigits = grisu2_flt(f, digits, &K);
 
   str_len += emit_digits(digits, ndigits, dest+str_len, K, neg);
+  dest[str_len] = 0;
 
   return str_len;
 }
