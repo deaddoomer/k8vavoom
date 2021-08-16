@@ -109,15 +109,13 @@ static inline int copy_special_str(char * const result, const bool sign, const b
     memcpy(result, "NaN", 3);
     return 3;
   }
-  if (sign) {
-    result[0] = '-';
-  }
   if (exponent) {
-    memcpy(result + sign, "Infinity", 8);
-    return sign + 8;
+    result[0] = (sign ? '-' : '+');
+    memcpy(result + 1, "Inf", 3);
+    return 4;
   }
-  memcpy(result + sign, "0E0", 3);
-  return sign + 3;
+  result[0] = '0';
+  return 1;
 }
 
 static inline uint32_t float_to_bits(const float f) {
