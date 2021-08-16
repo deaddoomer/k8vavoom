@@ -23,7 +23,9 @@
 //**
 //**************************************************************************
 //**
-//**  Template for mapping kays to values.
+//**  Template for mapping keys to values.
+//**
+//**  Robin Hood Hash Table
 //**
 //**************************************************************************
 // define this to skip calling dtors on keys and values (can be useful for PODs)
@@ -115,15 +117,24 @@ private:
 #endif
 
 private:
-  unsigned mEBSize;
-  TEntry *mEntries;
-  TEntry **mBuckets;
-  int mBucketsUsed;
-  TEntry *mFreeEntryHead;
-  int mFirstEntry, mLastEntry;
-  unsigned mSeed;
-  unsigned mSeedCount;
-  unsigned mCurrentMaxLoad;
+  unsigned mEBSize; // size of `mEntries` and `mBuckets` arrays, in elements
+  TEntry *mEntries; // this array holds entries
+  TEntry **mBuckets; // and this array is actual hash table "buckets", holds pointers to elements
+  unsigned mBucketsUsed; // total number of used buckets (number of entries in the hash table)
+  TEntry *mFreeEntryHead; // head of the list of free entries (allocated with the FIFO strategy)
+  int mFirstEntry, mLastEntry; // used range of `mEntries` (`mFirstEntry` can be negative for empty table)
+  unsigned mSeed; // current seed
+  unsigned mCurrentMaxLoad; // cached current max table load (max number of used buckets before resize)
+  /*
+    first and last entry indices are low and high (inclusive) bounds of the used part of `mEntries`.
+    it is used to speedup iteration.
+    for empty table, both indicies are `-1` (it is important!).
+
+    deleted entry is added to freelist, and will be reused on the next insertion.
+    freelist is woring by FIFO algorithm.
+    list head is a pointer, because entry table will be inevitably rehashed after resizing, and
+    rehashing will fix the pointer. there is no need to use indexing there.
+   */
 
 private:
   VVA_ALWAYS_INLINE void calcCurrentMaxLoad (const unsigned aEBSize) noexcept {
@@ -131,8 +142,7 @@ private:
   }
 
   VVA_ALWAYS_INLINE void genNewSeed () noexcept {
-    mSeedCount = Z_GetHashTableSeed();
-    mSeed = hashU32(mSeedCount);
+    mSeed = hashU32(Z_GetHashTableSeed());
   }
 
   // up to, but not including last
@@ -352,12 +362,11 @@ private:
 
   VVA_ALWAYS_INLINE unsigned distToStIdx (const unsigned idx) const noexcept {
     #ifndef TMAP_USE_MULTIPLY
-    unsigned res = (mBuckets[idx]->hash^mSeed)&(unsigned)(mEBSize-1);
+    const unsigned res = (mBuckets[idx]->hash^mSeed)&(unsigned)(mEBSize-1);
     #else
-    unsigned res = (unsigned)(((uint64_t)(mBuckets[idx]->hash^mSeed)*(uint64_t)(mEBSize-1))>>32);
+    const unsigned res = (unsigned)(((uint64_t)(mBuckets[idx]->hash^mSeed)*(uint64_t)(mEBSize-1))>>32);
     #endif
-    res = (res <= idx ? idx-res : idx+(mEBSize-res));
-    return res;
+    return (res <= idx ? idx-res : idx+(mEBSize-res));
   }
 
   void putEntryInternal (TEntry *swpe) noexcept {
@@ -386,7 +395,7 @@ private:
 
   // if key hash is known
   bool delInternal (const TK &akey, const unsigned khash) noexcept {
-    if (mBucketsUsed == 0) return false;
+    if (mBucketsUsed == 0u) return false;
 
     TMAP_IMPL_CALC_BUCKET_INDEX(khash)
 
@@ -406,7 +415,8 @@ private:
 
     releaseEntry(mBuckets[idx]);
 
-    if (mBucketsUsed > 1) {
+    if (--mBucketsUsed) {
+      // there was more than one item
       unsigned idxnext = (idx+1)&bhigh;
       for (unsigned dist = 0; dist <= bhigh; ++dist) {
         if (!mBuckets[idxnext]) { mBuckets[idx] = nullptr; break; }
@@ -417,18 +427,17 @@ private:
         idxnext = (idxnext+1)&bhigh;
       }
     } else {
+      // there was only one item
       mBuckets[idx] = nullptr;
     }
-
-    --mBucketsUsed;
 
     return true;
   }
 
 public:
-  VVA_ALWAYS_INLINE TMap_Class_Name () noexcept : mEBSize(0), mEntries(nullptr), mBuckets(nullptr), mBucketsUsed(0), mFreeEntryHead(nullptr), mFirstEntry(-1), mLastEntry(-1), mSeed(0), mSeedCount(0), mCurrentMaxLoad(0) {}
+  VVA_ALWAYS_INLINE TMap_Class_Name () noexcept : mEBSize(0), mEntries(nullptr), mBuckets(nullptr), mBucketsUsed(0), mFreeEntryHead(nullptr), mFirstEntry(-1), mLastEntry(-1), mSeed(0), mCurrentMaxLoad(0) {}
 
-  VVA_ALWAYS_INLINE TMap_Class_Name (TMap_Class_Name &other) noexcept : mEBSize(0), mEntries(nullptr), mBuckets(nullptr), mBucketsUsed(0), mFreeEntryHead(nullptr), mFirstEntry(-1), mLastEntry(-1), mSeed(0), mSeedCount(0), mCurrentMaxLoad(0) {
+  VVA_ALWAYS_INLINE TMap_Class_Name (TMap_Class_Name &other) noexcept : mEBSize(0), mEntries(nullptr), mBuckets(nullptr), mBucketsUsed(0), mFreeEntryHead(nullptr), mFirstEntry(-1), mLastEntry(-1), mSeed(0), mCurrentMaxLoad(0) {
     operator=(other);
   }
 
@@ -445,9 +454,9 @@ public:
     if (&other != this) {
       clear();
       // copy entries
-      if (other.mBucketsUsed > 0) {
+      if (other.mBucketsUsed) {
         // has some entries
-        mEBSize = nextPOTU32(unsigned(mBucketsUsed));
+        mEBSize = nextPOTU32(mBucketsUsed);
         mBuckets = (TEntry **)Z_Malloc(mEBSize*sizeof(TEntry *));
         memset(&mBuckets[0], 0, mEBSize*sizeof(TEntry *));
         mEntries = (TEntry *)Z_Malloc(mEBSize*sizeof(TEntry));
@@ -484,10 +493,10 @@ public:
     #endif
     mFreeEntryHead = nullptr;
     Z_Free(mBuckets);
-    mBucketsUsed = 0;
+    mBucketsUsed = 0u;
     mBuckets = nullptr;
     Z_Free((void *)mEntries);
-    mEBSize = mCurrentMaxLoad = 0;
+    mEBSize = mCurrentMaxLoad = 0u;
     mEntries = nullptr;
     mFreeEntryHead = nullptr;
     mFirstEntry = mLastEntry = -1;
@@ -496,9 +505,9 @@ public:
   // won't shrink buckets
   void reset () noexcept {
     freeEntries();
-    if (mBucketsUsed > 0) {
+    if (mBucketsUsed) {
       memset(mBuckets, 0, mEBSize*sizeof(TEntry *));
-      mBucketsUsed = 0;
+      mBucketsUsed = 0u;
     }
   }
 
@@ -517,7 +526,7 @@ public:
   void rehash (const unsigned flags=RehashDefault) noexcept {
     // clear buckets
     memset(mBuckets, 0, mEBSize*sizeof(TEntry *));
-    mBucketsUsed = 0;
+    mBucketsUsed = 0u;
     // reinsert entries
     mFreeEntryHead = nullptr;
     TEntry *lastfree = nullptr;
@@ -548,7 +557,7 @@ public:
             TMAP_IMPL_CALC_BUCKET_INDEX(khash)
             // check if we already have this key
             TEntry *old = nullptr;
-            if (mBucketsUsed != 0 && mBuckets[idx]) {
+            if (mBucketsUsed && mBuckets[idx]) {
               for (unsigned dist = 0; dist <= bhigh; ++dist) {
                 TEntry *ee = mBuckets[idx];
                 if (!ee) break;
@@ -597,14 +606,14 @@ public:
   // call this instead of `rehash()` after alot of deletions
   // if `doRealloc` is `false`, force moving all entries to top if entry pool reallocated
   void compact (bool doRealloc=true) noexcept {
-    unsigned newsz = nextPOTU32((unsigned)mBucketsUsed);
+    unsigned newsz = nextPOTU32(mBucketsUsed);
     if (doRealloc) {
       if (newsz >= 0x40000000u) return;
       newsz <<= 1;
       if (newsz < 64 || newsz >= mEBSize) return;
     }
     #ifdef CORE_MAP_TEST
-    printf("compacting; old size=%u; new size=%u; used=%d; fe=%d; le=%d; cseed=(%u:0x%08x)", mEBSize, newsz, mBucketsUsed, mFirstEntry, mLastEntry, mSeedCount, mSeed);
+    printf("compacting; old size=%u; new size=%u; used=%u; fe=%d; le=%d; cseed=(0x%08x)", mEBSize, newsz, mBucketsUsed, mFirstEntry, mLastEntry, mSeed);
     #endif
     bool didAnyCopy = false;
     // move all entries to top
@@ -636,7 +645,7 @@ public:
       if (didAnyCopy) {
         mFirstEntry = mLastEntry = 0;
         while ((unsigned)mLastEntry+1 < mEBSize && !mEntries[mLastEntry].isEmpty()) ++mLastEntry;
-        mLastEntry = mBucketsUsed-1;
+        mLastEntry = (int)(mBucketsUsed-1u);
       }
     }
     if (doRealloc) {
@@ -651,12 +660,12 @@ public:
     // reinsert entries
     if (didAnyCopy) rehash();
     #ifdef CORE_MAP_TEST
-    printf("; newfe=%d; newle=%d; newcseed=(%u:0x%08x)\n", mFirstEntry, mLastEntry, mSeedCount, mSeed);
+    printf("; newfe=%d; newle=%d; newcseed=(0x%08x)\n", mFirstEntry, mLastEntry, mSeed);
     #endif
   }
 
   bool has (const TK &akey) const noexcept {
-    if (mBucketsUsed == 0) return false;
+    if (mBucketsUsed == 0u) return false;
     const unsigned khash = calcKeyHash(akey);
     TMAP_IMPL_CALC_BUCKET_INDEX(khash)
     if (!mBuckets[idx]) return false;
@@ -673,7 +682,7 @@ public:
   }
 
   const TV *get (const TK &akey) const noexcept {
-    if (mBucketsUsed == 0) return nullptr;
+    if (mBucketsUsed == 0u) return nullptr;
     const unsigned khash = calcKeyHash(akey);
     TMAP_IMPL_CALC_BUCKET_INDEX(khash)
     if (!mBuckets[idx]) return nullptr;
@@ -688,7 +697,7 @@ public:
   }
 
   TV *get (const TK &akey) noexcept {
-    if (mBucketsUsed == 0) return nullptr;
+    if (mBucketsUsed == 0u) return nullptr;
     const unsigned khash = calcKeyHash(akey);
     TMAP_IMPL_CALC_BUCKET_INDEX(khash)
     if (!mBuckets[idx]) return nullptr;
@@ -717,7 +726,7 @@ public:
 
   // see http://codecapsule.com/2013/11/17/robin-hood-hashing-backward-shift-deletion/
   VVA_ALWAYS_INLINE bool del (const TK &akey) noexcept {
-    if (mBucketsUsed == 0) return false;
+    if (mBucketsUsed == 0u) return false;
     const unsigned khash = calcKeyHash(akey);
     return delInternal(akey, khash);
   }
@@ -731,7 +740,7 @@ public:
     TMAP_IMPL_CALC_BUCKET_INDEX(khash)
 
     // check if we already have this key
-    if (mBucketsUsed != 0 && mBuckets[idx]) {
+    if (mBucketsUsed && mBuckets[idx]) {
       for (unsigned dist = 0; dist <= bhigh; ++dist) {
         TEntry *e = mBuckets[idx];
         if (!e) break;
@@ -748,7 +757,7 @@ public:
 
     // need to resize elements table?
     // if elements table is empty, `allocEntry()` will take care of it
-    if (mEBSize && (unsigned)mBucketsUsed >= mCurrentMaxLoad) {
+    if (mEBSize && mBucketsUsed >= mCurrentMaxLoad) {
       unsigned newsz = (unsigned)mEBSize;
       if (newsz >= 0x40000000u) Sys_Error("out of memory for TMap!");
       newsz <<= 1;
