@@ -3,7 +3,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "/home/ketmar/back/vavoom_dev/src/libs/core/mathutil_float.h"
+#include "../mathutil_float.h"
+#include "grisu2dbl.h"
+
 
 static char *f2s_bufs[16] = {NULL};
 static unsigned f2s_currbuf = 0;
@@ -17,6 +19,15 @@ static const char *f2s (const float f, const char *fmt) {
   return res;
 }
 
+static const char *f2sg2 (const float f) {
+  if (!f2s_bufs[f2s_currbuf]) f2s_bufs[f2s_currbuf] = malloc(1024);
+  char *res = f2s_bufs[f2s_currbuf];
+  f2s_currbuf = (f2s_currbuf+1)%16;
+  int len = grisu2_dtoa(f, res);
+  res[len] = 0;
+  return res;
+}
+
 
 static void dumpFloat (const char *msg, const float f) {
   const uint32_t t = *(const uint32_t *)(&f);
@@ -25,6 +36,7 @@ static void dumpFloat (const char *msg, const float f) {
   const float f2 = zeroDenormalsF(f);
   const uint32_t t2 = *(const uint32_t *)(&f2);
   printf("=== %s -- float: %s (%s) : 0x%08x (%s : %s) : nodenorm: 0x%08x %s (%s) : onlynodenorm: 0x%08x %s (%s) ===\n", msg, f2s(f, "%f"), f2s(f, "%g"), t, f2s(killInfNaNF(f), "%f"), f2s(killInfNaNF(f), "%g"), t1, f2s(f1, "%f"), f2s(f1, "%g"), t2, f2s(f2, "%f"), f2s(f2, "%g"));
+  printf("  g2: %s\n", f2sg2(f));
   printf("  floatsign: %s : %s : 0x%08x\n", f2s(floatSign(f), "%f"), f2s(floatSign(f), "%g"), fltconv_floatasuint(floatSign(f)));
   printf("  sign: %d\n", fltconv_getsign(f));
   printf("  exponent: %u : %d\n", fltconv_getexponent(f), fltconv_getsignedexponent(f));
@@ -50,6 +62,10 @@ int main () {
   dumpFloat("2.0f", 2.0f);
   dumpFloat("-0.5f", -0.5f);
   dumpFloat("-2.0f", -2.0f);
+  dumpFloat("0.1f", 0.1f);
+  dumpFloat("0.2f", 0.2f);
+  dumpFloat("0.3f", 0.3f);
+  dumpFloat("0.4f", 0.4f);
   float denorm = fltconv_constructfloat(1, 0, 1); // very small positive denormal
   dumpFloat("minimum positive denormal", denorm);
   denorm = fltconv_constructfloat(-1, 0, 1); // very small negative denormal
