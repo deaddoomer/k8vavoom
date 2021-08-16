@@ -1740,34 +1740,7 @@ void VRenderLevelShared::RenderPlayerView () {
   refdef.drawworld = true;
   refdef.DrawCamera = false;
 
-  ResetDrawStack(); // prepare draw list stack
-  ResetPortalPool();
-  IncUpdateWorldFrame();
-  //Drawer->SetUpdateFrame(updateWorldFrame);
-
-  if (dbg_autoclear_automap) AM_ClearAutomap();
-
-  //FIXME: this is wrong, because fake sectors need to be updated for each camera separately
-  r_viewleaf = Level->PointInSubsector(Drawer->vieworg);
-  const sec_region_t *sctreg = Level->PointContentsRegion(r_viewleaf->sector, Drawer->vieworg+TVec(0.0f, 0.0f, 1.0f));
-  r_viewregion = (sec_region_t *)sctreg;
-  // remember it
-  const TVec lastorg = Drawer->vieworg;
-  subsector_t *playerViewLeaf = r_viewleaf;
-
-  //if (!r_disable_world_update) UpdateFakeSectors(playerViewLeaf);
-
-  GTextureManager.Time = Level->Time;
-
-  BuildPlayerTranslations();
-
-  AnimateSky(host_frametime);
-  UpdateParticles(host_frametime);
-
-  //TODO: we can separate `BspVisData` building (and batching surfaces for rendering), and
-  //      the actual rendering. this way we'll be able to do better dynlight checks
-
-  PushDlights();
+  // setup frame early, so `glClear()` will have more time to finish
 
   // update camera textures that were visible in the last frame
   // rendering camera texture sets `NextUpdateTime`
@@ -1798,6 +1771,36 @@ void VRenderLevelShared::RenderPlayerView () {
 
   // this should be always called here
   Drawer->PrepareForPosteffects();
+
+  // prepare draw list stack
+  ResetDrawStack();
+  ResetPortalPool();
+  IncUpdateWorldFrame();
+  //Drawer->SetUpdateFrame(updateWorldFrame);
+
+  if (dbg_autoclear_automap) AM_ClearAutomap();
+
+  //FIXME: this is wrong, because fake sectors need to be updated for each camera separately
+  r_viewleaf = Level->PointInSubsector(Drawer->vieworg);
+  const sec_region_t *sctreg = Level->PointContentsRegion(r_viewleaf->sector, Drawer->vieworg+TVec(0.0f, 0.0f, 1.0f));
+  r_viewregion = (sec_region_t *)sctreg;
+  // remember it
+  const TVec lastorg = Drawer->vieworg;
+  subsector_t *playerViewLeaf = r_viewleaf;
+
+  //if (!r_disable_world_update) UpdateFakeSectors(playerViewLeaf);
+
+  GTextureManager.Time = Level->Time;
+
+  BuildPlayerTranslations();
+
+  AnimateSky(host_frametime);
+  UpdateParticles(host_frametime);
+
+  //TODO: we can separate `BspVisData` building (and batching surfaces for rendering), and
+  //      the actual rendering. this way we'll be able to do better dynlight checks
+
+  PushDlights();
 
   // reset global colormap, it will be done with the shader
   const int savedColorMap = (r_dbg_force_colormap.asInt() ? r_dbg_force_colormap.asInt() : ColorMap);

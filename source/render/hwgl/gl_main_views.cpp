@@ -232,6 +232,7 @@ void VOpenGLDrawer::FinishUpdate () {
   SetMainFBO(true); // forced
   glBindTexture(GL_TEXTURE_2D, 0);
   SetOrthoProjection(0, getWidth(), getHeight(), 0);
+  // DO NOT CLEAR MAIN FBO HERE! this will break everything
   //ActivateMainFBO();
   //glFlush();
 }
@@ -304,7 +305,10 @@ void VOpenGLDrawer::SetupView (VRenderLevelDrawer *ARLev, const refdef_t *rd) {
   currentSVScissor[SCS_MAXX] = currentSVScissor[SCS_MAXY] = 32000;
 
   glColor4f(1.0f, 1.0f, 1.0f, 1.0f); // why not
+
+  // alas, we have to do it here instead of on flip
   glClear(GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT|(rd->drawworld && !rd->DrawCamera && clear ? GL_COLOR_BUFFER_BIT : 0));
+
   stencilBufferDirty = false;
   decalUsedStencil = false;
 
