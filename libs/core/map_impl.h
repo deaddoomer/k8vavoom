@@ -101,20 +101,23 @@ private:
 
   // key must not be empty!
   static VVA_ALWAYS_INLINE unsigned calcKeyHash (const TK &akey) noexcept {
-    unsigned khash = GetTypeHash(akey);
-    khash += !khash; // avoid zero hash value
-    return khash;
+    const unsigned khash = GetTypeHash(akey);
+    return khash+(!khash); // avoid zero hash value
   }
 
-#if !defined(TMAP_USE_MULTIPLY)
+  // calculate desired index for the given hash
+  VVA_ALWAYS_INLINE unsigned calcBestIdx (const unsigned hashval, const unsigned bhigh) const noexcept {
+    #if !defined(TMAP_USE_MULTIPLY)
+    return (hashval^mSeed)&bhigh;
+    #else
+    return (unsigned)(((uint64_t)(hashval^mSeed)*(uint64_t)bhigh)>>32);
+    #endif
+  }
+
+  // this is done in almost any function, so let's declare it as a macro
   #define TMAP_IMPL_CALC_BUCKET_INDEX(hashval_)  \
-    const unsigned bhigh = (unsigned)(mEBSize-1); \
-    unsigned idx = ((hashval_)^mSeed)&bhigh;
-#else
-  #define TMAP_IMPL_CALC_BUCKET_INDEX(hashval_)  \
-    const unsigned bhigh = (unsigned)(mEBSize-1); \
-    unsigned idx = (unsigned)(((uint64_t)((hashval_)^mSeed)*(uint64_t)bhigh)>>32);
-#endif
+    const unsigned bhigh = (unsigned)(mEBSize-1u); \
+    unsigned idx = calcBestIdx((hashval_), bhigh);
 
 private:
   unsigned mEBSize; // size of `mEntries` and `mBuckets` arrays, in elements
@@ -134,15 +137,27 @@ private:
     freelist is woring by FIFO algorithm.
     list head is a pointer, because entry table will be inevitably rehashed after resizing, and
     rehashing will fix the pointer. there is no need to use indexing there.
+
+    it may be better to keep hash value in buckets too (to improve CPU cache lines locality), but
+    i didn't profiled that, and the code looks cleaner the way it is now.
+
+    it is also possible to keep entry index and hash in `mBuckets` instead of pointer. this way
+    we'll have size penalty for 32-bit architectures, but we could reuse entry index for free
+    list index, and remove `nextFree` field from `TEntry`.
+    maybe even remove `hash` field too, and force `rehash()` to recalculate all hashes. this doesn't
+    look like a good idea, tho, because it may make grow operations much slower.
    */
+  #ifdef CORE_MAP_TEST
+  mutable unsigned mMaxProbeCount;
+  #endif
 
 private:
-  VVA_ALWAYS_INLINE void calcCurrentMaxLoad (const unsigned aEBSize) noexcept {
-    mCurrentMaxLoad = aEBSize*LoadFactorPrc/100u;
-  }
-
   VVA_ALWAYS_INLINE void genNewSeed () noexcept {
     mSeed = hashU32(Z_GetHashTableSeed());
+  }
+
+  VVA_ALWAYS_INLINE void calcCurrentMaxLoad (const unsigned aEBSize) noexcept {
+    mCurrentMaxLoad = aEBSize*LoadFactorPrc/100u;
   }
 
   // up to, but not including last
@@ -155,6 +170,9 @@ private:
       #endif
     }
     calcCurrentMaxLoad(last); // `initEntries()` called on each table resize, so it is a good place
+    #ifdef CORE_MAP_TEST
+    mMaxProbeCount = 0u;
+    #endif
   }
 
 public:
@@ -360,14 +378,18 @@ private:
     }
   }
 
-  VVA_ALWAYS_INLINE unsigned distToStIdx (const unsigned idx) const noexcept {
-    #ifndef TMAP_USE_MULTIPLY
-    const unsigned res = (mBuckets[idx]->hash^mSeed)&(unsigned)(mEBSize-1);
-    #else
-    const unsigned res = (unsigned)(((uint64_t)(mBuckets[idx]->hash^mSeed)*(uint64_t)(mEBSize-1))>>32);
-    #endif
-    return (res <= idx ? idx-res : idx+(mEBSize-res));
+  VVA_ALWAYS_INLINE unsigned distToStIdxBH (const unsigned idx, const unsigned bhigh) const noexcept {
+    const unsigned bestidx = calcBestIdx(mBuckets[idx]->hash, bhigh);
+    //return (bestidx <= idx ? idx-bestidx : idx+(bhigh+1u-bestidx));
+    // this is exactly the same as the code above, because we need distance in "positive direction"
+    // (i.e. if `bestidx` is higher than `idx`, we should walk to the end of the array, and then to `bestidx`)
+    // this is basically `(idx+(bhigh+1)-bestidx)&bhigh`
+    // by rewriting it, we'll get `((idx|(bhigh+1))-bestidx)&bhigh`
+    // i.e. we're setting the highest bit, and then masking it away, which is noop
+    return ((idx-bestidx)&bhigh);
   }
+
+  VVA_ALWAYS_INLINE unsigned distToStIdx (const unsigned idx) const noexcept { return distToStIdxBH(idx, mEBSize-1u); }
 
   void putEntryInternal (TEntry *swpe) noexcept {
     TMAP_IMPL_CALC_BUCKET_INDEX(swpe->hash)
@@ -379,7 +401,7 @@ private:
         ++mBucketsUsed;
         return;
       }
-      const unsigned pdist = distToStIdx(idx);
+      const unsigned pdist = distToStIdxBH(idx, bhigh);
       if (pcur > pdist) {
         // swapping the current bucket with the one to insert
         TEntry *tmpe = mBuckets[idx];
@@ -404,7 +426,7 @@ private:
     bool res = false;
     for (unsigned dist = 0; dist <= bhigh; ++dist) {
       if (!mBuckets[idx]) break;
-      const unsigned pdist = distToStIdx(idx);
+      const unsigned pdist = distToStIdxBH(idx, bhigh);
       if (dist > pdist) break;
       res = (mBuckets[idx]->hash == khash && mBuckets[idx]->key == akey);
       if (res) break;
@@ -420,7 +442,7 @@ private:
       unsigned idxnext = (idx+1)&bhigh;
       for (unsigned dist = 0; dist <= bhigh; ++dist) {
         if (!mBuckets[idxnext]) { mBuckets[idx] = nullptr; break; }
-        const unsigned pdist = distToStIdx(idxnext);
+        const unsigned pdist = distToStIdxBH(idxnext, bhigh);
         if (pdist == 0) { mBuckets[idx] = nullptr; break; }
         mBuckets[idx] = mBuckets[idxnext];
         idx = (idx+1)&bhigh;
@@ -613,7 +635,7 @@ public:
       if (newsz < 64 || newsz >= mEBSize) return;
     }
     #ifdef CORE_MAP_TEST
-    printf("compacting; old size=%u; new size=%u; used=%u; fe=%d; le=%d; cseed=(0x%08x)", mEBSize, newsz, mBucketsUsed, mFirstEntry, mLastEntry, mSeed);
+    printf("compacting; old size=%u; new size=%u; used=%u; fe=%d; le=%d; cseed=(0x%08x); mpc=%u", mEBSize, newsz, mBucketsUsed, mFirstEntry, mLastEntry, mSeed, mMaxProbeCount);
     #endif
     bool didAnyCopy = false;
     // move all entries to top
@@ -669,10 +691,17 @@ public:
     const unsigned khash = calcKeyHash(akey);
     TMAP_IMPL_CALC_BUCKET_INDEX(khash)
     if (!mBuckets[idx]) return false;
+    #ifdef CORE_MAP_TEST
+    unsigned probeCount = 0;
+    #endif
     bool res = false;
     for (unsigned dist = 0; dist <= bhigh; ++dist) {
       if (!mBuckets[idx]) break;
-      const unsigned pdist = distToStIdx(idx);
+      #ifdef CORE_MAP_TEST
+      ++probeCount;
+      if (mMaxProbeCount < probeCount) mMaxProbeCount = probeCount;
+      #endif
+      const unsigned pdist = distToStIdxBH(idx, bhigh);
       if (dist > pdist) break;
       res = (mBuckets[idx]->hash == khash && mBuckets[idx]->key == akey);
       if (res) break;
@@ -686,9 +715,16 @@ public:
     const unsigned khash = calcKeyHash(akey);
     TMAP_IMPL_CALC_BUCKET_INDEX(khash)
     if (!mBuckets[idx]) return nullptr;
+    #ifdef CORE_MAP_TEST
+    unsigned probeCount = 0;
+    #endif
     for (unsigned dist = 0; dist <= bhigh; ++dist) {
       if (!mBuckets[idx]) break;
-      const unsigned pdist = distToStIdx(idx);
+      #ifdef CORE_MAP_TEST
+      ++probeCount;
+      if (mMaxProbeCount < probeCount) mMaxProbeCount = probeCount;
+      #endif
+      const unsigned pdist = distToStIdxBH(idx, bhigh);
       if (dist > pdist) break;
       if (mBuckets[idx]->hash == khash && mBuckets[idx]->key == akey) return &(mBuckets[idx]->value);
       idx = (idx+1)&bhigh;
@@ -701,9 +737,16 @@ public:
     const unsigned khash = calcKeyHash(akey);
     TMAP_IMPL_CALC_BUCKET_INDEX(khash)
     if (!mBuckets[idx]) return nullptr;
+    #ifdef CORE_MAP_TEST
+    unsigned probeCount = 0;
+    #endif
     for (unsigned dist = 0; dist <= bhigh; ++dist) {
       if (!mBuckets[idx]) break;
-      const unsigned pdist = distToStIdx(idx);
+      #ifdef CORE_MAP_TEST
+      ++probeCount;
+      if (mMaxProbeCount < probeCount) mMaxProbeCount = probeCount;
+      #endif
+      const unsigned pdist = distToStIdxBH(idx, bhigh);
       if (dist > pdist) break;
       if (mBuckets[idx]->hash == khash && mBuckets[idx]->key == akey) return &(mBuckets[idx]->value);
       idx = (idx+1)&bhigh;
@@ -741,10 +784,17 @@ public:
 
     // check if we already have this key
     if (mBucketsUsed && mBuckets[idx]) {
+      #ifdef CORE_MAP_TEST
+      unsigned probeCount = 0;
+      #endif
       for (unsigned dist = 0; dist <= bhigh; ++dist) {
         TEntry *e = mBuckets[idx];
         if (!e) break;
-        const unsigned pdist = distToStIdx(idx);
+        #ifdef CORE_MAP_TEST
+        ++probeCount;
+        if (mMaxProbeCount < probeCount) mMaxProbeCount = probeCount;
+        #endif
+        const unsigned pdist = distToStIdxBH(idx, bhigh);
         if (dist > pdist) break;
         if (e->hash == khash && e->key == akey) {
           // replace element
@@ -761,6 +811,9 @@ public:
       unsigned newsz = (unsigned)mEBSize;
       if (newsz >= 0x40000000u) Sys_Error("out of memory for TMap!");
       newsz <<= 1;
+      #ifdef CORE_MAP_TEST
+      printf("growing; old size=%u; new size=%u; used=%u; fe=%d; le=%d; cseed=(0x%08x); maxload=%u; mpc=%u\n", mEBSize, newsz, mBucketsUsed, mFirstEntry, mLastEntry, mSeed, mCurrentMaxLoad, mMaxProbeCount);
+      #endif
       // resize buckets array
       mBuckets = (TEntry **)Z_Realloc(mBuckets, newsz*sizeof(TEntry *));
       memset(mBuckets+mEBSize, 0, (newsz-mEBSize)*sizeof(TEntry *));
@@ -800,6 +853,8 @@ public:
     for (unsigned f = 0; f < mEBSize; ++f) if (!mEntries[f].isEmpty()) ++res;
     return res;
   }
+
+  unsigned getMaxProbeCount () const noexcept { return mMaxProbeCount; }
   #endif
 
   VVA_ALWAYS_INLINE TIterator first () noexcept { return TIterator(this); }

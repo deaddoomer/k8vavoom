@@ -193,6 +193,7 @@ int main () {
     #endif
   }
   if (xcount != hash.count()) fatal("(1.5) fuuuuuuuuuuuu");
+  printf("capacity=%d; length=%d; maxprobecount=%u\n", hash.capacity(), hash.length(), hash.getMaxProbeCount());
   checkHash();
   testIterator(true);
 
