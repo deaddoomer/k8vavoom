@@ -113,6 +113,7 @@ void VOpenGLDrawer::SetFSPosteffectMode () {
   glLoadIdentity();
 
   glDisable(GL_SCISSOR_TEST);
+  glDisable(GL_STENCIL_TEST); // just in case
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -507,7 +508,6 @@ void VOpenGLDrawer::PostprocessOvebright () {
   GLDisableDepthWrite();
 
   glEnable(GL_TEXTURE_2D);
-  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
   // source texture
   SelectTexture(0);
@@ -516,6 +516,7 @@ void VOpenGLDrawer::PostprocessOvebright () {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
   PostprocessOberbright.Activate();
+  PostprocessOberbright.SetScreenFBO(0);
   float spec = r_overbright_specular.asFloat();
   if (!isFiniteF(spec)) spec = 0.1f;
   spec = clampval(spec, 0.0f, 16.0f);
