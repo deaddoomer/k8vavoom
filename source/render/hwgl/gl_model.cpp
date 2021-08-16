@@ -587,6 +587,10 @@ void VOpenGLDrawer::EndModelsLightPass () {
     SelectTexture(1);
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
     SelectTexture(0);
+  } else {
+    // shadowvolumes, disable both stenciling and scissoring
+    glDisable(GL_SCISSOR_TEST);
+    glDisable(GL_STENCIL_TEST);
   }
 }
 
