@@ -53,7 +53,7 @@ public:
     res |= (res>>8);
     res |= (res>>16);
     // already pot?
-    if (x != 0 && (x&(x-1)) == 0) res &= ~(res>>1); else ++res;
+    if (x != 0u && (x&(x-1)) == 0u) res &= ~(res>>1); else ++res;
     return res;
   }
 
@@ -75,11 +75,19 @@ private:
     LoadFactorPrc = 90, // it is ok for robin hood hashes
   };
 
+  // bucket entry
+  // this keeps entry hash duplicate, so we can avoid accessing entries on linear scans
+  // note that finding keys almost always doing linear scans, especially on heavily loaded tables
+  struct TBucket {
+    unsigned hash; // duplicate of bucket hash, to improve CPU cache lines locality; 0 means "empty bucket"
+    unsigned entryidx; // index in `mEntries` array when the bucket is used, nothing when the bucket is unused
+  };
+
   struct TEntry {
-    unsigned hash; // 0 means "empty"
-    TEntry *nextFree; // next free entry
     TK key;
     TV value;
+    unsigned hash; // 0 means "empty"
+    TEntry *nextFree; // next free entry
 
     VVA_ALWAYS_INLINE bool isEmpty () const noexcept { return (hash == 0u); }
     VVA_ALWAYS_INLINE void setEmpty () noexcept { hash = 0u; }
@@ -122,8 +130,8 @@ private:
 private:
   unsigned mEBSize; // size of `mEntries` and `mBuckets` arrays, in elements
   TEntry *mEntries; // this array holds entries
-  TEntry **mBuckets; // and this array is actual hash table "buckets", holds pointers to elements
-  unsigned mBucketsUsed; // total number of used buckets (number of entries in the hash table)
+  TBucket *mBuckets; // and this array is actual hash table "buckets" (key/entry index pairs)
+  unsigned mBucketsUsed; // total number of used buckets (number of alive entries in the hash table)
   TEntry *mFreeEntryHead; // head of the list of free entries (allocated with the FIFO strategy)
   int mFirstEntry, mLastEntry; // used range of `mEntries` (`mFirstEntry` can be negative for empty table)
   unsigned mSeed; // current seed
@@ -134,18 +142,17 @@ private:
     for empty table, both indicies are `-1` (it is important!).
 
     deleted entry is added to freelist, and will be reused on the next insertion.
-    freelist is woring by FIFO algorithm.
+    freelist is working as FIFO queue (much like a stack of free items).
     list head is a pointer, because entry table will be inevitably rehashed after resizing, and
-    rehashing will fix the pointer. there is no need to use indexing there.
+    rehashing will fix the pointer. there is no need to use indexing here.
 
-    it may be better to keep hash value in buckets too (to improve CPU cache lines locality), but
-    i didn't profiled that, and the code looks cleaner the way it is now.
-
-    it is also possible to keep entry index and hash in `mBuckets` instead of pointer. this way
-    we'll have size penalty for 32-bit architectures, but we could reuse entry index for free
-    list index, and remove `nextFree` field from `TEntry`.
-    maybe even remove `hash` field too, and force `rehash()` to recalculate all hashes. this doesn't
-    look like a good idea, tho, because it may make grow operations much slower.
+    we can split bucket array to two, holding hashes and indicies separately. this way linear scans
+    will load more hashes, and we'll access the indicies array only when our hash check is passed.
+    note that even with the current combined scheme we'll only have about two cache misses even for
+    quite huge tables. also, bucket array is trivially addressable with a simple scaled machine
+    instruction. and, when we'll find a good hash, entry index will be in CPU cache, ready to use.
+    the only downside is that "resetting" the table needs to clear twice as much data, but i believe
+    that it is neglible.
    */
   #ifdef CORE_MAP_TEST
   mutable unsigned mMaxProbeCount;
@@ -310,7 +317,7 @@ private:
       for (int f = mFirstEntry; f <= end; ++f, ++e) if (!e->isEmpty()) e->destroyEntry();
     }
     #endif
-    if (doZero && mEBSize > 0) initEntries(0, mEBSize);
+    if (doZero && mEBSize) initEntries(0u, mEBSize);
     mFreeEntryHead = nullptr;
     mFirstEntry = mLastEntry = -1;
   }
@@ -319,12 +326,12 @@ private:
     TEntry *res;
     if (!mFreeEntryHead) {
       // nothing was allocated, so allocate something now
-      if (mEBSize == 0) {
+      if (mEBSize == 0u) {
         mEBSize = InitSize;
-        mBuckets = (TEntry **)Z_Malloc(mEBSize*sizeof(TEntry *));
-        memset(&mBuckets[0], 0, mEBSize*sizeof(TEntry *));
-        mEntries = (TEntry *)Z_Malloc(mEBSize*sizeof(TEntry));
-        initEntries(0, mEBSize);
+        mBuckets = (TBucket *)Z_MallocNoClear(mEBSize*sizeof(TBucket));
+        memset(&mBuckets[0], 0, mEBSize*sizeof(TBucket));
+        mEntries = (TEntry *)Z_MallocNoClear(mEBSize*sizeof(TEntry));
+        initEntries(0u, mEBSize);
         genNewSeed();
       }
       // it is guaranteed to have a room for at least one entry here (see `put()`)
@@ -335,7 +342,7 @@ private:
       res = mFreeEntryHead;
       mFreeEntryHead = res->nextFree;
       // fix mFirstEntry and mLastEntry
-      int idx = (int)(::ptrdiff_t)(res-&mEntries[0]);
+      int idx = (int)(ptrdiff_t)(res-&mEntries[0]);
       if (mFirstEntry < 0 || idx < mFirstEntry) mFirstEntry = idx;
       if (idx > mLastEntry) mLastEntry = idx;
     }
@@ -347,8 +354,9 @@ private:
     return res;
   }
 
-  void releaseEntry (TEntry *e) noexcept {
-    const int idx = (int)(::ptrdiff_t)(e-&mEntries[0]);
+  void releaseEntry (const int idx) noexcept {
+    //const int idx = (int)(ptrdiff_t)(e-&mEntries[0]);
+    TEntry *e = &mEntries[(const unsigned)idx];
     #if !defined(TMAP_NO_CLEAR)
     e->destroyEntry();
     #endif
@@ -379,7 +387,7 @@ private:
   }
 
   VVA_ALWAYS_INLINE unsigned distToStIdxBH (const unsigned idx, const unsigned bhigh) const noexcept {
-    const unsigned bestidx = calcBestIdx(mBuckets[idx]->hash, bhigh);
+    const unsigned bestidx = calcBestIdx(mBuckets[idx].hash, bhigh);
     //return (bestidx <= idx ? idx-bestidx : idx+(bhigh+1u-bestidx));
     // this is exactly the same as the code above, because we need distance in "positive direction"
     // (i.e. if `bestidx` is higher than `idx`, we should walk to the end of the array, and then to `bestidx`)
@@ -391,25 +399,32 @@ private:
 
   VVA_ALWAYS_INLINE unsigned distToStIdx (const unsigned idx) const noexcept { return distToStIdxBH(idx, mEBSize-1u); }
 
-  void putEntryInternal (TEntry *swpe) noexcept {
-    TMAP_IMPL_CALC_BUCKET_INDEX(swpe->hash)
-    unsigned pcur = 0;
-    for (unsigned dist = 0; dist <= bhigh; ++dist) {
-      if (!mBuckets[idx]) {
-        // put entry
-        mBuckets[idx] = swpe;
+  void putEntryInternal (unsigned swpeidx) noexcept {
+    //TEntry *swpe = &mEntries[swpeidx];
+    unsigned swpehash = mEntries[swpeidx].hash;
+    // `swpehash` and `swpeidx` is the "current bucket" to insert
+    TMAP_IMPL_CALC_BUCKET_INDEX(swpehash)
+    unsigned pcur = 0u;
+    for (unsigned dist = 0u; dist <= bhigh; ++dist) {
+      if (mBuckets[idx].hash == 0u) {
+        // found free bucket, put "current bucket" there
+        mBuckets[idx].hash = swpehash;
+        mBuckets[idx].entryidx = swpeidx;
         ++mBucketsUsed;
         return;
       }
       const unsigned pdist = distToStIdxBH(idx, bhigh);
       if (pcur > pdist) {
-        // swapping the current bucket with the one to insert
-        TEntry *tmpe = mBuckets[idx];
-        mBuckets[idx] = swpe;
-        swpe = tmpe;
+        // swap the "current bucket" with the one at the current index
+        const unsigned tmphash = mBuckets[idx].hash;
+        const unsigned tmpidx = mBuckets[idx].entryidx;
+        mBuckets[idx].hash = swpehash;
+        mBuckets[idx].entryidx = swpeidx;
+        swpehash = tmphash;
+        swpeidx = tmpidx;
         pcur = pdist;
       }
-      idx = (idx+1)&bhigh;
+      idx = (idx+1u)&bhigh;
       ++pcur;
     }
     __builtin_trap(); // we should not come here, ever
@@ -422,35 +437,34 @@ private:
     TMAP_IMPL_CALC_BUCKET_INDEX(khash)
 
     // find key
-    if (!mBuckets[idx]) return false; // no key
+    if (mBuckets[idx].hash == 0u) return false; // no key
     bool res = false;
-    for (unsigned dist = 0; dist <= bhigh; ++dist) {
-      if (!mBuckets[idx]) break;
+    for (unsigned dist = 0u; dist <= bhigh; ++dist) {
+      if (mBuckets[idx].hash == 0u) break;
       const unsigned pdist = distToStIdxBH(idx, bhigh);
       if (dist > pdist) break;
-      res = (mBuckets[idx]->hash == khash && mBuckets[idx]->key == akey);
+      res = (mBuckets[idx].hash == khash && mEntries[mBuckets[idx].entryidx].key == akey);
       if (res) break;
-      idx = (idx+1)&bhigh;
+      idx = (idx+1u)&bhigh;
     }
-
     if (!res) return false; // key not found
 
-    releaseEntry(mBuckets[idx]);
+    releaseEntry((int)mBuckets[idx].entryidx);
 
     if (--mBucketsUsed) {
-      // there was more than one item
-      unsigned idxnext = (idx+1)&bhigh;
-      for (unsigned dist = 0; dist <= bhigh; ++dist) {
-        if (!mBuckets[idxnext]) { mBuckets[idx] = nullptr; break; }
+      // there was more than one item, perform backwards shift
+      unsigned idxnext = (idx+1u)&bhigh;
+      for (unsigned dist = 0u; dist <= bhigh; ++dist) {
+        if (mBuckets[idxnext].hash == 0u) { mBuckets[idx].hash = 0u; break; }
         const unsigned pdist = distToStIdxBH(idxnext, bhigh);
-        if (pdist == 0) { mBuckets[idx] = nullptr; break; }
+        if (pdist == 0u) { mBuckets[idx].hash = 0u; break; }
         mBuckets[idx] = mBuckets[idxnext];
-        idx = (idx+1)&bhigh;
-        idxnext = (idxnext+1)&bhigh;
+        idx = (idx+1u)&bhigh;
+        idxnext = (idxnext+1u)&bhigh;
       }
     } else {
       // there was only one item
-      mBuckets[idx] = nullptr;
+      mBuckets[idx].hash = 0u;
     }
 
     return true;
@@ -479,10 +493,10 @@ public:
       if (other.mBucketsUsed) {
         // has some entries
         mEBSize = nextPOTU32(mBucketsUsed);
-        mBuckets = (TEntry **)Z_Malloc(mEBSize*sizeof(TEntry *));
-        memset(&mBuckets[0], 0, mEBSize*sizeof(TEntry *));
-        mEntries = (TEntry *)Z_Malloc(mEBSize*sizeof(TEntry));
-        initEntries(0, mEBSize);
+        mBuckets = (TBucket *)Z_MallocNoClear(mEBSize*sizeof(TBucket));
+        memset(&mBuckets[0], 0, mEBSize*sizeof(TBucket));
+        mEntries = (TEntry *)Z_MallocNoClear(mEBSize*sizeof(TEntry));
+        initEntries(0u, mEBSize);
         genNewSeed();
         mFirstEntry = mLastEntry = -1;
         if (other.mLastEntry >= 0) {
@@ -497,7 +511,7 @@ public:
               mEntries[didx++] = other.mEntries[f];
             }
           }
-          if (didx > 0) {
+          if (didx) {
             mFirstEntry = 0;
             mLastEntry = (int)didx-1;
           }
@@ -528,7 +542,7 @@ public:
   void reset () noexcept {
     freeEntries();
     if (mBucketsUsed) {
-      memset(mBuckets, 0, mEBSize*sizeof(TEntry *));
+      memset(mBuckets, 0, mEBSize*sizeof(TBucket));
       mBucketsUsed = 0u;
     }
   }
@@ -547,7 +561,7 @@ public:
 
   void rehash (const unsigned flags=RehashDefault) noexcept {
     // clear buckets
-    memset(mBuckets, 0, mEBSize*sizeof(TEntry *));
+    memset(mBuckets, 0, mEBSize*sizeof(TBucket));
     mBucketsUsed = 0u;
     // reinsert entries
     mFreeEntryHead = nullptr;
@@ -559,7 +573,7 @@ public:
       // small optimisation for empty head case
       const unsigned stx = (unsigned)mFirstEntry;
       TEntry *e;
-      if (stx > 0) {
+      if (stx) {
         e = &mEntries[0];
         lastfree = mFreeEntryHead = e++;
         for (unsigned idx = 1; idx < stx; ++idx, ++e) {
@@ -578,37 +592,38 @@ public:
             e->hash = khash;
             TMAP_IMPL_CALC_BUCKET_INDEX(khash)
             // check if we already have this key
-            TEntry *old = nullptr;
-            if (mBucketsUsed && mBuckets[idx]) {
-              for (unsigned dist = 0; dist <= bhigh; ++dist) {
-                TEntry *ee = mBuckets[idx];
-                if (!ee) break;
-                const unsigned pdist = distToStIdx(idx);
+            //TEntry *old = nullptr;
+            unsigned old = 0xffffffffu;
+            if (mBucketsUsed && mBuckets[idx].hash) {
+              for (unsigned dist = 0u; dist <= bhigh; ++dist) {
+                if (mBuckets[idx].hash == 0u) break;
+                const unsigned pdist = distToStIdxBH(idx, bhigh);
                 if (dist > pdist) break;
-                if (ee->hash == khash && ee->key == e->key) {
+                if (mBuckets[idx].hash == khash && mEntries[mBuckets[idx].entryidx].key == e->key) {
                   // i found her!
-                  vassert(old != ee);
-                  old = ee;
+                  vassert(old != mBuckets[idx].entryidx);
+                  old = mBuckets[idx].entryidx;
                   break;
                 }
-                idx = (idx+1)&bhigh;
+                idx = (idx+1u)&bhigh;
               }
             }
-            if (old) {
+            if (old != 0xffffffffu) {
               if (flags&RehashLeaveLast) {
-                // replace old with new
-                old->destroyEntry();
-                old->key = e->key;
-                old->value = e->value;
-                old->hash = e->hash;
+                // replace old entry with new
+                TEntry *oe = &mEntries[old];
+                oe->destroyEntry();
+                oe->key = e->key;
+                oe->value = e->value;
+                oe->hash = e->hash;
               }
               e->destroyEntry();
             } else {
-              putEntryInternal(e);
+              putEntryInternal(eidx);
             }
           } else {
             // no need to recalculate hash
-            putEntryInternal(e);
+            putEntryInternal(eidx);
           }
         }
         // need additional check, because it may be destroyed
@@ -640,11 +655,11 @@ public:
     bool didAnyCopy = false;
     // move all entries to top
     if (mFirstEntry >= 0) {
-      unsigned didx = 0;
+      unsigned didx = 0u;
       while (didx < mEBSize && !mEntries[didx].isEmpty()) ++didx;
       const unsigned end = mLastEntry;
       // copy entries
-      for (unsigned f = didx+1; f <= end; ++f) {
+      for (unsigned f = didx+1u; f <= end; ++f) {
         if (!mEntries[f].isEmpty()) {
           vassert(didx < f);
           didAnyCopy = true;
@@ -666,13 +681,13 @@ public:
       }
       if (didAnyCopy) {
         mFirstEntry = mLastEntry = 0;
-        while ((unsigned)mLastEntry+1 < mEBSize && !mEntries[mLastEntry].isEmpty()) ++mLastEntry;
+        while ((unsigned)mLastEntry+1u < mEBSize && !mEntries[mLastEntry].isEmpty()) ++mLastEntry;
         mLastEntry = (int)(mBucketsUsed-1u);
       }
     }
     if (doRealloc) {
       // shrink
-      mBuckets = (TEntry **)Z_Realloc(mBuckets, newsz*sizeof(TEntry *));
+      mBuckets = (TBucket *)Z_Realloc(mBuckets, newsz*sizeof(TBucket));
       mEntries = (TEntry *)Z_Realloc((void *)mEntries, newsz*sizeof(TEntry));
       mEBSize = newsz;
       calcCurrentMaxLoad(newsz); // it will be done anyway, but...
@@ -690,22 +705,22 @@ public:
     if (mBucketsUsed == 0u) return false;
     const unsigned khash = calcKeyHash(akey);
     TMAP_IMPL_CALC_BUCKET_INDEX(khash)
-    if (!mBuckets[idx]) return false;
+    if (mBuckets[idx].hash == 0u) return false;
     #ifdef CORE_MAP_TEST
-    unsigned probeCount = 0;
+    unsigned probeCount = 0u;
     #endif
     bool res = false;
-    for (unsigned dist = 0; dist <= bhigh; ++dist) {
-      if (!mBuckets[idx]) break;
+    for (unsigned dist = 0u; dist <= bhigh; ++dist) {
+      if (mBuckets[idx].hash == 0u) break;
       #ifdef CORE_MAP_TEST
       ++probeCount;
       if (mMaxProbeCount < probeCount) mMaxProbeCount = probeCount;
       #endif
       const unsigned pdist = distToStIdxBH(idx, bhigh);
       if (dist > pdist) break;
-      res = (mBuckets[idx]->hash == khash && mBuckets[idx]->key == akey);
+      res = (mBuckets[idx].hash == khash && mEntries[mBuckets[idx].entryidx].key == akey);
       if (res) break;
-      idx = (idx+1)&bhigh;
+      idx = (idx+1u)&bhigh;
     }
     return res;
   }
@@ -714,20 +729,22 @@ public:
     if (mBucketsUsed == 0u) return nullptr;
     const unsigned khash = calcKeyHash(akey);
     TMAP_IMPL_CALC_BUCKET_INDEX(khash)
-    if (!mBuckets[idx]) return nullptr;
+    if (mBuckets[idx].hash == 0u) return nullptr;
     #ifdef CORE_MAP_TEST
-    unsigned probeCount = 0;
+    unsigned probeCount = 0u;
     #endif
-    for (unsigned dist = 0; dist <= bhigh; ++dist) {
-      if (!mBuckets[idx]) break;
+    for (unsigned dist = 0u; dist <= bhigh; ++dist) {
+      if (mBuckets[idx].hash == 0u) break;
       #ifdef CORE_MAP_TEST
       ++probeCount;
       if (mMaxProbeCount < probeCount) mMaxProbeCount = probeCount;
       #endif
       const unsigned pdist = distToStIdxBH(idx, bhigh);
       if (dist > pdist) break;
-      if (mBuckets[idx]->hash == khash && mBuckets[idx]->key == akey) return &(mBuckets[idx]->value);
-      idx = (idx+1)&bhigh;
+      if (mBuckets[idx].hash == khash && mEntries[mBuckets[idx].entryidx].key == akey) {
+        return &(mEntries[mBuckets[idx].entryidx].value);
+      }
+      idx = (idx+1u)&bhigh;
     }
     return nullptr;
   }
@@ -736,20 +753,22 @@ public:
     if (mBucketsUsed == 0u) return nullptr;
     const unsigned khash = calcKeyHash(akey);
     TMAP_IMPL_CALC_BUCKET_INDEX(khash)
-    if (!mBuckets[idx]) return nullptr;
+    if (mBuckets[idx].hash == 0u) return nullptr;
     #ifdef CORE_MAP_TEST
-    unsigned probeCount = 0;
+    unsigned probeCount = 0u;
     #endif
-    for (unsigned dist = 0; dist <= bhigh; ++dist) {
-      if (!mBuckets[idx]) break;
+    for (unsigned dist = 0u; dist <= bhigh; ++dist) {
+      if (mBuckets[idx].hash == 0u) break;
       #ifdef CORE_MAP_TEST
       ++probeCount;
       if (mMaxProbeCount < probeCount) mMaxProbeCount = probeCount;
       #endif
       const unsigned pdist = distToStIdxBH(idx, bhigh);
       if (dist > pdist) break;
-      if (mBuckets[idx]->hash == khash && mBuckets[idx]->key == akey) return &(mBuckets[idx]->value);
-      idx = (idx+1)&bhigh;
+      if (mBuckets[idx].hash == khash && mEntries[mBuckets[idx].entryidx].key == akey) {
+        return &(mEntries[mBuckets[idx].entryidx].value);
+      }
+      idx = (idx+1u)&bhigh;
     }
     return nullptr;
   }
@@ -783,25 +802,24 @@ public:
     TMAP_IMPL_CALC_BUCKET_INDEX(khash)
 
     // check if we already have this key
-    if (mBucketsUsed && mBuckets[idx]) {
+    if (mBucketsUsed && mBuckets[idx].hash) {
       #ifdef CORE_MAP_TEST
-      unsigned probeCount = 0;
+      unsigned probeCount = 0u;
       #endif
-      for (unsigned dist = 0; dist <= bhigh; ++dist) {
-        TEntry *e = mBuckets[idx];
-        if (!e) break;
+      for (unsigned dist = 0u; dist <= bhigh; ++dist) {
+        if (mBuckets[idx].hash == 0u) break;
         #ifdef CORE_MAP_TEST
         ++probeCount;
         if (mMaxProbeCount < probeCount) mMaxProbeCount = probeCount;
         #endif
         const unsigned pdist = distToStIdxBH(idx, bhigh);
         if (dist > pdist) break;
-        if (e->hash == khash && e->key == akey) {
+        if (mBuckets[idx].hash == khash && mEntries[mBuckets[idx].entryidx].key == akey) {
           // replace element
-          e->value = aval;
+          mEntries[mBuckets[idx].entryidx].value = aval;
           return true;
         }
-        idx = (idx+1)&bhigh;
+        idx = (idx+1u)&bhigh;
       }
     }
 
@@ -815,12 +833,10 @@ public:
       printf("growing; old size=%u; new size=%u; used=%u; fe=%d; le=%d; cseed=(0x%08x); maxload=%u; mpc=%u\n", mEBSize, newsz, mBucketsUsed, mFirstEntry, mLastEntry, mSeed, mCurrentMaxLoad, mMaxProbeCount);
       #endif
       // resize buckets array
-      mBuckets = (TEntry **)Z_Realloc(mBuckets, newsz*sizeof(TEntry *));
-      memset(mBuckets+mEBSize, 0, (newsz-mEBSize)*sizeof(TEntry *));
+      mBuckets = (TBucket *)Z_Realloc(mBuckets, newsz*sizeof(TBucket));
+      memset(mBuckets+mEBSize, 0, (newsz-mEBSize)*sizeof(TBucket));
       // resize entries array
       mEntries = (TEntry *)Z_Realloc((void *)mEntries, newsz*sizeof(TEntry));
-      //memset((void *)(mEntries+mEBSize), 0, (newsz-mEBSize)*sizeof(TEntry));
-      //for (unsigned f = mEBSize; f < newsz; ++f) mEntries[f].setEmpty(); //k8: no need to
       initEntries(mEBSize, newsz);
       mEBSize = newsz;
       // mFreeEntryHead will be fixed in `rehash()`
@@ -834,7 +850,7 @@ public:
     swpe->value = aval;
     swpe->hash = khash;
 
-    putEntryInternal(swpe);
+    putEntryInternal((unsigned)(ptrdiff_t)(swpe-&mEntries[0]));
     return false;
   }
 
@@ -850,7 +866,7 @@ public:
   #ifdef CORE_MAP_TEST
   int countItems () const noexcept {
     int res = 0;
-    for (unsigned f = 0; f < mEBSize; ++f) if (!mEntries[f].isEmpty()) ++res;
+    for (unsigned f = 0u; f < mEBSize; ++f) if (!mEntries[f].isEmpty()) ++res;
     return res;
   }
 
