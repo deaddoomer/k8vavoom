@@ -123,10 +123,20 @@ private:
   int mFirstEntry, mLastEntry;
   unsigned mSeed;
   unsigned mSeedCount;
+  unsigned mCurrentMaxLoad;
 
 private:
+  VVA_ALWAYS_INLINE void calcCurrentMaxLoad (const unsigned aEBSize) noexcept {
+    mCurrentMaxLoad = aEBSize*LoadFactorPrc/100u;
+  }
+
+  VVA_ALWAYS_INLINE void genNewSeed () noexcept {
+    mSeedCount = Z_GetHashTableSeed();
+    mSeed = hashU32(mSeedCount);
+  }
+
   // up to, but not including last
-  void initEntries (unsigned first, unsigned last) {
+  void initEntries (const unsigned first, const unsigned last) {
     if (first < last) {
       TEntry *ee = &mEntries[first];
       memset((void *)ee, 0, (last-first)*sizeof(TEntry));
@@ -134,11 +144,7 @@ private:
       for (unsigned f = first; f < last; ++f, ++ee) ee->initEntry();
       #endif
     }
-  }
-
-  VVA_ALWAYS_INLINE void genNewSeed () noexcept {
-    mSeedCount = Z_GetHashTableSeed();
-    mSeed = hashU32(mSeedCount);
+    calcCurrentMaxLoad(last); // `initEntries()` called on each table resize, so it is a good place
   }
 
 public:
@@ -420,9 +426,9 @@ private:
   }
 
 public:
-  VVA_ALWAYS_INLINE TMap_Class_Name () noexcept : mEBSize(0), mEntries(nullptr), mBuckets(nullptr), mBucketsUsed(0), mFreeEntryHead(nullptr), mFirstEntry(-1), mLastEntry(-1), mSeed(0), mSeedCount(0) {}
+  VVA_ALWAYS_INLINE TMap_Class_Name () noexcept : mEBSize(0), mEntries(nullptr), mBuckets(nullptr), mBucketsUsed(0), mFreeEntryHead(nullptr), mFirstEntry(-1), mLastEntry(-1), mSeed(0), mSeedCount(0), mCurrentMaxLoad(0) {}
 
-  VVA_ALWAYS_INLINE TMap_Class_Name (TMap_Class_Name &other) noexcept : mEBSize(0), mEntries(nullptr), mBuckets(nullptr), mBucketsUsed(0), mFreeEntryHead(nullptr), mFirstEntry(-1), mLastEntry(-1), mSeed(0), mSeedCount(0) {
+  VVA_ALWAYS_INLINE TMap_Class_Name (TMap_Class_Name &other) noexcept : mEBSize(0), mEntries(nullptr), mBuckets(nullptr), mBucketsUsed(0), mFreeEntryHead(nullptr), mFirstEntry(-1), mLastEntry(-1), mSeed(0), mSeedCount(0), mCurrentMaxLoad(0) {
     operator=(other);
   }
 
@@ -481,7 +487,7 @@ public:
     mBucketsUsed = 0;
     mBuckets = nullptr;
     Z_Free((void *)mEntries);
-    mEBSize = 0;
+    mEBSize = mCurrentMaxLoad = 0;
     mEntries = nullptr;
     mFreeEntryHead = nullptr;
     mFirstEntry = mLastEntry = -1;
@@ -582,6 +588,7 @@ public:
       }
       if (lastfree) lastfree->nextFree = nullptr;
     }
+    calcCurrentMaxLoad(mEBSize); // why not?
   }
 
   VVA_ALWAYS_INLINE void rehashRekeyLeaveFirst () noexcept { rehash(RehashRekey|RehashLeaveFirst); }
@@ -637,6 +644,7 @@ public:
       mBuckets = (TEntry **)Z_Realloc(mBuckets, newsz*sizeof(TEntry *));
       mEntries = (TEntry *)Z_Realloc((void *)mEntries, newsz*sizeof(TEntry));
       mEBSize = newsz;
+      calcCurrentMaxLoad(newsz); // it will be done anyway, but...
       didAnyCopy = true; // just in case, reinsert everything
     }
     // mFreeEntryHead will be fixed in `rehash()`
@@ -740,7 +748,7 @@ public:
 
     // need to resize elements table?
     // if elements table is empty, `allocEntry()` will take care of it
-    if (mEBSize && (unsigned)mBucketsUsed >= (bhigh+1)*LoadFactorPrc/100u) {
+    if (mEBSize && (unsigned)mBucketsUsed >= mCurrentMaxLoad) {
       unsigned newsz = (unsigned)mEBSize;
       if (newsz >= 0x40000000u) Sys_Error("out of memory for TMap!");
       newsz <<= 1;
