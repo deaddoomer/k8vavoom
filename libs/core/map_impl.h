@@ -453,13 +453,19 @@ private:
 
     if (--mBucketsUsed) {
       // there was more than one item, perform backwards shift
+      // we'll shift until we either find an empty bucket, or
+      // until next bucket distance is not ideal; this way
+      // our table will look like the removed entry was never
+      // inserted, and we don't need any tombstones; this also
+      // decreases distance-to-initial-bucket metric, which is
+      // very important for good performance
       unsigned idxnext = (idx+1u)&bhigh;
       for (unsigned dist = 0u; dist <= bhigh; ++dist) {
         if (mBuckets[idxnext].hash == 0u) { mBuckets[idx].hash = 0u; break; }
         const unsigned pdist = distToStIdxBH(idxnext, bhigh);
         if (pdist == 0u) { mBuckets[idx].hash = 0u; break; }
         mBuckets[idx] = mBuckets[idxnext];
-        idx = (idx+1u)&bhigh;
+        idx = idxnext; //(idx+1u)&bhigh; // `idxnext` is always next index, there's no need to recalculate it
         idxnext = (idxnext+1u)&bhigh;
       }
     } else {
@@ -592,8 +598,7 @@ public:
             e->hash = khash;
             TMAP_IMPL_CALC_BUCKET_INDEX(khash)
             // check if we already have this key
-            //TEntry *old = nullptr;
-            unsigned old = 0xffffffffu;
+            unsigned oldidx = 0;
             if (mBucketsUsed && mBuckets[idx].hash) {
               for (unsigned dist = 0u; dist <= bhigh; ++dist) {
                 if (mBuckets[idx].hash == 0u) break;
@@ -601,17 +606,16 @@ public:
                 if (dist > pdist) break;
                 if (mBuckets[idx].hash == khash && mEntries[mBuckets[idx].entryidx].key == e->key) {
                   // i found her!
-                  vassert(old != mBuckets[idx].entryidx);
-                  old = mBuckets[idx].entryidx;
+                  oldidx = mBuckets[idx].entryidx+1u;
                   break;
                 }
                 idx = (idx+1u)&bhigh;
               }
             }
-            if (old != 0xffffffffu) {
+            if (oldidx) {
               if (flags&RehashLeaveLast) {
                 // replace old entry with new
-                TEntry *oe = &mEntries[old];
+                TEntry *oe = &mEntries[oldidx-1u];
                 oe->destroyEntry();
                 oe->key = e->key;
                 oe->value = e->value;
@@ -779,10 +783,10 @@ public:
   VVA_ALWAYS_INLINE const TV *Find (const TK &Key) const noexcept { return get(Key); }
   VVA_ALWAYS_INLINE const TV *find (const TK &Key) const noexcept { return get(Key); }
 
+  // this is used when our values are pointers, to avoid check and dereference in the caller
   VVA_ALWAYS_INLINE const TV FindPtr (const TK &Key) const noexcept {
     auto res = get(Key);
-    if (res) return *res;
-    return nullptr;
+    return (res ? *res : nullptr);
   }
   VVA_ALWAYS_INLINE const TV findptr (const TK &Key) const noexcept { return FindPtr(Key); }
 
@@ -796,8 +800,9 @@ public:
   VVA_ALWAYS_INLINE bool Remove (const TK &Key) noexcept { return del(Key); }
   VVA_ALWAYS_INLINE bool remove (const TK &Key) noexcept { return del(Key); }
 
-  // returns `true` if old value was replaced
-  bool put (const TK &akey, const TV &aval) noexcept {
+  // returns `true` if old value was found
+  // will replace old value if `replace` is `true`
+  bool put (const TK &akey, const TV &aval, bool replace=true) noexcept {
     const unsigned khash = calcKeyHash(akey);
     TMAP_IMPL_CALC_BUCKET_INDEX(khash)
 
@@ -815,8 +820,8 @@ public:
         const unsigned pdist = distToStIdxBH(idx, bhigh);
         if (dist > pdist) break;
         if (mBuckets[idx].hash == khash && mEntries[mBuckets[idx].entryidx].key == akey) {
-          // replace element
-          mEntries[mBuckets[idx].entryidx].value = aval;
+          // replace element?
+          if (replace) mEntries[mBuckets[idx].entryidx].value = aval;
           return true;
         }
         idx = (idx+1u)&bhigh;
@@ -853,6 +858,10 @@ public:
     putEntryInternal((unsigned)(ptrdiff_t)(swpe-&mEntries[0]));
     return false;
   }
+
+  VVA_ALWAYS_INLINE bool putReplace (const TK &akey, const TV &aval) noexcept { return put(akey, aval, true); }
+  VVA_ALWAYS_INLINE bool putNoReplace (const TK &akey, const TV &aval) noexcept { return put(akey, aval, false); }
+
 
   VVA_ALWAYS_INLINE void Set (const TK &Key, const TV &Value) noexcept { put(Key, Value); }
   VVA_ALWAYS_INLINE void set (const TK &Key, const TV &Value) noexcept { put(Key, Value); }
