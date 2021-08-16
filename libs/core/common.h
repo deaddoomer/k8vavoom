@@ -111,7 +111,7 @@ enum EArrayNew { E_ArrayNew };
 
 inline VVA_OKUNUSED void *operator new (size_t, void *ptr, EArrayNew, EArrayNew) noexcept { return ptr; }
 
-static inline VVA_CHECKRESULT VVA_CONST uint16_t foldHash32to16 (uint32_t h) noexcept { return (uint16_t)(h+(h>>16)); }
+static inline VVA_CHECKRESULT VVA_CONST uint16_t foldHash32to16 (const uint32_t h) noexcept { return (uint16_t)(h+(h>>16)); }
 static inline VVA_CHECKRESULT VVA_CONST uint8_t foldHash32to8 (uint32_t h) noexcept { h = foldHash32to16(h); return (uint8_t)(h+(h>>8)); }
 
 
