@@ -32,8 +32,13 @@
 // note that both keys and values will be zeroed before using anyway
 //#define TMAP_NO_CLEAR
 
+// bucket mapping algos
 // see https://lemire.me/blog/2016/06/27/a-fast-alternative-to-the-modulo-reduction/
-//#define TMAP_USE_MULTIPLY
+//#define TMAP_BKHASH_FASTRANGE
+// use hash folding for hash tables with less than 64K items
+// this is slightly slower than no folding (one more branch, one addition, and one shift),
+// but may help with weaker hash functions
+//#define TMAP_BKHASH_FOLDING
 
 // define this to clear items on entry pool allocation/release
 // if not defined, entry pool item will be cleared right before putting a new item
@@ -113,19 +118,23 @@ private:
     return khash+(!khash); // avoid zero hash value
   }
 
-  // calculate desired index for the given hash
-  VVA_ALWAYS_INLINE unsigned calcBestIdx (const unsigned hashval, const unsigned bhigh) const noexcept {
-    #if !defined(TMAP_USE_MULTIPLY)
-    return (hashval^mSeed)&bhigh;
-    #else
+  // calculate desired bucket index for the given hash
+  VVA_ALWAYS_INLINE unsigned calcBestBucketIdx (const unsigned hashval, const unsigned bhigh) const noexcept {
+    #if defined(TMAP_BKHASH_FASTRANGE)
     return (unsigned)(((uint64_t)(hashval^mSeed)*(uint64_t)bhigh)>>32);
+    #elif defined(TMAP_BKHASH_FOLDING)
+    // fold hash values for hash tables with less than 64K items
+    // hash folding usually gives better results than simply dropping high bits
+    return ((bhigh <= 0xffffu ? foldHash32to16(hashval) : hashval)^mSeed)&bhigh;
+    #else
+    return (hashval^mSeed)&bhigh;
     #endif
   }
 
   // this is done in almost any function, so let's declare it as a macro
   #define TMAP_IMPL_CALC_BUCKET_INDEX(hashval_)  \
     const unsigned bhigh = (unsigned)(mEBSize-1u); \
-    unsigned idx = calcBestIdx((hashval_), bhigh);
+    unsigned idx = calcBestBucketIdx((hashval_), bhigh);
 
 private:
   unsigned mEBSize; // size of `mEntries` and `mBuckets` arrays, in elements
@@ -387,7 +396,7 @@ private:
   }
 
   VVA_ALWAYS_INLINE unsigned distToStIdxBH (const unsigned idx, const unsigned bhigh) const noexcept {
-    const unsigned bestidx = calcBestIdx(mBuckets[idx].hash, bhigh);
+    const unsigned bestidx = calcBestBucketIdx(mBuckets[idx].hash, bhigh);
     //return (bestidx <= idx ? idx-bestidx : idx+(bhigh+1u-bestidx));
     // this is exactly the same as the code above, because we need distance in "positive direction"
     // (i.e. if `bestidx` is higher than `idx`, we should walk to the end of the array, and then to `bestidx`)
