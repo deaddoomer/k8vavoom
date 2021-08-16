@@ -366,26 +366,6 @@ menudef AdvVideoOptions {
   }
 
 
-  header "Overbright";
-
-  option bool {
-    title = "Lightmap Overbright";
-    cvar = r_lmap_overbright;
-  }
-
-  option bool {
-    title = "Shadowmap/Shadow Volumes Overbright";
-    cvar = r_adv_overbright;
-  }
-
-  option slider {
-    title = "Specular (Overbright) Intensity";
-    cvar = r_overbright_specular;
-    step = 0.1;
-    min = 0;
-    max = 4;
-  }
-
   header "Other Lightmap Lighting";
 
   option bool {

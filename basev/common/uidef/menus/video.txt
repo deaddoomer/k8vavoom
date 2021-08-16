@@ -151,6 +151,33 @@ menudef VideoOptions {
   }
 
 
+  header "Overbright";
+
+  option bool {
+    title = "Lightmap Overbright";
+    cvar = r_lmap_overbright;
+  }
+
+  option bool {
+    title = "AdvRender Overbright";
+    cvar = r_adv_overbright;
+    help =
+      "Overbright support for Shadow Maps and Shadow Volumes.",
+      "\c[WHITE]WARNING! While this makes the picture better, it can eat 10 or more FPS!\c-",
+      "\c[WHITE]Turn this 'OFF' for weaker CPUs or complex maps.";
+  }
+
+  option slider {
+    title = "Specular (Overbright) Intensity";
+    cvar = r_overbright_specular;
+    step = 0.1;
+    min = 0;
+    max = 4;
+  }
+
+
+
+
   header "Renderer";
 
   option render {

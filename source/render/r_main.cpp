@@ -169,7 +169,7 @@ VCvarB r_shadows("r_shadows", true, "Allow shadows from lights?", CVAR_Archive);
 VCvarB r_lit_semi_translucent("r_lit_semi_translucent", true, "Lit semi-translucent textures?", CVAR_Archive);
 
 VCvarB r_lmap_overbright("r_lmap_overbright", true, "Use Quake-like (but gentlier) overbright for static lights?", CVAR_Archive);
-VCvarB r_adv_overbright("r_adv_overbright", true, "Use Quake-like (but gentlier) overbright for static lights?", CVAR_Archive);
+VCvarB r_adv_overbright("r_adv_overbright", false, "Use Quake-like (but gentlier) overbright for static lights?", CVAR_Archive);
 VCvarF r_overbright_specular("r_overbright_specular", "0.1", "Specular light in regular renderer.", CVAR_Archive);
 
 static VCvarF r_hud_fullscreen_alpha("r_hud_fullscreen_alpha", "0.44", "Alpha for fullscreen HUD", CVAR_Archive);
