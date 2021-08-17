@@ -984,7 +984,7 @@ int ryu_s2f (const char *buffer, int len, float *result, const unsigned flags) {
     for (; i < len; ++i) {
       char c = buffer[i];
       if (wasDigits && c == '_') continue;
-      if (c < '0' || c > '9') return RYU_MALFORMED_INPUT;
+      if (c < '0' || c > '9') break;
       wasDigits = 1;
       if (expTooBig) continue;
       if (e10digits > 3) {
