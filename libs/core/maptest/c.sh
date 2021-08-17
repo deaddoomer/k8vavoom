@@ -13,7 +13,7 @@ mkdir obj
 #  exit $res
 #fi
 
-g++ -DVAVOOM_DISABLE_MIMALLOC -fno-strict-aliasing -pthread -Wall -Wno-ignored-attributes -o map_test -Wall -O2 map_test.cpp ../zone.cpp #zmimalloc.o
+g++ -g -DVAVOOM_DISABLE_MIMALLOC -fno-strict-aliasing -pthread -Wall -Wno-ignored-attributes -o map_test -Wall -O2 map_test.cpp ../zone.cpp #zmimalloc.o
 
 res=$?
 

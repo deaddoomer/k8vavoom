@@ -40,11 +40,32 @@ typedef unsigned int vuint32;
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#define vassert(cond_)  if (!(cond_)) __builtin_trap()
+
+#define vassert(cond_)  do { \
+  if (!(cond_)) { \
+    fprintf(stderr, "%s:%d: Assertion failed: %s", __FILE__, __LINE__, #cond_); \
+  } \
+} while (0)
+
+#ifndef VVA_OKUNUSED
+# define VVA_OKUNUSED     __attribute__((unused))
+#endif
+#ifndef VVA_CHECKRESULT
+# define VVA_CHECKRESULT  __attribute__((warn_unused_result))
+#endif
+#ifndef VVA_PURE
+# define VVA_PURE         __attribute__((pure))
+#endif
+#ifndef VVA_CONST
+# define VVA_CONST        __attribute__((const))
+#endif
+#ifndef VVA_ALWAYS_INLINE
+# define VVA_ALWAYS_INLINE  inline __attribute__((always_inline))
+#endif
 
 
-static vuint32 GetTypeHash (const int a) noexcept {
-  vuint32 res = (vuint32)a;
+VVA_ALWAYS_INLINE VVA_PURE uint32_t GetTypeHash (const int a) noexcept {
+  uint32_t res = (uint32_t)a;
   res -= (res<<6);
   res = res^(res>>17);
   res -= (res<<9);
@@ -161,13 +182,24 @@ void testIterator (bool verbose) {
 }
 
 
-int main () {
+int main (int argc, char *argv[]) {
   int xcount;
 
   for (int i = 0; i < MaxItems; ++i) its[i] = -1;
 
   //Randomize();
-  srand(time(nullptr));
+  unsigned seed = (unsigned)time(nullptr);
+
+  if (argc > 1) {
+    char *str = argv[1];
+    char *end = str;
+    unsigned long int ns = strtoul(str, &end, 0);
+    if (*end) { fprintf(stderr, "invalid seed: '%s'\n", str); __builtin_trap(); }
+    seed = (unsigned)ns;
+  }
+
+  printf("=== SEED: 0x%08x ===\n", seed);
+  srand(seed);
 
   printf("testing: insertion\n");
   xcount = 0;
@@ -193,7 +225,7 @@ int main () {
     #endif
   }
   if (xcount != hash.count()) fatal("(1.5) fuuuuuuuuuuuu");
-  printf("capacity=%d; length=%d; maxprobecount=%u\n", hash.capacity(), hash.length(), hash.getMaxProbeCount());
+  printf("capacity=%d; length=%d; maxprobecount=%u; maxcomparecount=%u\n", hash.capacity(), hash.length(), hash.getMaxProbeCount(), hash.getMaxCompareCount());
   checkHash();
   testIterator(true);
 
@@ -226,10 +258,33 @@ int main () {
     #endif
     if (hash.count() == 0) break;
   }
-
-  printf("testing: complete\n");
+  printf("%d items left in hash\n", hash.count());
   checkHash();
   testIterator(true);
+
+  if (hash.count()) {
+    printf("deleting by iteration...\n");
+    for (auto &&it : hash.first()) {
+      vassert(it.isValid());
+      vassert(it.isValidEntry());
+      it.removeCurrentNoAdvance();
+      // `isValid()` may return `false` here
+      vassert(!it.isValidEntry());
+    }
+    vassert(hash.count() == 0);
+    #ifdef EXCESSIVE_COMPACT
+    hash.compact();
+    #endif
+    int cnt = 0;
+    for (auto &&it : hash.first()) {
+      vassert(it.isValid());
+      vassert(it.isValidEntry());
+      ++cnt;
+    }
+    vassert(cnt == hash.count());
+    vassert(!hash.first().isValid());
+    vassert(!hash.first().isValidEntry());
+  }
 
   return 0;
 }
