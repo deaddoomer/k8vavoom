@@ -11,8 +11,16 @@
  * REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY
  * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  */
-//#define P9_S2F_DEBUG
-//#define P9_USE_LDEXP
+#define P9_S2F_DEBUG
+#define P9_USE_LDEXP
+
+// RYU/Grisu2 can be used with default double->float conversion (except the one case)
+// however, there is one roundtrip error with Ryu (but not with Grisu2):
+//   FP INVALID ROUNDTRIP: n:0x15ae43fd;  n1:0x15ae43fe  str:[7.038531e-26]
+//   Grisu2 converts it as "7.0385307e-26"
+// this is definitely my bug with rounding, because Ryu parser parses both numbers correctly
+#define P9_FOR_RYU
+
 #include <stdio.h>
 
 //#include <ctype.h>
@@ -38,70 +46,67 @@ static uint32_t umuldiv (uint32_t a, uint32_t b, uint32_t c) {
 }
 
 
-static const uint64_t uvnan    = 0x7FF0000000000001UL;
+static const uint64_t uvnan    = 0x7FF8000000000001UL;
+static const uint64_t uvnegnan = 0xFFF8000000000001UL;
 static const uint64_t uvinf    = 0x7FF0000000000000UL;
 static const uint64_t uvneginf = 0xFFF0000000000000UL;
+// fp32 infinity
+static const uint32_t uinf     = 0x7F800000U;
 
-//static const uint64_t unan    = 0x7F800001U;
-static const uint64_t uinf    = 0x7F800000U;
-//static const uint64_t uneginf = 0xFF800000U;
+static inline double makeNaN (void) { return *(const __attribute__((__may_alias__)) double *)&uvnan; }
+static inline double makeSignedNaN (int negative) { return *(const __attribute__((__may_alias__)) double *)(negative ? &uvnegnan : &uvnan); }
 
-static inline double makeNaN (void) { return *(const double *)&uvnan; }
-//static inline float makeNaNF (void) { return *(const float *)&unan; }
+static inline double makeInf (int negative) { return *(const __attribute__((__may_alias__)) double *)(negative ? &uvneginf : &uvinf); }
+static inline float makeInfF (void) { return *(const __attribute__((__may_alias__)) float *)&uinf; }
 
-static inline double makeInf (int negative) { return *(const double *)(negative ? &uvneginf : &uvinf); }
-static inline float makeInfF (void) { return *(const float *)&uinf; }
-
-//static inline double makeNegInf (void) { return *(const double *)&uvneginf; }
-//static inline float makeNegInfF (void) { return *(const float *)&uneginf; }
 
 #define DBL_MANT_EXTRA_BIT  (0x0010000000000000UL)
-#define DBL_MANT_MASK  (0x000FFFFFFFFFFFFFUL)
-#define DBL_SIGN_MASK  (0x8000000000000000UL)
-#define DBL_EXP_SHIFT  (52)
-#define DBL_EXP_SMASK  (0x7FFU)
-#define DBL_EXP_OFFSET (1023)
+#define DBL_MANT_MASK       (0x000FFFFFFFFFFFFFUL)
+#define DBL_SIGN_MASK       (0x8000000000000000UL)
+#define DBL_EXP_SHIFT       (52)
+#define DBL_EXP_SMASK       (0x7FFU)
+#define DBL_EXP_OFFSET      (1023)
 
 
 static inline double prevDouble (double d) {
-  uint64_t n = *(const uint64_t *)&d;
+  uint64_t n = *(const __attribute__((__may_alias__)) uint64_t *)&d;
   if ((n&DBL_MANT_MASK) == 0) {
     //return d; // this seems to be wrong
     // can we borrow bits from exponent?
     if ((uint32_t)((n>>DBL_EXP_SHIFT)&DBL_EXP_SMASK) < 1) return d;
   }
   --n;
-  return *(const double *)&n;
+  return *(const __attribute__((__may_alias__)) double *)&n;
 }
 
 static inline double nextDouble (double d) {
-  uint64_t n = *(const uint64_t *)&d;
+  uint64_t n = *(const __attribute__((__may_alias__)) uint64_t *)&d;
   if ((n&DBL_MANT_MASK) == DBL_MANT_MASK) {
     //return d; // this seems to be wrong
     // can we put bits into exponent?
     if ((uint32_t)((n>>DBL_EXP_SHIFT)&DBL_EXP_SMASK) >= DBL_EXP_SMASK-1) return d;
   }
   ++n;
-  return *(const double *)&n;
+  return *(const __attribute__((__may_alias__)) double *)&n;
 }
 
 
 /*
 static inline int isInf (double d, int sign) {
-  uint64_t x = *(const uint64_t*)&d;
+  uint64_t x = *(const __attribute__((__may_alias__)) uint64_t*)&d;
   if (sign == 0) return (x == uvinf || x == uvneginf);
   if (sign > 0) return (x == uvinf);
   return (x == uvneginf);
 }
 
 static inline int isNaN (double d) {
-  const uint64_t x = *(const uint64_t*)&d;
+  const uint64_t x = *(const __attribute__((__may_alias__)) uint64_t*)&d;
   return (uint32_t)(x>>32)==0x7FF00000 && !isInf(d, 0);
 }
 */
 
 
-static float sanitizedD2F (double d) {
+static float sanitizedD2F (const double d) {
   const float max_finite = 3.4028234663852885981170418348451692544e+38;
   // the half-way point between the max-finite and infinity value
   // since infinity has an even significand everything equal or greater than this value should become infinity
@@ -121,7 +126,7 @@ static double ldexp_intr (double d, int pwr, int *uoflag) {
 #else
   if (pwr == 0) return d;
   //fprintf(stderr, "*** %a; pwr=%d\n", d, pwr);
-  int exp = ((*(const uint64_t *)&d)>>DBL_EXP_SHIFT)&DBL_EXP_SMASK;
+  int exp = ((*(const __attribute__((__may_alias__)) uint64_t *)&d)>>DBL_EXP_SHIFT)&DBL_EXP_SMASK;
   if (exp == 0 || exp == DBL_EXP_SMASK) return d;
   if (pwr < 0) {
     if (pwr < -((int)(DBL_EXP_SMASK-1))) {
@@ -135,17 +140,17 @@ static double ldexp_intr (double d, int pwr, int *uoflag) {
   } else {
     if (pwr > (int)DBL_EXP_SMASK-1) {
       if (uoflag) *uoflag = 1;
-      return makeInf(((*(const uint64_t *)&d)&DBL_SIGN_MASK) != 0);
+      return makeInf(((*(const __attribute__((__may_alias__)) uint64_t *)&d)&DBL_SIGN_MASK) != 0);
     }
     if ((exp += pwr) >= (int)DBL_EXP_SMASK) { //k8: i am unsure about `int` here
       if (uoflag) *uoflag = 1;
-      return makeInf(((*(const uint64_t *)&d)&DBL_SIGN_MASK) != 0);
+      return makeInf(((*(const __attribute__((__may_alias__)) uint64_t *)&d)&DBL_SIGN_MASK) != 0);
     }
   }
-  uint64_t n = *(const uint64_t *)&d;
+  uint64_t n = *(const __attribute__((__may_alias__)) uint64_t *)&d;
   n &= DBL_MANT_MASK|DBL_SIGN_MASK;
   n |= ((uint64_t)(exp&DBL_EXP_SMASK))<<DBL_EXP_SHIFT;
-  const double res = *(const double *)&n;
+  const double res = *(const __attribute__((__may_alias__)) double *)&n;
   //fprintf(stderr, " :: %a : %a; pwr=%d\n", ldexp(d, pwr), res, pwr);
   //if (res != ldexp(d, pwr)) __builtin_trap();
   return res; //ldexp(d, pwr);
@@ -439,6 +444,7 @@ double fmtstrtod (const char *as, char **aas, int *rangeErr) {
       if (aas) *aas = (char *)as;
       return makeNaN();
     }
+    int wasDigits = 0;
     int ftype = -1; // 0: zero; 1: normalized
     int collexp = 0;
     s += 2;
@@ -453,36 +459,32 @@ double fmtstrtod (const char *as, char **aas, int *rangeErr) {
         }
         ftype = (d != 0.0);
       } else {
+        if (wasDigits && *s == '_') { ++s; continue; }
         int hd = hexDigit(*s);
         if (hd < 0) break;
-        if (ftype == 0) {
-          if (hd != 0) {
-            // denormalised numbers aren't supported
-            if (aas) *aas = (char *)as;
-            return makeNaN();
-          }
-        } else {
-          if (rangeErr) {
+        wasDigits = 1;
+        if (rangeErr) {
+          *rangeErr = 1;
+          uint64_t mv = (*(const __attribute__((__may_alias__)) uint64_t *)&d)&DBL_MANT_MASK;
+          mv = (mv<<4)+((uint32_t)(hd&0x0f));
+          if (mv > (DBL_MANT_MASK|DBL_MANT_EXTRA_BIT)) {
+            // overflow
             *rangeErr = 1;
-            uint64_t mv = (*(const uint64_t *)&d)&DBL_MANT_MASK;
-            mv = mv*16+((uint32_t)(hd&0x0f));
-            if (mv > (DBL_MANT_MASK|DBL_MANT_EXTRA_BIT)) {
-              // overflow
-              *rangeErr = 1;
-            }
           }
-          d *= 16.0;
-          d += (double)hd;
-          if (ftype > 0) collexp += 4;
         }
+        d *= 16.0;
+        d += (double)hd;
+        if (ftype > 0) collexp += 4;
       }
       ++s;
     }
     // we MUST have the dot (unless it is a zero)
+    /*
     if (ftype < 0 && d != 0.0) {
       if (aas) *aas = (char *)as;
       return makeNaN();
     }
+    */
     //fprintf(stderr, "000: d=%a\n", d);
     // parse exponent
     int exp = 0;
@@ -505,16 +507,21 @@ double fmtstrtod (const char *as, char **aas, int *rangeErr) {
         if (dd < 0) break;
         ++s;
         exp = exp*10+dd;
-        if (exp >= 0x7ffffff) {
+        if (exp > 0xffffff) exp = 0x0ffffff;
+        /*
+        if (exp >= 0x7ffff) {
           if (aas) *aas = (char *)as;
           return makeNaN();
         }
+        */
       }
       // for zero, exponent should be zero
+      /*
       if (ftype == 0 && exp != 0) {
         if (rangeErr) *rangeErr = 1; // mark it with precision loss
         exp = 0;
       }
+      */
     }
     // done
     if (aas) *aas = (char *)skipSpaces(s);
@@ -570,6 +577,9 @@ double fmtstrtod (const char *as, char **aas, int *rangeErr) {
       case ' ':
         if (state == S0) continue;
         break;
+      case '_':
+        if (state != S0 && state != S1) continue;
+        break; /* syntax */
       case '-':
         if (state == S0) flag |= Fsign; else flag |= Fesign;
         /* fallthrough */
@@ -606,10 +616,12 @@ double fmtstrtod (const char *as, char **aas, int *rangeErr) {
    */
   switch (state) {
     case S0:
+      /*
       if (xcmp(s, "nan") == 0) {
         if (aas) *aas = (char *)s+3;
         return makeNaN();
       }
+      */
       /* fallthrough */
     case S1:
       /*k8: removed for good; this is in violation of standard, but...
@@ -618,6 +630,10 @@ double fmtstrtod (const char *as, char **aas, int *rangeErr) {
         goto retinf;
       }
       */
+      if (xcmp(s, "nan") == 0) {
+        if (aas) *aas = (char *)s+3;
+        return makeSignedNaN(flag&Fsign);
+      }
       if (xcmp(s, "inf") == 0) {
         if (aas) *aas = (char *)skipSpaces(s+3);
         goto retinf;
@@ -761,16 +777,21 @@ float fmtstrtof (const char *as, char **aas, int *rangeErr) {
   if (rerr) return (float)dguess;
   if (dguess == 0) return (float)dguess;
 
-  int exp = ((*(const uint64_t *)&dguess)>>DBL_EXP_SHIFT)&DBL_EXP_SMASK;
+  // zero, subnormal, inf, nan
+  const unsigned exp = ((*(const __attribute__((__may_alias__)) uint64_t *)&dguess)>>DBL_EXP_SHIFT)&DBL_EXP_SMASK;
   if (exp == 0 || exp == DBL_EXP_SMASK) return (float)dguess;
 
-  int isNegative = !!((*(const uint64_t *)&dguess)&DBL_SIGN_MASK);
+  const int isNegative = !!((*(const __attribute__((__may_alias__)) uint64_t *)&dguess)&DBL_SIGN_MASK);
 
   double dguesspos = dguess;
   // remove sign
-  *(uint64_t *)&dguesspos &= ~DBL_SIGN_MASK;
+  *(__attribute__((__may_alias__)) uint64_t *)&dguesspos &= ~DBL_SIGN_MASK;
 
   float fguesspos = sanitizedD2F(dguesspos);
+
+#ifdef P9_FOR_RYU
+  // for Ryu output it seems that we can use our float guess directly
+#else
   if (fguesspos == dguesspos) {
     // this shortcut triggers for integer values
     if (isNegative) fguesspos = -fguesspos;
@@ -795,18 +816,18 @@ float fmtstrtof (const char *as, char **aas, int *rangeErr) {
   //assert(f1 <= f2 && f2 <= f3 && f3 <= f4);
   //if (!(f1 <= fguesspos && fguesspos <= f3 && f3 <= f4)) __builtin_trap();
 
+  // if the guess doesn't lie near a single-precision boundary we can simply return its float value
+  if (f1 == f4) {
+    if (isNegative) fguesspos = -fguesspos;
+    return fguesspos;
+  }
+
 #ifdef P9_S2F_DEBUG
   fprintf(stderr, "dgp=%a\n", dguesspos);
   fprintf(stderr, "f1 =%a\n", f1);
   fprintf(stderr, "fgp=%a\n", fguesspos);
   fprintf(stderr, "f4 =%a\n", f4);
 #endif
-
-  // if the guess doesn't lie near a single-precision boundary we can simply return its float value
-  if (f1 == f4) {
-    if (isNegative) fguesspos = -fguesspos;
-    return fguesspos;
-  }
 
   /* assert
   if (!(f1 != fguesspos && fguesspos == f3 && f3 == f4) &&
@@ -818,8 +839,10 @@ float fmtstrtof (const char *as, char **aas, int *rangeErr) {
 #endif
 
   // THIS IS ABSOLUTELY WRONG!
-  uint32_t dv = ((*(const uint64_t *)&dguesspos)&DBL_MANT_MASK)>>28;
+  const uint32_t dv = ((*(const __attribute__((__may_alias__)) uint64_t *)&dguesspos)&DBL_MANT_MASK)>>28;
   fguesspos = (dv&1 ? f4 : f1);
+#endif
+
   if (isNegative) fguesspos = -fguesspos;
   return fguesspos;
 }

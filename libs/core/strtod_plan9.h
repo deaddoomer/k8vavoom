@@ -18,6 +18,7 @@
 extern "C" {
 #endif
 
+
 /*
  * This routine will convert to arbitrary precision
  * floating point entirely in multi-precision fixed.
@@ -33,7 +34,9 @@ extern "C" {
 double fmtstrtod (const char *as, char **aas, int *rangeErr);
 
 // this may do duplicate rounding
+// hex denormals sometimes may be parsed too
 float fmtstrtof (const char *as, char **aas, int *rangeErr);
+
 
 #if defined(__cplusplus)
 }
