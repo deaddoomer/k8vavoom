@@ -2508,6 +2508,7 @@ bool VStr::convertInt (const char *s, int *outv, bool loose) noexcept {
   if (!base) base = 10;
   while (*s) {
     char ch = *s++;
+    if (ch == '_') continue;
     int d = digitInBase(ch, base);
     if (d < 0) { if (neg) *outv = -(*outv); if (!loose) *outv = 0; return false; }
     *outv = (*outv)*base+d;
