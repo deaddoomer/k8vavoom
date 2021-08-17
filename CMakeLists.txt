@@ -329,6 +329,7 @@ if(RPATH_VALUE)
 endif(RPATH_VALUE)
 
 set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Werror=format-security")
+set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wparentheses")
 
 if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 9.0)
   set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fno-diagnostics-show-line-numbers")
@@ -346,7 +347,7 @@ if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.7)
   set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wmultistatement-macros")
   set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wmissing-attributes")
   set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wcast-function-type")
-  set(UNFUCK_GXX_FLAGS "${UNFUCK_GCC_FLAGS} -Wsuggest-override")
+  set(UNFUCK_GXX_FLAGS "${UNFUCK_GXX_FLAGS} -Wsuggest-override")
 endif()
 
 if(WITH_GCC_IDIOCITY)
@@ -364,6 +365,8 @@ else(WITH_GCC_IDIOCITY)
     set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wno-address-of-packed-member")
   endif()
 endif(WITH_GCC_IDIOCITY)
+
+set(UNFUCK_GXX_FLAGS "${UNFUCK_GCC_FLAGS} ${UNFUCK_GXX_FLAGS}")
 
 
 ###########################
