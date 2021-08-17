@@ -336,6 +336,10 @@ public:
     }
   }
 
+  // need to expose others too
+  virtual void io (VStr &s) override { VStream::io(s); }
+  virtual void io (VMemberBase *&o) override { VStream::io(o); }
+
   virtual void SerialiseStructPointer (void *&Ptr, VStruct *Struct) override {
     vint32 TmpIdx;
     *this << STRM_INDEX(TmpIdx);
@@ -456,6 +460,10 @@ public:
     }
     *this << STRM_INDEX(TmpIdx);
   }
+
+  // need to expose others too
+  virtual void io (VStr &s) override { VStream::io(s); }
+  virtual void io (VMemberBase *&o) override { VStream::io(o); }
 
   virtual void SerialiseStructPointer (void *&Ptr, VStruct *Struct) override {
     vint32 TmpIdx;
