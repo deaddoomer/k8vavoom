@@ -50,6 +50,7 @@ static const uint64_t uvnan    = 0x7FF8000000000001UL;
 static const uint64_t uvnegnan = 0xFFF8000000000001UL;
 static const uint64_t uvinf    = 0x7FF0000000000000UL;
 static const uint64_t uvneginf = 0xFFF0000000000000UL;
+static const uint64_t uvneg0   = 0x8000000000000000UL;
 // fp32 infinity
 static const uint32_t uinf     = 0x7F800000U;
 
@@ -58,6 +59,11 @@ static inline double makeSignedNaN (int negative) { return *(const __attribute__
 
 static inline double makeInf (int negative) { return *(const __attribute__((__may_alias__)) double *)(negative ? &uvneginf : &uvinf); }
 static inline float makeInfF (void) { return *(const __attribute__((__may_alias__)) float *)&uinf; }
+
+static inline double makeSignedZero (int negative) {
+  if (!negative) return 0.0;
+  return *(const __attribute__((__may_alias__)) double *)&uvneg0;
+}
 
 
 #define DBL_MANT_EXTRA_BIT  (0x0010000000000000UL)
@@ -126,34 +132,31 @@ static double ldexp_intr (double d, int pwr, int *uoflag) {
 #else
   if (pwr == 0) return d;
   //fprintf(stderr, "*** %a; pwr=%d\n", d, pwr);
-  int exp = ((*(const __attribute__((__may_alias__)) uint64_t *)&d)>>DBL_EXP_SHIFT)&DBL_EXP_SMASK;
+  uint64_t n = *(const __attribute__((__may_alias__)) uint64_t *)&d;
+  int exp = (n>>DBL_EXP_SHIFT)&DBL_EXP_SMASK;
   if (exp == 0 || exp == DBL_EXP_SMASK) return d;
   if (pwr < 0) {
     if (pwr < -((int)(DBL_EXP_SMASK-1))) {
       if (uoflag) *uoflag = 1;
-      return 0.0;
+      return makeSignedZero((n&DBL_SIGN_MASK) != 0);
     }
     if ((exp += pwr) <= 0) {
       if (uoflag) *uoflag = 1;
-      return 0.0;
+      return makeSignedZero((n&DBL_SIGN_MASK) != 0);
     }
   } else {
     if (pwr > (int)DBL_EXP_SMASK-1) {
       if (uoflag) *uoflag = 1;
-      return makeInf(((*(const __attribute__((__may_alias__)) uint64_t *)&d)&DBL_SIGN_MASK) != 0);
+      return makeInf((n&DBL_SIGN_MASK) != 0);
     }
     if ((exp += pwr) >= (int)DBL_EXP_SMASK) { //k8: i am unsure about `int` here
       if (uoflag) *uoflag = 1;
-      return makeInf(((*(const __attribute__((__may_alias__)) uint64_t *)&d)&DBL_SIGN_MASK) != 0);
+      return makeInf((n&DBL_SIGN_MASK) != 0);
     }
   }
-  uint64_t n = *(const __attribute__((__may_alias__)) uint64_t *)&d;
   n &= DBL_MANT_MASK|DBL_SIGN_MASK;
   n |= ((uint64_t)(exp&DBL_EXP_SMASK))<<DBL_EXP_SHIFT;
-  const double res = *(const __attribute__((__may_alias__)) double *)&n;
-  //fprintf(stderr, " :: %a : %a; pwr=%d\n", ldexp(d, pwr), res, pwr);
-  //if (res != ldexp(d, pwr)) __builtin_trap();
-  return res; //ldexp(d, pwr);
+  return *(const __attribute__((__may_alias__)) double *)&n;
 #endif
 }
 
@@ -502,9 +505,12 @@ double fmtstrtod (const char *as, char **aas, int *rangeErr) {
         if (aas) *aas = (char *)as;
         return makeNaN();
       }
+      wasDigits = 0;
       for (;;) {
+        if (wasDigits && *s == '_') { ++s; continue; }
         int dd = decDigit(*s);
         if (dd < 0) break;
+        wasDigits = 1;
         ++s;
         exp = exp*10+dd;
         if (exp > 0xffffff) exp = 0x0ffffff;
@@ -525,7 +531,7 @@ double fmtstrtod (const char *as, char **aas, int *rangeErr) {
     }
     // done
     if (aas) *aas = (char *)skipSpaces(s);
-    if (ftype == 0) return 0.0;
+    if (ftype == 0 || d == 0.0) return makeSignedZero(flag&Fsign);
     if (flag&Fesign) exp = -exp;
     if (collexp > 0x7ffff) collexp = 0x7ffff;
     //fprintf(stderr, "001: d=%a; exp=%d; collexp=%d\n", d, exp, collexp);
@@ -736,7 +742,8 @@ double fmtstrtod (const char *as, char **aas, int *rangeErr) {
   goto out;
 
 ret0:
-  return 0;
+  //return 0;
+  return makeSignedZero(flag&Fsign);
 
 retinf:
   /* Unix strtod requires these.  Plan 9 would return Inf(0) or Inf(-1). */

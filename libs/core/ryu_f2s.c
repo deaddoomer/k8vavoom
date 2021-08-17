@@ -107,8 +107,14 @@ static inline int copy_special_str(char * const result, bool sign, const bool ex
     memcpy(result + 1, "Inf", 3);
     return 4;
   }
-  result[0] = '0';
-  return 1;
+  if (sign) {
+    result[0] = '-';
+    result[1] = '0';
+    return 2;
+  } else {
+    result[0] = '0';
+    return 1;
+  }
 }
 
 static inline uint32_t float_to_bits(const float f) {
@@ -692,6 +698,12 @@ static inline double make_inf_dbl (int negative) {
   return *(const __attribute__((__may_alias__)) double *)&uvinf;
 }
 
+static inline double make_zero_dbl (int negative) {
+  if (!negative) return 0.0;
+  const uint64_t uvneg0 = 0x8000000000000000UL;
+  return *(const __attribute__((__may_alias__)) double *)&uvneg0;
+}
+
 
 static double ldexp_intr_dbl (const double d, int pwr) {
   if (pwr == 0) return d;
@@ -699,15 +711,12 @@ static double ldexp_intr_dbl (const double d, int pwr) {
   int exp = (n>>DBL_EXP_SHIFT)&DBL_EXP_SMASK;
   if (exp == 0 || exp == DBL_EXP_SMASK) return d;
   if (pwr < 0) {
-    if (pwr < -((int)(DBL_EXP_SMASK-1))) return 0.0;
-    if ((exp += pwr) <= 0) return 0.0;
+    if (pwr < -((int)(DBL_EXP_SMASK-1))) return make_zero_dbl((n&DBL_SIGN_MASK) != 0);
+    if ((exp += pwr) <= 0) return make_zero_dbl((n&DBL_SIGN_MASK) != 0);
   } else {
-    if (pwr > (int)DBL_EXP_SMASK-1) {
-      return make_inf_dbl((n&DBL_SIGN_MASK) != 0);
-    }
-    if ((exp += pwr) >= (int)DBL_EXP_SMASK) { //k8: i am unsure about `int` here
-      return make_inf_dbl((n&DBL_SIGN_MASK) != 0);
-    }
+    if (pwr > (int)DBL_EXP_SMASK-1) return make_inf_dbl((n&DBL_SIGN_MASK) != 0);
+    //k8: i am unsure about `int` here
+    if ((exp += pwr) >= (int)DBL_EXP_SMASK) return make_inf_dbl((n&DBL_SIGN_MASK) != 0);
   }
   n &= DBL_MANT_MASK|DBL_SIGN_MASK;
   n |= ((uint64_t)(exp&DBL_EXP_SMASK))<<DBL_EXP_SHIFT;
@@ -916,7 +925,7 @@ int ryu_s2f (const char *buffer, int len, float *result, const unsigned flags) {
     if (i < len && isGoodTrailingChar(buffer[i])) ++i;
     if (i < len) return RYU_MALFORMED_INPUT;
     // zero?
-    if (ftype == 0) {
+    if (ftype == 0 || fv == 0.0f) {
       *result = make_zero_flt(signedM);
       return RYU_SUCCESS;
     }

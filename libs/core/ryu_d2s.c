@@ -114,8 +114,14 @@ static inline int copy_special_str(char * const result, const bool sign, const b
     memcpy(result + 1, "Inf", 3);
     return 4;
   }
-  result[0] = '0';
-  return 1;
+  if (sign) {
+    result[0] = '-';
+    result[1] = '0';
+    return 2;
+  } else {
+    result[0] = '0';
+    return 1;
+  }
 }
 
 static inline uint32_t float_to_bits(const float f) {

@@ -42,11 +42,11 @@ int d2s_buffered_n (double f, char *result);
 #define RYU_MALFORMED_INPUT  (3)
 #define RYU_INVALID_ARGS     (4)  /* something is NULL */
 
-#define RYU_FLAG_DEFAULT     (0x00u) /* no nans, infs, and hex floats */
-#define RYU_FLAG_ALLOW_NAN   (0x01u) /* allow "nan" */
-#define RYU_FLAG_ALLOW_INF   (0x02u) /* allow "inf" */
-#define RYU_FLAG_ALLOW_HEX   (0x04u) /* allow hex floats */
-#define RYU_FLAG_ALLOW_ALL   (0x07u) /* everything is allowed */
+#define RYU_FLAG_DEFAULT    (0x00u) /* no nans, infs, and hex floats */
+#define RYU_FLAG_ALLOW_NAN  (0x01u) /* allow "nan" */
+#define RYU_FLAG_ALLOW_INF  (0x02u) /* allow "inf" */
+#define RYU_FLAG_ALLOW_HEX  (0x04u) /* allow hex floats */
+#define RYU_FLAG_ALLOW_ALL  (0x07u) /* everything is allowed */
 
 // returs RYU_xxx
 // hex denormals sometimes may be parsed too
