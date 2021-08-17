@@ -640,7 +640,7 @@ static int to_chars (const floating_decimal_32 v, const bool sign, char* const r
 #endif
 
 
-int f2s_buffered_n(float f, char* result) {
+int f2s_buffered_n (float f, char result[16]) {
   // Step 1: Decode the floating-point number, and unify normalized and subnormal cases.
   const uint32_t bits = float_to_bits(f);
 
@@ -666,7 +666,7 @@ int f2s_buffered_n(float f, char* result) {
   return to_chars(v, ieeeSign, result);
 }
 
-int f2s_buffered(float f, char* result) {
+int f2s_buffered (float f, char result[16]) {
   const int index = f2s_buffered_n(f, result);
 
   // Terminate the string.

@@ -26,13 +26,13 @@ extern "C" {
 /* returns string length, puts trailing zero */
 int f2s_buffered (float f, char result[16]);
 /* returns string length, doesn't put trailing zero */
-int f2s_buffered_n (float f, char *result);
+int f2s_buffered_n (float f, char result[16]);
 
 /* 25 bytes are enough */
 /* returns string length, puts trailing zero */
 int d2s_buffered (double f, char result[25]);
 /* returns string length, doesn't put trailing zero */
-int d2s_buffered_n (double f, char *result);
+int d2s_buffered_n (double f, char result[25]);
 
 
 // for parsing

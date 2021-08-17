@@ -1290,7 +1290,7 @@ static inline bool d2d_small_int(const uint64_t ieeeMantissa, const uint32_t iee
   return true;
 }
 
-int d2s_buffered_n(double f, char* result) {
+int d2s_buffered_n(double f, char result[25]) {
   // Step 1: Decode the floating-point number, and unify normalized and subnormal cases.
   const uint64_t bits = double_to_bits(f);
 
@@ -1334,7 +1334,7 @@ int d2s_buffered_n(double f, char* result) {
   return to_chars(v, ieeeSign, result);
 }
 
-int d2s_buffered(double f, char* result) {
+int d2s_buffered (double f, char result[25]) {
   const int index = d2s_buffered_n(f, result);
 
   // Terminate the string.
