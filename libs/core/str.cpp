@@ -30,6 +30,8 @@
 #include "core.h"
 #include "ryu.h"
 
+#define VCORE_USE_RYU_FLOAT_PARSER
+
 /*
 #if defined(VCORE_ALLOW_STRTODEX)
 # if defined(__x86_64__) || defined(__aarch64__) || defined(_WIN32) || defined(__i386__)
@@ -47,10 +49,17 @@
 # endif
 #endif
 */
-#define VCORE_USE_STRTODEX
+// always
+#ifndef VCORE_USE_STRTODEX
+# define VCORE_USE_STRTODEX
+#endif
 
 #ifdef VCORE_USE_STRTODEX
-# include "strtod_plan9.h"
+# ifdef VCORE_USE_RYU_FLOAT_PARSER
+/* nothing here */
+# else
+#  include "strtod_plan9.h"
+# endif
 #else
 # define VCORE_USE_LOCALE
 #endif
@@ -114,6 +123,15 @@ static VVA_ALWAYS_INLINE int vstrCalcInitialStoreSizeInt (int newlen) noexcept {
 //==========================================================================
 static bool strtofEx (float *resptr, const char *s) noexcept {
   if (!s || !s[0]) return false;
+  #ifdef VCORE_USE_RYU_FLOAT_PARSER
+  float tmpf = 0.0f;
+  if (!resptr) resptr = &tmpf;
+  const size_t slen = strlen(s);
+  if (slen > 0x3fffffffu) return false;
+  const int res = ryu_s2f(s, (int)slen, resptr, RYU_FLAG_ALLOW_ALL);
+  if (res != RYU_SUCCESS) *resptr = 0.0f; // just in case
+  return (res == RYU_SUCCESS);
+  #else
   char *end;
   float res = fmtstrtof(s, &end, nullptr);
   if (!isFiniteF(res) || *end) return false;
@@ -121,6 +139,7 @@ static bool strtofEx (float *resptr, const char *s) noexcept {
   if (res == 0) memset(&res, 0, sizeof(res));
   if (resptr) *resptr = res;
   return true;
+  #endif
 }
 #endif
 
