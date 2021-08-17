@@ -447,14 +447,21 @@ static int emit_digits (char *digits, int ndigits, char *dest, int K, bool neg) 
 
 
 int grisu2_dtoa (const double d, char dest[25]) {
-  if (d == 0.0) {
-    dest[0] = '0';
-    dest[1] = 0;
-    return 1;
-  }
-
   const uint64_t bits = get_dbits(d);
-  const bool neg = !!(bits&dbl_signmask);;
+  const bool neg = !!(bits&dbl_signmask);
+
+  if ((bits&~dbl_signmask) == 0) {
+    if (neg) {
+      dest[0] = '-';
+      dest[1] = '0';
+      dest[2] = 0;
+      return 2;
+    } else {
+      dest[0] = '0';
+      dest[1] = 0;
+      return 1;
+    }
+  }
 
   if ((bits&dbl_expmask) == dbl_expmask) {
     // not a finite number
@@ -488,14 +495,21 @@ int grisu2_dtoa (const double d, char dest[25]) {
 
 
 int grisu2_ftoa (const float f, char dest[25]) {
-  if (f == 0.0f) {
-    dest[0] = '0';
-    dest[1] = 0;
-    return 1;
-  }
-
   const uint32_t bits = get_fbits(f);
   const bool neg = !!(get_fbits(f)&flt_signmask);
+
+  if ((bits&~flt_signmask) == 0) {
+    if (neg) {
+      dest[0] = '-';
+      dest[1] = '0';
+      dest[2] = 0;
+      return 2;
+    } else {
+      dest[0] = '0';
+      dest[1] = 0;
+      return 1;
+    }
+  }
 
   if ((bits&flt_expmask) == flt_expmask) {
     // not a finite number
