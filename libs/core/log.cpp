@@ -58,12 +58,12 @@ struct ColorInfo {
 };
 
 // colors for various predefined types
-static TMap<EName, ColorInfo> ttyColors;
-static TMap<EName, ColorInfo> engineColors;
+static TMap<vuint32, ColorInfo> ttyColors;
+static TMap<vuint32, ColorInfo> engineColors;
 
-static inline const char *GetColorInfoFromMap (TMap<EName, ColorInfo> &map, EName type, bool &reset) noexcept {
-  auto pp = map.find(type);
-  if (!pp) pp = map.find(NAME_None);
+static inline const char *GetColorInfoFromMap (TMap<vuint32, ColorInfo> &map, EName type, bool &reset) noexcept {
+  auto pp = map.find((vuint32)type);
+  if (!pp) pp = map.find((vuint32)NAME_None);
   if (pp) {
     reset = pp->resetColor;
     return *pp->color;
@@ -73,15 +73,15 @@ static inline const char *GetColorInfoFromMap (TMap<EName, ColorInfo> &map, ENam
   }
 }
 
-static inline void SetColorInfoToMap (TMap<EName, ColorInfo> &map, EName type, const char *clrstr, bool reset) noexcept {
+static inline void SetColorInfoToMap (TMap<vuint32, ColorInfo> &map, EName type, const char *clrstr, bool reset) noexcept {
   if (clrstr && clrstr[0]) {
     ColorInfo ci;
     ci.color = clrstr;
     ci.resetColor = reset;
     ci.type = type;
-    map.put(type, ci);
+    map.put((vuint32)type, ci);
   } else {
-    map.remove(type);
+    map.remove((vuint32)type);
   }
 }
 
