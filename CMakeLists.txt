@@ -288,8 +288,8 @@ endif(K8_UNFUCK_AS_GCC)
 if(K8_UNFUCK_AS_GCC AND UNIX AND NOT CMAKE_CROSSCOMPILING)
   # i refuse to upgrade, lol
   if("$ENV{USER}" STREQUAL "ketmar")
-    set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -Wabi=10")
-    set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fabi-version=10")
+    set(UNFUCK_GXX_FLAGS "${UNFUCK_GXX_FLAGS} -Wabi=10")
+    set(UNFUCK_GXX_FLAGS "${UNFUCK_GXX_FLAGS} -fabi-version=10")
   endif()
 endif(K8_UNFUCK_AS_GCC AND UNIX AND NOT CMAKE_CROSSCOMPILING)
 
@@ -366,7 +366,8 @@ else(WITH_GCC_IDIOCITY)
   endif()
 endif(WITH_GCC_IDIOCITY)
 
-set(UNFUCK_GXX_FLAGS "${UNFUCK_GCC_FLAGS} ${UNFUCK_GXX_FLAGS}")
+# this protects some shitpp classes from MT code; we don't need this
+set(UNFUCK_GXX_FLAGS "${UNFUCK_GXX_FLAGS} -fno-threadsafe-statics")
 
 
 ###########################
@@ -409,6 +410,10 @@ set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -ffp-contract=off") # do not use fused
 # force gcc to unroll some loops
 set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -funroll-loops")
 set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -fpredictive-commoning")
+
+# consider more optimisation options (from O3):
+#   -ftree-partial-pre
+#   -ftree-loop-distribute-patterns
 
 # and force gcc to not vectrosize (whatever it is)
 set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -fno-tree-vectorize")
