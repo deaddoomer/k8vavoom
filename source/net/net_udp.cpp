@@ -118,8 +118,9 @@ double VUdpDriver::blocktime;
 static VUdpDriver Impl;
 
 #define IPAddrBufMax  (32)
-static thread_local char ipaddrbuf[64][IPAddrBufMax];
-static thread_local unsigned ipaddrbufcurr = 0;
+// should not be called from non-main thread
+static /*thread_local*/ char ipaddrbuf[64][IPAddrBufMax];
+static /*thread_local*/ unsigned ipaddrbufcurr = 0;
 
 
 //==========================================================================
