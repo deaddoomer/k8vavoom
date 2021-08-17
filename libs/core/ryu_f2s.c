@@ -35,6 +35,8 @@
 #ifdef RYU_DEBUG
 #include <stdio.h>
 #endif
+//#include <stdio.h>
+
 
 /*#include "ryu/common.h"*/
 // Returns the number of decimal digits in v, which must not contain more than 9 digits.
@@ -676,32 +678,140 @@ char* f2s(float f) {
 
 
 /******************************************************************************/
+#define DBL_MANT_EXTRA_BIT  (0x0010000000000000UL)
+#define DBL_MANT_MASK       (0x000FFFFFFFFFFFFFUL)
+#define DBL_SIGN_MASK       (0x8000000000000000UL)
+#define DBL_EXP_SHIFT       (52)
+#define DBL_EXP_SMASK       (0x7FFU)
+#define DBL_EXP_OFFSET      (1023)
+
+
+static inline double make_inf_dbl (int negative) {
+  uint64_t uvinf = 0x7FF0000000000000UL;
+  if (negative) uvinf |= DBL_SIGN_MASK;
+  return *(const __attribute__((__may_alias__)) double *)&uvinf;
+}
+
+
+static double ldexp_intr_dbl (const double d, int pwr) {
+  if (pwr == 0) return d;
+  uint64_t n = *(const __attribute__((__may_alias__)) uint64_t *)&d;
+  int exp = (n>>DBL_EXP_SHIFT)&DBL_EXP_SMASK;
+  if (exp == 0 || exp == DBL_EXP_SMASK) return d;
+  if (pwr < 0) {
+    if (pwr < -((int)(DBL_EXP_SMASK-1))) return 0.0;
+    if ((exp += pwr) <= 0) return 0.0;
+  } else {
+    if (pwr > (int)DBL_EXP_SMASK-1) {
+      return make_inf_dbl((n&DBL_SIGN_MASK) != 0);
+    }
+    if ((exp += pwr) >= (int)DBL_EXP_SMASK) { //k8: i am unsure about `int` here
+      return make_inf_dbl((n&DBL_SIGN_MASK) != 0);
+    }
+  }
+  n &= DBL_MANT_MASK|DBL_SIGN_MASK;
+  n |= ((uint64_t)(exp&DBL_EXP_SMASK))<<DBL_EXP_SHIFT;
+  return *(const __attribute__((__may_alias__)) double *)&n;
+}
+
+
 #define FLOAT_MANTISSA_BITS  23
 #define FLOAT_EXPONENT_BITS  8
 #define FLOAT_EXPONENT_BIAS  127
+#define FLOAT_EXPONENT_MASK  0xff
+#define FLOAT_MANTISSA_MASK  0x7fffffu
+#define FLOAT_SIGN_MASK      0x80000000u
+#define FLOAT_QUIETNAN_MASK  0x400000u
 
 
-static inline uint32_t floor_log2(const uint32_t value) {
-  return 31 - __builtin_clz(value);
+static inline __attribute__((always_inline)) uint32_t floor_log2 (const uint32_t value) {
+  return 31-__builtin_clz(value);
 }
 
 
-// The max function is already defined on Windows.
-static inline int32_t max32(int32_t a, int32_t b) {
-  return a < b ? b : a;
+static inline __attribute__((always_inline)) int32_t max32 (const int32_t a, const int32_t b) {
+  return (a < b ? b : a);
 }
 
-static inline float int32Bits2Float(uint32_t bits) {
-  float f;
-  memcpy(&f, &bits, sizeof(float));
-  return f;
+static inline __attribute__((always_inline)) float int32Bits2Float (const uint32_t bits) {
+  return *(const __attribute__((__may_alias__)) float *)&bits;
 }
 
 
-int ryu_s2f (const char *buffer, const int len, float *result) {
+static inline float make_inf_flt (int negative) {
+  uint32_t uinf = (FLOAT_EXPONENT_MASK<<FLOAT_MANTISSA_BITS);
+  if (negative) uinf |= FLOAT_SIGN_MASK;
+  return int32Bits2Float(uinf);
+}
+
+
+static inline float make_nan_flt (int negative, int signaling, uint32_t payload) {
+  payload &= (FLOAT_MANTISSA_MASK&~FLOAT_QUIETNAN_MASK);
+  if (!signaling) payload |= FLOAT_QUIETNAN_MASK;
+  payload |= (FLOAT_EXPONENT_MASK<<FLOAT_MANTISSA_BITS);
+  if (negative) payload |= FLOAT_SIGN_MASK;
+  return int32Bits2Float(payload);
+}
+
+
+static inline float make_zero_flt (int negative) {
+  uint32_t uzero = 0u;
+  if (negative) uzero |= FLOAT_SIGN_MASK;
+  return int32Bits2Float(uzero);
+}
+
+
+static float ldexp_intr_flt (const float f, int pwr) {
+  if (pwr == 0) return f;
+  uint32_t n = *(const __attribute__((__may_alias__)) uint32_t *)&f;
+  int exp = (n>>FLOAT_MANTISSA_BITS)&FLOAT_EXPONENT_MASK;
+  if (exp == 0 || exp == FLOAT_EXPONENT_MASK) return f; // zero, denormal, inf/nan
+  if (pwr < 0) {
+    if (pwr < -((int)(FLOAT_EXPONENT_MASK-1))) return (float)ldexp_intr_dbl((double)f, pwr); // precision loss
+    if ((exp += pwr) <= 0) return (float)ldexp_intr_dbl((double)f, pwr); // precision loss (denormal)
+  } else {
+    if (pwr > (int)FLOAT_EXPONENT_MASK-1) return make_inf_flt(n&FLOAT_SIGN_MASK);
+    if ((exp += pwr) >= (int)FLOAT_EXPONENT_MASK) return make_inf_flt(n&FLOAT_SIGN_MASK);
+  }
+  n &= FLOAT_MANTISSA_MASK|FLOAT_SIGN_MASK;
+  n |= ((uint32_t)(exp&FLOAT_EXPONENT_MASK))<<FLOAT_MANTISSA_BITS;
+  return *(const __attribute__((__may_alias__)) float *)&n;
+}
+
+
+static inline int hexDigit (const int ch) {
+  return
+    ch >= '0' && ch <= '9' ? ch-'0' :
+    ch >= 'A' && ch <= 'F' ? ch-'A'+10 :
+    ch >= 'a' && ch <= 'f' ? ch-'a'+10 :
+    -1;
+}
+
+
+static inline int isGoodTrailingChar (const char ch) {
+  return
+    ch == 'f' || ch == 'F' ||
+    ch == 'l' || ch == 'L';
+}
+
+
+//==========================================================================
+//
+//  ryu_s2f
+//
+//==========================================================================
+int ryu_s2f (const char *buffer, int len, float *result, const unsigned flags) {
+  // default value: quiet positive nan with all bits set
+  if (result) *result = make_nan_flt(0, 0, FLOAT_MANTISSA_MASK);
+
   if (!buffer || !result || len < 0) return RYU_INVALID_ARGS;
+
+  // trim spaces
+  while (len > 0 && (uint8_t)buffer[0] <= 32) { ++buffer; --len; }
+  while (len > 0 && (uint8_t)buffer[len-1] <= 32) --len;
+
   if (len == 0) return RYU_INPUT_TOO_SHORT;
-  if (len > 1024) return RYU_INPUT_TOO_LONG;
+  if (len > 256) return RYU_INPUT_TOO_LONG;
 
   int m10digits = 0;
   int e10digits = 0;
@@ -720,29 +830,107 @@ int ryu_s2f (const char *buffer, const int len, float *result) {
     ++i;
   }
 
+  // inf/nan
   if (len-i >= 3) {
     if ((buffer[i+0] == 'i' || buffer[i+0] == 'I') &&
         (buffer[i+1] == 'n' || buffer[i+1] == 'N') &&
-        (buffer[i+2] == 'f' || buffer[i+1] == 'F'))
+        (buffer[i+2] == 'f' || buffer[i+2] == 'F'))
     {
+      if ((flags&RYU_FLAG_ALLOW_INF) == 0) return RYU_MALFORMED_INPUT;
       if (len-i != 3) return RYU_MALFORMED_INPUT;
-      const uint32_t ieee = (((uint32_t)signedM)<<(FLOAT_EXPONENT_BITS+FLOAT_MANTISSA_BITS))|(0xffu<<FLOAT_MANTISSA_BITS);
-      *result = int32Bits2Float(ieee);
+      *result = make_inf_flt(signedM);
       return RYU_SUCCESS;
     }
     if ((buffer[i+0] == 'n' || buffer[i+0] == 'N') &&
         (buffer[i+1] == 'a' || buffer[i+1] == 'A') &&
-        (buffer[i+2] == 'n' || buffer[i+1] == 'N'))
+        (buffer[i+2] == 'n' || buffer[i+2] == 'N'))
     {
+      if ((flags&RYU_FLAG_ALLOW_NAN) == 0) return RYU_MALFORMED_INPUT;
       if (len-i != 3) return RYU_MALFORMED_INPUT;
-      // quiet nan
-      const uint32_t ieee = (((uint32_t)signedM)<<(FLOAT_EXPONENT_BITS+FLOAT_MANTISSA_BITS))|(0xffu<<FLOAT_MANTISSA_BITS)|(0x01<<(FLOAT_MANTISSA_BITS-1));
-      *result = int32Bits2Float(ieee);
+      *result = make_nan_flt(signedM, 0, 0);
       return RYU_SUCCESS;
     }
   }
 
   int wasDigits = 0;
+
+  // 0x literals
+  // this cannot parse denormals for now
+  if (len-i >= 2 && buffer[i] == '0' && (buffer[i+1] == 'x' || buffer[i+1] == 'X')) {
+    i += 2;
+    if (i >= len || hexDigit(buffer[i]) < 0) return RYU_MALFORMED_INPUT;
+    int ftype = -1; // 0: zero; 1: normalized
+    int collexp = 0; // *binary* digits after the dot
+    // collect into float; it is ok, as we are operating powers of two, not decimals
+    float fv = 0.0f;
+    while (i < len) {
+      const char ch = buffer[i];
+      if (wasDigits && ch == '_') { ++i; continue; }
+      if (ch == '.') {
+        if (ftype >= 0) return RYU_MALFORMED_INPUT; // double dot, wtf?!
+        ftype = (fv != 0.0f);
+      } else {
+        const int hd = hexDigit(ch);
+        if (hd < 0) break;
+        wasDigits = 1;
+        if (ftype == 0) {
+          if (hd != 0) return RYU_MALFORMED_INPUT; // denormalised numbers aren't supported
+        } else {
+          // check for overflow here
+          fv = fv*16.0f;
+          fv += (float)hd;
+          if (ftype > 0) collexp += 4;
+        }
+      }
+      ++i;
+    }
+    if (!wasDigits) return RYU_MALFORMED_INPUT;
+    // parse exponent
+    int exp = 0;
+    int expneg = 0;
+    if (i < len && (buffer[i] == 'p' || buffer[i] == 'P')) {
+      ++i;
+      if (i >= len) return RYU_MALFORMED_INPUT;
+      wasDigits = 0;
+      switch (buffer[i]) {
+        case '-':
+          expneg = 1;
+          /* fallthrough */
+        case '+':
+          ++i;
+          break;
+      }
+      while (i < len) {
+        const char ch = buffer[i];
+        if (wasDigits && ch == '_') { ++i; continue; }
+        if (ch < '0' || ch > '9') break;
+        wasDigits = 1;
+        exp = exp*10+(ch-'0');
+        if (exp > 0x00ffffff) exp = 0x0ffffff;
+        ++i;
+      }
+      if (!wasDigits) return RYU_MALFORMED_INPUT;
+    }
+    // done
+    // skip trailing 'f' or 'l', if any
+    if (i < len && isGoodTrailingChar(buffer[i])) ++i;
+    if (i < len) return RYU_MALFORMED_INPUT;
+    // zero?
+    if (ftype == 0) {
+      *result = make_zero_flt(signedM);
+      return RYU_SUCCESS;
+    }
+    if (expneg) exp = -exp;
+    exp -= collexp;
+    if (signedM) fv = -fv;
+    //fprintf(stderr, "ftype:%d; collexp:%d; exp:%d; expneg:%d; fv=%g : %a (0x%08x)\n", ftype, collexp, exp, expneg, fv, fv, *(const __attribute__((__may_alias__)) uint32_t *)&fv);
+    if (exp != 0) fv = ldexp_intr_flt(fv, exp);
+    *result = fv;
+    return RYU_SUCCESS;
+  }
+
+  // normal numbers
+  wasDigits = 0;
   int e10add = 0;
   for (; i < len; ++i) {
     char c = buffer[i];
@@ -756,7 +944,7 @@ int ryu_s2f (const char *buffer, const int len, float *result) {
     if (wasDigits < 0) {
       // too big
       ++e10add;
-      if (e10add > 128) return RYU_INPUT_TOO_LONG;
+      //if (e10add > 128) return RYU_INPUT_TOO_LONG;
       continue;
     }
     wasDigits = 1;
@@ -799,6 +987,8 @@ int ryu_s2f (const char *buffer, const int len, float *result) {
     }
     if (!wasDigits) return RYU_MALFORMED_INPUT;
   }
+  // skip trailing 'f' or 'l', if any
+  if (i < len && isGoodTrailingChar(buffer[i])) ++i;
   if (i < len) return RYU_MALFORMED_INPUT;
 
   // if exponent is too big, return +/-Infinity or +/-0 instead
@@ -826,14 +1016,12 @@ int ryu_s2f (const char *buffer, const int len, float *result) {
 
   if (m10digits+e10 <= -46 || m10 == 0) {
     // Number is less than 1e-46, which should be rounded down to 0; return +/-0.0
-    const uint32_t ieee = ((uint32_t)signedM)<<(FLOAT_EXPONENT_BITS+FLOAT_MANTISSA_BITS);
-    *result = int32Bits2Float(ieee);
+    *result = make_zero_flt(signedM);
     return RYU_SUCCESS;
   }
   if (m10digits+e10 >= 40) {
     // Number is larger than 1e+39, which should be rounded to +/-Infinity
-    const uint32_t ieee = (((uint32_t)signedM)<<(FLOAT_EXPONENT_BITS+FLOAT_MANTISSA_BITS))|(0xffu<<FLOAT_MANTISSA_BITS);
-    *result = int32Bits2Float(ieee);
+    *result = make_inf_flt(signedM);
     return RYU_SUCCESS;
   }
 
@@ -852,11 +1040,11 @@ int ryu_s2f (const char *buffer, const int len, float *result) {
     //
     // We use floor(log2(5^e10)) so that we get at least this many bits; better to
     // have an additional bit than to not have enough bits.
-    e2 = floor_log2(m10) + e10 + log2pow5(e10) - (FLOAT_MANTISSA_BITS + 1);
+    e2 = floor_log2(m10)+e10+log2pow5(e10)-(FLOAT_MANTISSA_BITS+1);
 
     // We now compute [m10 * 10^e10 / 2^e2] = [m10 * 5^e10 / 2^(e2-e10)].
     // To that end, we use the FLOAT_POW5_SPLIT table.
-    int j = e2 - e10 - ceil_log2pow5(e10) + FLOAT_POW5_BITCOUNT;
+    const int j = e2-e10-ceil_log2pow5(e10)+FLOAT_POW5_BITCOUNT;
     assert(j >= 0);
     m2 = mulPow5divPow2(m10, e10, j);
 
@@ -865,12 +1053,12 @@ int ryu_s2f (const char *buffer, const int len, float *result) {
     // This can only be the case if 2^e2 divides m10 * 10^e10, which in turn requires that the
     // largest power of 2 that divides m10 + e10 is greater than e2. If e2 is less than e10, then
     // the result must be exact. Otherwise we use the existing multipleOfPowerOf2 function.
-    trailingZeros = e2 < e10 || (e2 - e10 < 32 && multipleOfPowerOf2_32(m10, e2 - e10));
+    trailingZeros = e2 < e10 || (e2-e10 < 32 && multipleOfPowerOf2_32(m10, e2-e10));
   } else {
-    e2 = floor_log2(m10) + e10 - ceil_log2pow5(-e10) - (FLOAT_MANTISSA_BITS + 1);
+    e2 = floor_log2(m10)+e10-ceil_log2pow5(-e10)-(FLOAT_MANTISSA_BITS+1);
 
     // We now compute [m10 * 10^e10 / 2^e2] = [m10 / (5^(-e10) 2^(e2-e10))].
-    int j = e2 - e10 + ceil_log2pow5(-e10) - 1 + FLOAT_POW5_INV_BITCOUNT;
+    int j = e2-e10+ceil_log2pow5(-e10)-1+FLOAT_POW5_INV_BITCOUNT;
     m2 = mulPow5InvDivPow2(m10, -e10, j);
 
     // We also compute if the result is exact, i.e.,
@@ -882,7 +1070,7 @@ int ryu_s2f (const char *buffer, const int len, float *result) {
     // If e2-e10 < 0, we have actually computed [m10 * 2^(e10 e2) / 5^(-e10)] above,
     // and we need to check whether 5^(-e10) divides (m10 * 2^(e10-e2)), which is the case iff
     // pow5(m10 * 2^(e10-e2)) = pow5(m10) >= -e10.
-    trailingZeros = (e2 < e10 || (e2 - e10 < 32 && multipleOfPowerOf2_32(m10, e2 - e10)))
+    trailingZeros = (e2 < e10 || (e2-e10 < 32 && multipleOfPowerOf2_32(m10, e2-e10)))
         && multipleOfPowerOf5_32(m10, -e10);
   }
 
@@ -891,19 +1079,18 @@ int ryu_s2f (const char *buffer, const int len, float *result) {
 #endif
 
   // Compute the final IEEE exponent.
-  uint32_t ieee_e2 = (uint32_t) max32(0, e2 + FLOAT_EXPONENT_BIAS + floor_log2(m2));
+  uint32_t ieee_e2 = (uint32_t) max32(0, e2+FLOAT_EXPONENT_BIAS+floor_log2(m2));
 
   if (ieee_e2 > 0xfe) {
     // Final IEEE exponent is larger than the maximum representable; return +/-Infinity.
-    uint32_t ieee = (((uint32_t) signedM) << (FLOAT_EXPONENT_BITS + FLOAT_MANTISSA_BITS)) | (0xffu << FLOAT_MANTISSA_BITS);
-    *result = int32Bits2Float(ieee);
+    *result = make_inf_flt(signedM);
     return RYU_SUCCESS;
   }
 
   // We need to figure out how much we need to shift m2. The tricky part is that we need to take
   // the final IEEE exponent into account, so we need to reverse the bias and also special-case
   // the value 0.
-  int32_t shift = (ieee_e2 == 0 ? 1 : ieee_e2) - e2 - FLOAT_EXPONENT_BIAS - FLOAT_MANTISSA_BITS;
+  int32_t shift = (ieee_e2 == 0 ? 1 : ieee_e2)-e2-FLOAT_EXPONENT_BIAS-FLOAT_MANTISSA_BITS;
   assert(shift >= 0);
 #ifdef RYU_DEBUG
   printf("ieee_e2 = %d\n", ieee_e2);
@@ -915,24 +1102,24 @@ int ryu_s2f (const char *buffer, const int len, float *result) {
   // trailing zeros or the result would otherwise be odd.
   //
   // We need to update trailingZeros given that we have the exact output exponent ieee_e2 now.
-  trailingZeros &= (m2 & ((1u << (shift - 1)) - 1)) == 0;
-  uint32_t lastRemovedBit = (m2 >> (shift - 1)) & 1;
-  bool roundUp = (lastRemovedBit != 0) && (!trailingZeros || (((m2 >> shift) & 1) != 0));
+  trailingZeros &= (m2&((1u<<(shift-1))-1)) == 0;
+  uint32_t lastRemovedBit = (m2>>(shift-1))&1;
+  const bool roundUp = (lastRemovedBit != 0) && (!trailingZeros || (((m2>>shift)&1) != 0));
 
 #ifdef RYU_DEBUG
   printf("roundUp = %d\n", roundUp);
-  printf("ieee_m2 = %u\n", (m2 >> shift) + roundUp);
+  printf("ieee_m2 = %u\n", (m2>>shift)+roundUp);
 #endif
-  uint32_t ieee_m2 = (m2 >> shift) + roundUp;
-  assert(ieee_m2 <= (1u << (FLOAT_MANTISSA_BITS + 1)));
-  ieee_m2 &= (1u << FLOAT_MANTISSA_BITS) - 1;
+  uint32_t ieee_m2 = (m2>>shift)+roundUp;
+  assert(ieee_m2 <= (1u<<(FLOAT_MANTISSA_BITS+1)));
+  ieee_m2 &= (1u<<FLOAT_MANTISSA_BITS)-1;
   if (ieee_m2 == 0 && roundUp) {
     // Rounding up may overflow the mantissa.
     // In this case we move a trailing zero of the mantissa into the exponent.
     // Due to how the IEEE represents +/-Infinity, we don't need to check for overflow here.
-    ieee_e2++;
+    ++ieee_e2;
   }
-  uint32_t ieee = (((((uint32_t) signedM) << FLOAT_EXPONENT_BITS) | (uint32_t)ieee_e2) << FLOAT_MANTISSA_BITS) | ieee_m2;
+  uint32_t ieee = (((((uint32_t)signedM)<<FLOAT_EXPONENT_BITS)|(uint32_t)ieee_e2)<<FLOAT_MANTISSA_BITS)|ieee_m2;
   *result = int32Bits2Float(ieee);
   return RYU_SUCCESS;
 }
