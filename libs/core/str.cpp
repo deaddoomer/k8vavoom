@@ -2956,13 +2956,14 @@ float VStr::ApproxMatch (const char *left, int leftlen, const char *right, int r
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-enum { VA_BUFFER_COUNT = 32 };
+//WARNING! MUST BE POWER OF 2!
+enum { VA_BUFFER_COUNT = 64u };
 
 struct VaBuffer {
   char *buf;
   size_t bufsize;
   bool alloced;
-  char initbuf[32768];
+  char initbuf[1024];
 
   VaBuffer () noexcept : buf(initbuf), bufsize(sizeof(initbuf)), alloced(false) {}
   ~VaBuffer () noexcept { if (alloced) Z_Free(buf); buf = nullptr; alloced = false; bufsize = 0; }
@@ -2981,18 +2982,24 @@ struct VaBuffer {
 };
 
 
-static thread_local VaBuffer vabufs[VA_BUFFER_COUNT];
-static thread_local unsigned vabufcurr = 0;
+// use spinlock instead
+static /*thread_local*/ VaBuffer vabufs[VA_BUFFER_COUNT];
+static /*thread_local*/ unsigned vabufcurr = 0u;
+static uint32_t vabuf_locked = 0u;
 
 
 //==========================================================================
 //
 //  vavarg
 //
+//  not fully thread-safe, but i don't care
+//
 //==========================================================================
 VVA_CHECKRESULT char *vavarg (const char *text, va_list ap) noexcept {
+  // spinlock
+  while (__sync_val_compare_and_swap(&vabuf_locked, 0u, 1u) == 0) {}
   const unsigned bufnum = vabufcurr;
-  vabufcurr = (vabufcurr+1)%VA_BUFFER_COUNT;
+  vabufcurr = (vabufcurr+1u)%VA_BUFFER_COUNT;
   VaBuffer &vbuf = vabufs[bufnum];
   va_list apcopy;
   va_copy(apcopy, ap);
@@ -3004,6 +3011,7 @@ VVA_CHECKRESULT char *vavarg (const char *text, va_list ap) noexcept {
     vsnprintf(vbuf.buf, vbuf.bufsize, text, apcopy);
     va_end(apcopy);
   }
+  __atomic_store_n(&vabuf_locked, 0u, __ATOMIC_SEQ_CST);
   return vbuf.buf;
 }
 
