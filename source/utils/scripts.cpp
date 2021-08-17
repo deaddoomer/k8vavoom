@@ -1328,7 +1328,7 @@ void VScriptParser::ExpectFloat () {
         Float = val;
         GLog.Logf(NAME_Warning, "%s: hex value '%s' for floating constant", *GetLoc().toStringNoCol(), *String);
       } else {
-        float ff = 0;
+        float ff = 0.0f;
         if (!str.convertFloat(&ff)) {
           // mo...dders from LCA loves numbers like "90000000000000000000000000000000000000000000000000"
           const char *s = *str;
@@ -1346,8 +1346,17 @@ void VScriptParser::ExpectFloat () {
           while (*s && *(const vuint8 *)s <= ' ') ++s;
           if (*s) Error(va("Bad floating point constant \"%s\".", *String));
           GLog.Logf(NAME_Warning, "%s: DON'T BE IDIOTS, THIS IS TOO MUCH FOR A FLOAT: '%s'", *GetLoc().toStringNoCol(), *String);
-          ff = 1e14;
+          ff = 1.0e12f;
           if (neg) ff = -ff;
+        } else {
+          if (isNaNF(ff)) Error(va("Bad floating point constant \"%s\".", *String));
+          if (isInfF(ff)) {
+            GLog.Logf(NAME_Warning, "%s: WUTAFUCK IS THIS SO-CALLED FLOAT!? -- '%s'", *GetLoc().toStringNoCol(), *String);
+            ff = (isPositiveF(ff) ? 1.0e12f : -1.0e12f);
+          } else if (ff < -1.0e12f || ff > +1.0e12f) {
+            GLog.Logf(NAME_Warning, "%s: DON'T BE IDIOTS, THIS IS TOO MUCH FOR A FLOAT: '%s'", *GetLoc().toStringNoCol(), *String);
+            if (ff < -1.0e12f) ff = -1.0e12f; else ff = 1.0e12f;
+          }
         }
         Float = ff;
       }
