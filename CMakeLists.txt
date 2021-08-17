@@ -366,8 +366,16 @@ else(WITH_GCC_IDIOCITY)
   endif()
 endif(WITH_GCC_IDIOCITY)
 
+set(UNFUCK_GXX_FLAGS "${UNFUCK_GXX_FLAGS} -Wno-old-style-cast")
+set(UNFUCK_GXX_FLAGS "${UNFUCK_GXX_FLAGS} -Woverloaded-virtual")
+set(UNFUCK_GXX_FLAGS "${UNFUCK_GXX_FLAGS} -Wsign-promo")
+set(UNFUCK_GXX_FLAGS "${UNFUCK_GXX_FLAGS} -Wmultiple-inheritance")
+set(UNFUCK_GXX_FLAGS "${UNFUCK_GXX_FLAGS} -Wvirtual-inheritance")
+
 # this protects some shitpp classes from MT code; we don't need this
 set(UNFUCK_GXX_FLAGS "${UNFUCK_GXX_FLAGS} -fno-threadsafe-statics")
+# who cares, i don't use std
+set(UNFUCK_GXX_FLAGS "${UNFUCK_GXX_FLAGS} -fno-use-cxa-get-exception-ptr")
 
 
 ###########################
