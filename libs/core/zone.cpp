@@ -283,7 +283,7 @@ unsigned Z_GetHashTableSeed () VV_ZONE_NOEXCEPT {
       //fprintf(stderr, "Z_GetHashTableSeed: INITED; val=0x%08x\n", zoneHashTableSeedCurr);
     __atomic_store_n(&zoneHashTableSeedInited, 1u, __ATOMIC_SEQ_CST);
   } else if (inited == 2u) {
-    // spinlick wailing
+    // spinlock waiting
     while (__atomic_load_n(&zoneHashTableSeedInited, __ATOMIC_SEQ_CST) != 1u) {}
   }
   unsigned res = __atomic_add_fetch(&zoneHashTableSeedCurr, 1u, __ATOMIC_SEQ_CST);
