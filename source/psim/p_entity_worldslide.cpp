@@ -306,7 +306,6 @@ float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line
 
         if (debugSlide) {
           if (IsPlayer()) {
-            const TVec cvel = ClipVelocity(dir, hitnormal);
             GLog.Logf(NAME_Debug, "  prevhittime=%g; newhittime=%g; newhitnormal=(%g,%g); newhitpnum=%d; newdir=(%g,%g)", BestSlideFrac, htime, hitnormal.x, hitnormal.y, hitplanenum, cvel.x, cvel.y);
           }
         }
