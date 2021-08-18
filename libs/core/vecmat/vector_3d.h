@@ -196,9 +196,11 @@ public:
 
   // this is slightly slower, but better for axis-aligned vectors
 
+  // it is safe to call this on zero-length vector
   //VVA_ALWAYS_INLINE VVA_CHECKRESULT float Length2D () const noexcept { return (x && y ? sqrtf(VSUM2(x*x, y*y)) : fabsf(x+y)); }
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float length2D () const noexcept { return (x && y ? sqrtf(VSUM2(x*x, y*y)) : fabsf(x+y)); }
 
+  // it is safe to call this on zero-length vector
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float length () const noexcept {
          if (z) { if (x || y) return sqrtf(VSUM3(x*x, y*y, z*z)); else return fabsf(z); }
     else if (x && y) return sqrtf(VSUM2(x*x, y*y));
@@ -217,6 +219,7 @@ public:
   //VVA_ALWAYS_INLINE VVA_CHECKRESULT float DistanceTo2D (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, 0.0f).Length2D(); }
 
   // may return zero distance to very close points
+  // it is safe to call this on zero-length vector
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float distanceTo (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, z-v.z).lengthNoDenormals(); }
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float distanceTo2D (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, 0.0f).length2DNoDenormals(); }
 
@@ -224,12 +227,13 @@ public:
   VVA_ALWAYS_INLINE void normaliseInPlace () noexcept { if (z) { const float invlen = invlength(); x *= invlen; y *= invlen; z *= invlen; } else normalise2DInPlace(); }
   VVA_ALWAYS_INLINE void normalise2DInPlace () noexcept { if (x && y) { const float invlen = invlength2D(); x *= invlen; y *= invlen; } else { x = signval(x); y = signval(y); } }
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec normalised () const noexcept { if (z) { const float invlen = invlength(); return TVec(x*invlen, y*invlen, z*invlen); } else return normalised2D(); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec normalised2D () const noexcept { if (x && y) { const float invlen = invlength2D(); return TVec(x*invlen, y*invlen, 0.0f); } else return TVec(signval(x), signval(y), 0.0f); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec normalise () const noexcept { if (z) { const float invlen = invlength(); return TVec(x*invlen, y*invlen, z*invlen); } else return normalise2D(); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec normalise2D () const noexcept { if (x && y) { const float invlen = invlength2D(); return TVec(x*invlen, y*invlen, 0.0f); } else return TVec(signval(x), signval(y), 0.0f); }
   */
 
   // this is slightly slower, but better for axis-aligned vectors
 
+  // it is safe to call this on zero-length vector
   VVA_ALWAYS_INLINE void normalise2DInPlace () noexcept {
     if (x && y) {
       const float invlen = invlength2D();
@@ -243,6 +247,7 @@ public:
     z = 0.0f;
   }
 
+  // it is safe to call this on zero-length vector
   VVA_ALWAYS_INLINE void normaliseInPlace () noexcept {
     if (z) {
       if (x || y) {
@@ -258,12 +263,14 @@ public:
     }
   }
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec normalised2D () const noexcept {
+  // it is safe to call this on zero-length vector
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec normalise2D () const noexcept {
     if (x && y) { const float invlen = invlength2D(); return TVec(zeroDenormalsF(x*invlen), zeroDenormalsF(y*invlen), 0.0f); }
     else return TVec(floatSign(x), floatSign(y), 0.0f);
   }
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec normalised () const noexcept {
+  // it is safe to call this on zero-length vector
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec normalise () const noexcept {
     if (z) {
       if (x || y) {
         const float invlen = invlength();
@@ -273,7 +280,7 @@ public:
         return TVec(0.0f, 0.0f, floatSign(z));
       }
     } else {
-      return normalised2D();
+      return normalise2D();
     }
   }
 
@@ -479,10 +486,10 @@ static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float Length2DSquared (con
 static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float length2DSquared (const TVec &v) noexcept { return v.length2DSquared(); }
 */
 
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec Normalise (const TVec &v) noexcept { return v.normalised(); }
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec normalise (const TVec &v) noexcept { return v.normalised(); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec Normalise (const TVec &v) noexcept { return v.normalise(); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec normalise (const TVec &v) noexcept { return v.normalise(); }
 
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec normalise2D (const TVec &v) noexcept { return v.normalised2D(); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec normalise2D (const TVec &v) noexcept { return v.normalise2D(); }
 
 //static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float DotProduct (const TVec &v1, const TVec &v2) noexcept { return v1.dot(v2); }
 //static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float dot (const TVec &v1, const TVec &v2) noexcept { return v1.dot(v2); }

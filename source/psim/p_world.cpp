@@ -226,7 +226,7 @@ void VPathTraverse::Init (VThinker *Self, const TVec &p0, const TVec &p1, int fl
     trace_org = TVec(x1, y1, 0);
     trace_dest = TVec(x2, y2, 0);
     trace_delta = trace_dest-trace_org;
-    trace_dir = trace_delta.normalised();
+    trace_dir = trace_delta.normalise();
     trace_len = (trace_delta.x || trace_delta.y ? trace_delta.length() : 0.0f);
     trace_plane.SetPointDirXY(trace_org, trace_delta);
 

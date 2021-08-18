@@ -138,7 +138,7 @@ static bool SightPassRegionPlaneTexture (SightTraceInfo &trace, const sec_region
     taxis = TVec(s, -c)*(FTex->TextureTScale()*spl.splane->YScale);
   } else {
     const TVec taxisLM = TVec(0.0f, 0.0f, -1.0f);
-    const TVec saxisLM = spl.GetNormal().cross(taxisLM).normalised();
+    const TVec saxisLM = spl.GetNormal().cross(taxisLM).normalise();
     taxis = taxisLM*(FTex->TextureTScale()*spl.splane->YScale);
     saxis = saxisLM*(FTex->TextureSScale()*spl.splane->XScale);
   }

@@ -2454,14 +2454,14 @@ VExpression *VInvocation::OptimizeBuiltin (VEmitContext &ec) {
         return this;
       }
       v0 = ((VVectorExpr *)Args[0])->GetConstValue();
-      v0.normaliseInPlace(); //v0 = v0.normalised();
+      v0.normaliseInPlace(); //v0 = v0.normalise();
       if (!v0.isValid()) return this;
       e = new VVectorExpr(v0, Loc);
       break;
     case OPC_Builtin_VecNormalize2D:
       if (!CheckSimpleConstArgs(1, (const int []){TYPE_Vector})) return this;
       v0 = ((VVectorExpr *)Args[0])->GetConstValue();
-      v0.normalise2DInPlace(); //v0 = v0.normalised2D();
+      v0.normalise2DInPlace(); //v0 = v0.normalise2D();
       if (!v0.isValid()) return this;
       e = new VVectorExpr(v0, Loc);
       break;

@@ -160,7 +160,7 @@ TVec surface_t::CalculateRealCentroid () const noexcept {
       // first one
       pdir = cv-lastv1;
       if (pdir.lengthSquared() >= 0.2f*0.2f) {
-        pdir = pdir.normalised();
+        pdir = pdir.normalise();
         cp += lastv1;
         ccnt = 1;
       }
@@ -168,7 +168,7 @@ TVec surface_t::CalculateRealCentroid () const noexcept {
       // are we making a turn here?
       TVec xdir = cv-lastv1;
       if (xdir.lengthSquared() >= 0.2f*0.2f) {
-        xdir = xdir.normalised();
+        xdir = xdir.normalise();
         // dot product for two normalized vectors is cosine between them
         // cos(0) is 1, so if it isn't, we have a turn
         // cos(180) is -1, but it doesn't matter here
@@ -181,7 +181,7 @@ TVec surface_t::CalculateRealCentroid () const noexcept {
           cp += lastv1;
           ++ccnt;
           // and remember new direction
-          pdir = (cv-lastv1).normalised();
+          pdir = (cv-lastv1).normalise();
         }
       }
     }

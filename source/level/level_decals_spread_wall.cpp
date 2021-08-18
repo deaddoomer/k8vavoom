@@ -283,7 +283,7 @@ void VLevel::PutDecalAtLine (const TVec &aorg, float lineofs, VDecalDef *dec, in
       float s, c;
       msincos(ang, &s, &c);
       //taxis = TVec(s*seg->dir.x, s*seg->dir.y, -c);
-      //saxis = seg->normal.cross(taxis).normalised();
+      //saxis = seg->normal.cross(taxis).normalise();
       //org.z -= c;
       GCon->Logf(NAME_Debug, "decal '%s' at line #%d: size=(%g,%g); s=%g; c=%g", *dec->name, (int)(ptrdiff_t)(li-&Lines[0]), twdt, thgt, s, c);
       //org.x += 4;

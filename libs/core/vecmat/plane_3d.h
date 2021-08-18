@@ -120,7 +120,7 @@ public:
   // initialises "full" plane from point and direction (direction will be normalised)
   inline void SetPointNormal3DSafe (const TVec &point, const TVec &dir) noexcept {
     if (dir.toBool() && point.isValid()) {
-      normal = dir.normalised();
+      normal = dir.normalise();
       if (normal.toBool()) {
         dist = point.dot(normal);
       } else {
@@ -142,7 +142,7 @@ public:
 
   // the normal will point out of the clock for clockwise ordered points
   VVA_ALWAYS_INLINE void SetFromTriangle (const TVec &a, const TVec &b, const TVec &c) noexcept {
-    normal = (c-a).cross(b-a).normalised();
+    normal = (c-a).cross(b-a).normalise();
     dist = a.dot(normal);
   }
 

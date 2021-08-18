@@ -464,7 +464,7 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
       if (dot > 0.999848f || dot < -0.999848f) return; // cos(1 degree) = 0.999848f
       sprup = TVec(0.0f, 0.0f, 1.0f);
       // sprup.cross(Drawer->viewforward)
-      sprright = TVec(Drawer->viewforward.y, -Drawer->viewforward.x, 0.0f).normalised2D();
+      sprright = TVec(Drawer->viewforward.y, -Drawer->viewforward.x, 0.0f).normalise2D();
       // sprright.cross(sprup)
       sprforward = TVec(-sprright.y, sprright.x, 0.0f);
       break;
@@ -476,12 +476,12 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
       // cross product will be between two nearly parallel vectors and
       // starts to approach an undefined state, so we don't draw if the two
       // vectors are less than 1 degree apart
-      tvec = (sprorigin-Drawer->vieworg).normalised();
+      tvec = (sprorigin-Drawer->vieworg).normalise();
       dot = tvec.z; // same as tvec.dot(sprup), because sprup is 0, 0, 1
       if (dot > 0.999848f || dot < -0.999848f) return; // cos(1 degree) = 0.999848f
       sprup = TVec(0.0f, 0.0f, 1.0f);
       // sprup.cross(-sprorigin)
-      sprright = TVec(tvec.y, -tvec.x, 0.0f).normalised2D();
+      sprright = TVec(tvec.y, -tvec.x, 0.0f).normalise2D();
       // sprright.cross(sprup)
       sprforward = TVec(-sprright.y, sprright.x, 0.0f);
       break;
@@ -531,7 +531,7 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
       cr = mcos(thing->Angles.roll);
 
       // TVec(0.0f, 0.0f, 1.0f).cross(Drawer->viewforward)
-      tvec = TVec(Drawer->viewforward.y, -Drawer->viewforward.x, 0.0f).normalised2D();
+      tvec = TVec(Drawer->viewforward.y, -Drawer->viewforward.x, 0.0f).normalise2D();
       // tvec.cross(TVec(0.0f, 0.0f, 1.0f))
       sprforward = TVec(-tvec.y, tvec.x, 0.0f);
       // Rotate
@@ -771,7 +771,7 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
           angs.pitch = -90;
           if (r_fake_3dshadow_mode.asInt() == 0) {
             // direction to the thing
-            TVec spdir = TVec(sprorigin.x-Drawer->vieworg.x, sprorigin.y-Drawer->vieworg.y).normalised();
+            TVec spdir = TVec(sprorigin.x-Drawer->vieworg.x, sprorigin.y-Drawer->vieworg.y).normalise();
             const float ato = VectorAngleYaw(spdir);
             angs.roll = AngleMod(ato+180.0f);
           } else {

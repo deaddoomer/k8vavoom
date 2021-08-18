@@ -163,7 +163,7 @@ void TFrustum::setup (const TClipBase &clipbase, const TFrustumParam &fp, bool c
       VSUM3(v.x*fp.vright.x, v.y*fp.vup.x, /*v.z* */fp.vforward.x),
       VSUM3(v.x*fp.vright.y, v.y*fp.vup.y, /*v.z* */fp.vforward.y),
       VSUM3(v.x*fp.vright.z, v.y*fp.vup.z, /*v.z* */fp.vforward.z));
-    planes[i].SetPointNormal3D(fp.origin, v2.normalised());
+    planes[i].SetPointNormal3D(fp.origin, v2.normalise());
     planes[i].clipflag = 1U<<i;
   }
   // create back plane

@@ -727,7 +727,7 @@ void VUdmfParser::ParseSector (VLevel *Level) {
   // floor
   if (fpvalid[0] && fpvalid[1] && fpvalid[2] && fpvalid[3]) {
     TPlane pl;
-    pl.normal = TVec(fval[0], fval[1], fval[2]).normalised();
+    pl.normal = TVec(fval[0], fval[1], fval[2]).normalise();
     if (pl.normal.isValid() && !pl.normal.isZero() && fabsf(pl.normal.z) > 0.01f) {
       pl.dist = -fval[3];
       if (pl.normal.z < 0) pl.FlipInPlace();
@@ -738,7 +738,7 @@ void VUdmfParser::ParseSector (VLevel *Level) {
   // ceiling
   if (cpvalid[0] && cpvalid[1] && cpvalid[2] && cpvalid[3]) {
     TPlane pl;
-    pl.normal = TVec(cval[0], cval[1], cval[2]).normalised();
+    pl.normal = TVec(cval[0], cval[1], cval[2]).normalise();
     if (pl.normal.isValid() && !pl.normal.isZero() && fabsf(pl.normal.z) > 0.01f) {
       pl.dist = -cval[3];
       if (pl.normal.z > 0) pl.FlipInPlace();

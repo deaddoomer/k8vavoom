@@ -46,11 +46,14 @@
 //
 //==========================================================================
 float VLevel::SweepLinedefAABB (const line_t *ld, TVec vstart, TVec vend, TVec bmin, TVec bmax,
-                                TPlane *hitPlane, TVec *contactPoint, CD_HitType *hitType, int *hitplanenum)
+                                TPlane *hitPlane, TVec *contactPoint, CD_HitType *hitType, int *hitplanenum,
+                                float clipEpsilon)
 {
   if (hitType) *hitType = CD_HT_None;
   if (hitplanenum) *hitplanenum = -1;
   if (!ld) return -1.0f;
+
+  const float ceps = (clipEpsilon < 0.0f ? CD_CLIP_EPSILON : clipEpsilon);
 
   float ifrac = -1.0f;
   float ofrac = +1.0f;
@@ -78,21 +81,21 @@ float VLevel::SweepLinedefAABB (const line_t *ld, TVec vstart, TVec vend, TVec b
     if (idist > 0.0f) {
       startsOut = true;
       // if completely in front of face, no intersection with the entire brush
-      if (odist >= CD_CLIP_EPSILON || odist >= idist) return 1.0f;
+      if (odist >= ceps || odist >= idist) return 1.0f;
     }
     //if (odist > 0.0f) endsOut = true;
 
     // crosses plane
     if (idist > odist) {
       // line is entering into the brush
-      const float fr = fmax(0.0f, (idist-CD_CLIP_EPSILON)/(idist-odist));
+      const float fr = fmax(0.0f, (idist-ceps)/(idist-odist));
       if (fr > ifrac) {
         ifrac = fr;
         phit = (int)pidx;
       }
     } else {
       // line is leaving the brush
-      const float fr = fmin(1.0f, (idist+CD_CLIP_EPSILON)/(idist-odist));
+      const float fr = fmin(1.0f, (idist+ceps)/(idist-odist));
       if (fr < ofrac) ofrac = fr;
     }
   }
@@ -123,7 +126,7 @@ float VLevel::SweepLinedefAABB (const line_t *ld, TVec vstart, TVec vend, TVec b
             *contactPoint =
               (ld->v1->x < ld->v2->x ?
                 (*hitType == CD_HT_Right ? *ld->v1 : *ld->v2) :
-                (*hitType == CD_HT_Right ? *ld->v2 : *ld->v1))-(vend-vstart).normalised()*CD_CLIP_EPSILON;
+                (*hitType == CD_HT_Right ? *ld->v2 : *ld->v1))-(vend-vstart).normalise()*ceps;
           }
         } else if (phit > 1 && hpl->normal.x == 0.0f) {
           // top or down side of the box
@@ -132,7 +135,7 @@ float VLevel::SweepLinedefAABB (const line_t *ld, TVec vstart, TVec vend, TVec b
             *contactPoint =
               (ld->v1->y < ld->v2->y ?
                 (*hitType == CD_HT_Bottom ? *ld->v1 : *ld->v2) :
-                (*hitType == CD_HT_Bottom ? *ld->v2 : *ld->v1))-(vend-vstart).normalised()*CD_CLIP_EPSILON;
+                (*hitType == CD_HT_Bottom ? *ld->v2 : *ld->v1))-(vend-vstart).normalise()*ceps;
           }
         } else {
           // point hit
@@ -141,7 +144,7 @@ float VLevel::SweepLinedefAABB (const line_t *ld, TVec vstart, TVec vend, TVec b
             //*contactPoint = TVec((hpl->normal.x < 0.0f ? bmax.x : hpl->normal.x > 0.0f ? bmin.x : 0.0f), (hpl->normal.y < 0.0f ? bmax.y : hpl->normal.y > 0.0f ? bmin.y : 0.0f), bmin.z);
             if (pcount == 4 && ld->v1->x == ld->v2->x && ld->v1->y == ld->v2->y) {
               // point
-              *contactPoint = (*ld->v1)-(vend-vstart).normalised()*CD_CLIP_EPSILON;
+              *contactPoint = (*ld->v1)-(vend-vstart).normalise()*ceps;
             } else {
               bool fixX = false, fixY = false;
               if (hpl->normal.x == 0.0f) {

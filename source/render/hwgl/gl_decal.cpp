@@ -377,7 +377,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
           float s, c;
           msincos(angle, &s, &c);
           taxis = TVec(s*seg->ndir.x, s*seg->ndir.y, -c);
-          saxis = seg->normal.cross(taxis).normalised();
+          saxis = seg->normal.cross(taxis).normalise();
         }
         #endif
 
@@ -452,7 +452,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         #else
         // and this is right, but cannot seam when goes through different slopes
         taxis = TVec(0.0f, -1.0f);
-        saxis = surf->plane.normal.cross(taxis).normalised();
+        saxis = surf->plane.normal.cross(taxis).normalise();
         #endif
 
         saxis *= dtex->TextureSScale()*dscaleXInv;

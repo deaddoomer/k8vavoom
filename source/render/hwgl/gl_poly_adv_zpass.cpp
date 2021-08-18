@@ -184,7 +184,7 @@ void VOpenGLDrawer::RenderSurfaceShadowVolumeZPassIntr (VLevel *Level, const sur
     glBegin(GL_TRIANGLE_FAN);
       for (unsigned f = 0; f < vcount; ++f) {
         //glVertex(dest[f]);
-        TVec vv = (sverts[f].vec()-LightPos).normalised();
+        TVec vv = (sverts[f].vec()-LightPos).normalise();
         vv *= 32767.0f; // kind of infinity
         vv += LightPos;
         glVertex(vv);

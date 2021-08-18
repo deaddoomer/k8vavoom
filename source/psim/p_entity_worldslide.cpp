@@ -218,7 +218,7 @@ float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line
   }
 
   const TVec end(Origin+dir);
-  const TVec normdir(dir.normalised2D());
+  const TVec normdir(dir.normalise2D());
 
   float BestSlideFrac = 1.0f;
   TVec bestVel(0.0f, 0.0f);
@@ -293,12 +293,13 @@ float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line
         if ((li->flags&ML_TWOSIDED) && li->backsector && li->PointOnSide(Origin)) hitnormal = -hitnormal;
 
         const TVec cvel = ClipVelocity(dir, hitnormal);
+        const TVec cvnorm = cvel.normalise2D(); // it is ok to use it on zero vector
 
         if (htime == BestSlideFrac) {
           // prefer velocity that goes to the same dir
           // dot product for two normalized vectors is cosine between them
           // cos(0) is 1, cos(180) is -1
-          const float c = cvel.normalised2D().dot2D(normdir);
+          const float c = normdir.dot2D(cvnorm);
           if (c < 0.0f || c < bestVelCos) continue;
           if (cvel.length2DSquared() < bestVel.length2DSquared()) continue;
         }
@@ -315,7 +316,7 @@ float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line
         if (BestSlideLine) *BestSlideLine = li;
         //lastHitWasGood = (hitplanenum < 2);
         bestVel = cvel;
-        bestVelCos = cvel.normalised2D().dot2D(normdir);
+        bestVelCos = normdir.dot2D(cvnorm);
       }
     }
   }
@@ -498,7 +499,7 @@ void VEntity::SlideMoveSweep (float StepVelScale, bool noPickups) {
       // so swept box can hit nothing, yet `TryMove()` could find a collision
       // in this case we will make our direction longer to find that pesky wall to slide
       TVec ndir(dir);
-      ndir += dir.normalised2D()*8.0f;
+      ndir += dir.normalise2D()*8.0f;
       BestSlideFrac = SlidePathTraverseNew(ndir, &BestSlideNormal, nullptr, true);
       if (BestSlideFrac >= 1.0f) {
         // still no wall, give up
@@ -626,7 +627,7 @@ void VEntity::SlideMoveQ3Like (float StepVelScale, bool noPickups) {
       // so swept box can hit nothing, yet `TryMove()` could find a collision
       // in this case we will make our direction longer to find that pesky wall to slide
       TVec ndir(dir);
-      ndir += dir.normalised2D()*8.0f;
+      ndir += dir.normalise2D()*8.0f;
       BestSlideFrac = SlidePathTraverseNew(ndir, &BestSlideNormal, nullptr, true);
       if (BestSlideFrac >= 1.0f) {
         // still no wall, give up
@@ -802,7 +803,7 @@ TVec VEntity::SlideMoveCamera (TVec org, TVec end, float radius) {
         //GCon->Logf("floor hit! (%g,%g,%g)", ltr.HitPlaneNormal.x, ltr.HitPlaneNormal.y, ltr.HitPlaneNormal.z);
         hp += ltr.HitPlane.normal*2.0f;
       } else {
-        hp -= mdelta.normalised()*2.0f;
+        hp -= mdelta.normalise()*2.0f;
       }
     }
     return hp;
@@ -846,7 +847,7 @@ TVec VEntity::SlideMoveCamera (TVec org, TVec end, float radius) {
     // blocked move; trace back until we got a good position
     // this sux, but we'll do it only once per frame, so...
     float len = (newPos-org).length();
-    TVec dir = (newPos-org).normalised(); // to newpos
+    TVec dir = (newPos-org).normalise(); // to newpos
     //GCon->Logf("*** len=%g; dir=(%g,%g,%g)", len, dir.x, dir.y, dir.z);
     float curr = 1.0f;
     while (curr <= len) {

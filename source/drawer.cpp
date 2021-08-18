@@ -70,8 +70,8 @@ static void CalculateLightViewMatrix (VMatrix4 &ModelMat, const unsigned int fac
   ModelMat.SetIdentity();
 
   const TVec forward = LightViewForward[facenum];
-  const TVec left = LightViewUp[facenum].cross(forward).normalised();
-  const TVec up = forward.cross(left).normalised();
+  const TVec left = LightViewUp[facenum].cross(forward).normalise();
+  const TVec up = forward.cross(left).normalise();
 
   ModelMat.m[0][0] = left.x;
   ModelMat.m[0][1] = left.y;
@@ -429,9 +429,9 @@ void VDrawer::CalcSpotLightFaceView (VMatrix4 &ModelMat, const TVec &origin, uns
   /*
   ModelMat.SetIdentity();
 
-  const TVec forward = LightViewForward[facenum].normalised();
-  const TVec left = LightViewUp[facenum].cross(forward).normalised();
-  const TVec up = forward.cross(left).normalised();
+  const TVec forward = LightViewForward[facenum].normalise();
+  const TVec left = LightViewUp[facenum].cross(forward).normalise();
+  const TVec up = forward.cross(left).normalise();
 
   ModelMat.m[0][0] = left.x;
   ModelMat.m[0][1] = left.y;

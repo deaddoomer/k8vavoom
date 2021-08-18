@@ -278,7 +278,7 @@ void VSky::InitOldSky (int Sky1Texture, int Sky2Texture,
 
       TVec hdir = (j < VDIVS/2 ? surfverts[3].vec()-surfverts[0].vec() : surfverts[2].vec()-surfverts[1].vec());
       TVec vdir = surfverts[0].vec()-surfverts[1].vec();
-      TVec normal = vdir.cross(hdir).normalised();
+      TVec normal = vdir.cross(hdir).normalise();
       s.plane.Set(normal, normal.dot(surfverts[1].vec()));
 
       s.texinfo.saxis = hdir*(1024/HDIVS/hdir.dot(hdir));

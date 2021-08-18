@@ -284,7 +284,7 @@ void VMeshModel::Load_MD2 (const vuint8 *Data, int DataSize) {
         if (hacked) GCon->Log("  hacked around"); else { GCon->Log("  CANNOT FIX"); PlaneNormal = TVec(0, 0, 1); }
       }
       hadError = hadError || reported;
-      PlaneNormal = PlaneNormal.normalised();
+      PlaneNormal = PlaneNormal.normalise();
       const float PlaneDist = PlaneNormal.dot(v3);
       Frame.Planes[j].Set(PlaneNormal, PlaneDist);
       if (reported) {

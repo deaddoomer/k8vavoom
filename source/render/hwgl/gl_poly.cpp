@@ -214,8 +214,8 @@ void VOpenGLDrawer::DoHorizonPolygon (surface_t *surf) {
     v[3] = surf->verts[3].vec();
     const TVec HDir = -surf->GetNormal();
 
-    const TVec Dir1 = (vieworg-surf->verts[1].vec()).normalised();
-    const TVec Dir2 = (vieworg-surf->verts[2].vec()).normalised();
+    const TVec Dir1 = (vieworg-surf->verts[1].vec()).normalise();
+    const TVec Dir2 = (vieworg-surf->verts[2].vec()).normalise();
     float Mul1 = 1.0f/HDir.dot(Dir1);
     v[1] = surf->verts[1].vec()+Dir1*Mul1*Dist;
     const float Mul2 = 1.0f/HDir.dot(Dir2);
@@ -229,8 +229,8 @@ void VOpenGLDrawer::DoHorizonPolygon (surface_t *surf) {
     v[2] = surf->verts[2].vec();
     const TVec HDir = -surf->GetNormal();
 
-    const TVec Dir1 = (vieworg-surf->verts[0].vec()).normalised();
-    const TVec Dir2 = (vieworg-surf->verts[3].vec()).normalised();
+    const TVec Dir1 = (vieworg-surf->verts[0].vec()).normalise();
+    const TVec Dir2 = (vieworg-surf->verts[3].vec()).normalise();
     const float Mul1 = 1.0f/HDir.dot(Dir1);
     v[0] = surf->verts[0].vec()+Dir1*Mul1*Dist;
     const float Mul2 = 1.0f/HDir.dot(Dir2);

@@ -329,7 +329,7 @@ static bool DoUnstuckByAverage (TArray<UnstuckInfo> &uvlist, VEntity *mobj) {
   for (auto &&nfo : uvlist) if (nfo.line) nsum += nfo.unorm;
   nsum.z = 0.0f; // just in case
   if (nsum.isValid() && !nsum.isZero2D()) {
-    nsum = nsum.normalised();
+    nsum = nsum.normalise();
     // good unstuck normal
     #if 0
     // calculate distance to move away

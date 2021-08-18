@@ -1006,13 +1006,13 @@ TVec VLevel::CalcPolyobjCenter2D (polyobj_t *po) noexcept {
       lastv1 = *ld->v1;
       pdir = ((*ld->v2)-lastv1);
       if (pdir.length2DSquared() >= 1.0f) {
-        pdir = pdir.normalised();
+        pdir = pdir.normalise();
         center += lastv1;
         count = 1;
       }
     } else {
       // are we making a turn here?
-      const TVec xdir = ((*ld->v2)-lastv1).normalised();
+      const TVec xdir = ((*ld->v2)-lastv1).normalise();
       if (fabsf(xdir.dot(pdir)) < 1.0f-0.0001f) {
         // looks like we did made a turn
         // we have a new point
@@ -1022,7 +1022,7 @@ TVec VLevel::CalcPolyobjCenter2D (polyobj_t *po) noexcept {
         center += lastv1;
         ++count;
         // and remember new direction
-        pdir = ((*ld->v2)-lastv1).normalised();
+        pdir = ((*ld->v2)-lastv1).normalise();
       }
     }
   }

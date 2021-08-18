@@ -434,7 +434,7 @@ void VRenderLevelLightmap::CalcPoints (LMapTraceInfo &lmi, const surface_t *surf
           }
 
           const TVec fms = facemid-(*spt);
-          *spt += stfixStep*fms.normalised();
+          *spt += stfixStep*fms.normalise();
         }
         // just in case
         /*

@@ -792,15 +792,15 @@ VMatrix4 VMatrix4::lookAt (const TVec &eye, const TVec &center, const TVec &up) 
 //==========================================================================
 VMatrix4 &VMatrix4::lookingAt (const TVec &target) noexcept {
   TVec position(m[3][0], m[3][1], m[3][2]);
-  TVec forward = (target-position).normalised();
+  TVec forward = (target-position).normalise();
   TVec up(0.0f, 0.0f, 0.0f);
   if (fabsf(forward.x) < 0.0001f && fabsf(forward.z) < 0.0001f) {
     up.z = (forward.y > 0.0f ? -1.0f : 1.0f);
   } else {
     up.y = 1.0f;
   }
-  TVec left = up.cross(forward).normalised();
-  up = forward.cross(left).normalised(); //k8: `normalized` was commented out; why?
+  TVec left = up.cross(forward).normalise();
+  up = forward.cross(left).normalise(); //k8: `normalized` was commented out; why?
   m[0][0] = left.x;
   m[0][1] = left.y;
   m[0][2] = left.z;
@@ -821,9 +821,9 @@ VMatrix4 &VMatrix4::lookingAt (const TVec &target) noexcept {
 //==========================================================================
 VMatrix4 &VMatrix4::lookingAt (const TVec &target, const TVec &upVec) noexcept {
   TVec position = TVec(m[3][0], m[3][1], m[3][2]);
-  TVec forward = (target-position).normalised();
-  TVec left = upVec.cross(forward).normalised();
-  TVec up = forward.cross(left).normalised();
+  TVec forward = (target-position).normalise();
+  TVec left = upVec.cross(forward).normalise();
+  TVec up = forward.cross(left).normalise();
   m[0][0] = left.x;
   m[0][1] = left.y;
   m[0][2] = left.z;

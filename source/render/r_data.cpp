@@ -1287,7 +1287,7 @@ static void ParseLightDef (VScriptParser *sc, int LightType) {
       L->ConeDir.y = sc->Float;
       sc->ExpectFloat();
       L->ConeDir.z = sc->Float;
-      L->ConeDir = L->ConeDir.normalised();
+      L->ConeDir = L->ConeDir.normalise();
       if (!L->ConeDir.isValid()) L->ConeDir = TVec(0.0f, 0.0f, 0.0f);
       continue;
     }

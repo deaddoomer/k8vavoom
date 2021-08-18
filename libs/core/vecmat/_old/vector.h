@@ -285,10 +285,10 @@ static VVA_OKUNUSED VVA_CHECKRESULT inline float lengthSquared (const TVec &v) n
 static VVA_OKUNUSED VVA_CHECKRESULT inline float Length2DSquared (const TVec &v) noexcept { return v.length2DSquared(); }
 static VVA_OKUNUSED VVA_CHECKRESULT inline float length2DSquared (const TVec &v) noexcept { return v.length2DSquared(); }
 
-static VVA_OKUNUSED VVA_CHECKRESULT inline TVec Normalise (const TVec &v) noexcept { return v.normalised(); }
-static VVA_OKUNUSED VVA_CHECKRESULT inline TVec normalise (const TVec &v) noexcept { return v.normalised(); }
+static VVA_OKUNUSED VVA_CHECKRESULT inline TVec Normalise (const TVec &v) noexcept { return v.normalise(); }
+static VVA_OKUNUSED VVA_CHECKRESULT inline TVec normalise (const TVec &v) noexcept { return v.normalise(); }
 
-static VVA_OKUNUSED VVA_CHECKRESULT inline TVec normalise2D (const TVec &v) noexcept { return v.normalised2D(); }
+static VVA_OKUNUSED VVA_CHECKRESULT inline TVec normalise2D (const TVec &v) noexcept { return v.normalise2D(); }
 
 static VVA_OKUNUSED VVA_CHECKRESULT inline float DotProduct (const TVec &v1, const TVec &v2) noexcept { return v1.dot(v2); }
 static VVA_OKUNUSED VVA_CHECKRESULT inline float dot (const TVec &v1, const TVec &v2) noexcept { return v1.dot(v2); }
@@ -490,7 +490,7 @@ public:
   // initialises "full" plane from point and direction
   inline void SetPointNormal3DSafe (const TVec &point, const TVec &norm) noexcept {
     if (norm.isValid() && point.isValid() && !norm.isZero()) {
-      normal = norm.normalised();
+      normal = norm.normalise();
       if (normal.isValid() && !normal.isZero()) {
         dist = DotProduct(point, normal);
       } else {
@@ -512,7 +512,7 @@ public:
 
   // the normal will point out of the clock for clockwise ordered points
   inline void SetFromTriangle (const TVec &a, const TVec &b, const TVec &c) noexcept {
-    normal = (c-a).cross(b-a).normalised();
+    normal = (c-a).cross(b-a).normalise();
     dist = DotProduct(a, normal);
   }
 

@@ -46,7 +46,7 @@ void VLevel::CalcLine (line_t *line) {
   }
 
   line->SetPointDirXY(*line->v1, line->dir);
-  line->ndir = line->dir.normalised2D();
+  line->ndir = line->dir.normalise2D();
 
   // calc line's bounding box
   line->bbox2d[BOX2D_LEFT] = min2(line->v1->x, line->v2->x);
@@ -110,7 +110,7 @@ void VLevel::CalcSegPlaneDir (seg_t *seg) {
       seg->ndir = TVec((seg->v1->x < seg->v2->x ? 1.0f : -1.0f), 0.0f, 0.0f);
     } else {
       // sloped
-      seg->ndir = ((*seg->v2)-(*seg->v1)).normalised2D();
+      seg->ndir = ((*seg->v2)-(*seg->v1)).normalise2D();
     }
   }
 

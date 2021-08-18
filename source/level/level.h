@@ -833,9 +833,10 @@ public:
     CD_HT_Right,
   };
 
+  // negative clip epsilon means "use some default"
   static float SweepLinedefAABB (const line_t *ld, TVec vstart, TVec vend, TVec bmin, TVec bmax,
                                  TPlane *hitPlane=nullptr, TVec *contactPoint=nullptr, CD_HitType *hitType=nullptr,
-                                 int *hitplanenum=nullptr);
+                                 int *hitplanenum=nullptr, float clipEpsilon=-1.0f);
 
 public:
   void ResetValidCount ();
