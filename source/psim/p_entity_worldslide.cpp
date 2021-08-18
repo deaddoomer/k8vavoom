@@ -34,9 +34,11 @@
 
 // ////////////////////////////////////////////////////////////////////////// //
 static VCvarB dbg_slide_code("dbg_slide_code", false, "Debug slide code?", CVAR_PreInit|CVAR_Hidden);
-static VCvarI gm_slide_code("gm_slide_code", "2", "Which slide code to use (0:vanilla; 1:new; 2:q3-like)?", CVAR_Archive);
+static VCvarI gm_slide_code("gm_slide_code", "0", "Which slide code to use (0:vanilla; 1:new; 2:q3-like)?", CVAR_Archive);
+static VCvarB gm_slide_vanilla_newsel("gm_slide_vanilla_newsel", true, "Use same velocity-based selector in vanilla sliding code?", CVAR_Archive|CVAR_Hidden);
 static VCvarB gm_q3slide_use_timeleft("gm_q3slide_use_timeleft", false, "Use 'timeleft' method for Q3 sliding code (gives wrong velocities and bumpiness)?", CVAR_Archive|CVAR_Hidden);
 static VCvarB gm_slide_vanilla_finish("gm_slide_vanilla_finish", false, "Finish stuck slide with vanilla algo?", CVAR_Archive|CVAR_Hidden);
+static VCvarB gm_slide_use_mag_cosine("gm_slide_use_mag_cosine", true, "Use cosine*magnitude to select best vector?", CVAR_Archive|CVAR_Hidden);
 
 
 
@@ -134,15 +136,21 @@ TVec VEntity::TraceToWallSmall2D (TVec org, TVec vdelta) {
 //
 //==========================================================================
 void VEntity::SlidePathTraverseOld (float &BestSlideFrac, line_t *&BestSlideLine, float x, float y, float StepVelScale) {
-  TVec SlideOrg(x, y, Origin.z);
-  TVec SlideDir = Velocity*StepVelScale;
+  const TVec SlideOrg(x, y, Origin.z);
+  const TVec normdir(SlideOrg.normalise2D());
+  const TVec SlideDir = Velocity.xy()*StepVelScale;
   const float hgt = max2(0.0f, Height);
-  // old slide code
+  const bool usecos = gm_slide_vanilla_newsel.asBool();
+  const bool magcos = gm_slide_use_mag_cosine.asBool();
+
   intercept_t in;
-  for (VPathTraverse It(this, &in, SlideOrg, SlideOrg+TVec(SlideDir.x, SlideDir.y, 0.0f), PT_ADDLINES|PT_NOOPENS|PT_RAILINGS); It.GetNext(); ) {
-    if (!(in.Flags&intercept_t::IF_IsALine)) { continue; /*Host_Error("PTR_SlideTraverse: not a line?");*/ }
-    // just in case
-    if (in.frac >= 1.0f) continue; // no hit
+  float bestVelCos = -INFINITY;
+  TVec bestVel(0.0f, 0.0f);
+
+  for (VPathTraverse It(this, &in, SlideOrg, SlideOrg+SlideDir, PT_ADDLINES|PT_NOOPENS|PT_RAILINGS); It.GetNext(); ) {
+    if (!(in.Flags&intercept_t::IF_IsALine)) continue;
+    if (in.frac >= 1.0f) continue; // just in case
+    if (in.frac > BestSlideFrac) break; // hits are sorted by hittime, there's no reason to go further
 
     line_t *li = in.line;
 
@@ -156,6 +164,8 @@ void VEntity::SlidePathTraverseOld (float &BestSlideFrac, line_t *&BestSlideLine
       IsBlocked = true;
     } else if ((EntityFlags&EF_CheckLineBlockMonsters) && (li->flags&ML_BLOCKMONSTERS)) {
       IsBlocked = true;
+    } else {
+      IsBlocked = IsBlockingLine(li);
     }
 
     /*
@@ -186,13 +196,27 @@ void VEntity::SlidePathTraverseOld (float &BestSlideFrac, line_t *&BestSlideLine
       }
     }
 
-    // the line blocks movement, see if it is closer than best so far
-    if (in.frac < BestSlideFrac) {
-      BestSlideFrac = in.frac;
-      BestSlideLine = li;
+    const TVec hitnormal = ((li->flags&ML_TWOSIDED) && li->backsector && li->PointOnSide(Origin) ? -li->normal : li->normal);
+    const TVec cvel = ClipVelocity(SlideDir, hitnormal);
+    // dot product for two normalized vectors is cosine between them
+    // cos(0) is 1, cos(180) is -1
+    const float velcos = (magcos ? normdir.dot2D(cvel) : normdir.dot2D(cvel.normalise2D())); // it is ok to use `normalise2D()` on zero vector
+
+    if (in.frac == BestSlideFrac) {
+      if (!usecos) continue;
+      // prefer velocity that goes to the same dir
+      if (velcos < 0.0f || velcos < bestVelCos) continue;
     }
 
-    break;  // stop
+    // the line blocks movement, and it is closer than best so far
+    BestSlideFrac = in.frac;
+    BestSlideLine = li;
+    bestVel = cvel;
+    bestVelCos = velcos;
+
+    // hits are sorted by hittime, there's no reason to go further...
+    // ...unless we're using new selector
+    if (!usecos) break;
   }
 }
 
@@ -219,6 +243,7 @@ float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line
 
   const TVec end(Origin+dir);
   const TVec normdir(dir.normalise2D());
+  const bool magcos = gm_slide_use_mag_cosine.asBool();
 
   float BestSlideFrac = 1.0f;
   TVec bestVel(0.0f, 0.0f);
@@ -238,6 +263,7 @@ float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line
     for (int by = yl; by <= yh; ++by) {
       for (auto &&it : XLevel->allBlockLines(bx, by)) {
         line_t *li = it.line();
+
         bool IsBlocked = false;
         if (!(li->flags&ML_TWOSIDED) || !li->backsector) {
           if (li->PointOnSide(Origin)) continue; // don't hit the back side
@@ -289,19 +315,16 @@ float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line
           }
         }
 
-        TVec hitnormal = li->normal;
-        if ((li->flags&ML_TWOSIDED) && li->backsector && li->PointOnSide(Origin)) hitnormal = -hitnormal;
-
+        const TVec hitnormal = ((li->flags&ML_TWOSIDED) && li->backsector && li->PointOnSide(Origin) ? -li->normal : li->normal);
         const TVec cvel = ClipVelocity(dir, hitnormal);
-        const TVec cvnorm = cvel.normalise2D(); // it is ok to use it on zero vector
+        // dot product for two normalized vectors is cosine between them
+        // cos(0) is 1, cos(180) is -1
+        const float velcos = (magcos ? normdir.dot2D(cvel) : normdir.dot2D(cvel.normalise2D())); // it is ok to use `normalise2D()` on zero vector
 
         if (htime == BestSlideFrac) {
           // prefer velocity that goes to the same dir
-          // dot product for two normalized vectors is cosine between them
-          // cos(0) is 1, cos(180) is -1
-          const float c = normdir.dot2D(cvnorm);
-          if (c < 0.0f || c < bestVelCos) continue;
-          if (cvel.length2DSquared() < bestVel.length2DSquared()) continue;
+          if (velcos < 0.0f || velcos < bestVelCos) continue;
+          if (!magcos && cvel.length2DSquared() < bestVel.length2DSquared()) continue;
         }
 
         if (debugSlide) {
@@ -315,7 +338,7 @@ float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line
         if (BestSlideLine) *BestSlideLine = li;
         //lastHitWasGood = (hitplanenum < 2);
         bestVel = cvel;
-        bestVelCos = normdir.dot2D(cvnorm);
+        bestVelCos = velcos;
       }
     }
   }
