@@ -34,5 +34,8 @@ extern void SV_GetSaveDateString (int Slot, VStr &datestr);
 extern void SV_AutoSaveOnLevelExit ();
 extern void SV_AutoSave (bool checkpoint);
 
+// returns hash of savegame directory
+extern VStr SV_GetSaveHash ();
+
 
 #endif

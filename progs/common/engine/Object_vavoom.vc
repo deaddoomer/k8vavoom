@@ -666,6 +666,7 @@ native static final int P_GetNumSkills ();
 native static final SkillDef *P_GetSkillDef (int i);
 native static final bool SV_GetSaveString (int i, out string buf);
 native static final void SV_GetSaveDateString (int i, out string buf);
+native static final string SV_GetSaveHash ();
 native static final void StartSearch (bool Master);
 native static final slist_t *GetSlist ();
 

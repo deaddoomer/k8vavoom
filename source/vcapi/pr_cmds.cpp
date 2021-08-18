@@ -246,7 +246,6 @@ IMPLEMENT_FREE_FUNCTION(VObject, SV_GetSaveString) {
 #endif
 }
 
-
 IMPLEMENT_FREE_FUNCTION(VObject, SV_GetSaveDateString) {
   int i;
   VStr *buf;
@@ -257,6 +256,10 @@ IMPLEMENT_FREE_FUNCTION(VObject, SV_GetSaveDateString) {
 #else
   *buf = VStr("UNKNOWN");
 #endif
+}
+
+IMPLEMENT_FREE_FUNCTION(VObject, SV_GetSaveHash) {
+  RET_STR(SV_GetSaveHash());
 }
 
 

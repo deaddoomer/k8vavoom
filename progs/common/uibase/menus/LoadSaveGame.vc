@@ -69,6 +69,7 @@ void CreateLoadSaveChoices (class!ChoiceSaveLoadSlotBase destClass) {
 override void OnDraw () {
   ::OnDraw();
   if (Items.length == 0) return;
+
   // refresh `datestr`
   if (lastSelectedIndex != CursorPos) {
     lastSelectedIndex = CursorPos;
@@ -84,22 +85,27 @@ override void OnDraw () {
       datestr = "";
     }
   }
+
   // refresh `qsdatestr`
   if (!qsdatestr) {
     SV_GetSaveDateString(QUICKSAVE_SLOT, out qsdatestr);
     if (!qsdatestr || qsdatestr == "UNKNOWN") qsdatestr = " "; else qsdatestr = "QUICKSAVE: "~qsdatestr;
   }
+
   // draw it all
   //SetFont('smallfont');
   SetFont(Items[0].FontName);
   //SetTextAlign(hleft, vtop);
   SetTextAlign(hright, vtop);
   int ty = Height-FontHeight()*2-2;
+  int hty = ty-FontHeight()-2;
   DrawText(Width-16, ty, datestr);
   if (qsdatestr) {
     ty += FontHeight()+2;
     DrawText(Width-16, ty, qsdatestr);
   }
+
+  DrawText(Width-16, hty, va("HASH: %s", SV_GetSaveHash()), 0xff_66_66_66);
 }
 
 

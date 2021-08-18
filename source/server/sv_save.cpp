@@ -543,6 +543,18 @@ static VStr GetSaveSlotCommonDirectoryPrefix () {
 
 //==========================================================================
 //
+//  SV_GetSaveHash
+//
+//  returns hash of savegame directory
+//
+//==========================================================================
+VStr SV_GetSaveHash () {
+  return GetSaveSlotCommonDirectoryPrefix();
+}
+
+
+//==========================================================================
+//
 //  isBadSlotIndex
 //
 //  checking for "bad" index is more common
