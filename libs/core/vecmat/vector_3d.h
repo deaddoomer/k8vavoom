@@ -128,6 +128,8 @@ public:
   VVA_CHECKRESULT VVA_ALWAYS_INLINE bool operator == (const TVec &v2) const noexcept { return (x == v2.x && y == v2.y && z == v2.z); }
   VVA_CHECKRESULT VVA_ALWAYS_INLINE bool operator != (const TVec &v2) const noexcept { return (x != v2.x || y != v2.y || z != v2.z); }
 
+  // primitive swizzling
+  VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec xy () const noexcept { return TVec(x, y, 0.0f); }
 
   VVA_ALWAYS_INLINE VVA_CHECKRESULT const float &operator [] (const size_t i) const noexcept { vassert(i < 3); return (&x)[i]; }
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float &operator [] (const size_t i) noexcept { vassert(i < 3); return (&x)[i]; }
