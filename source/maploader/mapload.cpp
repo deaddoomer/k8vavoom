@@ -726,24 +726,26 @@ load_again:
   MapHashingTime = -Sys_Time();
   {
     //GCon->Logf("*** LSSHash: 0x%08x (%d:%d:%d)", LSSHash, NumLines, NumSides, NumSectors);
-    XXH32_state_t *lssXXHash = XXH32_createState();
-    XXH32_reset(lssXXHash, (unsigned)(NumLines+NumSides+NumSectors));
-    for (int f = 0; f < NumLines; ++f) xxHashLinedef(lssXXHash, Lines[f]);
-    for (int f = 0; f < NumSides; ++f) xxHashSidedef(lssXXHash, Sides[f]);
-    for (int f = 0; f < NumSectors; ++f) xxHashSectordef(lssXXHash, Sectors[f]);
-    LSSHash = XXH32_digest(lssXXHash);
-    XXH32_freeState(lssXXHash);
+    //XXH32_state_t *lssXXHash = XXH32_createState();
+    XXH32_state_t lssXXHash;
+    XXH32_reset(&lssXXHash, (unsigned)(NumLines+NumSides+NumSectors));
+    for (int f = 0; f < NumLines; ++f) xxHashLinedef(&lssXXHash, Lines[f]);
+    for (int f = 0; f < NumSides; ++f) xxHashSidedef(&lssXXHash, Sides[f]);
+    for (int f = 0; f < NumSectors; ++f) xxHashSectordef(&lssXXHash, Sectors[f]);
+    LSSHash = XXH32_digest(&lssXXHash);
+    //XXH32_freeState(lssXXHash);
     //GCon->Logf("*** LSSHash: 0x%08x", LSSHash);
   }
 
   // hash of segs
   {
     //GCon->Logf("*** SegHash: 0x%08x (%d)", SegHash, NumSegs);
-    XXH32_state_t *segXXHash = XXH32_createState();
-    XXH32_reset(segXXHash, (unsigned)NumSegs);
-    for (int f = 0; f < NumSegs; ++f) xxHashSegdef(segXXHash, Segs[f]);
-    SegHash = XXH32_digest(segXXHash);
-    XXH32_freeState(segXXHash);
+    //XXH32_state_t *segXXHash = XXH32_createState();
+    XXH32_state_t segXXHash;
+    XXH32_reset(&segXXHash, (unsigned)NumSegs);
+    for (int f = 0; f < NumSegs; ++f) xxHashSegdef(&segXXHash, Segs[f]);
+    SegHash = XXH32_digest(&segXXHash);
+    //XXH32_freeState(segXXHash);
     //GCon->Logf("*** SegHash: 0x%08x", SegHash);
   }
   MapHashingTime += Sys_Time();
