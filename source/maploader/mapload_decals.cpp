@@ -34,12 +34,12 @@ struct __attribute__((packed)) VectorInfo {
   unsigned lidx; // linedef index
   VectorInfo *next;
 
-  inline bool operator == (const VectorInfo &vi) const { return (memcmp(xy, &vi.xy, sizeof(xy)) == 0); }
-  inline bool operator != (const VectorInfo &vi) const { return (memcmp(xy, &vi.xy, sizeof(xy)) != 0); }
+  inline bool operator == (const VectorInfo &vi) const noexcept { return (memcmp(xy, &vi.xy, sizeof(xy)) == 0); }
+  inline bool operator != (const VectorInfo &vi) const noexcept { return (memcmp(xy, &vi.xy, sizeof(xy)) != 0); }
 };
 static_assert(sizeof(VectorInfo) == sizeof(float)*2+sizeof(unsigned)*1+sizeof(void *), "oops");
 
-static inline vuint32 GetTypeHash (const VectorInfo &vi) { return joaatHashBuf(vi.xy, sizeof(vi.xy)); }
+static inline uint32_t GetTypeHash (const VectorInfo &vi) noexcept { return joaatHashBuf(vi.xy, sizeof(vi.xy)); }
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -73,7 +73,7 @@ void VLevel::BuildDecalsVVList () {
       //vi->aidx = aidx;
       vi->lidx = i;
       vi->next = nullptr;
-      auto vaidxp = vmap.find(*vi);
+      auto vaidxp = vmap.get(*vi);
       if (vaidxp) {
         //vassert(*vaidxp != vi->aidx);
         VectorInfo *cv = &va[*vaidxp];
@@ -105,7 +105,7 @@ void VLevel::BuildDecalsVVList () {
 
       unsigned count = 0;
       VectorInfo *vi = &va[i*2+vn];
-      auto vaidxp = vmap.find(*vi);
+      auto vaidxp = vmap.get(*vi);
       if (!vaidxp) Sys_Error("VLevel::BuildDecalsVVList: internal error (0)");
       VectorInfo *cv = &va[*vaidxp];
       while (cv) {

@@ -1701,7 +1701,7 @@ COMMAND(PreSpawn) {
   Player->Net->NeedsUpdate = true;
 
   // make sure level info is spawned on server side, since there could be some RPCs that depend on it
-  VThinkerChannel *Chan = Player->Net->ThinkerChannels.FindPtr(GLevelInfo);
+  VThinkerChannel *Chan = Player->Net->ThinkerChannels.findptr(GLevelInfo);
   if (!Chan) {
     Chan = (VThinkerChannel *)Player->Net->CreateChannel(CHANNEL_Thinker, -1, true); // local channel
     if (!Chan) Sys_Error("cannot allocate `LevelInfo` channel, this should NOT happen!");

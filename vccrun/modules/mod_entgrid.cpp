@@ -403,7 +403,7 @@ void EntityGridImpl::freeCell (vuint32 cellidx) {
 //==========================================================================
 vuint32 EntityGridImpl::putObject (VObject *obj) {
   vassert(obj);
-  auto idp = objmap.find(obj);
+  auto idp = objmap.get(obj);
   if (idp) {
     vuint32 res = *idp;
     vassert(res >= 0 && res < objectsAlloted);
@@ -454,7 +454,7 @@ vuint32 EntityGridImpl::putObject (VObject *obj) {
 //==========================================================================
 void EntityGridImpl::derefObject (VObject *obj) {
   if (!obj) return;
-  auto idp = objmap.find(obj);
+  auto idp = objmap.get(obj);
   if (!idp) return; // wtf?!
   vassert(objects[*idp].obj == obj);
   derefObject(*idp);

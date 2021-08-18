@@ -392,8 +392,8 @@ public:
   VFuncRes (VObject *v) : type(TYPE_Reference), pointer(false), ptr(v), ival(0), fval(0), vval(0, 0, 0), sval(), nval(NAME_None) {}
   VFuncRes (VState *v) : type(TYPE_State), pointer(false), ptr(v), ival(0), fval(0), vval(0, 0, 0), sval(), nval(NAME_None) {}
 
-  inline VFuncRes &operator = (const VFuncRes &b) {
-    if (&b == this) return *this;
+  inline void operator = (const VFuncRes &b) {
+    if (&b == this) return;
     type = b.type;
     pointer = b.pointer;
     ptr = b.ptr;
@@ -402,7 +402,6 @@ public:
     vval = b.vval;
     sval = b.sval;
     nval = b.nval;
-    return *this;
   }
 
   inline EType getType () const { return type; }
@@ -1048,7 +1047,7 @@ struct VOptParam##tname_ { \
   inline VOptParam##tname_ (type_ adefault=defval_) noexcept : specified(false), value(adefault) {} \
   /*inline operator type_ () noexcept { return value; }*/ \
   inline operator type_ & () noexcept { return value; } \
-  inline VOptParam##tname_ &operator = (const type_ &v) noexcept { value = v; return *this; } \
+  inline void operator = (const type_ &v) noexcept { value = v; } \
 }; \
 static VVA_OKUNUSED inline void vobj_get_param (VOptParam##tname_ &n) noexcept { \
   n.specified = !!VObject::PR_Pop(); \

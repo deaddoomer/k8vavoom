@@ -331,7 +331,7 @@ void VRenderLevelShared::DrawPlayerSprites () {
       if (!e) continue;
       /*
       if (dl->ownerUId) {
-        auto ownpp = suid2ent.find(dl->ownerUId);
+        auto ownpp = suid2ent.get(dl->ownerUId);
         if (!ownpp) continue;
         e = *ownpp;
       } else {
@@ -467,7 +467,7 @@ void VRenderLevelShared::RenderCrosshair () {
     if (prevCrosshairPic != cl->Crosshair+1024) {
       int xpich = 0; // handle
       // try to load a custom crosshair
-      auto xhp = customXHairHandles.find(cl->Crosshair);
+      auto xhp = customXHairHandles.get(cl->Crosshair);
       if (xhp) {
         xpich = *xhp;
       } else {

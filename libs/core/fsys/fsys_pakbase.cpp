@@ -121,7 +121,7 @@ int FSysModDetectorHelper::findLump (const char *lumpname, int size, const char 
   if (strlen(lumpname) > 8) return -1;
   VName lname = VName(lumpname, VName::FindLower);
   if (lname == NAME_None) return -1;
-  auto npp = dir->lumpmap.find(lname);
+  auto npp = dir->lumpmap.get(lname);
   if (!npp) return -1;
   for (int fidx = *npp; fidx >= 0 && fidx < dir->files.length(); fidx = dir->files[fidx].nextLump) {
     if (size >= 0 && dir->files[fidx].filesize != size) continue;
@@ -145,7 +145,7 @@ int FSysModDetectorHelper::findFile (const char *filename, int size, const char 
   VStr fname = VStr(filename).fixSlashes().toLowerCase();
   while (!fname.isEmpty() && fname[0] == '/') fname.chopLeft(1);
   if (fname.isEmpty()) return -1;
-  auto npp = dir->filemap.find(fname);
+  auto npp = dir->filemap.get(fname);
   if (!npp) return -1;
   for (int fidx = *npp; fidx >= 0 && fidx < dir->files.length(); fidx = dir->files[fidx].prevFile) {
     if (size >= 0 && dir->files[fidx].filesize != size) continue;
@@ -375,7 +375,7 @@ int VFileDirectory::appendAndRegister (const VPakFileInfo &fi) {
   nfo.nextLump = -1; // just in case
   nfo.prevFile = -1; // just in case
   if (lmp != NAME_None) {
-    auto lp = lumpmap.find(lmp);
+    auto lp = lumpmap.get(lmp);
     if (lp) {
       int lnum = *lp, pnum = -1;
       for (;;) {
@@ -390,7 +390,7 @@ int VFileDirectory::appendAndRegister (const VPakFileInfo &fi) {
 
   if (nfo.fileNameIntr.length()) {
     // put files into hashmap
-    auto pfp = filemap.find(nfo.fileNameIntr);
+    auto pfp = filemap.get(nfo.fileNameIntr);
     if (pfp) nfo.prevFile = *pfp;
     filemap.put(nfo.fileNameIntr, f);
   }
@@ -699,7 +699,7 @@ void VFileDirectory::buildNameMaps (bool rebuilding, VPakFileBase *pak) {
 
     // register lump
     if (lmp != NAME_None) {
-      auto lsidp = lastSeenLump.find(lmp);
+      auto lsidp = lastSeenLump.get(lmp);
       if (!lsidp) {
         // new lump
         lumpmap.put(lmp, f);
@@ -732,7 +732,7 @@ void VFileDirectory::buildNameMaps (bool rebuilding, VPakFileBase *pak) {
       }
 
       // put files into hashmap
-      auto pfp = filemap.find(fi.fileNameIntr);
+      auto pfp = filemap.get(fi.fileNameIntr);
       if (pfp) fi.prevFile = *pfp;
       filemap.put(fi.fileNameIntr, f);
     }
@@ -808,7 +808,7 @@ bool VFileDirectory::fileExists (VStr fname, int *lump) {
   normalizeFileName(fname);
   if (lump) {
     if (fname.length() != 0) {
-      auto pp = filemap.find(fname);
+      auto pp = filemap.get(fname);
       if (pp) {
         *lump = *pp;
         return true;
@@ -833,7 +833,7 @@ bool VFileDirectory::fileExists (VStr fname, int *lump) {
 bool VFileDirectory::lumpExists (VName lname, vint32 ns) {
   lname = normalizeLumpName(lname);
   if (lname == NAME_None) return false;
-  auto fp = lumpmap.find(lname);
+  auto fp = lumpmap.get(lname);
   if (!fp) return false;
   if (ns < 0) return true;
   for (int f = *fp; f >= 0; f = files[f].nextLump) {
@@ -851,7 +851,7 @@ bool VFileDirectory::lumpExists (VName lname, vint32 ns) {
 int VFileDirectory::findFile (VStr fname) {
   normalizeFileName(fname);
   if (fname.length() == 0) return false;
-  auto fp = filemap.find(fname);
+  auto fp = filemap.get(fname);
   return (fp ? *fp : -1);
 }
 
@@ -866,7 +866,7 @@ int VFileDirectory::findFile (VStr fname) {
 int VFileDirectory::findFirstLump (VName lname, vint32 ns) {
   lname = normalizeLumpName(lname);
   if (lname == NAME_None) return -1;
-  auto fp = lumpmap.find(lname);
+  auto fp = lumpmap.get(lname);
   if (!fp) return -1;
   if (ns < 0) return *fp;
   for (int f = *fp; f >= 0; f = files[f].nextLump) {
@@ -884,7 +884,7 @@ int VFileDirectory::findFirstLump (VName lname, vint32 ns) {
 int VFileDirectory::findLastLump (VName lname, vint32 ns) {
   lname = normalizeLumpName(lname);
   if (lname == NAME_None) return -1;
-  auto fp = lumpmap.find(lname);
+  auto fp = lumpmap.get(lname);
   if (!fp) return -1;
   int res = -1;
   for (int f = *fp; f >= 0; f = files[f].nextLump) {

@@ -792,9 +792,8 @@ struct TSecPlaneRef {
   inline TSecPlaneRef (const TSecPlaneRef &sp) noexcept : splane(sp.splane), flipped(sp.flipped) {}
   explicit TSecPlaneRef (sec_plane_t *aplane, bool arev) noexcept : splane(aplane), flipped(arev) {}
 
-  inline TSecPlaneRef &operator = (const TSecPlaneRef &sp) noexcept {
+  inline void operator = (const TSecPlaneRef &sp) noexcept {
     if (this != &sp) { splane = sp.splane; flipped = sp.flipped; }
-    return *this;
   }
 
   inline bool isValid () const noexcept { return !!splane; }

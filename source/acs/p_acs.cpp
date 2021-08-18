@@ -1786,7 +1786,7 @@ VName VAcsLevel::GetNewLowerName (int idx) {
 //==========================================================================
 int VAcsLevel::PutNewString (VStr str) {
   //k8:this is wrong!:if (str.length() == 0) return 0; // string 0 is always empty, and scripts rely on this
-  auto idxp = stringMapByStr.find(str);
+  auto idxp = stringMapByStr.get(str);
   if (idxp) return (*idxp)|(ACSLEVEL_INTERNAL_STRING_STORAGE_INDEX<<16);
   // add string
   int idx = stringList.length();

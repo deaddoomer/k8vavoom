@@ -995,7 +995,7 @@ int VSoundManager::FindSound (VName TagName) {
   if (TagName == NAME_None) return 0;
   TagName = VName(*TagName, VName::FindLower);
   if (TagName == NAME_None) return 0;
-  auto ip = sfxMap.find(TagName);
+  auto ip = sfxMap.get(TagName);
   return (ip ? *ip : 0);
 }
 

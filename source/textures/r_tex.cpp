@@ -1421,7 +1421,7 @@ int VTextureManager::FindOrLoadFullyNamedTexture (VStr txname, VName *normname, 
 
   // full path search
   {
-    auto tpp = txFullNameHash.find(txname);
+    auto tpp = txFullNameHash.get(txname);
     if (tpp) {
       if (r_debug_fullpath_textures) GCon->Logf(NAME_Debug, "found texture '%s' by hash (%s : %s)", *txname, *W_RealLumpName(getTxByIndex(*tpp)->SourceLump), *getTxByIndex(*tpp)->Name);
       if (normname) *normname = VName(*txname);
@@ -1435,7 +1435,7 @@ int VTextureManager::FindOrLoadFullyNamedTexture (VStr txname, VName *normname, 
     if (lump >= 0) {
       // try existing texture first (because we may got it with a different extension)
       VStr realtxname = W_RealLumpName(lump);
-      auto tpp = txFullNameHash.find(realtxname);
+      auto tpp = txFullNameHash.get(realtxname);
       if (tpp) {
         if (r_debug_fullpath_textures) GCon->Logf(NAME_Debug, "found texture '%s' by hash (%s : %s)", *txname, *W_RealLumpName(getTxByIndex(*tpp)->SourceLump), *getTxByIndex(*tpp)->Name);
         if (normname) *normname = VName(*txname);

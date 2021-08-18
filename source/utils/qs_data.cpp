@@ -139,7 +139,7 @@ void QS_StartPhase (QSPhase aphase) {
 
 
 static void putValue (const QSValue &val) {
-  auto xptr = qsmap.find(val.ent);
+  auto xptr = qsmap.get(val.ent);
   if (!xptr) {
     int idx = qslist.length();
     QLItem &li = qslist.alloc();
@@ -182,7 +182,7 @@ void QS_PutValue (const QSValue &val) {
 
 QSValue QS_GetValue (VEntity *ent, VStr name) {
   if (qsPhase != QSPhase::QSP_Load) Host_Error("cannot use CheckPoint API outside of checkpoint handlers");
-  auto xptr = qsmap.find(ent);
+  auto xptr = qsmap.get(ent);
   if (!xptr) return QSValue();
   for (int idx = *xptr; idx >= 0; idx = qslist[idx].next) {
     vassert(qslist[idx].value.ent == ent);

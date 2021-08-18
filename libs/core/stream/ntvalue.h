@@ -139,8 +139,8 @@ public:
 
   VNTValue (VName aname, const vuint8 *buf, int bufsz, bool doCopyData=true) noexcept;
 
-  VNTValue &operator = (const VNTValue &s) noexcept {
-    if ((void *)this == (void *)&s) return *this;
+  void operator = (const VNTValue &s) noexcept {
+    if ((void *)this == (void *)&s) return;
     if (s.type == T_Blob) s.incRef(); // it should be here for `clear()`
     // clear this value
     clear();
@@ -154,7 +154,6 @@ public:
       case T_Blob: blobRC = s.blobRC; blob = s.blob; blobSize = s.blobSize; break;
       default: memcpy((void *)&ud, &s.ud, sizeof(ud)); break;
     }
-    return *this;
   }
 
   bool operator == (const VNTValue &) = delete;

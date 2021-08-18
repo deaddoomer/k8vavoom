@@ -112,6 +112,33 @@
 #include "crypto/prng_randombytes.h"
 
 #include "common.h" // common types and definitions
+
+
+//==========================================================================
+//
+//  VInterface
+//
+//==========================================================================
+
+// base class for abstract classes that need virtual destructor
+class VInterface {
+public:
+  virtual ~VInterface ();
+};
+
+
+//==========================================================================
+//
+//  Forward declarations
+//
+//==========================================================================
+class VName;
+// VavoomC
+class VMemberBase;
+class VStruct;
+class VObject;
+
+
 #include "strtod_plan9.h"
 #include "propp.h"
 
@@ -144,6 +171,29 @@
 #include "names.h" // built-in names
 #include "log.h" // general logging interface
 #include "name.h" // names
+
+// this shit is required for `VCustomKeyInfo`
+struct VCustomKeyInfo_NamedValue {
+  VName name;
+  int32_t id;
+
+  VVA_ALWAYS_INLINE VCustomKeyInfo_NamedValue () noexcept : name(NAME_None), id(0) {}
+  VVA_ALWAYS_INLINE VCustomKeyInfo_NamedValue (const VCustomKeyInfo_NamedValue &other) noexcept : name(other.name), id(other.id) {}
+  VVA_ALWAYS_INLINE VCustomKeyInfo_NamedValue (VName aname, int32_t aid) noexcept : name(aname), id(aid) {}
+  VVA_ALWAYS_INLINE VCustomKeyInfo_NamedValue (ENoInit) noexcept {}
+
+  VVA_ALWAYS_INLINE void operator = (const VCustomKeyInfo_NamedValue &other) noexcept { name = other.name; id = other.id; }
+
+  VVA_ALWAYS_INLINE bool operator == (const VCustomKeyInfo_NamedValue &other) noexcept { return (name == other.name && id == other.id); }
+};
+static_assert(__builtin_offsetof(VCustomKeyInfo_NamedValue, name) == 0, "invalid `VCustomKeyInfo_NamedValue` struct layout");
+static_assert(__builtin_offsetof(VCustomKeyInfo_NamedValue, id) == 4, "invalid `VCustomKeyInfo_NamedValue` struct layout");
+
+
+VVA_OKUNUSED VVA_ALWAYS_INLINE uint32_t GetTypeHash (const VCustomKeyInfo_NamedValue &nv) noexcept {
+  return hashU32((uint32_t)(nv.name.GetIndex()))+hashU32((uint32_t)nv.id);
+}
+
 #include "stream/stream.h" // streams
 #include "array.h" // dynamic arrays
 #include "map.h" // mapping of keys to values

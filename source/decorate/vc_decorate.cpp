@@ -417,7 +417,7 @@ static void DoClassReplacement (VClass *oldcls, VClass *newcls) {
       return;
     }
     vassert(repl);
-    auto orpp = currFileRepls.find(oldcls);
+    auto orpp = currFileRepls.get(oldcls);
     if (orpp) {
       //GLog.Logf("*** duplicate replacement of '%s' with '%s' (current is '%s')", *oldcls->GetFullName(), *newcls->GetFullName(), *repl->GetFullName());
       GLog.Logf(NAME_Warning, "DECORATE error: already replaced class '%s' replaced again with '%s' (current replacement is '%s')", oldcls->GetName(), newcls->GetName(), repl->GetName());
@@ -569,7 +569,7 @@ struct VFlagList {
   TMap<VStrCI, int> FlagsHash;
 
   VPropDef *FindProp (VStr name) {
-    auto pi = PropsHash.find(name);
+    auto pi = PropsHash.get(name);
     if (!pi) {
       const int dotidx = name.indexOf('.');
       if (dotidx >= 0) {
@@ -578,7 +578,7 @@ struct VFlagList {
         if (name.length() == 0) return nullptr;
         if (cn.strEquCI("Player")) cn = "PlayerPawn";
         if (!cn.strEquCI(Class->GetName())) return nullptr;
-        pi = PropsHash.find(name);
+        pi = PropsHash.get(name);
       }
     }
     return (pi ? &Props[*pi] : nullptr);
@@ -586,7 +586,7 @@ struct VFlagList {
 
   // name must be short (i.e. without qualification part)
   VFlagDef *FindFlag (VStr name) {
-    auto pi = FlagsHash.find(name);
+    auto pi = FlagsHash.get(name);
     return (pi ? &Flags[*pi] : nullptr);
   }
 
@@ -1292,7 +1292,7 @@ static void RegisterDecorateMethods () {
         VStr shortname = mts.mid(9, mts.length());
         VName xn = VName(*shortname, VName::Find);
         if (xn != NAME_None) {
-          auto mtx = cls->MethodMap.find(xn);
+          auto mtx = cls->MethodMap.get(xn);
           if (mtx) {
             if (((*mtx)->Flags&FUNC_Decorate) == 0) {
               GLog.Logf(NAME_Warning, "%s: decorate method `%s` has non-decorate VC counterpart at `%s`", *mt->Loc.toString(), *mt->GetFullName(), *(*mtx)->Loc.toString());
@@ -4041,7 +4041,7 @@ void ReadLineSpecialInfos () {
 int FindScriptLineSpecialByName (VStr s) {
   s = s.xstrip();
   if (s.isEmpty()) return 0;
-  auto it = LineSpecialMapByName.find(s);
+  auto it = LineSpecialMapByName.get(s);
   if (!it) return 0;
   const VLineSpecInfo &nfo = LineSpecialInfoList[*it];
   return (nfo.IsScriptAllowed() ? nfo.Index : 0);
@@ -4056,7 +4056,7 @@ int FindScriptLineSpecialByName (VStr s) {
 const VLineSpecInfo *FindLineSpecialByName (VStr s) {
   s = s.xstrip();
   if (s.isEmpty()) return nullptr;
-  auto it = LineSpecialMapByName.find(s);
+  auto it = LineSpecialMapByName.get(s);
   if (!it) return nullptr;
   return &LineSpecialInfoList[*it];
 }
@@ -4069,7 +4069,7 @@ const VLineSpecInfo *FindLineSpecialByName (VStr s) {
 //==========================================================================
 const VLineSpecInfo *FindLineSpecialByNumber (int num) {
   if (num <= 0) return nullptr;
-  auto it = LineSpecialMapByNumber.find(num);
+  auto it = LineSpecialMapByNumber.get(num);
   if (!it) return nullptr;
   return &LineSpecialInfoList[*it];
 }
@@ -4323,7 +4323,7 @@ void ProcessDecorateScripts () {
         VStr pwfix = (CF.PowerPrefix+CF.Name).toLowerCase();
         C = VClass::FindClassNoCase(*pwfix);
         if (C) {
-          if (!powerfixReported.find(pwfix)) {
+          if (!powerfixReported.get(pwfix)) {
             powerfixReported.put(pwfix, true);
             if (cli_WAll > 0 || cli_DecorateWarnPowerupRename > 0) {
               GLog.Logf(NAME_Warning, "Decorate powerup fixup in effect: `%s` -> `%s`", *CF.Name, *(CF.PowerPrefix+CF.Name));

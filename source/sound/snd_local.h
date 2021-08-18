@@ -463,7 +463,7 @@ private:
     inline DataLocker (VStreamMusicPlayer *aplr) noexcept : plr(aplr) { plr->LockData(); }
     inline ~DataLocker () noexcept { plr->UnlockData(); }
     DataLocker (const DataLocker &) = delete;
-    DataLocker & operator = (const DataLocker &) = delete;
+    DataLocker &operator = (const DataLocker &) = delete;
   };
 
 public:

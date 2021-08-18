@@ -58,6 +58,7 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+#include "common.h"
 template<typename TK, typename TV> class TMap_Class_Name {
 private:
   enum {
@@ -181,6 +182,9 @@ private:
   // calculate hash for the given key
   // must never return zero, because zero is used as "empty marker"
   static VVA_ALWAYS_INLINE VVA_CHECKRESULT uint32_t calcKeyHash (const TK &akey) noexcept {
+    // FUCK YOU, SHITPLUSPLUS! WHY CAN'T WE FUCKIN' DECLARE THIS FUCKIN' TEMPLATE,
+    // AND THEN USE IT TO DETECT THINGS THAT WERE DECLARED LATER?!!
+    //const uint32_t khash = CalcTypeHash(akey);
     const uint32_t khash = GetTypeHash(akey);
     return khash+(!khash); // avoid zero hash value
   }
@@ -273,7 +277,7 @@ public:
     VVA_ALWAYS_INLINE TIterator (const TIterator &src, bool /*dummy*/) noexcept : map(src.map), index(-1) {}
 
     VVA_ALWAYS_INLINE TIterator (const TIterator &src) noexcept : map(src.map), index(src.index) {}
-    VVA_ALWAYS_INLINE TIterator &operator = (const TIterator &src) noexcept { if (&src != this) { map = src.map; index = src.index; } return *this; }
+    VVA_ALWAYS_INLINE void operator = (const TIterator &src) noexcept { if (&src != this) { map = src.map; index = src.index; } }
 
     VVA_ALWAYS_INLINE void resetToFirst () noexcept {
       if (map->mFirstEntry >= 0) {

@@ -384,7 +384,7 @@ struct CustomModeInfo {
 
   CustomModeInfo (const CustomModeInfo &src) : name(), aliases(), pwads(), postpwads(), autoskips(), disableBloodReplacement(false), disableGoreMod(false), disableBDW(false), ForcePlayerClass(), basedir(), basedirglob(), reported(false) { copyFrom(src); }
 
-  CustomModeInfo &operator = (const CustomModeInfo &src) { copyFrom(src); return *this; }
+  void operator = (const CustomModeInfo &src) { copyFrom(src); }
 
   void clear () {
     name.clear();
@@ -1283,7 +1283,7 @@ void AddAutoloadRC (VStr aubasedir) {
     bool enabled = !sc->Check("disabled");
     sc->Expect("{");
     // exact matches has precedence
-    auto gmp = cliGroupMap.find(grpname.toLowerCase());
+    auto gmp = cliGroupMap.get(grpname.toLowerCase());
     if (gmp) {
       enabled = *gmp;
     } else {

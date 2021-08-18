@@ -547,7 +547,7 @@ public:
 static_assert(__builtin_offsetof(TPlane, dist) == __builtin_offsetof(TPlane, normal.z)+sizeof(float), "TPlane layout fail (0)");
 static_assert(sizeof(TPlane) == sizeof(float)*4, "TPlane layout fail (1)");
 
-VVA_ALWAYS_INLINE VVA_PURE vuint32 GetTypeHash (const TPlane &v) noexcept { return joaatHashBuf(&v, 4*sizeof(float)); }
+VVA_ALWAYS_INLINE VVA_PURE uint32_t GetTypeHash (const TPlane &v) noexcept { return joaatHashBuf(&v, 4*sizeof(float)); }
 
 // should be used only for wall planes!
 static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT

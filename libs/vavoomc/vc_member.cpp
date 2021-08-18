@@ -125,7 +125,7 @@ void VMemberBase::CompilerShutdown () {
 //
 //==========================================================================
 #define AddToHashMC(xname,map,HNext)  do { \
-  VMemberBase **mpp = map.find(xname); \
+  VMemberBase **mpp = map.get(xname); \
   if (mpp) { \
     self->HNext = (*mpp); \
     *mpp = self; \
@@ -197,7 +197,7 @@ void VMemberBase::DumpNameMaps () {
     vassert(self->HNext == nullptr); \
     break; \
   } \
-  VMemberBase **mpp = map.find(xname); \
+  VMemberBase **mpp = map.get(xname); \
   if (!mpp) { \
     vassert(self->HNext == nullptr); \
     break; \
@@ -208,7 +208,7 @@ void VMemberBase::DumpNameMaps () {
     if (mprev) { \
       mprev->HNext = m->HNext; \
     } else { \
-      if (m->HNext) *mpp = m->HNext; else map.remove(xname); \
+      if (m->HNext) *mpp = m->HNext; else map.del(xname); \
     } \
   } \
 } while (0)
@@ -405,7 +405,7 @@ VMemberBase *VMemberBase::StaticFindMember (VName AName, VMemberBase *AOuter, vu
     AName = VName(*nn);
   }
   // use normal map
-  VMemberBase **mpp = gMembersMap.find(AName);
+  VMemberBase **mpp = gMembersMap.get(AName);
   if (!mpp) return nullptr;
   for (VMemberBase *m = *mpp; m; m = m->HashNext) {
     //if (AName == "TVec") fprintf(stderr, "V: <%s> %d : %d (anypkg=%d); outerpkg=%d\n", *m->GetFullName(), m->MemberType, AType, (AOuter == ANY_PACKAGE), (m->Outer && m->Outer->MemberType == MEMBER_Package));
@@ -438,10 +438,10 @@ VMemberBase *VMemberBase::StaticFindMemberNoCase (VStr AName, VMemberBase *AOute
   if (lname == NAME_None) return nullptr;
   // locase map
   VMemberBase **mpp = nullptr;
-       if (AType == MEMBER_Class) mpp = gMembersMapClassLC.find(lname);
-  else if (AType == MEMBER_Property) mpp = gMembersMapPropLC.find(lname);
-  else if (AType == MEMBER_Const) mpp = gMembersMapConstLC.find(lname);
-  else mpp = gMembersMapAnyLC.find(lname);
+       if (AType == MEMBER_Class) mpp = gMembersMapClassLC.get(lname);
+  else if (AType == MEMBER_Property) mpp = gMembersMapPropLC.get(lname);
+  else if (AType == MEMBER_Const) mpp = gMembersMapConstLC.get(lname);
+  else mpp = gMembersMapAnyLC.get(lname);
   if (!mpp) return nullptr;
   VMemberBase *m = *mpp;
   while (m) {
@@ -531,7 +531,7 @@ VClass *VMemberBase::StaticFindClass (VName AName, bool caseSensitive) {
   if (AName == NAME_None) return nullptr;
   if (!caseSensitive) return StaticFindClass(*AName, false); // use slightly slower search
   vassert(caseSensitive);
-  VMemberBase **mpp = gMembersMap.find(AName);
+  VMemberBase **mpp = gMembersMap.get(AName);
   if (!mpp) return nullptr;
   for (VMemberBase *m = *mpp; m; m = m->HashNext) {
     if (m->Outer && m->Outer->MemberType == MEMBER_Package && m->MemberType == MEMBER_Class) {
@@ -555,7 +555,7 @@ VClass *VMemberBase::StaticFindClass (const char *AName, bool caseSensitive) {
   // use lower-case map
   VName loname = VName(AName, VName::FindLower);
   if (loname == NAME_None) return nullptr; // no such name, no chance to find a member
-  VMemberBase **mpp = gMembersMapClassLC.find(loname);
+  VMemberBase **mpp = gMembersMapClassLC.get(loname);
   if (!mpp) return nullptr;
   for (VMemberBase *m = *mpp; m; m = m->HashNextClassLC) {
     if (m->Outer && m->Outer->MemberType == MEMBER_Package && m->MemberType == MEMBER_Class) {

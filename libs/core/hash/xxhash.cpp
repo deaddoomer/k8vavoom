@@ -36,6 +36,7 @@
 /* *************************************
 *  Tuning parameters
 ***************************************/
+#define XXH_FORCE_MEMORY_ACCESS 2
 /*!XXH_FORCE_MEMORY_ACCESS :
  * By default, access to unaligned memory is controlled by `memcpy()`, which is safe and portable.
  * Unfortunately, on some target/compiler combinations, the generated assembly is sub-optimal.
@@ -62,6 +63,7 @@
 #  endif
 #endif
 
+#define XXH_ACCEPT_NULL_INPUT_POINTER 1
 /*!XXH_ACCEPT_NULL_INPUT_POINTER :
  * If input pointer is NULL, xxHash default behavior is to dereference it, triggering a segfault.
  * When this macro is enabled, xxHash actively checks input for null pointer.
@@ -71,6 +73,7 @@
 #  define XXH_ACCEPT_NULL_INPUT_POINTER 0
 #endif
 
+#define XXH_FORCE_NATIVE_FORMAT 1
 /*!XXH_FORCE_NATIVE_FORMAT :
  * By default, xxHash library provides endian-independent Hash values, based on little-endian convention.
  * Results are therefore identical for little-endian and big-endian CPU.
@@ -83,6 +86,7 @@
 #  define XXH_FORCE_NATIVE_FORMAT 0
 #endif
 
+#define XXH_FORCE_ALIGN_CHECK 1
 /*!XXH_FORCE_ALIGN_CHECK :
  * This is a minor performance trick, only useful with lots of very small keys.
  * It means : check for aligned/unaligned input.
@@ -162,21 +166,21 @@ extern "C" {
 #if (defined(XXH_FORCE_MEMORY_ACCESS) && (XXH_FORCE_MEMORY_ACCESS==2))
 
 /* Force direct memory access. Only works on CPU which support unaligned memory access in hardware */
-static U32 XXH_read32(const void* memPtr) { return *(const U32*) memPtr; }
+static inline __attribute__((always_inline)) U32 XXH_read32(const __attribute__((__may_alias__)) void* memPtr) { return *(const __attribute__((__may_alias__)) U32*) memPtr; }
 
 #elif (defined(XXH_FORCE_MEMORY_ACCESS) && (XXH_FORCE_MEMORY_ACCESS==1))
 
 /* __pack instructions are safer, but compiler specific, hence potentially problematic for some compilers */
 /* currently only defined for gcc and icc */
 typedef union { U32 u32; } __attribute__((packed)) unalign;
-static U32 XXH_read32(const void* ptr) { return ((const unalign*)ptr)->u32; }
+static inline __attribute__((always_inline)) U32 XXH_read32(const __attribute__((__may_alias__)) void* ptr) { return ((const unalign*)ptr)->u32; }
 
 #else
 
 /* portable and safe solution. Generally efficient.
  * see : http://stackoverflow.com/a/32095106/646947
  */
-static U32 XXH_read32(const void* memPtr)
+static inline __attribute__((always_inline)) U32 XXH_read32(const __attribute__((__may_alias__)) void* memPtr)
 {
     U32 val;
     memcpy(&val, memPtr, sizeof(val));
@@ -605,14 +609,14 @@ XXH_PUBLIC_API XXH32_hash_t XXH32_hashFromCanonical(const XXH32_canonical_t* src
 #if (defined(XXH_FORCE_MEMORY_ACCESS) && (XXH_FORCE_MEMORY_ACCESS==2))
 
 /* Force direct memory access. Only works on CPU which support unaligned memory access in hardware */
-static U64 XXH_read64(const void* memPtr) { return *(const U64*) memPtr; }
+static inline __attribute__((always_inline)) U64 XXH_read64(const __attribute__((__may_alias__)) void* memPtr) { return *(const __attribute__((__may_alias__)) U64*) memPtr; }
 
 #elif (defined(XXH_FORCE_MEMORY_ACCESS) && (XXH_FORCE_MEMORY_ACCESS==1))
 
 /* __pack instructions are safer, but compiler specific, hence potentially problematic for some compilers */
 /* currently only defined for gcc and icc */
 typedef union { U32 u32; U64 u64; } __attribute__((packed)) unalign64;
-static U64 XXH_read64(const void* ptr) { return ((const unalign64*)ptr)->u64; }
+static inline __attribute__((always_inline)) U64 XXH_read64(const __attribute__((__may_alias__)) void* ptr) { return ((const unalign64*)ptr)->u64; }
 
 #else
 
@@ -620,7 +624,7 @@ static U64 XXH_read64(const void* ptr) { return ((const unalign64*)ptr)->u64; }
  * see : http://stackoverflow.com/a/32095106/646947
  */
 
-static U64 XXH_read64(const void* memPtr)
+static inline __attribute__((always_inline)) U64 XXH_read64(const __attribute__((__may_alias__)) void* memPtr)
 {
     U64 val;
     memcpy(&val, memPtr, sizeof(val));

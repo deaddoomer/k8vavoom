@@ -2663,7 +2663,7 @@ struct CurrFuncHolder {
 
   CurrFuncHolder (VMethod **aplace, VMethod *newfunc) : place(aplace), prevfunc(*aplace) { *aplace = newfunc; }
   ~CurrFuncHolder () { *place = prevfunc; place = nullptr; }
-  CurrFuncHolder &operator = (const CurrFuncHolder &);
+  CurrFuncHolder &operator = (const CurrFuncHolder &) = delete;
 };
 
 

@@ -224,7 +224,7 @@ public: // iterators
       , fwd(afwd)
     {}
 
-    inline WidgetIterator &operator = (const WidgetIterator &w) noexcept { curr = w.curr; next = w.next; fwd = w.fwd; return *this; }
+    inline void operator = (const WidgetIterator &w) noexcept { curr = w.curr; next = w.next; fwd = w.fwd; }
 
     inline WidgetIterator begin () noexcept { return WidgetIterator(*this); }
     inline WidgetIterator end () noexcept { return WidgetIterator(nullptr, fwd); }

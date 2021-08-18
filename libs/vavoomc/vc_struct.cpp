@@ -351,7 +351,7 @@ bool VStruct::DefineMembers () {
   for (VStruct *st = this; st; st = st->ParentStruct) {
     for (VField *fi = Fields; fi; fi = fi->Next) {
       if (fi->Name == NAME_None) continue; // just in case, anonymous fields
-      auto np = fmMap.find(fi->Name);
+      auto np = fmMap.get(fi->Name);
       if (np) {
         ParseError((*np)->Loc, "Redeclared field");
         ParseError(fi->Loc, "Previous declaration here");
@@ -362,7 +362,7 @@ bool VStruct::DefineMembers () {
   // check methods
   for (auto &&mt : Methods) {
     if (mt->Name == NAME_None || VStr::strEqu(*mt->Name, "ctor") || VStr::strEqu(*mt->Name, "dtor")) continue; // just in case, anonymous fields
-    auto np = fmMap.find(mt->Name);
+    auto np = fmMap.get(mt->Name);
     if (np) {
       ParseError(mt->Loc, "Field/method name conflict (%s) (previous it at %s)", *mt->Name, *(*np)->Loc.toStringNoCol());
     }
@@ -669,7 +669,7 @@ void VStruct::SerialiseObject (VStream &Strm, vuint8 *Data) {
     while (fldcount--) {
       VName fldname = NAME_None;
       Strm << fldname;
-      auto fpp = fldmap.find(fldname);
+      auto fpp = fldmap.get(fldname);
       if (!fpp) {
         GLog.WriteLine(NAME_Warning, "saved field `%s` not found in struct `%s`, value ignored", *fldname, *Name);
         VField::SkipSerialisedValue(Strm);

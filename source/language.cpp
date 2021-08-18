@@ -197,12 +197,12 @@ void VLanguage::ParseLanguageScript (vint32 Lump, const char *InCode, bool Exact
       }
 
       // check for replacement
-      VLangEntry *Found = table.Find(Key);
-      if (!Found || Found->PassNum >= PassNum) {
+      VLangEntry *vep = table.get(Key);
+      if (!vep || vep->PassNum >= PassNum) {
         VLangEntry Entry;
         Entry.Value = Value;
         Entry.PassNum = PassNum;
-        table.Set(Key, Entry);
+        table.put(Key, Entry);
         //GCon->Logf(NAME_Dev, "  [%s]=[%s]", *VStr(Key).quote(), *Value.quote());
       }
     }
@@ -249,10 +249,10 @@ VStr VLanguage::Find (VName Key, bool *found) const {
     if (found) *found = true;
     return VStr();
   }
-  const VLangEntry *Found = table.Find(Key);
-  if (Found) {
+  const VLangEntry *vep = table.get(Key);
+  if (vep) {
     if (found) *found = true;
-    return Found->Value;
+    return vep->Value;
   }
   // try lowercase
   for (const char *s = *Key; *s; ++s) {
@@ -260,10 +260,10 @@ VStr VLanguage::Find (VName Key, bool *found) const {
       // found uppercase letter, try lowercase name
       VName loname = VName(*Key, VName::FindLower);
       if (loname != NAME_None) {
-        Found = table.Find(loname);
-        if (Found) {
+        vep = table.get(loname);
+        if (vep) {
           if (found) *found = true;
-          return Found->Value;
+          return vep->Value;
         }
       }
       break;
@@ -287,10 +287,10 @@ VStr VLanguage::Find (const char *s, bool *found) const {
   }
   VName loname = VName(s, VName::FindLower);
   if (loname != NAME_None) {
-    const VLangEntry *Found = table.Find(loname);
-    if (Found) {
+    const VLangEntry *vep = table.get(loname);
+    if (vep) {
       if (found) *found = true;
-      return Found->Value;
+      return vep->Value;
     }
   }
   if (found) *found = false;
@@ -399,5 +399,5 @@ void VLanguage::ReplaceString (VName Key, VStr Value) {
   VLangEntry Entry;
   Entry.Value = Value;
   Entry.PassNum = 0;
-  table.Set(Key, Entry);
+  table.put(Key, Entry);
 }

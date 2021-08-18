@@ -616,7 +616,7 @@ VStr VCommand::GetAutoComplete (VStr prefix) {
   // check for command
   rebuildCommandCache();
 
-  auto cptr = locaseCache.find(args[0]);
+  auto cptr = locaseCache.get(args[0]);
   if (cptr) {
     VCommand *cmd = *cptr;
     VStr ac = cmd->AutoCompleteArg(args, aidx);
@@ -836,7 +836,7 @@ int VCommand::GetCommandType (VStr cmd) {
 
   rebuildCommandCache();
 
-  auto cptr = locaseCache.find(cmd);
+  auto cptr = locaseCache.get(cmd);
   if (cptr) return CT_COMMAND;
 
   VBasePlayer *plr = findPlayer();
@@ -844,7 +844,7 @@ int VCommand::GetCommandType (VStr cmd) {
 
   if (VCvar::HasVar(*cmd)) return CT_CVAR;
 
-  auto idp = AliasMap.find(cmd);
+  auto idp = AliasMap.get(cmd);
   if (idp) return CT_ALIAS;
 
   return CT_UNKNOWN;
@@ -1050,7 +1050,7 @@ void VCommand::ExecuteString (VStr Acmd, ECmdSource src, VBasePlayer *APlayer) {
   // check for command
   rebuildCommandCache();
 
-  auto cptr = locaseCache.find(ccmd);
+  auto cptr = locaseCache.get(ccmd);
   if (cptr) {
     if (cptr && !Player) Player = findPlayer(); // for local commands
     (*cptr)->Run();
@@ -1098,7 +1098,7 @@ void VCommand::ExecuteString (VStr Acmd, ECmdSource src, VBasePlayer *APlayer) {
 
   // check for command defined with ALIAS
   if (!ccmd.isEmpty()) {
-    auto idp = AliasMap.find(ccmd);
+    auto idp = AliasMap.get(ccmd);
     if (idp) {
       VAlias &al = AliasList[*idp];
       GCmdBuf.Insert("\n");
@@ -1374,7 +1374,7 @@ COMMAND(Alias) {
   }
 
   //VStr aliasName = Args[1].toLowerCase();
-  auto idxp = AliasMap.find(/*aliasName*/Args[1]);
+  auto idxp = AliasMap.get(/*aliasName*/Args[1]);
 
   if (Args.length() == 2) {
     if (!idxp) {

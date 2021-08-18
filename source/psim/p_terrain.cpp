@@ -133,7 +133,7 @@ static VSplashInfo *GetSplashInfo (const char *Name) {
   if (!Name || !Name[0]) return nullptr;
   VName loname = VName(Name, VName::FindLower);
   if (loname == NAME_None) return nullptr;
-  auto spp = SplashMap.find(loname);
+  auto spp = SplashMap.get(loname);
   return (spp ? &SplashInfos[*spp] : nullptr);
   /*
   for (int i = 0; i < SplashInfos.length(); ++i) {
@@ -153,7 +153,7 @@ static VTerrainInfo *GetTerrainInfo (const char *Name) {
   if (!Name || !Name[0]) return &TerrainInfos[DefaultTerrainIndex]; // default one
   VName loname = VName(Name, VName::FindLower);
   if (loname == NAME_None) return nullptr;
-  auto spp = TerrainMap.find(loname);
+  auto spp = TerrainMap.get(loname);
   return (spp ? &TerrainInfos[*spp] : nullptr);
 }
 
@@ -223,7 +223,7 @@ static void ProcessFlatGlobMask (VStr mask, const char *tername, VStr slocstr) {
       TerrainTypeMap.del(pic);
       continue;
     }
-    auto pp = TerrainTypeMap.find(pic);
+    auto pp = TerrainTypeMap.get(pic);
     if (pp) {
       // replace old one
       if (GlobalDisableOverride && IsTerrainNoOverride(VStr(TerrainTypes[*pp].TypeName))) {
@@ -876,7 +876,7 @@ static void ParseTerrainScript (VScriptParser *sc) {
           GCon->Logf(NAME_Init, "%s: assigning %s texture '%s' for terrain '%s'", *slocstr, stn, *floorname, *tername);
         }
       }
-      auto pp = TerrainTypeMap.find(Pic);
+      auto pp = TerrainTypeMap.get(Pic);
       if (pp) {
         // replace old one
         if (GlobalDisableOverride && IsTerrainNoOverride(VStr(TerrainTypes[*pp].TypeName))) {
@@ -1045,7 +1045,7 @@ void P_InitTerrainTypes () {
   // fix default terrain name (why not?)
   {
     vassert(DefaultTerrainName != NAME_None);
-    auto spp = TerrainMap.find(DefaultTerrainName);
+    auto spp = TerrainMap.get(DefaultTerrainName);
     if (!spp) {
       GCon->Logf(NAME_Warning, "unknown default terrain '%s', defaulted to '%s'", *DefaultTerrainNameStr, *TerrainInfos[0].Name);
       DefaultTerrainName = TerrainInfos[0].Name;
@@ -1108,7 +1108,7 @@ void P_InitTerrainTypes () {
 //==========================================================================
 VTerrainInfo *SV_TerrainType (int pic, bool asPlayer) {
   if (pic <= 0) return &TerrainInfos[DefaultTerrainIndex];
-  auto pp = TerrainTypeMap.find(pic);
+  auto pp = TerrainTypeMap.get(pic);
   VTerrainInfo *ter = (pp ? TerrainTypes[*pp].Info : nullptr);
   if (ter && !asPlayer && (ter->Flags&VTerrainInfo::F_PlayerOnly)) ter = nullptr;
   if (ter && (ter->Flags&VTerrainInfo::F_OptOut) && !gm_optional_terrain.asBool()) ter = nullptr;
@@ -1123,7 +1123,7 @@ VTerrainInfo *SV_TerrainType (int pic, bool asPlayer) {
 //==========================================================================
 VTerrainBootprint *SV_TerrainBootprint (int pic) {
   if (pic <= 0) return nullptr;
-  auto pp = TerrainBootprintMap.find(pic);
+  auto pp = TerrainBootprintMap.get(pic);
   if (pp) return *pp;
   // try terrain
   VTerrainInfo *ter = SV_TerrainType(pic, true/*asPlayer*/); // this is used ONLY for player
@@ -1139,7 +1139,7 @@ VTerrainBootprint *SV_TerrainBootprint (int pic) {
 //==========================================================================
 VTerrainBootprint *SV_FindBootprintByName (const char *name) {
   if (!name || !name[0] || VStr::strEquCI(name, "none")) return nullptr;
-  auto bpp = TerrainBootprintNameMap.find(name);
+  auto bpp = TerrainBootprintNameMap.get(name);
   return (bpp ? *bpp : nullptr);
 }
 

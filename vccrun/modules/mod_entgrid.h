@@ -92,7 +92,7 @@ protected:
   static inline vuint32 cell2u32 (int tx, int ty) { return (((vuint32)(ty&0xffff))<<16)|((vuint32)(tx&0xffff)); }
 
   inline CellInfo *getCellAt (int x, int y) const {
-    auto cpp = cellmap.find(cell2u32(x/mCellWidth, y/mCellHeight));
+    auto cpp = cellmap.get(cell2u32(x/mCellWidth, y/mCellHeight));
     return (cpp ? &cells[*cpp] : nullptr);
   }
 

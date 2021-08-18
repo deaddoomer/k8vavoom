@@ -58,7 +58,7 @@ public:
     static_assert(sizeof(u) == sizeof(vuint64), "oops");
     u.f1 = v.x;
     u.f2 = v.y;
-    auto ip = map.find(u.i64);
+    auto ip = map.get(u.i64);
     if (ip) return *ip;
     int idx = list.length();
     list.append(TVec(v.x, v.y));

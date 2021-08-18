@@ -419,7 +419,7 @@ polyobj_t *VLevel::GetPolyobj (int polyNum) noexcept {
   }
   return nullptr;
   */
-  auto pip = PolyTagMap->find(polyNum);
+  auto pip = PolyTagMap->get(polyNum);
   return (pip ? PolyObjs[*pip] : nullptr);
 }
 

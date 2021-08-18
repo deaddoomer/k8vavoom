@@ -578,7 +578,7 @@ static void BuildSpriteTexturesList () {
       sti.texid = l;
       sti.next = 0;
       // append to list
-      auto pip = spriteTexMap.find(pfx);
+      auto pip = spriteTexMap.get(pfx);
       if (pip) {
         // append to the list
         int last = *pip;
@@ -691,7 +691,7 @@ void R_InstallSprite (const char *name, int index) {
 
   BuildSpriteTexturesList();
   {
-    auto pip = spriteTexMap.find(intpfx);
+    auto pip = spriteTexMap.get(intpfx);
     if (pip) {
       int slidx = *pip;
       do {
@@ -1068,7 +1068,7 @@ int R_CreateColorTranslation (const VColorRGBA newpal[256]) {
 //==========================================================================
 int R_FindTranslationByName (VStr trname) {
   if (trname.isEmpty()) return 0;
-  auto tp = NamedTranslations.find(trname);
+  auto tp = NamedTranslations.get(trname);
   return (tp ? *tp : 0);
 }
 
@@ -1080,7 +1080,7 @@ int R_FindTranslationByName (VStr trname) {
 //==========================================================================
 int R_GetBloodTranslation (int Col, bool allowAdd) {
   // check for duplicate blood translation
-  auto ppi = BloodTransMap.find(Col&0xffffff);
+  auto ppi = BloodTransMap.get(Col&0xffffff);
   if (ppi) return *ppi;
   /*
   // check for duplicate blood translation
@@ -1130,7 +1130,7 @@ VLightEffectDef *R_FindLightEffect (VStr Name) {
       if (Name.ICmp(*GLightEffectDefs[i].Name) == 0) return &GLightEffectDefs[i];
     }
     */
-    auto ldip = GLightEffectDefsMap.find(Name);
+    auto ldip = GLightEffectDefsMap.get(Name);
     if (ldip) return &GLightEffectDefs[*ldip];
   }
   return nullptr;
@@ -1149,7 +1149,7 @@ static VParticleEffectDef *FindParticleEffect (VStr Name) {
       if (Name.ICmp(*GParticleEffectDefs[i].Name) == 0) return &GParticleEffectDefs[i];
     }
     */
-    auto pdip = GParticleEffectDefsMap.find(Name);
+    auto pdip = GParticleEffectDefsMap.get(Name);
     if (pdip) return &GParticleEffectDefs[*pdip];
   }
   return nullptr;
@@ -1183,7 +1183,7 @@ static VLightEffectDef *NewLightEffect (VStr Name, int LightType) {
 static void NewLightAlias (const VLightEffectDef *lt, VStr newname) {
   if (!lt || newname.isEmpty()) return;
   if (newname.strEquCI(*lt->Name)) return;
-  auto ldip = GLightEffectDefsMap.find(*lt->Name);
+  auto ldip = GLightEffectDefsMap.get(*lt->Name);
   if (!ldip) return; // just in case
   GLightEffectDefsMap.put(newname, *ldip);
 }
@@ -1213,7 +1213,7 @@ static VParticleEffectDef *NewParticleEffect (VStr Name) {
 //==========================================================================
 static void NewParticleAlias (const VParticleEffectDef *pt, VStr newname) {
   if (!pt || newname.length() == 0) return;
-  auto pdip = GParticleEffectDefsMap.find(*pt->Name);
+  auto pdip = GParticleEffectDefsMap.get(*pt->Name);
   vassert(pdip);
   GParticleEffectDefsMap.put(newname, *pdip);
 }

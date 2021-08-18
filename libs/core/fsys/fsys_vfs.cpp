@@ -859,7 +859,7 @@ int W_CheckNumForTextureFileName (VStr Name) {
 
   MyThreadLocker glocker(&fsys_glock);
   VStr loname = (Name.isLowerCase() ? Name : Name.toLowerCase());
-  auto ip = fullNameTexLumpChecked.find(loname);
+  auto ip = fullNameTexLumpChecked.get(loname);
   if (ip) return *ip;
 
   int res = -1;

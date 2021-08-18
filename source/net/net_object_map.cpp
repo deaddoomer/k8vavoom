@@ -87,7 +87,7 @@ void VNetObjectsMap::SetupClassLookup () {
     if (mbr->MemberType == MEMBER_Class) {
       VClass *C = static_cast<VClass *>(mbr);
       if (C->IsChildOf(VThinker::StaticClass())) {
-        ClassMap.Set(C, ClassLookup.length());
+        ClassMap.put(C, ClassLookup.length());
         ClassLookup.Append(C);
       }
     }
@@ -139,7 +139,7 @@ bool VNetObjectsMap::CanSerialiseObject (VObject *Obj) {
   VThinker *Thinker = Cast<VThinker>(Obj);
   if (Thinker) {
     // thinker can be serialised only if it has an open channel
-    return !!Connection->ThinkerChannels.FindPtr(Thinker);
+    return !!Connection->ThinkerChannels.findptr(Thinker);
   } else {
     // we can always serialise nullptr object
     return !Obj;
@@ -279,7 +279,7 @@ bool VNetObjectsMap::SerialiseObject (VStream &Strm, VObject *&Obj) {
       // channel number to identify it, otherwise we can't serialise it
       bool Ret = false;
       vuint32 Index = 0;
-      VThinkerChannel *Chan = Connection->ThinkerChannels.FindPtr(Thinker);
+      VThinkerChannel *Chan = Connection->ThinkerChannels.findptr(Thinker);
       if (Chan) {
         Index = Chan->Index;
         Ret = (Chan->OpenAcked ? true : false);
@@ -316,7 +316,7 @@ bool VNetObjectsMap::SerialiseClass (VStream &Strm, VClass *&Class) {
     }
   } else {
     if (Class) {
-      vuint32 *ClassId = ClassMap.Find(Class);
+      vuint32 *ClassId = ClassMap.get(Class);
       Strm.SerialiseInt(*ClassId/*, ClassLookup.length()*/);
     } else {
       vuint32 NoClass = 0;
@@ -345,7 +345,7 @@ bool VNetObjectsMap::SerialiseState (VStream &Strm, VState *&State) {
     }
   } else {
     if (State) {
-      vuint32 *ClassId = ClassMap.Find((VClass *)State->Outer);
+      vuint32 *ClassId = ClassMap.get((VClass *)State->Outer);
       vuint32 StateId = State->NetId;
       vensure(ClassId);
       Strm.SerialiseInt(*ClassId/*, ClassLookup.length()*/);

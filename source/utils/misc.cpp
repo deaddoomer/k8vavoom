@@ -96,20 +96,22 @@ int superatoi (const char *s) noexcept {
 */
 
 
+static TMapNC<VName, vuint32> colorNameMap; // names are lowercased
+static bool colorNamesLoaded = false;
+
+
 //==========================================================================
 //
 //  M_LookupColorName
 //
 //==========================================================================
 vuint32 M_LookupColorName (const char *Name) {
-  static TMapNC<VName, vuint32> cmap; // names are lowercased
-  static bool loaded = false;
   char tmpbuf[64];
 
   if (!Name || !Name[0]) return 0;
 
-  if (!loaded) {
-    loaded = true;
+  if (!colorNamesLoaded) {
+    colorNamesLoaded = true;
 
     // check that X111R6RGB lump exists
     int Lump = W_CheckNumForName(NAME_x11r6rgb);
@@ -198,21 +200,21 @@ vuint32 M_LookupColorName (const char *Name) {
         vuint32 clr = 0xff000000U|(((vuint32)cc[0])<<16)|(((vuint32)cc[1])<<8)|((vuint32)cc[2]);
         tmpbuf[tbpos] = 0;
         VName n = VName(tmpbuf);
-        cmap.put(n, clr);
+        colorNameMap.put(n, clr);
         /*
         char *dstr = (char *)Z_Malloc(tbpos+1);
         strcpy(dstr, tmpbuf);
-        cmap.put(dstr, clr);
-        if (!cmap.find(dstr)) Sys_Error("!!! <%s>", dstr);
+        colorNameMap.put(dstr, clr);
+        if (!colorNameMap.get(dstr)) Sys_Error("!!! <%s>", dstr);
         *pBuf = 0;
         GCon->Logf("COLOR: %3d %3d %3d  <%s> %08x  <%s>", cc[0], cc[1], cc[2], dstr, clr, (char *)start);
         *pBuf = '\n';
         */
       }
     }
-    GCon->Logf(NAME_Init, "loaded %d color names", cmap.length());
+    GCon->Logf(NAME_Init, "loaded %d color names", colorNameMap.length());
 
-    if (!cmap.find(VName("ivory"))) Sys_Error("!!! IVORY");
+    if (!colorNameMap.get(VName("ivory"))) Sys_Error("!!! IVORY");
 
     delete[] Buf;
   }
@@ -290,7 +292,7 @@ vuint32 M_LookupColorName (const char *Name) {
   VName cnx = VName(tmpbuf, VName::Find);
   if (cnx == NAME_None) return 0;
 
-  auto cpp = cmap.find(tmpbuf);
+  auto cpp = colorNameMap.get(tmpbuf);
   /*
   if (cpp) {
     GCon->Logf("*** FOUND COLOR <%s> : <%s> : 0x%08x", Name, tmpbuf, *cpp);

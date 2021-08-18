@@ -44,9 +44,9 @@ public:
   explicit VVA_ALWAYS_INLINE VStrCI (double v) noexcept : VStr(v) {}
 
   // assignement operators
-  VVA_ALWAYS_INLINE VStrCI &operator = (const char *instr) noexcept { setContent(instr); return *this; }
-  VVA_ALWAYS_INLINE VStrCI &operator = (const VStr &instr) noexcept { assign(instr); return *this; }
-  VVA_ALWAYS_INLINE VStrCI &operator = (const VStrCI &instr) noexcept { assign(instr); return *this; }
+  VVA_ALWAYS_INLINE void operator = (const char *instr) noexcept { setContent(instr); }
+  VVA_ALWAYS_INLINE void operator = (const VStr &instr) noexcept { assign(instr); }
+  VVA_ALWAYS_INLINE void operator = (const VStrCI &instr) noexcept { assign(instr); }
 
   // comparison operators
   friend VVA_ALWAYS_INLINE bool operator == (const VStrCI &S1, const char *S2) noexcept { return (ICmp(*S1, S2) == 0); }
@@ -77,4 +77,4 @@ public:
   friend VVA_ALWAYS_INLINE bool operator >= (const VStrCI &S1, const VStrCI &S2) noexcept { return (S1.getData() == S2.getData() ? true : (ICmp(*S1, *S2) >= 0)); }
 };
 
-VVA_ALWAYS_INLINE VVA_PURE vuint32 GetTypeHash (const VStrCI &s) noexcept { return fnvHashStrCI(*s); }
+VVA_ALWAYS_INLINE VVA_PURE uint32_t GetTypeHash (const VStrCI &s) noexcept { return vvHashStrZCI(*s); }

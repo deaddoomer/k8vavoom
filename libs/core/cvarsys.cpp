@@ -51,7 +51,7 @@ static inline vuint32 cvnamehash (const char *buf) {
 #ifdef USE_SIMPLE_HASHFN
   return djbHashBufCI(buf, strlen(buf));
 #else
-  return fnvHashBufCI(buf, strlen(buf));
+  return vvHashBufCI(buf, strlen(buf));
 #endif
 }
 
@@ -1180,13 +1180,13 @@ void VCvar::DumpAllVars () {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-VCvarI &VCvarI::operator = (const VCvarB &v) { Set(v.asBool() ? 1 : 0); return *this; }
-VCvarI &VCvarI::operator = (const VCvarI &v) { Set(v.IntValue); return *this; }
+void VCvarI::operator = (const VCvarB &v) { Set(v.asBool() ? 1 : 0); }
+void VCvarI::operator = (const VCvarI &v) { Set(v.IntValue); }
 
-VCvarF &VCvarF::operator = (const VCvarB &v) { Set(v.asBool() ? 1.0f : 0.0f); return *this; }
-VCvarF &VCvarF::operator = (const VCvarI &v) { Set((float)v.asInt()); return *this; }
-VCvarF &VCvarF::operator = (const VCvarF &v) { Set(v.FloatValue); return *this; }
+void VCvarF::operator = (const VCvarB &v) { Set(v.asBool() ? 1.0f : 0.0f); }
+void VCvarF::operator = (const VCvarI &v) { Set((float)v.asInt()); }
+void VCvarF::operator = (const VCvarF &v) { Set(v.FloatValue); }
 
-VCvarB &VCvarB::operator = (const VCvarB &v) { Set(v.BoolValue ? 1 : 0); return *this; }
-VCvarB &VCvarB::operator = (const VCvarI &v) { Set(v.asInt() ? 1 : 0); return *this; }
-VCvarB &VCvarB::operator = (const VCvarF &v) { Set(v.asFloat() ? 1 : 0); return *this; }
+void VCvarB::operator = (const VCvarB &v) { Set(v.BoolValue ? 1 : 0); }
+void VCvarB::operator = (const VCvarI &v) { Set(v.asInt() ? 1 : 0); }
+void VCvarB::operator = (const VCvarF &v) { Set(v.asFloat() ? 1 : 0); }

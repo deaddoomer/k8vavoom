@@ -612,7 +612,7 @@ VThinker *VLevel::SpawnThinker (VClass *AClass, const TVec &AOrigin,
   }
 
   // check for forced replacement
-  auto repclspp = ForceReplacements.find(Class->Name);
+  auto repclspp = ForceReplacements.get(Class->Name);
   if (repclspp) {
     VClass *ocls = Class;
     Class = *repclspp;

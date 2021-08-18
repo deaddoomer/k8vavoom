@@ -168,8 +168,8 @@ public:
   inline void condense () noexcept { Resize(ArrNum); }
 
   // this won't copy capacity (there is no reason to do it)
-  TArray<T> &operator = (const TArray<T> &other) noexcept {
-    if (&other == this) return *this; // oops
+  void operator = (const TArray<T> &other) noexcept {
+    if (&other == this) return; // oops
     vassert(!other.Is2D());
     clear();
     int newsz = other.ArrNum;
@@ -182,7 +182,6 @@ public:
         ArrData[i] = other.ArrData[i];
       }
     }
-    return *this;
   }
 
   inline T &operator [] (int index) noexcept {

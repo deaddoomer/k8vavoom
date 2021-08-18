@@ -75,7 +75,7 @@ static bool setNamePut (VName setName, VName value) {
 //==========================================================================
 static bool setNameCheck (VName setName, VName value) {
   VStr realName = VStr(va("%s \x01\x01\x01 %s", *setName, *value));
-  return !!setOfNameSets.find(realName);
+  return setOfNameSets.has(realName);
 }
 
 

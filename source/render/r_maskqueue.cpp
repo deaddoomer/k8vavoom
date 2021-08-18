@@ -1125,7 +1125,7 @@ void VRenderLevelShared::DrawTranslucentPolys () {
           continue;
         }
         #else
-        auto lssp = lastSSurfMap.find(spsub);
+        auto lssp = lastSSurfMap.get(spsub);
         if (!lssp) {
           // no such subsector, append to the end of the list (but before all other sprites there)
           int iidx = dls.DrawSurfListAlpha.length();

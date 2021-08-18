@@ -382,7 +382,7 @@ int VOpenALDevice::LoadSound (int sound_id, ALuint *src) {
   }
 
   // check that sound lump is queued
-  auto pss = sourcesPending.find(sound_id);
+  auto pss = sourcesPending.get(sound_id);
   if (pss) {
     // pending sound, generate new source, and add it to pending list
     if (!AllocSource(src)) {
@@ -413,8 +413,8 @@ int VOpenALDevice::LoadSound (int sound_id, ALuint *src) {
 
   if (res == VSoundManager::LS_Pending) {
     // pending sound, generate new source, and add it to pending list
-    vassert(!sourcesPending.find(sound_id));
-    vassert(!srcPendingSet.find(*src));
+    vassert(!sourcesPending.get(sound_id));
+    vassert(!srcPendingSet.get(*src));
     PendingSrc *psrc = new PendingSrc;
     psrc->src = *src;
     psrc->sound_id = sound_id;
@@ -560,11 +560,11 @@ void VOpenALDevice::StopChannel (int Handle) {
   if (Handle == -1) return;
   ALuint hh = (ALuint)Handle;
   // remove pending sounds
-  auto sidp = srcPendingSet.find(hh);
+  auto sidp = srcPendingSet.get(hh);
   if (sidp) {
     // remove from pending list
     srcPendingSet.del(hh);
-    PendingSrc **pss = sourcesPending.find(*sidp);
+    PendingSrc **pss = sourcesPending.get(*sidp);
     if (pss) {
       PendingSrc *prev = nullptr, *cur = *pss;
       while (cur && cur->src != hh) {
@@ -633,7 +633,7 @@ void VOpenALDevice::UpdateListener (const TVec &org, const TVec &vel,
 //
 //==========================================================================
 void VOpenALDevice::NotifySoundLoaded (int sound_id, bool success) {
-  PendingSrc **pss = sourcesPending.find(sound_id);
+  PendingSrc **pss = sourcesPending.get(sound_id);
   if (!pss) return; // nothing to do
   PendingSrc *cur = *pss;
   while (cur) {

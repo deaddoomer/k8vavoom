@@ -116,11 +116,9 @@ constexpr inline VVA_PURE const char *SkipPathPartCStr (const char *s) noexcept 
 //==========================================================================
 
 #if !defined(VAVOOM_DISABLE_ASSERTS)
-//# define vassert(e)  if (!(e)) throw VavoomError("Assertion failed: " #e)
-# define vassert(e)  if (!(e)) do { Sys_Error("%s:%d: Assertion failed: %s", SkipPathPartCStr(__FILE__), __LINE__, #e); } while (0)
+# define vassert(cond_)  do { if (!(cond_)) Sys_Error("%s:%d: Assertion failed: %s", SkipPathPartCStr(__FILE__), __LINE__, #cond_); } while (0)
 #else
 # warning "WARNING! WARNING! WARNING! you'd better NEVER turn off assertion checking in k8vavoom code!"
-# define vassert(e)
+# define vassert(cond_)
 #endif
-//#define vensure(e)  if (!(e)) throw VavoomError("Assertion failed: " #e)
-#define vensure(e)  if (!(e)) do { Sys_Error("%s:%d: Assertion failed: %s", SkipPathPartCStr(__FILE__), __LINE__, #e); } while (0)
+#define vensure(cond_)  do { if (!(cond_)) Sys_Error("%s:%d: Assertion failed: %s", SkipPathPartCStr(__FILE__), __LINE__, #cond_); } while (0)

@@ -191,7 +191,7 @@ int VSoundManager::AddSound (VName TagName, const VStr &filename) {
 //
 //==========================================================================
 int VSoundManager::FindSound (VName tagName) {
-  auto ii = name2idx.find(tagName);
+  auto ii = name2idx.get(tagName);
   if (ii) return *ii;
   return 0;
 }
@@ -203,7 +203,7 @@ int VSoundManager::FindSound (VName tagName) {
 //
 //==========================================================================
 int VSoundManager::GetSoundPriority (VName tagName) {
-  auto ii = name2idx.find(tagName);
+  auto ii = name2idx.get(tagName);
   return (ii ? S_sfx[*ii].priority : 127);
 }
 
@@ -214,7 +214,7 @@ int VSoundManager::GetSoundPriority (VName tagName) {
 //
 //==========================================================================
 void VSoundManager::SetSoundPriority (VName tagName, int value) {
-  auto ii = name2idx.find(tagName);
+  auto ii = name2idx.get(tagName);
   if (ii) S_sfx[*ii].priority = value;
 }
 
@@ -225,7 +225,7 @@ void VSoundManager::SetSoundPriority (VName tagName, int value) {
 //
 //==========================================================================
 int VSoundManager::GetSoundChannels (VName tagName) {
-  auto ii = name2idx.find(tagName);
+  auto ii = name2idx.get(tagName);
   return (ii ? S_sfx[*ii].numChannels : 2);
 }
 
@@ -236,7 +236,7 @@ int VSoundManager::GetSoundChannels (VName tagName) {
 //
 //==========================================================================
 void VSoundManager::SetSoundChannels (VName tagName, int value) {
-  auto ii = name2idx.find(tagName);
+  auto ii = name2idx.get(tagName);
   if (ii) S_sfx[*ii].numChannels = value;
 }
 
@@ -247,7 +247,7 @@ void VSoundManager::SetSoundChannels (VName tagName, int value) {
 //
 //==========================================================================
 float VSoundManager::GetSoundRandomPitch (VName tagName) {
-  auto ii = name2idx.find(tagName);
+  auto ii = name2idx.get(tagName);
   return (ii ? S_sfx[*ii].changePitch : 0);
 }
 
@@ -258,7 +258,7 @@ float VSoundManager::GetSoundRandomPitch (VName tagName) {
 //
 //==========================================================================
 void VSoundManager::SetSoundRandomPitch (VName tagName, float value) {
-  auto ii = name2idx.find(tagName);
+  auto ii = name2idx.get(tagName);
   if (ii) S_sfx[*ii].changePitch = value;
 }
 
@@ -269,7 +269,7 @@ void VSoundManager::SetSoundRandomPitch (VName tagName, float value) {
 //
 //==========================================================================
 bool VSoundManager::GetSoundSingular (VName tagName) {
-  auto ii = name2idx.find(tagName);
+  auto ii = name2idx.get(tagName);
   return (ii ? S_sfx[*ii].bSingular : false);
 }
 
@@ -280,7 +280,7 @@ bool VSoundManager::GetSoundSingular (VName tagName) {
 //
 //==========================================================================
 void VSoundManager::SetSoundSingular (VName tagName, bool value) {
-  auto ii = name2idx.find(tagName);
+  auto ii = name2idx.get(tagName);
   if (ii) S_sfx[*ii].bSingular = value;
 }
 

@@ -353,7 +353,7 @@ VDecalDef *VDecalDef::find (const char *aname) noexcept {
   if (!aname || !aname[0]) return nullptr;
   VName xn = VName(aname, VName::FindLower);
   if (xn == NAME_None) return nullptr;
-  auto dpp = decalNameMap.find(xn);
+  auto dpp = decalNameMap.get(xn);
   return (dpp ? *dpp : nullptr);
 }
 
@@ -367,7 +367,7 @@ VDecalDef *VDecalDef::find (VStr aname) noexcept {
   if (aname.isEmpty()) return nullptr;
   VName xn = VName(*aname, VName::FindLower);
   if (xn == NAME_None) return nullptr;
-  auto dpp = decalNameMap.find(xn);
+  auto dpp = decalNameMap.get(xn);
   return (dpp ? *dpp : nullptr);
 }
 
@@ -381,7 +381,7 @@ VDecalDef *VDecalDef::find (VName aname) noexcept {
   if (aname == NAME_None) return nullptr;
   VName xn = aname.GetLowerNoCreate();
   if (xn == NAME_None) return nullptr;
-  auto dpp = decalNameMap.find(xn);
+  auto dpp = decalNameMap.get(xn);
   return (dpp ? *dpp : nullptr);
   /*
   for (auto it = listHead; it; it = it->next) {
@@ -874,7 +874,7 @@ VDecalGroup *VDecalGroup::find (const char *aname) noexcept {
   if (!aname || !aname[0]) return nullptr;
   VName xn = VName(aname, VName::FindLower);
   if (xn == NAME_None) return nullptr;
-  auto dpp = decalNameMap.find(xn);
+  auto dpp = decalNameMap.get(xn);
   return (dpp ? *dpp : nullptr);
 }
 
@@ -888,7 +888,7 @@ VDecalGroup *VDecalGroup::find (VStr aname) noexcept {
   if (aname.isEmpty()) return nullptr;
   VName xn = VName(*aname, VName::FindLower);
   if (xn == NAME_None) return nullptr;
-  auto dpp = decalNameMap.find(xn);
+  auto dpp = decalNameMap.get(xn);
   return (dpp ? *dpp : nullptr);
 }
 
@@ -902,7 +902,7 @@ VDecalGroup *VDecalGroup::find (VName aname) noexcept {
   if (aname == NAME_None) return nullptr;
   VName xn = aname.GetLowerNoCreate();
   if (xn == NAME_None) return nullptr;
-  auto dpp = decalNameMap.find(xn);
+  auto dpp = decalNameMap.get(xn);
   return (dpp ? *dpp : nullptr);
   /*
   for (auto it = listHead; it; it = it->next) {

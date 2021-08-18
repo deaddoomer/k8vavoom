@@ -188,7 +188,7 @@ void VPlayerChannel::CheckPlayerMO () {
       LastMOSUid = Plr->MO->ServerUId;
       if (Connection->IsClient()) Plr->eventInitWeaponSlots();
       GotMOOrigin = false;
-      auto mop = Connection->ThinkerChannels.find(Plr->MO);
+      auto mop = Connection->ThinkerChannels.get(Plr->MO);
       if (mop) GotMOOrigin = (*mop)->GotOrigin;
     }
   } else {
@@ -245,7 +245,7 @@ void VPlayerChannel::Update () {
         strm.WriteUInt((unsigned)i);
         if (VField::NetSerialiseValue(strm, Connection->ObjMap, Data+F->Ofs+i*InnerSize, IntType)) {
           VField::CopyFieldValue(Data+F->Ofs+i*InnerSize, OldData+F->Ofs+i*InnerSize, IntType);
-          FieldsToResend.remove(F);
+          FieldsToResend.del(F);
         } else {
           if (NewObj || true) FieldsToResend.put(F, true);
         }
@@ -256,7 +256,7 @@ void VPlayerChannel::Update () {
       strm.WriteUInt((unsigned)F->NetIndex);
       if (VField::NetSerialiseValue(strm, Connection->ObjMap, Data+F->Ofs, F->Type)) {
         VField::CopyFieldValue(Data+F->Ofs, OldData+F->Ofs, F->Type);
-        FieldsToResend.remove(F);
+        FieldsToResend.del(F);
       } else {
         if (NewObj || true) FieldsToResend.put(F, true);
       }

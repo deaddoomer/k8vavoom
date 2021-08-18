@@ -50,7 +50,7 @@ public:
     if (xy[1] == 0) memset(&xy[1], 0, sizeof(xy[1]));
   }
 
-  VVA_ALWAYS_INLINE Vertex2DInfo &operator = (const Vertex2DInfo &other) noexcept { if (&other != this) memcpy((void *)this, (const void *)&other, sizeof(Vertex2DInfo)); return *this; }
+  VVA_ALWAYS_INLINE void operator = (const Vertex2DInfo &other) noexcept { if (&other != this) memcpy((void *)this, (const void *)&other, sizeof(Vertex2DInfo)); }
 
   inline bool operator == (const Vertex2DInfo &vi) const noexcept { return (memcmp(&xy[0], &vi.xy[0], sizeof(xy)) == 0); }
   inline bool operator != (const Vertex2DInfo &vi) const noexcept { return (memcmp(&xy[0], &vi.xy[0], sizeof(xy)) != 0); }
@@ -64,4 +64,4 @@ public:
 };
 static_assert(sizeof(Vertex2DInfo) == sizeof(float)*2+sizeof(int), "oops");
 
-inline VVA_PURE vuint32 GetTypeHash (const Vertex2DInfo &vi) noexcept { return joaatHashBuf(vi.getHashData(), vi.getHashDataSize()); }
+VVA_ALWAYS_INLINE VVA_PURE uint32_t GetTypeHash (const Vertex2DInfo &vi) noexcept { return joaatHashBuf(vi.getHashData(), vi.getHashDataSize()); }

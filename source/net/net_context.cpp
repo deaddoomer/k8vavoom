@@ -69,18 +69,18 @@ void VNetContext::ThinkerDestroyed (VThinker *Th) {
   if (!Th) return; // just in case
   if (IsClient()) {
     // client; have connection with a server
-    VThinkerChannel *chan = ServerConnection->ThinkerChannels.FindPtr(Th);
+    VThinkerChannel *chan = ServerConnection->ThinkerChannels.findptr(Th);
     if (chan) {
       chan->SetThinker(nullptr); // notify channel that the thinker is already dead
       chan->Close();
     }
     // remove from detached list (just in case)
-    ServerConnection->DetachedThinkers.remove(Th);
-    ServerConnection->SimulatedThinkers.remove(Th);
+    ServerConnection->DetachedThinkers.del(Th);
+    ServerConnection->SimulatedThinkers.del(Th);
   } else {
     // server; remove thinker from all clients
     for (auto &&it : ClientConnections) {
-      VThinkerChannel *chan = it->ThinkerChannels.FindPtr(Th);
+      VThinkerChannel *chan = it->ThinkerChannels.findptr(Th);
       if (chan) {
         chan->SetThinker(nullptr); // notify channel that the thinker is already dead
         chan->Close();
@@ -89,8 +89,8 @@ void VNetContext::ThinkerDestroyed (VThinker *Th) {
         if (it->DetachedThinkers.has(Th)) GCon->Logf(NAME_Debug, "%s:%u: removed from detached list", Th->GetClass()->GetName(), Th->GetUniqueId());
       }
       // remove from detached list
-      it->DetachedThinkers.remove(Th);
-      it->SimulatedThinkers.remove(Th);
+      it->DetachedThinkers.del(Th);
+      it->SimulatedThinkers.del(Th);
     }
   }
 }

@@ -312,9 +312,9 @@ struct VCustomKeyInfo {
     inline Value (const int iv, const float fv) noexcept : i(iv), f(fv) {}
   };
 
-  typedef TMapNC<vint32, Value> ValueMap; // key: line tag or thing id
+  TArray<Value> allValues;
 
-  TMap<VName, ValueMap> idMap;
+  TMapNC<VCustomKeyInfo_NamedValue, int> idMap; // value: index in `allValues`
 
   inline VCustomKeyInfo () noexcept : idMap() {}
   inline ~VCustomKeyInfo () noexcept { idMap.clear(); }
@@ -322,22 +322,27 @@ struct VCustomKeyInfo {
   inline void putKey (int id, const char *name, int iv, float fv) noexcept {
     if (!name || !name[0] || !id) return;
     VName n = VName(name, VName::AddLower);
-    ValueMap *mp = idMap.find(n);
+    VCustomKeyInfo_NamedValue key(n, id);
+    const auto mp = idMap.get(key);
     if (!mp) {
-      idMap.put(n, ValueMap());
-      mp = idMap.find(n);
-      vassert(mp);
+      // new value
+      const int aidx = allValues.length();
+      allValues.append(Value(iv, fv));
+      idMap.put(key, aidx);
+    } else {
+      // replace old value
+      allValues[*mp] = Value(iv, fv);
     }
-    mp->put(id, Value(iv, fv));
   }
 
   inline const Value *findKey (int id, const char *name) const noexcept {
     if (!id || !name || !name[0]) return nullptr;
     VName n = VName(name, VName::FindLower);
     if (n == NAME_None) return nullptr;
-    const ValueMap *mp = idMap.find(n);
+    VCustomKeyInfo_NamedValue key(n, id);
+    const auto mp = idMap.get(key);
     if (!mp) return nullptr;
-    return mp->find(id);
+    return &allValues[*mp];
   }
 };
 
@@ -918,7 +923,7 @@ public:
   void DestroyAllThinkers ();
 
   inline VEntity *GetEntityBySUId (vuint32 suid) const {
-    VEntity **ee = (suid ? suid2ent->find(suid) : nullptr);
+    VEntity **ee = (suid ? suid2ent->get(suid) : nullptr);
     return (ee ? *ee : nullptr);
   }
 

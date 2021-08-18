@@ -40,41 +40,16 @@ typedef unsigned int vuint32;
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "../common.h"
+#include "../hash/hashfunc.h"
 
 #define vassert(cond_)  do { \
   if (!(cond_)) { \
-    fprintf(stderr, "%s:%d: Assertion failed: %s", __FILE__, __LINE__, #cond_); \
+    fprintf(stderr, "%s:%d: Assertion failed: %s\n", __FILE__, __LINE__, #cond_); \
+    __builtin_trap(); \
   } \
 } while (0)
 
-#ifndef VVA_OKUNUSED
-# define VVA_OKUNUSED     __attribute__((unused))
-#endif
-#ifndef VVA_CHECKRESULT
-# define VVA_CHECKRESULT  __attribute__((warn_unused_result))
-#endif
-#ifndef VVA_PURE
-# define VVA_PURE         __attribute__((pure))
-#endif
-#ifndef VVA_CONST
-# define VVA_CONST        __attribute__((const))
-#endif
-#ifndef VVA_ALWAYS_INLINE
-# define VVA_ALWAYS_INLINE  inline __attribute__((always_inline))
-#endif
-
-
-VVA_ALWAYS_INLINE VVA_PURE uint32_t GetTypeHash (const int a) noexcept {
-  uint32_t res = (uint32_t)a;
-  res -= (res<<6);
-  res = res^(res>>17);
-  res -= (res<<9);
-  res = res^(res<<4);
-  res -= (res<<3);
-  res = res^(res<<10);
-  res = res^(res>>15);
-  return res;
-}
 
 
 static void fatal (const char *msg) {
@@ -95,16 +70,11 @@ void Sys_Error (const char *error, ...) {
 }
 
 
-#include "../common.h"
 #include "../zone.h"
 #include "../map.h"
 
-//int zone_malloc_call_count;
-//int zone_realloc_call_count;
-//int zone_free_call_count;
 
-
-
+// ////////////////////////////////////////////////////////////////////////// //
 // tests for hash table
 enum { MaxItems = 16384 };
 
@@ -183,6 +153,15 @@ void testIterator (bool verbose) {
 
 
 int main (int argc, char *argv[]) {
+#if 0
+  const char *ss = "abc";
+  const uint32_t hall = bjHashBuf(ss, strlen(ss));
+  uint32_t h0 = bjHashBuf(ss+0, 1);
+  uint32_t h1 = bjHashBuf(ss+1, 1, h0);
+  uint32_t h2 = bjHashBuf(ss+2, 1, h1);
+  vassert(hall == h2);
+#endif
+
   int xcount;
 
   for (int i = 0; i < MaxItems; ++i) its[i] = -1;

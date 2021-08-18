@@ -243,7 +243,7 @@ static VVA_OKUNUSED void CountAllEntities () {
     VObject *o = VObject::GetIndexObject(f);
     if (!o) continue;
     VClass *cc = o->GetClass();
-    auto xp = cmap.find(cc);
+    auto xp = cmap.get(cc);
     if (xp) {
       ++(*xp);
     } else {

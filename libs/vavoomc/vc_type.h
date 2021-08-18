@@ -218,7 +218,7 @@ struct VScriptDictElem {
   VScriptDictElem () : value(nullptr), type(), /*hash(0),*/ flags(0) {}
   ~VScriptDictElem () { clear(); }
   VScriptDictElem (const VScriptDictElem &e) { e.copyTo(this); }
-  VScriptDictElem &operator = (const VScriptDictElem &e) { if (&e != this) e.copyTo(this); return *this; }
+  void operator = (const VScriptDictElem &e) { if (&e != this) e.copyTo(this); }
 
   bool operator == (const VScriptDictElem &e) const;
 
@@ -275,8 +275,8 @@ public:
 
 public:
   VScriptDict () : map(nullptr) {}
-  VScriptDict (const VScriptDict &); // no wai
-  VScriptDict &operator = (const VScriptDict &); // no wai
+  VScriptDict (const VScriptDict &) = delete; // no wai
+  VScriptDict &operator = (const VScriptDict &) = delete; // no wai
 
   int length () const;
   int capacity () const;

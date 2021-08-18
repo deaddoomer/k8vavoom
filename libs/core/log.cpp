@@ -62,8 +62,8 @@ static TMap<vuint32, ColorInfo> ttyColors;
 static TMap<vuint32, ColorInfo> engineColors;
 
 static inline const char *GetColorInfoFromMap (TMap<vuint32, ColorInfo> &map, EName type, bool &reset) noexcept {
-  auto pp = map.find((vuint32)type);
-  if (!pp) pp = map.find((vuint32)NAME_None);
+  auto pp = map.get((vuint32)type);
+  if (!pp) pp = map.get((vuint32)NAME_None);
   if (pp) {
     reset = pp->resetColor;
     return *pp->color;
@@ -81,7 +81,7 @@ static inline void SetColorInfoToMap (TMap<vuint32, ColorInfo> &map, EName type,
     ci.type = type;
     map.put((vuint32)type, ci);
   } else {
-    map.remove((vuint32)type);
+    map.del((vuint32)type);
   }
 }
 

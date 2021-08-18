@@ -328,7 +328,7 @@ static VClassModelScript *FindClassModelByName (VName clsName) {
       ClassModelMap.put(mdl->Name, mdl);
     }
   }
-  auto mp = ClassModelMap.find(clsName);
+  auto mp = ClassModelMap.get(clsName);
   return (mp ? *mp : nullptr);
 }
 
@@ -1240,7 +1240,7 @@ static void ParseGZModelDefs () {
             }
             // merge with already existing model, if there is any
             VStr locname = mdl->className.toLowerCase();
-            auto omp = gzmdmap.find(locname);
+            auto omp = gzmdmap.get(locname);
             if (omp) {
               if (dbg_dump_gzmodels) {
                 GCon->Log(NAME_Debug, "*** MERGE ***");
@@ -1431,7 +1431,7 @@ static int FindFrame (VClassModelScript &Cls, const VAliasModelFrameInfo &Frame,
   //FIXME: reduce pasta!
   if (Frame.sprite != NAME_None && Frame.frame >= 0 && Frame.frame < 4096) {
     // by sprite name
-    int *idxp = Cls.SprFrameMap.find(SprNameFrameToInt(Frame.sprite, Frame.frame));
+    int *idxp = Cls.SprFrameMap.get(SprNameFrameToInt(Frame.sprite, Frame.frame));
     if (idxp) {
       int idx = *idxp;
       while (idx >= 0) {
@@ -1444,7 +1444,7 @@ static int FindFrame (VClassModelScript &Cls, const VAliasModelFrameInfo &Frame,
 
   if (Frame.index >= 0) {
     // by index
-    int *idxp = Cls.NumFrameMap.find(Frame.index);
+    int *idxp = Cls.NumFrameMap.get(Frame.index);
     if (idxp) {
       int idx = *idxp;
       while (idx >= 0) {
@@ -2147,7 +2147,7 @@ bool VRenderLevelShared::DrawAliasModel (VEntity *mobj, VName clsName, const TVe
 //==========================================================================
 static VModel *FindFixedModelFor (VEntity *Ent, bool verbose) {
   vassert(Ent);
-  auto mpp = fixedModelMap.find(Ent->FixedModelName);
+  auto mpp = fixedModelMap.get(Ent->FixedModelName);
   if (mpp) return *mpp;
   // first time
   VStr fname = VStr("models/")+Ent->FixedModelName;

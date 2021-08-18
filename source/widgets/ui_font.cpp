@@ -822,7 +822,7 @@ VFont *VFont::FindFont (VStr AName) {
   #else
   if (!AName.isEmpty()) {
     VStr n = TrimPathFromFontName(AName);
-    auto fpp = FontMap.find(n);
+    auto fpp = FontMap.get(n);
     if (fpp) return *fpp;
   }
   #endif
@@ -1182,7 +1182,7 @@ int VFont::FindChar (int Chr) {
   // fast look-up for ASCII characters
   if (Chr >= 0 && Chr < 128) return AsciiChars[Chr];
   BuildCharMap();
-  auto pp = CharMap.find(Chr);
+  auto pp = CharMap.get(Chr);
   return (pp ? *pp : -1);
 }
 

@@ -607,14 +607,13 @@ public:
   public:
     MTLock (const MTLock &alock) : tm(alock.tm) { ++tm->inMapTextures; }
     ~MTLock () { if (tm) --tm->inMapTextures; tm = nullptr; }
-    MTLock &operator = (const MTLock &alock) {
-      if (&alock == this) return *this;
+    void operator = (const MTLock &alock) {
+      if (&alock == this) return;
       if (alock.tm != tm) {
         if (tm) --tm->inMapTextures;
         tm = alock.tm;
       }
       if (tm) ++tm->inMapTextures;
-      return *this;
     }
   };
 

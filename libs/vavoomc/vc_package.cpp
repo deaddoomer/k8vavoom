@@ -110,7 +110,7 @@ static void PutClassToList (Lists &l, VClass *cls) {
   if (!l.oldIndex.has(cls)) return; // not our class
   if (l.newIndex.has(cls)) return; // already processed
   // put parent first
-  auto pcp = l.nameMap.find(cls->ParentClassName);
+  auto pcp = l.nameMap.get(cls->ParentClassName);
   VClass *parent = (pcp ? *pcp : nullptr);
   //GLog.Logf(NAME_Debug, "CLASS '%s': parent is '%s' (%s)", *cls->GetFullName(), *cls->ParentClassName, (parent ? *parent->GetFullName() : "<none>"));
   vassert(parent != cls);
@@ -470,7 +470,7 @@ void VPackage::StaticEmitPackages () {
   for (auto &&mm : GMembers) {
     VPackage *pkg = mm->GetPackageRelaxed();
     if (!pkg) continue;
-    auto pp = pidMap.find(pkg);
+    auto pp = pidMap.get(pkg);
     if (pp) {
       const int pidx = *pp;
       vassert(pinfo[pidx].pkg == pkg);

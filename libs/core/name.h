@@ -225,4 +225,4 @@ public:
 static_assert(sizeof(VName) == sizeof(vint32), "invalid VName class size!"); // for VavoomC
 
 
-inline VVA_PURE vuint32 GetTypeHash (const VName &N) noexcept { return hashU32((vuint32)(N.GetIndex())); }
+VVA_ALWAYS_INLINE VVA_PURE uint32_t GetTypeHash (const VName N) noexcept { return hashU32((uint32_t)(N.GetIndex())); }

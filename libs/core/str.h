@@ -239,8 +239,8 @@ public:
   void chopRight (int len) noexcept;
 
   // assignement operators
-  VVA_ALWAYS_INLINE VStr &operator = (const char *instr) noexcept { setContent(instr); return *this; }
-  VVA_ALWAYS_INLINE VStr &operator = (const VStr &instr) noexcept { assign(instr); return *this; }
+  VVA_ALWAYS_INLINE void operator = (const char *instr) noexcept { setContent(instr); }
+  VVA_ALWAYS_INLINE void operator = (const VStr &instr) noexcept { assign(instr); }
 
   VStr &appendCStr (const char *instr, int len=-1) noexcept {
     if (len < 0) len = (int)(instr && instr[0] ? strlen(instr) : 0);
@@ -825,12 +825,9 @@ public:
 };
 
 
-//VVA_ALWAYS_INLINE VVA_PURE vuint32 GetTypeHash (const char *s) { return (s && s[0] ? fnvHashBuf(s, strlen(s)) : 1); }
-//VVA_ALWAYS_INLINE VVA_PURE vuint32 GetTypeHash (const VStr &s) { return (s.length() ? fnvHashBuf(*s, s.length()) : 1); }
-
 // results MUST be equal
-VVA_ALWAYS_INLINE VVA_PURE vuint32 GetTypeHash (const char *s) noexcept { return fnvHashStr(s); }
-VVA_ALWAYS_INLINE VVA_PURE vuint32 GetTypeHash (const VStr &s) noexcept { return fnvHashStr(*s); }
+VVA_ALWAYS_INLINE VVA_PURE uint32_t GetTypeHash (const char *s) noexcept { return vvHashStrZ(s); }
+VVA_ALWAYS_INLINE VVA_PURE uint32_t GetTypeHash (const VStr &s) noexcept { return vvHashStrZ(*s); }
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -845,10 +842,10 @@ public:
   static VVA_CHECKRESULT VVA_ALWAYS_INLINE bool isValidCodepoint (int c) noexcept { return ((c >= 0 && c < 0xD800) || (c > 0xDFFF && c <= 0x10FFFF)); } // is given codepoint valid?
 
 protected:
-  vuint32 state;
+  uint32_t state;
 
 public:
-  vuint32 codepoint; // decoded codepoint (valid only when decoder is in "complete" state)
+  uint32_t codepoint; // decoded codepoint (valid only when decoder is in "complete" state)
 
 public:
   VVA_ALWAYS_INLINE VUtf8DecoderFast () noexcept : state(Accept), codepoint(0) {}
@@ -865,9 +862,9 @@ public:
   VVA_CHECKRESULT VVA_ALWAYS_INLINE bool hasCodePoint () const noexcept { return (state == Accept || state == Reject); }
 
   // process another input byte; returns `true` if codepoint is complete
-  VVA_ALWAYS_INLINE bool put (vuint8 c) noexcept {
+  VVA_ALWAYS_INLINE bool put (const uint8_t c) noexcept {
     if (state == Reject) { state = Accept; codepoint = 0; } // restart from invalid state
-    vuint8 tp = utf8dfa[c];
+    uint8_t tp = utf8dfa[c];
     codepoint = (state != Accept ? (c&0x3f)|(codepoint<<6) : (0xff>>tp)&c);
     state = utf8dfa[256+state+tp];
     if (state == Reject) codepoint = Replacement;
@@ -875,7 +872,7 @@ public:
   }
 
 protected:
-  static const vuint8 utf8dfa[0x16c];
+  static const uint8_t utf8dfa[0x16c];
 };
 
 // required for Vavoom C VM

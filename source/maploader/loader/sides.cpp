@@ -108,7 +108,9 @@ void VLevel::CreateSides () {
   if (dummySideCount) {
     for (int f = NumNewSides; f < NumNewSides+dummySideCount+1; ++f) {
       side_t *ds = &Sides[f];
-      ds->TopTexture = ds->BottomTexture = ds->MidTexture = GTextureManager.DefaultTexture;
+      ds->TopTexture = GTextureManager.DefaultTexture;
+      ds->BottomTexture = GTextureManager.DefaultTexture;
+      ds->MidTexture = GTextureManager.DefaultTexture;
       ds->Flags = SDF_ABSLIGHT;
       ds->Light = 255;
       // `Sector` and `LineNum` will be set later

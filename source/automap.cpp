@@ -529,7 +529,7 @@ static VVA_OKUNUSED inline int VScrTransY480 (int y) { return (int)(y*VirtualHei
 //==========================================================================
 static int getSpriteIndex (VClass *cls) {
   vint32 sprIdx = -1;
-  auto spip = spawnSprIndex.find(cls);
+  auto spip = spawnSprIndex.get(cls);
   if (spip) return *spip;
   // find id
   VStateLabel *lbl = cls->FindStateLabel("Spawn");

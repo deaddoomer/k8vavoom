@@ -238,7 +238,7 @@ public:
   inline WadMapIterator () noexcept : lump(-1) {}
   inline WadMapIterator (const WadMapIterator &it) noexcept : lump(it.lump) {}
   inline WadMapIterator (const WadMapIterator &/*it*/, bool /*asEnd*/) noexcept : lump(-1) {}
-  inline WadMapIterator &operator = (const WadMapIterator &it) noexcept { lump = it.lump; return *this; }
+  inline void operator = (const WadMapIterator &it) noexcept { lump = it.lump; }
 
   static inline WadMapIterator FromWadFile (int aFile) noexcept {
     WadMapIterator it;
@@ -288,7 +288,7 @@ public:
   inline WadNSIterator (EWadNamespace aNS) noexcept : lump(-1), ns(aNS) { lump = W_IterateNS(-1, aNS); }
   inline WadNSIterator (const WadNSIterator &it) noexcept : lump(it.lump), ns(it.ns) {}
   inline WadNSIterator (const WadNSIterator &it, bool /*asEnd*/) noexcept : lump(-1), ns(it.ns) {}
-  inline WadNSIterator &operator = (const WadNSIterator &it) noexcept { lump = it.lump; ns = it.ns; return *this; }
+  inline void operator = (const WadNSIterator &it) noexcept { lump = it.lump; ns = it.ns; }
 
   static inline WadNSIterator FromWadFile (int aFile, EWadNamespace aNS) noexcept {
     WadNSIterator it;
@@ -355,7 +355,7 @@ public:
   inline WadNSNameIterator (VStr &str, EWadNamespace aNS) noexcept : lump(-1), ns(aNS), lumpname(NAME_None) { lumpname = VName(*str, VName::FindLower); startIteration(); }
   inline WadNSNameIterator (const WadNSNameIterator &it) noexcept : lump(it.lump), ns(it.ns), lumpname(it.lumpname) {}
   inline WadNSNameIterator (const WadNSNameIterator &it, bool /*asEnd*/) noexcept : lump(-1), ns(it.ns), lumpname(it.lumpname) {}
-  inline WadNSNameIterator &operator = (const WadNSNameIterator &it) noexcept { lump = it.lump; ns = it.ns; lumpname = it.lumpname; return *this; }
+  inline void operator = (const WadNSNameIterator &it) noexcept { lump = it.lump; ns = it.ns; lumpname = it.lumpname; }
 
   static inline WadNSNameIterator FromWadFile (const char *aname, int aFile, EWadNamespace aNS) noexcept {
     WadNSNameIterator it;
@@ -408,7 +408,7 @@ public:
   inline WadFileIterator (VStr afname) noexcept : lump(-1), fname(afname) { lump = W_IterateFile(-1, afname); }
   inline WadFileIterator (const WadFileIterator &it) noexcept : lump(it.lump), fname(it.fname) {}
   inline WadFileIterator (const WadFileIterator &it, bool /*asEnd*/) noexcept : lump(-1), fname(it.fname) {}
-  inline WadFileIterator &operator = (const WadFileIterator &it) noexcept { lump = it.lump; fname = it.fname; return *this; }
+  inline void operator = (const WadFileIterator &it) noexcept { lump = it.lump; fname = it.fname; }
 
   static inline WadFileIterator FromFirstAuxFile () noexcept {
     WadFileIterator it;

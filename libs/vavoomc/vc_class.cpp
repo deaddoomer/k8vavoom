@@ -284,7 +284,7 @@ VName VClass::FindInPropMap (EType type, VName prname) noexcept {
       case TYPE_Class: pmap = &cls->ClassProps; break;
       default: return NAME_None;
     }
-    auto np = pmap->find(prname);
+    auto np = pmap->get(prname);
     //GLog.Logf(NAME_Debug, "::FIPM:STR:%s: prname=<%s>; found=<%s>", cls->GetName(), *prname, (np ? **np : ""));
     if (np) return *np;
   }
@@ -445,7 +445,7 @@ int VClass::FindSpriteInternal (VName Name, bool Append) {
   if (!Append) {
     Name = VName(*Name, VName::FindLower);
     if (Name == NAME_None) return -1;
-    auto ip = GSpriteNamesMap.find(Name);
+    auto ip = GSpriteNamesMap.get(Name);
     return (ip ? *ip : -1);
   } else {
     if (Name == NAME_None) {
@@ -453,7 +453,7 @@ int VClass::FindSpriteInternal (VName Name, bool Append) {
       return 0; //k8: "tnt1"; maybe "----"?
     }
     VName loname = VName(*Name, VName::AddLower);
-    auto ip = GSpriteNamesMap.find(loname);
+    auto ip = GSpriteNamesMap.get(loname);
     if (ip) return *ip;
     GSpriteNamesMap.put(loname, GSpriteNames.length());
     return GSpriteNames.Append(loname);
@@ -907,7 +907,7 @@ int VClass::GetMethodIndex (VName AName) const {
   if (AName == NAME_None) return -1;
   //for (int i = 0; i < ClassNumMethods; ++i) if (ClassVTable[i]->Name == AName) return i;
   //return -1;
-  auto mptr = MethodMap.find(AName);
+  auto mptr = MethodMap.get(AName);
   //fprintf(stderr, "%s: %s = %d\n", *GetFullName(), *AName, (mptr ? (*mptr)->VTableIndex : -1));
   return (mptr ? (*mptr)->VTableIndex : -1);
 }
@@ -1111,7 +1111,7 @@ VMethod *VClass::FindDecorateStateActionExact (VStr actname) {
     }
   }
   // find metod
-  auto mtp = DecorateStateActions.find(actname);
+  auto mtp = DecorateStateActions.get(actname);
   if (mtp) return *mtp;
   // try parent class
   if (ParentClass) return ParentClass->FindDecorateStateActionExact(actname);
@@ -1140,7 +1140,7 @@ VMethod *VClass::FindDecorateStateAction (VStr actname) {
 //
 //==========================================================================
 VName VClass::FindDecorateStateFieldTrans (VName dcname) {
-  auto vp = DecorateStateFieldTrans.find(dcname);
+  auto vp = DecorateStateFieldTrans.get(dcname);
   if (vp) return *vp;
   if (ParentClass) return ParentClass->FindDecorateStateFieldTrans(dcname);
   return NAME_None;
@@ -1493,7 +1493,7 @@ static void RehashList (TArray<mobjinfo_t> &list, TMapNC<vint32, vint32> &map) {
     // link to map
     mobjinfo_t *mi = &list[idx];
     int id = mi->DoomEdNum;
-    auto prevp = map.find(id);
+    auto prevp = map.get(id);
     if (prevp) {
       mi->nextidx = *prevp;
       *prevp = idx;
@@ -1541,7 +1541,7 @@ static mobjinfo_t *AllocateIdFromList (TArray<mobjinfo_t> &list, TMapNC<vint32, 
   mi->Class = cls;
   mi->nextidx = -1;
   // link to map
-  auto prevp = map.find(id);
+  auto prevp = map.get(id);
   if (prevp) {
     mi->nextidx = *prevp;
     *prevp = idx;
@@ -1569,7 +1569,7 @@ static mobjinfo_t *FindIdInList (TArray<mobjinfo_t> &list, TMapNC<vint32, vint32
     }
   }
 #else
-  auto linkp = map.find(id);
+  auto linkp = map.get(id);
   if (linkp) {
     int link = *linkp;
     while (link != -1) {
@@ -2409,7 +2409,7 @@ void VClass::CreateMethodMap () {
 VMethod *VClass::FindConCommandMethod (VStr name, bool exact) {
   if (name.isEmpty()) return nullptr;
   VStr loname = name.toLowerCase();
-  auto mtp = ConCmdListMts.find(loname);
+  auto mtp = ConCmdListMts.get(loname);
   if (!mtp) return nullptr;
   if (!exact && VStr::endsWithNoCase(*(*mtp)->Name, "_AC")) return nullptr;
   return *mtp;

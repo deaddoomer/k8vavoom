@@ -34,13 +34,14 @@
 struct VTextureID {
 public:
   vint32 id;
-  VTextureID () : id (-1) {}
-  VTextureID (const VTextureID &b) : id(b.id) {}
-  // temp
-  VTextureID (vint32 aid) : id(aid) {}
 
-  inline VTextureID &operator = (const VTextureID &b) { id = b.id; return *this; }
-  inline operator vint32 () const { return id; }
+  inline VTextureID () noexcept : id (-1) {}
+  inline VTextureID (const VTextureID &b) noexcept : id(b.id) {}
+  // temp
+  inline VTextureID (vint32 aid) noexcept : id(aid) {}
+
+  inline void operator = (const VTextureID &b) noexcept { id = b.id; }
+  inline operator vint32 () const noexcept { return id; }
 
   void Serialise (VStream &strm) const;
   void Serialise (VStream &strm);

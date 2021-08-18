@@ -719,7 +719,7 @@ void VLevel::AddStaticLightRGB (vuint32 owneruid, const VLightParams &lpar, cons
   L.Flags = flags|rep_light_t::LightChanged|rep_light_t::LightActive;
   if (owneruid) {
     vassert(StaticLightsMap);
-    auto oidxp = StaticLightsMap->find(owneruid);
+    auto oidxp = StaticLightsMap->get(owneruid);
     if (oidxp) StaticLights[*oidxp].OwnerUId = 0; //FIXME!
     StaticLightsMap->put(owneruid, idx);
   }
@@ -737,7 +737,7 @@ void VLevel::AddStaticLightRGB (vuint32 owneruid, const VLightParams &lpar, cons
 void VLevel::MoveStaticLightByOwner (vuint32 owneruid, const TVec &Origin) {
   if (!owneruid) return;
   if (!StaticLightsMap) return; // no owned lights
-  auto oidxp = StaticLightsMap->find(owneruid);
+  auto oidxp = StaticLightsMap->get(owneruid);
   if (!oidxp) return; // no such owned light
   // check if it is moved far enough
   rep_light_t &sl = StaticLights[*oidxp];
@@ -762,7 +762,7 @@ void VLevel::MoveStaticLightByOwner (vuint32 owneruid, const TVec &Origin) {
 void VLevel::RemoveStaticLightByOwner (vuint32 owneruid) {
   if (!owneruid) return;
   if (!StaticLightsMap) return; // no owned lights
-  auto oidxp = StaticLightsMap->find(owneruid);
+  auto oidxp = StaticLightsMap->get(owneruid);
   if (!oidxp) return; // no such owned light
   rep_light_t &sl = StaticLights[*oidxp];
   sl.Flags = rep_light_t::LightChanged;
@@ -1166,7 +1166,7 @@ void VLevel::RemoveEntitySoundID (int SoundOriginID) {
 VEntity *VLevel::FindEntityBySoundID (int SoundOriginID) {
   if (SoundOriginID <= 0) return nullptr;
   if (!SoundIDMap) return nullptr;
-  auto ep = SoundIDMap->find((vuint32)SoundOriginID);
+  auto ep = SoundIDMap->get((vuint32)SoundOriginID);
   return (ep ? *ep : nullptr);
 }
 

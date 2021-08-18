@@ -312,7 +312,7 @@ void VRenderLevelShared::AddStaticLightRGB (vuint32 OwnerUId, const VLightParams
     L.radius = VLevelInfo::GZSizeToRadius(intensity, (lpar.LevelScale < 0.0f), 2.0f);
   }
   if (OwnerUId) {
-    auto osp = StOwners.find(OwnerUId);
+    auto osp = StOwners.get(OwnerUId);
     if (osp) Lights[*osp].ownerUId = 0;
     StOwners.put(OwnerUId, Lights.length()-1);
   }
@@ -467,7 +467,7 @@ void VRenderLevelShared::PushDlights () {
     //if (l->Owner && l->Owner->IsA(VEntity::StaticClass())) l->origin += ((VEntity *)l->Owner)->GetDrawDelta();
     if (l->ownerUId) {
       /*
-      auto ownpp = suid2ent.find(l->ownerUId);
+      auto ownpp = suid2ent.get(l->ownerUId);
       if (ownpp) l->origin += (*ownpp)->GetDrawDelta();
       */
       VEntity *own = Level->GetEntityBySUId(l->ownerUId);
@@ -543,7 +543,7 @@ dlight_t *VRenderLevelShared::AllocDlight (VThinker *Owner, const TVec &lorg, fl
   // first try to find owned light to replace
   if (Owner) {
     if (lightid == 0) {
-      auto idxp = dlowners.find(Owner->ServerUId);
+      auto idxp = dlowners.get(Owner->ServerUId);
       if (idxp) {
         dlowner = &DLights[*idxp];
         vassert(dlowner->ownerUId == Owner->ServerUId);
@@ -727,7 +727,7 @@ void VRenderLevelShared::ThinkerAdded (VThinker * /*Owner*/) {
 void VRenderLevelShared::ThinkerDestroyed (VThinker *Owner) {
   if (!Owner) return;
   // remove dynamic light
-  auto idxp = dlowners.find(Owner->ServerUId);
+  auto idxp = dlowners.get(Owner->ServerUId);
   if (idxp) {
     dlight_t *dl = &DLights[*idxp];
     vassert(dl->ownerUId == Owner->ServerUId);
@@ -737,9 +737,9 @@ void VRenderLevelShared::ThinkerDestroyed (VThinker *Owner) {
     dlowners.del(Owner->ServerUId);
   }
   // remove static light
-  auto stxp = StOwners.find(Owner->ServerUId);
+  auto stxp = StOwners.get(Owner->ServerUId);
   if (stxp) RemoveStaticLightByIndex(*stxp);
-  //suid2ent.remove(Owner->ServerUId);
+  //suid2ent.del(Owner->ServerUId);
 }
 
 
@@ -951,7 +951,7 @@ void VRenderLevelShared::CalcEntityStaticLightingFromOwned (VEntity *lowner, con
   if (!lowner || (flags&LP_IgnoreSelfLights)) return;
   if (!r_static_lights.asBool()) return;
 
-  auto stpp = StOwners.find(lowner->ServerUId);
+  auto stpp = StOwners.get(lowner->ServerUId);
   if (!stpp) return;
 
   const light_t *stl = &Lights[*stpp];
@@ -992,7 +992,7 @@ void VRenderLevelShared::CalcEntityDynamicLightingFromOwned (VEntity *lowner, co
   if (!lowner || (flags&LP_IgnoreSelfLights)) return;
   if (!r_dynamic_lights.asBool()) return;
 
-  auto dlpp = dlowners.find(lowner->ServerUId);
+  auto dlpp = dlowners.get(lowner->ServerUId);
   if (!dlpp) return;
 
   const dlight_t &dl = DLights[*dlpp];
@@ -1454,7 +1454,7 @@ void VRenderLevelShared::CalcStaticLightTouchingSubs (int slindex, light_t &sl) 
   if (SubStaticLights.length() < Level->NumSubsectors) SubStaticLights.setLength(Level->NumSubsectors);
   for (auto &&it : sl.touchedSubs) {
     const int snum = (int)(ptrdiff_t)(it-&Level->Subsectors[0]);
-    SubStaticLights[snum].touchedStatic.remove(slindex);
+    SubStaticLights[snum].touchedStatic.del(slindex);
   }
 
   sl.touchedSubs.resetNoDtor();

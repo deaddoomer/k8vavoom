@@ -146,7 +146,7 @@ public:
   inline void clear () { values.clear(); }
 
   inline void SetElemVal (int index, int value) { values.put(index, value); }
-  inline int GetElemVal (int index) const { auto vp = values.find(index); return (vp ? *vp : 0); }
+  inline int GetElemVal (int index) const { auto vp = values.get(index); return (vp ? *vp : 0); }
 
   void Serialise (VStream &Strm);
 };

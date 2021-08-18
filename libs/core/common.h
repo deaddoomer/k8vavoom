@@ -129,19 +129,6 @@ static inline VVA_CHECKRESULT VVA_CONST uint8_t foldHash32to8 (uint32_t h) noexc
 
 //==========================================================================
 //
-//  VInterface
-//
-//==========================================================================
-
-// base class for abstract classes that need virtual destructor
-class VInterface {
-public:
-  virtual ~VInterface ();
-};
-
-
-//==========================================================================
-//
 //  Basic templates
 //
 //==========================================================================
@@ -152,16 +139,29 @@ template<class T> T Clamp(T val, T low, T high) { return (val < low ? low : val 
 */
 
 
+// FUCK YOU, SHITPLUSPLUS! WHY CAN'T WE FUCKIN' DECLARE THIS FUCKIN' TEMPLATE,
+// AND THEN USE IT TO DETECT THINGS THAT WERE DECLARED LATER?!!
+
 //==========================================================================
 //
-//  Forward declarations
+//  use SFINAE to detect hash function
 //
 //==========================================================================
-class VName;
-// VavoomC
-class VMemberBase;
-class VStruct;
-class VObject;
+/*
+template<class T, class=void> struct VEnableIfHasHashMethod {};
+template<class T> struct VEnableIfHasHashMethod<T, decltype(T::CalculateHash, void())> { typedef void type; };
+
+template<class T, class=void> struct VUniversalHasher {
+  template<typename VTT> static VVA_ALWAYS_INLINE VVA_CHECKRESULT uint32_t CalcHash (const VTT &akey) noexcept { return GetTypeHash(akey); }
+};
+template<class T> struct VUniversalHasher<T, typename VEnableIfHasHashMethod<T>::type> {
+  template<typename VTT> static VVA_ALWAYS_INLINE VVA_CHECKRESULT uint32_t CalcHash (const VTT &akey) noexcept { return akey.GetTypeHash(); }
+};
+
+template<typename VT> static VVA_OKUNUSED VVA_CHECKRESULT uint32_t CalcTypeHash (const VT &v) noexcept {
+  return VUniversalHasher<VT>::CalcHash(v);
+}
+*/
 #endif
 
 

@@ -573,7 +573,7 @@ void VObjectMapChannel::ParseMessage (VMessageIn &Msg) {
     VClass *C = VMemberBase::StaticFindClass(Name);
     vassert(C);
     Connection->ObjMap->ClassLookup[CurrClass] = C;
-    Connection->ObjMap->ClassMap.Set(C, CurrClass);
+    Connection->ObjMap->ClassMap.put(C, CurrClass);
     ++CurrClass;
     //if (net_debug_dump_chan_objmap) GCon->Logf(NAME_DevNet, "  :class: [%d/%d]: <%s : %s>", CurrClass, Connection->ObjMap->ClassLookup.length(), *Name, C->GetName());
   }

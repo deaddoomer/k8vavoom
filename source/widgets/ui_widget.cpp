@@ -104,7 +104,7 @@ void VWidget::CleanupWidgets () {
     if (!AllWidgets.has(w)) {
       //for (auto &&ww : AllWidgets.first()) GCon->Logf("  %p : %p : %d", w, ww.getKey(), (int)(w == ww.getKey()));
       // already destroyed
-      //GCon->Logf(NAME_Debug, "(0)skipping already destroyed widget %s:%u:%p : %d", w->GetClass()->GetName(), w->GetUniqueId(), (void *)w, (AllWidgets.find(w) ? 1 : 0));
+      //GCon->Logf(NAME_Debug, "(0)skipping already destroyed widget %s:%u:%p : %d", w->GetClass()->GetName(), w->GetUniqueId(), (void *)w, (AllWidgets.get(w) ? 1 : 0));
       continue;
     }
     if (w->IsDestroyed()) {
@@ -184,7 +184,7 @@ void VWidget::Init (VWidget *AParent) {
 //==========================================================================
 void VWidget::Destroy () {
   //GCon->Logf(NAME_Debug, "destroying widget %s:%u:%p", GetClass()->GetName(), GetUniqueId(), (void *)this);
-  AllWidgets.remove(this);
+  AllWidgets.del(this);
   MarkChildrenDead();
   if (ParentWidget && IsChildAdded()) ParentWidget->RemoveChild(this);
   OnDestroy();

@@ -36,10 +36,9 @@ public:
   inline bool isValid () const noexcept { return !!clipflag; }
   inline void invalidate () noexcept { clipflag = 0; }
 
-  inline TClipPlane &operator = (const TPlane &p) noexcept {
+  inline void operator = (const TPlane &p) noexcept {
     normal = p.normal;
     dist = p.dist;
-    return *this;
   }
 };
 

@@ -1568,7 +1568,7 @@ static void UnarchiveThinkers (VSaveLoaderStream *Loader) {
   for (int i = 0; i < Loader->Exports.length(); ++i) {
     vassert(Loader->Exports[i]);
 #ifdef VAVOOM_LOADER_CAN_SKIP_CLASSES
-    auto dpp = deadThinkers.find(Loader->Exports[i]);
+    auto dpp = deadThinkers.get(Loader->Exports[i]);
     if (dpp) {
       //GCon->Logf("!!! %d: %s", i, Loader->Exports[i]->GetClass()->GetName());
       Loader->Exports[i]->Serialise(*Loader);

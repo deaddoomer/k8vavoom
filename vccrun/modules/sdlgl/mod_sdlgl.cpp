@@ -1245,7 +1245,7 @@ VOpenGLTexture::~VOpenGLTexture () {
   delete img;
   img = nullptr;
   if (mPath.length()) {
-    txLoaded.remove(mPath);
+    txLoaded.del(mPath);
   } else {
     /*
     for (int idx = 0; idx < txLoadedUnnamed.length(); ++idx) {
@@ -1373,12 +1373,12 @@ void VOpenGLTexture::update () {
 //==========================================================================
 VOpenGLTexture *VOpenGLTexture::Load (VStr fname, bool doSmoothing) {
   if (fname.length() > 0) {
-    VOpenGLTexture **loaded = txLoaded.find(fname);
+    VOpenGLTexture **loaded = txLoaded.get(fname);
     if (loaded) { (*loaded)->addRef(); return *loaded; }
   }
   VStr rname = fsysFileFindAnyExt(fname);
   if (rname.length() == 0) return nullptr;
-  VOpenGLTexture **loaded = txLoaded.find(rname);
+  VOpenGLTexture **loaded = txLoaded.get(rname);
   if (loaded) { (*loaded)->addRef(); return *loaded; }
   VStream *st = fsysOpenFile(rname);
   if (!st) return nullptr;
@@ -1402,7 +1402,7 @@ VOpenGLTexture *VOpenGLTexture::CreateEmpty (VName txname, int wdt, int hgt, boo
   if (txname != NAME_None) {
     sname = VStr(txname);
     if (sname.length() > 0) {
-      VOpenGLTexture **loaded = txLoaded.find(sname);
+      VOpenGLTexture **loaded = txLoaded.get(sname);
       if (loaded) {
         if ((*loaded)->width != wdt || (*loaded)->height != hgt) return nullptr; // oops
         (*loaded)->addRef();
@@ -1665,7 +1665,7 @@ static int vcGLAllocId (VGLTexture *obj) noexcept {
 //==========================================================================
 static void vcGLFreeId (int id) noexcept {
   if (id < 1 || id > vcGLLastUsedId) return;
-  vcGLTexMap.remove(id);
+  vcGLTexMap.del(id);
   if (vcGLFreeIdsUsed == vcGLFreeIds.length()) {
     vcGLFreeIds.append(id);
     ++vcGLFreeIdsUsed;
@@ -1731,7 +1731,7 @@ IMPLEMENT_FUNCTION(VGLTexture, GetById) {
   int id;
   vobjGetParam(id);
   if (id > 0 && id <= vcGLLastUsedId) {
-    auto opp = vcGLTexMap.find(id);
+    auto opp = vcGLTexMap.get(id);
     if (opp) RET_REF((VGLTexture *)(*opp)); else RET_REF(nullptr);
   } else {
     RET_REF(nullptr);

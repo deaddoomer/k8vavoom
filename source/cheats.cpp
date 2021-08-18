@@ -433,7 +433,7 @@ COMMAND(vc_count_all_objects) {
     VObject *obj = VObject::GetIndexObject(f);
     if (!obj) continue;
     VClass *c = obj->GetClass();
-    auto cp = clist.find(c);
+    auto cp = clist.get(c);
     if (cp) {
       clist.put(c, cp[0]+1);
     } else {

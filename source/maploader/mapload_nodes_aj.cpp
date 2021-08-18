@@ -259,7 +259,7 @@ public:
   inline size_t getHashDataSize () const noexcept { return sizeof(xy); }
 };
 static_assert(sizeof(VertexInfo) == sizeof(vint32)*2+sizeof(int), "oops");
-inline vuint32 GetTypeHash (const VertexInfo &vi) { return joaatHashBuf(vi.getHashData(), vi.getHashDataSize()); }
+inline uint32_t GetTypeHash (const VertexInfo &vi) noexcept { return joaatHashBuf(vi.getHashData(), vi.getHashDataSize()); }
 #define Vertex2DInfo  VertexInfoRounded
 #endif
 
@@ -273,7 +273,7 @@ inline vuint32 GetTypeHash (const VertexInfo &vi) { return joaatHashBuf(vi.getHa
 //==========================================================================
 static int ajUploadVertex (TMap<Vertex2DInfo, int> &vmap, VLevel *Level, const TVec *v) {
   Vertex2DInfo vi(*v, ajbsp::num_vertices);
-  auto pp = vmap.find(vi);
+  auto pp = vmap.get(vi);
   if (pp) return *pp;
   vassert(vi.getIndex() == ajbsp::num_vertices);
   vmap.put(vi, vi.getIndex());
@@ -362,7 +362,7 @@ struct CopyInfo {
 //==========================================================================
 static inline int AJVertexIndex (CopyInfo &nfo, const ajbsp::vertex_t *v) {
   vassert(v != nullptr);
-  auto ip = nfo.ajvidx.find(v);
+  auto ip = nfo.ajvidx.get(v);
   if (!ip) Sys_Error("AJBSP: found unknown vertex");
   return *ip;
 }

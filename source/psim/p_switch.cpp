@@ -111,7 +111,7 @@ bool VLevelInfo::IsSwitchTexture (int texid) {
   }
   return false;
   */
-  auto pp = switchTextures.find(texid);
+  auto pp = switchTextures.get(texid);
   return !!pp;
 }
 
@@ -166,21 +166,21 @@ bool VLevelInfo::ChangeSwitchTexture (line_t *line, VEntity *activator, int side
   EBWhere where = SWITCH_Top;
   do {
     // top?
-    swpp = switchTextures.find(XLevel->Sides[sidenum].TopTexture);
+    swpp = switchTextures.get(XLevel->Sides[sidenum].TopTexture);
     if (swpp) {
       where = SWITCH_Top;
       XLevel->Sides[sidenum].TopTexture = (*swpp)->Frames[0].Texture;
       break;
     }
     // middle?
-    swpp = switchTextures.find(XLevel->Sides[sidenum].MidTexture);
+    swpp = switchTextures.get(XLevel->Sides[sidenum].MidTexture);
     if (swpp) {
       where = SWITCH_Middle;
       XLevel->Sides[sidenum].MidTexture = (*swpp)->Frames[0].Texture;
       break;
     }
     // bottom?
-    swpp = switchTextures.find(XLevel->Sides[sidenum].BottomTexture);
+    swpp = switchTextures.get(XLevel->Sides[sidenum].BottomTexture);
     if (swpp) {
       where = SWITCH_Bottom;
       XLevel->Sides[sidenum].BottomTexture = (*swpp)->Frames[0].Texture;

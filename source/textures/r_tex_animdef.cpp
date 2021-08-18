@@ -114,10 +114,10 @@ public:
     int currIndex;
 
     inline NameIterator () noexcept : list(nullptr), currIndex(-1) {}
-    inline NameIterator (const ListOfLumps *alist, VName aname) noexcept : list(&alist->list) { auto mip = alist->map.find(aname); currIndex = (mip ? *mip : -1); }
+    inline NameIterator (const ListOfLumps *alist, VName aname) noexcept : list(&alist->list) { auto mip = alist->map.get(aname); currIndex = (mip ? *mip : -1); }
     inline NameIterator (const NameIterator &it) noexcept : list(it.list), currIndex(it.currIndex) {}
     inline NameIterator (const NameIterator &it, bool /*asEnd*/) noexcept : list(it.list), currIndex(-1) {}
-    inline NameIterator &operator = (const NameIterator &it) noexcept { list = it.list; currIndex = it.currIndex; return *this; }
+    inline void operator = (const NameIterator &it) noexcept { list = it.list; currIndex = it.currIndex; }
 
     inline NameIterator begin () noexcept { return NameIterator(*this); }
     inline NameIterator end () noexcept { return NameIterator(*this, true); }
@@ -149,7 +149,7 @@ void ListOfLumps::append (VName txname, int filenum) {
   newlilu.texName = txname;
   newlilu.lumpFile = filenum;
   newlilu.nextIndex = -1;
-  auto mip = map.find(txname);
+  auto mip = map.get(txname);
   if (mip) {
     // append to the name chain
     int lidx = *mip;
@@ -480,7 +480,7 @@ void P_InitAnimated () {
     VName tn18 = VName(TmpName1, VName::AddLower8); // last
     VName tn28 = VName(TmpName2, VName::AddLower8); // first
 
-    if (animPicSeen.find(tn18) || animPicSeen.find(tn28)) {
+    if (animPicSeen.get(tn18) || animPicSeen.get(tn28)) {
       GCon->Logf(NAME_Warning, "ANIMATED: skipping animation sequence between '%s' and '%s' due to animdef", TmpName2, TmpName1);
       continue;
     }

@@ -789,12 +789,12 @@ void VLevel::SerialiseOther (VStream &Strm) {
         sl.OwnerUId = (owner ? owner->ServerUId : 0);
         if (sl.OwnerUId) {
           if (!StaticLightsMap) StaticLightsMap = new TMapNC<vuint32, int>();
-          auto oidp = StaticLightsMap->find(sl.OwnerUId);
+          auto oidp = StaticLightsMap->get(sl.OwnerUId);
           if (oidp) StaticLights[*oidp].OwnerUId = 0; //FIXME
           StaticLightsMap->put(sl.OwnerUId, lidx);
         }
       } else {
-        auto opp = suidmap.find(sl.OwnerUId);
+        auto opp = suidmap.get(sl.OwnerUId);
         VEntity *owner = (opp ? *opp : nullptr);
         vio.io(VName("Owner"), owner);
       }

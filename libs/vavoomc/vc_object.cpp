@@ -944,7 +944,7 @@ void VObject::SerialiseFields (VStream &Strm) {
     while (fldcount--) {
       VName fldname = NAME_None;
       Strm << fldname;
-      auto fpp = fldmap.find(fldname);
+      auto fpp = fldmap.get(fldname);
       if (!fpp) {
         GLog.WriteLine(NAME_Warning, "saved field `%s` not found in class `%s`, value ignored", *fldname, GetClass()->GetName());
         VField::SkipSerialisedValue(Strm);
@@ -1036,7 +1036,7 @@ void VObject::Serialise (VStream &strm) {
     if (strm.IsError()) VPackage::IOError(va("error reading object of class `%s`", GetClass()->GetName()));
     if (clsname == NAME_None) VPackage::IOError(va("cannot load object of `none` class"));
     // translate name
-    auto tnp = IOClassNameTranslation.find(clsname);
+    auto tnp = IOClassNameTranslation.get(clsname);
     if (tnp) {
       clsname = *tnp;
       if (clsname == NAME_None) VPackage::IOError(va("cannot load translated object of `none` class"));

@@ -205,7 +205,7 @@ void VThinkerChannel::SetThinker (VThinker *AThinker) {
   if (Thinker && AThinker && net_dbg_dump_thinker_channels.asInt()&1) GCon->Logf(NAME_Debug, "VThinkerChannel #%d: replacing thinker '%s':%u with '%s':%u", Index, Thinker->GetClass()->GetName(), Thinker->GetUniqueId(), AThinker->GetClass()->GetName(), AThinker->GetUniqueId());
 
   if (Thinker) {
-    Connection->ThinkerChannels.Remove(Thinker);
+    Connection->ThinkerChannels.del(Thinker);
     if (OldData) {
       for (VField *F = Thinker->GetClass()->NetFields; F; F = F->NextNetField) {
         VField::DestructField(OldData+F->Ofs, F->Type);
@@ -236,7 +236,7 @@ void VThinkerChannel::SetThinker (VThinker *AThinker) {
       GotOrigin = false;
     }
     NewObj = true;
-    Connection->ThinkerChannels.Set(Thinker, this);
+    Connection->ThinkerChannels.put(Thinker, this);
   }
 }
 

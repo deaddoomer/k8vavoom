@@ -60,7 +60,7 @@ public:
   VVA_ALWAYS_INLINE void SetIdentity () noexcept { memcpy((void *)m, (const void *)Identity.m, sizeof(m)); }
   VVA_ALWAYS_INLINE void SetZero () noexcept { memset((void *)m, 0, sizeof(m)); }
 
-  VVA_ALWAYS_INLINE VMatrix4 &operator = (const VMatrix4 &m2) noexcept { if (&m2 != this) memcpy(m, m2.m, sizeof(m)); return *this; }
+  VVA_ALWAYS_INLINE void operator = (const VMatrix4 &m2) noexcept { if (&m2 != this) memcpy(m, m2.m, sizeof(m)); }
 
   VVA_ALWAYS_INLINE float *operator [] (const int i) noexcept { return m[i]; }
   VVA_ALWAYS_INLINE const float *operator [] (const int i) const noexcept { return m[i]; }

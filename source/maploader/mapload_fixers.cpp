@@ -593,7 +593,7 @@ vuint32 VLevel::IsFloodBugSectorPart (sector_t *sec) {
     }
 
     //vint32 lineidx = (vint32)(ptrdiff_t)(line-&Lines[0]);
-    //if (checkSkipLines.find(lineidx)) continue; // skip lines we are not interested into
+    //if (checkSkipLines.get(lineidx)) continue; // skip lines we are not interested into
     if (!line->frontsector || !line->backsector) {
       if (dbg_floodfill_fixer) GCon->Logf(NAME_Debug, "IsFloodBugSector:  sector #%d: skipped line #%d due to missing side sector", (int)(ptrdiff_t)(sec-&Sectors[0]), (int)(ptrdiff_t)(line-&Lines[0]));
       continue;

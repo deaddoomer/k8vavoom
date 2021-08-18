@@ -38,6 +38,8 @@ Library libcore.a :
 
   src/textparser.cpp
 
+  src/hash/lookup3.cpp
+  src/hash/halfsiphash.cpp
   src/hash/crc.cpp
   src/hash/md5.cpp
   src/hash/rg32.cpp

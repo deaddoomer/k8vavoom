@@ -186,7 +186,7 @@ static VMethod *ParseFunCallWithName (VScriptParser *sc, VStr FuncName, VClass *
   VMethod *Func = nullptr;
 
   // check ignores
-  if (!IgnoredDecorateActions.find(FuncName)) {
+  if (!IgnoredDecorateActions.get(FuncName)) {
     // find the state action method: first check action specials, then state actions
     // hack: `ACS_ExecuteWithResult` has its own method, but it still should be in line specials
     if (!FuncName.strEquCI("ACS_ExecuteWithResult")) {

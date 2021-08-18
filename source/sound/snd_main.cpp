@@ -311,7 +311,7 @@ static VStr SelectRandomSong (VStr song) {
     scanMidiDir(rdir, 0);
     GCon->Logf(NAME_Debug, "%d music file%s found", sndMusList.length(), (sndMusList.length() == 1 ? "" : "s"));
   }
-  auto pp = sndRandomMusReplace.find(song);
+  auto pp = sndRandomMusReplace.get(song);
   if (pp) return *pp;
   if (sndMusList.length() == 0) return song;
   int n = GenRandomU31()%sndMusList.length();

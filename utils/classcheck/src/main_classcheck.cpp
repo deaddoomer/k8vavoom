@@ -106,14 +106,14 @@ Type *findShitppType (const Type *tp) {
   if (!tp) return nullptr;
   vassert(!tp->shitpp);
   vassert(tp->name != NAME_None);
-  auto spp = shitppTypes.find(tp->name);
+  auto spp = shitppTypes.get(tp->name);
   if (spp) return *spp;
   // try mangled name
   VStr tname = VStr(tp->name);
   tname = VStr("V")+tname;
   VName xn = VName(*tname, VName::Find);
   if (xn != NAME_None) {
-    spp = shitppTypes.find(xn);
+    spp = shitppTypes.get(xn);
     if (spp) return *spp;
   }
   if (tp->name == "AmbientSound") return nullptr;
@@ -122,7 +122,7 @@ Type *findShitppType (const Type *tp) {
   tname = VStr("F")+tname;
   xn = VName(*tname, VName::Find);
   if (xn == NAME_None) return nullptr;
-  spp = shitppTypes.find(xn);
+  spp = shitppTypes.get(xn);
   if (spp) return *spp;
   return nullptr;
 }
@@ -185,7 +185,7 @@ void Type::appendField (Field *fld) {
 //==========================================================================
 Type *Type::getParent () const {
   if (parentName == NAME_None) return nullptr;
-  Type **pp = (shitpp ? shitppTypes.find(parentName) : vcTypes.find(parentName));
+  Type **pp = (shitpp ? shitppTypes.get(parentName) : vcTypes.get(parentName));
   if (pp) return *pp;
   Sys_Error("parent type `%s` for %s type `%s` not found!", *parentName, (shitpp ? "shitpp" : "VavoomC"), *name);
 }
@@ -1181,7 +1181,7 @@ void parseVCSource (VStr filename, VStr className=VStr::EmptyString) {
       return;
     }
     dontSave = true;
-    tp = *vcTypes.find(VName("Object"));
+    tp = *vcTypes.get(VName("Object"));
   } else {
     VStr name = par->expectId();
 
@@ -1235,7 +1235,7 @@ void parseVCSource (VStr filename, VStr className=VStr::EmptyString) {
         par->restorePos(tkpos);
         if (!dontSave) {
           compressBools(tp);
-          auto oldtp = vcTypes.find(tp->name);
+          auto oldtp = vcTypes.get(tp->name);
           if (vcTypes.put(tp->name, tp)) GLog.Logf(NAME_Warning, "%s: duplicate type `%s` (%s) (0)", *par->getSavedLoc(tkpos).toStringNoCol(), *tp->toString(), *(*oldtp)->loc.toStringNoCol());
         }
         goto again;
@@ -1290,7 +1290,7 @@ void parseVCSource (VStr filename, VStr className=VStr::EmptyString) {
         if (!semiEaten) par->expect(";");
       }
       compressBools(stp);
-      auto oldtp = vcTypes.find(stp->name);
+      auto oldtp = vcTypes.get(stp->name);
       if (vcTypes.put(stp->name, stp)) GLog.Logf(NAME_Warning, "%s: duplicate type `%s` (%s) (1)", *stp->loc.toStringNoCol(), *stp->toString(), *(*oldtp)->loc.toStringNoCol());
       //skipBrackets(par);
       continue;
@@ -1313,7 +1313,7 @@ void parseVCSource (VStr filename, VStr className=VStr::EmptyString) {
       skipBrackets(par);
       if (!dontSave) {
         compressBools(tp);
-        auto oldtp = vcTypes.find(tp->name);
+        auto oldtp = vcTypes.get(tp->name);
         if (vcTypes.put(tp->name, tp)) GLog.Logf(NAME_Warning, "%s: duplicate type `%s` (%s) (2)", *par->getSavedLoc(tkpos).toStringNoCol(), *tp->toString(), *(*oldtp)->loc.toStringNoCol());
       }
       goto again;
@@ -1384,7 +1384,7 @@ void parseVCSource (VStr filename, VStr className=VStr::EmptyString) {
   //GLog.Logf(NAME_Debug, "vc: %s", *tp->toString());
   if (!dontSave) {
     compressBools(tp);
-    auto oldtp = vcTypes.find(tp->name);
+    auto oldtp = vcTypes.get(tp->name);
     if (vcTypes.put(tp->name, tp)) GLog.Logf(NAME_Warning, "%s: duplicate type `%s` (%s) (3)", *tp->loc.toStringNoCol(), *tp->toString(), *(*oldtp)->loc.toStringNoCol());
   }
 
@@ -1462,8 +1462,8 @@ void checkVCType (Type *tp) {
   for (int f = 0; f < fcount; ++f) {
     Field *vcf = tp->fieldAt(f);
     Field *spf = spt->fieldAt(f);
-    Type *vcType = vcf->type; //if (vcTypes.has(vcType->name)) vcType = *vcTypes.find(vcType->name);
-    Type *spType = spf->type; //if (shitppTypes.has(spType->name)) spType = *shitppTypes.find(spType->name);
+    Type *vcType = vcf->type; //if (vcTypes.has(vcType->name)) vcType = *vcTypes.get(vcType->name);
+    Type *spType = spf->type; //if (shitppTypes.has(spType->name)) spType = *shitppTypes.get(spType->name);
     if (*vcType == *spType) {
     } else {
       // check for class type
@@ -1605,7 +1605,7 @@ int main (int argc, char **argv) {
   GLog.Logf("%d shitpp types found, %d vc types found", shitppTypes.length(), vcTypes.length());
 
   {
-    auto tpp = vcTypes.find(VName("Object"));
+    auto tpp = vcTypes.get(VName("Object"));
     Type *tpvcObj = *tpp;
     compressBools(tpvcObj);
     vassert(tpvcObj->name == "Object");

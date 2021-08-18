@@ -226,7 +226,7 @@ void VUdmfParser::keyWarning (int wtype) {
   if (!wtype) return;
   if (CanSilentlyIgnoreKey()) return;
   VName kn = VName(*Key, VName::AddLower);
-  auto pxx = keysWarned.find(kn);
+  auto pxx = keysWarned.get(kn);
   if (pxx) {
     if (((*pxx)&wtype) == wtype) return; // already warned
     keysWarned.put(kn, (*pxx)|wtype);
@@ -1210,7 +1210,7 @@ void VLevel::LoadTextMap (int Lump, const VMapInfo &MInfo) {
 
   for (int f = 0; f < NumVertexes; ++f) {
     Vertex2DInfo vi = Vertex2DInfo(Vertexes[f].x, Vertexes[f].y, f);
-    auto ip = vmap.find(vi);
+    auto ip = vmap.get(vi);
     if (ip) {
       vremap.put(f, *ip);
       GCon->Logf(NAME_Warning, "%s: UDMF: vertex %d is duplicate of vertex %d (defined at %s)", *Parser.ParsedVertexes[f].loc.toStringNoCol(), f, *ip, *Parser.ParsedVertexes[*ip].loc.toStringNoCol());
@@ -1240,11 +1240,11 @@ void VLevel::LoadTextMap (int Lump, const VMapInfo &MInfo) {
     Lines[i] = Parser.ParsedLines[i].L;
     // vertex index validity already checked
 
-    auto ip0 = vremap.find(Parser.ParsedLines[i].V1Index);
+    auto ip0 = vremap.get(Parser.ParsedLines[i].V1Index);
     if (!ip0 || *ip0 < 0 || *ip0 >= NumVertexes) Sys_Error("UDMF: internal error (v0)");
     Lines[i].v1 = &Vertexes[*ip0];
 
-    auto ip1 = vremap.find(Parser.ParsedLines[i].V2Index);
+    auto ip1 = vremap.get(Parser.ParsedLines[i].V2Index);
     if (!ip1 || *ip1 < 0 || *ip1 >= NumVertexes) Sys_Error("UDMF: internal error (v1)");
     Lines[i].v2 = &Vertexes[*ip1];
 

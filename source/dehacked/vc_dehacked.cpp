@@ -311,7 +311,7 @@ bool IsDehReplacedSprite (VName spname) {
 //
 //==========================================================================
 VName GetDehReplacedSprite (VName oldname) {
-  auto rp = SpriteReplacements.find(oldname);
+  auto rp = SpriteReplacements.get(oldname);
   return (rp ? *rp : NAME_None);
 }
 
@@ -2116,7 +2116,7 @@ static void FindDehackedLumps (TArray<int> &lumplist) {
         VStr pkname = getFileWadName(it.getFile());
         if (pkname.length()) {
           VStr rname = pkname.stripExtension();
-          auto dl = dehmap.find(rname);
+          auto dl = dehmap.get(rname);
           if (dl) {
             //GCon->Logf(NAME_Debug, "removed wad <%s> from named deh search list", *wadlist[*dl].wadname);
             WadInfo &wi = wadlist[*dl];
@@ -2132,7 +2132,7 @@ static void FindDehackedLumps (TArray<int> &lumplist) {
               }
             }
             wi.wadfidx = -1;
-            dehmap.remove(rname);
+            dehmap.del(rname);
           }
         }
       }
@@ -2145,7 +2145,7 @@ static void FindDehackedLumps (TArray<int> &lumplist) {
       if (rname.endsWithCI(".deh") || rname.endsWithCI(".bex")) {
         bool isbex = rname.endsWithCI(".bex");
         rname = rname.extractFileName().stripExtension();
-        auto dl = dehmap.find(rname);
+        auto dl = dehmap.get(rname);
         if (dl) {
           // use the fact that wads from zips/pk3s are mounted after the respective zip/pk3
           // this way, it is safe to add this dehacked file

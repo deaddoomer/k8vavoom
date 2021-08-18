@@ -1780,7 +1780,7 @@ void VNetConnection::UpdateThinkers () {
     //GCon->Logf(NAME_DevNet, "000: PendingThinkers.length()=%d", PendingThinkers.length());
     timsort_r(PendingThinkers.ptr(), PendingThinkers.length(), sizeof(PendingThinkers[0]), &cmpPendingThinkers, (void *)&snfo);
     for (auto &&th : PendingThinkers) {
-      VThinkerChannel *chan = ThinkerChannels.FindPtr(th);
+      VThinkerChannel *chan = ThinkerChannels.findptr(th);
       if (!chan) continue;
       if (connCanSend && chan->CanSendData()) {
         chan->Update();
@@ -1799,7 +1799,7 @@ void VNetConnection::UpdateThinkers () {
   // update mobjs in sight
   for (TThinkerIterator<VThinker> th(Context->GetLevel()); th; ++th) {
     if (!IsRelevant(*th)) continue;
-    VThinkerChannel *chan = ThinkerChannels.FindPtr(*th);
+    VThinkerChannel *chan = ThinkerChannels.findptr(*th);
     if (!chan) {
       //HACK! add gore entities as last ones
       if (VStr::startsWith(th->GetClass()->GetName(), "K8Gore")) {
@@ -1934,7 +1934,7 @@ void VNetConnection::UpdateThinkers () {
           if (distSq <= maxDistSq) break;
         }
         // evict furthest thinker
-        VThinkerChannel *tc = ThinkerChannels.FindPtr(AliveThinkerChans[AliveThinkerChans.length()-1]);
+        VThinkerChannel *tc = ThinkerChannels.findptr(AliveThinkerChans[AliveThinkerChans.length()-1]);
         vassert(tc);
         tc->Close();
         AliveThinkerChans.removeAt(AliveThinkerChans.length()-1);

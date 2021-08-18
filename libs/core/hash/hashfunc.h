@@ -39,25 +39,26 @@ static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline int digitInBase (char ch, c
 
 
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline char upcase1251 (const char ch) noexcept {
-  if ((vuint8)ch < 128) return ch-(ch >= 'a' && ch <= 'z' ? 32 : 0);
-  if ((vuint8)ch >= 224 /*&& (vuint8)ch <= 255*/) return (vuint8)ch-32;
-  if ((vuint8)ch == 184 || (vuint8)ch == 186 || (vuint8)ch == 191) return (vuint8)ch-16;
-  if ((vuint8)ch == 162 || (vuint8)ch == 179) return (vuint8)ch-1;
+  if ((uint8_t)ch < 128) return ch-(ch >= 'a' && ch <= 'z' ? 32 : 0);
+  if ((uint8_t)ch >= 224 /*&& (uint8_t)ch <= 255*/) return (uint8_t)ch-32;
+  if ((uint8_t)ch == 184 || (uint8_t)ch == 186 || (uint8_t)ch == 191) return (uint8_t)ch-16;
+  if ((uint8_t)ch == 162 || (uint8_t)ch == 179) return (uint8_t)ch-1;
   return ch;
 }
 
 
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline char locase1251 (const char ch) noexcept {
-  if ((vuint8)ch < 128) return ch+(ch >= 'A' && ch <= 'Z' ? 32 : 0);
-  if ((vuint8)ch >= 192 && (vuint8)ch <= 223) return (vuint8)ch+32;
-  if ((vuint8)ch == 168 || (vuint8)ch == 170 || (vuint8)ch == 175) return (vuint8)ch+16;
-  if ((vuint8)ch == 161 || (vuint8)ch == 178) return (vuint8)ch+1;
+  if ((uint8_t)ch < 128) return ch+(ch >= 'A' && ch <= 'Z' ? 32 : 0);
+  if ((uint8_t)ch >= 192 && (uint8_t)ch <= 223) return (uint8_t)ch+32;
+  if ((uint8_t)ch == 168 || (uint8_t)ch == 170 || (uint8_t)ch == 175) return (uint8_t)ch+16;
+  if ((uint8_t)ch == 161 || (uint8_t)ch == 178) return (uint8_t)ch+1;
   return ch;
 }
 
 
-static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline vuint32 nextPOTU32 (const vuint32 x) noexcept {
-  vuint32 res = x;
+// if `x` is already POT, returns `x`
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline uint32_t nextPOTU32 (const uint32_t x) noexcept {
+  uint32_t res = x;
   res |= (res>>1);
   res |= (res>>2);
   res |= (res>>4);
@@ -69,7 +70,7 @@ static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline vuint32 nextPOTU32 (const v
 }
 
 
-static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline vuint32 hashU32 (vuint32 a) noexcept {
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline uint32_t hashU32 (uint32_t a) noexcept {
   a -= (a<<6);
   a = a^(a>>17);
   a -= (a<<9);
@@ -82,7 +83,7 @@ static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline vuint32 hashU32 (vuint32 a)
 
 // https://github.com/skeeto/hash-prospector
 // bias = 0.023840118344741465
-static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT vuint16 hashU16 (vuint16 x) noexcept {
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT uint16_t hashU16 (uint16_t x) noexcept {
   x += x<<7; x ^= x>>8;
   x += x<<3; x ^= x>>2;
   x += x<<4; x ^= x>>8;
@@ -91,7 +92,7 @@ static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT vuint16 hashU16 (vuint16 x) noexce
 
 // https://github.com/skeeto/hash-prospector
 // [16 0x7feb352du 15 0x846ca68bu 16] bias: 0.17353355999581582
-static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline vuint32 permuteU32 (vuint32 x) noexcept {
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline uint32_t permuteU32 (uint32_t x) noexcept {
   x ^= x>>16;
   x *= 0x7feb352du;
   x ^= x>>15;
@@ -102,7 +103,7 @@ static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline vuint32 permuteU32 (vuint32
 
 // https://github.com/skeeto/hash-prospector
 // inverse
-static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline vuint32 permuteU32Inv (vuint32 x) noexcept {
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline uint32_t permuteU32Inv (uint32_t x) noexcept {
   x ^= x>>16;
   x *= 0x43021123u;
   x ^= x>>15^x>>30;
@@ -113,11 +114,12 @@ static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline vuint32 permuteU32Inv (vuin
 
 
 // fnv-1a: http://www.isthe.com/chongo/tech/comp/fnv/
-static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline vuint32 fnvHashBufCI (const void *buf, size_t len) noexcept {
-  vuint32 hash = 2166136261U; // fnv offset basis
+static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashBufCI (const __attribute__((__may_alias__)) void *buf, size_t len) noexcept {
+  uint32_t hash = 2166136261U; // fnv offset basis
   const vuint8 *s = (const vuint8 *)buf;
   while (len--) {
-    hash ^= (vuint8)locase1251(*s++);
+    //hash ^= (uint8_t)locase1251(*s++);
+    hash ^= (*s++)|0x20; // this converts ASCII capitals to locase (and destroys other, but who cares)
     hash *= 16777619U; // 32-bit fnv prime
   }
   return hash;
@@ -125,8 +127,8 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline vuint32 fnvHashBufCI (const 
 
 
 // fnv-1a: http://www.isthe.com/chongo/tech/comp/fnv/
-static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline vuint32 fnvHashBuf (const void *buf, size_t len) noexcept {
-  vuint32 hash = 2166136261U; // fnv offset basis
+static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashBuf (const __attribute__((__may_alias__)) void *buf, size_t len) noexcept {
+  uint32_t hash = 2166136261U; // fnv offset basis
   if (len) {
     const vuint8 *s = (const vuint8 *)buf;
     while (len--) {
@@ -139,8 +141,8 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline vuint32 fnvHashBuf (const vo
 
 
 // fnv-1a: http://www.isthe.com/chongo/tech/comp/fnv/
-static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline vuint32 fnvHashStr (const void *buf) noexcept {
-  vuint32 hash = 2166136261U; // fnv offset basis
+static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashStr (const __attribute__((__may_alias__)) void *buf) noexcept {
+  uint32_t hash = 2166136261U; // fnv offset basis
   if (buf) {
     const vuint8 *s = (const vuint8 *)buf;
     while (*s) {
@@ -153,12 +155,13 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline vuint32 fnvHashStr (const vo
 
 
 // fnv-1a: http://www.isthe.com/chongo/tech/comp/fnv/
-static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline vuint32 fnvHashStrCI (const void *buf) noexcept {
-  vuint32 hash = 2166136261U; // fnv offset basis
+static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashStrCI (const __attribute__((__may_alias__)) void *buf) noexcept {
+  uint32_t hash = 2166136261U; // fnv offset basis
   if (buf) {
     const vuint8 *s = (const vuint8 *)buf;
     while (*s) {
-      hash ^= (vuint8)locase1251(*s++);
+      //hash ^= (uint8_t)locase1251(*s++);
+      hash ^= (*s++)|0x20; // this converts ASCII capitals to locase (and destroys other, but who cares)
       hash *= 16777619U; // 32-bit fnv prime
     }
   }
@@ -167,25 +170,26 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline vuint32 fnvHashStrCI (const 
 
 
 // djb
-static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline vuint32 djbHashBufCI (const void *buf, size_t len) noexcept {
-  vuint32 hash = 5381;
+static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t djbHashBufCI (const __attribute__((__may_alias__)) void *buf, size_t len) noexcept {
+  uint32_t hash = 5381;
   const vuint8 *s = (const vuint8 *)buf;
-  while (len--) hash = ((hash<<5)+hash)+(vuint8)locase1251(*s++);
+  //while (len--) hash = ((hash<<5)+hash)+(uint8_t)locase1251(*s++);
+  while (len--) hash = ((hash<<5)+hash)+((*s++)|0x20); // this converts ASCII capitals to locase (and destroys other, but who cares)
   return hash;
 }
 
 
 // djb
-static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline vuint32 djbHashBuf (const void *buf, size_t len) noexcept {
-  vuint32 hash = 5381;
+static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t djbHashBuf (const __attribute__((__may_alias__)) void *buf, size_t len) noexcept {
+  uint32_t hash = 5381;
   const vuint8 *s = (const vuint8 *)buf;
   while (len-- > 0) hash = ((hash<<5)+hash)+(*s++);
   return hash;
 }
 
 
-static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline vuint32 joaatHashBuf (const void *buf, size_t len, vuint32 seed=0) noexcept {
-  vuint32 hash = seed;
+static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t joaatHashBuf (const __attribute__((__may_alias__)) void *buf, size_t len, uint32_t seed=0u) noexcept {
+  uint32_t hash = seed;
   const vuint8 *s = (const vuint8 *)buf;
   while (len--) {
     hash += *s++;
@@ -200,11 +204,12 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline vuint32 joaatHashBuf (const 
 }
 
 
-static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline vuint32 joaatHashBufCI (const void *buf, size_t len, vuint32 seed=0) noexcept {
-  vuint32 hash = seed;
+static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t joaatHashBufCI (const __attribute__((__may_alias__)) void *buf, size_t len, uint32_t seed=0u) noexcept {
+  uint32_t hash = seed;
   const vuint8 *s = (const vuint8 *)buf;
   while (len--) {
-    hash += (vuint8)locase1251(*s++);
+    //hash += (uint8_t)locase1251(*s++);
+    hash += (*s++)|0x20; // this converts ASCII capitals to locase (and destroys other, but who cares)
     hash += hash<<10;
     hash ^= hash>>6;
   }
@@ -216,9 +221,46 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline vuint32 joaatHashBufCI (cons
 }
 
 
-inline VVA_PURE VVA_CHECKRESULT vuint32 GetTypeHash (int n) noexcept { return hashU32((vuint32)n); }
-inline VVA_PURE VVA_CHECKRESULT vuint32 GetTypeHash (vuint32 n) noexcept { return hashU32(n); }
-inline VVA_PURE VVA_CHECKRESULT vuint32 GetTypeHash (vuint64 n) noexcept { return hashU32((vuint32)n)^hashU32((vuint32)(n>>32)); }
-inline VVA_PURE VVA_CHECKRESULT vuint32 GetTypeHash (const void *n) noexcept { return GetTypeHash((uintptr_t)n); }
+VVA_CHECKRESULT uint32_t bjHashBuf (const __attribute__((__may_alias__)) void *key, size_t length, uint32_t initval=0u) noexcept;
+VVA_CHECKRESULT uint64_t bjHashBuf64 (const __attribute__((__may_alias__)) void *key, size_t length) noexcept;
+
+VVA_CHECKRESULT uint32_t halfsip24HashBuf (const __attribute__((__may_alias__)) void *in, const size_t inlen, const uint32_t seed=0u) noexcept;
+VVA_CHECKRESULT uint32_t halfsip24HashBufCI (const __attribute__((__may_alias__)) void *in, const size_t inlen, const uint32_t seed=0u) noexcept;
+
+static VVA_OKUNUSED VVA_CHECKRESULT uint32_t bjHashStr (const __attribute__((__may_alias__)) void *str) noexcept { return (str ? bjHashBuf(str, strlen((const char *)str)) : 0u); }
+
+static VVA_OKUNUSED VVA_CHECKRESULT uint32_t halfsip24HashStr (const __attribute__((__may_alias__)) void *str) noexcept { return (str ? halfsip24HashBuf(str, strlen((const char *)str)) : 0u); }
+static VVA_OKUNUSED VVA_CHECKRESULT uint32_t halfsip24HashStrCI (const __attribute__((__may_alias__)) void *str) noexcept { return (str ? halfsip24HashBufCI(str, strlen((const char *)str)) : 0u); }
+
+VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint8_t n) noexcept { return hashU32((const uint32_t)n); }
+VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint16_t n) noexcept { return hashU32((const uint32_t)n); }
+VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint32_t n) noexcept { return hashU32(n); }
+VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint64_t n) noexcept { return hashU32((const uint32_t)n)+hashU32((const uint32_t)(n>>32)); }
+VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const int8_t n) noexcept { return hashU32((const uint32_t)n); }
+VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const int16_t n) noexcept { return hashU32((const uint32_t)n); }
+VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const int32_t n) noexcept { return hashU32((const uint32_t)n); }
+VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const int64_t n) noexcept { return hashU32((const uint32_t)n)+hashU32((const uint32_t)(n>>32)); }
+VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const void *n) noexcept { return GetTypeHash((uintptr_t)n); }
+
+
+// use `halfsip24HashBufCI()` for case-insensitive hashes
+// it is mostly used for strings, and strings are 4-byte aligned, and it reads data by 4 bytes
+
+// defines, so we can easily switch hash functions
+//#define vvHashStrZ    fnvHashStr
+//#define vvHashStrZCI  fnvHashStrCI
+
+//#define vvHashStrZ    bjHashStr
+//#define vvHashStrZCI  fnvHashStrCI
+
+#define vvHashStrZ    bjHashStr
+#define vvHashStrZCI  halfsip24HashStrCI
+
+
+// used in cvarsys
+//#define vvHashBufCI   fnvHashBufCI
+
+#define vvHashBufCI   halfsip24HashBufCI
+
 
 #endif

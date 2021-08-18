@@ -637,7 +637,7 @@ COMMAND(Info_ThinkerCountDetail) {
     int nlen = VStr::length(th->GetClass()->GetName());
     if (maxlen < nlen) maxlen = nlen;
     VClass *tc = th->GetClass();
-    auto tcp = thmap.find(tc);
+    auto tcp = thmap.get(tc);
     if (tcp) {
       ++(*tcp);
     } else {
@@ -665,7 +665,7 @@ COMMAND(Info_ThinkerCountDetail) {
     timsort_r(list.ptr(), list.length(), sizeof(VClass *), &classNameCompare, nullptr);
     // dump
     for (int f = 0; f < list.length(); ++f) {
-      auto tcp = thmap.find(list[f]);
+      auto tcp = thmap.get(list[f]);
       GCon->Logf("\034K%*s\034-: \034D%d", maxlen, list[f]->GetName(), *tcp);
     }
   }

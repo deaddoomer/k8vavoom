@@ -175,7 +175,7 @@ public:
       // use lower-case map
       aname = VName(*aname, VName::FindLower);
       if (aname == NAME_None) return nullptr; // no such name, no chance to find a member
-      VMemberBase **mpp = gMembersMapAnyLC.find(aname);
+      VMemberBase **mpp = gMembersMapAnyLC.get(aname);
       if (!mpp) return nullptr;
       for (VMemberBase *m = *mpp; m; m = m->HashNextAnyLC) {
         FERes res = dg(m);
@@ -183,7 +183,7 @@ public:
       }
     } else {
       // use normal map
-      VMemberBase **mpp = gMembersMap.find(aname);
+      VMemberBase **mpp = gMembersMap.get(aname);
       if (!mpp) return nullptr;
       for (VMemberBase *m = *mpp; m; m = m->HashNext) {
         FERes res = dg(m);

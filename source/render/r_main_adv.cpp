@@ -249,7 +249,7 @@ void VRenderLevelShadowVolume::RenderSceneStaticLights (const refdef_t *RD, cons
       if (sli->stlight->ownerUId) {
         own = Level->GetEntityBySUId(sli->stlight->ownerUId);
         /*
-        auto ownpp = suid2ent.find(sli->stlight->ownerUId);
+        auto ownpp = suid2ent.get(sli->stlight->ownerUId);
         if (ownpp) own = *ownpp; //else GCon->Logf(NAME_Debug, "stlight owner with uid %u not found", sli->stlight->ownerUId);
         */
       }
@@ -340,10 +340,10 @@ void VRenderLevelShadowVolume::RenderSceneDynamicLights (const refdef_t *RD, con
       //VEntity *own = (dli->l->Owner && dli->l->Owner->IsA(VEntity::StaticClass()) ? (VEntity *)dli->l->Owner : nullptr);
       VEntity *own = nullptr;
       if (dli->l->ownerUId) {
-        //auto ownpp = suid2ent.find(dli->l->ownerUId);
+        //auto ownpp = suid2ent.get(dli->l->ownerUId);
         own = Level->GetEntityBySUId(dli->l->ownerUId);
         /*
-        auto ownpp = suid2ent.find(dli->l->ownerUId);
+        auto ownpp = suid2ent.get(dli->l->ownerUId);
         if (ownpp) own = *ownpp; //else GCon->Logf(NAME_Debug, "stlight owner with uid %u not found", sli->stlight->ownerUId);
         */
       }

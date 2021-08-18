@@ -74,7 +74,7 @@ public:
 
   bool canIO (VField *fld) {
     if (isSkip(fld)) return true;
-    auto ck = fieldmap.find(fld);
+    auto ck = fieldmap.get(fld);
     if (ck) return *ck;
     fieldmap.put(fld, true); // while we are checking
     bool res = canIO(fld->Type);
@@ -85,7 +85,7 @@ public:
   // saveable struct either has no fields, or all fields are saveable
   bool canIO (VStruct *st) {
     if (!st || st->Name == NAME_None) return true;
-    auto ck = structmap.find(st);
+    auto ck = structmap.get(st);
     if (ck) return *ck;
     structmap.put(st, true); // while we are checking
     for (VStruct *cst = st; cst; cst = cst->ParentStruct) {
@@ -104,12 +104,12 @@ public:
   bool canIO (VClass *cls, bool ignoreFlags) {
     if (!cls || cls->Name == NAME_None) return true;
     if (!ignoreFlags && isSkip(cls, true)) return true;
-    auto ck = classmap.find(cls);
+    auto ck = classmap.get(cls);
     if (ck) return *ck;
     classmap.put(cls, true);
     for (VClass *c = cls; c; c = c->ParentClass) {
       if (c != cls && isSkip(c, false)) break; // transient class breaks chain
-      auto ck2 = classmap.find(c);
+      auto ck2 = classmap.get(c);
       if (ck2) return *ck2;
       classmap.put(c, true);
       for (VField *fld = c->Fields; fld; fld = fld->Next) {
@@ -169,14 +169,14 @@ public:
 
   vuint32 getObjectId (VObject *o) {
     if (!o) return 0;
-    auto idp = objmap.find(o);
+    auto idp = objmap.get(o);
     if (!idp) VCFatalError("tried to save unregistered object (%s)", *o->GetClass()->Name);
     return *idp;
   }
 
   vuint32 getNameId (VName n) {
     if (n == NAME_None) return 0;
-    auto idp = namemap.find(n);
+    auto idp = namemap.get(n);
     if (!idp) {
       for (int f = 0; f < namearr.length(); ++f) {
         if (namearr[f] == n) abort();
@@ -188,7 +188,7 @@ public:
 
   vuint32 getStrId (const VStr &s) {
     if (s.isEmpty()) return 0;
-    auto idp = strmap.find(s);
+    auto idp = strmap.get(s);
     if (!idp) VCFatalError("tried to save unregistered string");
     return *idp;
   }

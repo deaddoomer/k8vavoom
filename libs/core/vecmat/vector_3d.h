@@ -123,8 +123,6 @@ public:
   VVA_ALWAYS_INLINE TVec (const float f[3]) noexcept { x = f[0]; y = f[1]; z = f[2]; }
   VVA_ALWAYS_INLINE TVec (const TVec &src) noexcept : x(src.x), y(src.y), z(src.z) {}
 
-  //VVA_ALWAYS_INLINE TVec &operator = (const TVec &other) noexcept { if (&other != this) memcpy((void *)this, (const void *)&other, sizeof(TVec)); return *this; }
-  //VVA_ALWAYS_INLINE TVec &operator = (const TVec &other) noexcept { x = other.x; y = other.y; z = other.z; return *this; }
   VVA_ALWAYS_INLINE TVec &operator = (const TVec &src) noexcept = default;
 
   VVA_CHECKRESULT VVA_ALWAYS_INLINE bool operator == (const TVec &v2) const noexcept { return (x == v2.x && y == v2.y && z == v2.z); }
@@ -462,7 +460,7 @@ static_assert(__builtin_offsetof(TVec, y) == __builtin_offsetof(TVec, x)+sizeof(
 static_assert(__builtin_offsetof(TVec, z) == __builtin_offsetof(TVec, y)+sizeof(float), "TVec layout fail (1)");
 static_assert(sizeof(TVec) == sizeof(float)*3, "TVec layout fail (2)");
 
-VVA_ALWAYS_INLINE VVA_PURE vuint32 GetTypeHash (const TVec &v) noexcept { return joaatHashBuf(&v, 3*sizeof(float)); }
+VVA_ALWAYS_INLINE VVA_PURE uint32_t GetTypeHash (const TVec &v) noexcept { return joaatHashBuf(&v, 3*sizeof(float)); }
 
 
 static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec operator * (const float s, const TVec &v) noexcept { return TVec(s*v.x, s*v.y, s*v.z); }

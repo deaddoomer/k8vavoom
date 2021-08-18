@@ -119,7 +119,7 @@ void VLevel::SetupThingsFromMapinfo () {
     mthing_t *th = &Things[tidx];
     if (th->type == 0) continue;
     mobjinfo_t *nfo = nullptr;
-    auto fp = id2nfo.find(th->type);
+    auto fp = id2nfo.get(th->type);
     if (fp) {
       nfo = *fp;
     } else {

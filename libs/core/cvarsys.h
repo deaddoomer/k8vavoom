@@ -248,10 +248,10 @@ public:
 
   inline operator int () const { return IntValue; }
   //inline operator bool () const { return !!IntValue; }
-  inline VCvarI &operator = (int AValue) { Set(AValue); return *this; }
-  VCvarI &operator = (const VCvar &v);
-  VCvarI &operator = (const VCvarB &v);
-  VCvarI &operator = (const VCvarI &v);
+  inline void operator = (int AValue) { Set(AValue); }
+  void operator = (const VCvar &v);
+  void operator = (const VCvarB &v);
+  void operator = (const VCvarI &v);
 };
 
 
@@ -264,11 +264,11 @@ public:
 
   inline operator float () const { return (shadowVar ? shadowVar->asFloat() : FloatValue); }
   //inline operator bool () const { return (isFiniteF(FloatValue) && FloatValue == 0); }
-  inline VCvarF &operator = (float AValue) { Set(AValue); return *this; }
-  VCvarF &operator = (const VCvar &v);
-  VCvarF &operator = (const VCvarB &v);
-  VCvarF &operator = (const VCvarI &v);
-  VCvarF &operator = (const VCvarF &v);
+  inline void operator = (float AValue) { Set(AValue); }
+  void operator = (const VCvar &v);
+  void operator = (const VCvarB &v);
+  void operator = (const VCvarI &v);
+  void operator = (const VCvarF &v);
 };
 
 
@@ -281,8 +281,8 @@ public:
 
   inline operator const char * () const { return (shadowVar ? *shadowVar->asStr() : *StringValue); }
   //inline operator bool () const { return ParseBool(*StringValue); }
-  inline VCvarS &operator = (const char *AValue) { Set(AValue); return *this; }
-  VCvarS &operator = (const VCvar &v);
+  inline void operator = (const char *AValue) { Set(AValue); }
+  void operator = (const VCvar &v);
 };
 
 
@@ -293,9 +293,9 @@ public:
   VCvarB (const char *AName, bool ADefault, const char *AHelp, int AFlags=0) : VCvar(AName, (ADefault ? "1" : "0"), AHelp, AFlags, CVType::Bool) {}
 
   inline operator bool () const { return (shadowVar ? shadowVar->asBool() : BoolValue); }
-  VCvarB &operator = (const VCvar &v);
-  inline VCvarB &operator = (bool v) { Set(v ? 1 : 0); return *this; }
-  VCvarB &operator = (const VCvarB &v);
-  VCvarB &operator = (const VCvarI &v);
-  VCvarB &operator = (const VCvarF &v);
+  void operator = (const VCvar &v);
+  inline void operator = (bool v) { Set(v ? 1 : 0); }
+  void operator = (const VCvarB &v);
+  void operator = (const VCvarI &v);
+  void operator = (const VCvarF &v);
 };

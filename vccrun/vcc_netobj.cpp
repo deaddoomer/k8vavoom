@@ -65,7 +65,7 @@ void VNetObjectsMap::SetUpClassLookup () {
     if (VMemberBase::GMembers[i]->MemberType == MEMBER_Class) {
       VClass *cls = static_cast<VClass *>(VMemberBase::GMembers[i]);
       if (cls->IsChildOf(/*VThinker*/VObject::StaticClass())) {
-        ClassMap.Set(cls, ClassLookup.length());
+        ClassMap.put(cls, ClassLookup.length());
         ClassLookup.Append(cls);
       }
     }
@@ -178,7 +178,7 @@ bool VNetObjectsMap::SerialiseClass (VStream &Strm, VClass *&Class) {
     }
   } else {
     if (Class) {
-      vuint32 *ClassId = ClassMap.Find(Class);
+      vuint32 *ClassId = ClassMap.get(Class);
       Strm.SerialiseInt(*ClassId/*, ClassLookup.length()*/);
     } else {
       vuint32 NoClass = 0;
@@ -207,7 +207,7 @@ bool VNetObjectsMap::SerialiseState (VStream &Strm, VState *&State) {
     }
   } else {
     if (State) {
-      vuint32 *ClassId = ClassMap.Find((VClass*)State->Outer);
+      vuint32 *ClassId = ClassMap.get((VClass*)State->Outer);
       vuint32 StateId = State->NetId;
       vensure(ClassId);
       Strm.SerialiseInt(*ClassId/*, ClassLookup.length()*/);

@@ -2025,7 +2025,7 @@ void VParser::ParseMethodDef (VExpression *RetType, VName MName, const TLocation
               VStr lns(Lex.Name);
               lns.getMutableCStr()[0] = (c0-32); // poor man's locase
               VName ln(*lns);
-              if (!propMap->find(ln)) propMap->put(ln, MName);
+              if (!propMap->has(ln)) propMap->put(ln, MName);
             }
           }
           Lex.NextToken();
@@ -2945,8 +2945,8 @@ void VParser::ParseStatesNewStyleUnused (VClass *inClass) {
         ParseError(stloc, "No texture name specified");
       } else {
         ti.texImage = ti.texImage.toLowerCase();
-        texlist.remove(txname);
-        texlist.put(txname, ti);
+        //texlist.del(txname);
+        texlist.put(txname, ti); // replace
       }
       continue;
     }

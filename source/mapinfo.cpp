@@ -66,8 +66,9 @@ struct SCParseModeSaver {
     sc->SetEscape(oldEscape);
   }
 
-  SCParseModeSaver (const SCParseModeSaver &);
-  void operator = (const SCParseModeSaver &) const;
+  //SCParseModeSaver (const SCParseModeSaver &);
+  //void operator = (const SCParseModeSaver &) const;
+  VV_DISABLE_COPY(SCParseModeSaver)
 };
 
 
@@ -323,7 +324,7 @@ void P_SetupMapinfoPlayerClasses () {
 //
 //==========================================================================
 static void appendNumFixup (TMap<int, SpawnEdFixup> &arr, VStr className, int num, int flags=0, int special=0, int arg1=0, int arg2=0, int arg3=0, int arg4=0, int arg5=0) {
-  SpawnEdFixup *fxp = arr.find(num);
+  SpawnEdFixup *fxp = arr.get(num);
   if (fxp) {
     fxp->ClassName = className;
     fxp->flags = flags;
@@ -360,7 +361,7 @@ static void processNumFixups (const char *errname, bool ismobj, TMap<int, SpawnE
   int f = 0;
   while (f < list.length()) {
     mobjinfo_t &nfo = list[f];
-    SpawnEdFixup *fxp = fixups.find(nfo.DoomEdNum);
+    SpawnEdFixup *fxp = fixups.get(nfo.DoomEdNum);
     if (fxp) {
       SpawnEdFixup fix = *fxp;
       VStr cname = fxp->ClassName;
@@ -461,7 +462,7 @@ static int loadSkyTexture (VScriptParser *sc, VName name, bool silent=false) {
   if (name == NAME_None) return GTextureManager.DefaultTexture;
 
   VName loname = VName(*name, VName::AddLower);
-  auto tidp = forceList.find(loname);
+  auto tidp = forceList.get(loname);
   if (tidp) return *tidp;
 
   //int Tex = GTextureManager.NumForName(sc->Name8, TEXTYPE_Wall, false);
@@ -1403,7 +1404,7 @@ static void ParseMapCommon (VScriptParser *sc, VMapInfo *info, bool &HexenMode, 
   for (;;) {
     //sc->GetString(); sc->UnGet(); GCon->Logf(NAME_Debug, "%s: %s", *sc->GetLoc().toStringNoCol(), *sc->String);
     if (!sc->GetString()) break;
-    auto mpp = mcmap.find(sc->String.toLowerCase());
+    auto mpp = mcmap.get(sc->String.toLowerCase());
     if (mpp) {
       (*(*mpp)->handler)(sc, newFormat, info, HexenMode);
     } else {

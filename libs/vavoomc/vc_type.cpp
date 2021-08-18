@@ -1701,7 +1701,7 @@ void VScriptDict::reset () {
 //==========================================================================
 VScriptDictElem *VScriptDict::find (const VScriptDictElem &key) {
   if (!map) return nullptr;
-  return map->find(key);
+  return map->get(key);
 }
 
 
