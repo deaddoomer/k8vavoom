@@ -35,7 +35,8 @@
 // ////////////////////////////////////////////////////////////////////////// //
 static VCvarB dbg_slide_code("dbg_slide_code", false, "Debug slide code?", CVAR_PreInit|CVAR_Hidden);
 static VCvarI gm_slide_code("gm_slide_code", "2", "Which slide code to use (0:vanilla; 1:new; 2:q3-like)?", CVAR_Archive);
-static VCvarB gm_q3slide_use_timeleft("gm_q3slide_use_timeleft", false, "Use 'timeleft' method for Q3 sliding code (gives wrong velocities and bumpiness)?", CVAR_Archive);
+static VCvarB gm_q3slide_use_timeleft("gm_q3slide_use_timeleft", false, "Use 'timeleft' method for Q3 sliding code (gives wrong velocities and bumpiness)?", CVAR_Archive|CVAR_Hidden);
+static VCvarB gm_slide_vanilla_finish("gm_slide_vanilla_finish", false, "Finish stuck slide with vanilla algo?", CVAR_Archive|CVAR_Hidden);
 
 
 
@@ -205,7 +206,7 @@ void VEntity::SlidePathTraverseOld (float &BestSlideFrac, line_t *&BestSlideLine
 //
 //==========================================================================
 float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line_t **BestSlideLine, bool tryBiggerBlockmap) {
-  const float rad = GetMoveRadius();
+  const float rad = GetMoveRadius(); //+0.1f; // make it slightly bigger, to compensate `TryMove()` checks
   const float hgt = max2(0.0f, Height);
 
   float stepHeight = MaxStepHeight;
@@ -216,11 +217,12 @@ float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line
     else if ((EntityFlags&(EF_Missile|EF_StepMissile)) == EF_Missile) stepHeight = 0.0f;
   }
 
-  float BestSlideFrac = 1.0f;
-  const bool slideDiag = (dir.x && dir.y);
-  bool prevClipToZero = false;
-  bool lastHitWasGood = false;
   const TVec end(Origin+dir);
+  const TVec normdir(dir.normalised2D());
+
+  float BestSlideFrac = 1.0f;
+  TVec bestVel(0.0f, 0.0f);
+  float bestVelCos = -INFINITY;
 
   //DeclareMakeBlockMapCoords(Origin.x, Origin.y, rad, xl, yl, xh, yh);
   const int bmdelta = (tryBiggerBlockmap ? 1 : 0);
@@ -290,16 +292,15 @@ float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line
         TVec hitnormal = li->normal;
         if ((li->flags&ML_TWOSIDED) && li->backsector && li->PointOnSide(Origin)) hitnormal = -hitnormal;
 
-        // prefer walls with non-zero clipped velocity
-        if (prevClipToZero && slideDiag && lastHitWasGood && hitplanenum < 2 && htime == BestSlideFrac) {
-          const TVec cvel = ClipVelocity(dir, hitnormal);
-          if (cvel.isZero2D()) {
-            if (debugSlide) {
-              if (IsPlayer()) GLog.Logf(NAME_Debug, "  CVZ-SIDEHIT! hpl=%d; type=%d", hitplanenum, hitType);
-            }
-            continue;
-          }
-          // try this hitpoint, maybe it will not clip the velocity to zero
+        const TVec cvel = ClipVelocity(dir, hitnormal);
+
+        if (htime == BestSlideFrac) {
+          // prefer velocity that goes to the same dir
+          // dot product for two normalized vectors is cosine between them
+          // cos(0) is 1, cos(180) is -1
+          const float c = cvel.normalised2D().dot2D(normdir);
+          if (c < 0.0f || c < bestVelCos) continue;
+          if (cvel.length2DSquared() < bestVel.length2DSquared()) continue;
         }
 
         if (debugSlide) {
@@ -308,11 +309,13 @@ float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line
             GLog.Logf(NAME_Debug, "  prevhittime=%g; newhittime=%g; newhitnormal=(%g,%g); newhitpnum=%d; newdir=(%g,%g)", BestSlideFrac, htime, hitnormal.x, hitnormal.y, hitplanenum, cvel.x, cvel.y);
           }
         }
+
         BestSlideFrac = htime;
         if (BestSlideNormal) *BestSlideNormal = hitnormal;
         if (BestSlideLine) *BestSlideLine = li;
-        lastHitWasGood = (hitplanenum < 2);
-        if (slideDiag) prevClipToZero = !ClipVelocity(dir, hitnormal).isZero2D();
+        //lastHitWasGood = (hitplanenum < 2);
+        bestVel = cvel;
+        bestVelCos = cvel.normalised2D().dot2D(normdir);
       }
     }
   }
@@ -429,7 +432,9 @@ void VEntity::SlideMoveVanilla (float StepVelScale, bool noPickups) {
 
 
 #define SLIDE_MOVE_FINALTRY()  do { \
-  if (dir.y == 0.0f || !TryMove(tmtrace, TVec(Origin.x, Origin.y+dir.y, Origin.z), true, noPickups)) { \
+  if (gm_slide_vanilla_finish.asBool()) { \
+    SlideMoveVanilla(StepVelScale, noPickups); \
+  } else if (dir.y == 0.0f || !TryMove(tmtrace, TVec(Origin.x, Origin.y+dir.y, Origin.z), true, noPickups)) { \
     if (dir.x == 0.0f || !TryMove(tmtrace, TVec(Origin.x+dir.x, Origin.y, Origin.z), true, noPickups)) { \
       if (dir.x || dir.y) Velocity.x = Velocity.y = 0.0f; \
     } \
@@ -467,9 +472,7 @@ void VEntity::SlideMoveSweep (float StepVelScale, bool noPickups) {
       if (debugSlide) {
         if (IsPlayer()) GCon->Logf(NAME_Debug, " STUCK! hitcount=%d; dir=(%g,%g)", hitcount, dir.x, dir.y);
       }
-      //SLIDE_MOVE_FINALTRY();
-      //return;
-      return SlideMoveVanilla(StepVelScale, noPickups);
+      SLIDE_MOVE_FINALTRY();
     }
 
     if (debugSlide) {
@@ -502,10 +505,8 @@ void VEntity::SlideMoveSweep (float StepVelScale, bool noPickups) {
         if (debugSlide) {
           if (IsPlayer()) GCon->Logf(NAME_Debug, "    ...and giving up.");
         }
-        //SLIDE_MOVE_FINALTRY();
-        //return;
-        // just in case, it may unstuck sometimes
-        return SlideMoveVanilla(StepVelScale, noPickups);
+        SLIDE_MOVE_FINALTRY();
+        return;
       }
       // this slide time is not right, zero it
       BestSlideFrac = 0.0f;
@@ -522,11 +523,10 @@ void VEntity::SlideMoveSweep (float StepVelScale, bool noPickups) {
             if (debugSlide) {
               if (IsPlayer()) GLog.Logf(NAME_Debug, "  CAN'T SLIDE; newdir=(%g,%g)", newx, newy);
             }
-            //dir.x = newx;
-            //dir.y = newy;
-            //SLIDE_MOVE_FINALTRY();
-            //return;
-            return SlideMoveVanilla(StepVelScale, noPickups);
+            dir.x = newx;
+            dir.y = newy;
+            SLIDE_MOVE_FINALTRY();
+            return;
           }
         }
       }
@@ -557,8 +557,6 @@ void VEntity::SlideMoveSweep (float StepVelScale, bool noPickups) {
     }
   } while (!TryMove(tmtrace, TVec(Origin.x+dir.x, Origin.y+dir.y, Origin.z), true, noPickups));
 }
-
-#undef SLIDE_MOVE_FINALTRY
 
 
 //==========================================================================
@@ -602,9 +600,8 @@ void VEntity::SlideMoveQ3Like (float StepVelScale, bool noPickups) {
       if (debugSlide) {
         if (IsPlayer()) GCon->Logf(NAME_Debug, " STUCK! hitcount=%d; dir=(%g,%g)", trynum, dir.x, dir.y);
       }
-      //Velocity.x = Velocity.y = 0.0f;
-      //return;
-      return SlideMoveVanilla(StepVelScale, noPickups);
+      SLIDE_MOVE_FINALTRY();
+      return;
     }
 
     if (debugSlide) {
@@ -636,10 +633,8 @@ void VEntity::SlideMoveQ3Like (float StepVelScale, bool noPickups) {
         if (debugSlide) {
           if (IsPlayer()) GCon->Logf(NAME_Debug, "    ...and giving up.");
         }
-        // just in case, it may unstuck sometimes
-        //Velocity.x = Velocity.y = 0.0f;
-        //return;
-        return SlideMoveVanilla(StepVelScale, noPickups);
+        SLIDE_MOVE_FINALTRY();
+        return;
       }
       // this slide time is not right, zero it
       BestSlideFrac = 0.0f;
@@ -656,9 +651,10 @@ void VEntity::SlideMoveQ3Like (float StepVelScale, bool noPickups) {
             if (debugSlide) {
               if (IsPlayer()) GLog.Logf(NAME_Debug, "  CAN'T SLIDE AT ALL!");
             }
-            //Velocity.x = Velocity.y = 0.0f;
-            //return;
-            return SlideMoveVanilla(StepVelScale, noPickups);
+            dir.x = newx;
+            dir.y = newy;
+            SLIDE_MOVE_FINALTRY();
+            return;
           }
         }
       }
@@ -751,6 +747,8 @@ void VEntity::SlideMoveQ3Like (float StepVelScale, bool noPickups) {
   }
 }
 
+#undef SLIDE_MOVE_FINALTRY
+
 
 //==========================================================================
 //
@@ -769,7 +767,7 @@ void VEntity::SlideMove (float StepVelScale, bool noPickups) {
   const float oldvelz = Velocity.z;
   const int slideType = gm_slide_code.asInt();
        if (slideType >= 2) SlideMoveQ3Like(StepVelScale, noPickups);
-  else if (slideType == 1) return SlideMoveSweep(StepVelScale, noPickups);
+  else if (slideType == 1) SlideMoveSweep(StepVelScale, noPickups);
   else SlideMoveVanilla(StepVelScale, noPickups);
   Velocity.z = oldvelz;
 }
