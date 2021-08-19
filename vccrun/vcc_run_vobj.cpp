@@ -338,3 +338,43 @@ IMPLEMENT_FREE_FUNCTION(VObject, appLoadOptions) {
   RET_REF(ldr.objarr[1]); // 0 is `none`
 #endif
 }
+
+
+//static final void PostQuitEvent (int code);
+IMPLEMENT_FREE_FUNCTION(VObject, PostQuitEvent) {
+  int code;
+  vobjGetParam(code);
+  ::PostQuitEvent(code);
+}
+
+
+//static final int RunMainEventLoop (optional ref event_t qevent);
+IMPLEMENT_FREE_FUNCTION(VObject, RunMainEventLoop) {
+  VOptParamPtr<event_t> qevt;
+  vobjGetParam(qevt);
+  RET_INT(::VCC_RunEventLoop(qevt.value));
+}
+
+
+// timer API for non-SDL apps
+// `vccSetTimer` and `vccSetInterval` returns timer id, or 0 on error
+//native static final int vccSetTimer (int mstimeout);
+IMPLEMENT_FREE_FUNCTION(VObject, vccSetTimer) {
+  int mstimeout;
+  vobjGetParam(mstimeout);
+  RET_INT(::VCC_SetTimer(mstimeout));
+}
+
+//native static final int vccSetInterval (int mstimeout);
+IMPLEMENT_FREE_FUNCTION(VObject, vccSetInterval) {
+  int mstimeout;
+  vobjGetParam(mstimeout);
+  RET_INT(::VCC_SetInterval(mstimeout));
+}
+
+//native static final void vccCancelInterval (int iid);
+IMPLEMENT_FREE_FUNCTION(VObject, vccCancelInterval) {
+  int mstimeout;
+  vobjGetParam(mstimeout);
+  ::VCC_CancelInterval(mstimeout);
+}

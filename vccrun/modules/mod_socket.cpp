@@ -72,7 +72,18 @@ static SockModAutoInit smautoinit;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-void (*sockmodPostEventCB) (int code, int sockid, int data, bool wantAck);
+//void (*sockmodPostEventCB) (int code, int sockid, int data);
+static void sockmodPostEventCB (int code, int sockid, int data) {
+  //GLog.Logf(NAME_Debug, "sockmodPostEventCB: code=%d; sockid=%d; data=%d", code, sockid, data);
+  event_t ev;
+  ev.clear();
+  ev.type = ev_socket;
+  ev.sockev = code;
+  ev.sockid = sockid;
+  ev.sockdata = data;
+  VObject::PostEvent(ev);
+  VCC_PingEventLoop();
+}
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -431,8 +442,23 @@ static void closeSO (SocketObj *so, bool immed) {
 
 
 void sockmodAckEvent (int code, int sockid, int data, bool eaten, bool cancelled) {
+  if (code == evsock_sqempty) return; // nobody cares
+
   if (eaten || cancelled) {
-    if (code != evsock_disconnected && code != evsock_error && code != evsock_cantconnect && code != evsock_timeout) return;
+    // the following events can be eaten, but we still have to perform cleanup
+    bool needCleanup = true;
+    switch (code) {
+      case evsock_disconnected:
+      case evsock_cantconnect:
+      case evsock_error:
+      case evsock_timeout:
+        break;
+      default:
+        // non-fatal event
+        needCleanup = false;
+        break;
+    }
+    if (!needCleanup) return;
   }
   MyThreadLocker lock(&mainLock);
   SocketObj *so = findSocket(sockid);
@@ -553,7 +579,7 @@ static int SocketConnect (SockType type, const VStr &host, int port, SocketOptio
       }
     }
     // send connected event
-    sockmodPostEventCB(evsock_connected, resid, 0, true);
+    sockmodPostEventCB(evsock_connected, resid, 0);
   }
 
   return resid;
@@ -795,7 +821,6 @@ struct DsEvData {
   int code;
   int sid;
   int data;
-  bool wantAck;
 };
 
 
@@ -804,31 +829,29 @@ static vuint8 readbuf[1024*128];
 
 
 // schedule, we should not hold a lock
-static void sockQueueEvent (SocketObj *so, int evt, bool wantAck=true) {
+static void sockQueueEvent (SocketObj *so, int evt) {
   if (!so || so->id <= 0) return;
   DsEvData &dev = dsevids.alloc();
   dev.code = evt;
   dev.sid = so->id;
   dev.data = 0;
-  dev.wantAck = wantAck;
 }
 
 
 // schedule, we should not hold a lock
-static void sockQueueEventWithData (SocketObj *so, int evt, int data, bool wantAck=true) {
+static void sockQueueEventWithData (SocketObj *so, int evt, int data) {
   if (!so || so->id <= 0) return;
   DsEvData &dev = dsevids.alloc();
   dev.code = evt;
   dev.sid = so->id;
   dev.data = data;
-  dev.wantAck = wantAck;
 }
 
 
 static void sockErrored (SocketObj *so, int evt) {
   closeSO(so, true);
   so->state = SocketObj::ST_ERROR;
-  sockQueueEvent(so, evt, true);
+  sockQueueEvent(so, evt);
 }
 
 
@@ -872,7 +895,7 @@ static MYTHREAD_RET_TYPE mainTrd (void *xarg) {
       }
     } // done creating sets
     // send scheduled events
-    for (int f = 0; f < dsevids.length(); ++f) sockmodPostEventCB(dsevids[f].code, dsevids[f].sid, dsevids[f].data, dsevids[f].wantAck);
+    for (int f = 0; f < dsevids.length(); ++f) sockmodPostEventCB(dsevids[f].code, dsevids[f].sid, dsevids[f].data);
     // wait
     timeval to;
     to.tv_sec = 0;
@@ -941,7 +964,7 @@ static MYTHREAD_RET_TYPE mainTrd (void *xarg) {
                 if ((size_t)wr > so->sbuf.used) abort();
                 so->sbuf.drop((size_t)wr);
                 if (so->sbuf.isEmpty()) {
-                  sockQueueEvent(so, evsock_sqempty, false); // no ack, nobody cares
+                  sockQueueEvent(so, evsock_sqempty); // no ack, nobody cares
                   break;
                 }
                 break;
@@ -1035,7 +1058,7 @@ static MYTHREAD_RET_TYPE mainTrd (void *xarg) {
       }
     }
     // send scheduled events
-    for (int f = 0; f < dsevids.length(); ++f) sockmodPostEventCB(dsevids[f].code, dsevids[f].sid, dsevids[f].data, dsevids[f].wantAck);
+    for (int f = 0; f < dsevids.length(); ++f) sockmodPostEventCB(dsevids[f].code, dsevids[f].sid, dsevids[f].data);
   }
   Z_ThreadDone();
   return MYTHREAD_RET_VALUE;

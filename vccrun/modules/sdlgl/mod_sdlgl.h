@@ -129,14 +129,15 @@ private:
   static int mWidth, mHeight;
   static bool doGLSwap;
   static bool doRefresh;
-  static bool quitSignal;
+  static int quitSignal;
   static bool hasNPOT; // NPOT texture support
   static VMethod *onDrawVC;
   static VMethod *onEventVC;
   static VMethod *onNewFrameVC;
+  static VMethod *onSwappedVC;
 
   static int currFrameTime;
-  static int prevFrameTime;
+  static uint64_t nextFrameTime;
   static int mBlendMode;
   static int mBlendFunc;
 
@@ -183,10 +184,8 @@ private:
   static void initMethods ();
   static void onNewFrame ();
   static void onDraw ();
+  static void onSwapped ();
   static void onEvent (event_t &evt);
-
-  // returns `true`, if there is SDL event
-  static bool doFrameBusiness (SDL_Event &ev);
 
 public:
   static bool canInit () noexcept;
@@ -234,7 +233,15 @@ public:
   static bool SetTimerInterval (int id, int intervalms) noexcept;
 
   static void sendPing () noexcept;
-  static void postSocketEvent (int code, int sockid, int data, bool wantAck) noexcept;
+  //static void postSocketEvent (int code, int sockid, int data) noexcept;
+
+  // called to notify `VCC_WaitEvent()` that some new event was posted
+  static void VCC_PingEventLoop ();
+
+  static void VCC_WaitEvents ();
+
+  // process received event, called by the event loop
+  static void VCC_ProcessEvent (event_t &ev, void *udata);
 
   static int getFrameTime () noexcept;
   static void setFrameTime (int newft) noexcept;
@@ -504,7 +511,7 @@ public:
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-// VaVoom C wrapper
+// VavoomC wrapper
 class VGLTexture : public VObject {
   DECLARE_CLASS(VGLTexture, VObject, 0)
   NO_DEFAULT_CONSTRUCTOR(VGLTexture)

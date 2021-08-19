@@ -19,14 +19,15 @@
 
 #include "../vcc_run.h"
 
-
+/*
 // callback should be thread-safe (it may be called from several different threads)
-// if `wantAck` is `true`, and event wasn't eaten or cancelled in dispatcher,
-// the next callback will be called
-extern void (*sockmodPostEventCB) (int code, int sockid, int data, bool wantAck);
+// event handler *SHOULD* call `sockmodAckEvent()` for each such event with appropriate flags
+// calls should be made in order
+extern void (*sockmodPostEventCB) (int code, int sockid, int data);
 
 // this callback will be called... ah, see above
 void sockmodAckEvent (int code, int sockid, int data, bool eaten, bool cancelled);
+*/
 
 
 #endif

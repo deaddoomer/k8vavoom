@@ -49,7 +49,7 @@ static TMap<VStr, VOpenGLTexture *> txLoaded;
 
 bool VGLVideo::doGLSwap = false;
 bool VGLVideo::doRefresh = false;
-bool VGLVideo::quitSignal = false;
+int VGLVideo::quitSignal = 0; // 1: need to post; 2: posted
 bool VGLVideo::hasNPOT = false;
 
 extern VObject *mainObject;
@@ -101,21 +101,6 @@ static glMultiTexCoord2fARB_t p_glMultiTexCoord2fARB = nullptr;
 typedef void (APIENTRY *glActiveTextureARB_t) (GLenum);
 static glActiveTextureARB_t p_glActiveTextureARB = nullptr;
 //#endif
-
-
-// ////////////////////////////////////////////////////////////////////////// //
-// data for socket event sub-dispatcher
-static mythread_mutex sockLock;
-
-struct DsEvData {
-  int code;
-  int sid;
-  int data;
-  bool wantAck;
-};
-
-
-static TArray<DsEvData> dsevids;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -2728,7 +2713,7 @@ void VGLVideo::fuckfucksdl () noexcept {
 
   sdlSetGLAttrs();
 
-  hw_window = SDL_CreateWindow("VaVoom C runner hidden SDL fucker", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+  hw_window = SDL_CreateWindow("VavoomC runner hidden SDL fucker", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
     640, 480, SDL_WINDOW_OPENGL|SDL_WINDOW_HIDDEN);
   if (!hw_window) {
     GLog.Log(NAME_Error, "ALAS: cannot create SDL2 window.");
@@ -2958,6 +2943,7 @@ void VGLVideo::clear (int rgb) noexcept {
 VMethod *VGLVideo::onDrawVC = nullptr;
 VMethod *VGLVideo::onEventVC = nullptr;
 VMethod *VGLVideo::onNewFrameVC = nullptr;
+VMethod *VGLVideo::onSwappedVC = nullptr;
 
 
 //==========================================================================
@@ -2968,6 +2954,7 @@ VMethod *VGLVideo::onNewFrameVC = nullptr;
 void VGLVideo::initMethods () {
   onDrawVC = nullptr;
   onEventVC = nullptr;
+  onSwappedVC = nullptr;
 
   VClass *mklass = VClass::FindClass("Main");
   if (!mklass) return;
@@ -2975,6 +2962,11 @@ void VGLVideo::initMethods () {
   VMethod *mmain = mklass->FindMethod("onDraw");
   if (mmain && (mmain->Flags&FUNC_VarArgs) == 0 && mmain->ReturnType.Type == TYPE_Void && mmain->NumParams == 0) {
     onDrawVC = mmain;
+  }
+
+  mmain = mklass->FindMethod("onSwapped");
+  if (mmain && (mmain->Flags&FUNC_VarArgs) == 0 && mmain->ReturnType.Type == TYPE_Void && mmain->NumParams == 0) {
+    onSwappedVC = mmain;
   }
 
   mmain = mklass->FindMethod("onEvent");
@@ -3017,6 +3009,18 @@ void VGLVideo::onDraw () {
 
 //==========================================================================
 //
+//  VGLVideo::onSwapped
+//
+//==========================================================================
+void VGLVideo::onSwapped () {
+  if (!hw_glctx || !onSwappedVC) return;
+  if ((onSwappedVC->Flags&FUNC_Static) == 0) P_PASS_REF((VObject *)mainObject);
+  VObject::ExecuteFunction(onSwappedVC);
+}
+
+
+//==========================================================================
+//
 //  VGLVideo::onEvent
 //
 //==========================================================================
@@ -3042,7 +3046,7 @@ void VGLVideo::onNewFrame () {
 
 // ////////////////////////////////////////////////////////////////////////// //
 int VGLVideo::currFrameTime = 0;
-int VGLVideo::prevFrameTime = 0;
+uint64_t VGLVideo::nextFrameTime = 0;
 
 
 //==========================================================================
@@ -3063,44 +3067,8 @@ int VGLVideo::getFrameTime () noexcept {
 void VGLVideo::setFrameTime (int newft) noexcept {
   if (newft < 0) newft = 0;
   if (currFrameTime == newft) return;
-  prevFrameTime = 0;
+  nextFrameTime = 0; //FIXME!
   currFrameTime = newft;
-}
-
-
-//==========================================================================
-//
-//  VGLVideo::doFrameBusiness
-//
-//==========================================================================
-bool VGLVideo::doFrameBusiness (SDL_Event &ev) {
-  if (currFrameTime <= 0) {
-    SDL_WaitEvent(&ev);
-    return true;
-  }
-
-  int cticks = SDL_GetTicks();
-  if (cticks < 0) Sys_Error("Tick overflow!");
-
-  if (prevFrameTime == 0) {
-    prevFrameTime = cticks;
-    onNewFrame();
-    cticks = SDL_GetTicks();
-  }
-
-  bool gotEvent = false;
-  if (prevFrameTime+currFrameTime > cticks) {
-    if (SDL_WaitEventTimeout(&ev, prevFrameTime+currFrameTime-cticks)) gotEvent = true;
-    cticks = SDL_GetTicks();
-  }
-
-  //GLog.Logf(NAME_Debug, "pt=%d; nt=%d; ct=%d", prevFrameTime, prevFrameTime+currFrameTime, cticks);
-  while (prevFrameTime+currFrameTime <= cticks) {
-    prevFrameTime += currFrameTime;
-    onNewFrame();
-  }
-
-  return (gotEvent || SDL_PollEvent(&ev));
 }
 
 
@@ -3129,35 +3097,11 @@ void VGLVideo::getMousePosition (int *mx, int *my) {
 
 //==========================================================================
 //
-//  VGLVideo::dispatchEvents
+//  VGLVideo::VCC_ProcessEvent
 //
 //==========================================================================
-void VGLVideo::dispatchEvents () {
-  for (int ecount = VObject::CountQueuedEvents(); ecount > 0; --ecount) {
-    event_t ev;
-    if (!VObject::GetEvent(&ev)) break;
-    onEvent(ev);
-  }
-  // dispatch socket events
-  for (;;) {
-    DsEvData dev;
-    {
-      MyThreadLocker lock(&sockLock);
-      if (dsevids.length() == 0) break;
-      dev = dsevids[0];
-      dsevids.removeAt(0);
-    }
-    //GLog.Logf(NAME_Debug, "DISPATCHING");
-    event_t ev;
-    memset((void *)&ev, 0, sizeof(ev));
-    ev.type = ev_socket;
-    ev.data1 = dev.code;
-    ev.data2 = dev.sid;
-    ev.data3 = dev.data;
-    onEvent(ev);
-    if (dev.wantAck) sockmodAckEvent(dev.code, dev.sid, dev.data, !!(ev.flags&EFlag_Eaten), !!(ev.flags&EFlag_Cancelled));
-    //GLog.Logf(NAME_Debug, "DISPATCHED");
-  }
+void VGLVideo::VCC_ProcessEvent (event_t &ev, void *udata) {
+  onEvent(ev);
 }
 
 
@@ -3220,31 +3164,97 @@ static void CtlTriggerButton (int idx, bool down) noexcept {
 }
 
 
+static bool inEventLoop = false;
+static atomic_int VCC_PingSent = 0;
+static double lastCollect = 0.0;
+
+
 //==========================================================================
 //
-//  VGLVideo::runEventLoop
+//  VGLVideo::VCC_WaitEvents
 //
 //==========================================================================
-void VGLVideo::runEventLoop () {
+void VGLVideo::VCC_WaitEvents () {
+  if (!mInited) Sys_Error("VGLVideo::VCC_WaitEvents: wtf?! (inited)");
+  if (!inEventLoop) Sys_Error("VGLVideo::VCC_WaitEvents: wtf?! (inloop)");
+
+  uint64_t prevFrameSwapTime = 0;
+  Sys_Time_Ex(&prevFrameSwapTime);
+
   int mx, my;
+  for (;;) {
+    if (quitSignal == 1) {
+      PostQuitEvent(0);
+      quitSignal = 2;
+    }
 
-  if (!mInited) return;
+    if (VObject::PeekEvent(0, nullptr)) return; // has some events to process
 
-  initMethods();
-
-  onDraw();
-
-  bool doQuit = false;
-  while (!doQuit && !quitSignal) {
     SDL_Event ev;
     event_t evt;
 
-    SDL_PumpEvents();
-    bool gotEvent = doFrameBusiness(ev);
+    int mstimeout = -1;
+    //GLog.Logf(NAME_Debug, "VGLVideo::VCC_WaitEvents:000: currFrameTime=%d", currFrameTime);
+    if (currFrameTime > 0) {
+      uint64_t ctt = 0;
+      const double dctt = Sys_Time_Ex(&ctt);
+      if (nextFrameTime == 0) nextFrameTime = ctt;
+      bool wasNewFrame = false;
+      //GLog.Logf(NAME_Debug, "VGLVideo::VCC_WaitEvents:001:   ctt=%llu; nextFrameTime=%llu", ctt, nextFrameTime);
+      while (ctt >= nextFrameTime) {
+        nextFrameTime += currFrameTime;
+        //onNewFrame();
+        wasNewFrame = true;
+        //GLog.Logf(NAME_Debug, "VGLVideo::VCC_WaitEvents:002:   ctt=%llu; nextFrameTime=%llu", ctt, nextFrameTime);
+      }
+      vassert(ctt < nextFrameTime);
+      mstimeout = (int)(nextFrameTime-ctt);
+      vassert(mstimeout != 0);
+      if (wasNewFrame) onNewFrame();
 
-  morevents:
-    if (gotEvent) {
-      memset((void *)&evt, 0, sizeof(evt));
+      //GLog.Log(NAME_Debug, "VGLVideo::VCC_WaitEvents:004:   checking gc...");
+      //double currTick = fsysCurrTick();
+      if (dctt-lastCollect >= 3.0) {
+        lastCollect = dctt;
+        //GLog.Log(NAME_Debug, "VGLVideo::VCC_WaitEvents:004:   collecting garbage...");
+        VObject::CollectGarbage(); // why not?
+        //GLog.Log(NAME_Debug, "VGLVideo::VCC_WaitEvents:004:   garbage collection complete.");
+        //GLog.Logf(NAME_Debug, "objc=%d", VObject::GetObjectsCount());
+      }
+    } else {
+      // unlimited framerate
+      // refresh signal must be sent by the VC code
+      const double currTick = Sys_Time();
+      if (currTick-lastCollect >= 3.0) {
+        lastCollect = currTick;
+        VObject::CollectGarbage(); // why not?
+        //GLog.Logf(NAME_Debug, "objc=%d", VObject::GetObjectsCount());
+      }
+    }
+
+    if (doRefresh) onDraw();
+    if (doGLSwap) {
+      //GLog.Log(NAME_Debug, "VGLVideo::VCC_WaitEvents:004:   doGLSwap");
+      doGLSwap = false;
+      SDL_GL_SwapWindow(hw_window);
+      onSwapped();
+    }
+
+    //GLog.Logf(NAME_Debug, "VGLVideo::VCC_WaitEvents:100: hasevents=%d", (int)VObject::PeekEvent(0, nullptr));
+    if (VObject::PeekEvent(0, nullptr)) return; // has some events to process
+
+    //GLog.Logf(NAME_Debug, "VGLVideo::VCC_WaitEvents:110: mstimeout=%d", mstimeout);
+    //SDL_PumpEvents(); // no need to call this
+    if (mstimeout > 0) {
+      if (!SDL_WaitEventTimeout(&ev, mstimeout)) continue; // timeout (or error, but we don't care)
+    } else {
+      if (!SDL_WaitEvent(&ev)) Sys_Error("error waiting for the event");
+    }
+
+    //GLog.Log(NAME_Debug, "VGLVideo::VCC_WaitEvents:200: processing SDL events...");
+    bool doCheck = true;
+    while (doCheck) {
+      evt.clear();
       evt.modflags = curmodflags;
       switch (ev.type) {
         case SDL_KEYDOWN:
@@ -3490,13 +3500,13 @@ void VGLVideo::runEventLoop () {
           }
           break;
         case SDL_QUIT:
-          //doQuit = true;
           evt.type = ev_closequery;
           evt.data1 = 0; // alas, there is no way to tell why we're quiting; fuck you, sdl!
           evt.data2 = 0;
           evt.data3 = 0;
           //onEvent(evt);
           VObject::PostEvent(evt);
+          doCheck = false;
           break;
         case SDL_USEREVENT:
           //GLog.Logf(NAME_Debug, "SDL: userevent, code=%d", ev.user.code);
@@ -3514,32 +3524,86 @@ void VGLVideo::runEventLoop () {
               VObject::PostEvent(evt);
             }
           }
+          atomic_set(&VCC_PingSent, 0);
           break;
         default:
           break;
       }
-      // if we have no fixed frame time, process more events
-      //if (currFrameTime <= 0 && SDL_PollEvent(&ev)) goto morevents;
-      //HACK: after switching on new event processor, it should be done this way (to not break old code)
-      dispatchEvents();
-      if (currFrameTime <= 0 && !quitSignal && SDL_PollEvent(&ev)) { gotEvent = true; goto morevents; }
-    }
-
-    if (doRefresh) onDraw();
-
-    if (doGLSwap) {
-      static double lastCollect = 0.0;
-      doGLSwap = false;
-      SDL_GL_SwapWindow(hw_window);
-
-      double currTick = fsysCurrTick();
-      if (currTick-lastCollect >= 3) {
-        lastCollect = currTick;
-        VObject::CollectGarbage(); // why not?
-        //GLog.Logf(NAME_Debug, "objc=%d", VObject::GetObjectsCount());
+      if (doCheck) {
+        if (!SDL_PollEvent(&ev)) break;
       }
     }
   }
+}
+
+
+static VCC_PingEventLoopFn oldPingEventLoop = nullptr;
+static VCC_WaitEventsFn oldVCC_WaitEvents = nullptr;
+
+
+//==========================================================================
+//
+//  VGLVideo::VCC_PingEventLoop
+//
+//==========================================================================
+void VGLVideo::VCC_PingEventLoop () {
+  if (!mInited) {
+    if (oldPingEventLoop) oldPingEventLoop();
+    return;
+  }
+
+  if (atomic_set(&VCC_PingSent, 1) == 0) {
+    SDL_Event event;
+    SDL_UserEvent userevent;
+
+    userevent.type = SDL_USEREVENT;
+    userevent.code = 0;
+
+    event.type = SDL_USEREVENT;
+    event.user = userevent;
+
+    SDL_PushEvent(&event);
+  }
+}
+
+
+//==========================================================================
+//
+//  VGLVideo::sendPing
+//
+//==========================================================================
+void VGLVideo::sendPing () noexcept {
+  VCC_PingEventLoop();
+}
+
+
+//==========================================================================
+//
+//  VGLVideo::runEventLoop
+//
+//==========================================================================
+void VGLVideo::runEventLoop () {
+  if (!mInited) Sys_Error("VGLVideo::runEventLoop: wtf?!");
+  if (inEventLoop) Sys_Error("VGLVideo::runEventLoop: wtf?!");
+
+  //if (!mInited) return;
+
+  initMethods();
+  onDraw();
+  RegisterEventProcessor(&VGLVideo::VCC_ProcessEvent, nullptr);
+  oldPingEventLoop = ::VCC_PingEventLoop;
+  ::VCC_PingEventLoop = &VCC_PingEventLoop;
+  oldVCC_WaitEvents = ::VCC_WaitEvents;
+  ::VCC_WaitEvents = &VCC_WaitEvents;
+  atomic_set(&VCC_PingSent, 0);
+  inEventLoop = true;
+  VCC_RunEventLoop(nullptr);
+  inEventLoop = false;
+  UnregisterEventProcessor(&VGLVideo::VCC_ProcessEvent, nullptr);
+  vassert(::VCC_PingEventLoop == &VCC_PingEventLoop);
+  vassert(::VCC_WaitEvents == &VCC_WaitEvents);
+  ::VCC_PingEventLoop = oldPingEventLoop;
+  ::VCC_WaitEvents = oldVCC_WaitEvents;
 }
 
 
@@ -3670,67 +3734,6 @@ void VGLVideo::drawTextAtTexture (VOpenGLTexture *tx, int x, int y, VStr text, c
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-class VideoAutoInit {
-public:
-  VideoAutoInit () noexcept {
-    mythread_mutex_init(&sockLock);
-    sockmodPostEventCB = &VGLVideo::postSocketEvent;
-  }
-};
-static VideoAutoInit videoAutoInit;
-
-
-//==========================================================================
-//
-//  VGLVideo::sendPing
-//
-//==========================================================================
-void VGLVideo::sendPing () noexcept {
-  if (!mInited) return;
-
-  SDL_Event event;
-  SDL_UserEvent userevent;
-
-  userevent.type = SDL_USEREVENT;
-  userevent.code = 0;
-
-  event.type = SDL_USEREVENT;
-  event.user = userevent;
-
-  SDL_PushEvent(&event);
-}
-
-
-//==========================================================================
-//
-//  VGLVideo::postSocketEvent
-//
-//==========================================================================
-void VGLVideo::postSocketEvent (int code, int sockid, int data, bool wantAck) noexcept {
-  // put it into saved queue, and ping dispatcher
-  bool doSendPing = false;
-  {
-    MyThreadLocker lock(&sockLock);
-    doSendPing = (dsevids.length() == 0); // no need to send many pings
-    DsEvData &dev = dsevids.alloc();
-    dev.code = code;
-    dev.sid = sockid;
-    dev.data = data;
-    dev.wantAck = wantAck;
-  }
-  if (doSendPing) sendPing();
-};
-
-
-// callback should be thread-safe (it may be called from several different threads)
-// if `wantAck` is `true`, and event wasn't eaten or cancelled in dispatcher,
-// the next callback will be called
-extern void (*sockmodPostEventCB) (int code, int sockid, int data, bool wantAck);
-
-// this callback will be called... ah, see above
-void sockmodLostEvent (int code, int sockid, int data, bool eaten, bool cancelled);
-
-
 IMPLEMENT_FUNCTION(VGLVideo, canInit) { RET_BOOL(VGLVideo::canInit()); }
 IMPLEMENT_FUNCTION(VGLVideo, hasOpenGL) { RET_BOOL(VGLVideo::hasOpenGL()); }
 IMPLEMENT_FUNCTION(VGLVideo, isInitialized) { RET_BOOL(VGLVideo::isInitialized()); }
@@ -3785,13 +3788,14 @@ IMPLEMENT_FUNCTION(VGLVideo, clearScreen) {
 
 IMPLEMENT_FUNCTION(VGLVideo, requestQuit) {
   if (!VGLVideo::quitSignal) {
-    VGLVideo::quitSignal = true;
+    if (!VGLVideo::quitSignal) VGLVideo::quitSignal = 1;
     VGLVideo::sendPing();
+    //PostQuitEvent(0);
   }
 }
 
 IMPLEMENT_FUNCTION(VGLVideo, resetQuitRequest) {
-  VGLVideo::quitSignal = false;
+  VGLVideo::quitSignal = 0;
 }
 
 IMPLEMENT_FUNCTION(VGLVideo, requestRefresh) {

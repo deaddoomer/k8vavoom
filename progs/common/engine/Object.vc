@@ -357,7 +357,8 @@ enum {
   ev_winfocus,
   // only for vccrun
   ev_timer, // data1: timer id
-  ev_closequery,
+  ev_closequery, // may be send when window close request is received
+  ev_quit, // send to stop current event loop
   // socket library
   ev_socket, // see below
   // sent when resolution changed; no data
@@ -469,6 +470,17 @@ static final void EventClear (ref event_t evt) { evt.clear(); }
 static final bool EventIsAnyMouse (ref event_t evt) { return evt.isAnyMouse(); }
 // default is both press and release
 static final bool EventIsMouseButton (ref event_t evt, optional bool down/*=undefined*/) { return evt.isMouseButton(down!optional); }
+
+#ifdef IN_VCC_RUN
+native static final void PostQuitEvent (int code);
+native static final int RunMainEventLoop (optional ref event_t qevent);
+
+// timer API for non-SDL apps
+// `vccSetTimer` and `vccSetInterval` returns timer id, or 0 on error
+native static final int vccSetTimer (int mstimeout);
+native static final int vccSetInterval (int mstimeout);
+native static final void vccCancelInterval (int iid);
+#endif
 
 
 bitenum ModMask {

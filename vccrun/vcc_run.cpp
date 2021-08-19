@@ -84,6 +84,281 @@ static VStr buildConfigName (const VStr &optfile) {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+struct VFNEvProcList {
+  VCC_ProcessEventFn handler;
+  void *udata;
+  VFNEvProcList *next;
+};
+
+static VFNEvProcList *evProcListHead = nullptr;
+
+
+void RegisterEventProcessor (VCC_ProcessEventFn handler, void *udata) {
+  if (!handler) return;
+  VFNEvProcList *prev = nullptr;
+  for (VFNEvProcList *curr = evProcListHead; curr; prev = curr, curr = curr->next) {
+    if (curr->handler == handler && curr->udata == udata) return;
+  }
+  VFNEvProcList *c = (VFNEvProcList *)Z_Calloc(sizeof(VFNEvProcList));
+  if (prev) prev->next = c; else evProcListHead = c;
+  c->handler = handler;
+  c->udata = udata;
+  c->next = nullptr;
+}
+
+
+void UnregisterEventProcessor (VCC_ProcessEventFn handler, void *udata) {
+  if (!handler) return;
+  VFNEvProcList *prev = nullptr;
+  for (VFNEvProcList *curr = evProcListHead; curr; prev = curr, curr = curr->next) {
+    if (curr->handler == handler && curr->udata) {
+      if (prev) prev->next = curr->next; else evProcListHead = curr->next;
+      Z_Free(curr);
+      return;
+    }
+  }
+}
+
+
+// timer API for non-SDL apps
+// returns timer id, or 0 on error
+struct VCCTimer {
+  int id;
+  unsigned mstimeout;
+  uint64_t fireTime;
+  bool oneShot;
+};
+
+static TArray<VCCTimer> vccTimers;
+static uint64_t nextTimerTimeout = 0; //0xffffffffffffffffULL;
+
+
+static int VCC_AddTimer (int mstimeout, bool oneShot) {
+  if (mstimeout < 0) return 0;
+  int n = 0;
+  while (n < vccTimers.length() && vccTimers[n].id) ++n;
+  VCCTimer *tm;
+  if (n >= vccTimers.length()) {
+    tm = &vccTimers.alloc();
+    n = vccTimers.length();
+  } else {
+    tm = &vccTimers[n++];
+  }
+  tm->id = n;
+  tm->mstimeout = (unsigned)mstimeout;
+  Sys_Time_Ex(&tm->fireTime);
+  tm->fireTime += tm->mstimeout;
+  tm->oneShot = oneShot;
+  if (mstimeout == 0 && !oneShot) tm->mstimeout = 1u;
+  if (!nextTimerTimeout || tm->fireTime < nextTimerTimeout) nextTimerTimeout = tm->fireTime;
+  return tm->id;
+}
+
+
+int VCC_SetTimer (int mstimeout) {
+  return VCC_AddTimer(mstimeout, true);
+}
+
+int VCC_SetInterval (int mstimeout) {
+  return VCC_AddTimer(mstimeout, false);
+}
+
+
+void VCC_CancelInterval (int iid) {
+  if (iid < 1 || iid >= vccTimers.length()) return;
+  if (!vccTimers[iid].id) return;
+  vccTimers[iid].id = 0;
+  int ffree = vccTimers.length();
+  while (ffree > 0 && !vccTimers[ffree].id) --ffree;
+  if (ffree != vccTimers.length()) vccTimers.setLength(ffree, false); // do not resize array storage
+  nextTimerTimeout = 0;
+  for (auto &&tm : vccTimers) {
+    if (!tm.id) continue;
+    if (!nextTimerTimeout || tm.fireTime < nextTimerTimeout) nextTimerTimeout = tm.fireTime;
+  }
+}
+
+
+// return max timeout or -1; never zero
+static int VCC_ProcessTimers () {
+  if (vccTimers.length() == 0) {
+    nextTimerTimeout = 0;
+    return -1;
+  }
+
+  uint64_t ctt = 0;
+  Sys_Time_Ex(&ctt);
+
+  int firstfree = 0;
+  int currtm = 0;
+
+  for (auto &&tm : vccTimers) {
+    //GLog.Logf("TM#%u: id=%d; to=%u; ftm=%llu", currtm, tm.id, tm.mstimeout, tm.fireTime);
+    ++currtm;
+    if (!tm.id) continue;
+    if (tm.fireTime <= ctt) {
+      event_t ev;
+      ev.clear();
+      ev.type = ev_timer;
+      ev.timerid = tm.id;
+      VObject::PostEvent(ev);
+      if (tm.oneShot) {
+        tm.id = 0;
+      } else {
+        tm.fireTime = ctt+tm.mstimeout;
+        firstfree = currtm;
+      }
+    } else {
+      firstfree = currtm;
+    }
+  }
+
+  if (firstfree != vccTimers.length()) vccTimers.setLength(firstfree, false); // do not resize array storage
+
+  nextTimerTimeout = 0;
+  for (auto &&tm : vccTimers) {
+    if (!tm.id) continue;
+    if (!nextTimerTimeout || tm.fireTime < nextTimerTimeout) nextTimerTimeout = tm.fireTime;
+  }
+
+  //GLog.Logf(NAME_Debug, "ntt=%llu", nextTimerTimeout);
+
+  if (nextTimerTimeout <= ctt) return -1;
+  if (nextTimerTimeout-ctt > 1000000) return 1000000;
+  return (int)(nextTimerTimeout-ctt);
+}
+
+
+static mythread_event eventLoopPingEvent;
+static atomic_int quitEventPosted = 0;
+
+
+static void VCC_PingEventLoopDefault () {
+  //GLog.Logf(NAME_Debug, "pinging event loop (%d)...", VObject::CountQueuedEvents());
+  mythread_event_signal(&eventLoopPingEvent);
+}
+
+
+static void VCC_WaitEventsDefault () {
+  for (;;) {
+    const int ttout = VCC_ProcessTimers();
+    if (VObject::CountQueuedEvents()) {
+      mythread_event_reset(&eventLoopPingEvent);
+      return;
+    }
+    if (ttout < 0) {
+      mythread_event_wait(&eventLoopPingEvent, nullptr);
+      return;
+    }
+    //GLog.Logf(NAME_Debug, "ttout=%d", ttout);
+    (void)mythread_event_wait_timeout(&eventLoopPingEvent, ttout, nullptr);
+  }
+}
+
+
+VCC_WaitEventsFn VCC_WaitEvents = &VCC_WaitEventsDefault;
+VCC_PingEventLoopFn VCC_PingEventLoop = &VCC_PingEventLoopDefault;
+
+
+int VCC_RunEventLoop (event_t *quitev) {
+  VClass *mklass = VClass::FindClass("Main");
+  if (!mklass) Sys_Error("class `Main` not found!");
+
+  VMethod *onEventVC = mklass->FindMethod("onEvent");
+  if (onEventVC && (onEventVC->Flags&FUNC_VarArgs) == 0 && onEventVC->ReturnType.Type == TYPE_Void && onEventVC->NumParams == 1 &&
+      ((onEventVC->ParamTypes[0].Type == TYPE_Pointer &&
+        onEventVC->ParamFlags[0] == 0 &&
+        onEventVC->ParamTypes[0].GetPointerInnerType().Type == TYPE_Struct &&
+        onEventVC->ParamTypes[0].GetPointerInnerType().Struct->Name == "event_t") ||
+       ((onEventVC->ParamFlags[0]&(FPARM_Out|FPARM_Ref)) != 0 &&
+        onEventVC->ParamTypes[0].Type == TYPE_Struct &&
+        onEventVC->ParamTypes[0].Struct->Name == "event_t")))
+  {
+    // ok
+  } else {
+    Sys_Error("no suitable `onEvent` method found!");
+  }
+
+  //GLog.Log(NAME_Debug, "VCC_RunEventLoop: started");
+  double lastGetEvent = -1.0;
+  event_t ev;
+  for (;;) {
+    //GLog.Logf(NAME_Debug, "VCC_RunEventLoop: waiting for events (%d)...", VObject::CountQueuedEvents());
+    /*if (VObject::CountQueuedEvents() == 0)*/ VCC_WaitEvents();
+    //GLog.Logf(NAME_Debug, "VCC_RunEventLoop: has %d events to process...", VObject::CountQueuedEvents());
+
+    bool wasEvent = false;
+    for (int ecount = VObject::CountQueuedEvents(); ecount > 0; --ecount) {
+      ev.clear();
+      if (!VObject::GetEvent(&ev)) break;
+      //lastGetEvent = Sys_Time();
+      wasEvent = true;
+      if (ev.type == ev_quit) atomic_set(&quitEventPosted, 0);
+
+      // run handlers
+      VFNEvProcList *c = evProcListHead;
+      if (c) {
+        while (c) {
+          VFNEvProcList *cc = c;
+          c = c->next;
+          cc->handler(ev, cc->udata);
+          if (ev.isEatenOrCancelled()) break;
+        }
+      } else if (onEventVC) {
+        if ((onEventVC->Flags&FUNC_Static) == 0) P_PASS_REF((VObject *)mainObject);
+        P_PASS_REF((event_t *)&ev);
+        VObject::ExecuteFunction(onEventVC);
+      }
+
+      if (ev.type == ev_socket) {
+        sockmodAckEvent(ev.sockev, ev.sockid, ev.sockdata, ev.isEaten(), ev.isCancelled());
+      }
+      if (ev.type == ev_quit && !ev.isEatenOrCancelled()) {
+        if (quitev) *quitev = ev;
+        return ev.data1;
+      }
+      if (ev.type == ev_closequery && !ev.isEatenOrCancelled()) {
+        PostQuitEvent(0);
+      }
+    }
+
+    const int qposted = atomic_get(&quitEventPosted);
+    if (qposted == 2) {
+      if (VObject::PostEvent(ev)) atomic_set(&quitEventPosted, 1);
+    }
+
+    const double ctt = Sys_Time();
+    if (lastGetEvent < 0.0) lastGetEvent = ctt;
+    if (!wasEvent) {
+      // minute passed, ping resulted in no events
+      if (ctt-lastGetEvent > 30.0) Sys_Error("fatal error in `VCC_WaitEvent()`");
+    } else {
+      lastGetEvent = ctt;
+    }
+  }
+}
+
+
+// `exitcode` will be put to `data1`
+void PostQuitEvent (int exitcode) {
+  const int qposted = atomic_get(&quitEventPosted);
+  // do not spam
+  if (qposted != 1) {
+    event_t ev;
+    ev.clear();
+    ev.type = ev_quit;
+    ev.data1 = exitcode;
+    if (!VObject::PostEvent(ev)) {
+      atomic_set(&quitEventPosted, 2);
+    } else {
+      atomic_set(&quitEventPosted, 1);
+    }
+  }
+  VCC_PingEventLoop();
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 #if defined(WIN32)
 # include <windows.h>
 #endif
@@ -570,10 +845,13 @@ int main (int argc, char **argv) {
   VObject::standaloneExecutor = 1; // required
   VObject::engineAllowNotImplementedBuiltins = 1;
   VObject::cliShowUndefinedBuiltins = 0; // for now
+  VMemberBase::StaticAddDefine("IN_VCC_RUN");
 
   srand(time(nullptr));
   SysErrorCB = &OnSysError;
   VObject::PR_WriterCB = &vmWriter;
+
+  if (mythread_event_init(&eventLoopPingEvent, MYTHREAD_EVENT_AUTORESET) != 0) Sys_Error("cannot create event loop internal signal event");
 
   try {
     //GLog.AddListener(&VccLog);
