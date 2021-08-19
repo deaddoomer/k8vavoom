@@ -213,7 +213,8 @@ enum {
   ev_winfocus,
   // only for vccrun
   ev_timer, // data1: timer id
-  ev_closequery,
+  ev_closequery, // may be send when window close request is received
+  ev_quit, // send to stop current event loop
   // socket library
   ev_socket,
   // sent when resolution changed; no data
@@ -698,6 +699,11 @@ public:
   // `canCache` is never `nullptr`, and always set to `true` on call
   typedef VCvar *(*GetVCvarObjectFn) (VName name, bool *canCache);
   static GetVCvarObjectFn GetVCvarObject;
+
+private:
+  // check if the queue has any unprocessed events
+  // returns number of events in the queue, or 0
+  static int CountQueuedEventsNoLock () noexcept;
 
 public:
   // event queue API; as it is used both in k8vavoom and in vccrun, and with

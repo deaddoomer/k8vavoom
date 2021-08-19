@@ -74,12 +74,22 @@ void VObject::ClearEventQueue () noexcept {
 
 //==========================================================================
 //
+//  VObject::CountQueuedEventsNoLock
+//
+//==========================================================================
+int VObject::CountQueuedEventsNoLock () noexcept {
+  return eventLast+(eventLast < eventFirst ? eventMax : 0)-eventFirst;
+}
+
+
+//==========================================================================
+//
 //  VObject::CountQueuedEvents
 //
 //==========================================================================
 int VObject::CountQueuedEvents () noexcept {
   QueueLocker lock;
-  return eventLast+(eventLast < eventFirst ? eventMax : 0)-eventFirst;
+  return CountQueuedEventsNoLock();
 }
 
 
@@ -107,7 +117,7 @@ int VObject::GetEventQueueSize () noexcept {
 bool VObject::SetEventQueueSize (int newsize) noexcept {
   if (newsize < 1) return false; // oops
   QueueLocker lock;
-  if (newsize < CountQueuedEvents()) return false;
+  if (newsize < CountQueuedEventsNoLock()) return false;
   // allocate new buffer, copy events
   event_t *newbuf = (event_t *)Z_Malloc(newsize*sizeof(event_t));
   int npos = 0;
@@ -166,7 +176,7 @@ bool VObject::InsertEvent (const event_t &ev) noexcept {
 //==========================================================================
 bool VObject::PeekEvent (int idx, event_t *ev) noexcept {
   QueueLocker lock;
-  if (idx < 0 || idx > CountQueuedEvents()) {
+  if (idx < 0 || idx >= CountQueuedEventsNoLock()) {
     if (ev) ev->clear();
     return false;
   }
