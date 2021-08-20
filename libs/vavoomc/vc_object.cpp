@@ -910,8 +910,11 @@ void VObject::SerialiseFields (VStream &Strm) {
     if (fldcount < 0) VPackage::IOError(va("invalid number of saved fields in class `%s` (%d)", GetClass()->GetName(), fldcount));
     if (fldcount == 0) return; // nothing to do
     // build field list to speedup loading
-    TMapNC<VName, VField *> fldmap;
-    TMapNC<VName, bool> fldseen;
+    struct FldInfo {
+      VField *fld;
+      bool seen;
+    };
+    TMapNC<VName, FldInfo> fldmap;
     for (VClass *cls = GetClass(); cls; cls = cls->GetSuperClass()) {
       for (VField *fld = cls->Fields; fld; fld = fld->Next) {
         if (fld->Flags&(FIELD_Native|FIELD_Transient)) continue;
@@ -936,7 +939,10 @@ void VObject::SerialiseFields (VStream &Strm) {
           GLog.Logf(NAME_Warning, "  field at %s", *fld->Loc.toStringNoCol());
           // do not load duplicate
         } else {
-          fldmap.put(fld->Name, fld);
+          FldInfo nfo;
+          nfo.fld = fld;
+          nfo.seen = false;
+          fldmap.put(fld->Name, nfo);
         }
       }
     }
@@ -949,18 +955,19 @@ void VObject::SerialiseFields (VStream &Strm) {
         GLog.WriteLine(NAME_Warning, "saved field `%s` not found in class `%s`, value ignored", *fldname, GetClass()->GetName());
         VField::SkipSerialisedValue(Strm);
       } else {
-        if (fldseen.put(fldname, true)) {
+        if (fpp->seen) {
           GLog.WriteLine(NAME_Warning, "duplicate saved field `%s` in class `%s`", *fldname, GetClass()->GetName());
         }
+        fpp->seen = true;
         if (debugDump) GLog.WriteLine("VC I/O: loading field `%s` of class `%s`",  *fldname, GetClass()->GetName());
-        VField *fld = *fpp;
+        VField *fld = fpp->fld;
         VField::SerialiseFieldValue(Strm, (vuint8 *)this+fld->Ofs, fld->Type);
       }
     }
     // show missing fields
     for (auto fit = fldmap.first(); fit; ++fit) {
-      VName fldname = fit.getKey();
-      if (!fldseen.has(fldname)) {
+      if (!fit.getValue().seen) {
+        VName fldname = fit.getKey();
         GLog.WriteLine(NAME_Warning, "field `%s` is missing in saved data for class `%s`", *fldname, GetClass()->GetName());
       }
     }
