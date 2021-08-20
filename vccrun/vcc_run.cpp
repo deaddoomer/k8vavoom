@@ -38,6 +38,17 @@
 
 #include "modules/sdlgl/mod_sdlgl.h"
 
+#if !defined(WIN32) && !defined(NO_RAWTTY)
+# include <stdint.h>
+# include <sys/ioctl.h>
+# include <sys/select.h>
+# include <sys/time.h>
+# include <sys/types.h>
+/*# include <termios.h>*/
+# include <unistd.h>
+# include <sys/eventfd.h>
+#endif
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 //#define DEBUG_OBJECT_LOADER
@@ -81,6 +92,208 @@ static VStr buildConfigName (const VStr &optfile) {
 // ////////////////////////////////////////////////////////////////////////// //
 #include "vcc_run_serializer.cpp"
 #include "vcc_run_net.cpp"
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+//FIXME: correctly interpret modifiers
+static VVA_OKUNUSED bool convertTTYEvent (event_t &ev, const TTYEvent &tty) noexcept {
+  ev.clear();
+
+  if (tty.type == TTYEvent::Type::None) return false;
+  if (tty.type == TTYEvent::Type::Error) return false;
+  if (tty.type == TTYEvent::Type::Unknown) return false;
+
+  if (tty.isCtrlDown()) ev.modflags |= bCtrl;
+  if (tty.isAltDown()) ev.modflags |= bAlt;
+  if (tty.isShiftDown()) ev.modflags |= bShift;
+
+  //ModChar, // char with some modifier
+  if (tty.type == TTYEvent::Type::Char || tty.type == TTYEvent::Type::ModChar) {
+    //FIXME: correctly interpret modifiers
+    if (tty.ch == 8) { ev.type = ev_keydown; ev.keycode = K_BACKSPACE; return true; }
+    if (tty.ch == 9) { ev.type = ev_keydown; ev.keycode = K_TAB; return true; }
+    if (tty.ch == 10 || tty.ch == 13) { ev.type = ev_keydown; ev.keycode = K_ENTER; return true; }
+    if (tty.ch == 27) { ev.type = ev_keydown; ev.keycode = K_ESCAPE; return true; }
+    if (tty.ch == 32) { ev.type = ev_keydown; ev.keycode = K_SPACE; return true; }
+    if (tty.ch >= 48 && tty.ch <= 57) { ev.type = ev_keydown; ev.keycode = tty.ch; return true; }
+    if (tty.ch >= 97 && tty.ch <= 122) { ev.type = ev_keydown; ev.keycode = tty.ch; return true; }
+    if (tty.ch >= 65 && tty.ch <= 90) { ev.type = ev_keydown; ev.modflags |= bShift; ev.keycode = K_a+(tty.ch-65); return true; }
+    return false;
+  }
+
+  switch (tty.type) {
+    case TTYEvent::Type::Up: ev.type = ev_keydown; ev.keycode = K_UPARROW; return true;
+    case TTYEvent::Type::Down: ev.type = ev_keydown; ev.keycode = K_DOWNARROW; return true;
+    case TTYEvent::Type::Left: ev.type = ev_keydown; ev.keycode = K_LEFTARROW; return true;
+    case TTYEvent::Type::Right: ev.type = ev_keydown; ev.keycode = K_RIGHTARROW; return true;
+
+    case TTYEvent::Type::Insert: ev.type = ev_keydown; ev.keycode = K_INSERT; return true;
+    case TTYEvent::Type::Delete: ev.type = ev_keydown; ev.keycode = K_DELETE; return true;
+    case TTYEvent::Type::PageUp: ev.type = ev_keydown; ev.keycode = K_PAGEUP; return true;
+    case TTYEvent::Type::PageDown: ev.type = ev_keydown; ev.keycode = K_PAGEDOWN; return true;
+    case TTYEvent::Type::Home: ev.type = ev_keydown; ev.keycode = K_HOME; return true;
+    case TTYEvent::Type::End: ev.type = ev_keydown; ev.keycode = K_END; return true;
+
+    case TTYEvent::Type::Escape: ev.type = ev_keydown; ev.keycode = K_ESCAPE; return true;
+    case TTYEvent::Type::Backspace: ev.type = ev_keydown; ev.keycode = K_BACKSPACE; return true;
+    case TTYEvent::Type::Tab: ev.type = ev_keydown; ev.keycode = K_TAB; return true;
+    case TTYEvent::Type::Enter: ev.type = ev_keydown; ev.keycode = K_ENTER; return true;
+
+    case TTYEvent::Type::Pad5: ev.type = ev_keydown; ev.keycode = K_PAD5; return true;
+
+    case TTYEvent::Type::F1: ev.type = ev_keydown; ev.keycode = K_F1; return true;
+    case TTYEvent::Type::F2: ev.type = ev_keydown; ev.keycode = K_F2; return true;
+    case TTYEvent::Type::F3: ev.type = ev_keydown; ev.keycode = K_F3; return true;
+    case TTYEvent::Type::F4: ev.type = ev_keydown; ev.keycode = K_F4; return true;
+    case TTYEvent::Type::F5: ev.type = ev_keydown; ev.keycode = K_F5; return true;
+    case TTYEvent::Type::F6: ev.type = ev_keydown; ev.keycode = K_F6; return true;
+    case TTYEvent::Type::F7: ev.type = ev_keydown; ev.keycode = K_F7; return true;
+    case TTYEvent::Type::F8: ev.type = ev_keydown; ev.keycode = K_F8; return true;
+    case TTYEvent::Type::F9: ev.type = ev_keydown; ev.keycode = K_F9; return true;
+    case TTYEvent::Type::F10: ev.type = ev_keydown; ev.keycode = K_F10; return true;
+    case TTYEvent::Type::F11: ev.type = ev_keydown; ev.keycode = K_F11; return true;
+    case TTYEvent::Type::F12: ev.type = ev_keydown; ev.keycode = K_F12; return true;
+
+    /*
+    case TTYEvent::MLeftDown,
+    case TTYEvent::MLeftUp,
+    case TTYEvent::MLeftMotion,
+    case TTYEvent::MMiddleDown,
+    case TTYEvent::MMiddleUp,
+    case TTYEvent::MMiddleMotion,
+    case TTYEvent::MRightDown,
+    case TTYEvent::MRightUp,
+    case TTYEvent::MRightMotion,
+
+    case TTYEvent::MWheelUp,
+    case TTYEvent::MWheelDown,
+
+    case TTYEvent::MMotion, // mouse motion without buttons, not read from tty by now, but can be useful for other backends
+
+    // synthesized events, used in tui
+    case TTYEvent::MLeftClick,
+    case TTYEvent::MMiddleClick,
+    case TTYEvent::MRightClick,
+
+    case TTYEvent::MLeftDouble,
+    case TTYEvent::MMiddleDouble,
+    case TTYEvent::MRightDouble,
+
+    case TTYEvent::FocusIn,
+    case TTYEvent::FocusOut,
+    */
+    default: break;
+  }
+
+  return false;
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+#if !defined(WIN32) && !defined(NO_RAWTTY)
+static int ttyEFDw = -1;
+static mythread ttyCheckerThread;
+
+
+static MYTHREAD_RET_TYPE threadTTYChecker (void *) {
+  bool stdinPollActive = false;
+  for (;;) {
+    fd_set fds;
+    FD_ZERO(&fds);
+    if (stdinPollActive) FD_SET(STDIN_FILENO, &fds); //STDIN_FILENO is 0
+    FD_SET(ttyEFDw, &fds);
+    int ee = (stdinPollActive ? STDIN_FILENO : -1);
+    if (ttyEFDw > ee) ee = ttyEFDw;
+    //fprintf(stderr, "threadTTYChecker: stdinPollActive=%d\n", (int)stdinPollActive);
+    int res = select(ee+1, &fds, nullptr, nullptr, nullptr);
+    if (res < 0) __builtin_trap(); //FIXME: the thing that should not happen
+    if (FD_ISSET(ttyEFDw, &fds)) {
+      uint64_t data;
+      for (;;) {
+        data = 0;
+        ssize_t rd = ::read(ttyEFDw, &data, 8);
+        if (rd == -1) {
+          if (errno != EAGAIN && errno != EINTR) __builtin_trap(); //FIXME: the thing that should not happen
+        }
+        break;
+      }
+      //fprintf(stderr, "threadTTYChecker: data=%llu\n", data);
+      if (data == 69) break;
+      stdinPollActive = (data != 0);
+    }
+    if (stdinPollActive && FD_ISSET(STDIN_FILENO, &fds)) {
+      VCC_PingEventLoop();
+      stdinPollActive = false;
+    }
+  }
+  //fprintf(stderr, "threadTTYChecker: exited\n");
+  return MYTHREAD_RET_VALUE;
+}
+
+
+static void activateTTYChecker () {
+  if (ttyEFDw == -666) return;
+  if (ttyEFDw == -1) {
+    if (!ttyIsGood()) { ttyEFDw = -666; return; }
+    ttyEFDw = eventfd(0, 0);
+    if (ttyEFDw == -1) { ttyEFDw = -666; return; }
+    mythread_create(&ttyCheckerThread, &threadTTYChecker, nullptr);
+    //fprintf(stderr, "THREAD CREATED!\n");
+  }
+  for (;;) {
+    uint64_t data = 1; // activate
+    ssize_t wr = ::write(ttyEFDw, &data, 8);
+    if (wr == -1) {
+      if (errno != EAGAIN && errno != EINTR) __builtin_trap(); //FIXME: the thing that should not happen
+    }
+    break;
+  }
+}
+
+
+static void deactivateTTYChecker () {
+  if (ttyEFDw < 0) return;
+  for (;;) {
+    uint64_t data = 0; // deactivate
+    ssize_t wr = ::write(ttyEFDw, &data, 8);
+    if (wr == -1) {
+      if (errno != EAGAIN && errno != EINTR) __builtin_trap(); //FIXME: the thing that should not happen
+    }
+    break;
+  }
+}
+
+
+static void stopTTYChecker () {
+  if (ttyEFDw < 0) return;
+  for (;;) {
+    uint64_t data = 69; // close
+    ssize_t wr = ::write(ttyEFDw, &data, 8);
+    if (wr == -1) {
+      if (errno != EAGAIN && errno != EINTR) __builtin_trap(); //FIXME: the thing that should not happen
+    }
+    break;
+  }
+  ::close(ttyEFDw);
+  ttyEFDw = -1;
+}
+
+
+static void checkTTYEvents () {
+  while (ttyIsKeyHit()) {
+    event_t ev;
+    TTYEvent tty = ttyReadKey(0); // don't wait
+    if (convertTTYEvent(ev, tty)) VObject::PostEvent(ev);
+  }
+}
+
+
+#else
+static void activateTTYChecker () {}
+static void deactivateTTYChecker () {}
+static void stopTTYChecker () {}
+static void checkTTYEvents () {}
+#endif
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -241,17 +454,20 @@ static void VCC_PingEventLoopDefault () {
 
 static void VCC_WaitEventsDefault () {
   for (;;) {
+    checkTTYEvents();
     const int ttout = VCC_ProcessTimers();
     if (VObject::CountQueuedEvents()) {
       mythread_event_reset(&eventLoopPingEvent);
       return;
     }
+    activateTTYChecker();
     if (ttout < 0) {
       mythread_event_wait(&eventLoopPingEvent, nullptr);
-      return;
+    } else {
+      //GLog.Logf(NAME_Debug, "ttout=%d", ttout);
+      (void)mythread_event_wait_timeout(&eventLoopPingEvent, ttout, nullptr);
     }
-    //GLog.Logf(NAME_Debug, "ttout=%d", ttout);
-    (void)mythread_event_wait_timeout(&eventLoopPingEvent, ttout, nullptr);
+    deactivateTTYChecker();
   }
 }
 
@@ -314,6 +530,7 @@ int VCC_RunEventLoop (event_t *quitev) {
         sockmodAckEvent(ev.sockev, ev.sockid, ev.sockdata, ev.isEaten(), ev.isCancelled());
       }
       if (ev.type == ev_quit && !ev.isEatenOrCancelled()) {
+        stopTTYChecker();
         if (quitev) *quitev = ev;
         return ev.data1;
       }

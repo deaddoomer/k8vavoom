@@ -213,3 +213,41 @@ native static final bool SocketSendBuf (int sockid, const ref array!ubyte data, 
 native static final string SocketRecvStr (int sockid, optional int maxlen);
 // append data to buffer; returns number of appended bytes or 0 on error/empty queue
 native static final int SocketRecvBuf (int sockid, ref array!ubyte data, optional int maxlen);
+
+
+//==========================================================================
+//
+//              TTY LIBRARY
+//
+//==========================================================================
+// returns `false` if TTY is not available at all
+native static final bool ttyIsAvailable ();
+
+// returns `true` if TTY is good and supports fancy features
+// if TTY is not good, no other API will work, and calling 'em is UB
+native static final bool ttyIsGood ();
+
+// switch TTY to raw or to normal mode
+// returns `false` if failed
+// WARNING! calls are not counted! i.e. two disables and then one enable will enable
+native static final bool ttySetRawMode (bool enable);
+
+// returns current TTY mode as was previously set by `ttySetRawMode()`
+native static final bool ttyIsInRawMode ();
+
+// returns TTY size
+native static final int ttyGetWidth ();
+native static final int ttyGetHeight ();
+
+native static final void ttyRawWrite (string format, ...) [printf,1];
+
+native static final void ttyBeep ();
+
+native static final void ttyEnableBracketedPaste ();
+native static final void ttyDisableBracketedPaste ();
+
+native static final void ttyEnableFocusReports ();
+native static final void ttyDisableFocusReports ();
+
+native static final void ttyEnableMouseReports ();
+native static final void ttyDisableMouseReports ();

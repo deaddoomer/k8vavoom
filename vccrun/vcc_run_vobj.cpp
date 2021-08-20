@@ -378,3 +378,88 @@ IMPLEMENT_FREE_FUNCTION(VObject, vccCancelInterval) {
   vobjGetParam(mstimeout);
   ::VCC_CancelInterval(mstimeout);
 }
+
+
+// returns `false` if TTY is not available at all
+//native static bool ttyIsAvailable () noexcept;
+IMPLEMENT_FREE_FUNCTION(VObject, ttyIsAvailable) {
+  RET_BOOL(ttyIsAvailable());
+}
+
+// returns `true` if TTY is good and supports fancy features
+// if TTY is not good, no other API will work, and calling 'em is UB
+//native static bool ttyIsGood () noexcept;
+IMPLEMENT_FREE_FUNCTION(VObject, ttyIsGood) {
+  RET_BOOL(ttyIsGood());
+}
+
+// switch TTY to raw or to normal mode
+// returns `false` if failed
+// WARNING! calls are not counted! i.e. two disables and then one enable will enable
+//native static bool ttySetRawMode (bool enable) noexcept;
+IMPLEMENT_FREE_FUNCTION(VObject, ttySetRawMode) {
+  bool enable;
+  vobjGetParam(enable);
+  //if (!enable) ttySetWaitKey(true);
+  ttySetWaitKey(!enable);
+  RET_BOOL(ttySetRawMode(enable));
+  //if (!enable) ttySetWaitKey(false);
+}
+
+// returns current TTY mode as was previously set by `ttySetRawMode()`
+//native static bool ttyIsInRawMode () noexcept;
+IMPLEMENT_FREE_FUNCTION(VObject, ttyIsInRawMode) {
+  RET_BOOL(ttyIsInRawMode());
+}
+
+// returns TTY size
+//native static int ttyGetWidth () noexcept;
+IMPLEMENT_FREE_FUNCTION(VObject, ttyGetWidth) {
+  RET_INT(ttyGetWidth());
+}
+
+//native static int ttyGetHeight () noexcept;
+IMPLEMENT_FREE_FUNCTION(VObject, ttyGetHeight) {
+  RET_INT(ttyGetHeight());
+}
+
+//native static final void ttyRawWrite (string format, ...) [printf,1];
+IMPLEMENT_FREE_FUNCTION(VObject, ttyRawWrite) {
+  VStr s = VObject::PF_FormatString();
+  if (!s.isEmpty()) ttyRawWrite("%s", *s);
+}
+
+//native static final void ttyBeep ();
+IMPLEMENT_FREE_FUNCTION(VObject, ttyBeep) {
+  ttyBeep();
+}
+
+//native static final void ttyEnableBracketedPaste ();
+IMPLEMENT_FREE_FUNCTION(VObject, ttyEnableBracketedPaste) {
+  ttyEnableBracketedPaste();
+}
+
+//native static final void ttyDisableBracketedPaste ();
+IMPLEMENT_FREE_FUNCTION(VObject, ttyDisableBracketedPaste) {
+  ttyDisableBracketedPaste();
+}
+
+//native static final void ttyEnableFocusReports ();
+IMPLEMENT_FREE_FUNCTION(VObject, ttyEnableFocusReports) {
+  ttyEnableFocusReports();
+}
+
+//native static final void ttyDisableFocusReports ();
+IMPLEMENT_FREE_FUNCTION(VObject, ttyDisableFocusReports) {
+  ttyDisableFocusReports();
+}
+
+//native static final void ttyEnableMouseReports ();
+IMPLEMENT_FREE_FUNCTION(VObject, ttyEnableMouseReports) {
+  ttyEnableMouseReports();
+}
+
+//native static final void ttyDisableMouseReports ();
+IMPLEMENT_FREE_FUNCTION(VObject, ttyDisableMouseReports) {
+  ttyDisableMouseReports();
+}
