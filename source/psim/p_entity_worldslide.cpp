@@ -31,6 +31,8 @@
 #include "p_entity.h"
 #include "p_world.h"
 
+#define VV_NO_DENORMAL_VELOCITIES
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 static VCvarB dbg_slide_code("dbg_slide_code", false, "Debug slide code?", CVAR_PreInit|CVAR_Hidden);
@@ -38,7 +40,6 @@ static VCvarI gm_slide_code("gm_slide_code", "0", "Which slide code to use (0:va
 static VCvarB gm_slide_vanilla_newsel("gm_slide_vanilla_newsel", true, "Use same velocity-based selector in vanilla sliding code?", CVAR_Archive|CVAR_Hidden);
 static VCvarB gm_q3slide_use_timeleft("gm_q3slide_use_timeleft", false, "Use 'timeleft' method for Q3 sliding code (gives wrong velocities and bumpiness)?", CVAR_Archive|CVAR_Hidden);
 static VCvarB gm_slide_vanilla_finish("gm_slide_vanilla_finish", false, "Finish stuck slide with vanilla algo?", CVAR_Archive|CVAR_Hidden);
-static VCvarB gm_slide_use_mag_cosine("gm_slide_use_mag_cosine", true, "Use cosine*magnitude to select best vector?", CVAR_Archive|CVAR_Hidden);
 
 
 
@@ -135,17 +136,20 @@ TVec VEntity::TraceToWallSmall2D (TVec org, TVec vdelta) {
 //  used only for the oldest slide code!
 //
 //==========================================================================
-void VEntity::SlidePathTraverseOld (float &BestSlideFrac, line_t *&BestSlideLine, float x, float y, float StepVelScale) {
-  const TVec SlideOrg(x, y, Origin.z);
-  const TVec normdir(SlideOrg.normalise2D());
+void VEntity::SlidePathTraverseOld (float &BestSlideFrac, TVec &BestSlideNormal, line_t *&BestSlideLine, float x, float y, float StepVelScale) {
+  #ifdef VV_NO_DENORMAL_VELOCITIES
+  const TVec SlideDir = (Velocity.xy()*StepVelScale).noNanInfDenormal2D();
+  if (SlideDir.isZero2D()) return;
+  #else
   const TVec SlideDir = Velocity.xy()*StepVelScale;
+  if (!SlideDir.toBool2D()) return;
+  #endif
+  const TVec SlideOrg(x, y, Origin.z);
   const float hgt = max2(0.0f, Height);
   const bool usecos = gm_slide_vanilla_newsel.asBool();
-  const bool magcos = gm_slide_use_mag_cosine.asBool();
 
   intercept_t in;
   float bestVelCos = -INFINITY;
-  TVec bestVel(0.0f, 0.0f);
 
   for (VPathTraverse It(this, &in, SlideOrg, SlideOrg+SlideDir, PT_ADDLINES|PT_NOOPENS|PT_RAILINGS); It.GetNext(); ) {
     if (!(in.Flags&intercept_t::IF_IsALine)) continue;
@@ -200,10 +204,11 @@ void VEntity::SlidePathTraverseOld (float &BestSlideFrac, line_t *&BestSlideLine
     const TVec cvel = ClipVelocity(SlideDir, hitnormal);
     // dot product for two normalized vectors is cosine between them
     // cos(0) is 1, cos(180) is -1
-    const float velcos = (magcos ? normdir.dot2D(cvel) : normdir.dot2D(cvel.normalise2D())); // it is ok to use `normalise2D()` on zero vector
+    const float velcos = SlideDir.dot2D(cvel);
 
     if (in.frac == BestSlideFrac) {
       if (!usecos) continue;
+      // our cosine is multiplied by both direction magnitudes; `SlideDir` magnitude is constant, though
       // prefer velocity that goes to the same dir
       if (velcos < 0.0f || velcos < bestVelCos) continue;
     }
@@ -211,7 +216,7 @@ void VEntity::SlidePathTraverseOld (float &BestSlideFrac, line_t *&BestSlideLine
     // the line blocks movement, and it is closer than best so far
     BestSlideFrac = in.frac;
     BestSlideLine = li;
-    bestVel = cvel;
+    BestSlideNormal = hitnormal;
     bestVelCos = velcos;
 
     // hits are sorted by hittime, there's no reason to go further...
@@ -242,11 +247,8 @@ float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line
   }
 
   const TVec end(Origin+dir);
-  const TVec normdir(dir.normalise2D());
-  const bool magcos = gm_slide_use_mag_cosine.asBool();
 
   float BestSlideFrac = 1.0f;
-  TVec bestVel(0.0f, 0.0f);
   float bestVelCos = -INFINITY;
 
   //DeclareMakeBlockMapCoords(Origin.x, Origin.y, rad, xl, yl, xh, yh);
@@ -319,12 +321,12 @@ float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line
         const TVec cvel = ClipVelocity(dir, hitnormal);
         // dot product for two normalized vectors is cosine between them
         // cos(0) is 1, cos(180) is -1
-        const float velcos = (magcos ? normdir.dot2D(cvel) : normdir.dot2D(cvel.normalise2D())); // it is ok to use `normalise2D()` on zero vector
+        const float velcos = dir.dot2D(cvel);
 
         if (htime == BestSlideFrac) {
+          // our cosine is multiplied by both direction magnitudes; `SlideDir` magnitude is constant, though
           // prefer velocity that goes to the same dir
           if (velcos < 0.0f || velcos < bestVelCos) continue;
-          if (!magcos && cvel.length2DSquared() < bestVel.length2DSquared()) continue;
         }
 
         if (debugSlide) {
@@ -337,7 +339,6 @@ float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line
         if (BestSlideNormal) *BestSlideNormal = hitnormal;
         if (BestSlideLine) *BestSlideLine = li;
         //lastHitWasGood = (hitplanenum < 2);
-        bestVel = cvel;
         bestVelCos = velcos;
       }
     }
@@ -364,7 +365,6 @@ void VEntity::SlideMoveVanilla (float StepVelScale, bool noPickups) {
 
   float XMove = Velocity.x*StepVelScale;
   float YMove = Velocity.y*StepVelScale;
-  if (XMove == 0.0f && YMove == 0.0f) return; // just in case
 
   const float rad = GetMoveRadius();
 
@@ -377,6 +377,12 @@ void VEntity::SlideMoveVanilla (float StepVelScale, bool noPickups) {
 
   int hitcount = 0;
   do {
+    #ifdef VV_NO_DENORMAL_VELOCITIES
+    XMove = zeroNanInfDenormalsF(XMove);
+    YMove = zeroNanInfDenormalsF(YMove);
+    #endif
+    if (!(isU32NonZeroF(XMove)|isU32NonZeroF(YMove))) return; // just in case
+
     if (++hitcount == 3) {
       // don't loop forever
       bool movedY = (YMove != 0.0f ? TryMove(tmtrace, TVec(Origin.x, Origin.y+YMove, Origin.z), true, noPickups) : false);
@@ -385,11 +391,11 @@ void VEntity::SlideMoveVanilla (float StepVelScale, bool noPickups) {
       return;
     }
 
-    if (XMove != 0.0f) prevVelX = XMove;
-    if (YMove != 0.0f) prevVelY = YMove;
+    if (isU32NonZeroF(XMove)) prevVelX = XMove;
+    if (isU32NonZeroF(YMove)) prevVelY = YMove;
 
     // trace along the three leading corners
-    if (/*XMove*/prevVelX > 0.0f) {
+    if (isPositiveF(prevVelX) > 0.0f) {
       leadx = Origin.x+rad;
       trailx = Origin.x-rad;
     } else {
@@ -397,7 +403,7 @@ void VEntity::SlideMoveVanilla (float StepVelScale, bool noPickups) {
       trailx = Origin.x+rad;
     }
 
-    if (/*Velocity.y*/prevVelY > 0.0f) {
+    if (isPositiveF(prevVelY) > 0.0f) {
       leady = Origin.y+rad;
       traily = Origin.y-rad;
     } else {
@@ -405,15 +411,16 @@ void VEntity::SlideMoveVanilla (float StepVelScale, bool noPickups) {
       traily = Origin.y+rad;
     }
 
-    float BestSlideFrac = 666.0f; //1.00001f; -- arbitrary big number
+    float BestSlideFrac = 666.0f; // arbitrary big number
     line_t *BestSlideLine = nullptr;
+    TVec BestNorm(0.0f, 0.0f);
 
-    SlidePathTraverseOld(BestSlideFrac, BestSlideLine, leadx, leady, StepVelScale);
-    if (BestSlideFrac != 0.0f) SlidePathTraverseOld(BestSlideFrac, BestSlideLine, trailx, leady, StepVelScale);
-    if (BestSlideFrac != 0.0f) SlidePathTraverseOld(BestSlideFrac, BestSlideLine, leadx, traily, StepVelScale);
+    SlidePathTraverseOld(BestSlideFrac, BestNorm, BestSlideLine, leadx, leady, StepVelScale);
+    if (isU32NonZeroF(BestSlideFrac)) SlidePathTraverseOld(BestSlideFrac, BestNorm, BestSlideLine, trailx, leady, StepVelScale);
+    if (isU32NonZeroF(BestSlideFrac)) SlidePathTraverseOld(BestSlideFrac, BestNorm, BestSlideLine, leadx, traily, StepVelScale);
 
     // move up to the wall
-    if (BestSlideFrac >= 1.0f /*== 1.00001f*/) {
+    if (BestSlideFrac >= 1.0f) {
       // the move must have hit the middle, so stairstep
       bool movedY = (YMove != 0.0f ? TryMove(tmtrace, TVec(Origin.x, Origin.y+YMove, Origin.z), true, noPickups) : false);
       if (!movedY && XMove != 0.0f) movedY = TryMove(tmtrace, TVec(Origin.x+XMove, Origin.y, Origin.z), true, noPickups);
@@ -446,8 +453,9 @@ void VEntity::SlideMoveVanilla (float StepVelScale, bool noPickups) {
     // k8: don't multiply z, 'cause it makes jumping against a wall unpredictably hard
     Velocity.x *= BestSlideFrac;
     Velocity.y *= BestSlideFrac;
-    Velocity = ClipVelocity(Velocity, BestSlideLine->normal);
-    //Velocity = ClipVelocity(Velocity*BestSlideFrac, BestSlideLine->normal);
+    Velocity = ClipVelocity(Velocity, BestNorm);
+    Velocity.fix2DNanInfDenormalsInPlace(); // just in case, also resets `z`
+
     XMove = Velocity.x*StepVelScale;
     YMove = Velocity.y*StepVelScale;
   } while (!TryMove(tmtrace, TVec(Origin.x+XMove, Origin.y+YMove, Origin.z), true, noPickups));
@@ -480,7 +488,7 @@ void VEntity::SlideMoveSweep (float StepVelScale, bool noPickups) {
   Velocity.z = 0.0f;
 
   TVec dir(Velocity*StepVelScale); // we want to arrive there
-  if (dir.x == 0.0f && dir.y == 0.0f) return; // just in case
+  if (dir.isZero2D()) return; // just in case
 
   const bool debugSlide = dbg_slide_code.asBool();
 
@@ -490,6 +498,11 @@ void VEntity::SlideMoveSweep (float StepVelScale, bool noPickups) {
 
   int hitcount = 0;
   do {
+    #ifdef VV_NO_DENORMAL_VELOCITIES
+    dir.fix2DNanInfDenormalsInPlace(); // just in case
+    #endif
+    if (!dir.toBool2D()) return; // just in case
+
     if (++hitcount == 4) {
       // don't loop forever
       if (debugSlide) {
@@ -570,7 +583,7 @@ void VEntity::SlideMoveSweep (float StepVelScale, bool noPickups) {
     Velocity.x *= BestSlideFrac;
     Velocity.y *= BestSlideFrac;
     Velocity = ClipVelocity(Velocity, BestSlideNormal);
-    Velocity.z = 0.0f; // just in case
+    Velocity.fix2DNanInfDenormalsInPlace(); // just in case, also resets `z`
 
     dir.x = Velocity.x*StepVelScale;
     dir.y = Velocity.y*StepVelScale;
@@ -612,8 +625,11 @@ void VEntity::SlideMoveQ3Like (float StepVelScale, bool noPickups) {
   int trynum = 0;
   for (;;) {
     TVec dir(Velocity);
-    dir.z = 0.0f;
     dir *= StepVelScale; // we want to arrive here
+    #ifdef VV_NO_DENORMAL_VELOCITIES
+    dir.fix2DNanInfDenormalsInPlace(); // just in case
+    #endif
+    if (!dir.toBool2D()) return; // just in case
 
     // just in case
     if (TryMove(tmtrace, TVec(Origin+dir), true, noPickups)) return;

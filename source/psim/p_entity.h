@@ -784,7 +784,7 @@ private:
     return in-normal*(in.dot(normal)*overbounce);
   }
 
-  void SlidePathTraverseOld (float &BestSlideFrac, line_t *&BestSlideLine, float x, float y, float StepVelScale);
+  void SlidePathTraverseOld (float &BestSlideFrac, TVec &BestSlideNormal, line_t *&BestSlideLine, float x, float y, float StepVelScale);
 
   // returns hit time -- [0..1]
   // 1 means that we couldn't find any suitable wall
