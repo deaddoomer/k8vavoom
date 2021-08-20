@@ -163,6 +163,19 @@ static __attribute__((unused)) inline void mythread_sigmask (int how, const sigs
 #endif
 }
 
+// Compares two `mythread`s. NEVER compare with `==`, because internal format is undefined
+// returns non-zero if equal; both should be properly initialized
+static __attribute__((unused)) inline int mythread_equal (const mythread *a, const mythread *b) VC_MYTHREAD_NOEXCEPT {
+  if (a == b) return 1;
+  if (!a || !b) return 0;
+  return (pthread_equal(*a, *b) ? 1 : 0);
+}
+
+// returns current thread id
+static __attribute__((unused)) inline void mythread_self (mythread *self) VC_MYTHREAD_NOEXCEPT {
+  if (self) *self = pthread_self();
+}
+
 // Creates a new thread with all signals blocked. Returns zero on success and non-zero on error.
 static __attribute__((unused)) inline int mythread_create (mythread *thread, void *(*func) (void *arg), void *arg) VC_MYTHREAD_NOEXCEPT {
   sigset_t old;
@@ -384,6 +397,19 @@ static __attribute__((unused)) inline void mythread_sigmask (int how, const sigs
 }
 #endif
 
+// Compares two `mythread`s. NEVER compare with `==`, because internal format is undefined
+// returns non-zero if equal; both should be properly initialized
+static __attribute__((unused)) inline int mythread_equal (const mythread *a, const mythread *b) VC_MYTHREAD_NOEXCEPT {
+  if (a == b) return 1;
+  if (!a || !b) return 0;
+  return (thrd_equal(*a, *b) ? 1 : 0);
+}
+
+// returns current thread id
+static __attribute__((unused)) inline void mythread_self (mythread *self) VC_MYTHREAD_NOEXCEPT {
+  if (self) *self = thrd_current();
+}
+
 // Creates a new thread with all signals blocked. Returns zero on success and non-zero on error.
 static __attribute__((unused)) inline int mythread_create (mythread *thread, int (*func) (void *arg), void *arg) VC_MYTHREAD_NOEXCEPT {
   return (thrd_create(thread, func, arg) != thrd_success);
@@ -548,6 +574,19 @@ typedef DWORD mythread_condtime;
 // mythread_sigmask() isn't available on Windows. Even a dummy version would
 // make no sense because the other POSIX signal functions are missing anyway.
 
+
+// Compares two `mythread`s. NEVER compare with `==`, because internal format is undefined
+// returns non-zero if equal; both should be properly initialized
+static __attribute__((unused)) inline int mythread_equal (const mythread *a, const mythread *b) VC_MYTHREAD_NOEXCEPT {
+  if (a == b) return 1;
+  if (!a || !b) return 0;
+  return (GetThreadId(*a) == GetThreadId(*b) ? 1 : 0);
+}
+
+// returns current thread id
+static __attribute__((unused)) inline void mythread_self (mythread *self) VC_MYTHREAD_NOEXCEPT {
+  if (self) *self = GetCurrentThread();
+}
 
 // Creates a new thread with all signals blocked. Returns zero on success and non-zero on error.
 static __attribute__((unused)) inline int mythread_create (mythread *thread, unsigned int (__stdcall *func) (void *arg), void *arg) VC_MYTHREAD_NOEXCEPT {
