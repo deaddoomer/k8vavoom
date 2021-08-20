@@ -41,8 +41,8 @@ public:
   VVA_ALWAYS_INLINE TAVec &operator = (const TAVec &src) noexcept = default;
 
   VVA_ALWAYS_INLINE bool isValid () const noexcept { return (isFiniteF(pitch) && isFiniteF(yaw) && isFiniteF(roll)); }
-  VVA_ALWAYS_INLINE bool isZero () const noexcept { return !(isZeroFU32(pitch)|isZeroFU32(yaw)|isZeroFU32(roll)); }
-  VVA_ALWAYS_INLINE bool isZeroSkipRoll () const noexcept { return !(isZeroFU32(pitch)|isZeroFU32(yaw)); }
+  VVA_ALWAYS_INLINE bool isZero () const noexcept { return !(isU32NonZeroF(pitch)|isU32NonZeroF(yaw)|isU32NonZeroF(roll)); }
+  VVA_ALWAYS_INLINE bool isZeroSkipRoll () const noexcept { return !(isU32NonZeroF(pitch)|isU32NonZeroF(yaw)); }
 
   friend VStream &operator << (VStream &Strm, TAVec &v) {
     return Strm << v.pitch << v.yaw << v.roll;

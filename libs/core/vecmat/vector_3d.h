@@ -135,11 +135,14 @@ public:
   VVA_ALWAYS_INLINE VVA_CHECKRESULT float &operator [] (const size_t i) noexcept { vassert(i < 3); return (&x)[i]; }
 
   VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isValid () const noexcept { return (isFiniteF(x) && isFiniteF(y) && isFiniteF(z)); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isZero () const noexcept { return !(isZeroFU32(x)|isZeroFU32(y)|isZeroFU32(z)); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isZero2D () const noexcept { return !(isZeroFU32(x)|isZeroFU32(y)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isValid2D () const noexcept { return (isFiniteF(x) && isFiniteF(y)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isZero () const noexcept { return !(isU32NonZeroF(x)|isU32NonZeroF(y)|isU32NonZeroF(z)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isZero2D () const noexcept { return !(isU32NonZeroF(x)|isU32NonZeroF(y)); }
 
   // this is what VavoomC wants: false is either zero, or invalid vector
   VVA_ALWAYS_INLINE VVA_CHECKRESULT bool toBool () const noexcept { return (isValid() && !isZero()); }
+  // this is what VavoomC wants: false is either zero, or invalid vector
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool toBool2D () const noexcept { return (isValid2D() && !isZero2D()); }
 
   VVA_ALWAYS_INLINE void fixDenormalsInPlace () noexcept { zeroDenormalsFInPlace(&x); zeroDenormalsFInPlace(&y); zeroDenormalsFInPlace(&z); }
   VVA_ALWAYS_INLINE void fixNanInfDenormalsInPlace () noexcept { zeroNanInfDenormalsFInPlace(&x); zeroNanInfDenormalsFInPlace(&y); zeroNanInfDenormalsFInPlace(&z); }

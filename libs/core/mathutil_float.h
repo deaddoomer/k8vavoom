@@ -228,7 +228,7 @@ VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isZeroInfNaNF (const float f) VV_FLTUTIL_NOEXC
 // this ignores sign bit; zero float is all zeroes except the sign bit
 // returns 0 or some unspecified non-zero unsigned integer
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE unsigned isZeroFU32 (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_ALWAYS_INLINE unsigned isU32NonZeroF (const float f) VV_FLTUTIL_NOEXCEPT {
   return ((*(const __attribute__((__may_alias__)) uint32_t *)&f)&0x7fffffffu);
 }
 
