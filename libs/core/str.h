@@ -45,12 +45,15 @@ extern const char *secs2timestr (const double secs) noexcept;
 
 
 
+struct VStr_ByCharIterator;
+
 // ////////////////////////////////////////////////////////////////////////// //
 // WARNING! this cannot be bigger than one pointer, or VM will break!
 // WARNING! this is NOT MT-SAFE! if you want to use it from multiple threads,
 //          make sure to `cloneUniqueMT()` it, and pass to each thread its own VStr!
 //          but note that immutable strings *are* MT-safe.
 class VStr {
+  friend struct VStr_ByCharIterator;
 public:
   //HACK: multithreaded locking is done by orring setting `rc` with 0x80000000 (which makes the string immutable, btw)
   struct __attribute__((packed)) Store {
@@ -807,6 +810,13 @@ public:
   static VVA_CHECKRESULT bool isSafeDiskFileName (const VStr &fname) noexcept { return fname.isSafeDiskFileName(); }
 
 public:
+
+  VStr_ByCharIterator begin () noexcept;
+  const VStr_ByCharIterator begin () const noexcept;
+  VStr_ByCharIterator end () noexcept;
+  const VStr_ByCharIterator end () const noexcept;
+
+public:
   static const vuint16 cp1251[128];
   static char wc2shitmap[65536];
 
@@ -822,6 +832,22 @@ public:
     else if (size < 1024*1024*1024) return va("%u%s MB", size/(1024*1024), (size%(1024*1024) >= 1024 ? ".5" : ""));
     else return va("%u%s GB", size/(1024*1024*1024), (size%(1024*1024*1024) >= 1024*1024 ? ".5" : ""));
   }
+};
+
+
+struct VStr_ByCharIterator {
+public:
+  VStr s;
+  int index;
+
+public:
+  VVA_ALWAYS_INLINE VStr_ByCharIterator (VStr st) noexcept : s(st), index(0) {}
+  VVA_ALWAYS_INLINE VStr_ByCharIterator (VStr st, bool) noexcept : s(st), index(-1) {}
+
+  VVA_ALWAYS_INLINE bool operator == (const VStr_ByCharIterator &other) const noexcept { return ((index < 0 && other.index < 0) || (s.getData() == other.s.getData() && index == other.index)); }
+  VVA_ALWAYS_INLINE bool operator != (const VStr_ByCharIterator &other) const noexcept { return !operator==(other); }
+  VVA_ALWAYS_INLINE char operator * () const noexcept { return (index >= 0 && index < s.length() ? s.getData()[(unsigned)index] : 0); } /* required for iterator */
+  VVA_ALWAYS_INLINE void operator ++ () noexcept { if (index >= 0) { if (++index >= s.length()) index = -1; } } /* this is enough for iterator */
 };
 
 

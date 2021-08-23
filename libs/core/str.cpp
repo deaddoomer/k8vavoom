@@ -2954,6 +2954,13 @@ float VStr::ApproxMatch (const char *left, int leftlen, const char *right, int r
 }
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+VStr_ByCharIterator VStr::begin () noexcept { return VStr_ByCharIterator(*this); }
+const VStr_ByCharIterator VStr::begin () const noexcept { return VStr_ByCharIterator(*this); }
+VStr_ByCharIterator VStr::end () noexcept { return VStr_ByCharIterator(*this, true); }
+const VStr_ByCharIterator VStr::end () const noexcept { return VStr_ByCharIterator(*this, true); }
+
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 //WARNING! MUST BE POWER OF 2!
