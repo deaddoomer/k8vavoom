@@ -49,21 +49,31 @@ public:
   char *buf;
   size_t bufalloted;
   size_t bufused;
+  char staticbuf[128];
 
 private:
-  void reserve (size_t add) {
+  void reserve (size_t add) noexcept {
     if (!add) return;
-    ++add;
-    while (bufalloted-bufused < add) bufalloted = (bufalloted|0x7ff)+1;
-    buf = (char *)Z_Realloc(buf, bufalloted);
-    if (!buf) { VObject::VMDumpCallStack(); VPackage::InternalFatalError("Out of memory"); }
+    //++add;
+    if (bufalloted-bufused < add) {
+      while (bufalloted-bufused < add) bufalloted = (bufalloted|0x7f)+1;
+      if (buf == staticbuf) {
+        buf = (char *)Z_MallocNoClear(bufalloted);
+        if (bufused) memcpy(buf, staticbuf, bufused);
+      } else {
+        buf = (char *)Z_Realloc(buf, bufalloted);
+      }
+      //if (!buf) { VObject::VMDumpCallStack(); VPackage::InternalFatalError("Out of memory"); }
+    }
   }
 
 public:
-  inline PFFmtBuf (size_t resv=0) : buf(nullptr), bufalloted(0), bufused(0) { reserve(resv); }
-  inline ~PFFmtBuf () { if (buf) Z_Free(buf); }
+  VV_DISABLE_COPY(PFFmtBuf)
 
-  inline const char *getCStr () {
+  inline PFFmtBuf (size_t resv=0) noexcept : buf(staticbuf), bufalloted(sizeof(staticbuf)), bufused(0) { reserve(resv); }
+  inline ~PFFmtBuf () noexcept { if (buf && buf != staticbuf) Z_Free(buf); }
+
+  inline const char *getCStr () noexcept {
     if (!bufused) return "";
     reserve(1);
     buf[bufused] = 0;
@@ -77,28 +87,23 @@ public:
 
   void putStrInternal (VStr s, bool doQuote=false) {
     if (s.isEmpty()) return;
-    int qlen = 0;
+    int qlen = s.length();
     if (doQuote) {
       // check if we need to quote string
-      doQuote = false;
-      qlen = s.length();
-      for (int f = 0; f < s.length(); ++f) {
-        vuint8 ch = (vuint8)s[f];
+      for (char ch : s) {
         if (ch == '\n' || ch == '\t' || ch == '\r' || ch == '"' || ch == '\\') {
-          doQuote = true;
           ++qlen;
-        } else if (ch < ' ' || ch == 127) {
-          doQuote = true;
+        } else if ((vuint8)ch < ' ' || ch == 127) {
           qlen += 3;
         }
       }
     }
-    if (doQuote) {
+    if (qlen != s.length()) {
+      vassert(qlen > s.length());
       reserve((size_t)qlen);
       vuint8 *d = (vuint8 *)(buf+bufused);
       bufused += (size_t)qlen;
-      for (int f = 0; f < s.length(); ++f) {
-        vuint8 ch = (vuint8)s[f];
+      for (char ch : s) {
         switch (ch) {
           case '\n': *d++ = '\\'; *d++ = 'n'; break;
           case '\t': *d++ = '\\'; *d++ = 't'; break;
@@ -106,11 +111,11 @@ public:
           case '"': *d++ = '\\'; *d++ = '"'; break;
           case '\\': *d++ = '\\'; *d++ = '\\'; break;
           default:
-            if (ch < ' ' || ch == 127) {
-              snprintf((char *)d, 6, "\\x%02x", ch);
+            if ((vuint8)ch < ' ' || ch == 127) {
+              snprintf((char *)d, 6, "\\x%02x", (vuint8)ch);
               d += 4;
             } else {
-              *d++ = ch;
+              *d++ = (vuint8)ch;
             }
             break;
         }
@@ -199,7 +204,13 @@ public:
 };
 
 
-// caller should be tagged with `[printf]` attribute
+//==========================================================================
+//
+//  VObject::PF_FormatString
+//
+//  caller should be tagged with `[printf]` attribute
+//
+//==========================================================================
 VStr VObject::PF_FormatString () {
   // vectors take three, so this is not enough for 32 args, but meh...
   const int MAX_PRINTF_PARAMS = 64;
@@ -290,6 +301,7 @@ VStr VObject::PF_FormatString () {
           ++pi;
           break;
         case 'f':
+        case 'g':
           if (pi >= MAX_PRINTF_PARAMS) { VObject::VMDumpCallStack(); VPackage::InternalFatalError("Out of arguments to string formatting function"); }
           switch (ptypes[pi].Type) {
             case TYPE_Int: case TYPE_Byte: case TYPE_Bool: pbuf.putFloat(params[pi].i); break;
@@ -500,6 +512,11 @@ void (*VObject::PR_WriterCB) (const char *buf, bool debugPrint, VName wrname) = 
 static char wrbuffer[16384] = {0};
 
 
+//==========================================================================
+//
+//  VObject::PR_DoWriteBuf
+//
+//==========================================================================
 void VObject::PR_DoWriteBuf (const char *buf, bool debugPrint, VName wrname) {
   if (PR_WriterCB) {
     PR_WriterCB(buf, debugPrint, wrname);
@@ -522,6 +539,11 @@ void VObject::PR_DoWriteBuf (const char *buf, bool debugPrint, VName wrname) {
 }
 
 
+//==========================================================================
+//
+//  VObject::PR_WriteOne
+//
+//==========================================================================
 void VObject::PR_WriteOne (const VFieldType &type) {
   char buf[256];
   buf[0] = 0;
@@ -641,6 +663,11 @@ void VObject::PR_WriteOne (const VFieldType &type) {
 }
 
 
+//==========================================================================
+//
+//  VObject::PR_WriteFlush
+//
+//==========================================================================
 void VObject::PR_WriteFlush () {
   PR_DoWriteBuf(nullptr);
 }
