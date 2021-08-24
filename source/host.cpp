@@ -886,8 +886,6 @@ void Host_Frame () {
       #endif
     }
 
-    Host_CollectGarbage();
-
     #ifdef CLIENT
     // update video
     if (show_time) time1 = Sys_Time();
@@ -899,6 +897,8 @@ void Host_Frame () {
 
     if (cls.signon) CL_DecayLights();
     #endif
+
+    Host_CollectGarbage();
 
     if (show_time) {
       pass1 = (int)((time1-time3)*1000);

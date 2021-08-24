@@ -602,10 +602,11 @@ void VSdlInputDevice::ReadInput () {
   int mouseCurrX = mouseLastX, mouseCurrY = mouseLastY;
   int rel_x = 0, rel_y = 0;
   bool firstDump = true;
+  //bool wasMouseButtons = false; // if `true`, prepend mouse movement
 
-  SDL_PumpEvents();
+  //SDL_PumpEvents();
   while (SDL_PollEvent(&ev)) {
-    memset((void *)&vev, 0, sizeof(vev));
+    vev.clear();
     vev.modflags = curmodflags;
     switch (ev.type) {
       case SDL_KEYDOWN:
@@ -632,7 +633,7 @@ void VSdlInputDevice::ReadInput () {
             GInput->PostKeyEvent(kk, (ev.key.state == SDL_PRESSED ? 1 : 0), vev.modflags);
           }
         }
-        // now fix flags
+        // now fix the flags
         switch (ev.key.keysym.sym) {
           case SDLK_LSHIFT: if (ev.type == SDL_KEYDOWN) curmodflags |= bShiftLeft; else curmodflags &= ~bShiftLeft; break;
           case SDLK_RSHIFT: if (ev.type == SDL_KEYDOWN) curmodflags |= bShiftRight; else curmodflags &= ~bShiftRight; break;
@@ -728,8 +729,9 @@ void VSdlInputDevice::ReadInput () {
             if (Drawer) Drawer->GetMousePosition(&vev.x, &vev.y);
           }
           VObject::PostEvent(vev);
+          //wasMouseButtons = true;
         }
-        // now fix flags
+        // now fix the flags
              if (ev.button.button == SDL_BUTTON_LEFT) { if (ev.button.state == SDL_PRESSED) curmodflags |= bLMB; else curmodflags &= ~bLMB; }
         else if (ev.button.button == SDL_BUTTON_RIGHT) { if (ev.button.state == SDL_PRESSED) curmodflags |= bRMB; else curmodflags &= ~bRMB; }
         else if (ev.button.button == SDL_BUTTON_MIDDLE) { if (ev.button.state == SDL_PRESSED) curmodflags |= bMMB; else curmodflags &= ~bMMB; }
@@ -747,6 +749,7 @@ void VSdlInputDevice::ReadInput () {
             if (Drawer) Drawer->GetMousePosition(&vev.x, &vev.y);
           }
           VObject::PostEvent(vev);
+          //wasMouseButtons = true;
         }
         break;
       // joysticks
@@ -1009,12 +1012,31 @@ void VSdlInputDevice::ReadInput () {
       if (currRelative) {
         // not a typo
         if (rel_x|rel_y) {
+          #if 0
+          if (true/*wasMouseButtons*/) {
+            GCon->Log(NAME_Debug, "=== BEFORE EVENTS ===");
+            for (int eidx = 0; eidx < VObject::CountQueuedEvents(); ++eidx) {
+              if (!VObject::PeekEvent(eidx, &vev)) break;
+              GCon->Logf(NAME_Debug, "  %2d: type=%d; data1=%d; data2=%d; data3=%d; data4=%d", eidx, vev.type, vev.data1, vev.data2, vev.data3, vev.data4);
+            }
+          }
+          #endif
           vev.clear();
           vev.modflags = curmodflags;
           vev.type = ev_mouse;
           vev.dx = rel_x;
           vev.dy = rel_y;
-          VObject::PostEvent(vev);
+          if (true/*wasMouseButtons*/) VObject::InsertEvent(vev); else VObject::PostEvent(vev);
+          #if 0
+          if (true/*wasMouseButtons*/) {
+            GCon->Log(NAME_Debug, "--- AFTER EVENTS ---");
+            for (int eidx = 0; eidx < VObject::CountQueuedEvents(); ++eidx) {
+              if (!VObject::PeekEvent(eidx, &vev)) break;
+              GCon->Logf(NAME_Debug, "  %2d: type=%d; data1=%d; data2=%d; data3=%d; data4=%d", eidx, vev.type, vev.data1, vev.data2, vev.data3, vev.data4);
+            }
+            GCon->Log(NAME_Debug, "--------------------");
+          }
+          #endif
 
           vev.clear();
           vev.modflags = curmodflags;
@@ -1035,7 +1057,7 @@ void VSdlInputDevice::ReadInput () {
             vev.type = ev_mouse;
             vev.dx = dx;
             vev.dy = dy;
-            VObject::PostEvent(vev);
+            if (true/*wasMouseButtons*/) VObject::InsertEvent(vev); else VObject::PostEvent(vev);
 
             vev.clear();
             vev.modflags = curmodflags;
@@ -1350,7 +1372,7 @@ bool VSdlInputDevice::CheckForEscape () {
 
   VInputPublic::UnpressAll();
 
-  SDL_PumpEvents();
+  //SDL_PumpEvents();
   while (!bGotCloseRequest && SDL_PollEvent(&ev)) {
     switch (ev.type) {
       //case SDL_KEYDOWN:
