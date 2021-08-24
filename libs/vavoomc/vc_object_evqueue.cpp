@@ -163,7 +163,7 @@ bool VObject::InsertEvent (const event_t &ev) noexcept {
   if (prevFirst == eventLast) return false; // queue overflow
   // if this is first ever event, allocate queue
   if (!events) events = (event_t *)Z_Malloc(eventMax*sizeof(event_t));
-  events[eventFirst] = ev;
+  events[prevFirst] = ev;
   eventFirst = prevFirst;
   return true;
 }
