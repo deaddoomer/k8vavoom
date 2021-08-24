@@ -94,9 +94,9 @@ void VOpenGLDrawer::DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additi
     SurfMaskedPolyBrightmapGlow.SetAlpha(Alpha);
 
     SurfMaskedPolyBrightmapGlow.SetLight(
-      ((surf->Light>>16)&255)*255.0f,
-      ((surf->Light>>8)&255)*255.0f,
-      (surf->Light&255)*255.0f, lightLevel);
+      ((surf->Light>>16)&255)/255.0f,
+      ((surf->Light>>8)&255)/255.0f,
+      (surf->Light&255)/255.0f, lightLevel);
     /*
       SurfMaskedPolyBrightmapGlow.SetLight(
         ((surf->Light>>16)&255)*lightLevel/255.0f,
@@ -125,9 +125,9 @@ void VOpenGLDrawer::DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additi
     SurfMaskedPolyGlow.SetLightMode(lightMode);
     SurfMaskedPolyGlow.SetAlpha(Alpha);
     SurfMaskedPolyGlow.SetLight(
-      ((surf->Light>>16)&255)*255.0f,
-      ((surf->Light>>8)&255)*255.0f,
-      (surf->Light&255)*255.0f, lightLevel);
+      ((surf->Light>>16)&255)/255.0f,
+      ((surf->Light>>8)&255)/255.0f,
+      (surf->Light&255)/255.0f, lightLevel);
     /*
       SurfMaskedPolyGlow.SetLight(
         ((surf->Light>>16)&255)*lightLevel/255.0f,
