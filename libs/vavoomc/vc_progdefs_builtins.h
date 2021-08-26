@@ -88,6 +88,7 @@
   DECLARE_OPC_BUILTIN(VectorAbs),
   // cvar getters/setters with runtime-defined names
   // should be sequential in exactly this order!
+  DECLARE_OPC_BUILTIN(IsCvarExistsRT),
   DECLARE_OPC_BUILTIN(GetCvarIntRT),
   DECLARE_OPC_BUILTIN(GetCvarFloatRT),
   DECLARE_OPC_BUILTIN(GetCvarStrRT),
@@ -99,6 +100,7 @@
   // cvar optimisations
   // in the bytecode, this builtin is followed with name index, and `VCvar*`; it can be `nullptr`, and can be hotpached
   // should be sequential in exactly this order!
+  DECLARE_OPC_BUILTIN(IsCvarExists),
   DECLARE_OPC_BUILTIN(GetCvarInt),
   DECLARE_OPC_BUILTIN(GetCvarFloat),
   DECLARE_OPC_BUILTIN(GetCvarStr),

@@ -50,7 +50,7 @@ TMap<VStrCI, bool> VObject::cliAsmDumpMethods;
 TArray<VObject::CanSkipReadingClassFn> VObject::CanSkipReadingClassCBList;
 TMapNC<VName, VName> VObject::IOClassNameTranslation;
 
-VObject::GetVCvarObjectFn VObject::GetVCvarObject;
+VObject::GetVCvarObjectFn VObject::GetVCvarObject = nullptr;
 
 
 //==========================================================================

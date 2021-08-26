@@ -934,6 +934,7 @@ struct Instr {
           case OPC_Builtin_NameToIIndex:
             return;
           // cvar getters with runtime-defined names
+          case OPC_Builtin_IsCvarExistsRT:
           case OPC_Builtin_GetCvarIntRT:
           case OPC_Builtin_GetCvarFloatRT:
           case OPC_Builtin_GetCvarStrRT:
@@ -951,6 +952,7 @@ struct Instr {
 
       case OPC_BuiltinCVar:
         switch (Arg1) {
+          case OPC_Builtin_IsCvarExists:
           case OPC_Builtin_GetCvarInt:
           case OPC_Builtin_GetCvarFloat:
           case OPC_Builtin_GetCvarStr:

@@ -29,6 +29,7 @@
 //**************************************************************************
 //#define VCC_STUPID_TRACER
 //#define VMEXEC_RUNDUMP
+//#define VCC_DEBUG_CVAR_CACHE_VMDUMP
 //#define VCC_DEBUG_CVAR_CACHE
 
 #include "vc_public.h"
@@ -361,7 +362,7 @@ public:
 //  GetAndCacheCVar
 //
 //==========================================================================
-static inline VCvar *GetAndCacheCVar (vuint8 *ip) noexcept {
+static inline VCvar *GetAndCacheCVar (vuint8 *ip, bool allownull=false) noexcept {
   VName varname = VName::CreateWithIndexSafe(*(const vint32 *)(ip+2));
   VCvar *vp = *(VCvar **)(ip+2+4);
   if (!vp) {
@@ -373,16 +374,16 @@ static inline VCvar *GetAndCacheCVar (vuint8 *ip) noexcept {
       canCache = true;
       vp = (varname != NAME_None ? VCvar::FindVariable(*varname) : nullptr);
     }
-    if (!vp) VPackage::InternalFatalError(va("cannot get value of non-existent cvar '%s'", *varname));
+    if (!vp && !allownull) VPackage::InternalFatalError(va("cannot get value of non-existent cvar '%s'", *varname));
     if (canCache) {
       #ifdef VCC_DEBUG_CVAR_CACHE
-      GLog.Logf(NAME_Debug, "*** CACHING CVAR '%s' ADDRESS %p", *varname, vp);
+      GLog.Logf(NAME_Debug, "*** CACHING CVAR '%s' ADDRESS %p (%d) (%s)", *varname, vp, (int)allownull, (vp ? vp->GetName() : "<none>"));
       #endif
       *(VCvar **)(ip+2+4) = vp;
     }
   } else {
     #ifdef VCC_DEBUG_CVAR_CACHE
-    GLog.Logf(NAME_Debug, "*** CACHED CVAR '%s' ADDRESS %p", *varname, vp);
+    GLog.Logf(NAME_Debug, "*** CACHED CVAR '%s' ADDRESS %p (%s)", *varname, vp, vp->GetName());
     #endif
   }
   return vp;
@@ -394,7 +395,7 @@ static inline VCvar *GetAndCacheCVar (vuint8 *ip) noexcept {
 //  GetRTCVar
 //
 //==========================================================================
-static inline VCvar *GetRTCVar (const vuint8 *ip, int nameidx) noexcept {
+static inline VCvar *GetRTCVar (const vuint8 *ip, int nameidx, bool allownull=false) noexcept {
   VName varname = VName::CreateWithIndexSafe(nameidx);
   VCvar *vp;
   if (VObject::GetVCvarObject) {
@@ -403,9 +404,9 @@ static inline VCvar *GetRTCVar (const vuint8 *ip, int nameidx) noexcept {
   } else {
     vp = (varname != NAME_None ? VCvar::FindVariable(*varname) : nullptr);
   }
-  if (!vp) {
+  if (!vp && !allownull) {
     cstDump(ip);
-    VPackage::InternalFatalError(va("cannot set value of non-existent cvar '%s'", *varname));
+    VPackage::InternalFatalError(va("cannot access non-existent cvar '%s'", *varname));
   }
   return vp;
 }

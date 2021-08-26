@@ -697,6 +697,7 @@ public:
   // cvar cache API
 
   // `canCache` is never `nullptr`, and always set to `true` on call
+  // *always* return `nullptr` if there is no such cvar
   typedef VCvar *(*GetVCvarObjectFn) (VName name, bool *canCache);
   static GetVCvarObjectFn GetVCvarObject;
 

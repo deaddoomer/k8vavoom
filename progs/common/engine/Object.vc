@@ -1551,7 +1551,7 @@ enum {
   CVAR_HIDDEN = 0x40000,
 }
 
-native static final bool CvarExists (name Name); // is cvar exists?
+native static final bool CvarExists (name Name) [builtin IsCvarExists]; // is cvar exists?
 native static final int CvarGetFlags (name Name); // -1: no such var
 native static final string GetCvarHelp (name Name); // get cvar help text
 native static final string GetCvarDefault (name Name); // get cvar default value

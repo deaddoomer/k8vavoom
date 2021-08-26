@@ -43,7 +43,7 @@ static void *vm_labels_builtins[] = {
 # define PR_VMBN_BREAK  ip += 2; goto vm_labels_builtins_done
 #endif
 
-#ifdef VCC_DEBUG_CVAR_CACHE
+#ifdef VCC_DEBUG_CVAR_CACHE_VMDUMP
 {
   unsigned n = ReadU8(ip+1);
   GLog.Logf(NAME_Debug, "OPC_BuiltinCVar: %u", n);
@@ -349,6 +349,17 @@ PR_VMBN_SWITCH(ReadU8(ip+1)) {
   }
 
   // cvar getters/setters with runtime-defined names
+  PR_VMBN_CASE(OPC_Builtin_IsCvarExistsRT)
+  {
+    /*
+    #ifdef VCC_DEBUG_CVAR_CACHE
+    GLog.Logf(NAME_Debug, "IsCvarExistsRT: %s", *VName::CreateWithIndexSafe(sp[-1].i));
+    #endif
+    */
+    VCvar *vp = GetRTCVar(ip, sp[-1].i, true);
+    sp[-1].i = (vp ? 1 : 0);
+    PR_VMBN_BREAK;
+  }
   PR_VMBN_CASE(OPC_Builtin_GetCvarIntRT)
   {
     VCvar *vp = GetRTCVar(ip, sp[-1].i);
@@ -408,6 +419,19 @@ PR_VMBN_SWITCH(ReadU8(ip+1)) {
   // cached cvars getters/setters
   // ip+2: (vint32) name index
   // ip+2+4: vcvar ptr (pointer-sized)
+  PR_VMBN_CASE(OPC_Builtin_IsCvarExists)
+    {
+      VCvar *vp = GetAndCacheCVar(ip, true);
+      /*
+      #ifdef VCC_DEBUG_CVAR_CACHE
+      GLog.Logf(NAME_Debug, "IsCvarExists: vp=%p (%s)", vp, (vp ? vp->GetName() : "<none>"));
+      #endif
+      */
+      sp[0].i = (vp ? 1 : 0);
+      ++sp;
+      ip += 4+sizeof(void *);
+      PR_VMBN_BREAK;
+    }
   PR_VMBN_CASE(OPC_Builtin_GetCvarInt)
     {
       VCvar *vp = GetAndCacheCVar(ip);

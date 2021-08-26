@@ -1901,11 +1901,13 @@ IMPLEMENT_FUNCTION(VObject, GetInputKeyCode) {
 //
 //**************************************************************************
 // native static final bool CvarExists (name Name);
+/*
 IMPLEMENT_FUNCTION(VObject, CvarExists) {
   VName name;
   vobjGetParam(name);
   RET_BOOL(VCvar::HasVar(*name));
 }
+*/
 
 // native static final int CvarGetFlags (name Name);
 IMPLEMENT_FUNCTION(VObject, CvarGetFlags) {
