@@ -394,7 +394,7 @@ static inline VCvar *GetAndCacheCVar (vuint8 *ip) noexcept {
 //  GetRTCVar
 //
 //==========================================================================
-static inline VCvar *GetRTCVar (int nameidx) noexcept {
+static inline VCvar *GetRTCVar (const vuint8 *ip, int nameidx) noexcept {
   VName varname = VName::CreateWithIndexSafe(nameidx);
   VCvar *vp;
   if (VObject::GetVCvarObject) {
@@ -403,7 +403,10 @@ static inline VCvar *GetRTCVar (int nameidx) noexcept {
   } else {
     vp = (varname != NAME_None ? VCvar::FindVariable(*varname) : nullptr);
   }
-  if (!vp) VPackage::InternalFatalError(va("cannot set value of non-existent cvar '%s'", *varname));
+  if (!vp) {
+    cstDump(ip);
+    VPackage::InternalFatalError(va("cannot set value of non-existent cvar '%s'", *varname));
+  }
   return vp;
 }
 

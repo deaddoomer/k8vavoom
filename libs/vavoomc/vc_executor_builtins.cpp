@@ -351,47 +351,47 @@ PR_VMBN_SWITCH(ReadU8(ip+1)) {
   // cvar getters/setters with runtime-defined names
   PR_VMBN_CASE(OPC_Builtin_GetCvarIntRT)
   {
-    VCvar *vp = GetRTCVar(sp[-1].i);
+    VCvar *vp = GetRTCVar(ip, sp[-1].i);
     sp[-1].i = vp->asInt();
     PR_VMBN_BREAK;
   }
   PR_VMBN_CASE(OPC_Builtin_GetCvarFloatRT)
   {
-    VCvar *vp = GetRTCVar(sp[-1].i);
+    VCvar *vp = GetRTCVar(ip, sp[-1].i);
     sp[-1].f = vp->asFloat();
     PR_VMBN_BREAK;
   }
   PR_VMBN_CASE(OPC_Builtin_GetCvarStrRT)
   {
-    VCvar *vp = GetRTCVar(sp[-1].i);
+    VCvar *vp = GetRTCVar(ip, sp[-1].i);
     sp[-1].p = nullptr;
     *(VStr *)&sp[-1].p = vp->asStr();
     PR_VMBN_BREAK;
   }
   PR_VMBN_CASE(OPC_Builtin_GetCvarBoolRT)
   {
-    VCvar *vp = GetRTCVar(sp[-1].i);
+    VCvar *vp = GetRTCVar(ip, sp[-1].i);
     sp[-1].i = (vp->asBool() ? 1 : 0);
     PR_VMBN_BREAK;
   }
 
   PR_VMBN_CASE(OPC_Builtin_SetCvarIntRT)
   {
-    VCvar *vp = GetRTCVar(sp[-2].i);
+    VCvar *vp = GetRTCVar(ip, sp[-2].i);
     if (!vp->IsReadOnly()) vp->SetInt(sp[-1].i);
     sp -= 2;
     PR_VMBN_BREAK;
   }
   PR_VMBN_CASE(OPC_Builtin_SetCvarFloatRT)
   {
-    VCvar *vp = GetRTCVar(sp[-2].i);
+    VCvar *vp = GetRTCVar(ip, sp[-2].i);
     if (!vp->IsReadOnly()) vp->SetFloat(sp[-1].f);
     sp -= 2;
     PR_VMBN_BREAK;
   }
   PR_VMBN_CASE(OPC_Builtin_SetCvarStrRT)
   {
-    VCvar *vp = GetRTCVar(sp[-2].i);
+    VCvar *vp = GetRTCVar(ip, sp[-2].i);
     if (!vp->IsReadOnly()) vp->SetStr(*((VStr *)&sp[-1].p));
     ((VStr *)&sp[-1].p)->clear();
     sp -= 2;
@@ -399,7 +399,7 @@ PR_VMBN_SWITCH(ReadU8(ip+1)) {
   }
   PR_VMBN_CASE(OPC_Builtin_SetCvarBoolRT)
   {
-    VCvar *vp = GetRTCVar(sp[-2].i);
+    VCvar *vp = GetRTCVar(ip, sp[-2].i);
     if (!vp->IsReadOnly()) vp->SetBool(!!sp[-1].i);
     sp -= 2;
     PR_VMBN_BREAK;
