@@ -37,10 +37,23 @@ array!MenuDefOptionBase optlist;
 
 //==========================================================================
 //
+//  SetupCVars
+//
+//==========================================================================
+void SetupCVars () {
+  if (!CvarExists('__msearch_filter_title')) CreateCvarStr('__msearch_filter_title', "", "", CVAR_HIDDEN);
+  if (!CvarExists('__msearch_filter_cvar')) CreateCvarStr('__msearch_filter_cvar', "", "", CVAR_HIDDEN);
+  if (!CvarExists('__msearch_filter_help')) CreateCvarStr('__msearch_filter_help', "", "", CVAR_HIDDEN);
+}
+
+
+//==========================================================================
+//
 //  LoadFilters
 //
 //==========================================================================
 void LoadFilters () {
+  SetupCVars();
   filterTitle = GetCvarS('__msearch_filter_title');
   filterCVar = GetCvarS('__msearch_filter_cvar');
   filterHelp = GetCvarS('__msearch_filter_help');
@@ -53,9 +66,7 @@ void LoadFilters () {
 //
 //==========================================================================
 void SaveFilters () {
-  if (!CvarExists('__msearch_filter_title')) CreateCvarStr('__msearch_filter_title', "", "", CVAR_HIDDEN);
-  if (!CvarExists('__msearch_filter_cvar')) CreateCvarStr('__msearch_filter_cvar', "", "", CVAR_HIDDEN);
-  if (!CvarExists('__msearch_filter_help')) CreateCvarStr('__msearch_filter_help', "", "", CVAR_HIDDEN);
+  SetupCVars();
   SetCvarS('__msearch_filter_title', filterTitle);
   SetCvarS('__msearch_filter_cvar', filterCVar);
   SetCvarS('__msearch_filter_help', filterHelp);
