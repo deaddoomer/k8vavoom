@@ -14,6 +14,8 @@ varying vec2 TextureCoordinate;
 void main () {
   // no need to calculate shading here
   vec4 TexColor = texture2D(Texture, TextureCoordinate);
+  // alpha is in `Light.a`
+  TexColor.a *= Light.a;
   if (TexColor.a < AlphaRef) discard;
 
   vec4 lt = Light;
@@ -21,7 +23,7 @@ void main () {
 
   // black-stencil it
   vec4 FinalColor;
-  FinalColor.a = TexColor.a*lt.a;
+  FinalColor.a = TexColor.a; //*lt.a;
   //FinalColor.rgb *= lt.rgb;
   FinalColor.rgb = StencilColor.rgb;
   $include "common/fog_calc.fs"

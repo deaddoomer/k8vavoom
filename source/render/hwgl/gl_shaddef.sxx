@@ -206,6 +206,7 @@ Set FogSet {
         curr_FogEnd = (Fade == FADE_LIGHT ? 1024.0f*r_fade_factor*VDrawer::LightFadeMult : r_fog_end);
       } else {
         curr_FogEnabled = false;
+        curr_FogColor[3] = Alpha; // still need to set it
       }
     }
   ]]

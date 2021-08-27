@@ -12,7 +12,7 @@ $include "common/texshade.inc"
 $include "common/brightmap_vars.fs"
 #endif
 uniform vec4 Light;
-//uniform float Alpha;
+//uniform float Alpha; // alpha is in `FogColor.a`
 uniform float AlphaRef;
 
 $include "common/fog_vars.fs"
@@ -29,6 +29,7 @@ $include "common/doom_lighting.fs"
 void main () {
   vec4 TexColor = GetStdTexel(Texture, TextureCoordinate);
   // normal sprite rendering
+  TexColor.a *= FogColor.a; // sprite alpha
   if (TexColor.a < AlphaRef) discard;
   //TexColor *= Light;
 
