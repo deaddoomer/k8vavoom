@@ -509,6 +509,7 @@ void VEntity::SlideMoveSweep (float StepVelScale, bool noPickups) {
         if (IsPlayer()) GCon->Logf(NAME_Debug, " STUCK! hitcount=%d; dir=(%g,%g)", hitcount, dir.x, dir.y);
       }
       SLIDE_MOVE_FINALTRY();
+      return;
     }
 
     if (debugSlide) {
