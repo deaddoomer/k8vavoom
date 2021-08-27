@@ -37,6 +37,8 @@
 #include "client/client.h"
 #include "filesys/files.h"
 
+//#define SDL_MOUSE_CAPTURE_DEBUG
+
 
 // k8: joysticks have 16 buttons; no, really, you don't need more
 
@@ -380,7 +382,13 @@ VSdlInputDevice::~VSdlInputDevice () {
 void VSdlInputDevice::OwnMouse () {
   currDoGrab = m_grab.asBool();
   if (currDoGrab) {
-    if (SDL_CaptureMouse(SDL_TRUE) != 0) GCon->Log(NAME_Debug, "SDL: cannot capture mouse."); else GCon->Log(NAME_Debug, "SDL: mouse captured.");
+    if (SDL_CaptureMouse(SDL_TRUE) != 0) {
+      GCon->Log(NAME_Debug, "SDL: cannot capture mouse.");
+    } else {
+      #ifdef SDL_MOUSE_CAPTURE_DEBUG
+      GCon->Log(NAME_Debug, "SDL: mouse captured.");
+      #endif
+    }
   }
   currRelative = (!relativeFailed && m_relative.asBool());
   if (currRelative) {
@@ -389,7 +397,9 @@ void VSdlInputDevice::OwnMouse () {
       currRelative = false;
       relativeFailed = true;
     } else {
+      #ifdef SDL_MOUSE_CAPTURE_DEBUG
       GCon->Log(NAME_Debug, "SDL: switched mouse to relative mode.");
+      #endif
     }
   }
   // we don't need relative mouse motion in non-relative mode
@@ -966,7 +976,9 @@ void VSdlInputDevice::ReadInput () {
       if ((!relativeFailed && currRelative != m_relative.asBool()) ||
           currDoGrab != m_grab.asBool())
       {
+        #ifdef SDL_MOUSE_CAPTURE_DEBUG
         GCon->Logf(NAME_Debug, "SDL: mouse mode changed, recapturing...");
+        #endif
         DisownMouse();
         OwnMouse();
       }
