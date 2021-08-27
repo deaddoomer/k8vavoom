@@ -712,7 +712,7 @@ public:
   // `tmtrace` is output
   bool TryMove (tmtrace_t &tmtrace, TVec newPos, bool AllowDropOff, bool checkOnly=false, bool noPickups=false);
   bool TestMobjZ (const TVec &TryOrg, VEntity **hitent=nullptr);
-  void SlideMove (float StepVelScale, bool noPickups=false);
+  void SlideMove (float deltaTime, bool noPickups=false);
   // this should be called in physics, when `TryMove()` failed
   // returns new origin near the wall
   // do not use big `vdelta` here, the tracer is VERY ineffective!
@@ -784,7 +784,18 @@ private:
     return in-normal*(in.dot(normal)*overbounce);
   }
 
-  void SlidePathTraverseOld (float &BestSlideFrac, TVec &BestSlideNormal, line_t *&BestSlideLine, float x, float y, float StepVelScale);
+  enum {
+    SlideBlockSkip = -1, // for 1-sided lines
+    // for 2-sided lines
+    SlideBlockNotBlocked = 0,
+    SlideBlockBlocked = 1,
+  };
+  int IsBlockedSlideLine (const line_t *line) const noexcept;
+
+  // check openings for 2-sided line
+  bool IsBlockedSlide2SLine (const line_t *line, const TVec hitpoint) noexcept;
+
+  void SlidePathTraverseOld (float &BestSlideFrac, TVec &BestSlideNormal, line_t *&BestSlideLine, float x, float y, float deltaTime);
 
   // returns hit time -- [0..1]
   // 1 means that we couldn't find any suitable wall
@@ -792,9 +803,9 @@ private:
 
   // all sliders will reset `Velocity.z`, so save and restore it if necessary!
   // `SlideMove()` does it automatically
-  void SlideMoveVanilla (float StepVelScale, bool noPickups); // vanilla-like
-  void SlideMoveSweep (float StepVelScale, bool noPickups); // current
-  void SlideMoveQ3Like (float StepVelScale, bool noPickups); // q3 experiment
+  void SlideMoveVanilla (float deltaTime, bool noPickups); // vanilla-like
+  void SlideMoveSweep (float deltaTime, bool noPickups); // current
+  void SlideMoveQ3Like (float deltaTime, bool noPickups); // q3 experiment
 
   void CreateSecNodeList ();
 

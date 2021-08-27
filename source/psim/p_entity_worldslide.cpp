@@ -131,21 +131,80 @@ TVec VEntity::TraceToWallSmall2D (TVec org, TVec vdelta) {
 
 //==========================================================================
 //
+//  VEntity::IsBlockedSlideLine
+//
+//==========================================================================
+int VEntity::IsBlockedSlideLine (const line_t *line) const noexcept {
+  if (!line) return SlideBlockSkip; // just in case
+  if (!(line->flags&ML_TWOSIDED) || !line->backsector) {
+    // one-sided line
+    return (line->PointOnSide(Origin) ? SlideBlockSkip : SlideBlockBlocked);
+  }
+  // two-sided line
+  if (line->flags&(ML_BLOCKING|ML_BLOCKEVERYTHING)) return SlideBlockBlocked;
+  if ((EntityFlags&EF_IsPlayer) && (line->flags&ML_BLOCKPLAYERS)) return SlideBlockBlocked;
+  if ((EntityFlags&EF_CheckLineBlockMonsters) && (line->flags&ML_BLOCKMONSTERS)) return SlideBlockBlocked;
+  return (IsBlockingLine(line) ? SlideBlockBlocked : SlideBlockNotBlocked);
+}
+
+
+//==========================================================================
+//
+//  VEntity::IsBlockedSlide2SLine
+//
+//==========================================================================
+bool VEntity::IsBlockedSlide2SLine (const line_t *line, const TVec hitpoint) noexcept {
+  vassert(line);
+  vassert((line->flags&ML_TWOSIDED) && line->backsector);
+
+  const float hgt = Height;
+  if (hgt <= 0.0f) return false;
+  const float oz = Origin.z;
+
+  // set openrange, opentop, openbottom
+  opening_t *open = XLevel->LineOpenings(line, hitpoint, SPF_NOBLOCKING, !(EntityFlags&EF_Missile)/*do3dmidtex*/); // missiles ignores 3dmidtex
+  open = VLevel::FindOpening(open, oz, oz+hgt);
+
+  float stepHeight = MaxStepHeight;
+  if (EntityFlags&EF_IgnoreFloorStep) {
+    stepHeight = 0.0f;
+  } else {
+         if ((EntityFlags&EF_CanJump) && Health > 0) stepHeight = 48.0f;
+    else if ((EntityFlags&(EF_Missile|EF_StepMissile)) == EF_Missile) stepHeight = 0.0f;
+  }
+
+  if (open && open->range >= hgt && // fits
+      open->top-oz >= hgt && // mobj is not too high
+      open->bottom-oz <= stepHeight) // not too big for a step up
+  {
+    // this line doesn't block movement... but do some more checks
+    if (oz >= open->bottom) return false; // not blocked
+    // check to make sure there's nothing in the way for the step up
+    const TVec CheckOrg(Origin.x, Origin.y, open->bottom);
+    return TestMobjZ(CheckOrg);
+  }
+
+  // blocked
+  return true;
+}
+
+
+//==========================================================================
+//
 //  VEntity::SlidePathTraverseOld
 //
 //  used only for the oldest slide code!
 //
 //==========================================================================
-void VEntity::SlidePathTraverseOld (float &BestSlideFrac, TVec &BestSlideNormal, line_t *&BestSlideLine, float x, float y, float StepVelScale) {
+void VEntity::SlidePathTraverseOld (float &BestSlideFrac, TVec &BestSlideNormal, line_t *&BestSlideLine, float x, float y, float deltaTime) {
   #ifdef VV_NO_DENORMAL_VELOCITIES
-  const TVec SlideDir = (Velocity.xy()*StepVelScale).noNanInfDenormal2D();
+  const TVec SlideDir = (Velocity.xy()*deltaTime).noNanInfDenormal2D();
   if (SlideDir.isZero2D()) return;
   #else
-  const TVec SlideDir = Velocity.xy()*StepVelScale;
+  const TVec SlideDir = Velocity.xy()*deltaTime;
   if (!SlideDir.toBool2D()) return;
   #endif
   const TVec SlideOrg(x, y, Origin.z);
-  const float hgt = max2(0.0f, Height);
   const bool usecos = gm_slide_vanilla_newsel.asBool();
 
   intercept_t in;
@@ -158,19 +217,8 @@ void VEntity::SlidePathTraverseOld (float &BestSlideFrac, TVec &BestSlideNormal,
 
     line_t *li = in.line;
 
-    bool IsBlocked = false;
-    if (!(li->flags&ML_TWOSIDED) || !li->backsector) {
-      if (li->PointOnSide(Origin)) continue; // don't hit the back side
-      IsBlocked = true;
-    } else if (li->flags&(ML_BLOCKING|ML_BLOCKEVERYTHING)) {
-      IsBlocked = true;
-    } else if ((EntityFlags&EF_IsPlayer) && (li->flags&ML_BLOCKPLAYERS)) {
-      IsBlocked = true;
-    } else if ((EntityFlags&EF_CheckLineBlockMonsters) && (li->flags&ML_BLOCKMONSTERS)) {
-      IsBlocked = true;
-    } else {
-      IsBlocked = IsBlockingLine(li);
-    }
+    const int IsBlocked = IsBlockedSlideLine(li);
+    if (IsBlocked == SlideBlockSkip) continue;
 
     /*
     if (dbg_slide_code.asBool()) {
@@ -178,26 +226,8 @@ void VEntity::SlidePathTraverseOld (float &BestSlideFrac, TVec &BestSlideNormal,
     }
     */
 
-    if (!IsBlocked) {
-      // set openrange, opentop, openbottom
-      TVec hpoint = SlideOrg+in.frac*SlideDir;
-      opening_t *open = XLevel->LineOpenings(li, hpoint, SPF_NOBLOCKING, true/*do3dmidtex*/); //!(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
-      open = VLevel::FindOpening(open, Origin.z, Origin.z+hgt);
-
-      if (open && open->range >= hgt && // fits
-          open->top-Origin.z >= hgt && // mobj is not too high
-          open->bottom-Origin.z <= MaxStepHeight) // not too big a step up
-      {
-        // this line doesn't block movement
-        if (Origin.z < open->bottom) {
-          // check to make sure there's nothing in the way for the step up
-          TVec CheckOrg = Origin;
-          CheckOrg.z = open->bottom;
-          if (!TestMobjZ(CheckOrg)) continue;
-        } else {
-          continue;
-        }
-      }
+    if (IsBlocked == SlideBlockNotBlocked) {
+      if (!IsBlockedSlide2SLine(li, SlideOrg+in.frac*SlideDir)) continue;
     }
 
     const TVec hitnormal = ((li->flags&ML_TWOSIDED) && li->backsector && li->PointOnSide(Origin) ? -li->normal : li->normal);
@@ -232,12 +262,14 @@ void VEntity::SlidePathTraverseOld (float &BestSlideFrac, TVec &BestSlideNormal,
 //
 //  returns hit time -- [0..1]
 //  1 means that we couldn't find any suitable wall
+//  -1 means "initially stuck"
 //
 //==========================================================================
 float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line_t **BestSlideLine, bool tryBiggerBlockmap) {
   const float rad = GetMoveRadius(); //+0.1f; // make it slightly bigger, to compensate `TryMove()` checks
   const float hgt = max2(0.0f, Height);
 
+  /*
   float stepHeight = MaxStepHeight;
   if (EntityFlags&EF_IgnoreFloorStep) {
     stepHeight = 0.0f;
@@ -245,11 +277,14 @@ float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line
          if ((EntityFlags&EF_CanJump) && Health > 0) stepHeight = 48.0f;
     else if ((EntityFlags&(EF_Missile|EF_StepMissile)) == EF_Missile) stepHeight = 0.0f;
   }
+  */
 
   const TVec end(Origin+dir);
 
   float BestSlideFrac = 1.0f;
   float bestVelCos = -INFINITY;
+
+  //const TVec normdir(dir.normalise2D());
 
   //DeclareMakeBlockMapCoords(Origin.x, Origin.y, rad, xl, yl, xh, yh);
   const int bmdelta = (tryBiggerBlockmap ? 1 : 0);
@@ -266,54 +301,56 @@ float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line
       for (auto &&it : XLevel->allBlockLines(bx, by)) {
         line_t *li = it.line();
 
-        bool IsBlocked = false;
-        if (!(li->flags&ML_TWOSIDED) || !li->backsector) {
-          if (li->PointOnSide(Origin)) continue; // don't hit the back side
-          IsBlocked = true;
-        } else if (li->flags&(ML_BLOCKING|ML_BLOCKEVERYTHING)) {
-          IsBlocked = true;
-        } else if ((EntityFlags&EF_IsPlayer) && (li->flags&ML_BLOCKPLAYERS)) {
-          IsBlocked = true;
-        } else if ((EntityFlags&EF_CheckLineBlockMonsters) && (li->flags&ML_BLOCKMONSTERS)) {
-          IsBlocked = true;
-        } else {
-          IsBlocked = IsBlockingLine(li);
-        }
+        const int IsBlocked = IsBlockedSlideLine(li);
+        if (IsBlocked == SlideBlockSkip) continue;
 
         VLevel::CD_HitType hitType;
         int hitplanenum = -1;
         TVec contactPoint;
-        const float htime = VLevel::SweepLinedefAABB(li, Origin, end, TVec(-rad, -rad, 0.0f), TVec(rad, rad, hgt), nullptr, &contactPoint, &hitType, &hitplanenum);
-        if (htime < 0.0f || htime >= 1.0f) continue; // didn't hit
-        if (htime > BestSlideFrac) continue; // don't care, too far away
+        float htime = VLevel::SweepLinedefAABB(li, Origin, end, TVec(-rad, -rad, 0.0f), TVec(rad, rad, hgt), nullptr, &contactPoint, &hitType, &hitplanenum);
+        if (/*htime < 0.0f ||*/ htime >= 1.0f) {
+          // didn't hit
+          /*
+          if (debugSlide) {
+            if (IsPlayer()) GLog.Logf(NAME_Debug, "  DIDNOT: frc=%g (best=%g); hpl=%d; type=%d; line #%d", htime, BestSlideFrac, hitplanenum, hitType, (int)(ptrdiff_t)(li-&XLevel->Lines[0]));
+          }
+          */
+          continue;
+        }
+        if (htime > BestSlideFrac) {
+          // don't care, too far away
+          if (debugSlide) {
+            if (IsPlayer()) GLog.Logf(NAME_Debug, "  FARAWAY: frc=%g (best=%g); hpl=%d; type=%d; line #%d", htime, BestSlideFrac, hitplanenum, hitType, (int)(ptrdiff_t)(li-&XLevel->Lines[0]));
+          }
+          continue;
+        }
         // totally ignore beveling planes
         //if (hitplanenum > 1) continue;
+
+        // we CAN stuck without stucking!
+        if (htime < 0.0f) {
+          //htime = 0.0f;
+          //contactPoint = Origin;
+          if (debugSlide) {
+            if (IsPlayer()) GLog.Logf(NAME_Debug, "  CHECK-STUCK: line #%d", (int)(ptrdiff_t)(li-&XLevel->Lines[0]));
+          }
+          return -1.0f;
+        }
 
         // if we already have a good wall, don't replace it with a bad wall
         if (hitplanenum > 1 && BestSlideFrac == htime) {
           if (debugSlide) {
-            if (IsPlayer()) GLog.Logf(NAME_Debug, "  SIDEHIT! hpl=%d; type=%d", hitplanenum, hitType);
+            if (IsPlayer()) GLog.Logf(NAME_Debug, "  SIDEHIT! hpl=%d; type=%d; line #%d", hitplanenum, hitType, (int)(ptrdiff_t)(li-&XLevel->Lines[0]));
           }
           continue;
         }
 
-        if (!IsBlocked) {
-          // set openrange, opentop, openbottom
-          opening_t *open = XLevel->LineOpenings(li, contactPoint, SPF_NOBLOCKING, !(EntityFlags&EF_Missile)); // missiles ignores 3dmidtex
-          open = VLevel::FindOpening(open, Origin.z, Origin.z+hgt);
-
-          if (open && open->range >= hgt && // fits
-              open->top-Origin.z >= hgt && // mobj is not too high
-              open->bottom-Origin.z <= stepHeight) // not too big a step up
-          {
-            // this line doesn't block movement
-            if (Origin.z < open->bottom) {
-              // check to make sure there's nothing in the way for the step up
-              const TVec CheckOrg(Origin.x, Origin.y, open->bottom);
-              if (!TestMobjZ(CheckOrg)) continue; // not blocked
-            } else {
-              continue; // not blocked
+        if (IsBlocked == SlideBlockNotBlocked) {
+          if (!IsBlockedSlide2SLine(li, contactPoint)) {
+            if (debugSlide) {
+              if (IsPlayer()) GLog.Logf(NAME_Debug, "  2S-SKIP: frc=%g (best=%g); hpl=%d; type=%d; line #%d", htime, BestSlideFrac, hitplanenum, hitType, (int)(ptrdiff_t)(li-&XLevel->Lines[0]));
             }
+            continue;
           }
         }
 
@@ -322,16 +359,23 @@ float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line
         // dot product for two normalized vectors is cosine between them
         // cos(0) is 1, cos(180) is -1
         const float velcos = dir.dot2D(cvel);
+        //const float velcos = normdir.dot2D(cvel.normalise2D());
 
         if (htime == BestSlideFrac) {
           // our cosine is multiplied by both direction magnitudes; `SlideDir` magnitude is constant, though
           // prefer velocity that goes to the same dir
-          if (velcos < 0.0f || velcos < bestVelCos) continue;
+          if (velcos < 0.0f || velcos < bestVelCos) {
+            if (debugSlide) {
+              if (IsPlayer()) GLog.Logf(NAME_Debug, "  COSSKIP: frc=%g (best=%g); hpl=%d; type=%d; velcos=%g (best=%g), line #%d", htime, BestSlideFrac, hitplanenum, hitType, velcos, bestVelCos, (int)(ptrdiff_t)(li-&XLevel->Lines[0]));
+            }
+            continue;
+          }
         }
 
         if (debugSlide) {
           if (IsPlayer()) {
-            GLog.Logf(NAME_Debug, "  prevhittime=%g; newhittime=%g; newhitnormal=(%g,%g); newhitpnum=%d; newdir=(%g,%g)", BestSlideFrac, htime, hitnormal.x, hitnormal.y, hitplanenum, cvel.x, cvel.y);
+            GLog.Logf(NAME_Debug, "  prevhittime=%g; newhittime=%g; newhitnormal=(%g,%g); newhitpnum=%d; newdir=(%g,%g); line #%d", BestSlideFrac, htime, hitnormal.x, hitnormal.y, hitplanenum, cvel.x, cvel.y,
+              (int)(ptrdiff_t)(li-&XLevel->Lines[0]));
           }
         }
 
@@ -348,6 +392,13 @@ float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line
 }
 
 
+#define SLIDEOLD_MOVE_FINALTRY()  do { \
+  bool moved = (isU32NonZeroF(YMove) ? TryMove(tmtrace, TVec(Origin.x, Origin.y+YMove, Origin.z), true, noPickups) : false); \
+  if (!moved && isU32NonZeroF(XMove)) moved = TryMove(tmtrace, TVec(Origin.x+XMove, Origin.y, Origin.z), true, noPickups); \
+  if (!moved) Velocity.x = Velocity.y = 0.0f; \
+} while (0)
+
+
 //==========================================================================
 //
 //  VEntity::SlideMoveVanilla
@@ -359,12 +410,12 @@ float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line
 //  `noPickups` means "don't activate specials" too.
 //
 //==========================================================================
-void VEntity::SlideMoveVanilla (float StepVelScale, bool noPickups) {
+void VEntity::SlideMoveVanilla (float deltaTime, bool noPickups) {
   tmtrace_t tmtrace;
   memset((void *)&tmtrace, 0, sizeof(tmtrace)); // valgrind: AnyBlockingLine
 
-  float XMove = Velocity.x*StepVelScale;
-  float YMove = Velocity.y*StepVelScale;
+  float XMove = Velocity.x*deltaTime;
+  float YMove = Velocity.y*deltaTime;
 
   const float rad = GetMoveRadius();
 
@@ -383,11 +434,10 @@ void VEntity::SlideMoveVanilla (float StepVelScale, bool noPickups) {
     #endif
     if (!(isU32NonZeroF(XMove)|isU32NonZeroF(YMove))) return; // just in case
 
-    if (++hitcount == 3) {
+    // this was `3`, but why not `4`?
+    if (++hitcount == 4) {
       // don't loop forever
-      bool movedY = (YMove != 0.0f ? TryMove(tmtrace, TVec(Origin.x, Origin.y+YMove, Origin.z), true, noPickups) : false);
-      if (!movedY && XMove != 0.0f) movedY = TryMove(tmtrace, TVec(Origin.x+XMove, Origin.y, Origin.z), true, noPickups);
-      if (!movedY) Velocity.x = Velocity.y = 0.0f;
+      SLIDEOLD_MOVE_FINALTRY();
       return;
     }
 
@@ -413,62 +463,60 @@ void VEntity::SlideMoveVanilla (float StepVelScale, bool noPickups) {
 
     float BestSlideFrac = 666.0f; // arbitrary big number
     line_t *BestSlideLine = nullptr;
-    TVec BestNorm(0.0f, 0.0f);
+    TVec BestSlideNormal(0.0f, 0.0f);
 
-    SlidePathTraverseOld(BestSlideFrac, BestNorm, BestSlideLine, leadx, leady, StepVelScale);
-    if (isU32NonZeroF(BestSlideFrac)) SlidePathTraverseOld(BestSlideFrac, BestNorm, BestSlideLine, trailx, leady, StepVelScale);
-    if (isU32NonZeroF(BestSlideFrac)) SlidePathTraverseOld(BestSlideFrac, BestNorm, BestSlideLine, leadx, traily, StepVelScale);
+    SlidePathTraverseOld(BestSlideFrac, BestSlideNormal, BestSlideLine, leadx, leady, deltaTime);
+    if (isU32NonZeroF(BestSlideFrac)) SlidePathTraverseOld(BestSlideFrac, BestSlideNormal, BestSlideLine, trailx, leady, deltaTime);
+    if (isU32NonZeroF(BestSlideFrac)) SlidePathTraverseOld(BestSlideFrac, BestSlideNormal, BestSlideLine, leadx, traily, deltaTime);
 
     // move up to the wall
     if (BestSlideFrac >= 1.0f) {
       // the move must have hit the middle, so stairstep
-      bool movedY = (YMove != 0.0f ? TryMove(tmtrace, TVec(Origin.x, Origin.y+YMove, Origin.z), true, noPickups) : false);
-      if (!movedY && XMove != 0.0f) movedY = TryMove(tmtrace, TVec(Origin.x+XMove, Origin.y, Origin.z), true, noPickups);
-      if (!movedY) Velocity.x = Velocity.y = 0.0f;
+      if (TryMove(tmtrace, TVec(Origin.x+XMove, Origin.y+YMove, Origin.z), true, noPickups)) return;
+      SLIDEOLD_MOVE_FINALTRY();
       return;
     }
 
     // fudge a bit to make sure it doesn't hit
-    const float origSlide = BestSlideFrac; // we'll need it later
-    BestSlideFrac -= 0.03125f;
-    if (BestSlideFrac > 0.0f) {
-      const float newx = XMove*BestSlideFrac;
-      const float newy = YMove*BestSlideFrac;
+    const float newSlideFrac = BestSlideFrac-0.03125f;
+    if (newSlideFrac > 0.0f) {
+      const float newx = XMove*newSlideFrac;
+      const float newy = YMove*newSlideFrac;
       if (!TryMove(tmtrace, TVec(Origin.x+newx, Origin.y+newy, Origin.z), true, noPickups)) {
-        bool movedY = (YMove != 0.0f ? TryMove(tmtrace, TVec(Origin.x, Origin.y+YMove, Origin.z), true, noPickups) : false);
-        if (!movedY && XMove != 0.0f) movedY = TryMove(tmtrace, TVec(Origin.x+XMove, Origin.y, Origin.z), true, noPickups);
-        if (!movedY) Velocity.x = Velocity.y = 0.0f;
+        XMove = newx;
+        YMove = newy;
+        SLIDEOLD_MOVE_FINALTRY();
         return;
       }
     }
 
     // now continue along the wall
     // first calculate remainder
-    BestSlideFrac = 1.0f-origSlide;
+    BestSlideFrac = 1.0f-BestSlideFrac;
 
-    if (BestSlideFrac > 1.0f) BestSlideFrac = 1.0f;
-    if (BestSlideFrac <= 0.0f) return;
+    //if (BestSlideFrac > 1.0f) BestSlideFrac = 1.0f; // just in case
+    if (BestSlideFrac <= 0.0f) return; // just in case too
 
     // clip the moves
-    // k8: don't multiply z, 'cause it makes jumping against a wall unpredictably hard
-    Velocity.x *= BestSlideFrac;
-    Velocity.y *= BestSlideFrac;
-    Velocity = ClipVelocity(Velocity, BestNorm);
+    Velocity *= BestSlideFrac;
+    Velocity = ClipVelocity(Velocity, BestSlideNormal);
     Velocity.fix2DNanInfDenormalsInPlace(); // just in case, also resets `z`
 
-    XMove = Velocity.x*StepVelScale;
-    YMove = Velocity.y*StepVelScale;
+    XMove = Velocity.x*deltaTime;
+    YMove = Velocity.y*deltaTime;
   } while (!TryMove(tmtrace, TVec(Origin.x+XMove, Origin.y+YMove, Origin.z), true, noPickups));
 }
+
+#undef SLIDEOLD_MOVE_FINALTRY
 
 
 #define SLIDE_MOVE_FINALTRY()  do { \
   if (gm_slide_vanilla_finish.asBool()) { \
-    SlideMoveVanilla(StepVelScale, noPickups); \
-  } else if (dir.y == 0.0f || !TryMove(tmtrace, TVec(Origin.x, Origin.y+dir.y, Origin.z), true, noPickups)) { \
-    if (dir.x == 0.0f || !TryMove(tmtrace, TVec(Origin.x+dir.x, Origin.y, Origin.z), true, noPickups)) { \
-      if (dir.x || dir.y) Velocity.x = Velocity.y = 0.0f; \
-    } \
+    SlideMoveVanilla(deltaTime, noPickups); \
+  } else { \
+    bool moved = (isU32NonZeroF(dir.y) ? TryMove(tmtrace, TVec(Origin.x, Origin.y+dir.y, Origin.z), true, noPickups) : false); \
+    if (!moved && isU32NonZeroF(dir.x)) moved = TryMove(tmtrace, TVec(Origin.x+dir.x, Origin.y, Origin.z), true, noPickups); \
+    if (!moved) Velocity.x = Velocity.y = 0.0f; \
   } \
 } while (0)
 
@@ -482,12 +530,12 @@ void VEntity::SlideMoveVanilla (float StepVelScale, bool noPickups) {
 //  `noPickups` means "don't activate specials" too.
 //
 //==========================================================================
-void VEntity::SlideMoveSweep (float StepVelScale, bool noPickups) {
+void VEntity::SlideMoveSweep (float deltaTime, bool noPickups) {
   tmtrace_t tmtrace;
 
   Velocity.z = 0.0f;
 
-  TVec dir(Velocity*StepVelScale); // we want to arrive there
+  TVec dir(Velocity*deltaTime); // we want to arrive there
   if (dir.isZero2D()) return; // just in case
 
   const bool debugSlide = dbg_slide_code.asBool();
@@ -500,6 +548,8 @@ void VEntity::SlideMoveSweep (float StepVelScale, bool noPickups) {
   do {
     #ifdef VV_NO_DENORMAL_VELOCITIES
     dir.fix2DNanInfDenormalsInPlace(); // just in case
+    #else
+    dir.z = 0.0f; // just in case
     #endif
     if (!dir.toBool2D()) return; // just in case
 
@@ -513,7 +563,11 @@ void VEntity::SlideMoveSweep (float StepVelScale, bool noPickups) {
     }
 
     if (debugSlide) {
-      if (IsPlayer()) GCon->Logf(NAME_Debug, " hitcount=%d; dir=(%g,%g)", hitcount, dir.x, dir.y);
+      if (IsPlayer()) {
+        const bool ok = CheckRelPosition(tmtrace, Origin, true/*noPickups*/);
+        const bool mvok = TryMove(tmtrace, Origin, true, true/*noPickups*/);
+        GCon->Logf(NAME_Debug, " hitcount=%d; dir=(%g,%g); checkpos=%d; mvok=%d", hitcount, dir.x, dir.y, (int)ok, (int)mvok);
+      }
     }
 
     // find line to slide
@@ -526,7 +580,7 @@ void VEntity::SlideMoveSweep (float StepVelScale, bool noPickups) {
       if (debugSlide) {
         if (IsPlayer()) GCon->Logf(NAME_Debug, "  DONE! BestSlideFrac=%g", BestSlideFrac);
       }
-      if (TryMove(tmtrace, TVec(Origin.x+dir.x, Origin.y+dir.y, Origin.z), true, noPickups)) return;
+      if (TryMove(tmtrace, Origin+dir, true, noPickups)) return;
       // if we can't move, try better search
       if (debugSlide) {
         if (IsPlayer()) GCon->Logf(NAME_Debug, "    CANNOT MOVE!");
@@ -549,22 +603,57 @@ void VEntity::SlideMoveSweep (float StepVelScale, bool noPickups) {
       BestSlideFrac = 0.0f;
     }
 
-    if (BestSlideFrac > 0.0f) {
-      if (!TryMove(tmtrace, TVec(Origin.x+dir.x, Origin.y+dir.y, Origin.z), true, noPickups)) {
-        // fudge a bit to make sure it doesn't hit
-        const float slidefrac = BestSlideFrac-0.03125f;
-        if (slidefrac > 0.0f) {
-          const float newx = dir.x*slidefrac;
-          const float newy = dir.y*slidefrac;
-          if (!TryMove(tmtrace, TVec(Origin.x+newx, Origin.y+newy, Origin.z), true, noPickups)) {
-            if (debugSlide) {
-              if (IsPlayer()) GLog.Logf(NAME_Debug, "  CAN'T SLIDE; newdir=(%g,%g)", newx, newy);
-            }
-            dir.x = newx;
-            dir.y = newy;
-            SLIDE_MOVE_FINALTRY();
-            return;
+    // we initially stuck, wtf?!
+    if (BestSlideFrac < 0.0f) {
+      // try to backup a little
+      if (debugSlide) {
+        if (IsPlayer()) GCon->Logf(NAME_Debug, "  UNSTUCK-HACK!");
+      }
+      TVec ndir(dir.normalise2D());
+      const TVec oldOrg = Origin;
+      Origin -= ndir*2.0f;
+      BestSlideFrac = SlidePathTraverseNew(dir+ndir*3.0f, &BestSlideNormal);
+      Origin = oldOrg;
+      if (BestSlideFrac < 0.0f) {
+        // still stuck, wtf?!
+        if (debugSlide) {
+          if (IsPlayer()) GCon->Logf(NAME_Debug, "  STUCK-STUCK!");
+        }
+        SLIDE_MOVE_FINALTRY();
+        return;
+      }
+      // this slide time is not right, zero it
+      BestSlideFrac = 0.0f;
+    }
+
+    if (BestSlideFrac == 0.0f) {
+      TVec cdir = ClipVelocity(dir, BestSlideNormal);
+      if (debugSlide) {
+        if (IsPlayer()) GLog.Logf(NAME_Debug, "  TIME0:0: newdir=(%g,%g); dir=(%g,%g); norm=(%g,%g)", cdir.x, cdir.y, dir.x, dir.y, BestSlideNormal.x, BestSlideNormal.y);
+      }
+      bool mvok = TryMove(tmtrace, Origin+cdir, true, noPickups);
+      if (debugSlide) {
+        if (IsPlayer()) GLog.Logf(NAME_Debug, "  TIME0:1: mvok=%d", (int)mvok);
+      }
+      if (!mvok) {
+        if (isU32NonZeroF(dir.x)) mvok = TryMove(tmtrace, TVec(Origin.x+dir.x, Origin.y, Origin.z), true, noPickups);
+        if (!mvok && isU32NonZeroF(dir.y)) mvok = TryMove(tmtrace, TVec(Origin.x, Origin.y+dir.y, Origin.z), true, noPickups);
+      }
+    }
+
+    // just in case, try full move too
+    if (BestSlideFrac > 0.0f && !TryMove(tmtrace, Origin+dir, true, noPickups)) {
+      // fudge a bit to make sure it doesn't hit
+      const float newSlideFrac = BestSlideFrac-0.03125f;
+      if (newSlideFrac > 0.0f) {
+        const TVec smdir(dir*newSlideFrac);
+        if (!TryMove(tmtrace, Origin+smdir, true, noPickups)) {
+          if (debugSlide) {
+            if (IsPlayer()) GLog.Logf(NAME_Debug, "  CAN'T SLIDE; newdir=(%g,%g)", smdir.x, smdir.y);
           }
+          dir = smdir;
+          SLIDE_MOVE_FINALTRY();
+          return;
         }
       }
     }
@@ -580,19 +669,16 @@ void VEntity::SlideMoveSweep (float StepVelScale, bool noPickups) {
     if (BestSlideFrac <= 0.0f) return; // fully moved (this cannot happen, but...)
 
     // clip the moves
-    // k8: don't multiply z, 'cause it makes jumping against a wall unpredictably hard
-    Velocity.x *= BestSlideFrac;
-    Velocity.y *= BestSlideFrac;
+    Velocity *= BestSlideFrac;
     Velocity = ClipVelocity(Velocity, BestSlideNormal);
     Velocity.fix2DNanInfDenormalsInPlace(); // just in case, also resets `z`
 
-    dir.x = Velocity.x*StepVelScale;
-    dir.y = Velocity.y*StepVelScale;
+    dir = Velocity*deltaTime; // `dir.z` is zero
 
     if (debugSlide) {
-      if (IsPlayer()) GLog.Logf(NAME_Debug, "  newvel=(%g,%g)", Velocity.x, Velocity.y);
+      if (IsPlayer()) GLog.Logf(NAME_Debug, "  newvel=(%g,%g); newdir=(%g,%g)", Velocity.x, Velocity.y, dir.x, dir.y);
     }
-  } while (!TryMove(tmtrace, TVec(Origin.x+dir.x, Origin.y+dir.y, Origin.z), true, noPickups));
+  } while (!TryMove(tmtrace, Origin+dir, true, noPickups));
 }
 
 
@@ -606,18 +692,17 @@ void VEntity::SlideMoveSweep (float StepVelScale, bool noPickups) {
 //  `noPickups` means "don't activate specials" too.
 //
 //==========================================================================
-void VEntity::SlideMoveQ3Like (float StepVelScale, bool noPickups) {
+void VEntity::SlideMoveQ3Like (float deltaTime, bool noPickups) {
   tmtrace_t tmtrace;
 
   const bool debugSlide = dbg_slide_code.asBool();
 
   if (debugSlide) {
-    if (IsPlayer()) GCon->Logf(NAME_Debug, "%s: === SlideMove; move=(%g,%g) pos=(%g,%g,%g) ===", GetClass()->GetName(), Velocity.x*StepVelScale, Velocity.y*StepVelScale, Origin.x, Origin.y, Origin.z);
+    if (IsPlayer()) GCon->Logf(NAME_Debug, "%s: === SlideMove; move=(%g,%g) pos=(%g,%g,%g) ===", GetClass()->GetName(), Velocity.x*deltaTime, Velocity.y*deltaTime, Origin.x, Origin.y, Origin.z);
   }
 
   Velocity.z = 0.0f;
 
-  int i;
   TVec planes[/*MAX_CLIP_PLANES*/5];
   int numplanes = 0;
 
@@ -626,14 +711,16 @@ void VEntity::SlideMoveQ3Like (float StepVelScale, bool noPickups) {
   int trynum = 0;
   for (;;) {
     TVec dir(Velocity);
-    dir *= StepVelScale; // we want to arrive here
+    dir *= deltaTime; // we want to arrive here
     #ifdef VV_NO_DENORMAL_VELOCITIES
     dir.fix2DNanInfDenormalsInPlace(); // just in case
+    #else
+    dir.z = 0.0f; // just in case
     #endif
     if (!dir.toBool2D()) return; // just in case
 
     // just in case
-    if (TryMove(tmtrace, TVec(Origin+dir), true, noPickups)) return;
+    if (TryMove(tmtrace, Origin+dir, true, noPickups)) return;
 
     if (++trynum == 4) {
       // don't loop forever
@@ -653,15 +740,14 @@ void VEntity::SlideMoveQ3Like (float StepVelScale, bool noPickups) {
     float BestSlideFrac = SlidePathTraverseNew(dir, &BestSlideNormal);
 
     if (BestSlideFrac >= 1.0f) {
-      // the move must have hit the middle, so stairstep
       if (debugSlide) {
-        if (IsPlayer()) GCon->Logf(NAME_Debug, "  DONE! BestSlideFrac=%g", BestSlideFrac);
+        if (IsPlayer()) GCon->Logf(NAME_Debug, "  CANNOT MOVE! BestSlideFrac=%g", BestSlideFrac);
       }
-      if (TryMove(tmtrace, TVec(Origin.x+dir.x, Origin.y+dir.y, Origin.z), true, noPickups)) return;
+      //if (TryMove(tmtrace, Origin+dir, true, noPickups)) return; // it is done above
       // if we can't move, try better search
-      if (debugSlide) {
-        if (IsPlayer()) GCon->Logf(NAME_Debug, "    CANNOT MOVE!");
-      }
+      //if (debugSlide) {
+      //  if (IsPlayer()) GCon->Logf(NAME_Debug, "    CANNOT MOVE!");
+      //}
       // this can happen because our sweeping function is not exactly the same as `TryMove()`
       // so swept box can hit nothing, yet `TryMove()` could find a collision
       // in this case we will make our direction longer to find that pesky wall to slide
@@ -680,33 +766,53 @@ void VEntity::SlideMoveQ3Like (float StepVelScale, bool noPickups) {
       BestSlideFrac = 0.0f;
     }
 
+    // we initially stuck, wtf?!
+    if (BestSlideFrac < 0.0f) {
+      // try to backup a little
+      if (debugSlide) {
+        if (IsPlayer()) GCon->Logf(NAME_Debug, "  UNSTUCK-HACK!");
+      }
+      TVec ndir(dir.normalise2D());
+      const TVec oldOrg = Origin;
+      Origin -= ndir*2.0f;
+      BestSlideFrac = SlidePathTraverseNew(dir+ndir*3.0f, &BestSlideNormal);
+      Origin = oldOrg;
+      if (BestSlideFrac < 0.0f) {
+        // still stuck, wtf?!
+        if (debugSlide) {
+          if (IsPlayer()) GCon->Logf(NAME_Debug, "  STUCK-STUCK!");
+        }
+        SLIDE_MOVE_FINALTRY();
+        return;
+      }
+      // this slide time is not right, zero it
+      BestSlideFrac = 0.0f;
+    }
+
+    // no need to try a full move here, it is done above
     if (BestSlideFrac > 0.0f) {
-      if (!TryMove(tmtrace, Origin+dir, true, noPickups)) {
-        // make hittime slightly smaller, to avoid walls stucking
-        const float slidetime = BestSlideFrac-0.03125f;
-        if (slidetime > 0.0f) {
-          const float newx = dir.x*slidetime;
-          const float newy = dir.y*slidetime;
-          if (!TryMove(tmtrace, TVec(Origin.x+newx, Origin.y+newy, Origin.z), true, noPickups)) {
-            if (debugSlide) {
-              if (IsPlayer()) GLog.Logf(NAME_Debug, "  CAN'T SLIDE AT ALL!");
-            }
-            dir.x = newx;
-            dir.y = newy;
-            SLIDE_MOVE_FINALTRY();
-            return;
+      // make hittime slightly smaller, to avoid walls stucking
+      const float newSlideFrac = BestSlideFrac-0.03125f;
+      if (newSlideFrac > 0.0f) {
+        const TVec smdir(dir*newSlideFrac);
+        if (!TryMove(tmtrace, Origin+smdir, true, noPickups)) {
+          if (debugSlide) {
+            if (IsPlayer()) GLog.Logf(NAME_Debug, "  CAN'T SLIDE AT ALL!");
           }
+          dir = smdir;
+          SLIDE_MOVE_FINALTRY();
+          return;
         }
       }
     }
 
     // fix timeleft
     if (useTimeLeft) {
-      StepVelScale -= StepVelScale*BestSlideFrac;
+      deltaTime -= deltaTime*BestSlideFrac;
       if (debugSlide) {
-        if (IsPlayer()) GLog.Logf(NAME_Debug, "  timeleft=%g; vel=(%g,%g)", StepVelScale, Velocity.x, Velocity.y);
+        if (IsPlayer()) GLog.Logf(NAME_Debug, "  timeleft=%g; vel=(%g,%g)", deltaTime, Velocity.x, Velocity.y);
       }
-      if (StepVelScale <= 0.0f) return; // fully moved (this cannot happen, but...)
+      if (deltaTime <= 0.0f) return; // fully moved (this cannot happen, but...)
     } else {
       BestSlideFrac = 1.0f-BestSlideFrac;
       if (debugSlide) {
@@ -715,26 +821,28 @@ void VEntity::SlideMoveQ3Like (float StepVelScale, bool noPickups) {
       if (BestSlideFrac <= 0.0f) return; // fully moved (this cannot happen, but...)
 
       // clip the moves
-      // k8: don't multiply z, 'cause it makes jumping against a wall unpredictably hard
-      Velocity.x *= BestSlideFrac;
-      Velocity.y *= BestSlideFrac;
+      Velocity *= BestSlideFrac;
     }
 
     // if this is the same plane we hit before, nudge velocity out along it,
     // which fixes some epsilon issues with non-axial planes
-    for (i = 0; i < numplanes; ++i) {
-      if (BestSlideNormal.dot(planes[i]) > 0.99f) {
-        Velocity += BestSlideNormal;
-        break;
+    {
+      bool found = false;
+      for (int i = 0; i < numplanes; ++i) {
+        if (BestSlideNormal.dot(planes[i]) > 0.99f) {
+          found = true;
+          Velocity += BestSlideNormal;
+          break;
+        }
       }
+      if (found) continue; // already seen it
+      planes[numplanes++] = BestSlideNormal;
     }
-    if (i < numplanes) continue; // already seen it
-    planes[numplanes++] = BestSlideNormal;
 
     // modify velocity so it parallels all of the clip planes
 
     // find a plane that it enters
-    for (i = 0; i < numplanes; ++i) {
+    for (int i = 0; i < numplanes; ++i) {
       float into = Velocity.dot(planes[i]);
       if (into >= 0.1f) {
         // move doesn't interact with the plane
@@ -803,12 +911,12 @@ void VEntity::SlideMoveQ3Like (float StepVelScale, bool noPickups) {
 //  k8: TODO: switch to beveled BSP!
 //
 //==========================================================================
-void VEntity::SlideMove (float StepVelScale, bool noPickups) {
+void VEntity::SlideMove (float deltaTime, bool noPickups) {
   const float oldvelz = Velocity.z;
   const int slideType = gm_slide_code.asInt();
-       if (slideType >= 2) SlideMoveQ3Like(StepVelScale, noPickups);
-  else if (slideType == 1) SlideMoveSweep(StepVelScale, noPickups);
-  else SlideMoveVanilla(StepVelScale, noPickups);
+       if (slideType >= 2) SlideMoveQ3Like(deltaTime, noPickups);
+  else if (slideType == 1) SlideMoveSweep(deltaTime, noPickups);
+  else SlideMoveVanilla(deltaTime, noPickups);
   Velocity.z = oldvelz;
 }
 
@@ -917,10 +1025,10 @@ TVec VEntity::SlideMoveCamera (TVec org, TVec end, float radius) {
 //
 //==========================================================================
 IMPLEMENT_FUNCTION(VEntity, SlideMove) {
-  float StepVelScale;
+  float deltaTime;
   VOptParamBool noPickups(false);
-  vobjGetParamSelf(StepVelScale, noPickups);
-  Self->SlideMove(StepVelScale, noPickups);
+  vobjGetParamSelf(deltaTime, noPickups);
+  Self->SlideMove(deltaTime, noPickups);
 }
 
 // native final TVec TraceToWallSmall2D (const TVec org, const TVec vdelta);
