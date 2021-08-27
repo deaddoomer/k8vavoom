@@ -407,7 +407,7 @@ override void SB_DrawMainBar (bool inAutomap) {
         if (!Weapon(Item) || !pawn) continue;
         int TmpSlot, TmpIndex;
         pawn.FindWeaponSlot(class!Weapon(Item.Class), TmpSlot, TmpIndex);
-        if (TmpSlot == i+2) {
+        if (TmpSlot == i+1) {
           HaveWeapon = true;
           break;
         }
