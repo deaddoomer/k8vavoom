@@ -1,3 +1,7 @@
+WARNING! THIS IS NOT FINISHED! ACTUALLY, IT'S NOT EVEN STARTED YET!
+the information here may be wrong or outdated.
+
+
 file: "models/models.xml"
 
 <?xml version="1.0" encoding="UTF-8" ?>
