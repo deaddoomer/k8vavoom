@@ -182,8 +182,8 @@ public:
   vuint8 pal[768]; //RGB
   vuint8 trans[768]; //alpha for palette (color 0 will be transparent for paletted images, as DooM does it this way)
   vuint8 tR, tG, tB; // transparent color for RGB images
-  bool hasTrans;
-  unsigned ChunkPt;
+  bool hasTrans; // has some transparency info? (i.e. some color may be treated as "transparen")
+  int ChunkPt; // index of the "current" chunk (last found, etc.)
 
   int width;
   int height;
@@ -191,7 +191,7 @@ public:
   vuint8 colortype;
   vuint8 interlace;
   vuint8 *pixbuf;
-  unsigned xmul; // number of bytes in one pixel entry
+  unsigned xmul; // number of bytes in one pixel entry; purely informative, not used by the code
 
   unsigned flags;
 
@@ -233,6 +233,9 @@ vuint32 M_CreateChunkId (const char sign[4]);
 // each chunk is not done. If it is valid, you get a PNGHandle to pass to
 // the following functions.
 PNGHandle *M_VerifyPNG (VStream *file);
+
+// Just deletes the PNGHandle. The file is not closed.
+void M_FreePNG (PNGHandle *&png);
 
 // Finds a chunk in a PNG file. The file pointer will be positioned at the
 // beginning of the chunk data, and its length will be returned. A return

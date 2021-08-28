@@ -179,7 +179,7 @@ vuint8 *VPngTexture::GetPixels () {
     }
   }
 
-  delete png;
+  M_FreePNG(png);
 
   //if (Strm->IsError()) { VStream::Destroy(Strm); Sys_Error("Can't open PNG file '%s'", *Name); }
 
