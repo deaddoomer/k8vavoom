@@ -213,6 +213,9 @@ static int currImpulse = 0;
 static VCvarB always_run("always_run", false, "Always run?", CVAR_Archive);
 static VCvarB artiskip("artiskip", true, "Should Shift+Enter skip an artifact?", CVAR_Archive); // whether shift-enter skips an artifact
 
+static VCvarB cl_input_pressure("cl_input_pressure", false, "Try to detect 'key pressure'?", CVAR_Archive);
+
+
 static VCvarF cl_forwardspeed("cl_forwardspeed", "200", "Forward speed.", CVAR_Archive);
 static VCvarF cl_backspeed("cl_backspeed", "200", "Backward speed.", CVAR_Archive);
 static VCvarF cl_sidespeed("cl_sidespeed", "200", "Sidestepping speed.", CVAR_Archive);
@@ -404,7 +407,8 @@ void TKButton::KeyUp (const char *c) noexcept {
 float TKButton::KeyPressure () noexcept {
   const float val = PressureTbl[state&7];
   ClearEdges();
-  return val;
+  if (cl_input_pressure.asBool()) return val;
+  return (isU32NonZeroF(val) ? 1.0f : 0.0f);
 }
 
 
