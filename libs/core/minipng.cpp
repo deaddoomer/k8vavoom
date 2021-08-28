@@ -35,22 +35,58 @@
 
 #include "core.h"
 
-
+/*
 #ifndef __BIG_ENDIAN__
 # define MAKE_ID(a,b,c,d)  ((uint32_t)((a)|((b)<<8)|((c)<<16)|((d)<<24)))
 #else
 # define MAKE_ID(a,b,c,d)  ((uint32_t)((d)|((c)<<8)|((b)<<16)|((a)<<24)))
 #endif
+*/
+
+
+static inline uint32_t MAKE_ID (const int b0, const int b1, const int b2, const int b3) noexcept {
+  const vuint32 a = clampToByte(b0);
+  const vuint32 b = clampToByte(b1);
+  const vuint32 c = clampToByte(b2);
+  const vuint32 d = clampToByte(b3);
+  #ifdef VAVOOM_LITTLE_ENDIAN
+  return (vuint32)(a|(b<<8)|(c<<16)|(d<<24));
+  #else
+  return (vuint32)(d|(c<<8)|(b<<16)|(a<<24));
+  #endif
+}
 
 
 // zlib includes some CRC32 stuff, so just use that
 
 //static inline const uint32_t *GetCRCTable () { return (const uint32_t *)get_crc_table(); }
-static inline uint32_t CalcCRC32 (const uint8_t *buf, unsigned int len) { return mz_crc32 (0, buf, len); }
-static inline uint32_t AddCRC32 (uint32_t crc, const uint8_t *buf, unsigned int len) { return mz_crc32 (crc, buf, len); }
+static inline uint32_t CalcCRC32 (const uint8_t *buf, unsigned len) { return mz_crc32 (0, buf, len); }
+static inline uint32_t AddCRC32 (uint32_t crc, const uint8_t *buf, unsigned len) { return mz_crc32 (crc, buf, len); }
 //static inline uint32_t CRC1 (uint32_t crc, const uint8_t c, const uint32_t *crcTable) { return crcTable[(crc & 0xff) ^ c] ^ (crc >> 8); }
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+int png_level = 6;
+float png_gamma = 0;
+
+
+//==========================================================================
+//
+//  M_CreateChunkId
+//
+//==========================================================================
+vuint32 M_CreateChunkId (const char sign[4]) {
+  if (!sign) return 0u;
+  // check for validity
+  for (unsigned f = 0; f < 4; ++f) {
+    vuint8 c = (vuint8)sign[f];
+    if (!(c >= 'A' && c <= 'Z') && !(c >= 'a' && c <= 'z')) return 0u;
+  }
+  return MAKE_ID(sign[0], sign[1], sign[2], sign[3]);
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 // The maximum size of an IDAT chunk ZDoom will write. This is also the
 // size of the compression buffer it allocates on the stack.
 #define PNG_WRITE_SIZE  (32768)
@@ -67,7 +103,18 @@ struct IHDR {
 };
 
 
-PNGHandle::PNGHandle (VStream *file) : ChunkPt(0), width(0), height(0), pixbuf(nullptr) {
+//==========================================================================
+//
+//  PNGHandle::PNGHandle
+//
+//==========================================================================
+PNGHandle::PNGHandle (VStream *file)
+  : ChunkPt(0)
+  , width(0)
+  , height(0)
+  , pixbuf(nullptr)
+  , flags(0)
+{
   File = file;
   memset(pal, 0, sizeof(pal));
   memset(trans, 255, sizeof(trans));
@@ -80,6 +127,11 @@ PNGHandle::PNGHandle (VStream *file) : ChunkPt(0), width(0), height(0), pixbuf(n
 }
 
 
+//==========================================================================
+//
+//  PNGHandle::~PNGHandle
+//
+//==========================================================================
 PNGHandle::~PNGHandle () {
   delete[] pixbuf; pixbuf = nullptr;
 #ifdef MINIPNG_LOAD_TEXT_CHUNKS
@@ -91,6 +143,11 @@ PNGHandle::~PNGHandle () {
 }
 
 
+//==========================================================================
+//
+//  PNGHandle::loadIDAT
+//
+//==========================================================================
 bool PNGHandle::loadIDAT () {
   if (!File || width < 1 || height < 1) return false;
   ChunkPt = 0;
@@ -116,11 +173,21 @@ bool PNGHandle::loadIDAT () {
 }
 
 
+//==========================================================================
+//
+//  PNGHandle::getPixelPremulted
+//
+//==========================================================================
 PalEntry PNGHandle::getPixelPremulted (int x, int y) const {
   return getPixel(x, y).premulted();
 }
 
 
+//==========================================================================
+//
+//  PNGHandle::getPixel
+//
+//==========================================================================
 PalEntry PNGHandle::getPixel (int x, int y, bool keepTransparent) const {
   const vuint8 *a = pixaddr(x, y);
   if (!a) return PalEntry::Transparent();
@@ -153,26 +220,26 @@ PalEntry PNGHandle::getPixel (int x, int y, bool keepTransparent) const {
 
 //==========================================================================
 //
-// MakeChunk
+//  MakeChunk
 //
-// Prepends the chunk length and type and appends the chunk's CRC32.
-// There must be 8 bytes available before the chunk passed and 4 bytes
-// after the chunk.
+//  Prepends the chunk length and type and appends the chunk's CRC32.
+//  There must be 8 bytes available before the chunk passed and 4 bytes
+//  after the chunk.
 //
 //==========================================================================
 static inline void MakeChunk (void *where, vuint32 type, size_t len) {
   vuint8 *data = (vuint8 *)where;
-  *(vuint32 *)(data-8) = BigLong((unsigned int)len);
+  *(vuint32 *)(data-8) = BigLong((unsigned)len);
   *(vuint32 *)(data-4) = type;
-  *(vuint32 *)(data+len) = BigLong((unsigned int)CalcCRC32 (data-4, (unsigned int)(len+4)));
+  *(vuint32 *)(data+len) = BigLong((unsigned)CalcCRC32(data-4, (unsigned)(len+4)));
 }
 
 
 //==========================================================================
 //
-// StuffPalette
+//  StuffPalette
 //
-// Converts 256 4-byte palette entries to 3 bytes each.
+//  Converts 256 4-byte palette entries to 3 bytes each.
 //
 //==========================================================================
 static void StuffPalette (const PalEntry *from, vuint8 *to) {
@@ -186,20 +253,12 @@ static void StuffPalette (const PalEntry *from, vuint8 *to) {
 }
 
 
-static bool WriteIDAT (VStream *file, const vuint8 *data, int len);
-static void UnfilterRow (int width, vuint8 *dest, vuint8 *stream, vuint8 *prev, int bpp);
-static void UnpackPixels (int width, int bytesPerRow, int bitdepth, const vuint8 *rowin, vuint8 *rowout, bool grayscale);
-
-int png_level = 6;
-float png_gamma = 0;
-
-
 //==========================================================================
 //
-// M_CreatePNG
+//  M_CreatePNG
 //
-// Passed a newly-created file, writes the PNG signature and IHDR, gAMA, and
-// PLTE chunks. Returns true if everything went as expected.
+//  Passed a newly-created file, writes the PNG signature and IHDR, gAMA, and
+//  PLTE chunks. Returns true if everything went as expected.
 //
 //==========================================================================
 bool M_CreatePNG (VStream *file, const vuint8 *buffer, const PalEntry *palette,
@@ -250,9 +309,9 @@ bool M_CreatePNG (VStream *file, const vuint8 *buffer, const PalEntry *palette,
 
 //==========================================================================
 //
-// M_CreateDummyPNG
+//  M_CreateDummyPNG
 //
-// Like M_CreatePNG, but the image is always a grayscale 1x1 black square.
+//  Like M_CreatePNG, but the image is always a grayscale 1x1 black square.
 //
 //==========================================================================
 bool M_CreateDummyPNG (VStream *file) {
@@ -270,9 +329,9 @@ bool M_CreateDummyPNG (VStream *file) {
 
 //==========================================================================
 //
-// M_FinishPNG
+//  M_FinishPNG
 //
-// Writes an IEND chunk to a PNG file. The file is left opened.
+//  Writes an IEND chunk to a PNG file. The file is left opened.
 //
 //==========================================================================
 bool M_FinishPNG (VStream *file) {
@@ -284,9 +343,9 @@ bool M_FinishPNG (VStream *file) {
 
 //==========================================================================
 //
-// M_AppendPNGChunk
+//  M_AppendPNGChunk
 //
-// Writes a PNG-compliant chunk to the file.
+//  Writes a PNG-compliant chunk to the file.
 //
 //==========================================================================
 bool M_AppendPNGChunk (VStream *file, vuint32 chunkID, const vuint8 *chunkData, vuint32 len) {
@@ -301,7 +360,7 @@ bool M_AppendPNGChunk (VStream *file, vuint32 chunkID, const vuint8 *chunkData, 
   }
   crc = CalcCRC32((vuint8 *)&head[1], 4);
   if (len != 0) crc = AddCRC32(crc, chunkData, len);
-  crc = BigLong((unsigned int)crc);
+  crc = BigLong((unsigned)crc);
   file->Serialise(&crc, 4);
   return !file->IsError();
 }
@@ -309,9 +368,9 @@ bool M_AppendPNGChunk (VStream *file, vuint32 chunkID, const vuint8 *chunkData, 
 
 //==========================================================================
 //
-// M_AppendPNGText
+//  M_AppendPNGText
 //
-// Appends a PNG tEXt chunk to the file
+//  Appends a PNG tEXt chunk to the file
 //
 //==========================================================================
 bool M_AppendPNGText (VStream *file, const char *keyword, const char *text) {
@@ -346,31 +405,33 @@ bool M_AppendPNGText (VStream *file, const char *keyword, const char *text) {
 
 //==========================================================================
 //
-// M_FindPNGChunk
+//  M_FindPNGChunk
 //
-// Finds a chunk in a PNG file. The file pointer will be positioned at the
-// beginning of the chunk data, and its length will be returned. A return
-// value of 0 indicates the chunk was either not present or had 0 length.
-// This means there is no way to conclusively determine if a chunk is not
-// present in a PNG file with this function, but since we're only
-// interested in chunks with content, that's okay. The file pointer will
-// be left sitting at the start of the chunk's data if it was found.
+//  Finds a chunk in a PNG file. The file pointer will be positioned at the
+//  beginning of the chunk data, and its length will be returned. A return
+//  value of 0 indicates the chunk was either not present or had 0 length.
+//  This means there is no way to conclusively determine if a chunk is not
+//  present in a PNG file with this function, but since we're only
+//  interested in chunks with content, that's okay. The file pointer will
+//  be left sitting at the start of the chunk's data if it was found.
 //
 //==========================================================================
-unsigned int M_FindPNGChunk (PNGHandle *png, vuint32 id) {
+unsigned M_FindPNGChunk (PNGHandle *png, vuint32 id) {
   png->ChunkPt = 0;
+  if (!id) return 0;
   return M_NextPNGChunk(png, id);
 }
 
 
 //==========================================================================
 //
-// M_NextPNGChunk
+//  M_NextPNGChunk
 //
-// Like M_FindPNGChunk, but it starts it search at the current chunk.
+//  Like M_FindPNGChunk, but it starts it search at the current chunk.
 //
 //==========================================================================
-unsigned int M_NextPNGChunk (PNGHandle *png, vuint32 id) {
+unsigned M_NextPNGChunk (PNGHandle *png, vuint32 id) {
+  if (!id) return 0;
   for (; png->ChunkPt < (vuint32)png->Chunks.length(); ++png->ChunkPt) {
     if (png->Chunks[png->ChunkPt].ID == id) {
       // Found the chunk
@@ -384,7 +445,7 @@ unsigned int M_NextPNGChunk (PNGHandle *png, vuint32 id) {
 
 //==========================================================================
 //
-// M_FindPNGIDAT
+//  M_FindPNGIDAT
 //
 //==========================================================================
 bool M_FindPNGIDAT (PNGHandle *png, vuint32 *chunkLen) {
@@ -400,10 +461,10 @@ bool M_FindPNGIDAT (PNGHandle *png, vuint32 *chunkLen) {
 #ifdef MINIPNG_LOAD_TEXT_CHUNKS
 //==========================================================================
 //
-// M_GetPNGText
+//  M_GetPNGText
 //
-// Finds a PNG text chunk with the given signature and returns a pointer
-// to a nullptr-terminated string if present. Returns nullptr on failure.
+//  Finds a PNG text chunk with the given signature and returns a pointer
+//  to a nullptr-terminated string if present. Returns nullptr on failure.
 //
 //==========================================================================
 char *M_GetPNGText (PNGHandle *png, const char *keyword) {
@@ -423,7 +484,13 @@ char *M_GetPNGText (PNGHandle *png, const char *keyword) {
 }
 
 
-// This version copies it to a supplied buffer instead of allocating a new one.
+//==========================================================================
+//
+//  M_GetPNGText
+//
+//  This version copies it to a supplied buffer instead of allocating a new one.
+//
+//==========================================================================
 bool M_GetPNGText (PNGHandle *png, const char *keyword, char *buffer, size_t buffsize) {
   size_t keylen;
   for (int i = 0; i < png->TextChunks.length(); ++i) {
@@ -440,6 +507,11 @@ bool M_GetPNGText (PNGHandle *png, const char *keyword, char *buffer, size_t buf
 #endif
 
 
+//==========================================================================
+//
+//  readI32BE
+//
+//==========================================================================
 static bool readI32BE (VStream *filer, int *res) {
   if (res) *res = 0;
   if (!filer) return false;
@@ -456,6 +528,11 @@ static bool readI32BE (VStream *filer, int *res) {
 }
 
 
+//==========================================================================
+//
+//  readU16BE
+//
+//==========================================================================
 static bool readU16BE (VStream *filer, vuint16 *res) {
   if (res) *res = 0;
   if (!filer) return false;
@@ -471,6 +548,11 @@ static bool readU16BE (VStream *filer, vuint16 *res) {
 }
 
 
+//==========================================================================
+//
+//  convertBPP
+//
+//==========================================================================
 static vuint8 convertBPP (vuint16 v, vuint8 bitdepth) {
   switch (bitdepth) {
     case 1: return (v ? 255 : 0);
@@ -485,10 +567,10 @@ static vuint8 convertBPP (vuint16 v, vuint8 bitdepth) {
 
 //==========================================================================
 //
-// M_VerifyPNG
+//  M_VerifyPNG
 //
-// Returns a PNGHandle if the file is a PNG or nullptr if not. CRC checking of
-// chunks is not done in order to save time.
+//  Returns a PNGHandle if the file is a PNG or nullptr if not. CRC checking of
+//  chunks is not done in order to save time.
 //
 //==========================================================================
 PNGHandle *M_VerifyPNG (VStream *filer) {
@@ -549,7 +631,7 @@ PNGHandle *M_VerifyPNG (VStream *filer) {
 
   chunk.ID = data[1];
   chunk.Offset = 16;
-  chunk.Size = BigLong((unsigned int)data[0]);
+  chunk.Size = BigLong((unsigned)data[0]);
   png->Chunks.Append(chunk);
   png->File->Seek(16);
 
@@ -580,7 +662,7 @@ PNGHandle *M_VerifyPNG (VStream *filer) {
     if (data[1] == MAKE_ID('I','D','A','T')) sawIDAT = true;
     chunk.ID = data[1];
     chunk.Offset = (vuint32)png->File->Tell();
-    chunk.Size = BigLong((unsigned int)data[0]);
+    chunk.Size = BigLong((unsigned)data[0]);
     png->Chunks.Append(chunk);
 
     if (data[1] == MAKE_ID('P','L','T','E')) {
@@ -630,6 +712,11 @@ PNGHandle *M_VerifyPNG (VStream *filer) {
       if (error) break;
     }
 
+    if (data[1] == MAKE_ID('i','D','O','T')) {
+      png->flags |= PNGHandle::Flag_AppleCorrupted;
+      continue;
+    }
+
     // if this is a text chunk, also record its contents
 #ifdef MINIPNG_LOAD_TEXT_CHUNKS
     if (data[1] == MAKE_ID('t','E','X','t')) {
@@ -656,9 +743,9 @@ PNGHandle *M_VerifyPNG (VStream *filer) {
 
 //==========================================================================
 //
-// M_FreePNG
+//  M_FreePNG
 //
-// Just deletes the PNGHandle. The file is not closed.
+//  Just deletes the PNGHandle. The file is not closed.
 //
 //==========================================================================
 void M_FreePNG (PNGHandle *png) {
@@ -666,24 +753,200 @@ void M_FreePNG (PNGHandle *png) {
 }
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 struct TempBuff {
   void *ptr;
-  inline TempBuff (int sz) { vassert(sz >= 0); ptr = Z_Malloc(sz+128); }
+  inline TempBuff (int sz) noexcept { vassert(sz >= 0); ptr = Z_Malloc(sz+128); }
   TempBuff (const TempBuff &) = delete;
   TempBuff &operator = (const TempBuff &) = delete;
-  inline ~TempBuff () { if (ptr) Z_Free(ptr); ptr = nullptr; }
+  inline ~TempBuff () noexcept { if (ptr) Z_Free(ptr); ptr = nullptr; }
 };
 
 
 //==========================================================================
 //
-// ReadIDAT
+//  UnfilterRow
 //
-// Reads image data out of a PNG
+//  Unfilters the given row. Unknown filter types are silently ignored.
+//  bpp is bytes per pixel, not bits per pixel.
+//  width is in bytes, not pixels.
+//
+//==========================================================================
+static void UnfilterRow (int width, vuint8 *dest, vuint8 *row, vuint8 *prev, int bpp) {
+  int x;
+
+  switch (*row++) {
+    case 1: // sub
+      x = bpp;
+      do { *dest++ = *row++; } while (--x);
+      for (x = width-bpp; x > 0; --x) {
+        *dest = *row++ + *(dest-bpp);
+        ++dest;
+      }
+      break;
+    case 2: // up
+      x = width;
+      do { *dest++ = *row++ + *prev++; } while (--x);
+      break;
+    case 3: // average
+      x = bpp;
+      do { *dest++ = *row++ + (*prev++)/2; } while (--x);
+      for (x = width-bpp; x > 0; --x) {
+        *dest = *row++ + (vuint8)((unsigned(*(dest-bpp))+unsigned(*prev++))>>1);
+        ++dest;
+      }
+      break;
+    case 4: // paeth
+      x = bpp;
+      do { *dest++ = *row++ + *prev++; } while (--x);
+      for (x = width-bpp; x > 0; --x) {
+        int a = *(dest-bpp);
+        int b = *(prev);
+        int c = *(prev-bpp);
+        int pa = b-c;
+        int pb = a-c;
+        int pc = abs(pa+pb);
+        pa = abs(pa);
+        pb = abs(pb);
+        *dest = *row+(vuint8)((pa <= pb && pa <= pc) ? a : (pb <= pc) ? b : c);
+        ++dest;
+        ++row;
+        ++prev;
+      }
+      break;
+    default:  // Treat everything else as filter type 0 (none)
+      memcpy(dest, row, width);
+      break;
+  }
+}
+
+
+//==========================================================================
+//
+//  UnpackPixels
+//
+//  Unpacks a row of pixels whose depth is less than 8 so that each pixel
+//  occupies a single byte. The outrow must be "width" bytes long.
+//  "bytesPerRow" is the number of bytes for the packed row. The in and out
+//  rows may overlap, but only if rowin == rowout.
+//
+//==========================================================================
+static void UnpackPixels (int width, int bytesPerRow, int bitdepth, const vuint8 *rowin, vuint8 *rowout, bool grayscale) {
+  const vuint8 *in;
+  vuint8 *out;
+  vuint8 pack;
+  int lastbyte;
+
+  //assert(bitdepth == 1 || bitdepth == 2 || bitdepth == 4);
+
+  out = rowout+width;
+  in = rowin+bytesPerRow;
+
+  switch (bitdepth) {
+    case 1:
+      lastbyte = width&7;
+      if (lastbyte != 0) {
+        --in;
+        pack = *in;
+        out -= lastbyte;
+        out[0] = (pack>>7)&1;
+        if (lastbyte >= 2) out[1] = (pack>>6)&1;
+        if (lastbyte >= 3) out[2] = (pack>>5)&1;
+        if (lastbyte >= 4) out[3] = (pack>>4)&1;
+        if (lastbyte >= 5) out[4] = (pack>>3)&1;
+        if (lastbyte >= 6) out[5] = (pack>>2)&1;
+        if (lastbyte == 7) out[6] = (pack>>1)&1;
+      }
+      while (in-- > rowin) {
+        pack = *in;
+        out -= 8;
+        out[0] = (pack>>7)&1;
+        out[1] = (pack>>6)&1;
+        out[2] = (pack>>5)&1;
+        out[3] = (pack>>4)&1;
+        out[4] = (pack>>3)&1;
+        out[5] = (pack>>2)&1;
+        out[6] = (pack>>1)&1;
+        out[7] = pack&1;
+      }
+      break;
+    case 2:
+      lastbyte = width&3;
+      if (lastbyte != 0) {
+        --in;
+        pack = *in;
+        out -= lastbyte;
+        out[0] = pack>>6;
+        if (lastbyte >= 2) out[1] = (pack>>4)&3;
+        if (lastbyte == 3) out[2] = (pack>>2)&3;
+      }
+      while (in-- > rowin) {
+        pack = *in;
+        out -= 4;
+        out[0] = pack>>6;
+        out[1] = (pack>>4)&3;
+        out[2] = (pack>>2)&3;
+        out[3] = pack&3;
+      }
+      break;
+    case 4:
+      lastbyte = width&1;
+      if (lastbyte != 0) {
+        --in;
+        pack = *in;
+        out -= lastbyte;
+        out[0] = pack>>4;
+      }
+      while (in-- > rowin) {
+        pack = *in;
+        out -= 2;
+        out[0] = pack>>4;
+        out[1] = pack&15;
+      }
+      break;
+  }
+
+  // expand grayscale to 8bpp
+  if (grayscale) {
+    // put the 2-bit lookup table on the stack, since it's probably already in a cache line
+    vuint8 bits2[4];
+
+    out = rowout+width;
+    switch (bitdepth) {
+      case 1:
+        while (--out >= rowout) {
+          // 1 becomes -1 (0xFF), and 0 remains untouched.
+          *out = 0-*out;
+        }
+        break;
+      case 2:
+        bits2[0] = 0x00;
+        bits2[1] = 0x55;
+        bits2[2] = 0xAA;
+        bits2[3] = 0xFF;
+        while (--out >= rowout) {
+          *out = bits2[*out];
+        }
+        break;
+      case 4:
+        while (--out >= rowout) {
+          *out |= (*out<<4);
+        }
+        break;
+    }
+  }
+}
+
+
+//==========================================================================
+//
+//  ReadIDAT
+//
+//  Reads image data out of a PNG
 //
 //==========================================================================
 bool M_ReadIDAT (VStream &file, vuint8 *buffer, int width, int height, int pitch,
-                 vuint8 bitdepth, vuint8 colortype, vuint8 interlace, unsigned int chunklen)
+                 vuint8 bitdepth, vuint8 colortype, vuint8 interlace, unsigned chunklen)
 {
   // uninterlaced images are treated as a conceptual eighth pass by these tables
   /*static*/ const vuint8 passwidthshift[8] =  { 3, 3, 2, 2, 1, 1, 0, 0 };
@@ -857,7 +1120,7 @@ bool M_ReadIDAT (VStream &file, vuint8 *buffer, int width, int height, int pitch
       file.Serialise(x, 12);
            if (file.IsError()) lastIDAT = true;
       else if (x[2] != MAKE_ID('I','D','A','T')) lastIDAT = true;
-      else chunklen = BigLong((unsigned int)x[1]);
+      else chunklen = BigLong((unsigned)x[1]);
     }
   }
 
@@ -877,10 +1140,38 @@ bool M_ReadIDAT (VStream &file, vuint8 *buffer, int width, int height, int pitch
 
 //==========================================================================
 //
-// M_SaveBitmap
+//  WriteIDAT
 //
-// Given a bitmap, creates one or more IDAT chunks in the given file.
-// Returns true on success.
+//  Writes a single IDAT chunk to the file. Returns true on success.
+//
+//==========================================================================
+static bool WriteIDAT (VStream *file, const vuint8 *data, int len) {
+  vuint32 foo[2], crc;
+
+  foo[0] = BigLong(len);
+  foo[1] = MAKE_ID('I','D','A','T');
+  crc = CalcCRC32((vuint8 *)&foo[1], 4);
+  crc = BigLong((unsigned)AddCRC32(crc, data, len));
+
+  file->Serialise(foo, 8);
+  if (file->IsError()) return false;
+  if (len) {
+    file->Serialise(data, (int)len);
+    if (file->IsError()) return false;
+  }
+  file->Serialise(&crc, 4);
+  return !file->IsError();
+}
+
+
+
+
+//==========================================================================
+//
+//  M_SaveBitmap
+//
+//  Given a bitmap, creates one or more IDAT chunks in the given file.
+//  Returns true on success.
 //
 //==========================================================================
 //#define MAXWIDTH  (12000)
@@ -989,205 +1280,4 @@ bool M_SaveBitmap (const vuint8 *from, ESSType color_type, int width, int height
 
   delete [] temprow;
   return !file->IsError();
-}
-
-
-//==========================================================================
-//
-// WriteIDAT
-//
-// Writes a single IDAT chunk to the file. Returns true on success.
-//
-//==========================================================================
-static bool WriteIDAT (VStream *file, const vuint8 *data, int len) {
-  vuint32 foo[2], crc;
-
-  foo[0] = BigLong(len);
-  foo[1] = MAKE_ID('I','D','A','T');
-  crc = CalcCRC32((vuint8 *)&foo[1], 4);
-  crc = BigLong((unsigned int)AddCRC32(crc, data, len));
-
-  file->Serialise(foo, 8);
-  if (file->IsError()) return false;
-  if (len) {
-    file->Serialise(data, (int)len);
-    if (file->IsError()) return false;
-  }
-  file->Serialise(&crc, 4);
-  return !file->IsError();
-}
-
-
-//==========================================================================
-//
-// UnfilterRow
-//
-// Unfilters the given row. Unknown filter types are silently ignored.
-// bpp is bytes per pixel, not bits per pixel.
-// width is in bytes, not pixels.
-//
-//==========================================================================
-static void UnfilterRow (int width, vuint8 *dest, vuint8 *row, vuint8 *prev, int bpp) {
-  int x;
-
-  switch (*row++) {
-    case 1: // sub
-      x = bpp;
-      do { *dest++ = *row++; } while (--x);
-      for (x = width-bpp; x > 0; --x) {
-        *dest = *row++ + *(dest-bpp);
-        ++dest;
-      }
-      break;
-    case 2: // up
-      x = width;
-      do { *dest++ = *row++ + *prev++; } while (--x);
-      break;
-    case 3: // average
-      x = bpp;
-      do { *dest++ = *row++ + (*prev++)/2; } while (--x);
-      for (x = width-bpp; x > 0; --x) {
-        *dest = *row++ + (vuint8)((unsigned(*(dest-bpp))+unsigned(*prev++))>>1);
-        ++dest;
-      }
-      break;
-    case 4: // paeth
-      x = bpp;
-      do { *dest++ = *row++ + *prev++; } while (--x);
-      for (x = width-bpp; x > 0; --x) {
-        int a = *(dest-bpp);
-        int b = *(prev);
-        int c = *(prev-bpp);
-        int pa = b-c;
-        int pb = a-c;
-        int pc = abs(pa+pb);
-        pa = abs(pa);
-        pb = abs(pb);
-        *dest = *row+(vuint8)((pa <= pb && pa <= pc) ? a : (pb <= pc) ? b : c);
-        ++dest;
-        ++row;
-        ++prev;
-      }
-      break;
-    default:  // Treat everything else as filter type 0 (none)
-      memcpy(dest, row, width);
-      break;
-  }
-}
-
-
-//==========================================================================
-//
-// UnpackPixels
-//
-// Unpacks a row of pixels whose depth is less than 8 so that each pixel
-// occupies a single byte. The outrow must be "width" bytes long.
-// "bytesPerRow" is the number of bytes for the packed row. The in and out
-// rows may overlap, but only if rowin == rowout.
-//
-//==========================================================================
-static void UnpackPixels (int width, int bytesPerRow, int bitdepth, const vuint8 *rowin, vuint8 *rowout, bool grayscale) {
-  const vuint8 *in;
-  vuint8 *out;
-  vuint8 pack;
-  int lastbyte;
-
-  //assert(bitdepth == 1 || bitdepth == 2 || bitdepth == 4);
-
-  out = rowout+width;
-  in = rowin+bytesPerRow;
-
-  switch (bitdepth) {
-    case 1:
-      lastbyte = width&7;
-      if (lastbyte != 0) {
-        --in;
-        pack = *in;
-        out -= lastbyte;
-        out[0] = (pack>>7)&1;
-        if (lastbyte >= 2) out[1] = (pack>>6)&1;
-        if (lastbyte >= 3) out[2] = (pack>>5)&1;
-        if (lastbyte >= 4) out[3] = (pack>>4)&1;
-        if (lastbyte >= 5) out[4] = (pack>>3)&1;
-        if (lastbyte >= 6) out[5] = (pack>>2)&1;
-        if (lastbyte == 7) out[6] = (pack>>1)&1;
-      }
-      while (in-- > rowin) {
-        pack = *in;
-        out -= 8;
-        out[0] = (pack>>7)&1;
-        out[1] = (pack>>6)&1;
-        out[2] = (pack>>5)&1;
-        out[3] = (pack>>4)&1;
-        out[4] = (pack>>3)&1;
-        out[5] = (pack>>2)&1;
-        out[6] = (pack>>1)&1;
-        out[7] = pack&1;
-      }
-      break;
-    case 2:
-      lastbyte = width&3;
-      if (lastbyte != 0) {
-        --in;
-        pack = *in;
-        out -= lastbyte;
-        out[0] = pack>>6;
-        if (lastbyte >= 2) out[1] = (pack>>4)&3;
-        if (lastbyte == 3) out[2] = (pack>>2)&3;
-      }
-      while (in-- > rowin) {
-        pack = *in;
-        out -= 4;
-        out[0] = pack>>6;
-        out[1] = (pack>>4)&3;
-        out[2] = (pack>>2)&3;
-        out[3] = pack&3;
-      }
-      break;
-    case 4:
-      lastbyte = width&1;
-      if (lastbyte != 0) {
-        --in;
-        pack = *in;
-        out -= lastbyte;
-        out[0] = pack>>4;
-      }
-      while (in-- > rowin) {
-        pack = *in;
-        out -= 2;
-        out[0] = pack>>4;
-        out[1] = pack&15;
-      }
-      break;
-  }
-
-  // expand grayscale to 8bpp
-  if (grayscale) {
-    // put the 2-bit lookup table on the stack, since it's probably already in a cache line
-    vuint8 bits2[4];
-
-    out = rowout+width;
-    switch (bitdepth) {
-      case 1:
-        while (--out >= rowout) {
-          // 1 becomes -1 (0xFF), and 0 remains untouched.
-          *out = 0-*out;
-        }
-        break;
-      case 2:
-        bits2[0] = 0x00;
-        bits2[1] = 0x55;
-        bits2[2] = 0xAA;
-        bits2[3] = 0xFF;
-        while (--out >= rowout) {
-          *out = bits2[*out];
-        }
-        break;
-      case 4:
-        while (--out >= rowout) {
-          *out |= (*out<<4);
-        }
-        break;
-    }
-  }
 }

@@ -152,6 +152,7 @@ bool M_SaveBitmap (const vuint8 *from, ESSType color_type, int width, int height
 
 // PNG Reading --------------------------------------------------------------
 struct PNGHandle {
+public:
   enum {
     ColorGrayscale = 0,
     ColorRGB = 2,
@@ -160,12 +161,19 @@ struct PNGHandle {
     ColorRGBA = 6,
   };
 
+  // flags
+  enum {
+    Flag_AppleCorrupted = 1u<<0,
+  };
+
+public:
   struct Chunk {
     vuint32 ID;
     vuint32 Offset;
     vuint32 Size;
   };
 
+public:
   VStream *File; // doesn't own
   TArray<Chunk> Chunks;
 #ifdef MINIPNG_LOAD_TEXT_CHUNKS
@@ -175,7 +183,7 @@ struct PNGHandle {
   vuint8 trans[768]; //alpha for palette (color 0 will be transparent for paletted images, as DooM does it this way)
   vuint8 tR, tG, tB; // transparent color for RGB images
   bool hasTrans;
-  unsigned int ChunkPt;
+  unsigned ChunkPt;
 
   int width;
   int height;
@@ -183,8 +191,11 @@ struct PNGHandle {
   vuint8 colortype;
   vuint8 interlace;
   vuint8 *pixbuf;
-  int xmul;
+  unsigned xmul; // number of bytes in one pixel entry
 
+  unsigned flags;
+
+public:
   ~PNGHandle ();
 
   // use this to load the actual PNG data
@@ -196,19 +207,26 @@ struct PNGHandle {
   PalEntry getPixel (int x, int y, bool keepTransparent=false) const;
   PalEntry getPixelPremulted (int x, int y) const;
 
+  bool isAppleCorrupted () const noexcept { return (flags&Flag_AppleCorrupted); }
+
 private:
   PNGHandle (VStream *file);
   PNGHandle ();
   PNGHandle (const PNGHandle &);
   void operator = (const PNGHandle &) const;
 
-  inline const vuint8 *pixaddr (int x, int y) const {
+  inline const vuint8 *pixaddr (int x, int y) const noexcept {
     return (width > 0 && height > 0 && xmul > 0 && x >= 0 && y >= 0 && x < width && y < height ? &pixbuf[y*(width*4)+x*xmul] : nullptr);
   }
 
   friend PNGHandle *M_VerifyPNG (VStream *file);
 };
 
+
+// create chunk id
+// returns 0 for invalid signatures
+// signature doesn't have to end with zero byte, but must have all 4 bytes valid
+vuint32 M_CreateChunkId (const char sign[4]);
 
 // Verify that a file really is a PNG file. This includes not only checking
 // the signature, but also checking for the IEND chunk. CRC checking of
@@ -219,11 +237,11 @@ PNGHandle *M_VerifyPNG (VStream *file);
 // Finds a chunk in a PNG file. The file pointer will be positioned at the
 // beginning of the chunk data, and its length will be returned. A return
 // value of 0 indicates the chunk was either not present or had 0 length.
-unsigned int M_FindPNGChunk (PNGHandle *png, vuint32 chunkID);
+unsigned M_FindPNGChunk (PNGHandle *png, vuint32 chunkID);
 
 // Finds a chunk in the PNG file, starting its search at whatever chunk
 // the file pointer is currently positioned at.
-unsigned int M_NextPNGChunk (PNGHandle *png, vuint32 chunkID);
+unsigned M_NextPNGChunk (PNGHandle *png, vuint32 chunkID);
 
 bool M_FindPNGIDAT (PNGHandle *png, vuint32 *chunkLen);
 
@@ -238,7 +256,7 @@ bool M_GetPNGText (PNGHandle *png, const char *keyword, char *buffer, size_t buf
 // The file must be positioned at the start of the first IDAT. It reads
 // image data into the provided buffer. Returns true on success.
 bool M_ReadIDAT (VStream &file, vuint8 *buffer, int width, int height, int pitch,
-                 vuint8 bitdepth, vuint8 colortype, vuint8 interlace, unsigned int idatlen);
+                 vuint8 bitdepth, vuint8 colortype, vuint8 interlace, unsigned idatlen);
 
 
 #endif

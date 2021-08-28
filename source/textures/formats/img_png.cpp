@@ -147,12 +147,14 @@ vuint8 *VPngTexture::GetPixels () {
   VCheckedStream Strm(SourceLump);
 
   PNGHandle *png = M_VerifyPNG(&Strm);
-  if (!png) Sys_Error("'%s' is not a valid PNG file", *Name);
+  if (!png) Sys_Error("'%s' is not a valid PNG file", *W_FullLumpName(SourceLump));
 
-  if (!png->loadIDAT()) Sys_Error("Error reading PNG file '%s'", *Name);
+  if (png->isAppleCorrupted()) GCon->Logf(NAME_Warning, "'%s' is corrupted by apple crapware", *W_FullLumpName(SourceLump));
+
+  if (!png->loadIDAT()) Sys_Error("Error reading PNG file '%s'", *W_FullLumpName(SourceLump));
 
   if (r_showinfo) {
-    GCon->Logf("PNG '%s': %dx%d (bitdepth:%u; colortype:%u; interlace:%u)", *Name, png->width, png->height, png->bitdepth, png->colortype, png->interlace);
+    GCon->Logf("PNG '%s' (%s): %dx%d (bitdepth:%u; colortype:%u; interlace:%u)", *Name, *W_FullLumpName(SourceLump), png->width, png->height, png->bitdepth, png->colortype, png->interlace);
   }
 
   Width = png->width;
