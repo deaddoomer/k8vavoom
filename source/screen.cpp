@@ -212,10 +212,13 @@ static VCvarI draw_gc_stats("draw_gc_stats", "0", "Draw GC stats (0: none; 1: br
 #endif
 
 #ifdef VV_SWR_HAS_JPEG
-static VCvarS screenshot_type("screenshot_type", "png", "Screenshot type (png/jpg/tga/pcx).", CVAR_Archive);
+# define VV_SWR_CVAR_JPG  "/jpg"
+# define VV_SWR_CVAR_FMT  "jpg"
 #else
-static VCvarS screenshot_type("screenshot_type", "png", "Screenshot type (png/tga/pcx).", CVAR_Archive);
+# define VV_SWR_CVAR_JPG  ""
+# define VV_SWR_CVAR_FMT  "png"
 #endif
+static VCvarS screenshot_type("screenshot_type", VV_SWR_CVAR_FMT, "Screenshot type (png" VV_SWR_CVAR_JPG "/tga/pcx).", CVAR_Archive);
 
 extern void WriteTGA (VStr FileName, void *data, int width, int height, int bpp, bool bot2top);
 extern void WritePCX (VStr FileName, void *data, int width, int height, int bpp, bool bot2top);
@@ -223,6 +226,44 @@ extern void WritePNG (VStr FileName, const void *Data, int Width, int Height, in
 #ifdef VV_SWR_HAS_JPEG
 extern void WriteJPG (VStr FileName, const void *Data, int Width, int Height, int Bpp, bool Bot2top);
 #endif
+
+
+enum {
+  SS_BAD = -1,
+  SS_PNG = 0,
+  SS_TGA,
+  SS_PCX,
+  SS_JPG,
+};
+
+
+//==========================================================================
+//
+//  getSSTypeByExt
+//
+//==========================================================================
+static int getSSTypeByExt (VStr ext) noexcept {
+  while (!ext.isEmpty() && ext[0] == '.') ext.chopLeft(1);
+  if (ext.isEmpty()) {
+    ext = screenshot_type.asStr();
+    while (!ext.isEmpty() && ext[0] == '.') ext.chopLeft(1);
+  }
+  if (ext.isEmpty()) {
+#ifdef VV_SWR_HAS_JPEG
+    return SS_JPG;
+#else
+    return SS_PNG;
+#endif
+  }
+  if (ext.strEquCI("png")) return SS_PNG;
+  if (ext.strEquCI("tga")) return SS_TGA;
+  if (ext.strEquCI("pcx")) return SS_PCX;
+#ifdef VV_SWR_HAS_JPEG
+  if (ext.strEquCI("jpg")) return SS_JPG;
+  if (ext.strEquCI("jpeg")) return SS_JPG;
+#endif
+  return SS_BAD;
+}
 
 
 //==========================================================================
@@ -245,13 +286,28 @@ COMMAND(Screenshot) {
     while (!ssname.isEmpty() && ssname.endsWith(".")) ssname.chopRight(1);
   }
 
-  VStr sst;
-  if (!ssname.isEmpty()) sst = ssname.ExtractFileExtension().toLowerCase();
-  if (sst.isEmpty()) sst = screenshot_type.asStr().toLowerCase();
-  if (sst.length() > 0 && sst[0] == '.') sst.chopLeft(1);
-  if (sst.strEqu("jpeg")) sst = "jpg";
-  if (sst.isEmpty()) { GCon->Log(NAME_Error, "Empty screenshot type"); return; }
-  if (sst.length() > 3) { GCon->Log(NAME_Error, "Screenshot type too long"); return; }
+  int stype;
+  {
+    VStr sst;
+    if (!ssname.isEmpty()) sst = ssname.ExtractFileExtension();
+    stype = getSSTypeByExt(sst);
+  }
+  if (stype == SS_BAD) { GCon->Log(NAME_Error, "Unknown screenshot type"); return; }
+
+  VStr sext;
+  switch (stype) {
+    case SS_PNG: sext = "png"; break;
+    case SS_TGA: sext = "tga"; break;
+    case SS_PCX: sext = "pcx"; break;
+    case SS_JPG: sext = "jpg"; break;
+    default: GCon->Log(NAME_Error, "WTF?!"); return;
+  }
+
+  if (!ssname.isEmpty()) {
+    VStr e = ssname.ExtractFileExtension();
+         if (e == ".") ssname += sext;
+    else if (e.isEmpty()) { ssname += "."; ssname += sext; }
+  }
 
   // find a file name to save it to
   VStr BaseDir = FL_GetScreenshotsDir();
@@ -262,7 +318,7 @@ COMMAND(Screenshot) {
 
   if (ssname.isEmpty()) {
     for (i = 0; i <= 9999; ++i) {
-      snprintf(tmpbuf, sizeof(tmpbuf), "shot%04d.%s", i, *sst);
+      snprintf(tmpbuf, sizeof(tmpbuf), "shot%04d.%s", i, *sext);
       filename = BaseDir+"/"+tmpbuf;
       if (!Sys_FileExists(filename)) break; // file doesn't exist
     }
@@ -280,11 +336,11 @@ COMMAND(Screenshot) {
   if (data) {
     bool report = true;
     // type is already lowercased
-         if (sst.strEqu("pcx")) WritePCX(filename, data, ScreenWidth, ScreenHeight, bpp, bot2top);
-    else if (sst.strEqu("tga")) WriteTGA(filename, data, ScreenWidth, ScreenHeight, bpp, bot2top);
-    else if (sst.strEqu("png")) WritePNG(filename, data, ScreenWidth, ScreenHeight, bpp, bot2top);
+         if (stype == SS_PCX) WritePCX(filename, data, ScreenWidth, ScreenHeight, bpp, bot2top);
+    else if (stype == SS_TGA) WriteTGA(filename, data, ScreenWidth, ScreenHeight, bpp, bot2top);
+    else if (stype == SS_PNG) WritePNG(filename, data, ScreenWidth, ScreenHeight, bpp, bot2top);
 #ifdef VV_SWR_HAS_JPEG
-    else if (sst.strEqu("jpg")) WriteJPG(filename, data, ScreenWidth, ScreenHeight, bpp, bot2top);
+    else if (stype == SS_JPG) WriteJPG(filename, data, ScreenWidth, ScreenHeight, bpp, bot2top);
 #endif
     else {
       report = false;

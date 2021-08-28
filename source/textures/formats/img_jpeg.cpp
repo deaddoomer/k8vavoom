@@ -68,7 +68,7 @@ struct VJpegClientData {
 };
 #endif
 
-static VCvarI jpeg_quality("jpeg_quality", "80", "Jpeg screenshot quality.", CVAR_Archive);
+static VCvarI jpeg_quality("jpeg_quality", "60", "Jpeg screenshot quality.", CVAR_Archive);
 
 
 //==========================================================================
@@ -592,12 +592,17 @@ void WriteJPG (VStr FileName, const void *Data, int Width, int Height, int Bpp, 
 
 #else /* !VAVOOM_DISABLE_STB_IMAGE_JPEG */
 
-extern "C" {
-  static void stbWriter (void *context, void *data, int size) {
-    VStream *strm = (VStream *)context;
-    if (size > 0) strm->Serialise(data, size);
-  }
+
+//==========================================================================
+//
+//  stbWriter
+//
+//==========================================================================
+static void stbWriter (void *context, void *data, int size) {
+  VStream *strm = (VStream *)context;
+  if (size > 0) strm->Serialise(data, size);
 }
+
 
 //==========================================================================
 //

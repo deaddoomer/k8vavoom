@@ -2973,7 +2973,7 @@ static int stbi__process_marker(stbi__jpeg *z, int m)
       L -= 2;
 
       if (m == 0xE0 && L >= 5) { // JFIF APP0 segment
-         static const unsigned char tag[5] = {'J','F','I','F','\0'};
+         /*static*/ const unsigned char tag[5] = {'J','F','I','F','\0'};
          int ok = 1;
          int i;
          for (i=0; i < 5; ++i)
@@ -2983,7 +2983,7 @@ static int stbi__process_marker(stbi__jpeg *z, int m)
          if (ok)
             z->jfif = 1;
       } else if (m == 0xEE && L >= 12) { // Adobe APP14 segment
-         static const unsigned char tag[6] = {'A','d','o','b','e','\0'};
+         /*static*/ const unsigned char tag[6] = {'A','d','o','b','e','\0'};
          int ok = 1;
          int i;
          for (i=0; i < 6; ++i)
@@ -3088,7 +3088,7 @@ static int stbi__process_frame_header(stbi__jpeg *z, int scan)
 
    z->rgb = 0;
    for (i=0; i < s->img_n; ++i) {
-      static const unsigned char rgb[3] = { 'R', 'G', 'B' };
+      /*static*/ const unsigned char rgb[3] = { 'R', 'G', 'B' };
       z->img_comp[i].id = stbi__get8(s);
       if (s->img_n == 3 && z->img_comp[i].id == rgb[i])
          ++z->rgb;
@@ -4090,7 +4090,7 @@ static int stbi__parse_huffman_block(stbi__zbuf *a)
 
 static int stbi__compute_huffman_codes(stbi__zbuf *a)
 {
-   static const stbi_uc length_dezigzag[19] = { 16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15 };
+   /*static*/ const stbi_uc length_dezigzag[19] = { 16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15 };
    stbi__zhuffman z_codelength;
    stbi_uc lencodes[286+32+137];//padding for maximum single op
    stbi_uc codelength_sizes[19];
@@ -4349,7 +4349,7 @@ static stbi__pngchunk stbi__get_chunk_header(stbi__context *s)
 
 static int stbi__check_png_header(stbi__context *s)
 {
-   static const stbi_uc png_sig[8] = { 137,80,78,71,13,10,26,10 };
+   /*static*/ const stbi_uc png_sig[8] = { 137,80,78,71,13,10,26,10 };
    int i;
    for (i=0; i < 8; ++i)
       if (stbi__get8(s) != png_sig[i]) return stbi__err("bad png sig","Not a PNG");
