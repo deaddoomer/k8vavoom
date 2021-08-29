@@ -163,10 +163,13 @@ bool VOpenALDevice::Init () {
 
   if (cli_AudioDeviceName) GCon->Logf(NAME_Init, "opened OpenAL device '%s'", cli_AudioDeviceName);
 
+  #ifndef VAVOOM_USE_MOJOAL
+  // MojoAL doesn't have this
   if (!alcIsExtensionPresent(Device, "ALC_EXT_thread_local_context")) {
     Sys_Error("OpenAL: 'ALC_EXT_thread_local_context' extension is not present.\n"
               "Please, use OpenAL Soft implementation, and make sure that it is recent.");
   }
+  #endif
 
   RealMaxVoices = (vint32)MAX_VOICES;
   Context = nullptr;
@@ -192,17 +195,28 @@ bool VOpenALDevice::Init () {
     Context = alcCreateContext(Device, attrs);
     if (Context) break;
     --RealMaxVoices;
+    if (RealMaxVoices < 4) break;
   }
 
   if (!Context) Sys_Error("Failed to create OpenAL context");
   GCon->Logf(NAME_Init, "OpenAL: created context with %d max voices", RealMaxVoices);
 
+  #ifdef VAVOOM_USE_MOJOAL
+  // MojoAL doesn't have this
+  alcMakeContextCurrent(Context);
+  {
+    ALenum E = alGetError();
+    if (E != AL_NO_ERROR) Sys_Error("OpenAL error (setting thread context): %s", alGetErrorString(E));
+  }
+  #else
   alcSetThreadContext(Context);
-  //E = alGetError();
-  //if (E != AL_NO_ERROR) Sys_Error("OpenAL error (setting thread context): %s", alGetErrorString(E));
+  #endif
 
+  #ifndef VAVOOM_USE_MOJOAL
+  // MojoAL doesn't have this
   alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
   alEnable(AL_SOURCE_DISTANCE_MODEL);
+  #endif
 
   // clear error code
   ClearError();
@@ -238,7 +252,12 @@ bool VOpenALDevice::Init () {
 //
 //==========================================================================
 void VOpenALDevice::AddCurrentThread () {
+  #ifdef VAVOOM_USE_MOJOAL
+  // MojoAL doesn't have this
+  // do nothing here, this is used only by streaming player
+  #else
   alcSetThreadContext(Context);
+  #endif
 }
 
 
@@ -248,7 +267,12 @@ void VOpenALDevice::AddCurrentThread () {
 //
 //==========================================================================
 void VOpenALDevice::RemoveCurrentThread () {
+  #ifdef VAVOOM_USE_MOJOAL
+  // MojoAL doesn't have this
+  // do nothing here, this is used only by streaming player
+  #else
   alcSetThreadContext(nullptr);
+  #endif
 }
 
 
@@ -258,7 +282,7 @@ void VOpenALDevice::RemoveCurrentThread () {
 //
 //==========================================================================
 int VOpenALDevice::SetChannels (int InNumChannels) {
-  return clampval(InNumChannels, 1, (int)RealMaxVoices);
+  return clampval(InNumChannels, 1, (int)RealMaxVoices-2);
 }
 
 
@@ -302,10 +326,13 @@ void VOpenALDevice::Shutdown () {
   // destroy context
   if (Context) {
     if (developer) GLog.Log(NAME_Dev, "VOpenALDevice::Shutdown(): destroying context");
+    #ifdef VAVOOM_USE_MOJOAL
+    // MojoAL doesn't have this
+    alcMakeContextCurrent(nullptr);
+    #else
     alcSetThreadContext(nullptr);
-    //alcSetThreadContext(Context);
+    #endif
     alcDestroyContext(Context);
-    //alcSetThreadContext(nullptr);
     Context = nullptr;
   }
 

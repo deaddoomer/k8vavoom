@@ -242,6 +242,10 @@ set(SOUNDSYS_SOURCES
   sound/decoders/snd_nuked.cpp
 )
 
+if(WITH_MOJOAL)
+  set(SOUNDSYS_SOURCES ${SOUNDSYS_SOURCES} sound/mojoal/mojoal.c)
+endif(WITH_MOJOAL)
+
 
 #---------------------------------------
 #

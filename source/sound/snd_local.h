@@ -28,9 +28,14 @@
 
 #ifdef CLIENT
 # define AL_ALEXT_PROTOTYPES
-# include <AL/al.h>
-# include <AL/alc.h>
-# include <AL/alext.h>
+# ifdef VAVOOM_USE_MOJOAL
+#  include "mojoal/AL/al.h"
+#  include "mojoal/AL/alc.h"
+# else
+#  include <AL/al.h>
+#  include <AL/alc.h>
+#  include <AL/alext.h>
+# endif
 // linux headers doesn't define this
 # ifndef OPENAL
 #  define OPENAL
@@ -184,7 +189,8 @@ struct VReverbInfo {
 // this class implements the only supported OpenAL Soft driver
 class VOpenALDevice {
 private:
-  enum { MAX_VOICES = 256-4 };
+  //enum { MAX_VOICES = 256-4 };
+  enum { MAX_VOICES = 130 };
 
   enum { NUM_STRM_BUFFERS = 8*2 };
   enum { STRM_BUFFER_SIZE = 1024*8 };
