@@ -523,7 +523,7 @@ void VBasePlayer::DoClientStartSound (int SoundId, TVec Org, int OriginId,
 {
 #ifdef CLIENT
   //if (MO && OriginId == MO->SoundOriginID) GCon->Logf(NAME_Debug, "PLR PLAY (%d) at (%g,%g,%g) (%g,%g,%g)", OriginId, Org.x, Org.y, Org.z, MO->Origin.x, MO->Origin.y, MO->Origin.z);
-  GAudio->PlaySound(SoundId, Org, TVec(0, 0, 0), OriginId, Channel, Volume, Attenuation, Loop);
+  GAudio->PlaySound(SoundId, Org, TVec(0.0f, 0.0f, 0.0f), OriginId, Channel, Volume, Attenuation, Loop);
 #endif
 }
 
