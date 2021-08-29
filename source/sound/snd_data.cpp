@@ -935,7 +935,7 @@ int VSoundManager::AddSoundLump (VName TagName, int Lump) {
   TagName = (TagName != NAME_None ? VName(*TagName, VName::AddLower) : NAME_None);
   S.TagName = TagName;
   S.Data = nullptr;
-  S.Priority = 127;
+  S.Priority = 64; // default (was 127)
   S.NumChannels = 4; // max instances of this sound; was 2; it will be bound with "snd_max_same_sounds" anyway
   S.ChangePitch = CurrentChangePitch;
   S.VolumeAmp = 1.0f;
@@ -1272,6 +1272,7 @@ void VSoundManager::SetSingularity (int sound_id, bool singular) {
 //==========================================================================
 void VSoundManager::SetPriority (int sound_id, int priority) {
   if (sound_id < 1 || sound_id >= S_sfx.length()) return;
+  priority = clampval(priority, 0, 255); // just in case
   S_sfx[sound_id].Priority = priority;
 }
 

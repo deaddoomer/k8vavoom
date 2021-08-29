@@ -929,7 +929,7 @@ public:
 
   void StartSound (VName Sound, vint32 Channel, float Volume, float Attenuation, bool Loop, bool Local=false);
   void StartLocalSound (VName Sound, vint32 Channel, float Volume, float Attenuation);
-  void StopSound (vint32 Channel);
+  void StopSound (vint32 Channel); // channel 0 means "all channels"
   void StartSoundSequence (VName, vint32 Channel);
   void AddSoundSequenceChoice (VName);
   void StopSoundSequence ();

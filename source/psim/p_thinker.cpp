@@ -192,7 +192,7 @@ void VThinker::StartSound (const TVec &origin, vint32 origin_id,
     if (!Level->Game->Players[i]) continue;
     if (!(Level->Game->Players[i]->PlayerFlags&VBasePlayer::PF_Spawned)) continue;
     bool isLocal = Local;
-    if (!isLocal && Level->Game->Players[i]->MO == this) {
+    if (origin_id && !isLocal && Level->Game->Players[i]->MO == this) {
       //GCon->Logf(NAME_Debug, "starting sound with id %d as local for player #%d", sound_id, i);
       isLocal = true;
     }
@@ -205,9 +205,13 @@ void VThinker::StartSound (const TVec &origin, vint32 origin_id,
 //
 //  VThinker::StopSound
 //
+//  oid 0 means "do nothing" (there is another way to stop all local sounds)
+//  channel 0 means "all channels for this origin id"
+//
 //==========================================================================
 void VThinker::StopSound (vint32 origin_id, vint32 channel) {
   if (!Level || !Level->Game) return; //FIXME! for client-side entities (this should be fixed, client-side entities can emit sounds)
+  if (origin_id <= 0) return; // there is another way to stop all local sounds
   for (int i = 0; i < MAXPLAYERS; ++i) {
     if (!Level->Game->Players[i]) continue;
     if (!(Level->Game->Players[i]->PlayerFlags&VBasePlayer::PF_Spawned)) continue;

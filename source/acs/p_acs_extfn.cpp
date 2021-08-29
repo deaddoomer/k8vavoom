@@ -314,6 +314,7 @@ int VAcs::CallFunction (line_t *actline, int argCount, int funcIndex, vint32 *ar
             if (volume > 1) volume = 1;
             bool looping = (argCount > 4 ? !!args[4] : false);
             float attenuation = (argCount > 5 ? (float)args[5]/(float)0x10000 : 1.0f);
+            if (attenuation < 0.0f) attenuation = 0.0f; //WARNING! zero attenuation means "local sound"
             bool local = (argCount > 6 ? !!args[6] : false);
             if (local) attenuation = 0;
             Ent->StartSound(name, chan, volume, attenuation, looping, local);

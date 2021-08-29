@@ -90,7 +90,7 @@ public:
 
   // playback of sound effects
   virtual void PlaySound (int InSoundId, const TVec &origin, const TVec &velocity,
-                        int origin_id, int channel, float volume, float Attenuation, bool Loop) override;
+                          int origin_id, int channel, float volume, float Attenuation, bool Loop) override;
   virtual void StopSound (int origin_id, int channel) override;
   virtual void StopAllSound (bool keepLastSwitch=false) override;
   virtual bool IsSoundPlaying (int origin_id, int InSoundId) override;
@@ -132,16 +132,15 @@ public:
 private:
   enum { MAX_CHANNELS = 256 };
 
-  enum { PRIORITY_MAX_ADJUST = 10 };
-
   // info about sounds currently playing
+  // sounds with the highest `priority` will be considered for replacing
   struct FChannel {
-    int origin_id;
+    int origin_id; // <=0: full-volume local sound
     int channel;
     TVec origin;
     TVec velocity;
     int sound_id;
-    int priority;
+    float priority; // the higher priority is worser; this is dynamically adjusted using base sound priority and distance from the listener
     float volume;
     float Attenuation;
     int handle;
@@ -152,7 +151,7 @@ private:
   };
 
   // sound curve
-  int MaxSoundDist;
+  float MaxSoundDist;
 
   // map's music lump and CD track
   VName MapSong;
@@ -183,7 +182,8 @@ private:
   friend class TCmdMusic;
 
   // sound effect helpers
-  int GetChannel (int sound_id, int origin_id, int channel, int priority);
+  int FindChannelToReplaceInternal (int sound_id, int origin_id, const float priority, int *sndcountp);
+  int GetChannel (int sound_id, int origin_id, int channel, const float priority);
   void StopChannel (int cidx); // won't deallocate it
   void UpdateSfx ();
 
@@ -199,15 +199,18 @@ private:
   int AllocChannel (); // -1: no more
   void DeallocChannel (int cidx);
 
-  inline int ChanFirstUsed () const { return ChanNextUsed(-1, true); }
   int ChanNextUsed (int cidx, bool wantFirst=false) const;
+  inline int ChanFirstUsed () const { return ChanNextUsed(-1, true); }
 
   // WARNING! this must be called from the main thread, i.e.
   //          from the thread that calls `PlaySound*()` API!
   virtual void NotifySoundLoaded (int sound_id, bool success) override;
+
+  float CalcSoundPriority (int sound_id, float dist) noexcept;
 };
 
 
+// it is safe to call `AllocChannel()` and `DeallocChannel()` in this loop
 #define FOR_EACH_CHANNEL(varname) \
   for (int varname = ChanFirstUsed(); varname >= 0; varname = ChanNextUsed(i))
 
@@ -361,7 +364,7 @@ VAudioPublic *VAudioPublic::Create () {
 //
 //==========================================================================
 VAudio::VAudio ()
-  : MaxSoundDist(4096)
+  : MaxSoundDist(4096.0f)
   , MapSong(NAME_None)
   , MusicVolumeFactor(1.0f)
   , MusicEnabled(true)
@@ -456,21 +459,22 @@ void VAudio::ResetAllChannels () {
 //
 //==========================================================================
 int VAudio::ChanNextUsed (int cidx, bool wantFirst) const {
-  if (ChanUsed < 1) return -1; // anyway
+  if (ChanUsed < 1 || NumChannels < 1) return -1; // anyway
   if (!wantFirst && cidx < 0) return -1;
-  if (wantFirst) cidx = 0; else ++cidx;
-  while (cidx < NumChannels) {
-    const int bidx = cidx/32;
-    const vuint32 mask = 0xffffffffu>>(cidx%32);
+  unsigned ucidx = (wantFirst ? 0u : (unsigned)(cidx+1));
+  //if (wantFirst) cidx = 0; else ++cidx;
+  while (ucidx < (unsigned)NumChannels) {
+    const unsigned bidx = ucidx/32;
+    const vuint32 mask = 0xffffffffu>>(ucidx%32);
     const vuint32 cbv = ChanBitmap[bidx];
     if (cbv&mask) {
       // has some used channels
       for (;;) {
-        if (cbv&(0x80000000u>>(cidx%32))) return cidx;
-        ++cidx;
+        if (cbv&(0x80000000u>>(ucidx%32))) return (int)ucidx;
+        ++ucidx;
       }
     }
-    cidx = (cidx|0x1f)+1;
+    ucidx = (ucidx|0x1fu)+1u;
   }
   return -1;
 }
@@ -485,16 +489,16 @@ int VAudio::ChanNextUsed (int cidx, bool wantFirst) const {
 //==========================================================================
 int VAudio::AllocChannel () {
   if (ChanUsed >= NumChannels) return -1;
-  for (int bidx = 0; bidx < (NumChannels+31)/32; ++bidx) {
+  for (unsigned bidx = 0u; bidx < (unsigned)(NumChannels+31)/32; ++bidx) {
     vuint32 cbv = ChanBitmap[bidx];
     // has some free channels?
     if (cbv == 0xffffffffu) continue; // nope
-    int cidx = bidx*32;
-    for (vuint32 mask = 0x80000000u; mask; mask >>= 1, ++cidx) {
+    unsigned cidx = bidx*32;
+    for (unsigned mask = 0x80000000u; mask; mask >>= 1, ++cidx) {
       if ((cbv&mask) == 0) {
         ChanBitmap[bidx] |= mask;
         ++ChanUsed;
-        return cidx;
+        return (int)cidx;
       }
     }
     abort(); // we should never come here
@@ -515,9 +519,9 @@ int VAudio::AllocChannel () {
 void VAudio::DeallocChannel (int cidx) {
   if (ChanUsed == 0) return; // wtf?!
   if (cidx < 0 || cidx >= NumChannels) return; // oops
-  const int bidx = cidx/32;
-  const vuint32 mask = 0x80000000u>>(cidx%32);
-  const vuint32 cbv = ChanBitmap[bidx];
+  const unsigned bidx = (unsigned)cidx/32;
+  const unsigned mask = 0x80000000u>>((unsigned)cidx%32);
+  const unsigned cbv = ChanBitmap[bidx];
   if (cbv&mask) {
     // allocated channel, free it
     ChanBitmap[bidx] ^= mask;
@@ -555,7 +559,7 @@ void VAudio::Init () {
     StreamMusicPlayer->Init();
   }
 
-  MaxSoundDist = 4096;
+  MaxSoundDist = 4096.0f;
   MaxVolume = -1;
 
   // free all channels for use
@@ -600,6 +604,27 @@ void VAudio::Shutdown () {
 
 //==========================================================================
 //
+//  VAudio::CalcSoundPriority
+//
+//  note that the sounds with the higher priority will be replaced first
+//
+//==========================================================================
+float VAudio::CalcSoundPriority (int sound_id, float dist) noexcept {
+  if (sound_id <= 0 || sound_id >= GSoundManager->S_sfx.length()) return +INFINITY; // just in case
+  // get default sound priority
+  float prio = (float)GSoundManager->S_sfx[sound_id].Priority;
+  // adjust priority according to the distance
+  // yes, zero distance will set the priority to zero; this is indended
+  dist = clampval(dist, 0.0f, MaxSoundDist);
+  constexpr float PRIORITY_MAX_ADJUST = 16.0f;
+  //prio *= PRIORITY_MAX_ADJUST-PRIORITY_MAX_ADJUST*dist/MaxSoundDist;
+  prio *= PRIORITY_MAX_ADJUST*dist/MaxSoundDist;
+  return prio;
+}
+
+
+//==========================================================================
+//
 //  VAudio::PlaySound
 //
 //  this function adds a sound to the list of currently active sounds, which
@@ -607,17 +632,25 @@ void VAudio::Shutdown () {
 //
 //  channel 0 is "CHAN_AUTO"
 //
+//  if `origin_id` is `-666`, this is local player sound
+//
 //==========================================================================
 void VAudio::PlaySound (int InSoundId, const TVec &origin, const TVec &velocity,
                         int origin_id, int channel, float volume, float Attenuation, bool Loop)
 {
-  if (!SoundDevice || !InSoundId || !MaxVolume || !volume || NumChannels < 1) return;
+  if (!SoundDevice || !InSoundId || !MaxVolume || volume <= 0.0f || NumChannels < 1) return;
 
   // find actual sound ID to use
   int sound_id = GSoundManager->ResolveSound(InSoundId);
 
   if (sound_id < 1 || sound_id >= GSoundManager->S_sfx.length()) return; // k8: just in case
   if (GSoundManager->S_sfx[sound_id].VolumeAmp <= 0) return; // nothing to see here, come along
+
+  // check if this sound is emited by the local player
+  if (origin_id < 0) origin_id = -666; // for local sounds, there is no defined origin, `-666` is a fun fake
+  //if (!origin_id && Attenuation <= 0.0f) origin_id = -666; // full-volume sounds are always local
+  const bool LocalPlayerSound = (origin_id <= 0 || (cl && cl->MO && cl->MO->SoundOriginID == origin_id) || Attenuation <= 0.0f);
+  // sound from unknown origin, but with zero attenuation is "player local sound", there's no other way
 
   // if it's a looping sound and it's still playing, then continue playing the existing one
   FOR_EACH_CHANNEL(i) {
@@ -634,22 +667,23 @@ void VAudio::PlaySound (int InSoundId, const TVec &origin, const TVec &velocity,
   volume *= GSoundManager->S_sfx[sound_id].VolumeAmp;
   if (volume <= 0) return; // nothing to see here, come along
 
-  // check if this sound is emited by the local player
-  bool LocalPlayerSound = (origin_id == -666 || origin_id == 0 || (cl && cl->MO && cl->MO->SoundOriginID == origin_id));
-
   // calculate the distance before other stuff so that we can throw out sounds that are beyond the hearing range
-  int dist = 0;
-  if (origin_id && !LocalPlayerSound && Attenuation > 0 && cl) dist = (int)((origin-cl->ViewOrg).length()*Attenuation);
+  float dist = 0.0f;
+  if (!LocalPlayerSound && Attenuation > 0.0f && cl) {
+    dist = (origin-cl->ViewOrg).length()*Attenuation;
+    if (dist <= 0.0f) dist = 0.001f; // safeguard
+  }
   //GCon->Logf("DISTANCE=%d", dist);
   if (dist >= MaxSoundDist) {
     //GCon->Logf("  too far away (%d)", MaxSoundDist);
     return; // sound is beyond the hearing range
   }
 
-  int priority = GSoundManager->S_sfx[sound_id].Priority*(PRIORITY_MAX_ADJUST-PRIORITY_MAX_ADJUST*dist/MaxSoundDist);
+  // initial priority
+  const float priority = CalcSoundPriority(sound_id, dist);
 
   int chan = GetChannel(sound_id, origin_id, channel, priority);
-  if (chan == -1) return; // no free channels
+  if (chan < 0) return; // no free channels
 
   if (cli_DebugSound > 0) GCon->Logf(NAME_Debug, "PlaySound: sound(%d)='%s'; origin_id=%d; channel=%d; chan=%d; loop=%d", sound_id, *GSoundManager->S_sfx[sound_id].TagName, origin_id, channel, chan, (int)Loop);
 
@@ -657,9 +691,10 @@ void VAudio::PlaySound (int InSoundId, const TVec &origin, const TVec &velocity,
   if (snd_random_pitch_enabled) {
     float sndcp = GSoundManager->S_sfx[sound_id].ChangePitch;
     // apply default pitch?
-    if (sndcp < 0) {
+    if (sndcp < 0.0f) {
       const char *tagstr = *GSoundManager->S_sfx[sound_id].TagName;
-      if (LocalPlayerSound || VStr::startsWithCI(tagstr, "menu/") || VStr::startsWithCI(tagstr, "misc/")) sndcp = 0;
+      //hack!
+      if (LocalPlayerSound || VStr::startsWithCI(tagstr, "menu/") || VStr::startsWithCI(tagstr, "misc/")) sndcp = 0.0f;
       else sndcp = clampval(snd_random_pitch_default.asFloat(), 0.0f, 1.0f);
     }
     // apply pitch
@@ -671,7 +706,7 @@ void VAudio::PlaySound (int InSoundId, const TVec &origin, const TVec &velocity,
 
   int handle;
   bool is3D;
-  if (!origin_id || LocalPlayerSound || Attenuation <= 0) {
+  if (LocalPlayerSound) {
     // local sound
     handle = SoundDevice->PlaySound(sound_id, volume, pitch, Loop);
     is3D = false;
@@ -701,7 +736,7 @@ void VAudio::PlaySound (int InSoundId, const TVec &origin, const TVec &velocity,
 //
 //==========================================================================
 void VAudio::MoveSounds (int origin_id, const TVec &neworigin) {
-  if (origin_id <= 0) return;
+  if (origin_id <= 0) return; // no need to move local full-volume sounds
   if (!neworigin.isValid()) return;
   FOR_EACH_CHANNEL(i) {
     if (!Channel[i].sound_id || Channel[i].handle == -1 || Channel[i].origin_id != origin_id) continue;
@@ -713,55 +748,120 @@ void VAudio::MoveSounds (int origin_id, const TVec &neworigin) {
 
 //==========================================================================
 //
+//  VAudio::FindChannelToReplaceInternal
+//
+//  find the internal sound channel to replace
+//  meant to be used in `VAudio::GetChannel()`
+//
+//  this prefers sounds from the same origin, if possible (priority check)
+//  also, if `sound_id` is not zero, only check sounds with this id
+//
+//  returns internal channel number or -1
+//  if `sound_id` is not zero, sets `sndcountp` to the count
+//
+//  WARNING! DO NOT CALL WITH INVALID ARGS!
+//
+//==========================================================================
+int VAudio::FindChannelToReplaceInternal (int sound_id, int origin_id, const float priority, int *sndcountp) {
+  // oither origins
+  int lp = -1;
+  float prior = priority;
+  double lowesttime = HUGE_VAL;
+  // given origin
+  int oidlp = -1;
+  float oidprior = priority;
+  double oidlowesttime = HUGE_VAL;
+  // counter
+  int count = 0;
+
+  // loop over all active channels
+  FOR_EACH_CHANNEL(i) {
+    if (sound_id && Channel[i].sound_id != sound_id) continue; // not interesting
+    ++count; // count them
+    // check origin
+    if (Channel[i].origin_id == origin_id) {
+      // same origin
+      if (Channel[i].priority > oidprior ||
+          (Channel[i].priority == oidprior && (oidlp < 0 || oidlowesttime > Channel[i].SysStartTime)))
+      {
+        oidlp = i;
+        oidlowesttime = Channel[i].SysStartTime;
+        oidprior = Channel[i].priority;
+      }
+    } else {
+      // other origin
+      if (Channel[i].priority > prior ||
+          (Channel[i].priority == prior && (lp < 0 || lowesttime > Channel[i].SysStartTime)))
+      {
+        // if we're gonna kill one, then this will be it
+        lp = i;
+        lowesttime = Channel[i].SysStartTime;
+        prior = Channel[i].priority;
+      }
+    }
+  }
+
+  // return counter
+  if (sndcountp) *sndcountp = count;
+  // prefer sounds from the same origin
+  return (oidlp >= 0 ? oidlp : lp);
+}
+
+
+//==========================================================================
+//
 //  VAudio::GetChannel
 //
 //  channel 0 is "CHAN_AUTO"
 //
+//  `priority` is adjusted according to the distance
+//  sounds with the higher priority will be replaced first
+//
+//  `origin_id` can be anything (including zero and negative numbers)
+//  zero means "unknown origin", negative means "local" (it is -666)
+//
 //==========================================================================
-int VAudio::GetChannel (int sound_id, int origin_id, int channel, int priority) {
-  const int maxcc = min2(snd_max_same_sounds.asInt(), 128);
-  // <0: unlimited; 0: default; >0: hard limit
-  const int numchannels = (maxcc >= 0 ? clampval(GSoundManager->S_sfx[sound_id].NumChannels, 0, (maxcc ? maxcc : 128)) : 0);
+int VAudio::GetChannel (int sound_id, int origin_id, int channel, const float priority) {
+  // just in case
+  if (sound_id < 1 || sound_id >= GSoundManager->S_sfx.length()) return -1; // invalid sound id
 
-  // first, look if we want to replace sound on some channel
-  if (channel != 0) {
+  const int maxcc = min2(snd_max_same_sounds.asInt(), 16);
+  // <0: unlimited; 0: default; >0: hard limit
+  const int numchannels = (maxcc >= 0 ? clampval(GSoundManager->S_sfx[sound_id].NumChannels, 0, (maxcc ? maxcc : 16)) : 0);
+
+  // first, look if we want to replace a sound on some channel
+  // sounds from unknown origin will never replace each other, though
+  if (channel != 0 && origin_id != 0) {
     FOR_EACH_CHANNEL(i) {
-      if (Channel[i].origin_id == origin_id && Channel[i].channel == channel) {
+      // `sound_id` is zero for unused channel (because sound with zero id is never used)
+      // this should not happen here, but...
+      if (Channel[i].sound_id && Channel[i].origin_id == origin_id && Channel[i].channel == channel) {
+        // this channel already playing some sound; replace it
         StopChannel(i);
         return i;
       }
     }
   }
 
-  if (numchannels > 0) {
-    int lp = -1; // least priority
-    int found = 0;
-    int prior = priority;
-    double lowesttime = HUGE_VAL;
+  // check for "singular" sounds
+  if (GSoundManager->S_sfx[sound_id].bSingular) {
     FOR_EACH_CHANNEL(i) {
       if (Channel[i].sound_id == sound_id) {
-        if (GSoundManager->S_sfx[sound_id].bSingular) {
-          // this sound is already playing, so don't start it again
-          return -1;
-        }
-        ++found; // found one; now, should we replace it?
-        if (prior > Channel[i].priority ||
-            (prior == Channel[i].priority && lowesttime > Channel[i].SysStartTime))
-        {
-          // if we're gonna kill one, then this will be it
-          lowesttime = (prior == Channel[i].priority ? Channel[i].SysStartTime : HUGE_VAL);
-          lp = i;
-          prior = Channel[i].priority;
-        }
+        // this sound is already playing, so don't start it again
+        return -1;
       }
     }
+  }
 
+  // if we have a defined maximum for simultaneously played sounds with this id, replace the "worst" one
+  // note that "singular" sounds will not end up here, so no need to check
+  // prefer sounds from the same origin (sounds from unknown origin will replace other sounds from unknown origin)
+  if (numchannels > 0) {
+    int found = 0;
+    const int lp = FindChannelToReplaceInternal(sound_id, origin_id, priority, &found);
+    // too many equal sounds? (prevent ear ripping ;-)
     if (found >= numchannels) {
-      if (lp == -1) {
-        // other sounds have greater priority
-        return -1; // don't replace any sounds
-      }
-      StopChannel(lp);
+      if (lp >= 0) StopChannel(lp);
       return lp;
     }
   }
@@ -770,26 +870,9 @@ int VAudio::GetChannel (int sound_id, int origin_id, int channel, int priority) 
   if (ChanUsed < NumChannels) return AllocChannel();
   if (NumChannels < 1) return -1;
 
-  // look for a lower priority sound to replace
-  int lowestlp = -1;
-  int lowestprio = priority;
-  FOR_EACH_CHANNEL(i) {
-    if (lowestprio > Channel[i].priority) {
-      lowestlp = i;
-      lowestprio = Channel[i].priority;
-    } else if (Channel[i].priority == lowestprio) {
-      if (lowestlp < 0 ||
-          (Channel[lowestlp].origin_id == Channel[i].origin_id &&
-           Channel[lowestlp].SysStartTime > Channel[i].SysStartTime))
-      {
-        lowestlp = i;
-      }
-    }
-  }
-  if (lowestlp < 0) return -1; // no free channels
-
-  // replace the lower priority sound
-  StopChannel(lowestlp);
+  // look for a lower priority sound to replace (with higher priority value)
+  const int lowestlp = FindChannelToReplaceInternal(0/*any sound id*/, origin_id, priority, nullptr/*counter is not interesting*/);
+  if (lowestlp >= 0) StopChannel(lowestlp);
   return lowestlp;
 }
 
@@ -814,10 +897,15 @@ void VAudio::StopChannel (int cidx) {
 //
 //  VAudio::StopSound
 //
+//  oid 0 means "all origin ids"
+//  channel 0 means "all channels for this origin id"
+//
 //==========================================================================
 void VAudio::StopSound (int origin_id, int channel) {
   FOR_EACH_CHANNEL(i) {
-    if (Channel[i].origin_id == origin_id && (!channel || Channel[i].channel == channel)) {
+    if ((origin_id <= 0 || Channel[i].origin_id == origin_id) &&
+        (!channel || Channel[i].channel == channel))
+    {
       StopChannel(i);
       DeallocChannel(i);
     }
@@ -1009,6 +1097,7 @@ void VAudio::UpdateSfx () {
 
   FOR_EACH_CHANNEL(i) {
     // active channel?
+    // this should not happen
     if (!Channel[i].sound_id) {
       vassert(Channel[i].handle == -1);
       DeallocChannel(i);
@@ -1028,7 +1117,7 @@ void VAudio::UpdateSfx () {
     }
 
     // full volume sound?
-    if (!Channel[i].origin_id || Channel[i].Attenuation <= 0) continue;
+    if (Channel[i].origin_id <= 0 || Channel[i].Attenuation <= 0.0f) continue;
 
     if (cl) {
       if (cl->MO && Channel[i].origin_id == cl->MO->SoundOriginID) {
@@ -1093,7 +1182,8 @@ void VAudio::UpdateSfx () {
 
     if (!cl) continue;
 
-    const int dist = (int)((Channel[i].origin-cl->ViewOrg).length()*Channel[i].Attenuation);
+    float dist = (Channel[i].origin-cl->ViewOrg).length()*Channel[i].Attenuation;
+    if (dist < 0.0f) dist = 0.0f; // just in case
     if (dist >= MaxSoundDist) {
       // too far away
       StopChannel(i);
@@ -1105,7 +1195,7 @@ void VAudio::UpdateSfx () {
 
     // update params
     if (Channel[i].is3D) SoundDevice->UpdateChannel3D(Channel[i].handle, Channel[i].origin, Channel[i].velocity);
-    Channel[i].priority = GSoundManager->S_sfx[Channel[i].sound_id].Priority*(PRIORITY_MAX_ADJUST-PRIORITY_MAX_ADJUST*dist/MaxSoundDist);
+    Channel[i].priority = CalcSoundPriority(Channel[i].sound_id, dist);
   }
 
   if (cl) {

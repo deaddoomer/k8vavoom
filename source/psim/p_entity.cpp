@@ -1055,7 +1055,7 @@ void VEntity::StartLocalSound (VName Sound, vint32 Channel, float Volume, float 
 //
 //==========================================================================
 void VEntity::StopSound (vint32 channel) {
-  Super::StopSound(SoundOriginID, channel);
+  if (SoundOriginID) Super::StopSound(SoundOriginID, channel);
 }
 
 

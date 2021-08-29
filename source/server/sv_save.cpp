@@ -2209,7 +2209,7 @@ void SV_MapTeleport (VName mapname, int flags, int newskill) {
       GLevel->RemoveThinker(vent);
       vent->UnlinkFromWorld();
       GLevel->DelSectorList();
-      vent->StopSound(0);
+      vent->StopSound(0); // stop all sounds
       //GCon->Logf(NAME_Debug, "SV_MapTeleport: saved player inventory item '%s'", vent->GetClass()->GetName());
       continue;
     }

@@ -701,11 +701,7 @@ private:
                    vint32 sound_id, vint32 channel, float volume, float Attenuation,
                    bool Loop, bool Local=false)
   {
-    for (int i = 0; i < MAXPLAYERS; ++i) {
-      if (!Level->Game->Players[i]) continue;
-      if (!(Level->Game->Players[i]->PlayerFlags&VBasePlayer::PF_Spawned)) continue;
-      Level->Game->Players[i]->eventClientStartSound(sound_id, origin, (Local ? -666 : origin_id), channel, volume, Attenuation, Loop);
-    }
+    Level->StartSound(origin, origin_id, sound_id, channel, volume, Attenuation, Loop, Local);
   }
 };
 

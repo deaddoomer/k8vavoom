@@ -138,7 +138,7 @@ void VLevelInfo::SectorStartSound (const sector_t *Sector, int SoundId,
 {
   if (Sector) {
     if (Sector->SectorFlags&sector_t::SF_Silent) return;
-    const int sid = (int)(ptrdiff_t)(Sector-XLevel->Sectors)+(org ? (SNDORG_SectorOrg<<24) : (SNDORG_Sector<<24));
+    const int oid = (int)(ptrdiff_t)(Sector-XLevel->Sectors)+(org ? (SNDORG_SectorOrg<<24) : (SNDORG_Sector<<24));
     TVec sorg = (org ? *org : Sector->soundorg);
     if (!org) {
       if (!Sector->isInnerPObj()) {
@@ -149,7 +149,8 @@ void VLevelInfo::SectorStartSound (const sector_t *Sector, int SoundId,
         sorg = Sector->ownpobj->startSpot;
       }
     }
-    StartSound(sorg, sid, SoundId, Channel, Volume, Attenuation, false);
+    if (Attenuation <= 0.0f) Attenuation = 1.0f; //WARNING! zero attenuation means "local sound"
+    StartSound(sorg, oid, SoundId, Channel, Volume, Attenuation, false);
   } else {
     StartSound((org ? *org : TVec(0.0f, 0.0f, 0.0f)), 0, SoundId, Channel, Volume, Attenuation, false);
   }
@@ -162,7 +163,7 @@ void VLevelInfo::SectorStartSound (const sector_t *Sector, int SoundId,
 //
 //==========================================================================
 void VLevelInfo::SectorStopSound (const sector_t *sector, int channel) {
-  if (sector) StopSound((int)(ptrdiff_t)(sector-XLevel->Sectors)+(SNDORG_Sector<<24), channel);
+  if (sector) StopSound((int)(ptrdiff_t)(sector-&XLevel->Sectors[0])+(SNDORG_Sector<<24), channel);
 }
 
 

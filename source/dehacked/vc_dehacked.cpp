@@ -951,9 +951,8 @@ static void ReadSound (int num) {
     }
 
     if (VStr::strEquCI(String, "Value")) {
-      // priority
       if (ignoreit) continue;
-      // singularity
+      // priority
       if (!GSoundManager) continue;
       const int sid = GSoundManager->GetSoundID(Sounds[num]);
       if (sid) {
