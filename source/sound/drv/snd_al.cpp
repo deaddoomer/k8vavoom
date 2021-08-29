@@ -254,7 +254,8 @@ bool VOpenALDevice::Init () {
 void VOpenALDevice::AddCurrentThread () {
   #ifdef VAVOOM_USE_MOJOAL
   // MojoAL doesn't have this
-  // do nothing here, this is used only by streaming player
+  // it is usually safe, because it is called only by the streaming player
+  alcMakeContextCurrent(Context);
   #else
   alcSetThreadContext(Context);
   #endif
@@ -731,11 +732,33 @@ bool VOpenALDevice::OpenStream (int Rate, int Bits, int Channels) {
   if (IsError("cannot generate source")) { StrmSource = 0; return false; }
   activeSourceSet.put(StrmSource, true);
   alSourcei(StrmSource, AL_SOURCE_RELATIVE, AL_TRUE);
+  memset((void *)StrmBuffers, 0, sizeof(StrmBuffers));
   alGenBuffers(NUM_STRM_BUFFERS, StrmBuffers);
+  #if 0
+  // this is required for MojoAL
+  for (unsigned f = 0; f < NUM_STRM_BUFFERS; ++f) {
+    vint16 data[2];
+    data[0] = data[1] = 0;
+    alBufferData(StrmBuffers[f], StrmFormat, data, 4, StrmSampleRate);
+  }
   alSourceQueueBuffers(StrmSource, NUM_STRM_BUFFERS, StrmBuffers);
   alSourcePlay(StrmSource);
   ClearError();
   StrmNumAvailableBuffers = 0;
+  #else
+  // don't queue any buffers, because why?
+  alSourceStop(StrmSource); // just in case
+  ClearError();
+  StrmNumAvailableBuffers = NUM_STRM_BUFFERS;
+  //ALint NumProc = -1; // just in case
+  //alGetSourcei(StrmSource, AL_BUFFERS_PROCESSED, &NumProc);
+  //fprintf(stderr, "OpenStream: NumProc=%d (%d); StrmNumAvailableBuffers=%d\n", NumProc, NUM_STRM_BUFFERS, StrmNumAvailableBuffers);
+  // all buffers are available
+  for (unsigned f = 0; f < NUM_STRM_BUFFERS; ++f) {
+    StrmAvailableBuffers[f] = StrmBuffers[f];
+    //fprintf(stderr, "  f=%u: %u\n", f, StrmBuffers[f]);
+  }
+  #endif
   return true;
 }
 
@@ -762,15 +785,25 @@ void VOpenALDevice::CloseStream () {
 //
 //==========================================================================
 int VOpenALDevice::GetStreamAvailable () {
-  if (!StrmSource) return 0;
-  ALint NumProc;
-  ClearError();
-  alGetSourcei(StrmSource, AL_BUFFERS_PROCESSED, &NumProc);
-  if (IsError("cannot get stream source info")) NumProc = 0;
-  if (NumProc > 0) {
-    alSourceUnqueueBuffers(StrmSource, NumProc, StrmAvailableBuffers+StrmNumAvailableBuffers);
+  if (!StrmSource) {
+    //fprintf(stderr, "NO STREAM SOURCE!\n");
+    return 0;
+  }
+  // check if we have any free buffers
+  if (StrmNumAvailableBuffers < NUM_STRM_BUFFERS) {
+    ALint NumProc = 0; // just in case
     ClearError();
-    StrmNumAvailableBuffers += NumProc;
+    alGetSourcei(StrmSource, AL_BUFFERS_PROCESSED, &NumProc);
+    if (IsError("cannot get stream source info")) NumProc = 0;
+    //fprintf(stderr, "000: NumProc=%d; StrmNumAvailableBuffers=%d\n", NumProc, StrmNumAvailableBuffers);
+    if (NumProc > 0) {
+      alSourceUnqueueBuffers(StrmSource, NumProc, StrmAvailableBuffers+StrmNumAvailableBuffers);
+      ClearError();
+      StrmNumAvailableBuffers += NumProc;
+      // just in case; this should not happen, but...
+      if (StrmNumAvailableBuffers > NUM_STRM_BUFFERS) StrmNumAvailableBuffers = NUM_STRM_BUFFERS;
+      //fprintf(stderr, "001: NumProc=%d; StrmNumAvailableBuffers=%d\n", NumProc, StrmNumAvailableBuffers);
+    }
   }
   return (StrmNumAvailableBuffers > 0 ? STRM_BUFFER_SIZE : 0);
 }
@@ -792,9 +825,13 @@ vint16 *VOpenALDevice::GetStreamBuffer () {
 //
 //==========================================================================
 void VOpenALDevice::SetStreamData (vint16 *Data, int Len) {
+  if (Len <= 0 || !Data) return;
+  if (!StrmSource) return;
+  if (StrmNumAvailableBuffers <= 0) __builtin_trap(); // the thing that should not be!
   ALint State;
-  ALuint Buf = StrmAvailableBuffers[StrmNumAvailableBuffers-1];
   --StrmNumAvailableBuffers;
+  ALuint Buf = StrmAvailableBuffers[StrmNumAvailableBuffers];
+  //fprintf(stderr, "SetStreamData: using buffer #%d/%d (%u)\n", StrmNumAvailableBuffers, NUM_STRM_BUFFERS-1, Buf);
   alBufferData(Buf, StrmFormat, Data, Len*4, StrmSampleRate);
   alSourceQueueBuffers(StrmSource, 1, &Buf);
   alGetSourcei(StrmSource, AL_SOURCE_STATE, &State);

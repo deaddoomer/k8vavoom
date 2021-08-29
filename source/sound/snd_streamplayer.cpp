@@ -28,6 +28,7 @@
 #include "snd_local.h"
 
 //#define VCCRUN_SOUND_THREAD_DEBUG
+//#define VCCRUN_SOUND_THREAD_DEBUG_TICKER
 
 #ifdef VCCRUN_SOUND_THREAD_DEBUG
 # define SDLOG(...)  GLog.WriteLine(__VA_ARGS__)
@@ -57,16 +58,23 @@ bool VStreamMusicPlayerWorker::doTick (VStreamMusicPlayer *strm) {
     // pause playback
     return false;
   }
-  //GCon->Logf(NAME_Debug, "doTick: decoding...");
+  #ifdef VCCRUN_SOUND_THREAD_DEBUG_TICKER
+  GLog.Logf(NAME_Debug, "doTick: decoding... (%d)", strm->SoundDevice->GetStreamAvailable());
+  #endif
+  int loopsAllowed = 42;
   const double stt = Sys_Time();
   for (int Len = strm->SoundDevice->GetStreamAvailable(); Len; Len = strm->SoundDevice->GetStreamAvailable()) {
     vint16 *Data = strm->SoundDevice->GetStreamBuffer();
     int StartPos = 0;
     int decodedFromLoop = 0, loopCount = 0;
     while (!strm->Stopping && StartPos < Len) {
-      //GCon->Logf(NAME_Debug, "doTick: trying to decode %d samples (len=%d, stpos=%d)", Len-StartPos, Len, StartPos);
+      #ifdef VCCRUN_SOUND_THREAD_DEBUG_TICKER
+      GLog.Logf(NAME_Debug, "doTick: trying to decode %d samples (len=%d, stpos=%d)", Len-StartPos, Len, StartPos);
+      #endif
       int SamplesDecoded = strm->Codec->Decode(Data+StartPos*2, Len-StartPos);
-      //GCon->Logf(NAME_Debug, "doTick: decoded %d samples", SamplesDecoded);
+      #ifdef VCCRUN_SOUND_THREAD_DEBUG_TICKER
+      GLog.Logf(NAME_Debug, "doTick: decoded %d samples", SamplesDecoded);
+      #endif
       if (SamplesDecoded < 0) SamplesDecoded = 0;
       StartPos += SamplesDecoded;
       decodedFromLoop += SamplesDecoded;
@@ -81,7 +89,7 @@ bool VStreamMusicPlayerWorker::doTick (VStreamMusicPlayer *strm) {
           ++loopCount;
           if (loopCount == 1) decodedFromLoop = 0;
           if (loopCount == 3 && decodedFromLoop < 256) {
-            GLog.WriteLine("Looped music stream is too short, aborting it");
+            GLog.Logf(NAME_Warning, "Looped music stream is too short, aborting it");
             VStreamMusicPlayer::DataLocker dlock(strm);
             strm->CurrLoop = false;
             strm->Stopping = true;
@@ -94,18 +102,25 @@ bool VStreamMusicPlayerWorker::doTick (VStreamMusicPlayer *strm) {
         }
       } else if (StartPos < Len) {
         // should never happen
-        GLog.WriteLine("Stream decoded less but is not finished.");
+        GLog.Logf(NAME_Warning, "Music stream decoded less but is not finished.");
         strm->Stopping = true;
         strm->FinishTime = Sys_Time();
       }
     }
-    //GCon->Logf(NAME_Debug, "doTick: setting data; len=%d; stpos=%d", Len, StartPos);
+    #ifdef VCCRUN_SOUND_THREAD_DEBUG_TICKER
+    GLog.Logf(NAME_Debug, "doTick: setting data; len=%d; stpos=%d", Len, StartPos);
+    #endif
     if (strm->Stopping && StartPos < Len) memset(Data+StartPos*2, 0, (Len-StartPos)*4);
     strm->SoundDevice->SetStreamData(Data, Len);
-    //GCon->Logf(NAME_Debug, "doTick: decoded; len=%d; stpos=%d; time=%g", Len, StartPos, Sys_Time()-stt);
+    #ifdef VCCRUN_SOUND_THREAD_DEBUG_TICKER
+    GLog.Logf(NAME_Debug, "doTick: decoded; len=%d; stpos=%d; time=%g", Len, StartPos, Sys_Time()-stt);
+    #endif
+    if (--loopsAllowed <= 0) break;
     if (Sys_Time()-stt > 0.5) break;
   }
-  //GCon->Logf(NAME_Debug, "doTick: DONE decoing...");
+  #ifdef VCCRUN_SOUND_THREAD_DEBUG_TICKER
+  GLog.Log(NAME_Debug, "doTick: DONE decoing...");
+  #endif
   return false;
 }
 

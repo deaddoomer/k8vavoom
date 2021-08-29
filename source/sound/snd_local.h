@@ -207,7 +207,7 @@ private:
   ALuint StrmAvailableBuffers[NUM_STRM_BUFFERS];
   int StrmNumAvailableBuffers;
   ALuint StrmSource;
-  vint16 StrmDataBuffer[STRM_BUFFER_SIZE*2];
+  vint16 StrmDataBuffer[STRM_BUFFER_SIZE*2]; // temp buffer we can use to decode data
 
   // if sound is queued to be loaded, we'll remember sound source here
   struct PendingSrc {
