@@ -191,7 +191,12 @@ void VThinker::StartSound (const TVec &origin, vint32 origin_id,
   for (int i = 0; i < MAXPLAYERS; ++i) {
     if (!Level->Game->Players[i]) continue;
     if (!(Level->Game->Players[i]->PlayerFlags&VBasePlayer::PF_Spawned)) continue;
-    Level->Game->Players[i]->eventClientStartSound(sound_id, origin, (Local ? -666 : origin_id), channel, volume, Attenuation, Loop);
+    bool isLocal = Local;
+    if (!isLocal && Level->Game->Players[i]->MO == this) {
+      //GCon->Logf(NAME_Debug, "starting sound with id %d as local for player #%d", sound_id, i);
+      isLocal = true;
+    }
+    Level->Game->Players[i]->eventClientStartSound(sound_id, origin, (isLocal ? -666 : origin_id), channel, volume, Attenuation, Loop);
   }
 }
 
