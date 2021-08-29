@@ -44,6 +44,9 @@
 
 #include "sound.h"
 
+// our velocities are almost always zero, so why?
+//#define VV_SND_ALLOW_VELOCITY
+
 
 enum ESSCmds {
   SSCMD_None,
@@ -221,13 +224,6 @@ private:
   TMapNC<ALuint, bool> activeSourceSet; // key is source id
 
 private:
-  static VCvarF doppler_factor;
-  static VCvarF doppler_velocity;
-  static VCvarF rolloff_factor;
-  static VCvarF reference_distance;
-  static VCvarF max_distance;
-
-private:
   static bool IsError (const char *errmsg, bool errabort=false);
   static void ClearError (); // reset error flag
 
@@ -236,6 +232,10 @@ private:
   // returns VSoundManager::LS_XXX
   // if not errored, sets `src` to new sound source
   int LoadSound (int sound_id, ALuint *src);
+
+private:
+  int CommonPlaySound (bool is3d, int sound_id, const TVec &origin, const TVec &velocity,
+                       float volume, float pitch, bool Loop);
 
 public:
   VOpenALDevice ();
@@ -250,7 +250,7 @@ public:
   void UpdateChannel3D (int Handle, const TVec &Org, const TVec &Vel);
   bool IsChannelPlaying (int Handle);
   void StopChannel (int Handle);
-  void UpdateListener (const TVec &org, const TVec &vel, const TVec &fwd, const TVec &, const TVec &up
+  void UpdateListener (const TVec &org, const TVec &vel, const TVec &fwd, const TVec &/*right*/, const TVec &up
 #if defined(VAVOOM_REVERB)
                       , VReverbInfo *Env
 #endif

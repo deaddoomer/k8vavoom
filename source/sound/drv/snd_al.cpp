@@ -28,18 +28,26 @@
 #include "../snd_local.h"
 
 
-VCvarF VOpenALDevice::doppler_factor("snd_doppler_factor", "1", "OpenAL doppler factor.", 0/*CVAR_Archive*/);
-VCvarF VOpenALDevice::doppler_velocity("snd_doppler_velocity", "10000", "OpenAL doppler velocity.", 0/*CVAR_Archive*/);
-VCvarF VOpenALDevice::rolloff_factor("snd_rolloff_factor", "1", "OpenAL rolloff factor.", 0/*CVAR_Archive*/);
-//VCvarF VOpenALDevice::reference_distance("snd_reference_distance", "64", "OpenAL reference distance.", CVAR_Archive);
-//VCvarF VOpenALDevice::max_distance("snd_max_distance", "2024", "OpenAL max distance.", CVAR_Archive);
-//VCvarF VOpenALDevice::reference_distance("snd_reference_distance", "384", "OpenAL reference distance.", 0/*CVAR_Archive*/);
-VCvarF VOpenALDevice::reference_distance("snd_reference_distance", "192", "OpenAL reference distance.", 0/*CVAR_Archive*/);
-//VCvarF VOpenALDevice::max_distance("snd_max_distance", "4096", "OpenAL max distance.", 0/*CVAR_Archive*/);
-VCvarF VOpenALDevice::max_distance("snd_max_distance", "8192", "OpenAL max distance.", 0/*CVAR_Archive*/);
+#ifdef VV_SND_ALLOW_VELOCITY
+static VCvarF snd_doppler_factor("snd_doppler_factor", "1", "OpenAL doppler factor.", 0/*CVAR_Archive*/);
+static VCvarF snd_doppler_velocity("snd_doppler_velocity", "10000", "OpenAL doppler velocity.", 0/*CVAR_Archive*/);
+#endif
+static VCvarF snd_rolloff_factor("snd_rolloff_factor", "1", "OpenAL rolloff factor.", 0/*CVAR_Archive*/);
+static VCvarF snd_reference_distance("snd_reference_distance", "192", "OpenAL reference distance.", 0/*CVAR_Archive*/); // was 384, and 64, and 192
+// it is 4096 in our main sound code; anything futher than this will be dropped
+static VCvarF snd_max_distance("snd_max_distance", "8192", "OpenAL max distance.", 0/*CVAR_Archive*/); // was 4096, and 2042, and 8192
 
 static VCvarB openal_show_extensions("openal_show_extensions", false, "Show available OpenAL extensions?", CVAR_Archive);
 
+// don't update if nothing was changed
+#ifdef VV_SND_ALLOW_VELOCITY
+static float prevDopplerFactor = -INFINITY;
+static float prevDopplerVelocity = -INFINITY;
+static TVec prevVelocity = TVec(-INFINITY, -INFINITY, -INFINITY);
+#endif
+static TVec prevPosition = TVec(-INFINITY, -INFINITY, -INFINITY);
+static TVec prevUp = TVec(-INFINITY, -INFINITY, -INFINITY);
+static TVec prevFwd = TVec(-INFINITY, -INFINITY, -INFINITY);
 
 const char *cli_AudioDeviceName = nullptr;
 
@@ -138,6 +146,15 @@ bool VOpenALDevice::Init () {
   StrmSource = 0;
   StrmNumAvailableBuffers = 0;
 
+#ifdef VV_SND_ALLOW_VELOCITY
+  prevDopplerFactor = -INFINITY;
+  prevDopplerVelocity = -INFINITY;
+  prevVelocity = TVec(-INFINITY, -INFINITY, -INFINITY);
+#endif
+  prevPosition = TVec(-INFINITY, -INFINITY, -INFINITY);
+  prevUp = TVec(-INFINITY, -INFINITY, -INFINITY);
+  prevFwd = TVec(-INFINITY, -INFINITY, -INFINITY);
+
   #if 0
   {
     const char *lst = alcGetString(NULL, ALC_DEFAULT_ALL_DEVICES_SPECIFIER);
@@ -212,9 +229,10 @@ bool VOpenALDevice::Init () {
   alcSetThreadContext(Context);
   #endif
 
-  #ifndef VAVOOM_USE_MOJOAL
-  // MojoAL doesn't have this
+  // this is default, but hey...
   alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
+  #ifndef VAVOOM_USE_MOJOAL
+  // MojoAL doesn't have this, but OpenAL-soft does
   alEnable(AL_SOURCE_DISTANCE_MODEL);
   #endif
 
@@ -255,7 +273,8 @@ void VOpenALDevice::AddCurrentThread () {
   #ifdef VAVOOM_USE_MOJOAL
   // MojoAL doesn't have this
   // it is usually safe, because it is called only by the streaming player
-  alcMakeContextCurrent(Context);
+  // and there is no need to do anything here anyway
+  //alcMakeContextCurrent(Context);
   #else
   alcSetThreadContext(Context);
   #endif
@@ -485,6 +504,42 @@ int VOpenALDevice::LoadSound (int sound_id, ALuint *src) {
 
 //==========================================================================
 //
+//  VOpenALDevice::CommonPlaySound
+//
+//  workhorse for `PlaySound()` and `PlaySound3D()`
+//
+//==========================================================================
+int VOpenALDevice::CommonPlaySound (bool is3d, int sound_id, const TVec &origin, const TVec &velocity,
+                                    float volume, float pitch, bool Loop)
+{
+  ALuint src;
+  (void)velocity;
+
+  int res = LoadSound(sound_id, &src);
+  if (res == VSoundManager::LS_Error) return -1;
+
+  alSourcef(src, AL_GAIN, volume);
+  alSourcei(src, AL_SOURCE_RELATIVE, (is3d ? AL_FALSE : AL_TRUE));
+  alSource3f(src, AL_POSITION, origin.x, origin.y, origin.z); // at the listener origin
+  #ifdef VV_SND_ALLOW_VELOCITY
+  alSource3f(src, AL_VELOCITY, velocity.x, velocity.y, velocity.z);
+  #endif
+  alSourcef(src, AL_ROLLOFF_FACTOR, snd_rolloff_factor);
+  alSourcef(src, AL_REFERENCE_DISTANCE, snd_reference_distance);
+  alSourcef(src, AL_MAX_DISTANCE, snd_max_distance);
+  alSourcef(src, AL_PITCH, pitch);
+  alSourcei(src, AL_LOOPING, (Loop ? AL_TRUE : AL_FALSE));
+  if (res == VSoundManager::LS_Ready) {
+    alSourcei(src, AL_BUFFER, Buffers[sound_id]);
+    alSourcePlay(src);
+  }
+  ClearError();
+  return src;
+}
+
+
+//==========================================================================
+//
 //  VOpenALDevice::PlaySound
 //
 //  This function adds a sound to the list of currently active sounds, which
@@ -492,26 +547,9 @@ int VOpenALDevice::LoadSound (int sound_id, ALuint *src) {
 //
 //==========================================================================
 int VOpenALDevice::PlaySound (int sound_id, float volume, float pitch, bool Loop) {
-  ALuint src;
-
-  int res = LoadSound(sound_id, &src);
-  if (res == VSoundManager::LS_Error) return -1;
-
-  alSourcef(src, AL_GAIN, volume);
-  alSourcef(src, AL_ROLLOFF_FACTOR, rolloff_factor);
-  alSourcei(src, AL_SOURCE_RELATIVE, AL_TRUE);
+  //k8: it seems that i was trying to put the sound slightly at the back; but hey, direction vectors!
   //alSource3f(src, AL_POSITION, 0.0f, 0.0f, -16.0f); //k8: really? wtf?!
-  alSource3f(src, AL_POSITION, 0.0f, 0.0f, 0.0f); // at the listener origin
-  alSourcef(src, AL_REFERENCE_DISTANCE, reference_distance);
-  alSourcef(src, AL_MAX_DISTANCE, max_distance);
-  alSourcef(src, AL_PITCH, pitch);
-  if (Loop) alSourcei(src, AL_LOOPING, AL_TRUE);
-  if (res == VSoundManager::LS_Ready) {
-    alSourcei(src, AL_BUFFER, Buffers[sound_id]);
-    alSourcePlay(src);
-  }
-  ClearError();
-  return src;
+  return CommonPlaySound(false, sound_id, TVec::ZeroVector, TVec::ZeroVector, volume, pitch, Loop);
 }
 
 
@@ -523,26 +561,7 @@ int VOpenALDevice::PlaySound (int sound_id, float volume, float pitch, bool Loop
 int VOpenALDevice::PlaySound3D (int sound_id, const TVec &origin, const TVec &velocity,
                                 float volume, float pitch, bool Loop)
 {
-  ALuint src;
-
-  int res = LoadSound(sound_id, &src);
-  if (res == VSoundManager::LS_Error) return -1;
-
-  alSourcef(src, AL_GAIN, volume);
-  alSourcef(src, AL_ROLLOFF_FACTOR, rolloff_factor);
-  alSourcei(src, AL_SOURCE_RELATIVE, AL_FALSE); // just in case
-  alSource3f(src, AL_POSITION, origin.x, origin.y, origin.z);
-  alSource3f(src, AL_VELOCITY, velocity.x, velocity.y, velocity.z);
-  alSourcef(src, AL_REFERENCE_DISTANCE, reference_distance);
-  alSourcef(src, AL_MAX_DISTANCE, max_distance);
-  alSourcef(src, AL_PITCH, pitch);
-  if (Loop) alSourcei(src, AL_LOOPING, AL_TRUE);
-  if (res == VSoundManager::LS_Ready) {
-    alSourcei(src, AL_BUFFER, Buffers[sound_id]);
-    alSourcePlay(src);
-  }
-  ClearError();
-  return src;
+  return CommonPlaySound(true, sound_id, origin, velocity, volume, pitch, Loop);
 }
 
 
@@ -552,9 +571,12 @@ int VOpenALDevice::PlaySound3D (int sound_id, const TVec &origin, const TVec &ve
 //
 //==========================================================================
 void VOpenALDevice::UpdateChannel3D (int Handle, const TVec &Org, const TVec &Vel) {
+  (void)Vel;
   if (Handle == -1) return;
   alSource3f(Handle, AL_POSITION, Org.x, Org.y, Org.z);
+  #ifdef VV_SND_ALLOW_VELOCITY
   alSource3f(Handle, AL_VELOCITY, Vel.x, Vel.y, Vel.z);
+  #endif
   ClearError();
 }
 
@@ -634,20 +656,42 @@ void VOpenALDevice::StopChannel (int Handle) {
 //
 //==========================================================================
 void VOpenALDevice::UpdateListener (const TVec &org, const TVec &vel,
-                                    const TVec &fwd, const TVec &, const TVec &up
+                                    const TVec &fwd, const TVec &/*right*/, const TVec &up
 #if defined(VAVOOM_REVERB)
                                     , VReverbInfo *Env
 #endif
 )
 {
-  alListener3f(AL_POSITION, org.x, org.y, org.z);
-  alListener3f(AL_VELOCITY, vel.x, vel.y, vel.z);
+  (void)vel;
 
-  ALfloat orient[6] = { fwd.x, fwd.y, fwd.z, up.x, up.y, up.z};
-  alListenerfv(AL_ORIENTATION, orient);
+  if (prevPosition != org) {
+    prevPosition = org;
+    alListener3f(AL_POSITION, org.x, org.y, org.z);
+  }
 
-  alDopplerFactor(doppler_factor);
-  alDopplerVelocity(doppler_velocity);
+  if (prevUp != up || prevFwd != fwd) {
+    prevUp = up;
+    prevFwd = fwd;
+    ALfloat orient[6] = { fwd.x, fwd.y, fwd.z, up.x, up.y, up.z};
+    alListenerfv(AL_ORIENTATION, orient);
+  }
+
+#ifdef VV_SND_ALLOW_VELOCITY
+  if (prevVelocity != vel) {
+    prevVelocity = vel;
+    alListener3f(AL_VELOCITY, vel.x, vel.y, vel.z);
+  }
+
+  if (prevDopplerFactor != snd_doppler_factor.asFloat()) {
+    prevDopplerFactor = snd_doppler_factor.asFloat();
+    alDopplerFactor(prevDopplerFactor);
+  }
+
+  if (prevDopplerVelocity != snd_doppler_velocity.asFloat()) {
+    prevDopplerVelocity = snd_doppler_velocity.asFloat();
+    alDopplerVelocity(prevDopplerVelocity);
+  }
+#endif
 
   ClearError();
 }

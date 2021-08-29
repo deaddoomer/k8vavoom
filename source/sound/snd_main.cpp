@@ -138,7 +138,11 @@ private:
     int origin_id; // <=0: full-volume local sound
     int channel;
     TVec origin;
-    TVec velocity;
+    TVec prevOrigin; // do not update source when it isn't moving
+#ifdef VV_SND_ALLOW_VELOCITY
+    TVec velocity; // unused
+    TVec prevVelocity; // do not update source when it isn't moving
+#endif
     int sound_id;
     float priority; // the higher priority is worser; this is dynamically adjusted using base sound priority and distance from the listener
     float volume;
@@ -717,7 +721,11 @@ void VAudio::PlaySound (int InSoundId, const TVec &origin, const TVec &velocity,
   Channel[chan].origin_id = origin_id;
   Channel[chan].channel = channel;
   Channel[chan].origin = origin;
+  Channel[chan].prevOrigin = origin;
+#ifdef VV_SND_ALLOW_VELOCITY
   Channel[chan].velocity = velocity;
+  Channel[chan].prevVelocity = velocity;
+#endif
   Channel[chan].sound_id = sound_id;
   Channel[chan].priority = priority;
   Channel[chan].volume = volume;
@@ -1123,7 +1131,9 @@ void VAudio::UpdateSfx () {
       if (cl->MO && Channel[i].origin_id == cl->MO->SoundOriginID) {
         //GCon->Logf(NAME_Debug, "channel #%d (%d), origin=(%g,%g,%g); new origin=(%g,%g,%g)", i, Channel[i].origin_id, Channel[i].origin.x, Channel[i].origin.y, Channel[i].origin.z, cl->MO->Origin.x, cl->MO->Origin.y, cl->MO->Origin.z);
         Channel[i].origin = cl->MO->Origin;
+        #ifdef VV_SND_ALLOW_VELOCITY
         Channel[i].velocity = TVec(0.0f, 0.0f, 0.0f);
+        #endif
       } else if (!Channel[i].LocalPlayerSound) {
         VLevel *Level = (GClLevel ? GClLevel : GLevel);
         if (Level) {
@@ -1135,9 +1145,11 @@ void VAudio::UpdateSfx () {
                 VEntity *ent = Level->FindEntityBySoundID(Channel[i].origin_id&0x00ffffff);
                 if (ent) {
                   Channel[i].origin = ent->Origin;
+                  #ifdef VV_SND_ALLOW_VELOCITY
                   Channel[i].velocity = ent->Velocity;
                   // this will be re-added later
                   Channel[i].origin -= Channel[i].velocity*host_frametime;
+                  #endif
                 }
               }
               break;
@@ -1153,7 +1165,9 @@ void VAudio::UpdateSfx () {
                     // 3d pobj
                     Channel[i].origin = sec->ownpobj->startSpot;
                   }
+                  #ifdef VV_SND_ALLOW_VELOCITY
                   Channel[i].velocity = TVec(0.0f, 0.0f, 0.0f);
+                  #endif
                 }
               }
               break;
@@ -1165,7 +1179,9 @@ void VAudio::UpdateSfx () {
                 // moving their sound origin won't do anything good
                 if (pobj && pobj->Is3D()) {
                   Channel[i].origin = pobj->startSpot;
+                  #ifdef VV_SND_ALLOW_VELOCITY
                   Channel[i].velocity = TVec(0.0f, 0.0f, 0.0f);
+                  #endif
                 }
               }
               break;
@@ -1178,7 +1194,9 @@ void VAudio::UpdateSfx () {
     if (Channel[i].LocalPlayerSound) continue;
 
     // move sound
+    #ifdef VV_SND_ALLOW_VELOCITY
     Channel[i].origin += Channel[i].velocity*host_frametime;
+    #endif
 
     if (!cl) continue;
 
@@ -1194,12 +1212,31 @@ void VAudio::UpdateSfx () {
     //GCon->Logf(NAME_Debug, "channel #%d (%d), origin=(%g,%g,%g); dist=%d", i, Channel[i].origin_id, Channel[i].origin.x, Channel[i].origin.y, Channel[i].origin.z, dist);
 
     // update params
-    if (Channel[i].is3D) SoundDevice->UpdateChannel3D(Channel[i].handle, Channel[i].origin, Channel[i].velocity);
+    if (Channel[i].is3D) {
+      if (Channel[i].prevOrigin != Channel[i].origin
+          #ifdef VV_SND_ALLOW_VELOCITY
+          || Channel[i].prevVelocity != Channel[i].velocity
+          #endif
+         )
+      {
+        Channel[i].prevOrigin = Channel[i].origin;
+        #ifdef VV_SND_ALLOW_VELOCITY
+        Channel[i].prevVelocity = Channel[i].velocity;
+        #endif
+        SoundDevice->UpdateChannel3D(Channel[i].handle, Channel[i].origin
+          #ifdef VV_SND_ALLOW_VELOCITY
+          , Channel[i].velocity
+          #else
+          , TVec(0.0f, 0.0f, 0.0f)
+          #endif
+        );
+      }
+    }
     Channel[i].priority = CalcSoundPriority(Channel[i].sound_id, dist);
   }
 
   if (cl) {
-    SoundDevice->UpdateListener(cl->ViewOrg, TVec(0, 0, 0),
+    SoundDevice->UpdateListener(cl->ViewOrg, TVec(0.0f, 0.0f, 0.0f),
       ListenerForward, ListenerRight, ListenerUp
 #if defined(VAVOOM_REVERB)
       , GSoundManager->FindEnvironment(cl->SoundEnvironment)
