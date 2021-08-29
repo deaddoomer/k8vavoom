@@ -81,6 +81,18 @@ static inline vuint32 MakeChunkIdStr (const char str[4]) noexcept {
 
 //==========================================================================
 //
+//  isGoodChunkChar
+//
+//==========================================================================
+static inline bool isGoodChunkChar (char ch) noexcept {
+  return
+    (ch >= 'A' && ch <= 'Z') ||
+    (ch >= 'a' && ch <= 'z');
+}
+
+
+//==========================================================================
+//
 //  M_CreateChunkId
 //
 //==========================================================================
@@ -88,10 +100,25 @@ vuint32 M_CreateChunkId (const char sign[4]) {
   if (!sign) return 0u;
   // check for validity
   for (unsigned f = 0; f < 4; ++f) {
-    vuint8 c = (vuint8)sign[f];
-    if (!(c >= 'A' && c <= 'Z') && !(c >= 'a' && c <= 'z')) return 0u;
+    if (!isGoodChunkChar(sign[f])) return 0u;
   }
   return MakeChunkIdStr(sign);
+}
+
+
+//==========================================================================
+//
+//  isGoodChunkId
+//
+//==========================================================================
+static bool isGoodChunkId (vuint32 id) noexcept {
+  if (!id) return false;
+  for (unsigned f = 0; f < 4; ++f) {
+    vuint8 ch = id&0xff;
+    id >>= 8;
+    if (!isGoodChunkChar(ch)) return false;
+  }
+  return true;
 }
 
 
@@ -238,9 +265,9 @@ PalEntry PNGHandle::getPixel (int x, int y, bool keepTransparent) const {
 //==========================================================================
 static inline void MakeChunk (void *where, vuint32 type, size_t len) {
   vuint8 *data = (vuint8 *)where;
-  *(vuint32 *)(data-8) = BigLong((unsigned)len);
+  *(vuint32 *)(data-8) = BigULong((unsigned)len);
   *(vuint32 *)(data-4) = type;
-  *(vuint32 *)(data+len) = BigLong((unsigned)CalcCRC32(data-4, (unsigned)(len+4)));
+  *(vuint32 *)(data+len) = BigULong((unsigned)CalcCRC32(data-4, (unsigned)(len+4)));
 }
 
 
@@ -358,7 +385,7 @@ bool M_FinishPNG (VStream *file) {
 //
 //==========================================================================
 bool M_AppendPNGChunk (VStream *file, vuint32 chunkID, const vuint8 *chunkData, vuint32 len) {
-  vuint32 head[2] = { (vuint32)BigLong((vuint32)len), chunkID };
+  vuint32 head[2] = { (vuint32)BigULong((vuint32)len), chunkID };
   vuint32 crc;
 
   file->Serialise(head, 8);
@@ -369,7 +396,7 @@ bool M_AppendPNGChunk (VStream *file, vuint32 chunkID, const vuint8 *chunkData, 
   }
   crc = CalcCRC32((vuint8 *)&head[1], 4);
   if (len != 0) crc = AddCRC32(crc, chunkData, len);
-  crc = BigLong((unsigned)crc);
+  crc = BigULong((unsigned)crc);
   file->Serialise(&crc, 4);
   return !file->IsError();
 }
@@ -389,7 +416,7 @@ bool M_AppendPNGText (VStream *file, const char *keyword, const char *text) {
   if (keylen > 79) keylen = 79;
   vuint32 crc;
 
-  head.len = BigLong(len+keylen+1);
+  head.len = BigULong(len+keylen+1);
   head.id = MakeChunkIdStr("tEXt");
   memset (&head.key, 0, sizeof(head.key));
   //strncpy (head.key, keyword, keylen);
@@ -406,7 +433,7 @@ bool M_AppendPNGText (VStream *file, const char *keyword, const char *text) {
 
   crc = CalcCRC32((vuint8 *)&head+4, keylen+5);
   if (len != 0) crc = AddCRC32(crc, (vuint8 *)text, len);
-  crc = BigLong(crc);
+  crc = BigULong(crc);
   file->Serialise(&crc, 4);
   return !file->IsError();
 }
@@ -597,8 +624,11 @@ PNGHandle *M_VerifyPNG (VStream *filer) {
   if (filer->IsError()) return nullptr;
   if (data[0] != MakeChunkId(137,'P','N','G') || data[1] != MakeChunkId(13,10,26,10)) return nullptr; // does not have PNG signature
   filer->Serialise(&data, 8);
+  const int ihdrofs = filer->Tell();
   if (filer->IsError()) return nullptr;
   if (data[1] != MakeChunkIdStr("IHDR")) return nullptr; // IHDR must be the first chunk
+  const vuint32 ihdrsize = BigULong(data[0]);
+  if (ihdrsize < 13 || ihdrsize > 1024) return nullptr;
 
   // the PNG looks valid so far
   // check the IHDR to make sure it's a type of PNG we support
@@ -606,11 +636,11 @@ PNGHandle *M_VerifyPNG (VStream *filer) {
 
   // read width
   if (!readI32BE(filer, &width)) return nullptr;
-  if (width < 1) return nullptr;
+  if (width < 1 || width > 8192) return nullptr;
 
   // read height
   if (!readI32BE(filer, &height)) return nullptr;
-  if (height < 1) return nullptr;
+  if (height < 1 || height > 8192) return nullptr;
 
   // it looks like a PNG so far, so start creating a PNGHandle for it
   png = new PNGHandle(filer);
@@ -644,10 +674,10 @@ PNGHandle *M_VerifyPNG (VStream *filer) {
   png->hasTrans = false;
 
   chunk.ID = data[1];
-  chunk.Offset = 16;
-  chunk.Size = BigLong((unsigned)data[0]);
+  chunk.Offset = ihdrofs;
+  chunk.Size = BigULong(data[0]);
   png->Chunks.Append(chunk);
-  png->File->Seek(16);
+  png->File->Seek(ihdrofs);
 
   switch (png->colortype) {
     case PNGHandle::ColorGrayscale: png->xmul = 1; break;
@@ -658,35 +688,48 @@ PNGHandle *M_VerifyPNG (VStream *filer) {
     default: delete png; return nullptr;
   }
 
+  const int fsize = png->File->TotalSize();
+  //GLog.Logf(NAME_Debug, "%s: ihdrofs=%d; ihdrsize=%u; totalsize=%d", *png->File->GetName(), ihdrofs, ihdrsize, fsize);
   for (;;) {
-    if (png->File->TotalSize()-png->File->Tell() <= (int)chunk.Size+4) break;
-    png->File->Seek(png->File->Tell()+chunk.Size+4);
-    //if (png->File->AtEnd()) break;
-    if (png->File->TotalSize()-png->File->Tell() < 12) break;
+    // skip last processed chunk
+    const int fpos = png->File->Tell();
+    const int fleft = fsize-fpos;
+    if (fleft <= (int)chunk.Size+4) break;
+    png->File->Seek(fpos+(int)chunk.Size+4);
+    if (fsize-png->File->Tell() < 12) break;
 
     // if the file ended before an IEND was encountered, it's not a PNG
     png->File->Serialise(&data, 8);
     if (png->File->IsError()) break;
+
+    //GLog.Logf(NAME_Debug, "%s:   chunk: '%c%c%c%c'; size=%u (sawIDAT=%d)", *png->File->GetName(), (char)(data[1]&0xff), (char)((data[1]>>8)&0xff), (char)((data[1]>>16)&0xff), (char)((data[1]>>24)&0xff), BigULong(data[0]), (int)sawIDAT);
+    if (!isGoodChunkId(data[1])) break;
+    if (BigULong(data[0]) > 0x0fffffffu) break;
+
+    chunk.ID = data[1];
+    chunk.Offset = (vuint32)png->File->Tell();
+    chunk.Size = BigULong((unsigned)data[0]);
+
     // an IEND chunk terminates the PNG and must be empty
     if (data[1] == MakeChunkIdStr("IEND")) {
       if (data[0] == 0 && sawIDAT) return png;
       break;
     }
-    // a PNG must include an IDAT chunk
-    if (data[1] == MakeChunkIdStr("IDAT")) sawIDAT = true;
-    chunk.ID = data[1];
-    chunk.Offset = (vuint32)png->File->Tell();
-    chunk.Size = BigLong((unsigned)data[0]);
-    png->Chunks.Append(chunk);
 
+    // a PNG must include an IDAT chunk
+    if (!sawIDAT && data[1] == MakeChunkIdStr("IDAT")) sawIDAT = true;
+
+    // palette
     if (data[1] == MakeChunkIdStr("PLTE")) {
       if (chunk.Size%3 != 0) break; // invalid chunk
       if (chunk.Size > 768) break; // invalid chunk
       png->File->Serialise(png->pal, (int)chunk.Size);
       if (png->File->IsError()) break;
       chunk.Size = 0; // don't try to seek past its contents again
+      continue;
     }
 
+    // transparency
     if (data[1] == MakeChunkIdStr("tRNS")) {
       vuint16 v;
       bool error = false;
@@ -724,6 +767,7 @@ PNGHandle *M_VerifyPNG (VStream *filer) {
           break;
       }
       if (error) break;
+      continue;
     }
 
     if (data[1] == MakeChunkIdStr("iDOT")) {
@@ -745,11 +789,14 @@ PNGHandle *M_VerifyPNG (VStream *filer) {
       str[chunk.Size] = 0;
       png->TextChunks.Append(str);
       chunk.Size = 0; // don't try to seek past its contents again
+      continue;
     }
 #endif
+
+    // all other chunks will be remembered
+    png->Chunks.Append(chunk);
   }
 
-  //filer = std::move(png->File); // need to get the reader back if this function failed.
   delete png;
   return nullptr;
 }
@@ -1137,7 +1184,7 @@ bool M_ReadIDAT (VStream &file, vuint8 *buffer, int width, int height, int pitch
       file.Serialise(x, 12);
            if (file.IsError()) lastIDAT = true;
       else if (x[2] != MakeChunkIdStr("IDAT")) lastIDAT = true;
-      else chunklen = BigLong((unsigned)x[1]);
+      else chunklen = BigULong((unsigned)x[1]);
     }
   }
 
@@ -1165,10 +1212,10 @@ bool M_ReadIDAT (VStream &file, vuint8 *buffer, int width, int height, int pitch
 static bool WriteIDAT (VStream *file, const vuint8 *data, int len) {
   vuint32 foo[2], crc;
 
-  foo[0] = BigLong(len);
+  foo[0] = BigULong(len);
   foo[1] = MakeChunkIdStr("IDAT");
   crc = CalcCRC32((vuint8 *)&foo[1], 4);
-  crc = BigLong((unsigned)AddCRC32(crc, data, len));
+  crc = BigULong((unsigned)AddCRC32(crc, data, len));
 
   file->Serialise(foo, 8);
   if (file->IsError()) return false;
@@ -1287,7 +1334,7 @@ bool M_SaveBitmap (const vuint8 *from, ESSType color_type, int width, int height
   foo[0] = 0;
   foo[1] = MakeChunkIdStr("IEND");
   crc = CalcCRC32((vuint8 *)&foo[1], 4);
-  crc = BigLong(crc);
+  crc = BigULong(crc);
 
   file->Serialise(foo, 8);
   if (file->IsError()) { delete [] temprow; return false; }
