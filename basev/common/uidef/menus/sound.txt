@@ -90,9 +90,9 @@ menudef SoundOptions {
   option numeric {
     title = "Sound Channels";
     cvar = snd_channels;
-    step = 8;
+    step = 2;
     min = 8;
-    max = 248;
+    max = 64;
   }
 
   option numeric {
@@ -100,7 +100,7 @@ menudef SoundOptions {
     cvar = snd_max_same_sounds;
     step = 1;
     min = -1;
-    max = 128;
+    max = 16;
     help =
       "Maxumum number of same sound, playing simultaneously."
       "This is used to prevent ear-ripping when alot of monsters of"
@@ -142,8 +142,7 @@ menudef SoundOptions {
     step = 0.1;
     min = 0;
     max = 4;
-    help =
-      "This will amplify random pitching (0 will disable it completely).";
+    help = "This will amplify random pitching (0 will disable it completely).";
   }
 
 
@@ -152,17 +151,13 @@ menudef SoundOptions {
   option bool {
     title = "Load Music In Background";
     cvar = snd_bgloading_music;
-    help =
-      "Load music in background thread? This may reduce stuttering.",
-      "\c[WHITE]WARNING! This option is experimental, and may crash the engine!";
+    help = "Load music in background thread? This may reduce stuttering.";
   }
 
   option bool {
     title = "Load Sounds In Background";
     cvar = snd_bgloading_sfx;
-    help =
-      "Load sound in background thread? This may reduce stuttering.",
-      "\c[WHITE]WARNING! This option is experimental, and may crash the engine!";
+    help = "Load sound in background thread? This may reduce stuttering.";
   }
 
 
