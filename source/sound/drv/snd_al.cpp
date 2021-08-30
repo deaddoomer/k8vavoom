@@ -235,11 +235,16 @@ bool VOpenALDevice::Init () {
 
   // this is default, but hey...
   alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
+
+  //k8: this is for using source's `AL_DISTANCE_MODEL` property
+  //    we don't need it at all, our distance model is global
+  /*
   // MojoAL doesn't have this
   // there is `alEnable()` in MojoAL, but it does nothing, and returns enum error (it is permitted)
   #if defined(AL_EXT_source_distance_model) && AL_EXT_source_distance_model
   alEnable(AL_SOURCE_DISTANCE_MODEL);
   #endif
+  */
 
   // clear error code
   ClearError();
