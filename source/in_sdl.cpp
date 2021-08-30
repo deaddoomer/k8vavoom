@@ -380,26 +380,30 @@ VSdlInputDevice::~VSdlInputDevice () {
 //
 //==========================================================================
 void VSdlInputDevice::OwnMouse () {
-  currDoGrab = m_grab.asBool();
-  if (currDoGrab) {
-    if (SDL_CaptureMouse(SDL_TRUE) != 0) {
-      GCon->Log(NAME_Debug, "SDL: cannot capture mouse.");
-    } else {
-      #ifdef SDL_MOUSE_CAPTURE_DEBUG
-      GCon->Log(NAME_Debug, "SDL: mouse captured.");
-      #endif
+  if (Drawer) {
+    currDoGrab = m_grab.asBool();
+    if (currDoGrab) {
+      if (SDL_CaptureMouse(SDL_TRUE) != 0) {
+        #ifdef SDL_MOUSE_CAPTURE_DEBUG
+        GCon->Log(NAME_Debug, "SDL: cannot capture mouse.");
+        #endif
+      } else {
+        #ifdef SDL_MOUSE_CAPTURE_DEBUG
+        GCon->Log(NAME_Debug, "SDL: mouse captured.");
+        #endif
+      }
     }
-  }
-  currRelative = (!relativeFailed && m_relative.asBool());
-  if (currRelative) {
-    if (SDL_SetRelativeMouseMode(SDL_TRUE) != 0) {
-      GCon->Log(NAME_Warning, "SDL: cannot switch mouse to relative mode.");
-      currRelative = false;
-      relativeFailed = true;
-    } else {
-      #ifdef SDL_MOUSE_CAPTURE_DEBUG
-      GCon->Log(NAME_Debug, "SDL: switched mouse to relative mode.");
-      #endif
+    currRelative = (!relativeFailed && m_relative.asBool());
+    if (currRelative) {
+      if (SDL_SetRelativeMouseMode(SDL_TRUE) != 0) {
+        GCon->Log(NAME_Warning, "SDL: cannot switch mouse to relative mode.");
+        currRelative = false;
+        relativeFailed = true;
+      } else {
+        #ifdef SDL_MOUSE_CAPTURE_DEBUG
+        GCon->Log(NAME_Debug, "SDL: switched mouse to relative mode.");
+        #endif
+      }
     }
   }
   // we don't need relative mouse motion in non-relative mode
