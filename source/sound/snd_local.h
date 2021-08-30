@@ -27,7 +27,7 @@
 #define VAVOOM_S_LOCAL_HEADER
 
 #ifdef CLIENT
-# define AL_ALEXT_PROTOTYPES
+/*# define AL_ALEXT_PROTOTYPES*/
 # ifdef VAVOOM_USE_MOJOAL
 #  include "mojoal/AL/al.h"
 #  include "mojoal/AL/alc.h"
@@ -188,12 +188,15 @@ struct VReverbInfo {
 
 
 #ifdef CLIENT
+typedef ALCboolean (ALC_APIENTRY *alcSetThreadContextFn) (ALCcontext *context);
+typedef ALCcontext *(ALC_APIENTRY *alcGetThreadContextFn) (void);
+
 // sound device interface
 // this class implements the only supported OpenAL Soft driver
 class VOpenALDevice {
 private:
   //enum { MAX_VOICES = 256-4 };
-  enum { MAX_VOICES = 130 };
+  enum { MAX_VOICES = 64+2 };
 
   enum { NUM_STRM_BUFFERS = 8*2 };
   enum { STRM_BUFFER_SIZE = 1024*8 };
@@ -203,6 +206,10 @@ private:
   ALuint *Buffers;
   vint32 BufferCount;
   vint32 RealMaxVoices;
+
+  bool HasTreadContext;
+  alcSetThreadContextFn p_alcSetThreadContext;
+  alcGetThreadContextFn p_alcGetThreadContext;
 
   ALuint StrmSampleRate;
   ALuint StrmFormat;

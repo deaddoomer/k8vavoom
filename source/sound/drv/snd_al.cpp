@@ -86,6 +86,8 @@ VOpenALDevice::VOpenALDevice ()
   , Context(nullptr)
   , Buffers(nullptr)
   , BufferCount(0)
+  , RealMaxVoices(0)
+  , HasTreadContext(0)
   , StrmSampleRate(0)
   , StrmFormat(0)
   , StrmNumAvailableBuffers(0)
@@ -146,11 +148,11 @@ bool VOpenALDevice::Init () {
   StrmSource = 0;
   StrmNumAvailableBuffers = 0;
 
-#ifdef VV_SND_ALLOW_VELOCITY
+  #ifdef VV_SND_ALLOW_VELOCITY
   prevDopplerFactor = -INFINITY;
   prevDopplerVelocity = -INFINITY;
   prevVelocity = TVec(-INFINITY, -INFINITY, -INFINITY);
-#endif
+  #endif
   prevPosition = TVec(-INFINITY, -INFINITY, -INFINITY);
   prevUp = TVec(-INFINITY, -INFINITY, -INFINITY);
   prevFwd = TVec(-INFINITY, -INFINITY, -INFINITY);
@@ -180,13 +182,18 @@ bool VOpenALDevice::Init () {
 
   if (cli_AudioDeviceName) GCon->Logf(NAME_Init, "opened OpenAL device '%s'", cli_AudioDeviceName);
 
-  #ifndef VAVOOM_USE_MOJOAL
+  HasTreadContext = false;
+  p_alcSetThreadContext = nullptr;
+  p_alcGetThreadContext = nullptr;
   // MojoAL doesn't have this
-  if (!alcIsExtensionPresent(Device, "ALC_EXT_thread_local_context")) {
-    Sys_Error("OpenAL: 'ALC_EXT_thread_local_context' extension is not present.\n"
-              "Please, use OpenAL Soft implementation, and make sure that it is recent.");
+  if (alcIsExtensionPresent(Device, "ALC_EXT_thread_local_context")) {
+    p_alcSetThreadContext = (alcSetThreadContextFn)alcGetProcAddress(Device, "alcSetThreadContext");
+    p_alcGetThreadContext = (alcGetThreadContextFn)alcGetProcAddress(Device, "alcGetThreadContext");
+    if (p_alcSetThreadContext && p_alcGetThreadContext) {
+      HasTreadContext = true;
+      GCon->Logf(NAME_Init, "OpenAL: found 'ALC_EXT_thread_local_context'");
+    }
   }
-  #endif
 
   RealMaxVoices = (vint32)MAX_VOICES;
   Context = nullptr;
@@ -218,21 +225,19 @@ bool VOpenALDevice::Init () {
   if (!Context) Sys_Error("Failed to create OpenAL context");
   GCon->Logf(NAME_Init, "OpenAL: created context with %d max voices", RealMaxVoices);
 
-  #ifdef VAVOOM_USE_MOJOAL
-  // MojoAL doesn't have this
-  alcMakeContextCurrent(Context);
-  {
+  if (HasTreadContext) {
+    p_alcSetThreadContext(Context);
+  } else {
+    alcMakeContextCurrent(Context);
     ALenum E = alGetError();
     if (E != AL_NO_ERROR) Sys_Error("OpenAL error (setting thread context): %s", alGetErrorString(E));
   }
-  #else
-  alcSetThreadContext(Context);
-  #endif
 
   // this is default, but hey...
   alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
-  #ifndef VAVOOM_USE_MOJOAL
-  // MojoAL doesn't have this, but OpenAL-soft does
+  // MojoAL doesn't have this
+  // there is `alEnable()` in MojoAL, but it does nothing, and returns enum error (it is permitted)
+  #if defined(AL_EXT_source_distance_model) && AL_EXT_source_distance_model
   alEnable(AL_SOURCE_DISTANCE_MODEL);
   #endif
 
@@ -270,14 +275,15 @@ bool VOpenALDevice::Init () {
 //
 //==========================================================================
 void VOpenALDevice::AddCurrentThread () {
-  #ifdef VAVOOM_USE_MOJOAL
   // MojoAL doesn't have this
   // it is usually safe, because it is called only by the streaming player
   // and there is no need to do anything here anyway
-  //alcMakeContextCurrent(Context);
-  #else
-  alcSetThreadContext(Context);
-  #endif
+  if (HasTreadContext) {
+    p_alcSetThreadContext(Context);
+  } else {
+    // streaming thread should use the same context anwyay
+    //alcMakeContextCurrent(Context);
+  }
 }
 
 
@@ -287,12 +293,9 @@ void VOpenALDevice::AddCurrentThread () {
 //
 //==========================================================================
 void VOpenALDevice::RemoveCurrentThread () {
-  #ifdef VAVOOM_USE_MOJOAL
   // MojoAL doesn't have this
   // do nothing here, this is used only by streaming player
-  #else
-  alcSetThreadContext(nullptr);
-  #endif
+  if (HasTreadContext) p_alcSetThreadContext(nullptr);
 }
 
 
@@ -346,12 +349,8 @@ void VOpenALDevice::Shutdown () {
   // destroy context
   if (Context) {
     if (developer) GLog.Log(NAME_Dev, "VOpenALDevice::Shutdown(): destroying context");
-    #ifdef VAVOOM_USE_MOJOAL
-    // MojoAL doesn't have this
+    if (HasTreadContext) p_alcSetThreadContext(nullptr);
     alcMakeContextCurrent(nullptr);
-    #else
-    alcSetThreadContext(nullptr);
-    #endif
     alcDestroyContext(Context);
     Context = nullptr;
   }
