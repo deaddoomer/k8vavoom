@@ -824,7 +824,17 @@ bool VOpenALDevice::OpenStream (int Rate, int Bits, int Channels) {
   activeSourceSet.put(StrmSource, true);
   alSourcei(StrmSource, AL_SOURCE_RELATIVE, AL_TRUE);
   // don't remap stereo channels
-  if (alIsExtensionPresent("AL_SOFT_direct_channels")) {
+  bool didStereoSet = false;
+  if (alIsExtensionPresent("AL_SOFT_direct_channels_remix")) {
+    const ALenum dcc = alGetEnumValue("AL_DIRECT_CHANNELS_SOFT");
+    const ALenum rmx = alGetEnumValue("AL_REMIX_UNMATCHED_SOFT");
+    if (dcc && rmx) {
+      didStereoSet = true;
+      alSourcei(StrmSource, dcc, rmx);
+      if (alGetError() == 0) GCon->Log("OpenAL: relaxed stereo channel remapping for better stereo quality.");
+    }
+  }
+  if (!didStereoSet && alIsExtensionPresent("AL_SOFT_direct_channels")) {
     const ALenum dcc = alGetEnumValue("AL_DIRECT_CHANNELS_SOFT");
     //GCon->Logf(NAME_Debug, "DCC: 0x%04x", (unsigned)dcc);
     if (dcc) {
