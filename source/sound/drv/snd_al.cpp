@@ -91,6 +91,7 @@ VOpenALDevice::VOpenALDevice ()
   , RealMaxVoices(0)
   , HasTreadContext(false)
   , HasBatchUpdate(false)
+  , HasForceSpatialize(false)
   , StrmSampleRate(0)
   , StrmFormat(0)
   , StrmNumAvailableBuffers(0)
@@ -158,6 +159,10 @@ bool VOpenALDevice::Init () {
   HasBatchUpdate = false;
   p_alDeferUpdatesSOFT = nullptr;
   p_alProcessUpdatesSOFT = nullptr;
+
+  HasForceSpatialize = false;
+  alSrcSpatSoftEnum = 0;
+  //alSrcSpatSoftValue = 0;
 
   #ifdef VV_SND_ALLOW_VELOCITY
   prevDopplerFactor = -INFINITY;
@@ -248,6 +253,18 @@ bool VOpenALDevice::Init () {
   GCon->Logf(NAME_Init, "OpenAL: AL_VENDOR: %s", alGetString(AL_VENDOR));
   GCon->Logf(NAME_Init, "OpenAL: AL_RENDERER: %s", alGetString(AL_RENDERER));
   GCon->Logf(NAME_Init, "OpenAL: AL_VERSION: %s", alGetString(AL_VERSION));
+  {
+    ALCint freq = 0;
+    alcGetIntegerv(Device, ALC_FREQUENCY, 1, &freq);
+    if (freq) GCon->Logf(NAME_Init, "OpenAL: sample rate is %d", freq);
+  }
+  #if 0
+  { // refresh rate, in Hz
+    ALCint refresh = 0;
+    alcGetIntegerv(Device, ALC_REFRESH, 1, &refresh);
+    if (refresh) GCon->Logf(NAME_Init, "OpenAL: refresh rate: %d", refresh);
+  }
+  #endif
 
   // this is default, but hey...
   alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
@@ -269,6 +286,16 @@ bool VOpenALDevice::Init () {
     if (p_alDeferUpdatesSOFT && p_alProcessUpdatesSOFT) {
       HasBatchUpdate = true;
       GCon->Logf(NAME_Init, "OpenAL: found 'AL_SOFT_deferred_updates'");
+    }
+  }
+
+  if (alIsExtensionPresent("AL_SOFT_source_spatialize")) {
+    ClearError();
+    alSrcSpatSoftEnum = alGetEnumValue("AL_SOURCE_SPATIALIZE_SOFT");
+    //alSrcSpatSoftValue = alGetEnumValue("AL_AUTO_SOFT");
+    if (alGetError() == 0 && alSrcSpatSoftEnum) {
+      HasForceSpatialize = true;
+      GCon->Logf(NAME_Init, "OpenAL: found 'AL_SOFT_source_spatialize'");
     }
   }
 
@@ -564,6 +591,13 @@ int VOpenALDevice::CommonPlaySound (bool is3d, int sound_id, const TVec &origin,
 
   int res = LoadSound(sound_id, &src);
   if (res == VSoundManager::LS_Error) return -1;
+
+  // force-spatialize it?
+  // non-3d sounds need not be spatialized (and they can be stereo, why not?)
+  if (HasForceSpatialize) {
+    alSourcei(src, alSrcSpatSoftEnum, (is3d ? AL_TRUE : AL_FALSE));
+    ClearError();
+  }
 
   alSourcef(src, AL_GAIN, volume);
   alSourcei(src, AL_SOURCE_RELATIVE, (is3d ? AL_FALSE : AL_TRUE));

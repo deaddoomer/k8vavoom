@@ -218,6 +218,10 @@ private:
   alDeferUpdatesSOFTFn p_alDeferUpdatesSOFT;
   alProcessUpdatesSOFTFn p_alProcessUpdatesSOFT;
 
+  bool HasForceSpatialize;
+  ALenum alSrcSpatSoftEnum;
+  //ALenum alSrcSpatSoftValue; // AL_AUTO_SOFT
+
   ALuint StrmSampleRate;
   ALuint StrmFormat;
   ALuint StrmBuffers[NUM_STRM_BUFFERS];
