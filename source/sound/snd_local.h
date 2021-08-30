@@ -191,6 +191,9 @@ struct VReverbInfo {
 typedef ALCboolean (ALC_APIENTRY *alcSetThreadContextFn) (ALCcontext *context);
 typedef ALCcontext *(ALC_APIENTRY *alcGetThreadContextFn) (void);
 
+typedef void (ALC_APIENTRY *alDeferUpdatesSOFTFn) (void);
+typedef void (ALC_APIENTRY *alProcessUpdatesSOFTFn) (void);
+
 // sound device interface
 // this class implements the only supported OpenAL Soft driver
 class VOpenALDevice {
@@ -210,6 +213,10 @@ private:
   bool HasTreadContext;
   alcSetThreadContextFn p_alcSetThreadContext;
   alcGetThreadContextFn p_alcGetThreadContext;
+
+  bool HasBatchUpdate;
+  alDeferUpdatesSOFTFn p_alDeferUpdatesSOFT;
+  alProcessUpdatesSOFTFn p_alProcessUpdatesSOFT;
 
   ALuint StrmSampleRate;
   ALuint StrmFormat;
@@ -276,6 +283,11 @@ public:
 
   void AddCurrentThread ();
   void RemoveCurrentThread ();
+
+  // call this to start batch update
+  void StartBatchUpdate ();
+  // and this to commit it
+  void FinishBatchUpdate ();
 
   // WARNING! this must be called from the main thread, i.e.
   //          from the thread that calls `PlaySound*()` API!

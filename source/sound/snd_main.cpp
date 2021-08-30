@@ -1342,10 +1342,13 @@ void VAudio::UpdateSounds () {
   if (snd_master_volume < 0.0f) snd_master_volume = 0.0f;
   if (snd_master_volume > 1.0f) snd_master_volume = 1.0f;
 
+  SoundDevice->StartBatchUpdate();
   // update any Sequences
   UpdateActiveSequences(host_frametime);
-
+  // update sounds
   UpdateSfx();
+  // done
+  SoundDevice->FinishBatchUpdate();
 
   if (StreamMusicPlayer) StreamMusicPlayer->SetVolume(snd_music_volume*MusicVolumeFactor);
 }

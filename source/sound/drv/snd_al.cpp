@@ -23,6 +23,8 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+// OpenAL-soft extension list: https://openal-soft.org/openal-extensions/
+//**************************************************************************
 #include "../../gamedefs.h"
 #include "../sound.h"
 #include "../snd_local.h"
@@ -37,7 +39,7 @@ static VCvarF snd_reference_distance("snd_reference_distance", "192", "OpenAL re
 // it is 4096 in our main sound code; anything futher than this will be dropped
 static VCvarF snd_max_distance("snd_max_distance", "8192", "OpenAL max distance.", 0/*CVAR_Archive*/); // was 4096, and 2042, and 8192
 
-static VCvarB openal_show_extensions("openal_show_extensions", false, "Show available OpenAL extensions?", CVAR_Archive);
+static VCvarB openal_show_extensions("openal_show_extensions", false, "Show available OpenAL extensions?", /*CVAR_Archive|*/CVAR_PreInit);
 
 // don't update if nothing was changed
 #ifdef VV_SND_ALLOW_VELOCITY
@@ -87,7 +89,8 @@ VOpenALDevice::VOpenALDevice ()
   , Buffers(nullptr)
   , BufferCount(0)
   , RealMaxVoices(0)
-  , HasTreadContext(0)
+  , HasTreadContext(false)
+  , HasBatchUpdate(false)
   , StrmSampleRate(0)
   , StrmFormat(0)
   , StrmNumAvailableBuffers(0)
@@ -148,6 +151,14 @@ bool VOpenALDevice::Init () {
   StrmSource = 0;
   StrmNumAvailableBuffers = 0;
 
+  HasTreadContext = false;
+  p_alcSetThreadContext = nullptr;
+  p_alcGetThreadContext = nullptr;
+
+  HasBatchUpdate = false;
+  p_alDeferUpdatesSOFT = nullptr;
+  p_alProcessUpdatesSOFT = nullptr;
+
   #ifdef VV_SND_ALLOW_VELOCITY
   prevDopplerFactor = -INFINITY;
   prevDopplerVelocity = -INFINITY;
@@ -182,9 +193,7 @@ bool VOpenALDevice::Init () {
 
   if (cli_AudioDeviceName) GCon->Logf(NAME_Init, "opened OpenAL device '%s'", cli_AudioDeviceName);
 
-  HasTreadContext = false;
-  p_alcSetThreadContext = nullptr;
-  p_alcGetThreadContext = nullptr;
+  // can be done before creating context
   // MojoAL doesn't have this
   if (alcIsExtensionPresent(Device, "ALC_EXT_thread_local_context")) {
     p_alcSetThreadContext = (alcSetThreadContextFn)alcGetProcAddress(Device, "alcSetThreadContext");
@@ -211,6 +220,9 @@ bool VOpenALDevice::Init () {
     ALCint attrs[] = {
       ALC_STEREO_SOURCES, 1, // get at least one stereo source for music
       ALC_MONO_SOURCES, RealMaxVoices, // this should be audio channels in our game engine
+      #if defined(ALC_SOFT_HRTF) && ALC_SOFT_HRTF
+      ALC_HRTF_SOFT, ALC_FALSE, // disable HRTF, we cannot properly support or configure it
+      #endif
       //ALC_FREQUENCY, 48000, // desired frequency; we don't really need this, let OpenAL choose the best
       0,
     };
@@ -233,6 +245,10 @@ bool VOpenALDevice::Init () {
     if (E != AL_NO_ERROR) Sys_Error("OpenAL error (setting thread context): %s", alGetErrorString(E));
   }
 
+  GCon->Logf(NAME_Init, "OpenAL: AL_VENDOR: %s", alGetString(AL_VENDOR));
+  GCon->Logf(NAME_Init, "OpenAL: AL_RENDERER: %s", alGetString(AL_RENDERER));
+  GCon->Logf(NAME_Init, "OpenAL: AL_VERSION: %s", alGetString(AL_VERSION));
+
   // this is default, but hey...
   alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
 
@@ -246,21 +262,28 @@ bool VOpenALDevice::Init () {
   #endif
   */
 
+  // AL extensions should be checked with the active context
+  if (alIsExtensionPresent("AL_SOFT_deferred_updates")) {
+    p_alDeferUpdatesSOFT = (alDeferUpdatesSOFTFn)alGetProcAddress("alDeferUpdatesSOFT");
+    p_alProcessUpdatesSOFT = (alProcessUpdatesSOFTFn)alGetProcAddress("alProcessUpdatesSOFT");
+    if (p_alDeferUpdatesSOFT && p_alProcessUpdatesSOFT) {
+      HasBatchUpdate = true;
+      GCon->Logf(NAME_Init, "OpenAL: found 'AL_SOFT_deferred_updates'");
+    }
+  }
+
   // clear error code
   ClearError();
 
   // print some information
   if (openal_show_extensions) {
-    GCon->Logf(NAME_Init, "AL_VENDOR: %s", alGetString(AL_VENDOR));
-    GCon->Logf(NAME_Init, "AL_RENDERER: %s", alGetString(AL_RENDERER));
-    GCon->Logf(NAME_Init, "AL_VERSION: %s", alGetString(AL_VERSION));
     GCon->Log(NAME_Init, "AL_EXTENSIONS:");
     TArray<VStr> Exts;
     VStr((char *)alGetString(AL_EXTENSIONS)).Split(' ', Exts);
-    for (int i = 0; i < Exts.length(); i++) GCon->Log(NAME_Init, VStr("- ")+Exts[i]);
+    for (VStr s : Exts) GCon->Logf(NAME_Init, "- %s", *s);
     GCon->Log(NAME_Init, "ALC_EXTENSIONS:");
     VStr((char *)alcGetString(Device, ALC_EXTENSIONS)).Split(' ', Exts);
-    for (int i = 0; i < Exts.length(); i++) GCon->Log(NAME_Init, VStr("- ")+Exts[i]);
+    for (VStr s : Exts) GCon->Logf(NAME_Init, "- %s", *s);
   }
 
   // allocate array for buffers
@@ -301,6 +324,26 @@ void VOpenALDevice::RemoveCurrentThread () {
   // MojoAL doesn't have this
   // do nothing here, this is used only by streaming player
   if (HasTreadContext) p_alcSetThreadContext(nullptr);
+}
+
+
+//==========================================================================
+//
+//  VOpenALDevice::StartBatchUpdate
+//
+//==========================================================================
+void VOpenALDevice::StartBatchUpdate () {
+  if (HasBatchUpdate) p_alDeferUpdatesSOFT();
+}
+
+
+//==========================================================================
+//
+//  VOpenALDevice::FinishBatchUpdate
+//
+//==========================================================================
+void VOpenALDevice::FinishBatchUpdate () {
+  if (HasBatchUpdate) p_alProcessUpdatesSOFT();
 }
 
 
