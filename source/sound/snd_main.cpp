@@ -121,6 +121,10 @@ public:
   virtual int GetMusicLoopCounter () override;
   virtual void IncMusicLoopCounter () override;
 
+  virtual int GetResamplerCount () const noexcept override;
+  virtual VStr GetResamplerName (int idx) const noexcept override;
+  virtual int GetDefaultResampler () const noexcept override;
+
 public:
   // console variables
   static VCvarF snd_sfx_volume;
@@ -441,6 +445,38 @@ int VAudio::GetMusicLoopCounter () {
 //==========================================================================
 void VAudio::IncMusicLoopCounter () {
   if (StreamMusicPlayer) StreamMusicPlayer->IncLoopCounter();
+}
+
+
+//==========================================================================
+//
+//  VAudio::GetResamplerCount
+//
+//==========================================================================
+int VAudio::GetResamplerCount () const noexcept {
+  return (SoundDevice ? SoundDevice->GetResamplerCount() : 1);
+}
+
+
+//==========================================================================
+//
+//  VAudio::GetResamplerName
+//
+//==========================================================================
+VStr VAudio::GetResamplerName (int idx) const noexcept {
+  if (SoundDevice) return SoundDevice->GetResamplerName(idx);
+  if (idx != 0) return VStr();
+  return VStr("default");
+}
+
+
+//==========================================================================
+//
+//  VAudio::GetDefaultResampler
+//
+//==========================================================================
+int VAudio::GetDefaultResampler () const noexcept {
+  return (SoundDevice ? SoundDevice->GetDefaultResampler() : 0);
 }
 
 

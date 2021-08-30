@@ -639,6 +639,11 @@ native static final void MUS_ResetMusicLoopCounter ();
 native static final int MUS_GetMusicLoopCounter ();
 native static final void MUS_IncMusicLoopCounter ();
 
+// get list of sound resamplers
+native static final int SND_GetResamplerCount ();
+native static final string SND_GetResamplerName (int idx);
+native static final int SND_GetDefaultResampler ();
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 // soundfont list

@@ -740,6 +740,42 @@ IMPLEMENT_FREE_FUNCTION(VObject, MUS_IncMusicLoopCounter) {
 }
 
 
+//native static final int SND_GetResamplerCount ();
+IMPLEMENT_FREE_FUNCTION(VObject, SND_GetResamplerCount) {
+  #ifdef CLIENT
+  if (GAudio) {
+    RET_INT(GAudio->GetResamplerCount());
+    return;
+  }
+  #endif
+  RET_INT(1);
+}
+
+//native static final string SND_GetResamplerName (int idx);
+IMPLEMENT_FREE_FUNCTION(VObject, SND_GetResamplerName) {
+  int idx;
+  vobjGetParam(idx);
+  #ifdef CLIENT
+  if (GAudio) {
+    RET_STR(GAudio->GetResamplerName(idx));
+    return;
+  }
+  #endif
+  RET_STR(VStr());
+}
+
+//native static final int SND_GetDefaultResampler ();
+IMPLEMENT_FREE_FUNCTION(VObject, SND_GetDefaultResampler) {
+  #ifdef CLIENT
+  if (GAudio) {
+    RET_INT(GAudio->GetDefaultResampler());
+    return;
+  }
+  #endif
+  RET_INT(0);
+}
+
+
 // ////////////////////////////////////////////////////////////////////////// //
 //native static final string TranslateKey (int c);
 IMPLEMENT_FREE_FUNCTION(VObject, TranslateKey) {

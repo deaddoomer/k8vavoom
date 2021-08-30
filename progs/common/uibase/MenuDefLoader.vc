@@ -372,6 +372,7 @@ final static MenuDefOptionBase parse (ScriptsParser par) {
   else if (par.Check("crosshair")) res = SpawnObject(MenuDefOptionCrosshair);
   else if (par.Check("bind")) res = SpawnObject(MenuDefOptionBind);
   else if (par.Check("render")) res = SpawnObject(MenuDefOptionRenderType);
+  else if (par.Check("soundresampler")) res = SpawnObject(MenuDefOptionSoundResampler);
   else if (par.Check("color")) res = SpawnObject(MenuDefOptionColor);
   else par.ScriptError("invalid option type '%s'", par.String);
   // condition?
@@ -939,6 +940,47 @@ override MenuChoiceBase CreateOption (MenuScreen menu) {
   else if (R_SupportsShadowVolumeRendering()) nn = "Stencil Shadows (D3-style)";
   else nn = "Shadowmaps";
   opt.AddItem(nn, 2);
+  if (cvar) opt.SetSessionCvar(cvar);
+  return opt;
+}
+
+
+
+//**************************************************************************
+//
+// MenuDefOptionSoundResampler
+//
+//**************************************************************************
+class MenuDefOptionSoundResampler : MenuDefOptionBase;
+
+//==========================================================================
+//
+//  parseOne
+//
+//==========================================================================
+override bool parseOne (ScriptsParser par) {
+  if (::parseOne(par)) return true;
+  return false;
+}
+
+
+//==========================================================================
+//
+//  CreateOption
+//
+//==========================================================================
+override MenuChoiceBase CreateOption (MenuScreen menu) {
+  // if we have only one renderer available, there's no need to choose anything
+  auto opt = MenuChoiceEnum(menu.GetItemContainer().NewChild(MenuChoiceEnum));
+  opt.SetText(title);
+  if (textColor != CR_UNDEFINED) opt.TextColor = textColor;
+  if (textColorFocus != CR_UNDEFINED) opt.TextColorFocus = textColorFocus;
+  opt.AddItem("Default", -1);
+  foreach (int ridx; 0..SND_GetResamplerCount()) {
+    string rname = SND_GetResamplerName(ridx);
+    if (SND_GetDefaultResampler() == ridx) rname ~= " [default]";
+    opt.AddItem(rname, ridx);
+  }
   if (cvar) opt.SetSessionCvar(cvar);
   return opt;
 }

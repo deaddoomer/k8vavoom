@@ -194,6 +194,8 @@ typedef ALCcontext *(ALC_APIENTRY *alcGetThreadContextFn) (void);
 typedef void (ALC_APIENTRY *alDeferUpdatesSOFTFn) (void);
 typedef void (ALC_APIENTRY *alProcessUpdatesSOFTFn) (void);
 
+typedef const ALchar *(ALC_APIENTRY *alGetStringiSOFTFn) (ALenum pname, ALsizei index);
+
 // sound device interface
 // this class implements the only supported OpenAL Soft driver
 class VOpenALDevice {
@@ -229,6 +231,15 @@ private:
   int StrmNumAvailableBuffers;
   ALuint StrmSource;
   vint16 StrmDataBuffer[STRM_BUFFER_SIZE*2]; // temp buffer we can use to decode data
+
+  alGetStringiSOFTFn p_alGetStringiSOFT;
+  ALenum alNumResSoftValue;
+  ALenum alDefResSoftValue;
+  ALenum alResNameSoftValue;
+  ALenum alSrcResamplerSoftValue;
+
+  TArray<VStr> ResamplerNames;
+  ALint defaultResampler;
 
   // if sound is queued to be loaded, we'll remember sound source here
   struct PendingSrc {
@@ -292,6 +303,10 @@ public:
   void StartBatchUpdate ();
   // and this to commit it
   void FinishBatchUpdate ();
+
+  int GetResamplerCount () const noexcept { return ResamplerNames.length(); }
+  VStr GetResamplerName (int idx) const noexcept { return (idx >= 0 && idx < ResamplerNames.length() ? ResamplerNames[idx] : VStr()); }
+  int GetDefaultResampler () const noexcept { return defaultResampler; }
 
   // WARNING! this must be called from the main thread, i.e.
   //          from the thread that calls `PlaySound*()` API!

@@ -242,6 +242,10 @@ public:
   virtual int GetMusicLoopCounter () = 0;
   virtual void IncMusicLoopCounter () = 0;
 
+  virtual int GetResamplerCount () const noexcept = 0;
+  virtual VStr GetResamplerName (int idx) const noexcept = 0;
+  virtual int GetDefaultResampler () const noexcept = 0;
+
   static VAudioPublic *Create ();
 };
 

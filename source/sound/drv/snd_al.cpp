@@ -39,6 +39,8 @@ static VCvarF snd_reference_distance("snd_reference_distance", "192", "OpenAL re
 // it is 4096 in our main sound code; anything futher than this will be dropped
 static VCvarF snd_max_distance("snd_max_distance", "8192", "OpenAL max distance.", 0/*CVAR_Archive*/); // was 4096, and 2042, and 8192
 
+static VCvarI snd_resampler("snd_resampler", "-1", "OpenAL sound resampler (-1 means \"default\").", CVAR_Archive);
+
 static VCvarB openal_show_extensions("openal_show_extensions", false, "Show available OpenAL extensions?", /*CVAR_Archive|*/CVAR_PreInit);
 
 // don't update if nothing was changed
@@ -163,6 +165,15 @@ bool VOpenALDevice::Init () {
   HasForceSpatialize = false;
   alSrcSpatSoftEnum = 0;
   //alSrcSpatSoftValue = 0;
+
+  p_alGetStringiSOFT = nullptr;
+  alNumResSoftValue = 0;
+  alDefResSoftValue = 0;
+  alResNameSoftValue = 0;
+  alSrcResamplerSoftValue = 0;
+
+  ResamplerNames.clear();
+  defaultResampler = 0;
 
   #ifdef VV_SND_ALLOW_VELOCITY
   prevDopplerFactor = -INFINITY;
@@ -302,6 +313,40 @@ bool VOpenALDevice::Init () {
   // clear error code
   ClearError();
 
+  if (alIsExtensionPresent("AL_SOFT_source_resampler")) {
+    p_alGetStringiSOFT = (alGetStringiSOFTFn)alGetProcAddress("alGetStringiSOFT");
+    alNumResSoftValue = alGetEnumValue("AL_NUM_RESAMPLERS_SOFT");
+    alDefResSoftValue = alGetEnumValue("AL_DEFAULT_RESAMPLER_SOFT");
+    alResNameSoftValue = alGetEnumValue("AL_RESAMPLER_NAME_SOFT");
+    alSrcResamplerSoftValue = alGetEnumValue("AL_SOURCE_RESAMPLER_SOFT");
+    if (p_alGetStringiSOFT && alNumResSoftValue && alDefResSoftValue && alResNameSoftValue && alSrcResamplerSoftValue) {
+      ALint resCount = alGetInteger(alNumResSoftValue);
+      defaultResampler = alGetInteger(alDefResSoftValue);
+      if (resCount > 0) {
+        for (ALint f = 0; f < resCount; ++f) {
+          const ALchar *name = p_alGetStringiSOFT(alResNameSoftValue, f);
+          if (!name || !name[0]) name = "<unknown>";
+          ResamplerNames.append(VStr(name));
+        }
+        if (defaultResampler < 0 || defaultResampler >= resCount) defaultResampler = 0; // just in case
+      } else {
+        defaultResampler = 0; // just in case
+      }
+    }
+    // if we have less than two resamplers, there is no need to set anything
+    if (ResamplerNames.length() < 2) {
+      p_alGetStringiSOFT = nullptr;
+      alNumResSoftValue = 0;
+      alDefResSoftValue = 0;
+      alResNameSoftValue = 0;
+      alSrcResamplerSoftValue = 0;
+    }
+  }
+
+  if (ResamplerNames.length() == 0) {
+    ResamplerNames.append(VStr("default"));
+  }
+
   // print some information
   if (openal_show_extensions) {
     GCon->Log(NAME_Init, "AL_EXTENSIONS:");
@@ -311,6 +356,15 @@ bool VOpenALDevice::Init () {
     GCon->Log(NAME_Init, "ALC_EXTENSIONS:");
     VStr((char *)alcGetString(Device, ALC_EXTENSIONS)).Split(' ', Exts);
     for (VStr s : Exts) GCon->Logf(NAME_Init, "- %s", *s);
+    // dump available resamplers
+    if (ResamplerNames.length()) {
+      GCon->Logf(NAME_Init, "OpenAL resamplers:");
+      for (int f = 0; f < ResamplerNames.length(); ++f) {
+        GCon->Logf(NAME_Init, "  %d: %s%s", f, *ResamplerNames[f], (defaultResampler == f ? " [default]" : ""));
+      }
+    }
+    // just in case
+    ClearError();
   }
 
   // allocate array for buffers
@@ -599,6 +653,12 @@ int VOpenALDevice::CommonPlaySound (bool is3d, int sound_id, const TVec &origin,
     ClearError();
   }
 
+  // set resampler
+  if (ResamplerNames.length() > 2) {
+    int res = snd_resampler.asInt();
+    if (res < 0 || res >= ResamplerNames.length()) res = defaultResampler;
+    alSourcei(src, alSrcResamplerSoftValue, res);
+  }
   alSourcef(src, AL_GAIN, volume);
   alSourcei(src, AL_SOURCE_RELATIVE, (is3d ? AL_FALSE : AL_TRUE));
   alSource3f(src, AL_POSITION, origin.x, origin.y, origin.z); // at the listener origin

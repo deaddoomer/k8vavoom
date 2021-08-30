@@ -63,6 +63,16 @@ menudef SoundOptions {
 
   header ""; // empty line
 
+  option soundresampler {
+    title = "Sound Resampler";
+    cvar = snd_resampler;
+    //list = sound_resamplers;
+    help =
+      "You can select sound resampler here.",
+      "Better (but slower) resamplers are usually down the list.",
+      "That is, you can trade CPU time for sound quality, or vice versa.";
+  }
+
   option slider {
     title = "Master Volume";
     cvar = snd_master_volume;
@@ -117,7 +127,7 @@ menudef SoundOptions {
   header ""; // empty line
 
   option bool {
-    title = "Enable Random Pitch";
+    title = "Random Pitch";
     cvar = snd_random_pitch_enabled;
     help =
       "If you don't like to move sliders, you can enable/disable",
