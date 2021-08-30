@@ -823,6 +823,15 @@ bool VOpenALDevice::OpenStream (int Rate, int Bits, int Channels) {
   if (IsError("cannot generate source")) { StrmSource = 0; return false; }
   activeSourceSet.put(StrmSource, true);
   alSourcei(StrmSource, AL_SOURCE_RELATIVE, AL_TRUE);
+  // don't remap stereo channels
+  if (alIsExtensionPresent("AL_SOFT_direct_channels")) {
+    const ALenum dcc = alGetEnumValue("AL_DIRECT_CHANNELS_SOFT");
+    //GCon->Logf(NAME_Debug, "DCC: 0x%04x", (unsigned)dcc);
+    if (dcc) {
+      alSourcei(StrmSource, dcc, AL_TRUE);
+      if (alGetError() == 0) GCon->Log("OpenAL: disabled stereo channel remapping for better stereo quality.");
+    }
+  }
   memset((void *)StrmBuffers, 0, sizeof(StrmBuffers));
   alGenBuffers(NUM_STRM_BUFFERS, StrmBuffers);
   #if 0
