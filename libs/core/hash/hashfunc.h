@@ -221,17 +221,56 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t joaatHashBufCI (con
 }
 
 
-VVA_CHECKRESULT uint32_t bjHashBuf (const __attribute__((__may_alias__)) void *key, size_t length, uint32_t initval=0u) noexcept;
-VVA_CHECKRESULT uint64_t bjHashBuf64 (const __attribute__((__may_alias__)) void *key, size_t length) noexcept;
+// ////////////////////////////////////////////////////////////////////////// //
+// Bob Jenkins' LOOKUP3
+// it won't return the same results for big-endian machines, but i don't care
 
+// hash `count` 32-bit integers
+VVA_CHECKRESULT uint32_t bjHashU32v (
+  const __attribute__((__may_alias__)) uint32_t *k, /* the key, an array of uint32_t values */
+  size_t count, /* the length of the key, in uint32_ts */
+  uint32_t initval=0u) noexcept; /* the previous hash, or an arbitrary value */
+
+// hash `count` 32-bit integers into 2 32-bit values
+void bjHashU32v64P (
+  const __attribute__((__may_alias__)) uint32_t *k,                   /* the key, an array of uint32_t values */
+  size_t count, /* the length of the key, in uint32_ts */
+  uint32_t *pc, /* IN: seed OUT: primary hash value */
+  uint32_t *pb) noexcept; /* IN: more seed OUT: secondary hash value */
+
+VVA_CHECKRESULT uint32_t bjHashBuf (const __attribute__((__may_alias__)) void *key, size_t length, uint32_t initval=0u) noexcept;
+
+void bjHashBuf64P (
+  const __attribute__((__may_alias__)) void *key, /* the key to hash */
+  size_t length, /* length of the key */
+  uint32_t *pc, /* IN: primary initval, OUT: primary hash */
+  uint32_t *pb) noexcept; /* IN: secondary initval, OUT: secondary hash */
+
+VVA_CHECKRESULT uint64_t bjHashBuf64 (const __attribute__((__may_alias__)) void *key, size_t length, uint64_t initval=0u) noexcept;
+VVA_CHECKRESULT uint64_t bjHashU32v64 (const __attribute__((__may_alias__)) uint32_t *k, size_t count, uint64_t initval=0u) noexcept;
+
+// hash one 32-bit value
+VVA_CHECKRESULT uint32_t bjHashU32 (uint32_t k, uint32_t initval=0u) noexcept;
+// hash one 32-bit value into two 32-bit values
+void bjHashU3264P (const uint32_t k, uint32_t *pc, uint32_t *pb) noexcept;
+
+// hash one 32-bit value into two 32-bit values
+VVA_CHECKRESULT uint64_t bjHashU3264 (const uint32_t k, uint64_t initval=0u) noexcept;
+
+
+static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t bjHashStr (const __attribute__((__may_alias__)) void *str) noexcept { return (str ? bjHashBuf(str, strlen((const char *)str)) : 0u); }
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// half-sip
 VVA_CHECKRESULT uint32_t halfsip24HashBuf (const __attribute__((__may_alias__)) void *in, const size_t inlen, const uint32_t seed=0u) noexcept;
 VVA_CHECKRESULT uint32_t halfsip24HashBufCI (const __attribute__((__may_alias__)) void *in, const size_t inlen, const uint32_t seed=0u) noexcept;
 
-static VVA_OKUNUSED VVA_CHECKRESULT uint32_t bjHashStr (const __attribute__((__may_alias__)) void *str) noexcept { return (str ? bjHashBuf(str, strlen((const char *)str)) : 0u); }
+static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t halfsip24HashStr (const __attribute__((__may_alias__)) void *str) noexcept { return (str ? halfsip24HashBuf(str, strlen((const char *)str)) : 0u); }
+static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t halfsip24HashStrCI (const __attribute__((__may_alias__)) void *str) noexcept { return (str ? halfsip24HashBufCI(str, strlen((const char *)str)) : 0u); }
 
-static VVA_OKUNUSED VVA_CHECKRESULT uint32_t halfsip24HashStr (const __attribute__((__may_alias__)) void *str) noexcept { return (str ? halfsip24HashBuf(str, strlen((const char *)str)) : 0u); }
-static VVA_OKUNUSED VVA_CHECKRESULT uint32_t halfsip24HashStrCI (const __attribute__((__may_alias__)) void *str) noexcept { return (str ? halfsip24HashBufCI(str, strlen((const char *)str)) : 0u); }
 
+// ////////////////////////////////////////////////////////////////////////// //
 VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint8_t n) noexcept { return hashU32((const uint32_t)n); }
 VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint16_t n) noexcept { return hashU32((const uint32_t)n); }
 VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint32_t n) noexcept { return hashU32(n); }
