@@ -32,7 +32,7 @@
 #ifdef VV_TJUNCTION_VERBOSE
 # define TJLOG(...)  if (dbg_fix_tjunctions) GCon->Logf(__VA_ARGS__)
 #else
-# define TJLOG(...)  (void)0
+# define TJLOG(...)  do {} while (0)
 #endif
 
 

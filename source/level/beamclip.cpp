@@ -50,8 +50,8 @@
 # define RNGLOG(...)  if (dbg_clip_dump_added_ranges) GCon->Logf(__VA_ARGS__)
 # define SBCLOG(...)  if (dbg_clip_dump_sub_checks) GCon->Logf((__VA_ARGS__)
 #else
-# define RNGLOG(...)  (void)0
-# define SBCLOG(...)  (void)0
+# define RNGLOG(...)  do {} while (0)
+# define SBCLOG(...)  do {} while (0)
 #endif
 
 

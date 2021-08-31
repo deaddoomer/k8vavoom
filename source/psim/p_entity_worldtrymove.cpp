@@ -38,7 +38,7 @@
 #ifdef VV_DBG_VERBOSE_TRYMOVE
 # define TMDbgF(...)  GCon->Logf(NAME_Debug, __VA_ARGS__)
 #else
-# define TMDbgF(...)  (void)0
+# define TMDbgF(...)  do {} while (0)
 #endif
 
 

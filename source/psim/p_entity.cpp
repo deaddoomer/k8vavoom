@@ -37,7 +37,7 @@
 #ifdef VV_SETSTATE_DEBUG
 # define VSLOGF(...)  GCon->Logf(NAME_Debug, __VA_ARGS__)
 #else
-# define VSLOGF(...)  (void)0
+# define VSLOGF(...)  do {} while (0)
 #endif
 
 
