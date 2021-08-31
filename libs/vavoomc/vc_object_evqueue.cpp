@@ -24,9 +24,9 @@
 //**
 //**************************************************************************
 static event_t *events = nullptr;
-static int eventMax = 2048; // default size; why not?
-static int eventLast = 0; // points past the last stored event
-static int eventFirst = 0; // first stored event
+static unsigned eventMax = 2048u; // default size; why not?
+static unsigned eventLast = 0u; // points past the last stored event
+static unsigned eventFirst = 0u; // first stored event
 // that is, new event will be posted at [head+1], and
 // to read events, get [tail] while (tail != head)
 
@@ -68,7 +68,7 @@ struct QueueLocker {
 //==========================================================================
 void VObject::ClearEventQueue () noexcept {
   QueueLocker lock;
-  eventLast = eventFirst = 0;
+  eventLast = eventFirst = 0u;
 }
 
 
@@ -78,7 +78,7 @@ void VObject::ClearEventQueue () noexcept {
 //
 //==========================================================================
 int VObject::CountQueuedEventsNoLock () noexcept {
-  return eventLast+(eventLast < eventFirst ? eventMax : 0)-eventFirst;
+  return (int)(eventLast+(eventLast < eventFirst ? eventMax : 0u)-eventFirst);
 }
 
 
@@ -100,7 +100,7 @@ int VObject::CountQueuedEvents () noexcept {
 //==========================================================================
 int VObject::GetEventQueueSize () noexcept {
   QueueLocker lock;
-  return eventMax;
+  return (int)eventMax;
 }
 
 
@@ -120,17 +120,17 @@ bool VObject::SetEventQueueSize (int newsize) noexcept {
   if (newsize < CountQueuedEventsNoLock()) return false;
   // allocate new buffer, copy events
   event_t *newbuf = (event_t *)Z_Malloc(newsize*sizeof(event_t));
-  int npos = 0;
+  unsigned npos = 0u;
   while (eventFirst != eventLast) {
     newbuf[npos++] = events[eventFirst++];
     eventFirst %= eventMax;
   }
-  vassert(npos <= newsize);
+  vassert(npos <= (unsigned)newsize);
   Z_Free(events);
   events = newbuf;
-  eventFirst = 0;
+  eventFirst = 0u;
   eventLast = npos;
-  eventMax = newsize;
+  eventMax = (unsigned)newsize;
   return true;
 }
 
@@ -142,7 +142,7 @@ bool VObject::SetEventQueueSize (int newsize) noexcept {
 //==========================================================================
 bool VObject::PostEvent (const event_t &ev) noexcept {
   QueueLocker lock;
-  int nextFree = (eventLast+1)%eventMax;
+  unsigned nextFree = (eventLast+1)%eventMax;
   if (nextFree == eventFirst) return false; // queue overflow
   // if this is first ever event, allocate queue
   if (!events) events = (event_t *)Z_Malloc(eventMax*sizeof(event_t));
@@ -159,7 +159,7 @@ bool VObject::PostEvent (const event_t &ev) noexcept {
 //==========================================================================
 bool VObject::InsertEvent (const event_t &ev) noexcept {
   QueueLocker lock;
-  int prevFirst = (eventFirst+eventMax-1)%eventMax;
+  unsigned prevFirst = (eventFirst+eventMax-1)%eventMax;
   if (prevFirst == eventLast) return false; // queue overflow
   // if this is first ever event, allocate queue
   if (!events) events = (event_t *)Z_Malloc(eventMax*sizeof(event_t));
