@@ -114,7 +114,7 @@ static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline uint32_t permuteU32Inv (uin
 
 
 // fnv-1a: http://www.isthe.com/chongo/tech/comp/fnv/
-static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashBufCI (const __attribute__((__may_alias__)) void *buf, size_t len) noexcept {
+static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashBufCI (const VVA_MAYALIAS void *buf, size_t len) noexcept {
   uint32_t hash = 2166136261U; // fnv offset basis
   const vuint8 *s = (const vuint8 *)buf;
   while (len--) {
@@ -127,7 +127,7 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashBufCI (const
 
 
 // fnv-1a: http://www.isthe.com/chongo/tech/comp/fnv/
-static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashBuf (const __attribute__((__may_alias__)) void *buf, size_t len) noexcept {
+static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashBuf (const VVA_MAYALIAS void *buf, size_t len) noexcept {
   uint32_t hash = 2166136261U; // fnv offset basis
   if (len) {
     const vuint8 *s = (const vuint8 *)buf;
@@ -141,7 +141,7 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashBuf (const _
 
 
 // fnv-1a: http://www.isthe.com/chongo/tech/comp/fnv/
-static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashStr (const __attribute__((__may_alias__)) void *buf) noexcept {
+static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashStr (const VVA_MAYALIAS void *buf) noexcept {
   uint32_t hash = 2166136261U; // fnv offset basis
   if (buf) {
     const vuint8 *s = (const vuint8 *)buf;
@@ -155,7 +155,7 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashStr (const _
 
 
 // fnv-1a: http://www.isthe.com/chongo/tech/comp/fnv/
-static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashStrCI (const __attribute__((__may_alias__)) void *buf) noexcept {
+static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashStrCI (const VVA_MAYALIAS void *buf) noexcept {
   uint32_t hash = 2166136261U; // fnv offset basis
   if (buf) {
     const vuint8 *s = (const vuint8 *)buf;
@@ -170,7 +170,7 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashStrCI (const
 
 
 // djb
-static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t djbHashBufCI (const __attribute__((__may_alias__)) void *buf, size_t len) noexcept {
+static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t djbHashBufCI (const VVA_MAYALIAS void *buf, size_t len) noexcept {
   uint32_t hash = 5381;
   const vuint8 *s = (const vuint8 *)buf;
   //while (len--) hash = ((hash<<5)+hash)+(uint8_t)locase1251(*s++);
@@ -180,7 +180,7 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t djbHashBufCI (const
 
 
 // djb
-static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t djbHashBuf (const __attribute__((__may_alias__)) void *buf, size_t len) noexcept {
+static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t djbHashBuf (const VVA_MAYALIAS void *buf, size_t len) noexcept {
   uint32_t hash = 5381;
   const vuint8 *s = (const vuint8 *)buf;
   while (len-- > 0) hash = ((hash<<5)+hash)+(*s++);
@@ -188,7 +188,7 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t djbHashBuf (const _
 }
 
 
-static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t joaatHashBuf (const __attribute__((__may_alias__)) void *buf, size_t len, uint32_t seed=0u) noexcept {
+static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t joaatHashBuf (const VVA_MAYALIAS void *buf, size_t len, uint32_t seed=0u) noexcept {
   uint32_t hash = seed;
   const vuint8 *s = (const vuint8 *)buf;
   while (len--) {
@@ -204,7 +204,7 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t joaatHashBuf (const
 }
 
 
-static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t joaatHashBufCI (const __attribute__((__may_alias__)) void *buf, size_t len, uint32_t seed=0u) noexcept {
+static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t joaatHashBufCI (const VVA_MAYALIAS void *buf, size_t len, uint32_t seed=0u) noexcept {
   uint32_t hash = seed;
   const vuint8 *s = (const vuint8 *)buf;
   while (len--) {
@@ -227,27 +227,27 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t joaatHashBufCI (con
 
 // hash `count` 32-bit integers
 VVA_CHECKRESULT uint32_t bjHashU32v (
-  const __attribute__((__may_alias__)) uint32_t *k, /* the key, an array of uint32_t values */
+  const VVA_MAYALIAS uint32_t *k, /* the key, an array of uint32_t values */
   size_t count, /* the length of the key, in uint32_ts */
   uint32_t initval=0u) noexcept; /* the previous hash, or an arbitrary value */
 
 // hash `count` 32-bit integers into 2 32-bit values
 void bjHashU32v64P (
-  const __attribute__((__may_alias__)) uint32_t *k,                   /* the key, an array of uint32_t values */
+  const VVA_MAYALIAS uint32_t *k, /* the key, an array of uint32_t values */
   size_t count, /* the length of the key, in uint32_ts */
   uint32_t *pc, /* IN: seed OUT: primary hash value */
   uint32_t *pb) noexcept; /* IN: more seed OUT: secondary hash value */
 
-VVA_CHECKRESULT uint32_t bjHashBuf (const __attribute__((__may_alias__)) void *key, size_t length, uint32_t initval=0u) noexcept;
+VVA_CHECKRESULT uint32_t bjHashBuf (const VVA_MAYALIAS void *key, size_t length, uint32_t initval=0u) noexcept;
 
 void bjHashBuf64P (
-  const __attribute__((__may_alias__)) void *key, /* the key to hash */
+  const VVA_MAYALIAS void *key, /* the key to hash */
   size_t length, /* length of the key */
   uint32_t *pc, /* IN: primary initval, OUT: primary hash */
   uint32_t *pb) noexcept; /* IN: secondary initval, OUT: secondary hash */
 
-VVA_CHECKRESULT uint64_t bjHashBuf64 (const __attribute__((__may_alias__)) void *key, size_t length, uint64_t initval=0u) noexcept;
-VVA_CHECKRESULT uint64_t bjHashU32v64 (const __attribute__((__may_alias__)) uint32_t *k, size_t count, uint64_t initval=0u) noexcept;
+VVA_CHECKRESULT uint64_t bjHashBuf64 (const VVA_MAYALIAS void *key, size_t length, uint64_t initval=0u) noexcept;
+VVA_CHECKRESULT uint64_t bjHashU32v64 (const VVA_MAYALIAS uint32_t *k, size_t count, uint64_t initval=0u) noexcept;
 
 // hash one 32-bit value
 VVA_CHECKRESULT uint32_t bjHashU32 (uint32_t k, uint32_t initval=0u) noexcept;
@@ -258,16 +258,16 @@ void bjHashU3264P (const uint32_t k, uint32_t *pc, uint32_t *pb) noexcept;
 VVA_CHECKRESULT uint64_t bjHashU3264 (const uint32_t k, uint64_t initval=0u) noexcept;
 
 
-static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t bjHashStr (const __attribute__((__may_alias__)) void *str) noexcept { return (str ? bjHashBuf(str, strlen((const char *)str)) : 0u); }
+static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t bjHashStr (const VVA_MAYALIAS void *str) noexcept { return (str ? bjHashBuf(str, strlen((const char *)str)) : 0u); }
 
 
 // ////////////////////////////////////////////////////////////////////////// //
 // half-sip
-VVA_CHECKRESULT uint32_t halfsip24HashBuf (const __attribute__((__may_alias__)) void *in, const size_t inlen, const uint32_t seed=0u) noexcept;
-VVA_CHECKRESULT uint32_t halfsip24HashBufCI (const __attribute__((__may_alias__)) void *in, const size_t inlen, const uint32_t seed=0u) noexcept;
+VVA_CHECKRESULT uint32_t halfsip24HashBuf (const VVA_MAYALIAS void *in, const size_t inlen, const uint32_t seed=0u) noexcept;
+VVA_CHECKRESULT uint32_t halfsip24HashBufCI (const VVA_MAYALIAS void *in, const size_t inlen, const uint32_t seed=0u) noexcept;
 
-static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t halfsip24HashStr (const __attribute__((__may_alias__)) void *str) noexcept { return (str ? halfsip24HashBuf(str, strlen((const char *)str)) : 0u); }
-static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t halfsip24HashStrCI (const __attribute__((__may_alias__)) void *str) noexcept { return (str ? halfsip24HashBufCI(str, strlen((const char *)str)) : 0u); }
+static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t halfsip24HashStr (const VVA_MAYALIAS void *str) noexcept { return (str ? halfsip24HashBuf(str, strlen((const char *)str)) : 0u); }
+static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t halfsip24HashStrCI (const VVA_MAYALIAS void *str) noexcept { return (str ? halfsip24HashBufCI(str, strlen((const char *)str)) : 0u); }
 
 
 // ////////////////////////////////////////////////////////////////////////// //

@@ -43,6 +43,9 @@
 #ifndef VVA_CONST
 # define VVA_CONST        __attribute__((const))
 #endif
+#ifndef VVA_MAYALIAS
+# define VVA_MAYALIAS     __attribute__((__may_alias__))
+#endif
 #ifndef VVA_ALWAYS_INLINE
 # define VVA_ALWAYS_INLINE  inline __attribute__((always_inline))
 #endif
