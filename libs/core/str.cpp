@@ -2676,6 +2676,7 @@ loopStart:
       case '\\':
         //if (patpos == pat.length) return false; // malformed pattern
         if (!pat[patpos]) return false; // malformed pattern
+        ++patpos; /* skip screened char */
         goto defcheck;
       case '?': // match anything //except '.'
         //if (sch == '.') goto starCheck;
