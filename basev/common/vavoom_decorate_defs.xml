@@ -203,6 +203,7 @@
     <flag name="DontRip" property="bDontRip" />
     <flag name="NoTelefrag" property="bNoTeleFrag" />
     <flag name="NoTimeFreeze" property="bNoTimeFreeze" />
+    <flag name="NoInfightSpecies" property="bNoInfightSpecies" />
     <!-- Appearance and sound -->
     <flag name="Bright" property="bBright" />
     <flag name="Invisible" property="bInvisible" relinktoworld="true" />

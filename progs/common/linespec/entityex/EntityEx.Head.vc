@@ -166,6 +166,12 @@ name DeathSound;
 name HowlSound;
 name BounceSound;
 
+/*
+  GZDoom:
+    +NoTarget --> bNeverTarget
+    +NeverTarget --> bReallyNeverTarget
+ */
+
 // flags
 bool bSpecial; // call P_SpecialThing when touched
 bool bShootable; // can be hit
@@ -359,6 +365,8 @@ bool bHitOwner;
 
 bool bOldRadiusDamage; // does not take z into account when doing radius damage
 transient bool bFixMapthingPos; // there is no reason to save it, it is used only when spawning map things anyway
+
+bool bNoInfightSpecies;
 
 // if `true`, flying projectile will leave decals on 2-sided walls it flied through
 bool bDecals2SPass;

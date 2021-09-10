@@ -497,6 +497,7 @@ int TakeSpecialDamage (EntityEx inflictor, EntityEx source, int damage, name Dmg
 //
 //==========================================================================
 bool OkayToSwitchTarget (EntityEx source) {
+  if (!source) return false;
   if (source == self) return false; // don't hate self (can happen when shooting barrels)
   if (source.bReallyNeverTarget) return false;
   if (!source.bShootable) return false; // don't hate actors that cannot be hurt
@@ -511,6 +512,7 @@ bool OkayToSwitchTarget (EntityEx source) {
       return false;
     }
   }
+  if (bNoInfightSpecies && IsSameSpecies(self, source)) return false; // don't fight own species
   if (source.bNeverTarget && (source.TID != TIDToHate || TIDToHate == 0) && !IsHostile(source)) return false;
   if (Threshold && !bNoGrudge) return false;
   if (IsFriend(source)) return false; // don't hate friends

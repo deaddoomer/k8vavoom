@@ -1277,7 +1277,7 @@ name GetSpecies () {
       Ret = GetClassParent(Ret);
     }
   }
-  return GetClassName(Ret);
+  return (Ret ? GetClassName(Ret) : '');
 }
 
 
