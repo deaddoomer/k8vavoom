@@ -37,6 +37,24 @@
   }
 */
 
+
+detector "Legion Of Bones" {
+  info {
+    type = "mod";
+  }
+
+  preconditions {
+    zscript = true;
+    //file { name = "zscript"; size = 186; md5 = "3607cf1f311c2883e459321c34e3ef1b"; }
+    file { name = "credits"; size = 2320; md5 = "8fe2cdd80f31556963b1d8fa07471ba2"; }
+  }
+
+  options {
+    addmod = "lobfix"; // do not use this if you don't know what you're doing! (i.e. don't use this at all)
+  }
+}
+
+
 detector "SkullDash EE" {
   info {
     type = "mod";

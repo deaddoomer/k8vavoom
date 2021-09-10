@@ -1,0 +1,5 @@
+$dest basepak.pk3
+
+$recursedir progs/    @CMAKE_CURRENT_SOURCE_DIR@/progs/
+
+loadvcs.txt   @CMAKE_CURRENT_SOURCE_DIR@/loadvcs.txt
