@@ -299,6 +299,8 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
 [decorate] final int decorate_ExplosionDamage { get { return ExplosionDamage; } }
 [decorate] final int decorate_ExplosionRadius { get { return ExplosionRadius; } }
 
+[decorate] final string decorate_Species { get { return Species; } }
+
 [decorate] final int decorate_Score { get { return Score; } }
 [decorate] final int decorate_Accuracy { get { return Accuracy; } }
 [decorate] final int decorate_Stamina { get { return Stamina; } }
