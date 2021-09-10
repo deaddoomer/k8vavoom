@@ -2021,6 +2021,89 @@ final bool doRemoveSomethingCheck (EntityEx dest, int flags, optional name filte
 }
 
 
+//==========================================================================
+//
+//  A_CheckForResurrection
+//
+//==========================================================================
+[decorate] final void A_CheckForResurrection () {
+  KeepChainResult();
+  CheckForResurrect(UseVileStates:false);
+}
+
+
+const [decorate] int CBF_NOLINES       = 1<<0; // Don't check lines.
+const [decorate] int CBF_SETTARGET     = 1<<1; // Sets the caller/pointer's target to the actor blocking it. Actors only.
+const [decorate] int CBF_SETMASTER     = 1<<2; // ^ but with master.
+const [decorate] int CBF_SETTRACER     = 1<<3; // ^ but with tracer.
+const [decorate] int CBF_SETONPTR      = 1<<4; // Sets the pointer change on the actor doing the checking instead of self.
+const [decorate] int CBF_DROPOFF       = 1<<5; // Check for dropoffs.
+const [decorate] int CBF_NOACTORS      = 1<<6; // Don't check actors.
+const [decorate] int CBF_ABSOLUTEPOS   = 1<<7; // Absolute position for offsets.
+const [decorate] int CBF_ABSOLUTEANGLE = 1<<8; // Absolute angle for offsets.
+
+
+//==========================================================================
+//
+//  A_CheckBlock
+//
+//==========================================================================
+[decorate] final void A_CheckBlock (state blockst, optional int flags, optional int aptr,
+                                    optional float xofs, optional float yofs, optional float zofs, optional float angle)
+{
+  KeepChainResult();
+
+  EntityEx tgt = EntityEx(DecorDoAAPtr('A_CheckBlock', aptr!optional));
+  if (!tgt) return;
+
+  //if (!specified_flags) flags = 0;
+
+  if (!(flags&CBF_ABSOLUTEANGLE)) angle += Angles.yaw; //k8: don't even ask me, GZDoom does exactly this
+
+  TVec oldpos = tgt.Origin;
+  TVec pos;
+
+  if (flags&CBF_ABSOLUTEPOS) {
+    pos = vector(xofs, yofs, zofs);
+  } else {
+    float s, c;
+    sincos(angle, out s, out c);
+    pos = oldpos+vector(xofs*c+yofs*s, xofs*s-yofs*c, zofs);
+  }
+
+
+  // this doesn't look right, but meh...
+  tmtrace_t tmtrace;
+  bool ok;
+  {
+    bool oldWithThings = tgt.bColideWithThings;
+    bool oldWithWorld = tgt.bColideWithWorld;
+    scope(exit) {
+      tgt.bColideWithThings = oldWithThings;
+      tgt.bColideWithWorld = oldWithWorld;
+    }
+
+    if (tgt.bColideWithThings) tgt.bColideWithThings = !(flags&CBF_NOACTORS);
+    if (tgt.bColideWithWorld) tgt.bColideWithWorld = !(flags&CBF_NOLINES);
+
+    ok = tgt.TryMoveEx(out tmtrace, pos, AllowDropOff:!!(flags&CBF_DROPOFF), checkOnly:true);
+  }
+
+  if (ok) return; // not blocked
+
+  if (EntityEx(tmtrace.BlockingMobj)) {
+    EntityEx receiver = (flags&CBF_SETONPTR ? tgt : EntityEx(self));
+    if (receiver) {
+      if (flags&CBF_SETTARGET) receiver.Target = EntityEx(tmtrace.BlockingMobj);
+      if (flags&CBF_SETMASTER) receiver.Master = EntityEx(tmtrace.BlockingMobj);
+      if (flags&CBF_SETTRACER) receiver.Tracer = EntityEx(tmtrace.BlockingMobj);
+    }
+  }
+
+  if (blockst) DoJump(blockst);
+}
+
+
 // offset origin by actor radius
 const [decorate] int SP_DECAL_RADIUS_OFS = 1<<0;
 // offset origin by actor radius by actor angles, not by `dir`

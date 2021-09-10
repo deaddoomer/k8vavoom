@@ -558,7 +558,8 @@ native final bool CheckRelPosition (out tmtrace_t tmtrace, TVec Pos, optional bo
 native final bool CheckRelPositionPoint (out tmtrace_t tmtrace, TVec Pos); // ignores things
 native final bool TryMove (TVec newPos, bool AllowDropOff, optional bool checkOnly);
 native final bool TryMoveEx (out tmtrace_t tmtrace, TVec newPos, bool AllowDropOff, optional bool checkOnly);
-native final bool TestMobjZ ();
+native final bool TestMobjZ (); // returns `true` if not blocked
+native final bool TestMobjZEx (TVec pos, optional out Entity hitent); // returns `true` if not blocked
 
 // `noPickups` means "don't activate specials" too
 native final void SlideMove (float DeltaTime, optional bool noPickups/*=false*/);

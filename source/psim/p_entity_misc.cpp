@@ -820,9 +820,24 @@ IMPLEMENT_FUNCTION(VEntity, CheckSides) {
   RET_BOOL(Self->CheckSides(lsPos));
 }
 
+//native final bool TestMobjZ ();
+// returns `true` if not blocked
 IMPLEMENT_FUNCTION(VEntity, TestMobjZ) {
   vobjGetParamSelf();
-  RET_BOOL(!Self->TestMobjZ(Self->Origin));
+  RET_BOOL(!Self->TestMobjZ(Self->Origin)); // returns `false` if not blocked, so invert it
+}
+
+
+//native final bool TestMobjZEx (TVec pos, optional out Entity hitent);
+// returns `true` if not blocked
+IMPLEMENT_FUNCTION(VEntity, TestMobjZEx) {
+  TVec pos;
+  VOptParamPtr<VEntity *> hitent;
+  vobjGetParamSelf(pos, hitent);
+  VEntity *he = nullptr;
+  const bool res = !Self->TestMobjZ(pos, &he); // returns `false` if not blocked, so invert it
+  if (!res && hitent.specified) *hitent.value = he;
+  RET_BOOL(res);
 }
 
 IMPLEMENT_FUNCTION(VEntity, CheckOnmobj) {
