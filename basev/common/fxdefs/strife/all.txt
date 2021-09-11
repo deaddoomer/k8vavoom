@@ -1,0 +1,3 @@
+#include "fxdefs/strife/decorations.txt"
+#include "fxdefs/strife/monsters.txt"
+#include "fxdefs/strife/weapons.txt"

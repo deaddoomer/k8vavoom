@@ -1,0 +1,7 @@
+#include "fxdefs/common/all.txt"
+#include "fxdefs/doom/all.txt"
+#include "fxdefs/heretic/all.txt"
+#include "fxdefs/hexen/all.txt"
+#include "fxdefs/k8tracers/all.txt"
+#include "fxdefs/raven/all.txt"
+#include "fxdefs/strife/all.txt"

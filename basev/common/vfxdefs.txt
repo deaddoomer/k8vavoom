@@ -8,31 +8,4 @@ muzzleflashlight MuzzleFlash
   minlight 32
 }
 
-#include "fxdefs/common/effects.txt"
-
-#include "fxdefs/doom/decorations.txt"
-#include "fxdefs/doom/monsters.txt"
-#include "fxdefs/doom/pickups.txt"
-#include "fxdefs/doom/weapons.txt"
-
-#include "fxdefs/raven/minotaur.txt"
-#include "fxdefs/raven/pickups.txt"
-
-#include "fxdefs/heretic/decorations.txt"
-#include "fxdefs/heretic/effects.txt"
-#include "fxdefs/heretic/monsters.txt"
-#include "fxdefs/heretic/pickups.txt"
-#include "fxdefs/heretic/weapons.txt"
-
-#include "fxdefs/hexen/decorations.txt"
-#include "fxdefs/hexen/effects.txt"
-#include "fxdefs/hexen/monsters.txt"
-#include "fxdefs/hexen/pickups.txt"
-#include "fxdefs/hexen/projectiles.txt"
-#include "fxdefs/hexen/weapons.txt"
-
-#include "fxdefs/strife/decorations.txt"
-#include "fxdefs/strife/monsters.txt"
-#include "fxdefs/strife/weapons.txt"
-
-#include "fxdefs/k8tracers/k8basetracers.txt"
+#include "fxdefs/all.txt"

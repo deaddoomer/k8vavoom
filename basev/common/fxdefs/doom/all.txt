@@ -1,0 +1,4 @@
+#include "fxdefs/doom/decorations.txt"
+#include "fxdefs/doom/monsters.txt"
+#include "fxdefs/doom/pickups.txt"
+#include "fxdefs/doom/weapons.txt"

@@ -1,0 +1,5 @@
+#include "fxdefs/heretic/decorations.txt"
+#include "fxdefs/heretic/effects.txt"
+#include "fxdefs/heretic/monsters.txt"
+#include "fxdefs/heretic/pickups.txt"
+#include "fxdefs/heretic/weapons.txt"
