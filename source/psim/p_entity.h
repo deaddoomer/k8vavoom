@@ -284,6 +284,8 @@ class VEntity : public VThinker {
     EFEX_AllowSimpleTick  = 1u<<15u, // do not fallback to full physics code even for states with action method calls
     // put here for no real reason (it belongs to EntityEx)
     EFEX_SeparateFlatDecal = 1u<<16u, // use `FlatDecalName` for flat decals
+    // this belongs to `EntityEx`, but i need it here for faster checks
+    EFEX_MissileHitscan    = 1u<<17u, // this is hitscan emulation, should be affected by hitscan blocking flags; `bMissile` should still be set
   };
   vuint32 FlagsEx;
 
@@ -651,7 +653,9 @@ public:
 
   //bool IsMonster () { static VMethodProxy method("IsMonster"); vobjPutParamSelf(); VMT_RET_BOOL(method); }
   inline bool IsPlayer () const noexcept { return (EntityFlags&EF_IsPlayer); }
-  inline bool IsMissile () const noexcept { return (EntityFlags&EF_Missile); }
+  inline bool IsMissile () const noexcept { return ((EntityFlags&EF_Missile) && !(FlagsEx&EFEX_MissileHitscan)); }
+  inline bool IsMissileHitscan () const noexcept { return ((EntityFlags&EF_Missile) && (FlagsEx&EFEX_MissileHitscan)); }
+  inline bool IsAnyMissile () const noexcept { return (EntityFlags&EF_Missile); }
   inline bool IsAnyCorpse () const noexcept { return ((EntityFlags&EF_Corpse)|(FlagsEx&EFEX_PseudoCorpse)); }
   inline bool IsRealCorpse () const noexcept { return (EntityFlags&EF_Corpse); }
   inline bool IsSolid () const noexcept { return (EntityFlags&EF_Solid); }
@@ -663,6 +667,10 @@ public:
   inline bool IsAnyAerial () const noexcept { return ((EntityFlags&(EF_Float|EF_Fly))|(FlagsEx&EFEX_FloatBob)); }
   inline bool IsFloatBob () const noexcept { return (FlagsEx&EFEX_FloatBob); }
   inline bool IsSpriteFlipped () const noexcept { return (FlagsEx&EFEX_CorpseFlipped); }
+
+  // `isAnyMissile()` should be `true`!
+  inline unsigned GetMissileLineBlockFlag () const noexcept { return (FlagsEx&EFEX_MissileHitscan ? ML_BLOCKHITSCAN : ML_BLOCKPROJECTILE); }
+
 
   enum EType {
     ET_Unknown,
@@ -677,7 +685,7 @@ public:
   // used in renderer
   inline EType Classify () const noexcept {
     if (IsPlayer()) return EType::ET_Player;
-    if (IsMissile()) return EType::ET_Missile;
+    if (IsAnyMissile()) return EType::ET_Missile;
     if (IsAnyCorpse()) return EType::ET_Corpse;
     if (IsMonster()) return EType::ET_Monster;
     if (IsSolid()) return EType::ET_Decoration;

@@ -347,6 +347,8 @@ transient native readonly bool bThisIsEntityEx;
 transient native readonly bool bThisIsActor;
 transient native readonly bool bAllowSimpleTick; // do not fallback to full physics code even for states with action method calls
 bool bSeparateFlatDecal; // use `FlatDecalName` for flat decals
+// this belongs to `EntityEx`, but i need it here for faster checks
+bool bMissileHitscan; // this is hitscan emulation, should be affected by hitscan blocking flags; `bMissile` should still be set
 
 // 0: none
 // 1: switches object to "k8vavoomInternalNoTickGrav" when it enters idle state (the one with negative duration)

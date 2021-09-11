@@ -19,6 +19,7 @@ Actor K8HSHitscanTracer : FastProjectile {
   -DONTSPLASH
   +MISSILE
   +k8MissileHeadshots
+  +k8MissileHitscan
 
   States {
   Spawn:

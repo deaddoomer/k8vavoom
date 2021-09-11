@@ -104,7 +104,7 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
           VEntity *ent = it.entity();
           if (ignoreMonsters || ignorePlayers) {
             if (ignorePlayers && ent->IsPlayer()) continue;
-            if (ignoreMonsters && (ent->IsMissile() || ent->IsMonster())) continue;
+            if (ignoreMonsters && (ent->IsAnyMissile() || ent->IsMonster())) continue;
           }
           if (!CheckRelThing(tmtrace, ent, noPickups)) {
             // continue checking for other things in to see if we hit something

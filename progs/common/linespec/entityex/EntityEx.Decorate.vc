@@ -357,6 +357,7 @@ private final EntityEx dccDoAPtr (optional int aptr0) {
 [decorate] final bool decorate_IsMonster (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? sex.bMonster : false); }
 [decorate] final bool decorate_IsPlayer (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? sex.bIsPlayer : false); }
 [decorate] final bool decorate_IsMissile (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? sex.bMissile : false); }
+[decorate] final bool decorate_IsHitscanMissile (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? sex.bMissile && sex.bMissileHitscan : false); }
 
 [decorate] final class!Actor decorate_MissilePuffOverride () { return class!Actor(self.MissilePuffOverride); }
 

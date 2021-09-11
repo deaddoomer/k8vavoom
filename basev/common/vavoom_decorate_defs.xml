@@ -345,6 +345,7 @@
     <flag name="KillOnUnarchive" property="bKillOnUnarchive" />
     <flag_byte name="OrientedOfs" property="SpriteType" true_value="SPR_ORIENTED_OFS" false_value="SPR_VP_PARALLEL_UPRIGHT" />
     <flag name="k8MissileHeadshots" property="bMissileHeadshotsAllowed" />
+    <flag name="k8MissileHitscan" property="bMissileHitscan" /> <!-- this is hitscan emulation, should be affected by hitscan blocking flags -->
     <!-- use `+k8MuzzleFlash` for muzzle flash actors, so their light will be ignored in `CalcLight()` -->
     <flag name="k8MuzzleFlash" property="bMeIsMuzzleFlash" />
     <flag name="k8AlwaysFullPhysics" property="bAlwaysTick" />

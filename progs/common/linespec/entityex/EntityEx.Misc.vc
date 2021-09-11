@@ -115,6 +115,7 @@ final void PerformVanillaLineAttack (TVec dir, float distance, int LADamage,
     // hitscan attacks are always like this
     pj.bDoHarmSpeciesMissile = true;
     pj.bDoHarmFriendsMissile = true;
+    pj.bMissileHitscan = true; // just in case
     // it can't explode, so no need to check that
     //if (!pj.CheckMissileSpawn()) return;
 
@@ -1299,7 +1300,7 @@ override bool Touch (Entity InOther, bool disableEffects) {
     // damage / explode
     if (!disableEffects && Level.Game.IsAuthority) {
       damage = GetMissileDamage((bStrifeDamage ? 3 : 7), 1);
-      if (bMissileHeadshotsAllowed || GetCvarB('k8HSAnyProjectile')) {
+      if ((bMissileHeadshotsAllowed || bMissileHitscan) || GetCvarB('k8HSAnyProjectile')) {
         //printdebug("%C: missile with velocity %s hit `%C`", self, Velocity, Other);
         damage = Other.K8onBeforeDamage(self, Origin+vector(0, 0, Height*0.5)-Other.Origin, damage, DamageType, secondary:false);
       }
@@ -1313,8 +1314,8 @@ override bool Touch (Entity InOther, bool disableEffects) {
           if (self.Radius > 0) org.z += self.Radius/2.0;
           Other.SpawnBloodSplatter(Origin, damage, org);
         }
-        int dmg = Other.Damage(self, Target, damage, DamageType, spawnBlood:bMissileHeadshotsAllowed);
-        if (dmg && !bMissileHeadshotsAllowed) Other.SpawnBloodAtHeadExplosion(damage, self);
+        int dmg = Other.Damage(self, Target, damage, DamageType, spawnBlood:(bMissileHeadshotsAllowed || bMissileHitscan));
+        if (dmg && !(bMissileHeadshotsAllowed || bMissileHitscan)) Other.SpawnBloodAtHeadExplosion(damage, self);
       }
     }
     // don't traverse any more

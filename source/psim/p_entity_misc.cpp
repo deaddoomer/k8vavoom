@@ -466,7 +466,7 @@ bool VEntity::IsBlockingLine (const line_t *ld) const noexcept {
       if (lflags&ML_RAILING) return false;
       if (lflags&ML_BLOCKEVERYTHING) return true; // explicitly blocking everything
       const unsigned eflags = EntityFlags;
-      if ((eflags&EF_Missile) && (lflags&ML_BLOCKPROJECTILE)) return true; // blocks projectile
+      if ((eflags&EF_Missile) && (lflags&GetMissileLineBlockFlag())) return true; // blocks projectile or hitscan-projectile?
       if ((eflags&EF_CheckLineBlocking) && (lflags&ML_BLOCKING)) return true; // explicitly blocking everything
       if ((eflags&EF_CheckLineBlockMonsters) && (lflags&ML_BLOCKMONSTERS)) return true; // block monsters only
       if ((eflags&EF_IsPlayer) && (lflags&ML_BLOCKPLAYERS)) return true; // block players only
@@ -492,7 +492,7 @@ bool VEntity::IsBlocking3DPobjLineTop (const line_t *ld) const noexcept {
       if (lflags&ML_BLOCKEVERYTHING) return true; // explicitly blocking everything
       if (IsPlayer() && (lflags&ML_BLOCKPLAYERS)) return true;
       if (IsMonster() && (lflags&ML_BLOCKMONSTERS)) return true;
-      if (IsMissile() && (ld->flags&ML_BLOCKPROJECTILE)) return true;
+      if (IsAnyMissile() && (ld->flags&GetMissileLineBlockFlag())) return true;
       if ((EntityFlags&EF_Float) && (lflags&ML_BLOCK_FLOATERS)) return true; // block floaters only
     }
   }
@@ -767,7 +767,7 @@ bool VEntity::CheckSides (TVec lsPos) {
   DeclareMakeBlockMapCoordsBBox2D(tmbbox, xl, yl, xh, yh);
 
   //k8: is this right?
-  int projblk = (EntityFlags&VEntity::EF_Missile ? ML_BLOCKPROJECTILE : 0);
+  int projblk = (EntityFlags&VEntity::EF_Missile ? GetMissileLineBlockFlag() : 0);
 
   // xl->xh, yl->yh determine the mapblock set to search
   //++validcount; // prevents checking same line twice
