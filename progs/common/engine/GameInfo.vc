@@ -39,6 +39,10 @@ enum {
   FastModeNormal = 0,
   FastModeFast = 1,
   FastModeSlow = 2,
+  // this makes only states marked with "fast" faster
+  FastModeFastStates = 3,
+  // make every state faster
+  FastModeFastEveryState = 4,
 }
 
 name AcsHelper;

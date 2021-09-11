@@ -257,6 +257,8 @@ override void Init () {
 
   CreateCvarInt('wp_fire_bobbing', 0, "Allow weapon bobbing when firing? (This is purely visual, it doesn't affect accuracy.)", CVAR_ARCHIVE);
 
+  CreateCvarInt('gm_state_faster_percent', 50, "Make \"fast monster\" states shorter by this number of percents (0 is maximum speed, 100 is original, 50 is default)", CVAR_ARCHIVE);
+
   // debug headshots?
   CreateCvarBool('k8HSDebug', false, "Show headshots debug messages?", 0);
   CreateCvarBool('k8HSDebug_ShowFailedDamageType', false, "Show skipped damage types?", 0);
@@ -451,6 +453,8 @@ void SetSkill (int NewSkill) {
   if (fmon) {
          if (fmon == 1) fastparm = FastModeFast;
     else if (fmon == 2) fastparm = FastModeSlow;
+    else if (fmon == 3) fastparm = FastModeFastStates;
+    else if (fmon == 4) fastparm = FastModeFastEveryState;
     else if (fmon > 2) fastparm = FastModeFast;
   } else {
          if (WorldInfo.bSkillFastMonsters) fastparm = FastModeFast;

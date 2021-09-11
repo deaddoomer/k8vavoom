@@ -476,10 +476,29 @@ menudef GameplayOptions {
   option enum {
     title = "Force fast/slow monsters";
     cvar = g_fast_monsters_override;
-    list { "Default", "Fast", "Slow" }
+    list {
+      "Default",
+      "Fast",
+      "Slow",
+      "Only Fast States",
+      "All States Fast",
+    }
     help =
       "Force fast/slow monsters.",
-      "\cJYou need to restart level for this to take effect.";
+      "\c[!WHITE]Only Fast States\c: only states that are marked as \"FAST\" in DECORATE.",
+      "\c[!WHITE]All States Fast\c: make all states faster.",
+      "\cJYou need to restart the map for this to take effect.";
+  }
+
+  option slider {
+    title = "Fast Monster Rate";
+    cvar = gm_state_faster_percent;
+    min = 0;
+    max = 100;
+    step = 5;
+    help =
+      "Percentage of state time for fast states (\"fast monsters\" mode).",
+      "0 is \"one tick\", 50 is default, 100 is \"unchanged\".";
   }
 
   option slider {
@@ -491,7 +510,7 @@ menudef GameplayOptions {
     help =
       "Force monster respawn time, in seconds.",
       "Nightmare is 12, 0 is \"don't change\", -1 is \"disabled\".",
-      "\cJYou need to restart level for this to take effect.";
+      "\cJYou need to restart the map for this to take effect.";
   }
 
   option slider {

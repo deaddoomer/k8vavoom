@@ -795,27 +795,74 @@ final bool HeightClip (optional bool skipTriggers, optional bool skipObjects) {
 
 //==========================================================================
 //
+//  MakeStateTimeFast
+//
+//==========================================================================
+static final float MakeStateTimeFast (float AStateTime) {
+  if (AStateTime > 0.0) {
+    int fastprc = clamp(GetCvarI('gm_state_faster_percent'), 0, 100); // default is 50, 100 is "original"
+    if (!fastprc) {
+      // max speed: one tick
+      AStateTime = fmin(AStateTime, 1.0/35.0);
+    } else {
+      // not lesser than one tic, tho
+      AStateTime = fmax(AStateTime*cast(float)fastprc/100.0, 1.0/35.0);
+    }
+  }
+  return AStateTime;
+}
+
+
+//==========================================================================
+//
 //  GetStateTime
 //
 //==========================================================================
 override float GetStateTime (state AState, float AStateTime) {
   if (AState) {
-    switch (GetStateTicKind(AState)) {
+    if (GetStateTicKind(AState) == StateTicKind.Random) {
+      AStateTime = float(GetStateArgN(AState, 0)+trunci(Random()*(GetStateArgN(AState, 1)-GetStateArgN(AState, 0)+1)))/35.0f;
       //case StateTicKind.Normal: return AStateTime;
-      case StateTicKind.Random: AStateTime = float(GetStateArgN(AState, 0)+trunci(Random()*(GetStateArgN(AState, 1)-GetStateArgN(AState, 0)+1)))/35.0f; break;
       //default: return AStateTime;
     }
-    if (IsFast()) {
-           if (bFaster && SeeState && StateIsInRange(AState, SeeState, none, 8)) AStateTime /= 2.0;
-      else if (bFastMelee && MeleeState && StateIsInRange(AState, MeleeState, none, 3)) AStateTime /= 2.0;
-      else {
-        auto fff = GetStateSpriteFrame(AState);
-        if (fff&FF_FAST) AStateTime /= 2.0;
+    if (AStateTime > 0.0) {
+      int fff;
+      switch (Level.Game.fastparm) {
+        case GameInfo::FastModeFast:
+          if (IsFast()) {
+            bool dochange = false;
+                 if (bFaster && SeeState && StateIsInRange(AState, SeeState, none, 8)) dochange = true;
+            else if (bFastMelee && MeleeState && StateIsInRange(AState, MeleeState, none, 3)) dochange = true;
+            else {
+              fff = GetStateSpriteFrame(AState);
+              if (fff&FF_FAST) dochange = true;
+            }
+            if (dochange) {
+              //printdebug("%C: prev state time: %s", self, AStateTime);
+              AStateTime = MakeStateTimeFast(AStateTime);
+              //printdebug("%C: new  state time: %s", self, AStateTime);
+            }
+          }
+          break;
+        case GameInfo::FastModeSlow:
+          // slow monsters
+          fff = GetStateSpriteFrame(AState);
+          if (fff&FF_SLOW) AStateTime *= 2.0;
+          break;
+        case GameInfo::FastModeFastStates:
+          // make only marked states faster
+          fff = GetStateSpriteFrame(AState);
+          if (fff&FF_SLOW) AStateTime = MakeStateTimeFast(AStateTime);
+          break;
+        case GameInfo::FastModeFastEveryState:
+          // make all states faster
+          if (bMonster) {
+            //printdebug("%C: prev state time: %s (%s tics)", self, AStateTime, AStateTime/(1.0/35.0));
+            AStateTime = MakeStateTimeFast(AStateTime);
+            //printdebug("%C: new  state time: %s (%s tics)", self, AStateTime, AStateTime/(1.0/35.0));
+          }
+          break;
       }
-    } else if (Level.Game.fastparm == GameInfo::FastModeSlow) {
-      // slow monsters
-      auto fff = GetStateSpriteFrame(AState);
-      if (fff&FF_SLOW) AStateTime *= 2.0;
     }
   }
   return AStateTime;
