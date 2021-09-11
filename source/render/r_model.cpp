@@ -964,9 +964,14 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         }
         if (ParseBool(StateDefNode, "useroll", false)) F.gzNoActorRoll = false; // use
       } else {
-        auto bad = StateDefNode->FindFirstAttributeOf("usepitch", "useroll", nullptr);
-        if (bad) Sys_Error("%s: model '%s' class state definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
-        F.gzdoom = false;
+        if (StateDefNode->HasAttribute("usepitch") && StateDefNode->GetAttribute("usepitch").strEqu("momentum")) {
+          F.gzNoActorPitch = 2; // from momentum
+        } else {
+          auto bad = StateDefNode->FindFirstAttributeOf("usepitch", "useroll", nullptr);
+          if (bad) Sys_Error("%s: model '%s' class state definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
+          F.gzNoActorPitch = 0; // default
+          F.gzdoom = false;
+        }
       }
 
       int lastIndex = -666;
@@ -1767,6 +1772,12 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
         Md2Angle.yaw = FDef.angleYaw.GetAngle(Md2Angle.yaw, rndVal);
         Md2Angle.pitch = FDef.anglePitch.GetAngle(Md2Angle.pitch, rndVal);
         Md2Angle.roll = FDef.angleRoll.GetAngle(Md2Angle.roll, rndVal);
+
+        if (FDef.gzNoActorPitch == 2) {
+          // from momentum
+          Md2Angle.pitch = (mobj ? VectorAnglePitch(mobj->Velocity) : 0.0f);
+          Md2Angle.roll = 0.0f;
+        }
       }
 
       if (Level && mobj) {
