@@ -1,0 +1,32 @@
+Model K8HSTracer // Name of actor in DECORATE
+{
+   Path "models" // Path to model in PK3
+   SKIN 0 "k8hstracer1.tga" // Model index, model file
+   MODEL 0 "k8hstracer.md3" // Model index, texture (can be in any format supported by GZDoom)
+   Scale 4.5 4.5 1.5 // Scale values
+   PITCHFROMMOMENTUM // A flag that will fix the model pitch for projectiles
+
+   FrameIndex KZZT A 0 0 // The sprite lump, sprite frame, model index, frame number
+}
+
+Model K8HSMonsterTracer // Name of actor in DECORATE
+{
+   Path "models" // Path to model in PK3
+   SKIN 0 "k8hstracer1.tga" // Model index, model file
+   MODEL 0 "k8hstracer.md3" // Model index, texture (can be in any format supported by GZDoom)
+   Scale 4.5 4.5 1.5 // Scale values
+   PITCHFROMMOMENTUM // A flag that will fix the model pitch for projectiles
+
+   FrameIndex KZZT A 0 0 // The sprite lump, sprite frame, model index, frame number
+}
+
+Model K8HSZombieTracer // Name of actor in DECORATE
+{
+   Path "models" // Path to model in PK3
+   SKIN 0 "k8hstracer1.tga" // Model index, model file
+   MODEL 0 "k8hstracer.md3" // Model index, texture (can be in any format supported by GZDoom)
+   Scale 4.5 4.5 1.5 // Scale values
+   PITCHFROMMOMENTUM // A flag that will fix the model pitch for projectiles
+
+   FrameIndex KZZT A 0 0 // The sprite lump, sprite frame, model index, frame number
+}

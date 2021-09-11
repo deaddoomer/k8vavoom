@@ -1,0 +1,58 @@
+Actor K8HSTracer : FastProjectile {
+  Damage 0
+  Radius 2
+  Height 2
+  Speed 140
+  RenderStyle Add
+  Alpha 0.9
+  Scale 0.15
+
+  PROJECTILE
+  +RANDOMIZE
+  +FORCEXYBILLBOARD
+  +DONTSPLASH
+  +NOEXTREMEDEATH
+
+  States {
+  Spawn:
+    KZZT A 1 BRIGHT
+    Loop
+  Death:
+    Stop
+  XDeath:
+    TNT1 A 0
+    Stop
+  }
+}
+
+
+Actor K8HSMonsterTracer : K8HSTracer {
+  Speed 80
+  Damage (random(3, 4))
+  Decal BulletChip
+
+  +BLOODSPLATTER
+  +THRUGHOST
+  -DONTSPLASH
+  +MISSILE
+
+  States {
+  Spawn:
+    KZZT A 1 BRIGHT
+    TNT1 A 0 ThrustThingZ(0, Random(-8, 8), 0, 1)
+    KZZT A 1 BRIGHT
+    Goto Idle
+  Idle:
+    KZZT A 1 BRIGHT
+    Loop
+  Death:
+    TNT1 A 1 A_SpawnItem("BulletPuff")
+    Stop
+  }
+}
+
+
+Actor K8HSZombieTracer : K8HSMonsterTracer {
+  Speed 110
+  Damage (random(1, 5)*3)
+}

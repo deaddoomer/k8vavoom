@@ -1,0 +1,25 @@
+Object K8HSTracer {
+  Frame KZZT {
+    Light K8HSTracerOrangeGlow
+  }
+}
+
+Object K8HSMonsterTracer {
+  Frame KZZT {
+    Light K8HSTracerOrangeGlow
+  }
+}
+
+Object K8HSZombieTracer {
+  Frame KZZT {
+    Light K8HSTracerOrangeGlow
+  }
+}
+
+
+PointLight K8HSTracerOrangeGlow {
+  color 1.0 0.5 0.0
+  size 25
+  dontlightself 1
+  noshadowmap 1
+}

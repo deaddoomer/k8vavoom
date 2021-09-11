@@ -1,0 +1,143 @@
+Actor K8HSProjZombieMan : ZombieMan replaces ZombieMan {
+  const float SpreadAngle = 4.5;
+
+  +HarmFriends //k8: dunno, i think it should
+  +DoHarmSpecies // allow direct damage from projectiles
+  -DontHarmSpecies
+  -DontHarmClass
+
+  States {
+  Missile:
+    POSS E 10 Fast A_FaceTarget
+    POSS F 8 Bright Fast
+      {
+        A_FaceTarget();
+        A_PlaySound("grunt/attack", CHAN_AUTO);
+        A_CustomMissile("K8HSZombieTracer", Height/1.75, 0, frandom(-SpreadAngle, SpreadAngle), CMF_AIMOFFSET);
+      }
+    POSS E 8 Fast
+    Goto See
+  }
+}
+
+
+Actor K8HSProjShotgunGuy : ShotgunGuy replaces ShotgunGuy {
+  const float SpreadAngle0 = 3.5;
+  const float SpreadAngle1 = 4.5;
+  const float SpreadAngle2 = 5.5;
+
+  +HarmFriends //k8: dunno, i think it should
+  +DoHarmSpecies // allow direct damage from projectiles
+  -DontHarmSpecies
+  -DontHarmClass
+
+  States {
+  Missile:
+    SPOS E 10 Fast A_FaceTarget
+    SPOS F 10 Bright Fast
+      {
+        A_FaceTarget();
+        A_PlaySound("shotguy/attack", CHAN_AUTO);
+        A_CustomMissile("K8HSZombieTracer", Height/1.75, 0, frandom(-SpreadAngle0, SpreadAngle0), CMF_AIMOFFSET);
+        A_CustomMissile("K8HSZombieTracer", Height/1.75, 0, frandom(-SpreadAngle1, SpreadAngle1), CMF_AIMOFFSET);
+        A_CustomMissile("K8HSZombieTracer", Height/1.75, 0, frandom(-SpreadAngle2, SpreadAngle2), CMF_AIMOFFSET);
+      }
+    SPOS E 10 Fast
+    Goto See
+  }
+}
+
+
+Actor K8HSProjChaingunGuy : ChaingunGuy replaces ChaingunGuy {
+  const float SpreadAngle0 = 2.5;
+  const float SpreadAngle1 = 3.5;
+
+  +HarmFriends //k8: dunno, i think it should
+  +DoHarmSpecies // allow direct damage from projectiles
+  -DontHarmSpecies
+  -DontHarmClass
+
+  States {
+  Missile:
+    CPOS E 10 Fast A_FaceTarget
+    CPOS F 4 Bright Fast
+      {
+        A_FaceTarget();
+        A_PlaySound("chainguy/attack", CHAN_AUTO);
+        A_CustomMissile("K8HSZombieTracer", Height/1.75, 0, frandom(-SpreadAngle0, SpreadAngle0), CMF_AIMOFFSET);
+      }
+    CPOS E 4 Bright Fast
+      {
+        A_FaceTarget();
+        A_PlaySound("chainguy/attack", CHAN_AUTO);
+        A_CustomMissile("K8HSZombieTracer", Height/1.75, 0, frandom(-SpreadAngle1, SpreadAngle1), CMF_AIMOFFSET);
+      }
+    CPOS F 1 A_CPosRefire
+    Goto Missile+1
+  }
+}
+
+
+Actor K8HSProjWolfensteinSS : WolfensteinSS replaces WolfensteinSS {
+  const float SpreadAngle = 5.5;
+
+  +HarmFriends //k8: dunno, i think it should
+  +DoHarmSpecies // allow direct damage from projectiles
+  -DontHarmSpecies
+  -DontHarmClass
+
+  States {
+  Missile:
+    SSWV EF 10 Fast A_FaceTarget
+    SSWV G 4 Bright Fast
+      {
+        A_FaceTarget();
+        A_PlaySound("wolfss/attack", CHAN_AUTO);
+        A_CustomMissile("K8HSZombieTracer", Height/1.75, 0, frandom(-SpreadAngle, SpreadAngle), CMF_AIMOFFSET);
+      }
+    SSWV F 6 Fast A_FaceTarget
+    SSWV G 4 Bright Fast
+      {
+        A_FaceTarget();
+        A_PlaySound("wolfss/attack", CHAN_AUTO);
+        A_CustomMissile("K8HSZombieTracer", Height/1.75, 0, frandom(-SpreadAngle, SpreadAngle), CMF_AIMOFFSET);
+      }
+    SSWV F 1 A_CPosRefire
+    Goto Missile+1
+  }
+}
+
+
+Actor K8HSProjSpiderMastermind : SpiderMastermind replaces SpiderMastermind {
+  const float SpreadAngle0 = 2.5;
+  const float SpreadAngle1 = 4.5;
+  const float SpreadAngle2 = 6.5;
+
+  +HarmFriends //k8: dunno, i think it should
+  +DoHarmSpecies // allow direct damage from projectiles
+  -DontHarmSpecies
+  -DontHarmClass
+
+  States {
+  Missile:
+    SPID A 20 Bright Fast A_FaceTarget
+    SPID G 4 Bright Fast
+      {
+        A_FaceTarget();
+        A_CustomMissile("K8HSZombieTracer", Height/1.75, 0, frandom(-SpreadAngle0, SpreadAngle0), CMF_AIMOFFSET);
+        A_CustomMissile("K8HSZombieTracer", Height/1.75, 0, frandom(-SpreadAngle1, SpreadAngle1), CMF_AIMOFFSET);
+        A_CustomMissile("K8HSZombieTracer", Height/1.75, 0, frandom(-SpreadAngle2, SpreadAngle2), CMF_AIMOFFSET);
+        A_PlaySound("spider/attack", CHAN_AUTO);
+      }
+    SPID H 4 Bright Fast
+      {
+        A_FaceTarget();
+        A_CustomMissile("K8HSZombieTracer", Height/1.75, 0, frandom(-SpreadAngle0, SpreadAngle0), CMF_AIMOFFSET);
+        A_CustomMissile("K8HSZombieTracer", Height/1.75, 0, frandom(-SpreadAngle1, SpreadAngle1), CMF_AIMOFFSET);
+        A_CustomMissile("K8HSZombieTracer", Height/1.75, 0, frandom(-SpreadAngle2, SpreadAngle2), CMF_AIMOFFSET);
+        A_PlaySound("spider/attack", CHAN_AUTO);
+      }
+    SPID H 1 Bright A_SpidRefire
+    Goto Missile+1
+  }
+}
