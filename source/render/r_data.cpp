@@ -1404,7 +1404,11 @@ static void ParseGZLightDef (VScriptParser *sc, int LightType, float lightsizefa
     // interval
     if (sc->Check("interval")) {
       sc->ExpectFloat();
-      L->Interval = sc->Float*35.0f;
+      if (LightType == DLTYPE_FlickerRandom) {
+        L->Interval = sc->Float*350.0f; // for this type of light, one second is 0.1
+      } else {
+        L->Interval = sc->Float*35.0f;
+      }
       continue;
     }
     // subtractive (not supported)
