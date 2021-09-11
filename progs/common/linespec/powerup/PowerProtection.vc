@@ -61,13 +61,15 @@ override void InitEffect () {
     // set some special flags for protecting the Owner
     //k8: dunno, it looks right to check for "common protection" here
     if (DamageFactors.length == 0) {
-      EntityEx(Owner).bNoRadiusDamage = true;
-      EntityEx(Owner).bNoMorph = true;
-      EntityEx(Owner).bDontSquash = true;
-      EntityEx(Owner).bDontBlast = true;
-      EntityEx(Owner).bNoTeleOther = true;
-      EntityEx(Owner).bDontRip = true;
-      EntityEx(Owner).bNoPain = true;
+      EntityEx ee = EntityEx(Owner);
+      if (!ee) return;
+      ee.bNoRadiusDamage = true;
+      ee.bNoMorph = true;
+      ee.bDontSquash = true;
+      ee.bDontBlast = true;
+      ee.bNoTeleOther = true;
+      ee.bDontRip = true;
+      ee.bNoPain = true;
     }
   }
 }
@@ -84,13 +86,15 @@ override void EndEffect () {
     // remove flags from Owner
     //k8: dunno, it looks right to check for "common protection" here
     if (DamageFactors.length == 0) {
-      EntityEx(Owner).bNoRadiusDamage = false;
-      EntityEx(Owner).bNoMorph = false;
-      EntityEx(Owner).bDontSquash = false;
-      EntityEx(Owner).bDontBlast = false;
-      EntityEx(Owner).bNoTeleOther = false;
-      EntityEx(Owner).bDontRip = false;
-      EntityEx(Owner).bNoPain = false;
+      EntityEx ee = EntityEx(Owner);
+      if (!ee) return;
+      ee.bNoRadiusDamage = ee.default.bNoRadiusDamage;
+      ee.bNoMorph = ee.default.bNoMorph;
+      ee.bDontSquash = ee.default.bDontSquash;
+      ee.bDontBlast = ee.default.bDontBlast;
+      ee.bNoTeleOther = ee.default.bNoTeleOther;
+      ee.bDontRip = ee.default.bDontRip;
+      ee.bNoPain = ee.default.bNoPain;
     }
   }
 }

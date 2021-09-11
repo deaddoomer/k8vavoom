@@ -1141,7 +1141,9 @@ override bool Touch (Entity InOther, bool disableEffects) {
       if (!bHitOwner && Other == Target) return ProcessHitFlags(Other, true, disableEffects); // don't missile self
       // let players missile other players
       if (!Target.bIsPlayer && !Other.bIsPlayer) {
+        // both inflictor and victim aren't players
         int Inf = Target.GetInfighting();
+        //if (self isa 'K8HSZombieTracer') printdebug("%C: hit from %C hit %C; Inf=%s", self, Target, Other, Inf);
         if (Inf < 0) {
           // monsters can't hurt each other, but make exception
           // depending on friendliness and hate status
@@ -1154,24 +1156,28 @@ override bool Touch (Entity InOther, bool disableEffects) {
             }
           }
         } else if (Inf == 0) {
-          //print("TOUCH: self=%n; other=%n; inf=%d", GetClassName(Class), GetClassName(Other.Class), Inf);
-          if (Other.IsFriend(Target)) return ProcessHitFlags(Other, false, disableEffects); // don't hurt friends
-          //print("  not friends");
+          //printdebug("%C: TOUCH: from=%C; other=%C; inf=%d", self, Target, Other, Inf);
+          // don't hurt friends
+          if (!Target.bDoHarmFriends && Other.IsFriend(Target)) return ProcessHitFlags(Other, false, disableEffects);
+          //printdebug("  not friends");
+          // don't hurt monsters that hate the same thing as you do
+          //FIXME: check `bDoHarmSpecies` flag here?
           if (Other.TIDToHate && Other.TIDToHate == Target.TIDToHate) {
-            // don't hurt monsters that hate the same thing as you do
             return ProcessHitFlags(Other, false, disableEffects);
           }
-          //print("  hates");
-          //print("  species: target is '%n', other is '%n'", Target.GetSpecies(), Other.GetSpecies());
-          //print("  species: target is '%s', other is '%s'", string(Target.GetSpecies()), string(Other.GetSpecies()));
-          if (IsSameSpecies(Target, Other)) {
+          //printdebug("  hates different things");
+          //printdebug("  species: target is '%n', other is '%n' (bDoHarmSpecies=%B)", Target.GetSpecies(), Other.GetSpecies(), Target.bDoHarmSpecies);
+          // check species only if inflictor is not allowed to hurt the same species with direct projectile damage
+          if (!Target.bDoHarmSpecies && IsSameSpecies(Target, Other)) {
+            //printdebug("  same species");
             // don't hurt same species, but only if the target isn't one's hostile
             if (!Other.IsHostile(Target)) {
+              //printdebug("  not hostile");
               // allow hurting monsters the shooter hates
               if (Other.TID == 0 || Target.TIDToHate != Other.TID) return ProcessHitFlags(Other, false, disableEffects);
             }
           }
-          //print("  different species");
+          //printdebug("  pre-checks complete");
         }
       }
     }
@@ -4696,6 +4702,8 @@ void RespawnResetFlags () {
   bNoTeleOther = default.bNoTeleOther;
   bDontHurtClass = default.bDontHurtClass; //k8:???
   bDontHurtSpecies = default.bDontHurtSpecies;
+  bDoHarmSpecies = default.bDoHarmSpecies;
+  bDoHarmFriends = default.bDoHarmFriends;
   bNoDamage = default.bNoDamage;
   bDontGib = default.bDontGib;
   bNoPain = default.bNoPain;

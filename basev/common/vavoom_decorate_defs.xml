@@ -196,9 +196,10 @@
     <flag name="DontMorph" property="bNoMorph" />
     <flag name="DontSquash" property="bDontSquash" />
     <flag name="NoTeleOther" property="bNoTeleOther" />
-    <flag name="DontHarmClass" property="bDontHurtClass" />
-    <flag name="DontHarmSpecies" property="bDontHurtSpecies" />
-    <flag_inverted name="DoHarmSpecies" property="bDontHurtSpecies" />
+    <flag name="DontHarmClass" property="bDontHurtClass" /> <!-- this is only for explosions -->
+    <flag name="DontHarmSpecies" property="bDontHurtSpecies" /> <!-- this is only for explosions -->
+    <flag name="DoHarmSpecies" property="bDoHarmSpecies" /> <!-- this is for direct projectile damage -->
+    <flag name="HarmFriends" property="bDoHarmFriends" /> <!-- this is for direct projectile damage -->
     <flag name="NoDamage" property="bNoDamage" />
     <flag name="DontRip" property="bDontRip" />
     <flag name="NoTelefrag" property="bNoTeleFrag" />
