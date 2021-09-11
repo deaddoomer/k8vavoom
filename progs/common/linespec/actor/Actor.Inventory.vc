@@ -344,5 +344,6 @@ final void DoTakeInventory (class!Inventory ItemType, int Amount, EntityEx Recei
   }
 
   int damage = 4*(P_Random()%3+1);
-  LineAttack(dir, (bIsPlayer ? 8192.0 : MISSILERANGE), damage, StrifePuff, DmgType:'Bullet');
+  //LineAttack(dir, (bIsPlayer ? 8192.0 : MISSILERANGE), damage, StrifePuff, DmgType:'Bullet');
+  PerformVanillaLineAttack(dir, (bIsPlayer ? 8192.0 : MISSILERANGE), damage, StrifePuff, DmgType:'Bullet');
 }

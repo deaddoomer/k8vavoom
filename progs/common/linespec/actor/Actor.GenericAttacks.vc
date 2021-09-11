@@ -442,7 +442,8 @@ final void DoAttack (bool DoMelee, bool DoMissile, int aMeleeDamage,
     TVec dir = aimDir;
     VectorRotateAroundZ(ref dir, (Random()-Random())*45.0/2.0);
     int damage = ((P_Random()%5)+1)*3;
-    LineAttack(dir, MISSILERANGE, damage, BulletPuff, DmgType:'Bullet', secondary:(i != 0));
+    //LineAttack(dir, MISSILERANGE, damage, BulletPuff, DmgType:'Bullet', secondary:(i != 0));
+    PerformVanillaLineAttack(dir, MISSILERANGE, damage, BulletPuff, DmgType:'Bullet', secondary:(i != 0), fromDecorate:true);
   }
 }
 

@@ -176,3 +176,19 @@ object PlasmaBall
   frame PLSEE { light PLASMA_X4 }
 }
 */
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// hitscan tracers
+Object K8HSHitscanTracer {
+  Frame KZZT {
+    Light K8HSHitscanTracerLight
+  }
+}
+
+PointLight K8HSHitscanTracerLight {
+  color 1.0 0.5 0.0
+  size 25
+  dontlightself 1
+  noshadowmap 1
+}

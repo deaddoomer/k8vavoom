@@ -681,7 +681,8 @@
   Aim(out dir, 16.0*64.0);
   if (PlayerEx(Player).Refire) VectorRotateAroundZ(ref dir, (Random()-Random())*45.0/8.0);
   //FIXME: damage type?
-  LineAttack(dir, MISSILERANGE, damage, GoldWandPuff1);
+  //LineAttack(dir, MISSILERANGE, damage, GoldWandPuff1);
+  PerformVanillaLineAttack(dir, MISSILERANGE, damage, GoldWandPuff1);
   PlaySound('weapons/wandhit', CHAN_WEAPON);
 }
 
@@ -709,7 +710,8 @@
   foreach (auto i; 0..5) {
     int damage = 1+(P_Random()&7);
     //FIXME: damage type?
-    LineAttack(dir, MISSILERANGE, damage, GoldWandPuff2);
+    //LineAttack(dir, MISSILERANGE, damage, GoldWandPuff2);
+    PerformVanillaLineAttack(dir, MISSILERANGE, damage, GoldWandPuff2);
     VectorRotateAroundZ(ref dir, (45.0/8.0)/2.0);
   }
   PlaySound('weapons/wandhit', CHAN_WEAPON);
@@ -772,7 +774,8 @@
   int damage = HITDICE(4);
   if (PlayerEx(Player).Refire) VectorRotateAroundZ(ref dir, (Random()-Random())*45.0/8.0);
   //FIXME: damage type?
-  LineAttack(dir, MISSILERANGE, damage, BlasterPuff);
+  //LineAttack(dir, MISSILERANGE, damage, BlasterPuff);
+  PerformVanillaLineAttack(dir, MISSILERANGE, damage, BlasterPuff);
   PlaySound('weapons/blastershoot', CHAN_WEAPON);
 }
 

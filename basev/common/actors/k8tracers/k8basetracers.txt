@@ -1,0 +1,48 @@
+Actor K8HSHitscanTracer : FastProjectile {
+  //Damage (random(1, 5)*3)
+  Damage 0  // DO NOT CHANGE! damage will be set by the code pointer
+  Radius 2
+  Height 2
+  Speed 110
+  RenderStyle Add
+  Alpha 0.9
+  Scale 0.15
+  Decal BulletChip
+
+  PROJECTILE
+  +RANDOMIZE
+  +FORCEXYBILLBOARD
+  +DONTSPLASH
+  +NOEXTREMEDEATH
+  +BLOODSPLATTER
+  +THRUGHOST
+  -DONTSPLASH
+  +MISSILE
+  +k8MissileHeadshots
+
+  States {
+  Spawn:
+    KKZZ A 1 BRIGHT
+    TNT1 A 0
+      {
+        if (!IsPlayer()) ThrustThingZ(0, Random(-8, 8), 0, 1);
+      }
+    KKZZ A 1 BRIGHT
+    Goto Idle
+  Idle:
+    KKZZ A 1 BRIGHT
+    Loop
+  Death:
+    TNT1 A 1
+      {
+        //A_k8ConLog(va("puffover: %C", MissilePuffOverride()));
+        A_SpawnItem(MissilePuffOverride());
+        //A_SpawnItem("BulletPuff");
+      }
+    Stop
+  XDeath:
+    // do not spawn puff when hit something
+    TNT1 A 1
+    Stop
+  }
+}

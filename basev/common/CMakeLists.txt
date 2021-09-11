@@ -12,6 +12,7 @@ file(GLOB basepak_SRC CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/actors/raven/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/actors/shared/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/actors/strife/*.txt
+  ${CMAKE_CURRENT_SOURCE_DIR}/actors/k8tracers/*.txt
 
   ${CMAKE_CURRENT_SOURCE_DIR}/fxdefs/common/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/fxdefs/doom/*.txt
@@ -33,6 +34,7 @@ file(GLOB basepak_SRC CONFIGURE_DEPENDS
 
   ${CMAKE_CURRENT_SOURCE_DIR}/models/*
   ${CMAKE_CURRENT_SOURCE_DIR}/models/k8lightbulb/*
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/k8tracer/*
 
   ${CMAKE_CURRENT_SOURCE_DIR}/sprites/*.png
   ${CMAKE_CURRENT_SOURCE_DIR}/sprites/dogs/*

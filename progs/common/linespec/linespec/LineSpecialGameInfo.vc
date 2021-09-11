@@ -257,7 +257,9 @@ override void Init () {
 
   CreateCvarInt('wp_fire_bobbing', 0, "Allow weapon bobbing when firing? (This is purely visual, it doesn't affect accuracy.)", CVAR_ARCHIVE);
 
-  CreateCvarInt('gm_state_faster_percent', 50, "Make \"fast monster\" states shorter by this number of percents (0 is maximum speed, 100 is original, 50 is default)", CVAR_ARCHIVE);
+  CreateCvarInt('gm_state_faster_percent', 50, "Make \"fast monster\" states shorter by this number of percents (0 is maximum speed, 100 is original, 50 is default).", CVAR_ARCHIVE);
+
+  CreateCvarInt('gm_vanilla_hitscan_type', 0, "Vanilla monster hitscan attack type (bit0: projectiles for monsters; bit1: projectiles for player weapons).", CVAR_ARCHIVE);
 
   // debug headshots?
   CreateCvarBool('k8HSDebug', false, "Show headshots debug messages?", 0);

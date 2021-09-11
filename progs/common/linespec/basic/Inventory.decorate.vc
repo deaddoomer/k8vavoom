@@ -712,7 +712,8 @@
     rot.roll = 0.0;
     TVec dir = RotateDirectionVector(aimDir, rot);
     int damage = 5*(P_Random()%3+1);
-    LineAttack(dir, (bIsPlayer ? 8192.0 : MISSILERANGE), damage, BulletPuff, DmgType:'Shell', secondary:(i != 0), decalType:decal);
+    //LineAttack(dir, (bIsPlayer ? 8192.0 : MISSILERANGE), damage, BulletPuff, DmgType:'Shell', secondary:(i != 0), decalType:decal);
+    PerformVanillaLineAttack(dir, (bIsPlayer ? 8192.0 : MISSILERANGE), damage, BulletPuff, DmgType:'Shell', secondary:(i != 0), decalType:decal);
   }
 }
 

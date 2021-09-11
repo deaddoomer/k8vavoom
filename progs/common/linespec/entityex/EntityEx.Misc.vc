@@ -47,6 +47,101 @@ override void Destroyed () {
 }
 
 
+/*
+final bool LineAttack (TVec dir, float distance, int LADamage,
+                       class!EntityEx PuffType, optional bool NoAttackGhosts,
+                       optional TVec *outHitPoint, optional name DmgType,
+                       optional bool secondary, optional name decalType,
+                       optional int pufftid, optional bool disableRandomZ,
+                       optional out EntityEx hitEntity, optional out EntityEx puffEntity)
+*/
+
+//==========================================================================
+//
+//  PerformVanillaLineAttack
+//
+//==========================================================================
+final void PerformVanillaLineAttack (TVec dir, float distance, int LADamage,
+                                     class!EntityEx PuffType, optional name DmgType,
+                                     optional bool secondary, optional name decalType,
+                                     optional bool fromDecorate)
+{
+  class!EntityEx pjclass = none;
+
+  int hstype = GetCvarI('gm_vanilla_hitscan_type');
+  // bit0: monsters
+  // bit1: player weapons
+  // bit2: various DECORATE codepointers
+       if (bIsPlayer) hstype &= 0x02;
+  else if (fromDecorate) hstype &= 0x04;
+  else hstype &= 0x01;
+  if (hstype) {
+    //pjclass = class!EntityEx(FindClass('K8HSZombieTracer'));
+    pjclass = class!EntityEx(K8HSHitscanTracer);
+    if (pjclass) pjclass = class!EntityEx(GetClassReplacement(pjclass));
+  }
+
+  if (!pjclass) {
+    LineAttack(dir, distance, LADamage, PuffType, DmgType:DmgType!optional, secondary:secondary!optional, decalType:decalType!optional);
+  } else {
+    EntityEx pj;
+    if (!bIsPlayer) {
+      pj = SpawnMissileXYZ(Origin+vector(0, 0, Height/1.75), Target, pjclass);
+      if (!pj) return;
+
+      float angle = VectorAngleYaw(dir);
+      float s, c;
+      sincos(angle, out s, out c);
+      //VectorRotateAroundZ(ref pj.Velocity, angle);
+      if (pj.Speed > 0) {
+        pj.Velocity.x = pj.Speed*c;
+        pj.Velocity.y = pj.Speed*s;
+      } else {
+        pj.Velocity.x = 0;
+        pj.Velocity.y = 0;
+      }
+      pj.Angles.yaw = angle;
+    } else {
+      TVec org = Origin;
+      org.z += CalculateMissileAttackZOfs(pjclass);
+      /*if (org.z != ONFLOORZ)*/ org.z -= FloorClip;
+      pj = Spawn(pjclass, org);
+      if (!pj) return;
+
+      pj.Target = self;
+      pj.DecalName = pj.default.DecalName;
+      pj.CarryBloodTranslations(self);
+      pj.PlayMissileSpawnSound(self);
+      if (!pj.CheckMissileSpawn()) return;
+
+      // exact direction
+      dir = dir.normalise;
+      VectorAngles(dir, out pj.Angles);
+      pj.Velocity = pj.Speed*dir;
+    }
+
+    if (specified_DmgType) pj.DamageType = DmgType;
+
+    if (PuffType) {
+      class!EntityEx ovc = class!EntityEx(GetClassReplacement(PuffType));
+      if (ovc) PuffType = ovc;
+      pj.MissilePuffOverride = PuffType;
+      //printdebug("%C: MissilePuffOverride=%C", self, pj.MissilePuffOverride);
+    }
+
+    if (specified_decalType) pj.DecalName = decalType;
+
+    pj.MissileDamageOverride = LADamage;
+
+    // hitscan attacks are always like this
+    pj.bDoHarmSpeciesMissile = true;
+    pj.bDoHarmFriendsMissile = true;
+  }
+}
+
+
+
+
 //==========================================================================
 //
 //  FixLightPosition
@@ -1158,7 +1253,7 @@ override bool Touch (Entity InOther, bool disableEffects) {
         } else if (Inf == 0) {
           //printdebug("%C: TOUCH: from=%C; other=%C; inf=%d", self, Target, Other, Inf);
           // don't hurt friends
-          if (!Target.bDoHarmFriends && Other.IsFriend(Target)) return ProcessHitFlags(Other, false, disableEffects);
+          if (!(Target.bDoHarmFriends || bDoHarmFriendsMissile) && Other.IsFriend(Target)) return ProcessHitFlags(Other, false, disableEffects);
           //printdebug("  not friends");
           // don't hurt monsters that hate the same thing as you do
           //FIXME: check `bDoHarmSpecies` flag here?
@@ -1168,7 +1263,7 @@ override bool Touch (Entity InOther, bool disableEffects) {
           //printdebug("  hates different things");
           //printdebug("  species: target is '%n', other is '%n' (bDoHarmSpecies=%B)", Target.GetSpecies(), Other.GetSpecies(), Target.bDoHarmSpecies);
           // check species only if inflictor is not allowed to hurt the same species with direct projectile damage
-          if (!Target.bDoHarmSpecies && IsSameSpecies(Target, Other)) {
+          if (!(Target.bDoHarmSpecies || bDoHarmSpeciesMissile) && IsSameSpecies(Target, Other)) {
             //printdebug("  same species");
             // don't hurt same species, but only if the target isn't one's hostile
             if (!Other.IsHostile(Target)) {
@@ -1304,6 +1399,7 @@ bool Slam (EntityEx Other) {
 //
 //==========================================================================
 int GetMissileDamage (int Mask, int Add) {
+  if (MissileDamageOverride) return (MissileDamageOverride != int.min ? MissileDamageOverride : 0);
   if (!MissileDamage) return 0;
   if (!Mask) return Add*MissileDamage;
   return ((P_Random()&Mask)+Add)*MissileDamage;
@@ -3517,7 +3613,8 @@ final void GunShot (bool accurate, TVec dir, name DmgType, bool secondary, optio
   }
 
   int damage = 5*(P_Random()%3+1);
-  LineAttack(dir, range, damage, BulletPuff, DmgType:DmgType, secondary:secondary, decalType:aDecalName!optional);
+  //LineAttack(dir, range, damage, BulletPuff, DmgType:DmgType, secondary:secondary, decalType:aDecalName!optional);
+  PerformVanillaLineAttack(dir, range, damage, BulletPuff, DmgType:DmgType, secondary:secondary, decalType:aDecalName!optional);
 }
 
 

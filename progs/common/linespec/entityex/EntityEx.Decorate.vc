@@ -358,6 +358,8 @@ private final EntityEx dccDoAPtr (optional int aptr0) {
 [decorate] final bool decorate_IsPlayer (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? sex.bIsPlayer : false); }
 [decorate] final bool decorate_IsMissile (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? sex.bMissile : false); }
 
+[decorate] final class!Actor decorate_MissilePuffOverride () { return class!Actor(self.MissilePuffOverride); }
+
 // or any subclass
 [decorate] final bool decorate_IsActorClass (name classname, optional int aptr0) {
   EntityEx sex = dccDoAPtr(aptr0!optional);

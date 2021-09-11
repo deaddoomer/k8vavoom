@@ -308,6 +308,8 @@ bool bDontHurtClass; // don't hurt own class with explosions
 bool bDontHurtSpecies; // don't hurt own species with explosions
 bool bDoHarmSpecies; // hurt own species with direct projectile damage
 bool bDoHarmFriends; // hurt friends with direct projectile damage
+bool bDoHarmSpeciesMissile; // cannot be set from the DECORATE; used to force missile properties
+bool bDoHarmFriendsMissile; // cannot be set from the DECORATE; used to force missile properties
 bool bNoDamage; // actor reacts to pain but does not take any damage
 bool bDontGib; // don't crunch this corpse to gibs
 bool bNoPain; // don't enter pain state
@@ -430,6 +432,8 @@ ubyte FriendPlayer;
 
 int MissileDamage; // for missiles
 int MissilePoisonDamage;
+int MissileDamageOverride; // non-zero: override; int.min is zero
+class!EntityEx MissilePuffOverride; // used in hitscan tracers
 
 // for nightmare respawn
 mthing_t SpawnPoint;

@@ -284,6 +284,23 @@ menudef GameplayOptions {
       "\cGWARNING! This may not work for custom weapon packs.";
   }
 
+  option enum {
+    title = "Force Projectile Fire";
+    cvar = gm_vanilla_hitscan_type;
+    list {
+      "Default",
+      "Monsters",
+      "Player Weapons",
+      "Monsters And Player Weapons",
+    };
+    help =
+      "You can replace vanilla hitscan attacks with fast projectile attacks.",
+      "This mostly works for vanilla monsters and weapons.",
+      "You can replace vanilla hitscanner attacks, or player weapon attacks,",
+      "or both.",
+      "\cGWARNING! This is MAJOR gameplay changer!";
+  }
+
   //TODO
   //if (GameName == "hexen") CreateOnOffCvar("Alt. Monster Behaviour", 'alternate_monster_attacks');
 
