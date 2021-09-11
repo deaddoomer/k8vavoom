@@ -637,7 +637,7 @@ override int ExecuteActionSpecial (int Special, int Arg1, int Arg2, int Arg3,
     case LNSPEC_TeleportZombieChanger:
       if (Side == 0) {
         // only teleport when crossing the front side of a line
-        buttonSuccess = EV_Teleport(Arg1, Arg2, Arg3, Arg4, Arg5, A, Line, fog:true);
+        buttonSuccess = EV_Teleport(Arg1, Arg2, Arg3, Arg4, Arg5, A, Line, Special:Special);
         if (A) A.SetPainState();
       }
       break;
@@ -710,19 +710,19 @@ override int ExecuteActionSpecial (int Special, int Arg1, int Arg2, int Arg3,
     case LNSPEC_Teleport:
       if (Side == 0) {
         // only teleport when crossing the front side of a line
-        buttonSuccess = EV_Teleport(Arg1, Arg2, Arg3, Arg4, Arg5, A, Line, fog:true);
+        buttonSuccess = EV_Teleport(Arg1, Arg2, Arg3, Arg4, Arg5, A, Line, Special:Special);
       }
       break;
     case LNSPEC_TeleportNoFog:
       if (Side == 0) {
         // only teleport when crossing the front side of a line
-        buttonSuccess = EV_Teleport(Arg1, Arg2, Arg3, Arg4, Arg5, A, Line, fog:false);
+        buttonSuccess = EV_Teleport(Arg1, Arg2, Arg3, Arg4, Arg5, A, Line, Special:Special);
       }
       break;
     case LNSPEC_TeleportNoStop:
       if (Side == 0) {
         // only teleport when crossing the front side of a line
-        buttonSuccess = EV_Teleport(Arg1, Arg2, Arg3, Arg4, Arg5, A, Line, fog:true, keepMomentum:true, Special:Special);
+        buttonSuccess = EV_Teleport(Arg1, Arg2, Arg3, Arg4, Arg5, A, Line, Special:Special);
       }
       break;
     case LNSPEC_ThrustThing:
@@ -4485,14 +4485,28 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
 //
 //  EV_Teleport
 //
+//  for LNSPEC_TeleportNoStop (check `Special`):
+//  for normal (`fog` is `true`):
+//    Arg2: sector tag
+//    Arg3: disable source fog
+//
+//  for nofog (silent) (`fog` is `false`):
+//    Arg2: disable keep orientation
+//    Arg3: sector tag
+//    Arg4: keep relative height (not implemented yet, always true)
+//
+//  nofog Arg2 is actually this (unimplemented yet):
+//    0: Hexen-compatible: Do not change angle and velocity at all.
+//    1: Strife-compatible: Always use the teleport exit's angle
+//    2: Boom-compatible: Adjust relatively to the teleport exit's angle,
+//       but in the wrong direction. This replicates a Boom bug that
+//       never got fixed.
+//    3: Boom-fixed: Adjust relatively to the teleport exit's angle.
+//
 //==========================================================================
-/*final*/ bool EV_Teleport (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
-                            EntityEx thing, line_t *Line, bool fog,
-                            optional bool keepMomentum, optional int Special)
+/*final*/ bool EV_Teleport (int aTid, int Arg2, int Arg3, int Arg4, int Arg5,
+                            EntityEx thing, line_t *Line, int Special)
 {
-  //int i;
-  //int count;
-  EntityEx A;
   int SecTag;
   sector_t *sec;
   bool SrcFog;
@@ -4505,17 +4519,18 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
   if (!thing) return false; // teleport function called with an invalid mobj
   if (thing.bNoTeleport) return false;
 
+  bool fog = (Special != LNSPEC_TeleportNoFog);
+
   //if (Special == LNSPEC_TeleportNoStop) print("154: thing=%C", thing);
 
-  A = none;
-  if (fog || Special == LNSPEC_TeleportNoStop) {
-    SecTag = Arg2;
-    SrcFog = !Arg3;
-    KeepOrient = false;
-  } else {
+  if (Special == LNSPEC_TeleportNoFog) {
     SecTag = Arg3;
     SrcFog = false;
     KeepOrient = !Arg2;
+  } else {
+    SecTag = Arg2;
+    SrcFog = !Arg3;
+    KeepOrient = false;
   }
 
   if (Special == LNSPEC_TeleportNoStop) {
@@ -4524,32 +4539,43 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
     fog = true;
   }
 
-  if (Arg1) {
+  EntityEx DestSpot = none;
+
+  // `aTid` is a destination spot thing tid
+  if (aTid) {
     int count = 0;
-    for (A = EntityEx(FindMobjFromTID(Arg1, none)); A; A = EntityEx(FindMobjFromTID(Arg1, A))) {
-      if (SecTag == 0 || IsSectorTagEqual(A.Sector, SecTag)) ++count;
+    for (DestSpot = EntityEx(FindMobjFromTID(aTid, none)); DestSpot; DestSpot = EntityEx(FindMobjFromTID(aTid, DestSpot))) {
+      if (SecTag == 0 || IsSectorTagEqual(DestSpot.Sector, SecTag)) ++count;
     }
-    if (count == 0) return false;
-    count = 1+(P_Random()%count);
-    A = none;
+    if (count == 0) return false; // no spots
+    count = 1+(GenRandomU31()%count);
+    DestSpot = none;
     foreach (int i; 0..count) {
-      do { A = EntityEx(FindMobjFromTID(Arg1, A)); } while (A && SecTag != 0 && !IsSectorTagEqual(A.Sector, SecTag));
+      for (;;) {
+        DestSpot = EntityEx(FindMobjFromTID(aTid, DestSpot));
+        if (!DestSpot) break; // oops
+        if (SecTag == 0 || IsSectorTagEqual(DestSpot.Sector, SecTag)) break;
+      }
     }
   } else if (SecTag) {
     for (int hidx = XLevel.FindSectorFromTag(out sec, SecTag); hidx >= 0;
          hidx = XLevel.FindSectorFromTag(out sec, SecTag, hidx))
     {
-      foreach AllThinkers(EntityEx, A) {
-        if (!TeleportDest(A)) continue; // not a teleportman
-        if (A.Sector != sec) continue; // wrong sector
+      //FIXME: can this be made faster? (no, teleport spots usually aren't on the map)
+      EntityEx dsp;
+      foreach AllThinkers(EntityEx, dsp) {
+        if (!TeleportDest(dsp)) continue; // not a teleportman
+        if (dsp.Sector != sec) continue; // wrong sector
+        DestSpot = dsp;
         break;
       }
-      if (A) break;
+      if (DestSpot) break;
     }
   }
-  if (!A) return false;
+  if (!DestSpot) return false;
 
-  DstOrg = A.Origin;
+  // destination origin
+  DstOrg = DestSpot.Origin;
 
   // Lee Killough's changes for silent teleporters from BOOM
   if (KeepOrient && Line) {
@@ -4557,7 +4583,7 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
     // Rotate 180 degrees, so that walking perpendicularly across
     // teleporter linedef causes thing to exit in the direction
     // indicated by the exit thing.
-    Angle = atan2(Line->normal.y, Line->normal.x)-A.Angles.yaw+180.0;
+    Angle = atan2(Line->normal.y, Line->normal.x)-DestSpot.Angles.yaw+180.0;
     // Momentum of thing crossing teleporter linedef
     OldVel = thing.Velocity;
   }
@@ -4565,13 +4591,13 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
   if (KeepVelocity) OldVel = thing.Velocity;
 
   // k8: yeah, it seems that for `KeepVelocity` we need to force floor destination
-  if (KeepVelocity || !TeleportDest2(A)) DstOrg.z = EntityEx::ONFLOORZ;
+  if (KeepVelocity || !TeleportDest2(DestSpot)) DstOrg.z = EntityEx::ONFLOORZ;
 
-  if (thing.Teleport(DstOrg, A.Angles.yaw, fog, SrcFog, KeepOrient)) {
+  if (thing.Teleport(DstOrg, DestSpot.Angles.yaw, fog, SrcFog, KeepOrient)) {
     if (KeepVelocity) {
       /*
       if (Special == LNSPEC_TeleportNoStop) {
-        print("154: DONE: thing=%C; ovel=%s; vel=%s; avel=%s", thing, OldVel, thing.Velocity, A.Velocity);
+        print("154: DONE: thing=%C; ovel=%s; vel=%s; avel=%s", thing, OldVel, thing.Velocity, DestSpot.Velocity);
         print("  radius=%s; height=%s; bPassMobj=%B; az=%s; tz=%s", thing.Radius, thing.Height, thing.bPassMobj, DstOrg.z, thing.Origin.z);
       }
       */
@@ -4583,8 +4609,10 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
       // rotate thing according to difference in angles
       thing.Angles.yaw = AngleMod360(thing.Angles.yaw+Angle);
       // rotate thing's momentum to come out of exit just like it entered
-      thing.Velocity.x = OldVel.x*cos(Angle)-OldVel.y*sin(Angle);
-      thing.Velocity.y = OldVel.y*cos(Angle)+OldVel.x*sin(Angle);
+      float s, c;
+      sincos(Angle, out s, out c);
+      thing.Velocity.x = OldVel.x*c-OldVel.y*s;
+      thing.Velocity.y = OldVel.y*c+OldVel.x*s;
     }
     return true;
   }
@@ -4601,10 +4629,10 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
 //  Teleport anything matching other_tid to dest_tid
 //
 //==========================================================================
-/*final*/ bool EV_TeleportOther (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
+/*final*/ bool EV_TeleportOther (int aTid, int Arg2, int Arg3, int Arg4, int Arg5) {
   bool Ret = false;
-  if (Arg1 && Arg2) {
-    foreach (EntityEx A; eachTID(Arg1, none)) {
+  if (aTid && Arg2) {
+    foreach (EntityEx A; eachTID(aTid, none)) {
       if (EV_Teleport(Arg2, 0, 0, 0, 0, A, nullptr, !!Arg3)) Ret = true;
     }
   }
@@ -4904,14 +4932,14 @@ private transient array!Entity recSoundSectorEntities; // will be collected in n
 //  EV_NoiseAlert
 //
 //==========================================================================
-/*final*/ bool EV_NoiseAlert (EntityEx A, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
+/*final*/ bool EV_NoiseAlert (EntityEx A, int aTid, int Arg2, int Arg3, int Arg4, int Arg5) {
   EntityEx ASource;
   EntityEx ATarget;
 
-  if (!Arg1) {
+  if (!aTid) {
     ASource = A;
   } else {
-    ASource = EntityEx(FindMobjFromTID(Arg1, none));
+    ASource = EntityEx(FindMobjFromTID(aTid, none));
   }
 
   if (!Arg2) {
