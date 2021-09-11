@@ -425,7 +425,7 @@ void DoChase (bool FastChase, state AMeleeState, state AMissileState,
     }
   }
 
-  if (NightmareFast && Level.Game.fastparm == 1) {
+  if (NightmareFast && Level.Game.fastparm == GameInfo::FastModeFast) {
     // monsters move faster in nightmare mode
     // check for zero-length states
     if (StateTime > 0.0) StateTime = fmax(0.1, StateTime*0.5);

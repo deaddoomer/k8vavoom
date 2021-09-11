@@ -35,6 +35,12 @@ enum {
   NM_Client, // client only, no local server
 };
 
+enum {
+  FastModeNormal = 0,
+  FastModeFast = 1,
+  FastModeSlow = 2,
+}
+
 name AcsHelper;
 name GenericConScript;
 

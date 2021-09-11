@@ -812,7 +812,7 @@ override float GetStateTime (state AState, float AStateTime) {
         auto fff = GetStateSpriteFrame(AState);
         if (fff&FF_FAST) AStateTime /= 2.0;
       }
-    } else if (Level.Game.fastparm == 2) {
+    } else if (Level.Game.fastparm == GameInfo::FastModeSlow) {
       // slow monsters
       auto fff = GetStateSpriteFrame(AState);
       if (fff&FF_SLOW) AStateTime *= 2.0;
@@ -1541,7 +1541,7 @@ override void OnMapSpawn (mthing_t *mthing) {
   if (!MeleeState) MeleeState = FindState('Melee');
   if (!MissileState) MissileState = FindState('Missile');
 
-  if (Level.Game.fastparm == 1 && FastSpeed > 0) Speed = FastSpeed;
+  if (Level.Game.fastparm == GameInfo::FastModeFast && FastSpeed > 0) Speed = FastSpeed;
 
   if (CountsAsKill()) ++Level.TotalKills;
   if (bCountItem) ++Level.TotalItems;
@@ -4477,7 +4477,7 @@ final bool IsSentient () {
 final bool IsFast () {
   if (bAlwaysFast) return true;
   if (bNeverFast) return false;
-  return (Level.Game.fastparm == 1);
+  return (Level.Game.fastparm == GameInfo::FastModeFast);
 }
 
 
