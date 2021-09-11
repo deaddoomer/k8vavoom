@@ -4485,17 +4485,16 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
 //
 //  EV_Teleport
 //
-//  for LNSPEC_TeleportNoStop (check `Special`):
-//  for normal (`fog` is `true`):
+//  for normal (Special != LNSPEC_TeleportNoFog)
 //    Arg2: sector tag
 //    Arg3: disable source fog
 //
-//  for nofog (silent) (`fog` is `false`):
+//  for nofog (Special == LNSPEC_TeleportNoFog)
 //    Arg2: disable keep orientation
 //    Arg3: sector tag
-//    Arg4: keep relative height (not implemented yet, always true)
+//    Arg4: keep relative height
 //
-//  nofog Arg2 is actually this (unimplemented yet):
+//  nofog Arg2 is actually this:
 //    0: Hexen-compatible: Do not change angle and velocity at all.
 //    1: Strife-compatible: Always use the teleport exit's angle
 //    2: Boom-compatible: Adjust relatively to the teleport exit's angle,
@@ -4510,8 +4509,9 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
   int SecTag;
   sector_t *sec;
   bool SrcFog;
-  bool KeepOrient;
+  int KeepOrient;
   bool KeepVelocity;
+  bool KeepHeight;
   TVec DstOrg;
   float Angle;
   TVec OldVel;
@@ -4521,20 +4521,22 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
 
   bool fog = (Special != LNSPEC_TeleportNoFog);
 
-  //if (Special == LNSPEC_TeleportNoStop) print("154: thing=%C", thing);
+  //printdebug("%C: EV_Teleport: special=%s (nofog=%B); aTid=%s; UseAngle=%s; Tag=%s; KeepHeight=%s", thing, Special, (Special == LNSPEC_TeleportNoFog), aTid, Arg2, Arg3, Arg4);
 
   if (Special == LNSPEC_TeleportNoFog) {
     SecTag = Arg3;
     SrcFog = false;
-    KeepOrient = !Arg2;
+    KeepOrient = clamp(Arg2, -1, 3);
+    KeepHeight = !!Arg4;
   } else {
+    // silent
     SecTag = Arg2;
     SrcFog = !Arg3;
-    KeepOrient = false;
+    KeepOrient = -1;
   }
 
   if (Special == LNSPEC_TeleportNoStop) {
-    KeepOrient = false;
+    KeepOrient = -1;
     KeepVelocity = true;
     fog = true;
   }
@@ -4574,17 +4576,32 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
   }
   if (!DestSpot) return false;
 
+  #if 0
+  //if (!fog && KeepOrient == 0) KeepOrient = 3;
+  printdebug("%C: EV_Teleport: fog=%B; aTid=%s; KeepOrient=%s; Tag=%s; KeepHeight=%B; KeepVelocity=%B; MyAngle=%s; DestAngle=%s; Line=%s",
+    thing, fog, aTid, KeepOrient, SecTag, KeepHeight, KeepVelocity, thing.Angles.yaw, DestSpot.Angles.yaw,
+    (Line ? Line-&thing.XLevel.Lines[0] : -666));
+  #endif
+
   // destination origin
   DstOrg = DestSpot.Origin;
 
   // Lee Killough's changes for silent teleporters from BOOM
-  if (KeepOrient && Line) {
+  if (KeepOrient >= 2 && Line) {
     // Get the angle between the exit thing and source linedef.
     // Rotate 180 degrees, so that walking perpendicularly across
     // teleporter linedef causes thing to exit in the direction
     // indicated by the exit thing.
-    Angle = atan2(Line->normal.y, Line->normal.x)-DestSpot.Angles.yaw+180.0;
-    // Momentum of thing crossing teleporter linedef
+    Angle = atan2(Line->normal.y, Line->normal.x)-DestSpot.Angles.yaw;
+    //printdebug("%C: Angle=%s (%s : %s); KeepOrient=%s", thing, Angle, Angle+90, Angle+180, KeepOrient);
+    if (KeepOrient == 2) {
+      // original Boom
+      Angle += 180.0;
+    } else {
+      // fixed Boom (this is prolly totally wrong)
+      Angle -= 180.0;
+    }
+    // Momentum of thing crossing teleporter linedef (will be fixed after teleporting)
     OldVel = thing.Velocity;
   }
 
@@ -4593,21 +4610,34 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
   // k8: yeah, it seems that for `KeepVelocity` we need to force floor destination
   if (KeepVelocity || !TeleportDest2(DestSpot)) DstOrg.z = EntityEx::ONFLOORZ;
 
-  if (thing.Teleport(DstOrg, DestSpot.Angles.yaw, fog, SrcFog, KeepOrient)) {
+  if (thing.Teleport(DstOrg, DestSpot.Angles.yaw, fog, SrcFog, KeepDir:(KeepOrient >= 0), KeepHeight:KeepHeight)) {
+    if (KeepOrient == 1) {
+      // always use teleport exit angle
+      thing.Angles.yaw = AngleMod360(DestSpot.Angles.yaw);
+      if (thing.bIsPlayer) thing.Player.bFixAngle = true;
+    }
     if (KeepVelocity) {
-      /*
-      if (Special == LNSPEC_TeleportNoStop) {
-        print("154: DONE: thing=%C; ovel=%s; vel=%s; avel=%s", thing, OldVel, thing.Velocity, DestSpot.Velocity);
-        print("  radius=%s; height=%s; bPassMobj=%B; az=%s; tz=%s", thing.Radius, thing.Height, thing.bPassMobj, DstOrg.z, thing.Origin.z);
-      }
-      */
+      // do not change velocity at all
       thing.Velocity = OldVel;
-      return true;
+    } else if (KeepOrient >= 0 && KeepOrient <= 1) {
+      // set new velocity for missiles (we skipped this in teleportation code due to "keep orientation")
+      if (thing.bMissile) {
+        float mspeed = thing.Velocity.length2D();
+        if (!mspeed.isFinite) mspeed = 0; // just in case
+        float s, c;
+        sincos(thing.Angles.yaw, out s, out c);
+        thing.Velocity.x = mspeed*c;
+        thing.Velocity.y = mspeed*s;
+      } else {
+        //k8: should we reset it here? it mostly matters for players
+        //thing.Velocity = vector(0.0, 0.0, 0.0);
+      }
     }
     // Lee Killough's changes for silent teleporters from BOOM
-    if (!fog && Line && KeepOrient) {
+    if (KeepOrient >= 2 && Line) {
       // rotate thing according to difference in angles
       thing.Angles.yaw = AngleMod360(thing.Angles.yaw+Angle);
+      if (thing.bIsPlayer) thing.Player.bFixAngle = true;
       // rotate thing's momentum to come out of exit just like it entered
       float s, c;
       sincos(Angle, out s, out c);
@@ -4617,7 +4647,6 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
     return true;
   }
 
-  //if (Special == LNSPEC_TeleportNoStop) print("154: CANNOT: thing=%C", thing);
   return false;
 }
 

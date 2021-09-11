@@ -1770,9 +1770,9 @@ linedef_specials_table {
   185 = {
     action = TeleportNoFog;
     arg1 = 0;
-    arg2 = 0;
+    arg2 = 1; /* Strife mode: always use teleport's exit angle */
     arg3 = origarg1;
-    arg4 = 0;
+    arg4 = 0; /* do not keep relative height */
     arg5 = 0;
     spac = Cross;
     repeat = true;

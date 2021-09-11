@@ -475,28 +475,32 @@ final bool TeleportMove (TVec org, optional bool ForceTelestomp, optional bool F
 //
 //  Teleport
 //
+//  KeepDir also prevent velocity changes
+//
 //==========================================================================
-final bool Teleport (TVec Dst, float angle, bool DstFog, bool SrcFog, bool KeepDir, optional bool ForceTelestomp) {
-  float fogDelta;
-  bool ResetPitch = false;
+final bool Teleport (TVec Dst, float angle, bool DstFog, bool SrcFog, bool KeepDir,
+                     optional bool ForceTelestomp, optional bool KeepHeight)
+{
+  bool ResetPitch = !KeepDir;
 
   TVec oldOrg = Origin;
+
   float aboveFloor = Origin.z-FloorZ;
-  if (Dst.z == ONFLOORZ) {
+  // also, missiles always keep their relative height
+  if (KeepHeight || Dst.z == ONFLOORZ || bMissile) {
     sector_t *DstSec = XLevel.PointInSector(Dst);
     float DstFloorZ = DstSec->floor.GetPointZClamped(Dst);
     float DstCeilZ = DstSec->floor.GetPointZClamped(Dst);
     if (bIsPlayer) {
-      if (FindInventory(PowerFlight) && aboveFloor) {
+      if ((KeepHeight || FindInventory(PowerFlight)) && aboveFloor) {
         Dst.z = DstFloorZ+aboveFloor;
-        if (Dst.z+Height > DstCeilZ) Dst.z = DstCeilZ-Height;
+        if (Dst.z+Height > DstCeilZ) Dst.z = fmax(DstFloorZ, DstCeilZ-Height);
       } else {
         Dst.z = DstFloorZ;
-        if (!KeepDir) ResetPitch = true;
       }
-    } else if (bMissile) {
-      Dst.z = Dst.z+aboveFloor;
-      if (Dst.z+Height > DstCeilZ) Dst.z = DstCeilZ-Height;
+    } else if (bMissile || KeepHeight) {
+      Dst.z += aboveFloor;
+      if (Dst.z+Height > DstCeilZ) Dst.z = fmax(DstFloorZ, DstCeilZ-Height);
     } else {
       Dst.z = DstFloorZ;
     }
@@ -533,7 +537,7 @@ final bool Teleport (TVec Dst, float angle, bool DstFog, bool SrcFog, bool KeepD
   }
 
   // spawn teleport fog at source and destination
-  fogDelta = (bMissile ? 0.0 : LineSpecialGameInfo(Level.Game).TeleFogHeight);
+  float fogDelta = (bMissile ? 0.0 : LineSpecialGameInfo(Level.Game).TeleFogHeight);
   if (SrcFog) Spawn(TeleportFog, oldOrg+vector(0.0, 0.0, fogDelta));
   if (DstFog) Spawn(TeleportFog, Origin+vector(20.0*cos(angle), 20.0*sin(angle), fogDelta));
 
@@ -548,14 +552,18 @@ final bool Teleport (TVec Dst, float angle, bool DstFog, bool SrcFog, bool KeepD
 
   HandleFloorclip();
 
-  if (bMissile) {
-    float s, c;
-    sincos(angle, out s, out c);
-    Velocity.x = Speed*c;
-    Velocity.y = Speed*s;
-  } else if (!KeepDir) {
-    // no fog doesn't alter the player's momentums
-    Velocity = vector(0.0, 0.0, 0.0);
+  if (!KeepDir) {
+    if (bMissile) {
+      float mspeed = Velocity.length2D();
+      if (!mspeed.isFinite) mspeed = 0; // just in case
+      float s, c;
+      sincos(angle, out s, out c);
+      Velocity.x = mspeed*c;
+      Velocity.y = mspeed*s;
+    } else {
+      // no fog doesn't alter the player's momentums
+      Velocity = vector(0.0, 0.0, 0.0);
+    }
   }
 
   bIntrJustMoved = false; // disable movement interpolation
