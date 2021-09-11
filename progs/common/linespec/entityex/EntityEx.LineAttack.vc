@@ -267,7 +267,7 @@ final EntityEx AimLineAttack (out TVec OutDir, TAVec aangles, float distance,
     //if (thingtopslope > aim_topslope) thingtopslope = aim_topslope;
     //if (thingbottomslope < aim_bottomslope) thingbottomslope = aim_bottomslope;
 
-    aim_slope = (thingtopslope+thingbottomslope)/2.0;
+    aim_slope = (thingtopslope+thingbottomslope)*0.5;
     linetarget = th;
 
     break; // don't go any farther

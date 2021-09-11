@@ -23,12 +23,17 @@ Actor K8HSHitscanTracer : FastProjectile {
   States {
   Spawn:
     KKZZ A 1 BRIGHT
+    /*
     TNT1 A 0
       {
-        if (!IsPlayer()) ThrustThingZ(0, Random(-8, 8), 0, 1);
+        if (!IsPlayer(AAPTR_TARGET)) {
+          A_k8ConLog("THRUST!");
+          ThrustThingZ(0, Random(-8, 8), 0, 1);
+        }
       }
     KKZZ A 1 BRIGHT
     Goto Idle
+    */
   Idle:
     KKZZ A 1 BRIGHT
     Loop

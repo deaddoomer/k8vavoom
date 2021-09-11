@@ -432,7 +432,9 @@ ubyte FriendPlayer;
 
 int MissileDamage; // for missiles
 int MissilePoisonDamage;
-int MissileDamageOverride; // non-zero: override; int.min is zero
+
+// for hitscan tracers
+int MissileDamageOverride; // non-zero: override; int.min is zero; used in hitscan tracers
 class!EntityEx MissilePuffOverride; // used in hitscan tracers
 
 // for nightmare respawn

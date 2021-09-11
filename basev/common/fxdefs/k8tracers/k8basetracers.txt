@@ -1,0 +1,14 @@
+// ////////////////////////////////////////////////////////////////////////// //
+// hitscan tracers
+pointlight K8HSHitscanTracerLight {
+  color 1.0 0.5 0.0
+  radius 45
+  noselflight
+  noselfshadow
+  noshadow
+}
+
+
+class K8HSHitscanTracer {
+  frame KKZZA { light K8HSHitscanTracerLight }
+}

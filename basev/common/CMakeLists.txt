@@ -9,15 +9,16 @@ file(GLOB basepak_SRC CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/actors/doom/*
   ${CMAKE_CURRENT_SOURCE_DIR}/actors/heretic/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/actors/hexen/*.txt
+  ${CMAKE_CURRENT_SOURCE_DIR}/actors/k8tracers/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/actors/raven/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/actors/shared/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/actors/strife/*.txt
-  ${CMAKE_CURRENT_SOURCE_DIR}/actors/k8tracers/*.txt
 
   ${CMAKE_CURRENT_SOURCE_DIR}/fxdefs/common/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/fxdefs/doom/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/fxdefs/heretic/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/fxdefs/hexen/*.txt
+  ${CMAKE_CURRENT_SOURCE_DIR}/fxdefs/k8tracers/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/fxdefs/raven/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/fxdefs/strife/*.txt
 

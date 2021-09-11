@@ -1,4 +1,4 @@
-//  Generic muzzle flash light
+// generic muzzle flash light
 muzzleflashlight MuzzleFlash
 {
   color 1 1 1
@@ -34,3 +34,5 @@ muzzleflashlight MuzzleFlash
 #include "fxdefs/strife/decorations.txt"
 #include "fxdefs/strife/monsters.txt"
 #include "fxdefs/strife/weapons.txt"
+
+#include "fxdefs/k8tracers/k8basetracers.txt"

@@ -76,7 +76,6 @@ final void PerformVanillaLineAttack (TVec dir, float distance, int LADamage,
   else if (fromDecorate) hstype &= 0x04;
   else hstype &= 0x01;
   if (hstype) {
-    //pjclass = class!EntityEx(FindClass('K8HSZombieTracer'));
     pjclass = class!EntityEx(K8HSHitscanTracer);
     if (pjclass) pjclass = class!EntityEx(GetClassReplacement(pjclass));
   }
@@ -85,61 +84,55 @@ final void PerformVanillaLineAttack (TVec dir, float distance, int LADamage,
     LineAttack(dir, distance, LADamage, PuffType, DmgType:DmgType!optional, secondary:secondary!optional, decalType:decalType!optional);
   } else {
     EntityEx pj;
+
+    // calculate projectile origin
+    TVec org = Origin;
     if (!bIsPlayer) {
-      pj = SpawnMissileXYZ(Origin+vector(0, 0, Height/1.75), Target, pjclass);
-      if (!pj) return;
-
-      float angle = VectorAngleYaw(dir);
-      float s, c;
-      sincos(angle, out s, out c);
-      //VectorRotateAroundZ(ref pj.Velocity, angle);
-      if (pj.Speed > 0) {
-        pj.Velocity.x = pj.Speed*c;
-        pj.Velocity.y = pj.Speed*s;
-      } else {
-        pj.Velocity.x = 0;
-        pj.Velocity.y = 0;
-      }
-      pj.Angles.yaw = angle;
+      org.z += Height/1.75-FloorClip;
     } else {
-      TVec org = Origin;
       org.z += CalculateMissileAttackZOfs(pjclass);
-      /*if (org.z != ONFLOORZ)*/ org.z -= FloorClip;
-      pj = Spawn(pjclass, org);
-      if (!pj) return;
-
-      pj.Target = self;
-      pj.DecalName = pj.default.DecalName;
-      pj.CarryBloodTranslations(self);
-      pj.PlayMissileSpawnSound(self);
-      if (!pj.CheckMissileSpawn()) return;
-
-      // exact direction
-      dir = dir.normalise;
-      VectorAngles(dir, out pj.Angles);
-      pj.Velocity = pj.Speed*dir;
     }
 
-    if (specified_DmgType) pj.DamageType = DmgType;
+    // spawn projectile mobj
+    pj = Spawn(pjclass, org);
+    if (!pj) return;
 
+    // setup various projectile properties
+    pj.Target = self; // originator
+    pj.DecalName = pj.default.DecalName;
+    pj.CarryBloodTranslations(self);
+    //pj.PlayMissileSpawnSound(self);
+    // setup decal, damage, damage type, and puff
+    if (specified_decalType) pj.DecalName = decalType;
+    if (specified_DmgType) pj.DamageType = DmgType;
     if (PuffType) {
       class!EntityEx ovc = class!EntityEx(GetClassReplacement(PuffType));
       if (ovc) PuffType = ovc;
       pj.MissilePuffOverride = PuffType;
       //printdebug("%C: MissilePuffOverride=%C", self, pj.MissilePuffOverride);
     }
-
-    if (specified_decalType) pj.DecalName = decalType;
-
     pj.MissileDamageOverride = LADamage;
-
     // hitscan attacks are always like this
     pj.bDoHarmSpeciesMissile = true;
     pj.bDoHarmFriendsMissile = true;
+    // it can't explode, so no need to check that
+    //if (!pj.CheckMissileSpawn()) return;
+
+    dir = dir.normalise; // just in case
+
+    // setup speed
+    // do not optimise this further, because cvar access is inlined
+    float spd = (bIsPlayer ? GetCvarF('gm_vanilla_hitproj_speed_player') : GetCvarF('gm_vanilla_hitproj_speed_monster'));
+    //printdebug("%C: bIsPlayer=%B; pj.Speed=%s; spd=%s (%s); dir=%s (len=%s) norm:%s", self, bIsPlayer, pj.Speed, spd, spd*35.0, dir, dir.length, dir.normalise);
+    if (spd.isFinite && spd > 0.0) pj.Speed = spd*35.0;
+
+    // setup angles and speed
+    // we have exact direction in all cases
+    VectorAngles(dir, out pj.Angles);
+    pj.Velocity = pj.Speed*dir;
+    //printdebug("%C: angles: yaw=%s; pitch=%s; roll=%s; vel=%s", self, pj.Angles.yaw, pj.Angles.pitch, pj.Angles.roll, pj.Velocity);
   }
 }
-
-
 
 
 //==========================================================================
