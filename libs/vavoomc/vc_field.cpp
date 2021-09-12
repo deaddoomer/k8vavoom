@@ -299,13 +299,13 @@ void VField::SerialiseFieldValue (VStream &Strm, vuint8 *Data, const VFieldType 
     if (tp != Type.Type) {
       // tolerate some type changes
       switch (tp) {
-        case TYPE_Int:
+        case TYPE_Int: // stored type
           {
             vint32 v;
             Strm << v;
             switch (Type.Type) {
               case TYPE_Int: *(vint32 *)Data = v; return;
-              case TYPE_Byte: *(vuint8 *)Data = v; return;
+              case TYPE_Byte: *(vuint8 *)Data = (vuint8)v; return;
               case TYPE_Bool:
                 if (v) {
                   *(int *)Data |= Type.BitMask;
@@ -313,11 +313,11 @@ void VField::SerialiseFieldValue (VStream &Strm, vuint8 *Data, const VFieldType 
                   *(int *)Data &= ~Type.BitMask;
                 }
                 return;
-              case TYPE_Float: *(float *)Data = v; return;
+              case TYPE_Float: *(float *)Data = (float)v; return;
             }
             break;
           }
-        case TYPE_Byte:
+        case TYPE_Byte: // stored type
           {
             vuint8 v;
             Strm << v;
@@ -331,16 +331,16 @@ void VField::SerialiseFieldValue (VStream &Strm, vuint8 *Data, const VFieldType 
                   *(int *)Data &= ~Type.BitMask;
                 }
                 return;
-              case TYPE_Float: *(float *)Data = v; return;
+              case TYPE_Float: *(float *)Data = (float)v; return;
             }
             break;
           }
-        case TYPE_Float:
+        case TYPE_Float: // stored type
           {
             float v;
             Strm << v;
             switch (Type.Type) {
-              case TYPE_Int: *(vint32 *)Data = (vuint32)v; return;
+              case TYPE_Int: *(vint32 *)Data = (vint32)v; return;
               case TYPE_Byte: *(vuint8 *)Data = (vuint8)v; return;
               case TYPE_Bool:
                 if (v) {
@@ -353,7 +353,7 @@ void VField::SerialiseFieldValue (VStream &Strm, vuint8 *Data, const VFieldType 
             }
             break;
           }
-        case TYPE_Bool:
+        case TYPE_Bool: // stored type
           {
             vuint8 v;
             Strm << v;
@@ -368,15 +368,37 @@ void VField::SerialiseFieldValue (VStream &Strm, vuint8 *Data, const VFieldType 
                   *(int *)Data &= ~Type.BitMask;
                 }
                 return;
-              case TYPE_Float: *(float *)Data = v; return;
+              case TYPE_Float: *(float *)Data = (float)v; return;
             }
             break;
           }
+        case TYPE_Name: // stored type
+          {
+            VName nval;
+            Strm << nval;
+            switch (Type.Type) {
+              case TYPE_Name: *(VName *)Data = nval; return;
+              case TYPE_String: *(VStr *)Data = VStr(nval); return;
+            }
+          }
+          break;
+        case TYPE_String: // stored type
+          {
+            VStr sval;
+            Strm << sval;
+            switch (Type.Type) {
+              case TYPE_Name: *(VName *)Data = VName(*sval); return; // this is not fully right, because string can contain zero bytes; but meh
+              case TYPE_String: *(VStr *)Data = sval; return;
+            }
+          }
+          break;
       }
       //VPackage::IOError(va("field '%s' should be of type '%s', but it is of type '%s'", *fullname, *Type.GetName(), *VFieldType(EType(tp)).GetName()));
       VPackage::IOError(va("stored data should be of type `%s`, but it is of type `%s`", *Type.GetName(), *VFieldType(EType(tp)).GetName()));
     }
   }
+
+  // here, either are equal (loading), or we're writing
   VFieldType IntType;
   vint32 InnerSize;
   vint32 n;
