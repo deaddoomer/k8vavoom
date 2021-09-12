@@ -186,7 +186,7 @@ final int Damage (EntityEx inflictor, EntityEx source, int damage,
 
   bool isBuddha = false;
   if (bIsPlayer && Player) {
-    // Take half damage in trainer mode
+    // take half damage in trainer mode
     damage = int(float(damage)*Level.World.GetDamageFactor());
     isBuddha = !!(PlayerEx(Player).Cheats&PlayerEx::CF_BUDDHA);
     if (!isBuddha && !ignorePowerups && FindBuddhaPowerup()) isBuddha = true;
@@ -320,14 +320,11 @@ final int Damage (EntityEx inflictor, EntityEx source, int damage,
     // remember attacker for advanced damage indication
     if (source && Player.MO == self) pex.RememberAttacker(source, source.Origin, damage, DmgType);
 
-    if (Player.Health-damage < 50 && !Level.Game.deathmatch) {
+    //k8: use main player object health here? Voodoo Dolls are hard!
+    if (/*Player.*/Health-damage < 50 && !Level.Game.deathmatch) {
       // try to use some inventory health
       AutoUseStrifeHealth(damage-Health+1);
     }
-
-    //Player.Health -= damage; // mirror mobj health here for Dave
-    //if (Player.Health < 0) Player.Health = 0;
-    //if (Player.Health < 1 && /*(pex.Cheats&PlayerEx::CF_BUDDHA)*/isBuddha) Player.Health = 1;
 
     // remember last attacker for statusbar face, and add damage flash
     pex.Attacker = source;
@@ -348,7 +345,6 @@ final int Damage (EntityEx inflictor, EntityEx source, int damage,
     // update internal player object health
     Player.Health = max(0, Health);
   }
-  //if (bIsPlayer && Health < 1 && /*(PlayerEx(Player).Cheats&PlayerEx::CF_BUDDHA)*/isBuddha) Health = 1;
 
   if (Health <= 0) {
     // death
@@ -374,10 +370,12 @@ final int Damage (EntityEx inflictor, EntityEx source, int damage,
     return damage;
   }
 
-  state WoundState = FindState('Wound', DmgType, false);
-  if (Health <= WoundHealth && WoundState) {
-    SetState(WoundState);
-    return damage;
+  if (Health <= WoundHealth) {
+    state WoundState = FindState('Wound', DmgType, false);
+    if (WoundState) {
+      SetState(WoundState);
+      return damage;
+    }
   }
 
   float PChance = FindPainChance(DmgType, PainChance);

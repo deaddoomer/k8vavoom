@@ -1226,11 +1226,11 @@ override bool Touch (Entity InOther, bool disableEffects) {
     }
 
     if (Target) {
-      // don't hit same species as originator
+      // don't hit the originator
       if (!bHitOwner && Other == Target) return ProcessHitFlags(Other, true, disableEffects); // don't missile self
       // let players missile other players
       if (!Target.bIsPlayer && !Other.bIsPlayer) {
-        // both inflictor and victim aren't players
+        // both the originator and the victim aren't players
         int Inf = Target.GetInfighting();
         //if (self isa 'K8HSZombieTracer') printdebug("%C: hit from %C hit %C; Inf=%s", self, Target, Other, Inf);
         if (Inf < 0) {
@@ -1279,13 +1279,15 @@ override bool Touch (Entity InOther, bool disableEffects) {
     if (bRip && !Other.bDontRip) {
       if (!disableEffects && Level.Game.IsAuthority) {
         if (CheckRipLevel(Other) && (!bNoBossRip || !Other.bBoss)) {
-          PlaySound('misc/ripslop', /*CHAN_BODY*/CHAN_AUTO);
           damage = GetMissileDamage(3, 2);
-          //printdebug("%C: ripper, other is %C", self, Other);
-          int dmg = Other.Damage(self, Target, damage, DamageType, spawnBlood:false); // we already spawned ripper blood
-          if (dmg && !Other.bNoBlood && !Other.bReflective && !Other.bInvulnerable) {
-            // ok to spawn some blood
-            Other.SpawnBloodRipper(damage, self);
+          if (damage) {
+            PlaySound('misc/ripslop', /*CHAN_BODY*/CHAN_AUTO);
+            //printdebug("%C: ripper, other is %C", self, Other);
+            int dmg = Other.Damage(self, Target, damage, DamageType, spawnBlood:false); // we already spawned ripper blood
+            if (dmg && !Other.bNoBlood && !Other.bReflective && !Other.bInvulnerable) {
+              // ok to spawn some blood
+              Other.SpawnBloodRipper(damage, self);
+            }
           }
           if (Other.bPushable && !bCannotPush) {
             // push thing
@@ -1300,7 +1302,7 @@ override bool Touch (Entity InOther, bool disableEffects) {
     // damage / explode
     if (!disableEffects && Level.Game.IsAuthority) {
       damage = GetMissileDamage((bStrifeDamage ? 3 : 7), 1);
-      if ((bMissileHeadshotsAllowed || bMissileHitscan) || GetCvarB('k8HSAnyProjectile')) {
+      if (damage > 0 && ((bMissileHeadshotsAllowed || bMissileHitscan) || GetCvarB('k8HSAnyProjectile'))) {
         //printdebug("%C: missile with velocity %s hit `%C`", self, Velocity, Other);
         damage = Other.K8onBeforeDamage(self, Origin+vector(0, 0, Height*0.5)-Other.Origin, damage, DamageType, secondary:false);
       }
