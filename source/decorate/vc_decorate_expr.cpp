@@ -638,7 +638,7 @@ static VExpression *ParseExpressionGeneral (VScriptParser *sc, VClass *Class, in
     VExpression *rhs = ParseExpressionGeneral(sc, Class, prio-1); // use `prio` for rassoc, and immediately return (see above)
     if (!rhs) { delete lhs; return nullptr; } // some error
     switch (mop->type) {
-      case MOP_Binary: lhs = new VBinary((VBinary::EBinOp)mop->opcode, lhs, rhs, l); break;
+      case MOP_Binary: lhs = new VBinary((VBinary::EBinOp)mop->opcode, lhs, rhs, l, true/*from decorate*/); break;
       case MOP_Logical: lhs = new VBinaryLogical((VBinaryLogical::ELogOp)mop->opcode, lhs, rhs, l); break;
       default: Sys_Error("internal decorate compiler error 697306");
     }
