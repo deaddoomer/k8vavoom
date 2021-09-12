@@ -728,9 +728,9 @@ final void Thrust (float angle, float move) {
 //
 //  FaceActor
 //
-//  Returns 1 if 'source' needs to turn clockwise, or 0 if 'source' needs
-// to turn counter clockwise.  'delta' is set to the amount 'source'
-// needs to turn.
+//  returns 1 if 'source' needs to turn clockwise, or 0 if 'source' needs
+//  to turn counter clockwise.
+//  'delta' is set to the amount 'source' needs to turn.
 //
 //==========================================================================
 int FaceActor (EntityEx atarget, out float delta) {
@@ -1418,7 +1418,7 @@ int SpecialMissileHit (EntityEx Other, bool disableEffects) {
 //
 //==========================================================================
 name GetSpecies () {
-  if (Species) return name(Species);
+  if (Species) return Species;
 
   class Ret = Class;
   //  Go up in the inheritance hierarchy while there's a monster flag
@@ -3126,7 +3126,7 @@ override void SetActorProperty (int Prop, int IntVal, string StrVal) {
     case APROP_Friction: Friction = fmax(float(IntVal)/65536.0, 0.0); break;
     case APROP_ReactionTime: ReactionCount = IntVal; break;
     case APROP_StencilColor: StencilColor = IntVal|0xff000000; break;
-    case APROP_Species: /*printdebug("%C: SPECIE=%s", self, StrVal);*/ Species = StrVal; break;
+    case APROP_Species: /*printdebug("%C: SPECIE=%s", self, StrVal);*/ Species = name(StrVal); break;
     case APROP_NameTag: /*printdebug("%C: NAMETAG=%s", self, StrVal);*/ StrifeName = StrVal; break;
     case APROP_DamageType: /*printdebug("%C: DAMAGETYPE=%s", self, StrVal);*/ DamageType = name(StrVal); break;
     default: dprint("%C: SetActorProperty: unknown property %s (value is %s)", self, Prop, IntVal);

@@ -409,7 +409,7 @@ float WallBounceFactor;
 // also the originator for missiles
 //EntityEx Target; // moved to `Entity`
 // for monster families
-string Species;
+name Species; // was string
 // last known enemy -- killogh 2/15/98
 EntityEx LastEnemy;
 //EntityEx Tracer; // moved to `Entity`
