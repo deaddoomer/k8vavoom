@@ -88,7 +88,8 @@ final void PerformVanillaLineAttack (TVec dir, float distance, int LADamage,
     // calculate projectile origin
     TVec org = Origin;
     if (!bIsPlayer) {
-      org.z += Height/1.75-FloorClip;
+      float prchgt = fmax(0.0, GetCvarF('gm_vanilla_hitproj_prcheight'));
+      org.z += Height*prchgt/100.0-FloorClip;
     } else {
       org.z += CalculateMissileAttackZOfs(pjclass);
     }
