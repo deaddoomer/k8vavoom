@@ -564,13 +564,24 @@ menudef GameplayOptions {
   }
 
   option slider {
-    title = "Projectile attack chance multiplier";
+    title = "ProjAttack chance multiplier";
     cvar = g_skill_aggressiveness_override;
     min = 0;
     max = 16;
     step = 0.1;
     help =
       "The greater, the less chance of monster projectile attack. Default is 1."
+      "Effect is immediate.";
+  }
+
+  option slider {
+    title = "Projectole speed multiplier";
+    cvar = gm_monster_proj_speed_mult;
+    min = 0;
+    max = 16;
+    step = 0.1;
+    help =
+      "Monster projectile speed multiplier."
       "Effect is immediate.";
   }
 

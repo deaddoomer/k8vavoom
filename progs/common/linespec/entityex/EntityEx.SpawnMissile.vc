@@ -341,6 +341,19 @@ final void MissileFixDir (TVec dir, EntityEx dest, EntityEx Mis) {
 
 //==========================================================================
 //
+//  MultProjSpeed
+//
+//==========================================================================
+final void MultProjSpeed (EntityEx proj) {
+  if (!bMonster) return;
+  float mult = GetCvarF('gm_monster_proj_speed_mult');
+  if (!mult.isFinite || mult <= 0) return;
+  proj.Speed *= fmin(16.0, mult);
+}
+
+
+//==========================================================================
+//
 //  SpawnMissile
 //
 //  Returns nullptr if the missile exploded immediately, otherwise returns
@@ -361,6 +374,7 @@ final EntityEx SpawnMissile (EntityEx dest, class!EntityEx type, optional float 
   A.CarryBloodTranslations(self);
   A.PlayMissileSpawnSound(self);
   A.Target = self; // where it came from
+  MultProjSpeed(A);
 
   TVec dir = (dest ? dest.Origin-Origin : Velocity);
   MissileFixDir(dir, dest, A);
@@ -387,6 +401,7 @@ final EntityEx SpawnMissileXYZ (TVec org, EntityEx dest, class!EntityEx type) {
   A.CarryBloodTranslations(self);
   A.PlayMissileSpawnSound(self);
   A.Target = self;  // Originator
+  MultProjSpeed(A);
 
   TVec dir = dest.Origin-Origin;
   MissileFixDir(dir, dest, A);
@@ -411,6 +426,7 @@ final EntityEx SpawnMissileZAimed (float z, EntityEx dest, class!EntityEx type) 
   A.CarryBloodTranslations(self);
   A.PlayMissileSpawnSound(self);
   A.Target = self;  // where it came from
+  MultProjSpeed(A);
 
   float dist = fmax(1.0, DistTo2(dest));
   if (!dist.isfinite) dist = 0;
@@ -472,6 +488,7 @@ final EntityEx SpawnMissileAngles (class!EntityEx type, float yaw, float pitch,
   A.CarryBloodTranslations(self);
   A.PlayMissileSpawnSound(self);
   A.Target = self; // originator
+  MultProjSpeed(A);
   A.Angles.yaw = yaw;
   A.Angles.pitch = pitch;
   AngleVector(A.Angles, out dir);
@@ -509,6 +526,7 @@ final EntityEx SpawnMissileAngle (class!EntityEx type, float angle,
   mo.CarryBloodTranslations(self);
   mo.PlayMissileSpawnSound(self);
   mo.Target = self; // originator
+  MultProjSpeed(mo);
   mo.Angles.yaw = angle;
   float sina, cosa;
   sincos(angle, out sina, out cosa);
@@ -540,11 +558,13 @@ final EntityEx SpawnMissileAngleSpeed (class!EntityEx type, float angle,
   if (!mo.DecalName) mo.DecalName = type.default.DecalName;
   mo.CarryBloodTranslations(self);
   mo.Tracer = self; // Originator
+  mo.Speed = aspeed;
+  MultProjSpeed(mo);
   mo.Angles.yaw = angle;
   float sina, cosa;
   sincos(angle, out sina, out cosa);
-  mo.Velocity.x = aspeed*cosa;
-  mo.Velocity.y = aspeed*sina;
+  mo.Velocity.x = mo.Speed*cosa;
+  mo.Velocity.y = mo.Speed*sina;
   mo.Velocity.z = momz;
   mo.PlayMissileSpawnSound(self);
   return mo.CheckMissileSpawn() ? mo : none;
@@ -564,6 +584,7 @@ final EntityEx SpawnSubMissile (class!EntityEx type, EntityEx AInstigator) {
   other.CarryBloodTranslations(self);
 
   other.Target = AInstigator;
+  MultProjSpeed(other);
   other.Angles = Angles;
   other.DecalName = other.default.DecalName;
 
