@@ -10,9 +10,9 @@ ketmar@ketmar.no-ip.org
 
 WARNING!!! WARNING!!! WARNING!!! WARNING!!! WARNING!!! WARNING!!!
 
-k8vavoom is the fork of the excellent DooM sourceport Vavoom. It features
+k8vavoom is the fork of the excellent Doom sourceport Vavoom. It features
 three unique lightning systems, one based on lightmaps (like Quake), one
-with DooM3-style lighting, and one based on shadowmaps. Please note that
+with Doom3-style lighting, and one based on shadowmaps. Please note that
 k8vavoom is not a carbon copy of Vavoom, so full backward compatibility
 should not be expected.
 
