@@ -372,7 +372,7 @@ static VExpression *ParsePostfixIncDec (VScriptParser *sc, VClass *Class, VExpre
   // build assignment
   VExpression *op1 = lhs->SyntaxCopy();
   VExpression *op2 = new VIntLiteral(opc, lhs->Loc);
-  VExpression *val = new VBinary(VBinary::Add, op1, op2, lhs->Loc);
+  VExpression *val = new VBinary(VBinary::Add, op1, op2, lhs->Loc, true/*from decorate*/);
   VExpression *ass = new VAssignment(VAssignment::Assign, lhs->SyntaxCopy(), val, sc->GetVCLoc());
 
   // build resulting operator
@@ -529,7 +529,7 @@ static VExpression *ParseExpressionGeneral (VScriptParser *sc, VClass *Class, in
         lhs = ParseConvertToUserVar(sc, Class, lhs);
         //GCon->Logf(NAME_Debug, "%s: `%s`: %s", *l.toStringNoCol(), *token, *lhs->toString());
         VExpression *op2 = new VIntLiteral((token[0] == '+' ? 1 : -1), lhs->Loc);
-        VExpression *val = new VBinary(VBinary::Add, lhs->SyntaxCopy(), op2, lhs->Loc);
+        VExpression *val = new VBinary(VBinary::Add, lhs->SyntaxCopy(), op2, lhs->Loc, true/*from decorate*/);
         return new VAssignment(VAssignment::Assign, lhs, val, l);
       }
     }
@@ -544,7 +544,7 @@ static VExpression *ParseExpressionGeneral (VScriptParser *sc, VClass *Class, in
         //GCon->Logf(NAME_Debug, "%s: UNARY! %s", *lhs->Loc.toStringNoCol(), *lhs->toString());
         // as this is right-associative, return here
         // note that postfix inc/dec is processed by the recursive call
-        return new VUnary((VUnary::EUnaryOp)mop->opcode, lhs, l);
+        return new VUnary((VUnary::EUnaryOp)mop->opcode, lhs, l, false/*not resolved*/, true/*from decorate*/);
         /*
         lhs = new VUnary((VUnary::EUnaryOp)mop->opcode, lhs, l);
         if (inCodeBlock) lhs = ParsePostfixIncDec(sc, Class, lhs);
@@ -706,7 +706,7 @@ static VExpression *ParseExpression (VScriptParser *sc, VClass *Class) {
     VExpression *rhs = ParseExpression(sc, Class); // rassoc
     if (!rhs) { delete lhs; return nullptr; }
     // we cannot get address of a uservar, so let's build this horrible AST instead
-    VExpression *val = new VBinary(opc, lhs->SyntaxCopy(), rhs, lhs->Loc);
+    VExpression *val = new VBinary(opc, lhs->SyntaxCopy(), rhs, lhs->Loc, true/*from decorate*/);
     return new VAssignment(VAssignment::Assign, lhs, val, l);
   }
 }

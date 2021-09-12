@@ -120,11 +120,12 @@ VStr VExprParens::toString () const {
 //  VUnary::VUnary
 //
 //==========================================================================
-VUnary::VUnary (VUnary::EUnaryOp AOper, VExpression *AOp, const TLocation &ALoc, bool aopresolved)
+VUnary::VUnary (EUnaryOp AOper, VExpression *AOp, const TLocation &ALoc, bool aopresolved, bool aFromDecorate)
   : VExpression(ALoc)
   , Oper(AOper)
   , op(AOp)
   , opresolved(aopresolved)
+  , FromDecorate(aFromDecorate)
 {
   if (!op) ParseError(Loc, "Expression expected");
 }
@@ -173,6 +174,7 @@ void VUnary::DoSyntaxCopyTo (VExpression *e) {
   res->Oper = Oper;
   res->op = (op ? op->SyntaxCopy() : nullptr);
   res->opresolved = opresolved;
+  res->FromDecorate = FromDecorate;
 }
 
 
@@ -251,6 +253,10 @@ VExpression *VUnary::DoResolve (VEmitContext &ec) {
       Type = TYPE_Int;
       break;
     case BitInvert:
+      if (FromDecorate && op->Type.Type == TYPE_Float) {
+        op = (new VScalarToInt(op))->Resolve(ec);
+        if (!op) { delete this; return nullptr; }
+      }
       if (op->Type.Type != TYPE_Int) {
         ParseError(Loc, "Expression type mismatch");
         delete this;

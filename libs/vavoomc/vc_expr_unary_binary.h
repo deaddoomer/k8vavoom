@@ -68,8 +68,10 @@ public:
   EUnaryOp Oper;
   VExpression *op;
   bool opresolved;
+  // string and name comparisons are case-insensitive in decorate
+  bool FromDecorate;
 
-  VUnary (EUnaryOp, VExpression *, const TLocation &, bool aopresolved=false);
+  VUnary (EUnaryOp AOper, VExpression *AOp, const TLocation &ALoc, bool aopresolved=false, bool aFromDecorate=false);
   virtual ~VUnary () override;
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
