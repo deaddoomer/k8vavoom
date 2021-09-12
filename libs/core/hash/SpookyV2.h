@@ -86,12 +86,10 @@ static inline __attribute__((unused)) uint64_t spooky_hash64 (const void *messag
 //
 // `message`: message to hash
 // `length`: length of message in bytes
-// `hash1`: in/out: in seed 1, out hash value 1; any 64-bit value will do, including 0
-// `hash2`: in/out: in seed 2, out hash value 2; different seeds produce independent hashes
 static inline __attribute__((unused)) uint32_t spooky_hash32 (const void *message, size_t length, uint32_t seed) {
   uint64_t hash1 = seed, hash2 = seed;
   spooky_hash128(message, length, &hash1, &hash2);
-  return (uint32_t)hash1;
+  return (uint32_t)(hash1+(hash1>>32));
 }
 
 

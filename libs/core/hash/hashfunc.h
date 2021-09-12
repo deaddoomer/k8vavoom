@@ -26,6 +26,7 @@
 #define VAVOOM_CORE_LIB_HASHFUNC
 
 #include "../common.h"
+#include <string.h>
 
 
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline int digitInBase (char ch, const int base=10) noexcept {
@@ -268,6 +269,30 @@ VVA_CHECKRESULT uint32_t halfsip24HashBufCI (const VVA_MAYALIAS void *in, const 
 
 static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t halfsip24HashStr (const VVA_MAYALIAS void *str) noexcept { return (str ? halfsip24HashBuf(str, strlen((const char *)str)) : 0u); }
 static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t halfsip24HashStrCI (const VVA_MAYALIAS void *str) noexcept { return (str ? halfsip24HashBufCI(str, strlen((const char *)str)) : 0u); }
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// murmur3
+VVA_CHECKRESULT uint32_t murmurHash3Buf (const VVA_MAYALIAS void *key, size_t len, uint32_t seed) noexcept;
+
+#define MURMUR3_128_HASH_SIZE  16
+
+// returns 16-byte hash value in `out`
+void murmurHash3Buf128 (const VVA_MAYALIAS void *key, const size_t len, uint32_t seed, VVA_MAYALIAS void *out) noexcept;
+
+// incremental MurMur3
+typedef struct {
+  uint32_t h1; // current hash value
+  uint32_t buf32;
+  uint32_t bufused; // 32 bits, for faster access
+  size_t totalbytes; // will be used in finalizer
+} Murmur3Ctx;
+
+// it is faster to update it with dwords (so it won't have to accumulate anything)
+void murmurHash3Init (Murmur3Ctx *ctx, uint32_t seed) noexcept;
+void murmurHash3Update (Murmur3Ctx *ctx, const VVA_MAYALIAS void *key, size_t len) noexcept;
+// note that you can keep using the context for updating after calling `murmurHash3Final()`
+uint32_t murmurHash3Final (const Murmur3Ctx *ctx) noexcept;
 
 
 // ////////////////////////////////////////////////////////////////////////// //

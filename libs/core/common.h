@@ -79,7 +79,10 @@
 #define MAX_VUINT16 ((vuint16)0xffff)
 #define MAX_VUINT32 ((vuint32)0xffffffff)
 
-#include <inttypes.h>
+#include <stdint.h>
+#include <stddef.h>
+
+/*#include <inttypes.h>*/
 typedef int8_t    __attribute__((__may_alias__)) vint8;
 typedef uint8_t   __attribute__((__may_alias__)) vuint8;
 typedef int16_t   __attribute__((__may_alias__)) vint16;

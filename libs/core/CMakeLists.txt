@@ -93,6 +93,7 @@ add_library(core STATIC
   hash/hashfunc.h
   hash/lookup3.cpp
   hash/halfsiphash.cpp
+  hash/murmur3.cpp
   hash/crc.h
   hash/crc.cpp
   hash/SpookyV2.h
