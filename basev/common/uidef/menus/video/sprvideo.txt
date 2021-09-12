@@ -12,6 +12,13 @@ menudef SpriteVideoOptions {
       "Simple",
       "Smart"
     }
+    help =
+      "Vanilla engine renders some sprites in the floor, but due to Carmack",
+      "renderer quirks, they are rendered without proper clipping.",
+      "This cannot be emulated in hardware renderer, so k8vavoom should fix",
+      "vertical sprite offsets to make things look better.",
+      "This selects the fixing algorithm.",
+      "\cJIf in doubt, select 'Smart'.";
   }
 
   option bool {
@@ -29,7 +36,7 @@ menudef SpriteVideoOptions {
     help =
       "Some mods uses pictures with transparent bottom part"
       "instead of cropping it, and this may confuse sprite"
-      "height fixer. This options calculates real sprite"
+      "height fixer. This options calculates the real sprite"
       "picture height instead of trusting the mod."
       "\cGWARNING! This is experimental feature (turned on for testing).";
   }
@@ -59,6 +66,10 @@ menudef SpriteVideoOptions {
     step = 1;
     min = -255;
     max = 0;
+    help =
+      "This controls internal sprite fixer parameter.",
+      "You'd better don't touch it.",
+      "You can press BACKSPACE to restore it to the default value.";
   }
 
 
@@ -127,13 +138,14 @@ menudef SpriteVideoOptions {
     title = "Fuzzy Effect";
     cvar = r_drawfuzz;
     list {
-      "Translucency",
-      "Shadow",
+      "Translucet",
+      "Fuzzy",
     }
     help =
       "Fuzzy (like Specter) sprite effect.",
       "'Translucency' is normal translucency effect.",
-      "'Shadow' is (very) rough approximation of 'fuzzy' effect.";
+      "'Fuzzy' is various approximations of 'fuzzy' effect.",
+      "You can select fuzzy effect type below.";
   }
 
   option slider {
@@ -303,13 +315,13 @@ menudef SpriteVideoOptions {
     title = "Additive Monsters";
     cvar = r_fake_shadow_additive_monsters;
     help =
-      "Shot 'additive' monsters cast shadow?";
+      "Should 'additive' monsters cast shadow?";
   }
 
   option bool {
     title = "Additive Projectiles";
     cvar = r_fake_shadow_additive_missiles;
     help =
-      "Shot 'additive' projectiles (like imp fireballs) cast shadow?";
+      "Should 'additive' projectiles (like imp fireballs) cast shadow?";
   }
 }

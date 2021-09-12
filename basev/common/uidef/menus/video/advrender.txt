@@ -65,7 +65,7 @@ menudef AdvRenderOptions {
       "\cGor visual glitches will occur.";
   }
 
-  option bool {
+  option bool [k8vavoom_developer_version > 0] {
     title = "Allow floor/ceiling mirrors";
     cvar = r_allow_floor_mirrors;
     help =

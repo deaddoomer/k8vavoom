@@ -85,7 +85,7 @@ menudef AdvVideoOptions {
   }
   */
 
-  option bool {
+  option bool [k8vavoom_developer_version > 0] {
     title = "Faster Visible Things Collecting";
     cvar = r_thing_faster_collect;
     help =
@@ -95,7 +95,7 @@ menudef AdvVideoOptions {
       "nothing).";
   }
 
-  option bool {
+  option bool [k8vavoom_developer_version > 0] {
     title = "Better Thing Rendering";
     cvar = r_draw_adjacent_sector_things;
     help =
@@ -133,6 +133,7 @@ menudef AdvVideoOptions {
     list {
       "Vavoom",
       "DarkDoom",
+      "DarkDoom Banded",
     }
     help =
       "This selects lighting mode.",
@@ -150,14 +151,16 @@ menudef AdvVideoOptions {
     help = "Minimum visibility for DarkDoom lighting mode.";
   }
 
-  option bool {
+  option bool [k8vavoom_developer_version > 0] {
     title = "Darken lights";
     cvar = r_darken;
+    help = "Darken lights for non-Doom lighting mode.";
   }
 
-  option bool {
+  option bool [k8vavoom_developer_version > 0] {
     title = "Simulate Faded lights";
     cvar = r_fade_light;
+    help = "Simulate light fading for non-Doom lighting mode.";
   }
 
   option enum {
@@ -222,10 +225,10 @@ menudef AdvVideoOptions {
   }
 
 
-  header "Lightmap Light Tracing";
+  header "Lightmap Light Tracing Texture Check";
 
   option bool {
-    title = "Check textures in static trace";
+    title = "Check Static Traces";
     cvar = r_lmap_texture_check_static;
     help =
       "Should static light tracer check textures to allow static light",
@@ -233,7 +236,7 @@ menudef AdvVideoOptions {
   }
 
   option bool {
-    title = "Check textures in dynamic trace";
+    title = "Check Dynamic Traces";
     cvar = r_lmap_texture_check_dynamic;
     help =
       "Should static light tracer check textures to allow dynamic light",
@@ -241,43 +244,13 @@ menudef AdvVideoOptions {
   }
 
   option numeric {
-    title = "Minimum texcheck dynamic radius";
+    title = "Minimum Check Radius (Dynamic)";
     cvar = r_lmap_texture_check_radius_dynamic;
     step = 10;
     min = 0;
     max = 1000;
     help =
       "Do not check textures if dynamic light is smaller than this radius.";
-  }
-
-
-  header "Thing Light Tracing";
-
-  option bool {
-    title = "Check textures in static trace";
-    cvar = r_lmap_texture_check_static;
-    help =
-      "Should static light tracer check textures to allow static light",
-      "shine through texture holes when checking thing lighting?";
-  }
-
-  option bool {
-    title = "Check textures in dynamic trace";
-    cvar = r_lmap_texture_check_dynamic;
-    help =
-      "Should static light tracer check textures to allow dynamic light",
-      "shine through texture holes when checking thing lighting?";
-  }
-
-  option numeric {
-    title = "Minimum texcheck dynamic radius";
-    cvar = r_lmap_texture_check_radius_dynamic;
-    step = 10;
-    min = 0;
-    max = 1000;
-    help =
-      "Do not check textures if dynamic light is smaller than this radius",
-      " when checking thing lighting.";
   }
 
 
@@ -339,6 +312,7 @@ menudef AdvVideoOptions {
   option bool {
     title = "Model Dynamic lighting";
     cvar = r_model_light;
+    help = "Should 3D models react to dynamic lighting?";
   }
 
   /* k8: this doesn't work with shaders; need to be restored later
