@@ -1,0 +1,10 @@
+class Main : Object;
+
+
+void main () {
+  string s = "s";
+  name n = 's';
+
+  writeln(s == n);
+  writeln("a" == 'a');
+}
