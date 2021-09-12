@@ -164,8 +164,10 @@ public:
   EBinOp Oper;
   VExpression *op1;
   VExpression *op2;
+  // string and name comparisons are case-insensitive in decorate
+  bool FromDecorate;
 
-  VBinary (EBinOp, VExpression *, VExpression *, const TLocation &);
+  VBinary (EBinOp AOper, VExpression *AOp1, VExpression *AOp2, const TLocation &ALoc, bool aFromDecorate=false);
   virtual ~VBinary () override;
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;

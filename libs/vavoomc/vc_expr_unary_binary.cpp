@@ -566,11 +566,12 @@ VStr VUnaryMutator::toString () const {
 //  VBinary::VBinary
 //
 //==========================================================================
-VBinary::VBinary (EBinOp AOper, VExpression *AOp1, VExpression *AOp2, const TLocation &ALoc)
+VBinary::VBinary (EBinOp AOper, VExpression *AOp1, VExpression *AOp2, const TLocation &ALoc, bool aFromDecorate)
   : VExpression(ALoc)
   , Oper(AOper)
   , op1(AOp1)
   , op2(AOp2)
+  , FromDecorate(aFromDecorate)
 {
   if (!op2) ParseError(Loc, "Expression expected");
 }
@@ -610,6 +611,7 @@ void VBinary::DoSyntaxCopyTo (VExpression *e) {
   res->Oper = Oper;
   res->op1 = (op1 ? op1->SyntaxCopy() : nullptr);
   res->op2 = (op2 ? op2->SyntaxCopy() : nullptr);
+  res->FromDecorate = FromDecorate;
 }
 
 
@@ -729,6 +731,7 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
   // if we're doing comparisons, and one operand is int, and second is
   // one-char name or one-char string, convert it to int too, as this
   // is something like `str[1] == "a"`
+  // also, allow mixing strings and names in comparisons
   switch (Oper) {
     case Less:
     case LessEquals:
@@ -772,6 +775,22 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
         delete op1;
         op1 = e->Resolve(ec); // will never fail
       }
+      else // first is string, second is name
+      if (op1->Type.Type == TYPE_String && op2->Type.Type == TYPE_Name)
+      {
+        // convert second to string (to avoid creating alot of names)
+        VExpression *e = new VCastToString(op2); // it is ok to pass resolved expression here
+        op2 = e->Resolve(ec);
+        if (!op2) { delete this; return nullptr; } // just in case
+      }
+      else // first is name, second is string
+      if (op1->Type.Type == TYPE_Name && op2->Type.Type == TYPE_String)
+      {
+        // convert first to string (to avoid creating alot of names)
+        VExpression *e = new VCastToString(op1); // it is ok to pass resolved expression here
+        op1 = e->Resolve(ec);
+        if (!op1) { delete this; return nullptr; } // just in case
+      }
       break;
     default:
       break;
@@ -780,6 +799,47 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
   // coerce both types if it is possible
   VExpression::CoerceTypes(ec, op1, op2, false); // don't coerce "none delegate"
   if (!op1 || !op2) { delete this; return nullptr; }
+
+  if (!FromDecorate) {
+    // optimise literal string comparisons
+    if (op1->Type.Type == TYPE_String && op1->IsStrConst() &&
+        op2->Type.Type == TYPE_String && op2->IsStrConst())
+    {
+      VStr s1 = op1->GetStrConst(ec.Package);
+      VStr s2 = op2->GetStrConst(ec.Package);
+      VExpression *e = nullptr;
+      switch (Oper) {
+        case Less: e = new VIntLiteral((s1 < s2 ? 1 : 0), Loc); break;
+        case LessEquals: e = new VIntLiteral((s1 <= s2 ? 1 : 0), Loc); break;
+        case Greater: e = new VIntLiteral((s1 > s2 ? 1 : 0), Loc); break;
+        case GreaterEquals: e = new VIntLiteral((s1 >= s2 ? 1 : 0), Loc); break;
+        case Equals: e = new VIntLiteral((s1 == s2 ? 1 : 0), Loc); break;
+        case NotEquals: e = new VIntLiteral((s1 != s2 ? 1 : 0), Loc); break;
+        default: break;
+      }
+      if (e) {
+        delete this;
+        return e->Resolve(ec);
+      }
+    }
+    // optimise literal name comparisons
+    if (op1->Type.Type == TYPE_Name && op1->IsNameConst() &&
+        op2->Type.Type == TYPE_Name && op2->IsNameConst())
+    {
+      VName n1 = op1->GetNameConst();
+      VName n2 = op2->GetNameConst();
+      VExpression *e = nullptr;
+      switch (Oper) {
+        case Equals: e = new VIntLiteral((n1 == n2 ? 1 : 0), Loc); break;
+        case NotEquals: e = new VIntLiteral((n1 != n2 ? 1 : 0), Loc); break;
+        default: break;
+      }
+      if (e) {
+        delete this;
+        return e->Resolve(ec);
+      }
+    }
+  }
 
   // determine resulting type (and check operand types)
   switch (Oper) {
