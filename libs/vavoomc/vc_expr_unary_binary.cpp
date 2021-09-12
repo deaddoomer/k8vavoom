@@ -1074,7 +1074,7 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
     return nullptr;
   }
 
-  // optimise shifts; note that constant folding will be done later
+  // optimise shifts and some bitops; note that constant folding will be done later
   if (op2->IsIntConst()) {
     vint32 Value2 = op2->GetIntConst();
     VExpression *e = nullptr;
@@ -1102,6 +1102,23 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
         } else if (Value2 > 31) {
           e = new VIntLiteral(0, Loc);
           e = e->Resolve(ec);
+        }
+        break;
+      case And:
+        if (Value2 == 0) {
+          e = new VIntLiteral(0, Loc);
+          e = e->Resolve(ec);
+        } else if (Value2 == -1) {
+          // all bits set
+          e = op1;
+          op1 = nullptr;
+        }
+        break;
+      case XOr:
+      case Or:
+        if (Value2 == 0) {
+          e = op1;
+          op1 = nullptr;
         }
         break;
       default: break;
