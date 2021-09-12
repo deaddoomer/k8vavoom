@@ -791,6 +791,17 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
         op1 = e->Resolve(ec);
         if (!op1) { delete this; return nullptr; } // just in case
       }
+      else // both are names, but we are in decorate
+      if (FromDecorate && op1->Type.Type == TYPE_Name && op2->Type.Type == TYPE_Name)
+      {
+        // convert both to strings
+        VExpression *e = new VCastToString(op1); // it is ok to pass resolved expression here
+        op1 = e->Resolve(ec);
+        if (!op1) { delete this; return nullptr; } // just in case
+        e = new VCastToString(op2); // it is ok to pass resolved expression here
+        op2 = e->Resolve(ec);
+        if (!op2) { delete this; return nullptr; } // just in case
+      }
       break;
     default:
       break;
@@ -837,6 +848,61 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
       if (e) {
         delete this;
         return e->Resolve(ec);
+      }
+    }
+  } else {
+    // from decorate, case-insensitive comparisons
+    if (op1->Type.Type == TYPE_String && op1->IsStrConst() &&
+        op2->Type.Type == TYPE_String && op2->IsStrConst())
+    {
+      VStr s1 = op1->GetStrConst(ec.Package);
+      VStr s2 = op2->GetStrConst(ec.Package);
+      VExpression *e = nullptr;
+      switch (Oper) {
+        case Less: e = new VIntLiteral((s1.ICmp(s2) < 0 ? 1 : 0), Loc); break;
+        case LessEquals: e = new VIntLiteral((s1.ICmp(s2) <= 0 ? 1 : 0), Loc); break;
+        case Greater: e = new VIntLiteral((s1.ICmp(s2) > 0 ? 1 : 0), Loc); break;
+        case GreaterEquals: e = new VIntLiteral((s1.ICmp(s2) >= 0 ? 1 : 0), Loc); break;
+        case Equals: e = new VIntLiteral((s1.ICmp(s2) == 0 ? 1 : 0), Loc); break;
+        case NotEquals: e = new VIntLiteral((s1.ICmp(s2) != 0 ? 1 : 0), Loc); break;
+        default: break;
+      }
+      if (e) {
+        delete this;
+        return e->Resolve(ec);
+      }
+    }
+    // rewrite string comparisons to method calls
+    if (op1->Type.Type == TYPE_String && op2->Type.Type == TYPE_String) {
+      bool validCmp = false;
+      switch (Oper) {
+        case Less:
+        case LessEquals:
+        case Greater:
+        case GreaterEquals:
+        case Equals:
+        case NotEquals:
+          validCmp = true;
+          break;
+        default: break;
+      }
+      if (validCmp) {
+        VMethod *mt = VObject::StaticClass()->FindMethodChecked("stricmp");
+        vassert(mt);
+        if (!mt->IsStatic() || mt->IsVarArgs() || mt->IsStructMethod() || mt->IsIterator()) {
+          ParseError(Loc, "invalid `stricmp()` method");
+          delete this;
+          return nullptr;
+        }
+        VExpression *args[2] = { op1, op2 }; // it should be safe to pass resolved expression here
+        VExpression *estrcmp = new VInvocation(nullptr/*self*/, mt, nullptr/*dgfield*/, false/*selfexpr*/, false/*basecall*/, Loc, 2, args);
+        // always with zero
+        VExpression *ezero = new VIntLiteral(0, Loc);
+        // create proper comparison
+        VExpression *ecmp = new VBinary(Oper, estrcmp, ezero, Loc);
+        op1 = op2 = nullptr;
+        delete this;
+        return ecmp->Resolve(ec);
       }
     }
   }
