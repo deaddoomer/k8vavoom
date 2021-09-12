@@ -143,9 +143,6 @@ public:
     LShift,
     RShift,
     URShift,
-    LShiftFloat, // crap for decorate
-    RShiftFloat, // crap for decorate
-    URShiftFloat, // crap for decorate
     StrCat,
     And,
     XOr,
@@ -192,6 +189,8 @@ protected:
   static inline bool IsOpZero (VExpression *e) { return (e ? (e->IsIntConst() ? (e->GetIntConst() == 0) : e->IsFloatConst() ? (e->GetFloatConst() == 0.0f) : false) : false); }
   static inline bool IsOpOne (VExpression *e) { return (e ? (e->IsIntConst() ? (e->GetIntConst() == 1) : e->IsFloatConst() ? (e->GetFloatConst() == 1.0f) : false) : false); }
   static inline bool IsOpMinusOne (VExpression *e) { return (e ? (e->IsIntConst() ? (e->GetIntConst() == -1) : e->IsFloatConst() ? (e->GetFloatConst() == -1.0f) : false) : false); }
+  static inline bool IsOpNegative (VExpression *e) { return (e ? (e->IsIntConst() ? (e->GetIntConst() < 0) : e->IsFloatConst() ? (e->GetFloatConst() < 0.0f) : false) : false); }
+  static inline bool IsOpPositive (VExpression *e) { return (e ? (e->IsIntConst() ? (e->GetIntConst() > 0) : e->IsFloatConst() ? (e->GetFloatConst() > 0.0f) : false) : false); }
 };
 
 

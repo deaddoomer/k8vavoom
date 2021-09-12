@@ -633,9 +633,6 @@ int VBinary::calcPrio (EBinOp op) {
     case LShift:
     case RShift:
     case URShift:
-    case LShiftFloat:
-    case RShiftFloat:
-    case URShiftFloat:
       return 4;
     case And:
       return 5;
@@ -709,22 +706,45 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
   if (op2) op2 = op2->Resolve(ec);
   if (!op1 || !op2) { delete this; return nullptr; }
 
-  // convert decorate crap
-  if (Oper == LShiftFloat || Oper == RShiftFloat || Oper == URShiftFloat) {
-    if (op1->Type.Type == TYPE_Float) {
-      // zero is allowed, because it is used to perform float->int conversion in decorate
-      if (!op2->IsIntConst() || op2->GetIntConst() != 0) {
-        ParseWarning(Loc, "shifting float value is something you should not do!");
-      }
-      // convert float to int
-      op1 = (new VScalarToInt(op1))->Resolve(ec);
-      if (!op1) { delete this; return nullptr; }
-    }
+  // convert decorate crap (int operations on floats)
+  if (FromDecorate) {
     switch (Oper) {
-      case LShiftFloat: Oper = LShift; break;
-      case RShiftFloat: Oper = RShift; break;
-      case URShiftFloat: Oper = URShift; break;
-      default: VCFatalError("ooops, internal compiler error ketmar-1249692");
+      case Modulus:
+        // fp modulus is undefined
+        if (op2->Type.Type == TYPE_Float) {
+          if (!op2->IsFloatConst()) {
+            ParseError(Loc, "floating point modulo is not defined");
+            delete this;
+            return nullptr;
+          }
+          // stupid check for valid integer
+          const float fv = op2->IsFloatConst();
+          const int iv = (int)fv;
+          const float f2 = (float)iv;
+          if (fv != f2) {
+            ParseError(Loc, "floating point modulo is not defined");
+            delete this;
+            return nullptr;
+          }
+        }
+        /* fallthrough */
+      case LShift:
+      case RShift:
+      case URShift:
+      case And:
+      case XOr:
+      case Or:
+        // convert both operands to ints
+        if (op1->Type.Type == TYPE_Float) {
+          op1 = (new VScalarToInt(op1))->Resolve(ec);
+          if (!op1) { delete this; return nullptr; }
+        }
+        if (op2->Type.Type == TYPE_Float) {
+          op2 = (new VScalarToInt(op2))->Resolve(ec);
+          if (!op2) { delete this; return nullptr; }
+        }
+      default:
+        break;
     }
   }
 
@@ -1040,6 +1060,20 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
     default: VCFatalError("VBinary::DoResolve: forgot to handle oper %d in typecheck", (int)Oper);
   }
 
+  // division by zero check
+  if ((Oper == Divide || Oper == Modulus) && IsOpZero(op2)) {
+    ParseError(Loc, "Division by 0");
+    delete this;
+    return nullptr;
+  }
+
+  // negative shift check
+  if ((Oper == LShift || Oper == RShift || Oper == URShift) && IsOpNegative(op2)) {
+    ParseError(Loc, "shifting by negative value is undefined");
+    delete this;
+    return nullptr;
+  }
+
   // optimise shifts; note that constant folding will be done later
   if (op2->IsIntConst()) {
     vint32 Value2 = op2->GetIntConst();
@@ -1104,7 +1138,6 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
         e = new VIntLiteral(Value1%Value2, Loc);
         break;
       case LShift:
-      case LShiftFloat:
         if (Value2 < 0 || Value2 > 31) {
           ParseError(Loc, "shl by %d", Value2);
           delete this;
@@ -1113,7 +1146,6 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
         e = new VIntLiteral(Value1<<Value2, Loc);
         break;
       case RShift:
-      case RShiftFloat:
         if (Value2 < 0 || Value2 > 31) {
           ParseError(Loc, "shr by %d", Value2);
           delete this;
@@ -1122,7 +1154,6 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
         e = new VIntLiteral(Value1>>Value2, Loc);
         break;
       case URShift:
-      case URShiftFloat:
         if (Value2 < 0 || Value2 > 31) {
           ParseError(Loc, "ushr by %d", Value2);
           delete this;
@@ -1172,13 +1203,6 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
       default: break;
     }
     if (e) { delete this; return e->Resolve(ec); }
-  }
-
-  // division by zero check
-  if ((Oper == Divide || Oper == Modulus) && IsOpZero(op2)) {
-    ParseError(Loc, "Division by 0");
-    delete this;
-    return nullptr;
   }
 
   // simplify/optimise some expressions with a known result
@@ -1411,9 +1435,6 @@ const char *VBinary::getOpName () const {
     case LShift: return "<<";
     case RShift: return ">>";
     case URShift: return ">>>";
-    case LShiftFloat: return "<<";
-    case RShiftFloat: return ">>";
-    case URShiftFloat: return ">>>";
     case StrCat: return "~";
     case And: return "&";
     case XOr: return "^";
