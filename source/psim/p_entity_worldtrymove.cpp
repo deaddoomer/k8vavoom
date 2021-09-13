@@ -137,6 +137,7 @@ bool VEntity::TryMove (tmtrace_t &tmtrace, TVec newPos, bool AllowDropOff, bool 
       // doesn't fit
       PushLine(tmtrace, skipEffects);
       TMDbgF("%s:   DOESN'T FIT(0)!", GetClass()->GetName());
+      if (!tmtrace.BlockingLine && tmtrace.FloorLine) tmtrace.BlockingLine = tmtrace.FloorLine;
       return false;
     }
 
@@ -146,6 +147,7 @@ bool VEntity::TryMove (tmtrace_t &tmtrace, TVec newPos, bool AllowDropOff, bool 
       // mobj must lower itself to fit
       PushLine(tmtrace, skipEffects);
       TMDbgF("%s:   DOESN'T FIT(1)! ZBox=(%g,%g); ceilz=%g", GetClass()->GetName(), Origin.z, Origin.z+Height, tmtrace.CeilingZ);
+      if (!tmtrace.BlockingLine && tmtrace.CeilingLine) tmtrace.BlockingLine = tmtrace.CeilingLine;
       return false;
     }
 
