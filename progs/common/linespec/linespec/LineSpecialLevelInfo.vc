@@ -1649,6 +1649,26 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
 //
 //  FIXME: split this to several functions, because "compat" sux
 //
+//  for non-generic:
+//    Arg1: tag
+//    Arg2: speed
+//    Arg3: height
+//    Arg4: delay
+//    Arg5: reset
+//
+//  for generic:
+//    Arg1: tag
+//    Arg2: speed
+//    Arg3: height
+//    Arg4: flags
+//            bit0 set means "up"
+//            bit1 set means "detector ignores different floor textures"
+//    Arg5: reset
+//
+//    If a line activates this special, and the line is marked as repeatable,
+//    then the direction the stairs build will alternate between up and down
+//    each time the special is activated.
+//
 //==========================================================================
 /*final*/ int EV_BuildStairsOld (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
                                  bool Generic, line_t *Line)
@@ -1667,6 +1687,8 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
   int OldSecNum;
 
   if (!Arg1 && (!Line || !Line->backsector)) return false;
+
+  //printdebug("EV_BuildStairsOld: tag=%s; speed=%s; height=%s; delay=%s; reset=%s; generic=%B", Arg1, Arg2, Arg3, Arg4, Arg5, Generic);
 
   if (Generic) {
     Direction = (Arg4&1 ? 1 : -1);
@@ -1703,6 +1725,8 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
       Floor = SpawnThinker(FloorMover);
       Floor.InitStair(sec, Arg1, Arg2, Arg3, Arg4, Arg5, Generic, Height);
 
+      //printdebug("  sector #%s: height=%s", SecNum, Height);
+
       Texture = sec->floor.pic;
 
       // Find next sector to raise
@@ -1714,31 +1738,36 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
         foreach (int i; 0..sec.lines.length) {
           SecLine = sec->lines[i];
           if (!(SecLine->flags&ML_TWOSIDED)) continue;
+
           TSec = SecLine->frontsector;
           if (sec != TSec) continue;
+
           TSec = SecLine->backsector;
           if (!TSec) continue; //jff 5/7/98 if no backside, continue
           if (!IgnTxt && TSec->floor.pic != Texture) continue;
 
+          // Doom bug: Height was changed before discarding the sector as part of the stairs.
+          // Needs to be compatibility optioned because some maps (Eternall MAP25) depend on it.
           Height += StairSize;
-          if (TSec->FloorData) continue;
+          if (TSec->FloorData) {
+            //printdebug("    ALREADY adjacent sector #%s: height=%s", TSec-&XLevel.Sectors[0], Height);
+            continue;
+          }
 
           sec = TSec;
-          // SecNum = TSec-XLevel.Sectors;
-          foreach (int j; 0..XLevel.Sectors.length) {
-            if (TSec == &XLevel.Sectors[j]) {
-              SecNum = j;
-              break;
-            }
-          }
+          SecNum = TSec-&XLevel.Sectors[0];
+
           Floor = SpawnThinker(FloorMover);
           Floor.InitStair(sec, Arg1, Arg2, Arg3, Arg4, Arg5, Generic, Height);
+          //printdebug("    adjacent sector #%s: height=%s", SecNum, Height);
           Ok = true;
           break;
         }
       } while (Ok);
     }
+
     if (!Level.CompatStairs) SecNum = OldSecNum; //jff 3/4/98 restore loop index
+
     // next sector
     if (!Arg1) break;
     ++SecNum;
@@ -1748,6 +1777,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
       ++SecNum;
     }
   }
+
   return Rtn;
 }
 
