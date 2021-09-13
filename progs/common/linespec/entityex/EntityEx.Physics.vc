@@ -32,6 +32,7 @@
 //#define ENABLE_LINGUORTALS
 //#define PHYSICS_DEBUG_ROCKET
 
+
 const float DOOM_BOUNCE_STOP_VEL = 2.5/*3.0*/*35.0;
 
 const float AUTOCROUCH_LIMIT = 0.75;
@@ -829,6 +830,48 @@ final void HitLine (ref tmtrace_t tmtrace, float DeltaTime, float StepVelScale, 
       return;
     }
 
+
+    #if 1
+    // skyhack
+    if (tmtrace.CeilingLine) {
+      int siden = PointOnPlaneSide(Origin-Velocity*2, ref *tmtrace.CeilingLine);
+      sector_t *sec = (siden ? tmtrace.CeilingLine->frontsector : tmtrace.CeilingLine->backsector);
+      // explode a missile against sky ceilings
+      if (sec && sec->ceiling.pic == Level.Game.skyflatnum) {
+        float secz = sec->ceiling.maxz;
+        bool hitsky = (secz <= tmtrace.End.z);
+        #ifdef PHYSICS_DEBUG_ROCKET
+        if (bMissile) printdebug("%C:  SKY-CEILING: secz=%s; endz=%s; hitsky=%B", self, secz, tmtrace.End.z, hitsky);
+        #endif
+        if (hitsky) {
+               if (bBounceSky) Velocity = vector(0.0, 0.0, -1.0*35.0);
+          else if (bExplodeOnSky) ExplodeMissile(none);
+          else Destroy();
+          return;
+        }
+      }
+    }
+    // floor skyhack: do we even have those?
+    if (tmtrace.FloorLine) {
+      int siden = PointOnPlaneSide(Origin-Velocity*2, ref *tmtrace.FloorLine);
+      sector_t *sec = (siden ? tmtrace.FloorLine->frontsector : tmtrace.FloorLine->backsector);
+      // explode a missile against sky floors
+      if (sec && sec->floor.pic == Level.Game.skyflatnum) {
+        float secz = sec->floor.maxz;
+        bool hitsky = (secz >= tmtrace.End.z);
+        #ifdef PHYSICS_DEBUG_ROCKET
+        if (bMissile) printdebug("%C:  SKY-FLOOR: secz=%s; endz=%s; hitsky=%B", self, secz, tmtrace.End.z, hitsky);
+        #endif
+        if (hitsky) {
+               if (bBounceSky) Velocity = vector(0.0, 0.0, -1.0*35.0);
+          else if (bExplodeOnSky) ExplodeMissile(none);
+          else Destroy();
+          return;
+        }
+      }
+    }
+    #else
+    //k8: this seems to be buggy
     // explode a missile against sky ceilings
     if (tmtrace.CeilingLine && tmtrace.CeilingLine->backsector &&
         tmtrace.CeilingLine->backsector->ceiling.pic == Level.Game.skyflatnum)
@@ -838,15 +881,24 @@ final void HitLine (ref tmtrace_t tmtrace, float DeltaTime, float StepVelScale, 
       #endif
       // hack to prevent missiles exploding against the sky
       // does not handle sky floors
-      float pf = tmtrace.CeilingLine->frontsector->floor.maxz;
-      float pb = tmtrace.CeilingLine->backsector->floor.maxz;
+      //k8: why it is a floor here?
+      float zfront = tmtrace.CeilingLine->frontsector->floor.maxz;
+      float zback = tmtrace.CeilingLine->backsector->floor.maxz;
       bool hitsky = true;
-      if (pf != pb) {
+      #ifdef PHYSICS_DEBUG_ROCKET
+      if (bMissile) printdebug("%C:     zfront=%s; zback=%s", self, zfront, zback);
+      #endif
+      if (zfront != zback) {
         int siden = PointOnPlaneSide(Origin-Velocity*2, ref *tmtrace.CeilingLine);
+        #ifdef PHYSICS_DEBUG_ROCKET
+        if (bMissile) printdebug("%C:     siden=%s; endz=%s", self, siden, tmtrace.End.z);
+        #endif
         if (!siden) {
-          hitsky = (pf < pb && tmtrace.End.z > pb);
+          // front side
+          hitsky = (zfront < zback && tmtrace.End.z > zback);
         } else {
-          hitsky = (pb < pf && tmtrace.End.z > pf);
+          // back side
+          hitsky = (zback < zfront && tmtrace.End.z > zfront);
         }
       }
       if (hitsky) {
@@ -866,15 +918,23 @@ final void HitLine (ref tmtrace_t tmtrace, float DeltaTime, float StepVelScale, 
       #endif
       // hack to prevent missiles exploding against the sky
       // does not handle sky floors
-      float pf = tmtrace.FloorLine->frontsector->floor.maxz;
-      float pb = tmtrace.FloorLine->backsector->floor.maxz;
+      float zfront = tmtrace.FloorLine->frontsector->floor.maxz;
+      float zback = tmtrace.FloorLine->backsector->floor.maxz;
       bool hitsky = true;
-      if (pf != pb) {
+      #ifdef PHYSICS_DEBUG_ROCKET
+      if (bMissile) printdebug("%C:     zfront=%s; zback=%s", self, zfront, zback);
+      #endif
+      if (zfront != zback) {
         int siden = PointOnPlaneSide(Origin-Velocity*2, ref *tmtrace.FloorLine);
+        #ifdef PHYSICS_DEBUG_ROCKET
+        if (bMissile) printdebug("%C:     siden=%s; endz=%s", self, siden, tmtrace.End.z);
+        #endif
         if (!siden) {
-          hitsky = (pf < pb && tmtrace.End.z > pb);
+          // front side
+          hitsky = (zfront < zback && tmtrace.End.z > zback);
         } else {
-          hitsky = (pb < pf && tmtrace.End.z > pf);
+          // back side
+          hitsky = (zback < zfront && tmtrace.End.z > zfront);
         }
       }
       if (hitsky) {
@@ -884,6 +944,7 @@ final void HitLine (ref tmtrace_t tmtrace, float DeltaTime, float StepVelScale, 
         return;
       }
     }
+    #endif
 
     if (tmtrace.BlockingLine) {
       // struck a wall
