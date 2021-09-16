@@ -2012,7 +2012,7 @@ override int AcsPolyMoveToRotateEx (int po, int speed, int x, int y, int z, floa
   TVec dst = vector(x, y, 0);
   TVec rel = vector(dst.x-poly.startSpot.x, dst.y-poly.startSpot.y, 0);
   float vdist = z-poly.startSpot.z;
-  //printdebug("AcsPolyMoveToEx(%s): speed=%s; rel=%s; vdist=%s", po, speed, rel, vdist);
+  //printdebug("AcsPolyMoveToEx(%s): ppos=(%s,%s,%s); z=%s; speed=%s; rel=%s; vdist=%s", po, poly.startSpot.x, poly.startSpot.y, poly.startSpot.z, z, speed, rel, vdist);
   if (!rel && !vdist) return 1;
 
   float dist = length2D(rel);
@@ -2060,6 +2060,7 @@ override int AcsPolyMoveToSpotRotateEx (int po, int speed, int targettid, float 
     deltaangle = 0;
   }
 
+  //printdebug("po=%s; ent.org=%s", po, ent.Origin);
   return AcsPolyMoveToRotateEx(po, speed, cast(int)ent.Origin.x, cast(int)ent.Origin.y, cast(int)ent.Origin.z, deltaangle, moveflags, Activator);
 }
 
