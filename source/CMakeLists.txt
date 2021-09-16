@@ -440,11 +440,35 @@ set(VCCLIB_SOURCES
 #---------------------------------------
 #file(REMOVE ${CMAKE_CURRENT_BINARY_DIR}/gitversion.h)
 #file(TOUCH ${CMAKE_CURRENT_SOURCE_DIR}/gitversion.h.in)
-configure_file(
-  gitversion.h.in
-  gitversion.h
-)
+##configure_file(
+##  gitversion.h.in
+##  gitversion.h
+##)
+### ### if(FOSSIL_REPO_PATH)
+### ###   execute_process(
+### ###     COMMAND fossil time -R "${FOSSIL_REPO_PATH}" -n 1 -F "%H" -t ci
+### ###     COMMAND head -c 16
+### ###     DEPENDS host.cpp
+### ###     RESULT_VARIABLE
+### ###       FOSSIL_HASH_RESULT
+### ###     OUTPUT_VARIABLE
+### ###       FOSSIL_HASH)
+### ###
+### ###   message(STATUS "Fossil commit hash: " ${FOSSIL_HASH})
+### ###   add_definitions("-DFOSSL_COMMIT_HASH=${FOSSIL_HASH}")
+### ### endif(FOSSIL_REPO_PATH)
 
+if(FOSSIL_REPO_PATH)
+  add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/fossilversion.h
+    COMMAND sh ${CMAKE_SOURCE_DIR}/utils/getfossver.sh "${FOSSIL_REPO_PATH}" ${CMAKE_CURRENT_BINARY_DIR}/fossilversion.h
+    DEPENDS host.cpp
+  )
+  add_definitions("-DHAVE_FOSSIL_COMMIT_HASH")
+  set(SRC_FOSSVER "${CMAKE_CURRENT_BINARY_DIR}/fossilversion.h")
+else(FOSSIL_REPO_PATH)
+  set(SRC_FOSSVER )
+endif(FOSSIL_REPO_PATH)
 
 #---------------------------------------
 #
@@ -452,7 +476,7 @@ configure_file(
 #
 #---------------------------------------
 set(CS_SHARED_SOURCES
-  gitversion.h.in
+  #gitversion.h.in
   gamedefs_build.h
   gamedefs_fwd.h
   gamedefs.h
@@ -508,7 +532,9 @@ set(CS_SHARED_SOURCES
 
 #-- source files for combined client/server --
 set(COMBINED_SOURCES
-  ${CMAKE_CURRENT_BINARY_DIR}/gitversion.h
+  #${CMAKE_CURRENT_BINARY_DIR}/gitversion.h
+  #${CMAKE_CURRENT_BINARY_DIR}/fossilversion.h
+  ${SRC_FOSSVER}
   ${CS_SHARED_SOURCES}
 
   ${RENDERBASE_SOURCES}
@@ -597,7 +623,10 @@ foreach(file ${MAIN_OPENGL_SOURCES})
 endforeach()
 
 source_group("" FILES ${MAIN_OPENGL_SOURCES})
-source_group(generated FILES ${OPENGL_GENERATED_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/gitversion.h)
+#source_group(generated FILES ${OPENGL_GENERATED_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/gitversion.h)
+if(FOSSIL_REPO_PATH)
+  source_group(generated FILES ${OPENGL_GENERATED_SOURCES} ${SRC_FOSSVER})
+endif(FOSSIL_REPO_PATH)
 
 #add_executable(vshadpp ${MAIN_OPENGL_SOURCES} ${OPENGL_GENERATED_SOURCES})
 #sxx_compile(render/hwgl/gl_shaddef.sxx  render/hwgl/gl_main.cpp)
@@ -615,7 +644,9 @@ include_directories( .
 #
 #---------------------------------------
 set(SERVER_COMMON_SOURCES
-  ${CMAKE_CURRENT_BINARY_DIR}/gitversion.h
+  #${CMAKE_CURRENT_BINARY_DIR}/gitversion.h
+  #${CMAKE_CURRENT_BINARY_DIR}/fossilversion.h
+  ${SRC_FOSSVER}
   ${CS_SHARED_SOURCES}
 
   # for loading various definitions

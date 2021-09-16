@@ -103,6 +103,10 @@ if(NSWITCH)
   set(WITH_MIMALLOC OFF)
 endif(NSWITCH)
 
+option(FOSSIL_REPO_PATH "Local path to k8vavoom Fossil repository (leave empty if unsure)" OFF)
+
+
+
 if(CYGWIN)
   set(WITH_MIMALLOC OFF)
 endif()

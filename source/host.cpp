@@ -23,7 +23,9 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-#include "gitversion.h"
+#ifdef HAVE_FOSSIL_COMMIT_HASH
+# include "fossilversion.h"
+#endif
 #include "gamedefs.h"
 #include "psim/p_player.h"
 #include "psim/p_entity.h"
@@ -368,8 +370,8 @@ void Host_Init () {
   GCon->Log(NAME_Init, "---------------------------------------------------------------");
   GCon->Log(NAME_Init, "REMEMBER: BY USING FOSS SOFTWARE, YOU ARE SUPPORTING COMMUNISM!");
   GCon->Log(NAME_Init, "---------------------------------------------------------------");
-  #if defined(VV_GIT_COMMIT_HASH_STR)
-  GCon->Log(NAME_Init, "git commit hash: " VV_GIT_COMMIT_HASH_STR);
+  #if defined(FOSSIL_COMMIT_HASH)
+  GCon->Log(NAME_Init, "Fossil commit hash: " FOSSIL_COMMIT_HASH);
   #endif
   GCon->Logf(NAME_Init, "Memory allocator: %s", Z_GetAllocatorType());
 
