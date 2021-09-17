@@ -181,18 +181,18 @@ VCvarB NoMonsters("NoMonsters", false, "NoMonsters mode?", 0/*CVAR_PreInit*/);
 VCvarI Skill("Skill", "3", "Skill level.", 0/*CVAR_PreInit*/);
 VCvarB sv_cheats("sv_cheats", false, "Allow cheats in network game?", CVAR_ServerInfo|/*CVAR_Latch|*/CVAR_PreInit);
 
-VCvarB sv_disable_run("sv_disable_run", false, "Disable running?", CVAR_ServerInfo/*|CVAR_Archive*/|CVAR_PreInit);
-VCvarB sv_disable_crouch("sv_disable_crouch", false, "Disable crouching?", CVAR_ServerInfo/*|CVAR_Archive*/|CVAR_PreInit);
-VCvarB sv_disable_jump("sv_disable_jump", false, "Disable jumping?", CVAR_ServerInfo/*|CVAR_Archive*/|CVAR_PreInit);
-VCvarB sv_disable_mlook("sv_disable_mlook", false, "Disable mouselook?", CVAR_ServerInfo/*|CVAR_Archive*/|CVAR_PreInit);
+VCvarB sv_disable_run("sv_disable_run", false, "Disable running?", CVAR_ServerInfo|CVAR_Archive|CVAR_PreInit);
+VCvarB sv_disable_crouch("sv_disable_crouch", false, "Disable crouching?", CVAR_ServerInfo|CVAR_Archive|CVAR_PreInit);
+VCvarB sv_disable_jump("sv_disable_jump", false, "Disable jumping?", CVAR_ServerInfo|CVAR_Archive|CVAR_PreInit);
+VCvarB sv_disable_mlook("sv_disable_mlook", false, "Disable mouselook?", CVAR_ServerInfo|CVAR_Archive|CVAR_PreInit);
+
+VCvarI sv_maxmove("sv_maxmove", "400", "Maximum allowed network movement.", CVAR_Archive);
 
 static VCvarB sv_barrel_respawn("sv_barrel_respawn", false, "Respawn barrels in network game?", CVAR_Archive|/*CVAR_ServerInfo|CVAR_Latch|*/CVAR_PreInit);
 static VCvarB sv_pushable_barrels("sv_pushable_barrels", true, "Pushable barrels?", CVAR_Archive|/*CVAR_ServerInfo|CVAR_Latch|*/CVAR_PreInit);
 VCvarB sv_decoration_block_projectiles("sv_decoration_block_projectiles", false, "Should decoration things block projectiles?", CVAR_Archive|/*CVAR_ServerInfo|CVAR_Latch|*/CVAR_PreInit);
 
 static VCvarI master_heartbeat_time("master_heartbeat_time", "3", "Master server heartbeat interval, minutes.", CVAR_Archive|CVAR_PreInit);
-
-VCvarI sv_maxmove("sv_maxmove", "400", "Maximum allowed network movement.", CVAR_Archive);
 
 static VServerNetContext *ServerNetContext = nullptr;
 
