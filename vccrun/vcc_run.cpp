@@ -64,6 +64,7 @@ static bool isGDB = false;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+/*
 static VStr buildConfigName (const VStr &optfile) {
   for (int f = 0; f < optfile.length(); ++f) {
     char ch = optfile[f];
@@ -87,10 +88,10 @@ static VStr buildConfigName (const VStr &optfile) {
   }
 #endif
 }
+*/
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-#include "vcc_run_serializer.cpp"
 #include "vcc_run_net.cpp"
 
 
