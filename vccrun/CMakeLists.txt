@@ -116,7 +116,7 @@ if (ENABLE_VCCRUN)
   )
 
 
-  add_executable(vccrun
+  add_executable(vccssa
     ${VCCRUN_RUNTIME_SOURCES}
     ${VCCRUN_FSYS_SOURCES}
     convars.h
@@ -162,9 +162,9 @@ if (ENABLE_VCCRUN)
     string(REGEX REPLACE "-Wl,--out-implib,[^ ]+ " " " CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE}")
   endif()
 
-  set_target_properties(vccrun PROPERTIES OUTPUT_NAME vccrun)
-  target_compile_definitions(vccrun PRIVATE ${VCCRUN_DEFINES})
-  #target_link_libraries(vccrun core ${LIBLZMA_LIBRARIES} ${VCCRUN_LINKLIBS})
-  add_dependencies(vccrun core vavoomc ${VCCRUN_DEPS})
-  target_link_libraries(vccrun vavoomc ${VCCRUN_LINKLIBS} core)
+  set_target_properties(vccssa PROPERTIES OUTPUT_NAME vccssa)
+  target_compile_definitions(vccssa PRIVATE ${VCCRUN_DEFINES})
+  #target_link_libraries(vccssa core ${LIBLZMA_LIBRARIES} ${VCCRUN_LINKLIBS})
+  add_dependencies(vccssa core vavoomc ${VCCRUN_DEPS})
+  target_link_libraries(vccssa vavoomc ${VCCRUN_LINKLIBS} core)
 endif(ENABLE_VCCRUN)
