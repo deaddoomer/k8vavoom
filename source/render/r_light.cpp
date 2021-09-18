@@ -1083,7 +1083,11 @@ void VRenderLevelShared::CalculateDynLightSub (VEntity *lowner, float &l, float 
 //
 //==========================================================================
 void VRenderLevelShared::CalculateSubStatic (VEntity *lowner, float &l, float &lr, float &lg, float &lb, const subsector_t *sub, const TVec &pt, float radius, float height, unsigned flags) {
-  (void)flags;
+  if (flags&LP_StrictDynamic) {
+    if ((flags&(LP_IgnoreDynLights|LP_IgnoreStatLights)) == (LP_IgnoreDynLights|LP_IgnoreStatLights)) return;
+  } else {
+    if (flags&LP_IgnoreStatLights) return;
+  }
   if (r_static_lights && sub) {
     if (!staticLightsFiltered) RefilterStaticLights();
     const TVec p = calcLightPoint(pt, height);
@@ -1100,6 +1104,10 @@ void VRenderLevelShared::CalculateSubStatic (VEntity *lowner, float &l, float &l
       // ignore owned lights, because they are processed in another method
       if (lowner && lowner->ServerUId == stl->ownerUId) continue;
       if (stl->flags&(dlight_t::Disabled|dlight_t::Subtractive|dlight_t::NoActorLight)) continue; // check "no self/actor light" flags
+      // check for "converted"
+      if (flags&LP_StrictDynamic) {
+        if (flags&(stl->flags&dlight_t::LightSource ? LP_IgnoreStatLights : LP_IgnoreDynLights)) continue;
+      }
       // check potential visibility
       const float distSq = (p-stl->origin).lengthSquared();
       if (distSq >= stl->radius*stl->radius) continue; // too far away
@@ -1330,10 +1338,8 @@ vuint32 VRenderLevelShared::LightPoint (VEntity *lowner, const TVec p, float rad
     CalcEntityDynamicLightingFromOwned(lowner, p, radius, height, l, lr, lg, lb, flags);
   }
 
-  // add static lights
-  if (!(flags&LP_IgnoreStatLights)) {
-    /*if (IsShadowVolumeRenderer())*/ CalculateSubStatic(lowner, l, lr, lg, lb, sub, p, radius, height, flags);
-  }
+  // add static lights (flags are checked in the callee)
+  /*if (IsShadowVolumeRenderer())*/ CalculateSubStatic(lowner, l, lr, lg, lb, sub, p, radius, height, flags);
 
   // add dynamic lights
   if (!(flags&LP_IgnoreDynLights)) {
@@ -1509,6 +1515,7 @@ vuint32 VRenderLevelShared::CalcEntityLight (VEntity *lowner, unsigned dflags) {
     LP_IgnoreFixedLight|
     LP_IgnoreExtraLight|
     LP_NoLightFade|
+    LP_StrictDynamic| // consider "converted" dynlights as dynamic
     (dflags&VDrawer::ELFlag_AllowSelfLights ? LP_NothingZero : LP_IgnoreSelfLights)|
     (dflags&VDrawer::ELFlag_IgnoreDynLights ? LP_IgnoreDynLights : LP_NothingZero)|
     (dflags&VDrawer::ELFlag_IgnoreStaticLights ? LP_IgnoreStatLights : LP_NothingZero)|

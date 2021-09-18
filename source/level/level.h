@@ -165,9 +165,10 @@ struct rep_light_t {
     Subtractive   = 1u<<7, // this does nothing
     Disabled      = 1u<<8,
     NoGeoClip     = 1u<<9, // don't clip with map geometry, don't cast geometry shadows
+    LightSource   = 1u<<10, // this light comes from the light source thing (i.e. not a "converted" one)
     // other
-    LightChanged = 1u<<10,
-    LightActive  = 1u<<11,
+    LightChanged = 1u<<29,
+    LightActive  = 1u<<30,
   };
   vuint32 Flags;
 

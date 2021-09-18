@@ -1621,7 +1621,8 @@ void DetectStaticLightSpawn () {
   if (lt.Radius <= 4) return;
   if ((lt.Type&DynamicLight::DLTYPE_TypeMask) != DynamicLight::DLTYPE_Point) return;
   // we need API to add "no shadow" static lights
-  if (lt.bNoShadow) return;
+  //if (lt.bNoShadow) return;
+  // and we have it! ;-)
   if (lt.ConeAngle < 0) return;
 
   printdebug("%C: possible static light; scale=%s:%s; ltradius=%s; color=0x%08x; spr=<%s>; ofs=%s; conedir=%s; coneangle=%s", self, ScaleX, ScaleY, lt.Radius, lt.Color, State.GetStateSpriteName, lt.Offset, lt.ConeDir, lt.ConeAngle);

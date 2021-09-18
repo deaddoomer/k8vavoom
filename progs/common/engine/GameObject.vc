@@ -1633,6 +1633,8 @@ bitenum {
   LIGHTFLAG_Disabled,
   // do not clip this light with geometry; it will also won't cast any shadows
   LIGHTFLAG_NoGeoClip,
+  // this light comes from the light source thing (i.e. not a "converted" one)
+  LIGHTFLAG_LightSource,
 }
 
 struct dlight_t {

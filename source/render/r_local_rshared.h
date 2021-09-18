@@ -488,6 +488,8 @@ public:
     LP_IgnoreGlowLights = 1u<<5,
     LP_IgnoreAmbLight   = 1u<<6,
     LP_NoLightFade      = 1u<<7,
+    // this indicates that "converted" dynamic lights should still be considered dynamic
+    LP_StrictDynamic    = 1u<<8,
     //
     LP_NothingZero = 0u,
   };

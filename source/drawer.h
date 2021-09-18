@@ -896,6 +896,9 @@ public: // lighting
   };
 
   // returns 0 for "unknown"
+  // otherwise returns "IRGB"
+  //   I: overal light level
+  //   RGB: calculated light color
   vuint32 CalcEntityLight (VEntity *lowner, unsigned flags);
 };
 
