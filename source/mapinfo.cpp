@@ -1790,6 +1790,21 @@ static void ParseMapUMapinfo (VScriptParser *sc, VMapInfo *info) {
       continue;
     }
 
+    //TODO:
+    // label = "name"
+    //   Specifies the string to prepend to the levelname on the automap.
+    //   If not specified the mapname will be used by default followed by
+    //   a colon and a space character (e.g. "E1M1: ").
+    // label = clear
+    //   Only print the levelname on the automap.
+    //
+    // i'll ignore that for now, it is better than crashing.
+    if (sc->Check("label")) {
+      miWarning(sc, "ignored UMAPINFO `label`, because it is not supported yet (this is harmless)");
+      (void)ParseUStringKey(sc);
+      continue;
+    }
+
     sc->Error(va("Unknown UMAPINFO map key '%s'", *sc->String));
   }
 
