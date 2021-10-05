@@ -34,6 +34,7 @@
 
 
 static int cli_NoSound = 0;
+static int cli_NoSfx = 0;
 static int cli_NoMusic = 0;
 int cli_DebugSound = 0;
 
@@ -43,6 +44,8 @@ int cli_DebugSound = 0;
   VParsedArgs::RegisterAlias("-no-sound", "-nosound") &&
   VParsedArgs::RegisterFlagSet("-nomusic", "disable music", &cli_NoMusic) &&
   VParsedArgs::RegisterAlias("-no-music", "-nomusic") &&
+  VParsedArgs::RegisterFlagSet("-nosfx", "disable sound effectx", &cli_NoSfx) &&
+  VParsedArgs::RegisterAlias("-no-sfx", "-nosfx") &&
   VParsedArgs::RegisterFlagSet("-debug-sound", "!show some debug messages from sound system", &cli_DebugSound);
 
 
@@ -188,6 +191,10 @@ private:
 
   // friends
   friend class TCmdMusic;
+
+  inline bool AreSfxEnabled () const noexcept {
+    return (SoundDevice && !cli_NoSfx);
+  }
 
   // sound effect helpers
   int FindChannelToReplaceInternal (int sound_id, int origin_id, const float priority, int *sndcountp);
@@ -591,12 +598,16 @@ void VAudio::Init () {
       delete SoundDevice;
       SoundDevice = nullptr;
     }
+  } else {
+    SoundDevice = nullptr; // just in case ;-)
   }
 
   // initialise stream music player
   if (SoundDevice && !cli_NoMusic) {
     StreamMusicPlayer = new VStreamMusicPlayer(SoundDevice);
     StreamMusicPlayer->Init();
+  } else {
+    StreamMusicPlayer = nullptr; // just in case
   }
 
   MaxSoundDist = 4096.0f;
@@ -678,7 +689,7 @@ float VAudio::CalcSoundPriority (int sound_id, float dist) noexcept {
 void VAudio::PlaySound (int InSoundId, const TVec &origin, const TVec &velocity,
                         int origin_id, int channel, float volume, float Attenuation, bool Loop)
 {
-  if (!SoundDevice || !InSoundId || !MaxVolume || volume <= 0.0f || NumChannels < 1) return;
+  if (!AreSfxEnabled() || !InSoundId || !MaxVolume || volume <= 0.0f || NumChannels < 1) return;
 
   // find actual sound ID to use
   int sound_id = GSoundManager->ResolveSound(InSoundId);
@@ -1015,6 +1026,7 @@ bool VAudio::IsSoundPlaying (int origin_id, int InSoundId) {
 //
 //==========================================================================
 void VAudio::StartSequence (int OriginId, const TVec &Origin, VName Name, int ModeNum) {
+  if (!AreSfxEnabled()) return; // don't bother adding sequences if the sound is off
   int Idx = GSoundManager->FindSequence(Name);
   if (Idx != -1) {
     StopSequence(OriginId); // stop any previous sequence
@@ -1029,6 +1041,7 @@ void VAudio::StartSequence (int OriginId, const TVec &Origin, VName Name, int Mo
 //
 //==========================================================================
 void VAudio::AddSeqChoice (int OriginId, VName Name) {
+  if (!AreSfxEnabled()) return; // don't bother adding sequences if the sound is off
   int Idx = GSoundManager->FindSequence(Name);
   if (Idx == -1) return;
   for (VSoundSeqNode *node = SequenceListHead; node; node = node->Next) {
@@ -1065,6 +1078,7 @@ void VAudio::UpdateActiveSequences (float DeltaTime) {
     // no sequences currently playing/game is paused or there's no player in the map
     return;
   }
+  if (!AreSfxEnabled()) return; // just in case
   //k8: no simple loop, 'cause sequence can delete itself
   VSoundSeqNode *node = SequenceListHead;
   while (node) {
@@ -1127,7 +1141,7 @@ void VAudio::SerialiseSounds (VStream &Strm) {
 //
 //==========================================================================
 void VAudio::UpdateSfx () {
-  if (!SoundDevice || NumChannels <= 0) return;
+  if (!AreSfxEnabled() || NumChannels <= 0) return;
 
   const float currVolume = clampval(snd_sfx_volume.asFloat()*snd_master_volume.asFloat(), 0.0f, 1.0f);
   if (currVolume != MaxVolume) {
@@ -1382,7 +1396,7 @@ void VAudio::UpdateSounds () {
   if (!SoundDevice) return;
 
   SoundDevice->StartBatchUpdate();
-  // update any Sequences
+  // update any sequences
   UpdateActiveSequences(host_frametime);
   // update sounds
   UpdateSfx();
