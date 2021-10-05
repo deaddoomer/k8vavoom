@@ -1378,6 +1378,9 @@ void VAudio::UpdateSounds () {
   if (snd_master_volume < 0.0f) snd_master_volume = 0.0f;
   if (snd_master_volume > 1.0f) snd_master_volume = 1.0f;
 
+  // with "-nosound", we have no sound device (and there cannot be any music device too ;-)
+  if (!SoundDevice) return;
+
   SoundDevice->StartBatchUpdate();
   // update any Sequences
   UpdateActiveSequences(host_frametime);
