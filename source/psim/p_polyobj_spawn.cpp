@@ -603,7 +603,9 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
   po->prevPtsCount = segptnum;
 
   const float startHeight = po->startSpot.z; // this is set to anchor height in spawner
-  po->startSpot.z = 0.0f; // this is actually offset from "default z point"
+  // using offsets completely breaks waypoints; use the real Z instead (but only for 3d pobjs)
+  // the code below will fix Z position for 3d pobjs; for 2d pobjs it doesn't matter (they are of inifinite height)
+  po->startSpot.z = 0.0f;
 
   const mthing_t *anchorthing = (anchor->thingidx >= 0 && anchor->thingidx < NumThings ? &Things[anchor->thingidx] : nullptr);
 
@@ -612,6 +614,8 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
   // clamp 3d pobj height if necessary
   if (po->posector) {
     // 3d polyobject
+    // use inner sector Z (this won't work for slopes, but 3d pobj slopes are not supported anyway)
+    po->startSpot.z = po->posector->floor.minz;
 
     if (dbg_pobj_verbose_spawn.asBool()) {
       GCon->Logf(NAME_Debug, "000: pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g  deltaZ=%g", po->tag,
