@@ -615,7 +615,7 @@ void VLevel::TranslatePolyobjToStartSpot (PolyAnchorPoint_t *anchor) {
   if (po->posector) {
     // 3d polyobject
     // use inner sector Z (this won't work for slopes, but 3d pobj slopes are not supported anyway)
-    po->startSpot.z = po->posector->floor.minz;
+    po->startSpot.z = po->posector->floor.minz-deltaZ;
 
     if (dbg_pobj_verbose_spawn.asBool()) {
       GCon->Logf(NAME_Debug, "000: pobj #%d: floor=(%g,%g,%g:%g) %g:%g; ceiling=(%g,%g,%g:%g) %g:%g  deltaZ=%g", po->tag,
