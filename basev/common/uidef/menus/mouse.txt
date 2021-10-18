@@ -73,7 +73,7 @@ menudef MouseOptions {
     cvar = ui_mouse;
     help =
       "If this options turned off, the engine will",
-      "release mouse capture when UI is active.";
+      "release the captured mouse when the UI is active.";
   }
 
 

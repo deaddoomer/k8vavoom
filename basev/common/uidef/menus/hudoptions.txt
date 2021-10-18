@@ -231,7 +231,7 @@ menudef HUDOptions {
     cvar = k8HealthBarShowClassName;
     textColor = BRICK;
     help =
-      "Should Health Bar always show class name, even if tag name available?"
+      "Should Health Bar always show class name, even if tag name is available?"
       "This is useful for various debugging.";
   }
 

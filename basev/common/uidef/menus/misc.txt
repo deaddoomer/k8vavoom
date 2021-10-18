@@ -59,7 +59,7 @@ menudef MiscOptions {
   option bool {
     title = "Allow vanilla cheatcodes";
     cvar = allow_vanilla_cheats;
-    help = "Turn this on to allow IDXXX cheatcodes from Vanilla DooM.";
+    help = "Turn this on to allow IDXXX cheatcodes from Vanilla Doom.";
   }
 
   option slider {

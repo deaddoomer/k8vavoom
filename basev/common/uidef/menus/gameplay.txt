@@ -75,7 +75,7 @@ menudef GameplayOptions {
       "This makes corpse collision radius smaller, so corpses will not",
       "hang on ledges unrealistically (at least not so often).",
       "",
-      "\cGWARNING! This may create stuck monsters with Arch-Vile resurresion.",
+      "\cGWARNING! This may create stuck monsters with Arch-Vile resurrection.",
       "\cGWARNING! This may create stuck monsters in Nightmare mode.";
   }
 
@@ -118,7 +118,7 @@ menudef GameplayOptions {
     title = "Optimise Physics Calculation";
     cvar = vm_optimise_statics;
     help =
-      "Omit most physics code for 'sleeping' entities. I.e. entities without",
+      "Omit most physics code for 'sleeping' entities, i.e. entities without",
       "horizontal velocity, and standing on a floor.",
       "",
       "This could allow you to play some pwads with 2k-4k monsters, but may",
@@ -128,7 +128,7 @@ menudef GameplayOptions {
   }
 
 
-  header "Terrain And Bootprint Options";
+  header "Terrain And Boot Print Options";
 
   option bool {
     title = "Footstep Sound";
@@ -140,28 +140,28 @@ menudef GameplayOptions {
     title = "Optional Terrain";
     cvar = gm_optional_terrain;
     help =
-      "Detect some liqiuds for Vanilla Doom?",
+      "Detect some liquids for Vanilla Doom?",
       "Some standard flats will emit a sound, and be detected as liquid terrain.";
   }
 
   option bool {
-    title = "Decal Bootprints";
+    title = "Decal Boot Prints";
     cvar = gm_decal_bootprints;
-    help = "Allow bootprints from floor decals?";
+    help = "Allow boot prints from floor decals?";
   }
 
   option bool {
-    title = "Terrain Bootprints";
+    title = "Terrain Boot Prints";
     cvar = gm_terrain_bootprints;
-    help = "Allow any terrain bootprints?";
+    help = "Allow any terrain boot prints?";
   }
 
   option bool {
-    title = "Optional Terrain Bootprints";
+    title = "Optional Terrain Boot Prints";
     cvar = gm_optional_bootprints;
     help =
-      "Allow optional terrain bootprints?",
-      "Optional bootprints mostly used for Vanilla Doom liquids.",
+      "Allow optional terrain boot prints?",
+      "Optional boot prints mostly used for Vanilla Doom liquids.",
       "If you will turn off terrain decals above, this option will have no effect.";
   }
 
@@ -220,7 +220,7 @@ menudef GameplayOptions {
     cvar = sv_decoration_block_projectiles;
     help =
       "Should decoration objects block projectiles?"
-      "Set to 'OFF' to get vanilla expirience.";
+      "Set to 'OFF' to get vanilla experience.";
   }
 
   option bool {
@@ -238,7 +238,7 @@ menudef GameplayOptions {
       "Use velocity-based transporters?"
       "This can glitch for small transporter speeds, and also"
       "doesn't maintain the same speed as a scolling floor."
-      "If your pwad is not working right, try to toggle this.";
+      "If your pwad is not working right, try toggling this.";
   }
 
   option slider {
@@ -248,7 +248,7 @@ menudef GameplayOptions {
     max = 8192;
     step = 10;
     help =
-      "You can limit number of corpses on the map.",
+      "Limits the number of corpses on the map.",
       "If there will be more than the given number of monsters,",
       "some corpses will disappear.",
       "Note that Arch-Vile cannot resurrect disappeared corpses (obviously).",
@@ -575,7 +575,7 @@ menudef GameplayOptions {
   }
 
   option slider {
-    title = "Projectole speed multiplier";
+    title = "Projectile speed multiplier";
     cvar = gm_monster_proj_speed_mult;
     min = 0;
     max = 16;
