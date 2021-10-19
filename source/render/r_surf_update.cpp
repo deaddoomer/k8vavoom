@@ -275,8 +275,6 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
 
   //if (sub->isInnerPObj()) GCon->Logf(NAME_Debug, "updating subsector for pobj #%d", sub->ownpobj->tag);
 
-  const bool updateFullSegs = (createdFullSegs && r_dbg_use_fullsegs.asBool());
-
   for (subregion_t *region = sub->regions; region; region = region->next) {
     TSecPlaneRef r_floor = region->floorplane;
     TSecPlaneRef r_ceiling = region->ceilplane;
@@ -290,12 +288,6 @@ void VRenderLevelShared::UpdateSubRegions (subsector_t *sub) {
         if (ld) {
           // miniseg has no drawsegs/segparts
           if (seg->drawsegs) UpdateDrawSeg(sub, seg->drawsegs, r_floor, r_ceiling);
-          // update fullsegs
-          if (updateFullSegs && ld->updateWorldFrame != updateWorldFrame) {
-            ld->updateWorldFrame = updateWorldFrame;
-            if (ld->frontside && ld->frontside->fullseg) UpdateDrawSeg(sub, ld->frontside->fullseg->drawsegs, r_floor, r_ceiling);
-            if (ld->backside && ld->backside->fullseg) UpdateDrawSeg(sub, ld->backside->fullseg->drawsegs, r_floor, r_ceiling);
-          }
         }
       }
     }
@@ -377,8 +369,6 @@ void VRenderLevelShared::UpdatePObj (polyobj_t *po) {
   po_floor.set(&po->pofloor, false);
   po_ceiling.set(&po->poceiling, false);
 
-  const bool updateFullSegs = (createdFullSegs && r_dbg_use_fullsegs.asBool());
-
   // update polyobject segs
   for (auto &&sit : po->SegFirst()) {
     const seg_t *seg = sit.seg();
@@ -391,11 +381,6 @@ void VRenderLevelShared::UpdatePObj (polyobj_t *po) {
         if (partner && partner->frontsub && partner->frontsub->isInnerPObj()) sub = partner->frontsub;
       }
       UpdateDrawSeg(sub, seg->drawsegs, po_floor, po_ceiling);
-      if (updateFullSegs && ld->updateWorldFrame != updateWorldFrame) {
-        ld->updateWorldFrame = updateWorldFrame;
-        if (ld->frontside && ld->frontside->fullseg) UpdateDrawSeg(sub, ld->frontside->fullseg->drawsegs, po_floor, po_ceiling);
-        if (ld->backside && ld->backside->fullseg) UpdateDrawSeg(sub, ld->backside->fullseg->drawsegs, po_floor, po_ceiling);
-      }
     }
   }
 

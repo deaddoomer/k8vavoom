@@ -1008,13 +1008,6 @@ void VRenderLevelShared::RenderSegMarkMapped (subsector_t *sub, seg_t *seg) {
   if (linedef && (linedef->flags&ML_DONTDRAW)) linedef = nullptr;
 
   if (linedef) {
-    // fullseg: mark all line segs for that side
-    if ((seg->flags&(SF_FULLSEG|SF_MAPPED)) == SF_FULLSEG) {
-      for (seg_t *lseg = linedef->firstseg; lseg; lseg = lseg->lsnext) {
-        if (lseg->side != seg->side) continue;
-        lseg->flags |= SF_MAPPED;
-      }
-    }
     seg->flags |= SF_MAPPED; // just in case
     // if the whole line is mapped, do nothing
     if (linedef->flags&ML_MAPPED) {
@@ -1054,7 +1047,6 @@ void VRenderLevelShared::RenderSegMarkMapped (subsector_t *sub, seg_t *seg) {
 //==========================================================================
 void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, subregion_t *subregion, seg_t *seg) {
   if (!seg) return; // just in case
-  if (seg->flags&SF_FULLSEG) Sys_Error("RenderLine: fullsegs should not end up here!"); // it should not came here
 
   line_t *linedef = seg->linedef;
 
@@ -1080,19 +1072,6 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
 
   // mirror clip
   if (Drawer->MirrorClip && (Drawer->MirrorPlane.PointOnSide2(*seg->v1) || Drawer->MirrorPlane.PointOnSide2(*seg->v2))) return;
-
-  #if 1
-  // render (queue) translucent lines by segs (for sorter)
-  if (createdFullSegs && r_dbg_use_fullsegs.asBool() && /*!linedef->pobj() &&*/ (linedef->exFlags&ML_EX_NON_TRANSLUCENT)) {
-    side_t *side = seg->sidedef;
-    if (side->fullseg && side->fullseg->drawsegs) {
-      if (side->rendercount == renderedLineCounter) return; // already rendered
-      side->rendercount = renderedLineCounter;
-      seg = side->fullseg;
-      dseg = seg->drawsegs;
-    }
-  }
-  #endif
 
   if (seg->PointOnSide(Drawer->vieworg)) {
     // viewer is in back side or on plane
@@ -1287,7 +1266,6 @@ void VRenderLevelShared::RenderPolyObj (subsector_t *sub) {
         }
         for (auto &&sit : pobj->SegFirst()) {
           seg_t *seg = sit.seg();
-          if (seg->flags&SF_FULLSEG) continue;
           RenderLine(sub, secregion, region, seg);
         }
         // render flats for 3d pobjs
@@ -1549,7 +1527,6 @@ void VRenderLevelShared::RenderSubsector (int num, bool onlyClip) {
         vassert(secregion->regflags&sec_region_t::RF_BaseRegion);
         seg_t *seg = &Level->Segs[sub->firstline];
         for (int j = sub->numlines; j--; ++seg) {
-          if (seg->flags&SF_FULLSEG) continue;
           RenderLine(sub, secregion, region, seg);
         }
       }

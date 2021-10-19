@@ -300,8 +300,6 @@ extern TArray<VTextureTranslation *> BloodTranslations;
 
 extern double dbgCheckVisTime;
 
-extern VCvarB r_dbg_use_fullsegs;
-
 
 // ////////////////////////////////////////////////////////////////////////// //
 static VVA_OKUNUSED inline bool IsAnyProfRActive () noexcept {

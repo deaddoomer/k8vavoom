@@ -222,8 +222,6 @@ static VCvarB am_active("am_active", false, "Is automap active?", 0);
 extern VCvarI screen_size;
 extern VCvarB ui_freemouse;
 
-extern VCvarB r_dbg_use_fullsegs;
-
 VCvarB am_always_update("am_always_update", true, "Update non-overlay automap?", CVAR_Archive);
 
 static VClass *keyClass = nullptr;
@@ -1457,7 +1455,6 @@ static void AM_UpdateSeen () {
           int unseenSides[2] = {0, 0};
           int seenSides[2] = {0, 0};
           for (const seg_t *seg = line.firstseg; seg; seg = seg->lsnext) {
-            if (/*!seg->drawsegs ||*/ (seg->flags&SF_FULLSEG)) continue; // renderer will process fullsegs properly, so ignore them
             if (seg->flags&SF_MAPPED) {
               seenSides[seg->side] = 1;
               // mark front subsector as rendered
@@ -1544,7 +1541,7 @@ static void AM_drawWalls () {
     } else {
       // render segments
       for (const seg_t *seg = line.firstseg; seg; seg = seg->lsnext) {
-        if (!seg->drawsegs || (seg->flags&(SF_MAPPED|SF_FULLSEG)) != SF_MAPPED) continue;
+        if (!seg->drawsegs || !(seg->flags&SF_MAPPED)) continue;
 
         mline_t l;
         l.a.x = seg->v1->x;

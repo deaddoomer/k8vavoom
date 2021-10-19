@@ -253,8 +253,6 @@ protected:
   int pspartsLeft;
   bool lastRenderQuality;
 
-  bool createdFullSegs;
-
   vuint32 currVisFrame;
 
   // chasecam

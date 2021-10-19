@@ -519,7 +519,6 @@ struct side_t {
   // sector the SideDef is facing
   sector_t *Sector;
 
-  seg_t *fullseg; // "whole line" segment (allocated in `Segs`, tho)
   vuint32 rendercount; // used to avoid rendering lines several times (with full segments)
 
   vint32 LineNum; // line index in `Lines`
@@ -541,9 +540,9 @@ struct side_t {
 enum {
   SF_MAPPED  = 1u<<0, // some segs of this linedef are visible, but not all
   SF_ZEROLEN = 1u<<1, // zero-length seg (it has some fake length)
-  SF_FULLSEG = 1u<<2, // is this a "fullseg"?
+  //SF_FULLSEG = 1u<<2, // is this a "fullseg"? (this was a bad idea); leave this bit unused for now
   // do not spam with warnings
-  SF_SECWARNED = 1u<<3, // is this a "fullseg"?
+  SF_SECWARNED = 1u<<3, // did we print any warnings for this seg? (used to avoid warning spam)
 };
 
 struct seg_t : public TPlane {

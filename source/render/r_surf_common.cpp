@@ -297,8 +297,7 @@ void VRenderLevelShared::CreateWorldSurfaces () {
     }
   }
 
-  const bool allowFullSegs = (Level->HasFullSegs() && IsShadowVolumeRenderer());
-  const int totalSegCount = Level->NumSubsectors+(allowFullSegs ? Level->NumLines : 0);
+  const int totalSegCount = Level->NumSubsectors;
 
   if (inWorldCreation) {
     R_OSDMsgShowSecondary("CREATING WORLD SURFACES");
@@ -311,25 +310,10 @@ void VRenderLevelShared::CreateWorldSurfaces () {
   //nextRenderedLineCounter();
 
   // count regions in all subsectors
-  if (allowFullSegs) {
-    GCon->Logf(NAME_Debug, "processing %d subsectors and %d lines...", Level->NumSubsectors, Level->NumLines);
-  } else {
-    GCon->Logf(NAME_Debug, "processing %d subsectors...", Level->NumSubsectors);
-  }
+  GCon->Logf(NAME_Debug, "processing %d subsectors...", Level->NumSubsectors);
   int srcount = 0;
   int dscount = 0;
   int spcount = 0;
-  if (allowFullSegs) {
-    for (auto &&ld : Level->allLines()) {
-      for (unsigned f = 0; f < 2; ++f) {
-        side_t *side = (f ? ld.backside : ld.frontside);
-        if (!side || !side->fullseg) continue;
-        dscount += 1; // one drawseg for a good seg
-        // segparts (including segparts for 3d floors)
-        spcount += CountSegParts(side->fullseg);
-      }
-    }
-  }
   for (auto &&sub : Level->allSubsectors()) {
     if (sub.isInnerPObj()) ++srcount; // floor and ceiling
     // we need flats for 3d polyobject subsectors
@@ -445,7 +429,6 @@ void VRenderLevelShared::CreateWorldSurfaces () {
               if (!seg->linedef || seg->pobj) continue; // miniseg has no drawsegs/segparts
               if (pdsLeft < 1) Sys_Error("out of drawsegs in surface creator");
               --pdsLeft;
-              vassert(!(seg->flags&SF_FULLSEG));
               CreateSegParts(sub, pds, seg, main_floor, main_ceiling, reg);
               ++pds;
             }
@@ -460,7 +443,6 @@ void VRenderLevelShared::CreateWorldSurfaces () {
                 pobj->rendercount = 1; // mark as rendered
                 for (auto &&sit : pobj->SegFirst()) {
                   seg_t *seg = sit.seg();
-                  if (seg->flags&SF_FULLSEG) continue; // fullsegs will be created later
                   if (!seg->linedef) continue; // miniseg has no drawsegs/segparts
                   if (pdsLeft < 1) Sys_Error("out of drawsegs in surface creator");
                   --pdsLeft;
@@ -517,42 +499,6 @@ void VRenderLevelShared::CreateWorldSurfaces () {
 
     if (inWorldCreation) R_PBarUpdate("Surfaces", it.index(), totalSegCount);
   }
-
-  // create "fullsegs"
-  if (allowFullSegs) {
-    int lfscount = 0;
-    for (auto &&ld : Level->allLines()) {
-      for (unsigned f = 0; f < 2; ++f) {
-        side_t *side = (f ? ld.backside : ld.frontside);
-        if (!side || !side->fullseg) continue;
-        //if (side->rendercount == renderedLineCounter) continue; // skip extra 3d lines
-
-        sector_t *fsec = (f ? ld.backsector : ld.frontsector);
-        vassert(fsec);
-        if (fsec->linecount == 0) continue; // no need to create 'em
-
-        subsector_t *sub = fsec->subsectors;
-        vassert(sub);
-        vassert(sub->sector == fsec);
-
-        seg_t *seg = side->fullseg;
-        vassert(seg->linedef);
-        vassert(seg->flags&SF_FULLSEG);
-        if (seg->drawsegs) {
-          GCon->Logf(NAME_Error, "fullseg of line #%d (side %d) already has drawsegs for some reason", (int)(ptrdiff_t)(&ld-&Level->Lines[0]), seg->side);
-          continue;
-        }
-        if (pdsLeft < 1) Sys_Error("out of drawsegs in surface creator");
-        --pdsLeft;
-        CreateSegParts(sub, pds, seg, fsec->eregions->efloor, fsec->eregions->eceiling, fsec->eregions);
-        ++pds;
-      }
-
-      if (inWorldCreation) R_PBarUpdate("Surfaces", Level->NumSubsectors+(++lfscount), totalSegCount);
-    }
-  }
-
-  createdFullSegs = allowFullSegs;
 
   GCon->Log(NAME_Debug, "performing initial world update...");
   InitialWorldUpdate();

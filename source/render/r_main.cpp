@@ -123,10 +123,6 @@ vuint8 light_remap[256];
 int screenblocks = 0; // viewport size
 bool render_last_quality_setting = false;
 
-//FIXME: set to `true` when it will be debugged
-VCvarB r_dbg_use_fullsegs("r_dbg_use_fullsegs", false, "Use full line segs for rendering/lighting? (\"loader_create_fullsegs\" should be enabled.)", CVAR_Archive);
-
-
 static VCvarF r_aspect_pixel("r_aspect_pixel", "1", "Pixel aspect ratio.", CVAR_Rom);
 static VCvarI r_aspect_horiz("r_aspect_horiz", "4", "Horizontal aspect multiplier.", CVAR_Rom);
 static VCvarI r_aspect_vert("r_aspect_vert", "3", "Vertical aspect multiplier.", CVAR_Rom);
@@ -775,7 +771,6 @@ VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
   , pspart(nullptr)
   , pspartsLeft(0)
 {
-  createdFullSegs = false;
   lastRenderQuality = r_fix_tjunctions.asBool();
   currDLightFrame = 0;
   currQueueFrame = 0;
