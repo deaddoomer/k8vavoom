@@ -659,6 +659,39 @@ void VLevel::InitPolyBlockMap () {
 
 //==========================================================================
 //
+//  pobjCopySecPlaneT
+//
+//  this should be a `sec_plane_t` method, but meh...
+//
+//  this is required to fix [4fdd92dc19]
+//
+//==========================================================================
+static inline void pobjCopySecPlaneT (sec_plane_t *dest, const sec_plane_t *src) {
+  if (!dest || !src || dest == src) return;
+  // as we will change most of the fields, it is easier
+  // to save and restore those that need to be untouched (at least for now)
+  const VTextureID pic = dest->pic;
+  const vuint32 flags = dest->flags;
+  const vuint32 flipFlags = dest->flipFlags;
+  const float Alpha = dest->Alpha;
+  const float MirrorAlpha = dest->MirrorAlpha;
+  const vint32 LightSourceSector = dest->LightSourceSector;
+  VEntity *SkyBox = dest->SkyBox;
+  // copy everything
+  *dest = *src;
+  // ...and restore something ;-)
+  dest->pic = pic;
+  dest->flags = flags;
+  dest->flipFlags = flipFlags;
+  dest->Alpha = Alpha;
+  dest->MirrorAlpha = MirrorAlpha;
+  dest->LightSourceSector = LightSourceSector;
+  dest->SkyBox = SkyBox;
+}
+
+
+//==========================================================================
+//
 //  VLevel::OffsetPolyobjFlats
 //
 //==========================================================================
@@ -693,8 +726,12 @@ void VLevel::OffsetPolyobjFlats (polyobj_t *po, float z, bool forceRecreation) {
   po->pofloor.PObjCY = po->poceiling.PObjCY = po->startSpot.y;
 
   // fix sector
-  sec->floor = po->pofloor;
-  sec->ceiling = po->poceiling;
+  //sec->floor = po->pofloor;
+  //sec->ceiling = po->poceiling;
+  // use special copy function, because some ACS scripts may change some
+  // sector properties, and we want to retain those changes
+  pobjCopySecPlaneT(&sec->floor, &po->pofloor);
+  pobjCopySecPlaneT(&sec->ceiling, &po->poceiling);
 
   if (forceRecreation) {
     for (subsector_t *sub = sec->subsectors; sub; sub = sub->seclink) {
