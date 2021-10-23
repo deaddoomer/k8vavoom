@@ -161,6 +161,8 @@ struct VSkillDef {
   float Aggressiveness;
   vint32 SpawnFilter;
   vint32 AcsReturn;
+  float MonsterHealth;
+  float HealthFactor;
   VStr MenuName;
   TArray<VSkillPlayerClassName> PlayerClassNames;
   VStr ConfirmationText;

@@ -93,6 +93,8 @@ void VWorldInfo::SetSkill (int ASkill) {
   SkillAggressiveness = SDef->Aggressiveness;
   SkillSpawnFilter = SDef->SpawnFilter;
   SkillAcsReturn = SDef->AcsReturn;
+  SkillMonsterHealth = SDef->MonsterHealth;
+  SkillHealthFactor = SDef->HealthFactor;
   Flags = (Flags & 0xffffff00) | (SDef->Flags & 0x0000000f);
   if (SDef->Flags&SKILLF_SlowMonsters) Flags |= WIF_SkillSlowMonsters;
 

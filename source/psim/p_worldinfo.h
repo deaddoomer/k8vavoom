@@ -47,6 +47,8 @@ class VWorldInfo : public VGameObject {
   float SkillAggressiveness;
   vint32 SkillSpawnFilter;
   vint32 SkillAcsReturn;
+  float SkillHealthFactor;
+  float SkillMonsterHealth;
 
   enum {
     WIF_SkillFastMonsters  = 0x00000001,

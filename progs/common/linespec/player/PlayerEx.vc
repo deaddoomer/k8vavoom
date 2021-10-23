@@ -4811,7 +4811,7 @@ bool checkDoHealthAccumRegen () {
 //==========================================================================
 bool doHealthAccumHealthPickup (Health item, EntityEx toucher) {
   if (!item) return false; // meh, just in case
-  int amount = item.Amount;
+  int amount = int(float(item.Amount)*Level.World.GetHealthFactor());
   int itemhealthlimit = item.MaxAmount;
   // is this small health bonus (like bottle)?
   if (itemhealthlimit) {

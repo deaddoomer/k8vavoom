@@ -2299,6 +2299,8 @@ static void ParseSkillDef (VScriptParser *sc) {
   sdef->RespawnLimit = 0;
   sdef->Aggressiveness = 1.0f;
   sdef->SpawnFilter = 0;
+  sdef->MonsterHealth = 1.0f;
+  sdef->HealthFactor = 1.0f;
   sdef->AcsReturn = SkillDefs.length()-1;
   sdef->MenuName.Clean();
   sdef->PlayerClassNames.Clear();
@@ -2445,9 +2447,11 @@ static void ParseSkillDef (VScriptParser *sc) {
         }
       }
     } else if (sc->Check("MonsterHealth")) {
-      GCon->Logf(NAME_Warning, "MAPINFO:%s: skill param 'MonsterHealth' is not implemented yet.", *sc->GetLoc().toStringNoCol());
+        //GCon->Logf(NAME_Warning, "MAPINFO:%s: skill param 'MonsterHealth' is not implemented yet.", *sc->GetLoc().toStringNoCol());
       sc->Expect("=");
       sc->ExpectFloat();
+      if (sc->Float < 0) GCon->Logf(NAME_Warning, "%s:MAPINFO: \"MonsterHealth\" should be positive", *sc->GetLoc().toStringNoCol());
+      sdef->MonsterHealth = 1.0f-midval(0.0f, sc->Float, 1.0f);
     } else if (sc->Check("FriendlyHealth")) {
       GCon->Logf(NAME_Warning, "MAPINFO:%s: skill param 'FriendlyHealth' is not implemented yet.", *sc->GetLoc().toStringNoCol());
       sc->Expect("=");
@@ -2465,9 +2469,11 @@ static void ParseSkillDef (VScriptParser *sc) {
     } else if (sc->Check("TotalInfighting")) {
       GCon->Logf(NAME_Warning, "MAPINFO:%s: skill param 'TotalInfighting' is not implemented yet.", *sc->GetLoc().toStringNoCol());
     } else if (sc->Check("HealthFactor")) {
-      GCon->Logf(NAME_Warning, "MAPINFO:%s: skill param 'HealthFactor' is not implemented yet.", *sc->GetLoc().toStringNoCol());
+        //GCon->Logf(NAME_Warning, "MAPINFO:%s: skill param 'HealthFactor' is not implemented yet.", *sc->GetLoc().toStringNoCol());
       sc->Expect("=");
       sc->ExpectFloat();
+      if (sc->Float < 0) GCon->Logf(NAME_Warning, "%s:MAPINFO: \"HealthFactor\" should be positive", *sc->GetLoc().toStringNoCol());
+      sdef->HealthFactor = sc->Float;
     } else if (sc->Check("KickbackFactor")) {
       GCon->Logf(NAME_Warning, "MAPINFO:%s: skill param 'KickbackFactor' is not implemented yet.", *sc->GetLoc().toStringNoCol());
       sc->Expect("=");
