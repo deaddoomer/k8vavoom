@@ -386,7 +386,8 @@ class VLevel : public VGameObject {
     // set by pobj spawner
     LF_Has3DPolyObjects                 = 1u<<11,
     // set by loader
-    LF_HasFullSegs                      = 1u<<12,
+    // DO NOT REMOVE!
+    //LF_HasFullSegs                      = 1u<<12,
     // BadApple.wad ;-)
     LF_IsBadApple                       = 1u<<13,
   };
@@ -873,7 +874,7 @@ public:
   void GetSubsectorBBox (subsector_t *sub, float bbox[6]);
   void CalcSecMinMaxs (sector_t *sector, bool fixTexZ=false); // also, update BSP bounding boxes
 
-  inline bool VVA_CHECKRESULT HasFullSegs () const noexcept { return (LevelFlags&LF_HasFullSegs); }
+  //inline bool VVA_CHECKRESULT HasFullSegs () const noexcept { return (LevelFlags&LF_HasFullSegs); }
 
 public:
   virtual void PostCtor () override;
