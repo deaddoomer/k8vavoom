@@ -2451,7 +2451,7 @@ static void ParseSkillDef (VScriptParser *sc) {
       sc->Expect("=");
       sc->ExpectFloat();
       if (sc->Float < 0) GCon->Logf(NAME_Warning, "%s:MAPINFO: \"MonsterHealth\" should be positive", *sc->GetLoc().toStringNoCol());
-      sdef->MonsterHealth = 1.0f-midval(0.0f, sc->Float, 1.0f);
+      sdef->MonsterHealth = sc->Float;
     } else if (sc->Check("FriendlyHealth")) {
       GCon->Logf(NAME_Warning, "MAPINFO:%s: skill param 'FriendlyHealth' is not implemented yet.", *sc->GetLoc().toStringNoCol());
       sc->Expect("=");
