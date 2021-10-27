@@ -796,6 +796,10 @@ if(ENABLE_CLIENT)
   #
   install(FILES ${CMAKE_SOURCE_DIR}/docs/k8vavoom.txt DESTINATION ${DATADIR})
   install(FILES ${CMAKE_SOURCE_DIR}/res/k8vavoom.png DESTINATION ${DATADIR})
+  # more docs
+  install(FILES ${CMAKE_SOURCE_DIR}/docs/code_of_conduct.txt DESTINATION ${DATADIR}/docs)
+  install(FILES ${CMAKE_SOURCE_DIR}/dox_vavoomc/vavoomc.txt DESTINATION ${DATADIR}/docs)
+  install(FILES ${CMAKE_SOURCE_DIR}/README DESTINATION ${DATADIR}/docs)
   # variants
   if(WIN32)
     install(FILES ${CMAKE_SOURCE_DIR}/res/ico/k8vavoom_icon2.ico DESTINATION ${DATADIR}/icons)
@@ -848,6 +852,15 @@ if(ENABLE_CLIENT)
   install(FILES ${CMAKE_SOURCE_DIR}/specs/k8vavoom_terrain_bootprints.txt DESTINATION ${DSPECSDIR})
   install(FILES ${CMAKE_SOURCE_DIR}/specs/k8vavoom_pointlights.txt DESTINATION ${DSPECSDIR})
   install(FILES ${CMAKE_SOURCE_DIR}/specs/k8vavoom_decals.txt DESTINATION ${DSPECSDIR})
+  # unfinished specs
+  install(FILES ${CMAKE_SOURCE_DIR}/specs/unfinished/k8vavoom_models.txt DESTINATION ${DSPECSDIR}/unfinished)
+  # non-specific specs
+  install(FILES ${CMAKE_SOURCE_DIR}/specs/umapinfo.txt DESTINATION ${DSPECSDIR})
+  install(FILES ${CMAKE_SOURCE_DIR}/specs/udmf.txt DESTINATION ${DSPECSDIR})
+  install(FILES ${CMAKE_SOURCE_DIR}/specs/udmf_zdoom.txt DESTINATION ${DSPECSDIR})
+  install(FILES ${CMAKE_SOURCE_DIR}/specs/usdf.txt DESTINATION ${DSPECSDIR})
+  install(FILES ${CMAKE_SOURCE_DIR}/specs/usdf_zdoom.txt DESTINATION ${DSPECSDIR})
+  install(FILES ${CMAKE_SOURCE_DIR}/specs/usdf_gzdoom.txt DESTINATION ${DSPECSDIR})
 
   if(ENABLE_WRAPPERS)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/k8vavoom
