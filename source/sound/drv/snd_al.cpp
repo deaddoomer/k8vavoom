@@ -643,7 +643,7 @@ int VOpenALDevice::CommonPlaySound (bool is3d, int sound_id, const TVec &origin,
   ALuint src;
   (void)velocity;
 
-  int res = LoadSound(sound_id, &src);
+  const int res = LoadSound(sound_id, &src);
   if (res == VSoundManager::LS_Error) return -1;
 
   // force-spatialize it?
@@ -655,9 +655,9 @@ int VOpenALDevice::CommonPlaySound (bool is3d, int sound_id, const TVec &origin,
 
   // set resampler
   if (ResamplerNames.length() > 2) {
-    int res = snd_resampler.asInt();
-    if (res < 0 || res >= ResamplerNames.length()) res = defaultResampler;
-    alSourcei(src, alSrcResamplerSoftValue, res);
+    int smp = snd_resampler.asInt();
+    if (smp < 0 || smp >= ResamplerNames.length()) smp = defaultResampler;
+    alSourcei(src, alSrcResamplerSoftValue, smp);
   }
   alSourcef(src, AL_GAIN, volume);
   alSourcei(src, AL_SOURCE_RELATIVE, (is3d ? AL_FALSE : AL_TRUE));
