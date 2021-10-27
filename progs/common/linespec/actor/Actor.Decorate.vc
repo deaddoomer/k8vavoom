@@ -708,10 +708,10 @@ private final float clampPitch (float newpitch) {
     case SKILLP_AmmoFactor: return Level.World.GetAmmoFactor();
     case SKILLP_DropAmmoFactor: return 1.0;
     case SKILLP_ArmorFactor: return 1.0;
-    case SKILLP_HealthFactor: return 1.0;
+    case SKILLP_HealthFactor: return Level.World.GetHealthFactor();
     case SKILLP_DamageFactor: return 1.0;
     case SKILLP_Aggressiveness: return Level.World.GetAggressiveness();
-    case SKILLP_MonsterHealth: return 1.0;
+    case SKILLP_MonsterHealth: return Level.World.GetMonsterHealth();
     case SKILLP_FriendlyHealth: return 1.0;
     case SKILLP_KickbackFactor: return 1.0;
   }

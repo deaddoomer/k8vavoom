@@ -36,6 +36,8 @@ readonly int SkillRespawnLimit;
 readonly float SkillAggressiveness; // 1.0
 readonly int SkillSpawnFilter;
 readonly int SkillAcsReturn;
+readonly float SkillHealthFactor; // 1.0
+readonly float SkillMonsterHealth; // 1.0
 
 readonly bool bSkillFastMonsters;
 readonly bool bSkillDisableCheats;
@@ -66,7 +68,8 @@ final float GetDamageFactor () { float v = GetCvarF('g_skill_damage_factor_overr
 final int GetRespawnLimit () { int v = GetCvarI('g_skill_respawn_limit_override'); return (v > 0 ? v : v < 0 ? 0 : SkillRespawnLimit); }
 final float GetAggressiveness () { float v = GetCvarF('g_skill_aggressiveness_override'); return (v > 0 ? v : SkillAggressiveness); }
 final int GetSpawnFilter () { int v = GetCvarI('g_skill_spawn_filter_override'); return (v > 0 ? v : v < 0 ? 0 : SkillSpawnFilter); }
-
+final float GetHealthFactor () { return SkillHealthFactor; }
+final float GetMonsterHealth () { return SkillMonsterHealth; }
 
 defaultproperties {
 }

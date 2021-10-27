@@ -270,6 +270,8 @@ struct SkillDef {
   float Aggressiveness;
   int SpawnFilter;
   int AcsReturn;
+  float HealthFactor;
+  float MonsterHealth;
   string MenuName;
   array!SkillPlayerClassName PlayerClassNames;
   string ConfirmationText;

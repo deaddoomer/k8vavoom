@@ -60,7 +60,7 @@ override bool TryPickup (EntityEx Toucher) {
         }
         return false; // old code
       }
-      Toucher.Player.Health += Amount;
+      Toucher.Player.Health += int(float(Amount)*Level.World.GetHealthFactor());
       if (Toucher.Player.Health > max) Toucher.Player.Health = max;
       Toucher.Health = Toucher.Player.Health;
       if (bTransferInventory) TransferInventoryTo(Toucher);

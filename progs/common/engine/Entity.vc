@@ -680,6 +680,11 @@ void OnMapSpawn (mthing_t *mthing) {
     if (Health < 0) Health = int.max/8;
     Health = min(Health, int.max/8);
   }
+
+  if(bMonster) {
+    Health = int(float(Health)*Level.World.GetMonsterHealth());
+  }
+
   InitialHealth = Health;
 }
 
