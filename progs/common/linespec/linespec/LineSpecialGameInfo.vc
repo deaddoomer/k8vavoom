@@ -259,7 +259,7 @@ override void Init () {
 
   CreateCvarInt('gm_state_faster_percent', 50, "Make \"fast monster\" states shorter by this number of percents (0 is maximum speed, 100 is original, 50 is default).", CVAR_ARCHIVE);
 
-  CreateCvarInt('gm_vanilla_hitscan_type', 0, "Vanilla monster hitscan attack type (bit0: projectiles for monsters; bit1: projectiles for player weapons).", CVAR_ARCHIVE);
+  CreateCvarInt('gm_vanilla_hitscan_type', /*0*/3, "Vanilla monster hitscan attack type (bit0: projectiles for monsters; bit1: projectiles for player weapons).", CVAR_ARCHIVE);
   CreateCvarFloat('gm_vanilla_hitproj_speed_monster', 110.0, "Speed of \"hitscan projectiles\" for monsters.", CVAR_ARCHIVE);
   CreateCvarFloat('gm_vanilla_hitproj_speed_player', 120.0, "Speed of \"hitscan projectiles\" for player.", CVAR_ARCHIVE);
   CreateCvarFloat('gm_vanilla_hitproj_prcheight', 62, "\"Hitscan projectile\" firing point, percents from the actor height.", CVAR_ARCHIVE);
