@@ -811,7 +811,12 @@ static VStr TimeVal2Str (const TTimeVal *tvin, bool forAutosave=false) {
   tv.tv_sec = (((uint64_t)tvin->secs)&0xffffffff)|(((uint64_t)tvin->secshi)<<32);
   //tv.tv_usec = tvin->usecs;
   tm ctm;
+#ifndef STK_TIMET_FIX
   if (localtime_r(&tv.tv_sec, &ctm)) {
+#else
+  time_t tsec = tv.tv_sec;
+  if (localtime_r(&tsec, &ctm)) {
+#endif
     if (forAutosave) {
       // for autosave
       return VStr(va("%02d:%02d", (int)ctm.tm_hour, (int)ctm.tm_min));

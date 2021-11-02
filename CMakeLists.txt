@@ -20,6 +20,7 @@ option(WITH_SYS_FLAC   "Enable FLAC support via libflac (if off, dr_flac will be
 option(WITH_FLUID      "Enable FluidSynth support" ON)
 option(WITH_LIBJIT     "Enable LibJIT support in VavoomC compiler (don't use!)" OFF)
 option(WITH_XRANDR     "Enable XRandR support for DPI detection (don't use!)" OFF)
+option(WITH_WNT64      "Enable 64-bit build" OFF)
 if(WIN32)
 option(WITH_SYS_FLUID  "Use system FluidSynth library" OFF)
 else(WIN32)
@@ -139,6 +140,13 @@ else()
   set(WITH_MIMALLOC OFF)
 endif()
 
+set( RES_FLAGS -Fpe-i386 )
+
+if (WITH_WNT64)
+    message(STATUS "*** 64-bit builds are UNSUPPORTED ***")
+    add_definitions(-DSTK_TIMET_FIX)
+    set( RES_FLAGS -Fpe-x86-64 )
+endif ()
 
 set(K8_UNFUCK_AS_GCC ON)
 set(K8_UNFUCK_AS_SHITLANG OFF)
@@ -261,6 +269,10 @@ if(NOT SDL2_OVERRIDE)
     add_definitions(-DVAVOOM_ARCH_LINUX_SPECIAL_SDL=1)
   endif(HAVE_SDL2_SUBDIR)
 endif(NOT SDL2_OVERRIDE)
+
+if(WITH_WNT64)
+  add_definitions(-DSDL_MAIN_HANDLED)
+endif(WITH_WNT64)
 
 
 set(UNFUCK_GCC_FLAGS "")

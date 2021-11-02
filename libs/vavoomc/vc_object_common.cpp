@@ -1817,7 +1817,12 @@ IMPLEMENT_FUNCTION(VObject, DecodeTimeVal) {
   tv.tv_sec = (((uint64_t)tvin->secs)&0xffffffff)|(((uint64_t)tvin->secshi)<<32);
   //tv.tv_usec = tvin->usecs;
   tm ctm;
+#ifndef STK_TIMET_FIX
   if (localtime_r(&tv.tv_sec, &ctm)) {
+#else
+  time_t tsec = tv.tv_sec;
+  if (localtime_r(&tsec, &ctm)) {
+#endif
     tmres->sec = ctm.tm_sec;
     tmres->min = ctm.tm_min;
     tmres->hour = ctm.tm_hour;

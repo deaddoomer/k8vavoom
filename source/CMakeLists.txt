@@ -734,7 +734,7 @@ if(ENABLE_CLIENT)
     set(RC_OBJ ${CMAKE_CURRENT_BINARY_DIR}/shitdoze.o)
     add_custom_command(OUTPUT ${RC_OBJ}
       DEPENDS ${RC_SRC}
-      COMMAND windres -o ${RC_OBJ} -i ${RC_SRC} -Fpe-i386
+      COMMAND windres -o ${RC_OBJ} -i ${RC_SRC} ${RES_FLAGS}
     )
     set(MAIN_SOURCES ${MAIN_SOURCES} ${RC_OBJ})
   endif(WIN32)
