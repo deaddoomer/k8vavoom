@@ -1941,6 +1941,13 @@ bool VRenderLevelShared::UpdateCameraTexture (VEntity *Camera, int TexNum, int F
   //GCon->Logf(NAME_Debug, "  CAMERA; tex=%d; fboidx=%d; forced=%d", TexNum, cfidx, (int)forcedUpdate);
 
   if (r_allow_cameras) {
+    // prepare draw list stack
+    // this method is called before rendering everything else, so we can come here unprepared
+    // `RenderPlayerView()` will reset everything again later
+    ResetDrawStack();
+    ResetPortalPool();
+    IncUpdateWorldFrame();
+
     Drawer->SetCameraFBO(cfidx);
     SetupCameraFrame(Camera, Tex, FOV, &CameraRefDef);
     RenderScene(&CameraRefDef, nullptr);
