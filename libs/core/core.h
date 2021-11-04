@@ -157,6 +157,7 @@ class VObject;
 #include "crypto/poly1305-donna.h"
 #include "crypto/ed25519.h"
 #include "crypto/curve25519-donna.h"
+#include "crypto/ripemd160.h"
 #ifdef CORE_MORE_HASHES
 # include "crypto/jh32.h"
 #endif

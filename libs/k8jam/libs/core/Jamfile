@@ -55,6 +55,7 @@ Library libcore.a :
   src/crypto/poly1305-donna.c
   src/crypto/curve25519-donna.c
   src/crypto/jh32.cpp
+  src/crypto/ripemd160.c
 
   # mi-malloc
   src/mimalloc/static.c

@@ -123,6 +123,8 @@ add_library(core STATIC
   crypto/chachaprng_cpp.h
   crypto/jh32.h
   crypto/jh32.cpp
+  crypto/ripemd160.h
+  crypto/ripemd160.c
 
   # mimalloc
   ${CORELIB_MIMALLOC_SOURCES}
