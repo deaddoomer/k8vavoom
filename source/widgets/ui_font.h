@@ -112,6 +112,8 @@ public:
 
   inline VName GetFontName () const noexcept { return Name; }
 
+  virtual bool IsSingleTextureFont () const noexcept;
+
   // can return `nullptr` (pWidth is space width in this case)
   // `pWidth` can be `nullptr`
   // color is color translation (CR_XXX); -1 means "untranslated"

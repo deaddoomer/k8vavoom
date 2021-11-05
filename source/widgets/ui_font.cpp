@@ -101,6 +101,7 @@ public:
 class VSingleTextureFont : public VFont {
 public:
   VSingleTextureFont (VName, int);
+  bool IsSingleTextureFont () const noexcept override;
 };
 
 // texture class for regular font characters
@@ -1104,6 +1105,16 @@ VFont::~VFont () {
 
 //==========================================================================
 //
+//  VFont::IsSingleTextureFont
+//
+//==========================================================================
+bool VFont::IsSingleTextureFont () const noexcept {
+  return false;
+}
+
+
+//==========================================================================
+//
 //  VFont::BuildTranslations
 //
 //==========================================================================
@@ -1799,6 +1810,16 @@ VSingleTextureFont::VSingleTextureFont (VName AName, int TexNum) {
   FChar.Height = FontHeight;
 
   (void)Tex->GetMaxIntensity(); // cache it
+}
+
+
+//==========================================================================
+//
+//  VSingleTextureFont::IsSingleTextureFont
+//
+//==========================================================================
+bool VSingleTextureFont::IsSingleTextureFont () const noexcept {
+  return true;
 }
 
 

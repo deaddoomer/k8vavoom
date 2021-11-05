@@ -1685,6 +1685,7 @@ void VWidget::DrawString (int x, int y, VStr String, int NormalColor, int BoldCo
   bool oldflt = gl_pic_filtering;
   gl_pic_filtering = gl_font_filtering;
   VFont::CharRect rect;
+  bool ignoreColor = Font->IsSingleTextureFont();
 
   for (const char *SPtr = *String; *SPtr; ) {
     int c = VStr::Utf8GetChar(SPtr);
@@ -1698,7 +1699,7 @@ void VWidget::DrawString (int x, int y, VStr String, int NormalColor, int BoldCo
     int w;
     VTexture *Tex = Font->GetChar(c, &rect, &w, Color);
     if (Tex && rect.isValid()) {
-      if (WidgetFlags&WF_TextShadowed) DrawCharPicShadowed(cx, cy, Tex, rect, Color); else DrawCharPic(cx, cy, Tex, rect, Color, Alpha);
+      if (WidgetFlags&WF_TextShadowed) DrawCharPicShadowed(cx, cy, Tex, rect, (ignoreColor ? 0 : Color)); else DrawCharPic(cx, cy, Tex, rect, (ignoreColor ? 0 : Color), Alpha);
     }
     cx += w+Kerning;
   }
