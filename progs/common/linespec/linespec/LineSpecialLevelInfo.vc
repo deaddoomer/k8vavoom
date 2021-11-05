@@ -477,6 +477,7 @@ override void SpawnSpecials () {
     switch (activationType) {
       case SPAC_MCross:
         if (!(lineActivation&SPAC_MCross)) {
+          // no monster-cross activation
           switch (line->special) {
             case LNSPEC_DoorRaise:
               if (line->arg2 >= 64) break;
@@ -490,6 +491,7 @@ override void SpawnSpecials () {
               noway = false;
           }
         } else {
+          // monster-cross activation
           noway = false;
         }
         break;
