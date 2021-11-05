@@ -4551,7 +4551,8 @@ final bool UseLines (float UseRange, float UseThingRange, name FailSound,
 
   // let sector intercept the use
   if (!usedAnything && Sector && Sector->ActionList) {
-    if (!triedLine && SectorAction(Sector->ActionList).TriggerAction(self, SectorAction::SECSPAC_Use)) {
+    //k8: dunno, this looks like absolute idiocity, but kdizd doesn't work without it
+    if (/*!triedLine &&*/ SectorAction(Sector->ActionList).TriggerAction(self, SectorAction::SECSPAC_Use)) {
       usedAnything = true;
       retvalue = true;
     }
