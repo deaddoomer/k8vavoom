@@ -3395,7 +3395,7 @@ static void ParseOldDecStates (VScriptParser *sc, TArray<VState *> &States, VCla
   for (int TokIdx = 0; TokIdx < Tokens.length(); ++TokIdx) {
     const char *pFrame = *Tokens[TokIdx];
     int DurColon = Tokens[TokIdx].IndexOf(':');
-    float Duration = 4;
+    float Duration = 4.0f;
     if (DurColon >= 0) {
       Duration = VStr::atoi(pFrame);
       if (Duration < 1 || Duration > 65534) sc->Error ("Rates must be in the range [0,65534]");
@@ -3507,7 +3507,7 @@ static void ParseOldDecoration (VScriptParser *sc, int Type) {
       // spawn state
       sc->ExpectString();
       if (sc->String.Length() != 4) sc->Error("Sprite name must be 4 characters long");
-      Sprite = *sc->String.ToLower();
+      Sprite = VName(*sc->String, VName::AddLower);
     } else if (sc->Check("Frames")) {
       sc->ExpectString();
       SpawnStart = States.length();
@@ -3517,7 +3517,7 @@ static void ParseOldDecoration (VScriptParser *sc, int Type) {
       // death states
       sc->ExpectString();
       if (sc->String.Length() != 4) sc->Error("Sprite name must be 4 characters long");
-      DeathSprite = *sc->String.ToLower();
+      DeathSprite = VName(*sc->String, VName::AddLower);
     } else if ((Type == OLDDEC_Breakable || Type == OLDDEC_Projectile) && sc->Check("DeathFrames")) {
       sc->ExpectString();
       DeathStart = States.length();
@@ -3732,7 +3732,17 @@ static void ParseOldDecoration (VScriptParser *sc, int Type) {
     for (int i = SpawnStart; i < SpawnEnd-1; ++i) States[i]->NextState = States[i+1];
     States[SpawnEnd-1]->NextState = States[SpawnStart];
   }
+
+  // need to be done here, because `SetStateLabel()` expects labels to be resolved
+  Class->EmitStateLabels();
+
   Class->SetStateLabel("Spawn", States[SpawnStart]);
+
+  /*
+  if (States.length() > 0) {
+    GCon->Logf(NAME_Debug, "***%s: SpawnStart=%d (%d); sprite=%s; DeathStart=%d; DeathSprite=%s; [%s] %g", *ClassName, SpawnStart, States.length(), *Sprite, DeathStart, *DeathSprite, *States[0]->SpriteName, States[0]->Time);
+  }
+  */
 
   // set up links of death states
   if (DeathEnd != 0) {
@@ -3814,7 +3824,7 @@ static void ParseOldDecoration (VScriptParser *sc, int Type) {
   }
 
   // postprocess states
-  Class->EmitStateLabels();
+  //Class->EmitStateLabels();
   for (auto &&sts : States) {
     #if defined(VC_DECORATE_ACTION_BELONGS_TO_STATE)
     sts->Define(); // this defines state functions
