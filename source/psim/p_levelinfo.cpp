@@ -110,8 +110,11 @@ void VLevelInfo::SetMapInfo (VLevel *InLevel, const VMapInfo &Info) {
   LevelInfoFlags2 = Info.Flags2;
 
   // doom format maps use strict monster activation by default
-  if (!(XLevel->LevelFlags&VLevel::LF_Extended) && !(LevelInfoFlags2&LIF2_HaveMonsterActivation)) {
-    LevelInfoFlags2 &= ~LIF2_LaxMonsterActivation;
+  //k8: it seems that UDMF too (let's hope it won't break Heretic/Hexen UDMF maps)
+  if (!(LevelInfoFlags2&LIF2_HaveMonsterActivation)) {
+    if (!(XLevel->LevelFlags&VLevel::LF_Extended) || (XLevel->LevelFlags&VLevel::LF_TextMap)) {
+      LevelInfoFlags2 &= ~LIF2_LaxMonsterActivation;
+    }
   }
 
   if (CInfo->Flags&CLUSTERF_Hub) LevelInfoFlags2 |= LIF2_ClusterHub;
