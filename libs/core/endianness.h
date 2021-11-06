@@ -23,6 +23,11 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+#ifndef VAVOOM_CORE_LIB_ENDIANNESS
+#define VAVOOM_CORE_LIB_ENDIANNESS
+
+#include "common.h"
+
 #ifdef __unix__
 #include <sys/param.h>
 #endif
@@ -78,46 +83,49 @@ float BigFloat (float x);
 
 #ifdef VAVOOM_LITTLE_ENDIAN
 // little-endian
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vint16 LittleShort (const vint16 x) noexcept { return x; }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint16 LittleUShort (const vuint16 x) noexcept { return x; }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vint32 LittleLong (const vint32 x) noexcept { return x; }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint32 LittleULong (const vuint32 x) noexcept { return x; }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE float LittleFloat (const float x) noexcept { return x; }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vint16 LittleShort (const vint16 x) VVA_NOEXCEPT { return x; }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint16 LittleUShort (const vuint16 x) VVA_NOEXCEPT { return x; }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vint32 LittleLong (const vint32 x) VVA_NOEXCEPT { return x; }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint32 LittleULong (const vuint32 x) VVA_NOEXCEPT { return x; }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE float LittleFloat (const float x) VVA_NOEXCEPT { return x; }
 
 #if 1
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vint16 BigShort (const vint16 x) noexcept { return (vint16)__builtin_bswap16((vuint16)x); }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint16 BigUShort (const vuint16 x) noexcept { return __builtin_bswap16(x); }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vint32 BigLong (const vint32 x) noexcept { return (vint32)__builtin_bswap32((vuint32)x); }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint32 BigULong (const vuint32 x) noexcept { return __builtin_bswap32(x); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vint16 BigShort (const vint16 x) VVA_NOEXCEPT { return (vint16)__builtin_bswap16((vuint16)x); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint16 BigUShort (const vuint16 x) VVA_NOEXCEPT { return __builtin_bswap16(x); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vint32 BigLong (const vint32 x) VVA_NOEXCEPT { return (vint32)__builtin_bswap32((vuint32)x); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint32 BigULong (const vuint32 x) VVA_NOEXCEPT { return __builtin_bswap32(x); }
 #else
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vint16 BigShort (const vint16 x) noexcept { return ((vuint16)x>>8)|((vuint16)x<<8); }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint16 BigUShort (const vuint16 x) noexcept { return ((vuint16)x>>8)|((vuint16)x<<8); }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vint32 BigLong (const vint32 x) noexcept { return ((vuint32)x>>24)|(((vuint32)x>>8)&0xff00U)|(((vuint32)x<<8)&0xff0000U)|((vuint32)x<<24); }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint32 BigULong (const vuint32 x) noexcept { return ((vuint32)x>>24)|(((vuint32)x>>8)&0xff00U)|(((vuint32)x<<8)&0xff0000U)|((vuint32)x<<24); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vint16 BigShort (const vint16 x) VVA_NOEXCEPT { return ((vuint16)x>>8)|((vuint16)x<<8); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint16 BigUShort (const vuint16 x) VVA_NOEXCEPT { return ((vuint16)x>>8)|((vuint16)x<<8); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vint32 BigLong (const vint32 x) VVA_NOEXCEPT { return ((vuint32)x>>24)|(((vuint32)x>>8)&0xff00U)|(((vuint32)x<<8)&0xff0000U)|((vuint32)x<<24); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint32 BigULong (const vuint32 x) VVA_NOEXCEPT { return ((vuint32)x>>24)|(((vuint32)x>>8)&0xff00U)|(((vuint32)x<<8)&0xff0000U)|((vuint32)x<<24); }
 #endif
-static VVA_OKUNUSED VVA_ALWAYS_INLINE float BigFloat (const float x) noexcept { union { float f; vuint32 l; } a; a.f = x; a.l = BigULong(a.l); return a.f; }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE float BigFloat (const float x) VVA_NOEXCEPT { union { float f; vuint32 l; } a; a.f = x; a.l = BigULong(a.l); return a.f; }
 
 #else
 // big-endian
 #if 1
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vint16 LittleShort (const vint16 x) noexcept { return (vint16)__builtin_bswap16((vuint16)x); }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint16 LittleUShort (const vuint16 x) noexcept { return __builtin_bswap16(x); }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vint32 LittleLong (const vint32 x) noexcept { return (vint32)__builtin_bswap32((vuint32)x); }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint32 LittleULong (const vuint32 x) noexcept { return __builtin_bswap32(x); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vint16 LittleShort (const vint16 x) VVA_NOEXCEPT { return (vint16)__builtin_bswap16((vuint16)x); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint16 LittleUShort (const vuint16 x) VVA_NOEXCEPT { return __builtin_bswap16(x); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vint32 LittleLong (const vint32 x) VVA_NOEXCEPT { return (vint32)__builtin_bswap32((vuint32)x); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint32 LittleULong (const vuint32 x) VVA_NOEXCEPT { return __builtin_bswap32(x); }
 #else
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vint16 LittleShort (const vint16 x) noexcept { return ((vuint16)x>>8)|((vuint16)x<<8); }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint16 LittleUShort (const vuint16 x) noexcept { return ((vuint16)x>>8)|((vuint16)x<<8); }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vint32 LittleLong (const vint32 x) noexcept { return ((vuint32)x>>24)|(((vuint32)x>>8)&0xff00U)|(((vuint32)x<<8)&0xff0000U)|((vuint32)x<<24); }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint32 LittleULong (const vuint32 x) noexcept { return ((vuint32)x>>24)|(((vuint32)x>>8)&0xff00U)|(((vuint32)x<<8)&0xff0000U)|((vuint32)x<<24); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vint16 LittleShort (const vint16 x) VVA_NOEXCEPT { return ((vuint16)x>>8)|((vuint16)x<<8); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint16 LittleUShort (const vuint16 x) VVA_NOEXCEPT { return ((vuint16)x>>8)|((vuint16)x<<8); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vint32 LittleLong (const vint32 x) VVA_NOEXCEPT { return ((vuint32)x>>24)|(((vuint32)x>>8)&0xff00U)|(((vuint32)x<<8)&0xff0000U)|((vuint32)x<<24); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint32 LittleULong (const vuint32 x) VVA_NOEXCEPT { return ((vuint32)x>>24)|(((vuint32)x>>8)&0xff00U)|(((vuint32)x<<8)&0xff0000U)|((vuint32)x<<24); }
 #endif
-static VVA_OKUNUSED VVA_ALWAYS_INLINE float LittleFloat (const float x) noexcept { union { float f; vint32 l; } a; a.f = x; a.l = LittleLong(a.l); return a.f; }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE float LittleFloat (const float x) VVA_NOEXCEPT { union { float f; vint32 l; } a; a.f = x; a.l = LittleLong(a.l); return a.f; }
 
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vint16 BigShort (const vint16 x) noexcept { return x; }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint16 BigUShort (const vuint16 x) noexcept { return x; }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vint32 BigLong (const vint32 x) noexcept { return x; }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint32 BigULong (const vuint32 x) noexcept { return x; }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE float BigFloat (const float x) noexcept { return x; }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vint16 BigShort (const vint16 x) VVA_NOEXCEPT { return x; }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint16 BigUShort (const vuint16 x) VVA_NOEXCEPT { return x; }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vint32 BigLong (const vint32 x) VVA_NOEXCEPT { return x; }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE vuint32 BigULong (const vuint32 x) VVA_NOEXCEPT { return x; }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE float BigFloat (const float x) VVA_NOEXCEPT { return x; }
 
 #endif
 
 #endif // VAVOOM_HIDE_ENDIANNES_CONVERSIONS
+
+
+#endif

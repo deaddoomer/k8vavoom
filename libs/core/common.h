@@ -50,6 +50,12 @@
 # define VVA_ALWAYS_INLINE  inline __attribute__((always_inline))
 #endif
 
+#ifdef __cplusplus
+# define VVA_NOEXCEPT noexcept
+#else
+# define VVA_NOEXCEPT
+#endif
+
 
 //==========================================================================
 //

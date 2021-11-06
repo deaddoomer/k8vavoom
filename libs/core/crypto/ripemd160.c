@@ -9,6 +9,7 @@
 extern "C" {
 #endif
 
+#if 0
 #ifdef WORDS_BIGENDIAN
 # undef WORDS_BIGENDIAN
 #endif
@@ -34,6 +35,12 @@ extern "C" {
 # else
 #  error "unable to determine endianess!"
 # endif
+#endif
+#ifdef WORDS_BIGENDIAN
+# define VAVOOM_BIG_ENDIAN
+#endif
+#else
+# include "../endianness.h"
 #endif
 
 
@@ -338,7 +345,7 @@ void ripemd160_put (RIPEMD160_Ctx *ctx, const void *data, size_t datasize) {
   # error "unknown pointer size"
   #endif
   const uint8_t *b = (const uint8_t *)data;
-#if defined(WORDS_BIGENDIAN)
+#ifdef VAVOOM_BIG_ENDIAN
   while (datasize--) ripemd160_putbyte(ctx, *b++);
 #else
   // we can use `memcpy()` here
