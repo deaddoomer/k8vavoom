@@ -223,7 +223,7 @@ public:
     return *this;
   }
 
-  friend class TCmdWait;
+  friend class TCmdwait;
 };
 
 // main command buffer

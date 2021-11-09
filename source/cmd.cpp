@@ -1450,10 +1450,10 @@ COMMAND(Alias) {
 
 //==========================================================================
 //
-//  Echo_f
+//  COMMAND echo
 //
 //==========================================================================
-COMMAND(Echo) {
+COMMAND(echo) {
   if (Args.length() < 2) return;
 
   VStr Text = Args[1];
@@ -1476,29 +1476,61 @@ COMMAND(Echo) {
 
 //==========================================================================
 //
-//  COMMAND Exec
+//  COMMAND exec
 //
 //==========================================================================
-COMMAND(Exec) {
+COMMAND(exec) {
   if (Args.length() < 2 || Args.length() > 3) {
-    GCon->Log((execLogInit ? NAME_Init : NAME_Log), "Exec <filename> : execute script file");
+    GCon->Log((execLogInit ? NAME_Init : NAME_Log), "exec <filename> [nofilerrors]: execute script file");
     return;
+  }
+
+  //GCon->Logf(NAME_Debug, "***EXEC***: execLogInit=%d; fname=<%s>", (int)execLogInit, *Args[1]);
+
+  // check for some special files
+  enum {
+    NormalRC,
+    SpecialK8,
+    SpecialUser,
+  };
+
+  int ftype = NormalRC;
+  VStr basename = Args[1].extractFileBaseName();
+  if (basename.strEquCI("k8vavoom_startup.vs") || basename.strEquCI("k8vavoom_default.cfg")) {
+    if (!Args[1].strEquCI(basename)) {
+      GCon->Logf(NAME_Error, "cannot execute special init file '%s' with a path!", *Args[1]);
+      return;
+    }
+    ftype = SpecialK8;
+  } else if (basename.strEquCI("config.cfg") || basename.strEquCI("autoexec.cfg")) {
+    if (!Args[1].strEquCI(basename)) {
+      GCon->Logf(NAME_Error, "cannot execute special user init file '%s' with a path!", *Args[1]);
+      return;
+    }
+    ftype = SpecialUser;
   }
 
   VStream *Strm = nullptr;
 
-  // try disk file
-  VStr dskname = Host_GetConfigDir()+"/"+Args[1];
-  if (Sys_FileExists(dskname)) {
+  // try disk file (except for standard init files)
+  if (ftype != SpecialK8) {
+    VStr dskname = Host_GetConfigDir()+"/"+Args[1];
     Strm = FL_OpenSysFileRead(dskname);
-    if (Strm) GCon->Logf((execLogInit ? NAME_Init : NAME_Log), "Executing '%s'", *dskname);
+    if (Strm) {
+      GCon->Logf((execLogInit ? NAME_Init : NAME_Log), "executing %s file '%s'...",
+        (ftype == SpecialK8 ? "WRONG init" : ftype == SpecialUser ? "init" : "disk"), *dskname);
+    }
   }
 
-  // try wad file
-  if (!Strm && FL_FileExists(Args[1])) {
-    Strm = FL_OpenFileRead(Args[1]);
+  // try wad file (except for special user init files)
+  if (!Strm && ftype != SpecialUser) {
+    int lump = -1;
+    // if we're still it "initial startup" mode, allow only base paks
+    Strm = (execLogInit || ftype != NormalRC ? FL_OpenFileReadBaseOnly(Args[1], &lump) : FL_OpenFileRead(Args[1], &lump));
     if (Strm) {
-      GCon->Logf((execLogInit ? NAME_Init : NAME_Log), "Executing '%s'", *Args[1]);
+      //GCon->Logf((execLogInit ? NAME_Init : NAME_Log), "executing '%s'...", *Args[1]);
+      GCon->Logf((execLogInit ? NAME_Init : NAME_Log), "executing %s file '%s'...",
+        (ftype == SpecialK8 ? "init" : ftype == SpecialUser ? "WRONG init" : "rc"), *W_FullLumpName(lump));
       //GCon->Logf("<%s>", *Strm->GetName());
     }
   }
@@ -1512,12 +1544,23 @@ COMMAND(Exec) {
 
   int flsize = Strm->TotalSize();
   if (flsize == 0) { VStream::Destroy(Strm); return; }
+  if (flsize < 0 || flsize > 1024*1024*8) {
+    VStream::Destroy(Strm);
+    GCon->Logf(NAME_Warning, "rc file '%s' is too big, ignored.", *Args[1]);
+    return;
+  }
 
   char *buf = new char[flsize+2];
-  Strm->Serialise(buf, flsize);
-  if (Strm->IsError()) {
+  try {
+    Strm->Serialise(buf, flsize);
+  } catch (...) {
     VStream::Destroy(Strm);
     delete[] buf;
+    throw;
+  }
+  if (Strm->IsError()) {
+    delete[] buf;
+    VStream::Destroy(Strm);
     GCon->Logf(NAME_Warning, "Error reading '%s'!", *Args[1]);
     return;
   }
@@ -1527,17 +1570,16 @@ COMMAND(Exec) {
   buf[flsize] = 0;
 
   GCmdBuf.Insert(buf);
-
   delete[] buf;
 }
 
 
 //==========================================================================
 //
-//  COMMAND Wait
+//  COMMAND wait
 //
 //==========================================================================
-COMMAND(Wait) {
+COMMAND(wait) {
   int msecs = 0;
   if (Args.length() > 1) {
     if (!VStr::convertInt(*Args[1], &msecs)) msecs = 0;
