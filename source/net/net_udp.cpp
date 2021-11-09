@@ -101,7 +101,7 @@ public:
   virtual bool FindExternalAddress (sockaddr_t *addr) override;
 
 #ifdef WIN32
-  static BOOL PASCAL FAR BlockingHook ();
+  static INT_PTR PASCAL FAR BlockingHook ();
   void GetLocalAddress ();
 #endif
 
@@ -311,9 +311,9 @@ void VUdpDriver::Shutdown () {
 //  VUdpDriver::BlockingHook
 //
 //==========================================================================
-BOOL PASCAL FAR VUdpDriver::BlockingHook () {
+INT_PTR PASCAL FAR VUdpDriver::BlockingHook () {
   MSG msg;
-  BOOL ret;
+  INT_PTR ret;
 
   if ((Sys_Time()-blocktime) > 2.0) {
     WSACancelBlockingCall();
@@ -321,7 +321,7 @@ BOOL PASCAL FAR VUdpDriver::BlockingHook () {
   }
 
   // get the next message, if any
-  ret = (BOOL)PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
+  ret = (INT_PTR)PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
 
   // if we got one, process it
   if (ret) {
