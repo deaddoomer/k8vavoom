@@ -1580,6 +1580,9 @@ native static final void SetShadowCvarS (name Name, string value); // set cvar s
 native static final void SetShadowCvarB (name Name, bool value); // set cvar boolean value
 alias SetShadowCvarI = SetShadowCvar; // set cvar int value
 
+// this is SLOW! use only in menus
+native static final bool CvarIsReadOnly (name Name);
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 // temporary name set functions

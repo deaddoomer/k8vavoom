@@ -164,7 +164,9 @@ override void OnDraw () {
   }
   int xx = (bLeftAlign ? TextWidth(Text)+8 : CursorXOffs+10);
   SetTextAlign(hleft, vtop);
-  DrawText(xx, ty, caption, (IsFocused ? ValueColorFocus : ValueColor));
+  int Col2 = (IsFocused ? ValueColorFocus : ValueColor);
+  if (isReadOnly) Col2 = CR_BLACK;
+  DrawText(xx, ty, caption, Col2);
 }
 
 
@@ -174,6 +176,7 @@ override void OnDraw () {
 //
 //==========================================================================
 override bool OnEvent (ref event_t evt) {
+  if (isReadOnly) return ::OnEvent(evt);
   // "on click"
   if (evt.bubbling && evt.type == ev_click && evt.dest == self) {
     if (evt.keycode == K_MOUSE1) {

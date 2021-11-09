@@ -114,6 +114,7 @@ override void OnDraw () {
   //int xx = (bLeftAlign ? TextWidth(Text)+8 : CursorXOffs+10);
   int xx = CursorXOffs+10;
   int Col2 = (IsFocused ? ValueColorFocus : ValueColor);
+  if (isReadOnly) Col2 = CR_BLACK;
   SetTextAlign(hleft, vtop);
   //k8: we have much better fp->str now, so there's no need to perform any string trickery here
   DrawText(xx, ty, va("%f", Value), Col2);
@@ -126,6 +127,7 @@ override void OnDraw () {
 //
 //==========================================================================
 override bool OnEvent (ref event_t evt) {
+  if (isReadOnly) return ::OnEvent(evt);
   // "on click"
   if (evt.bubbling && evt.type == ev_click && evt.dest == self) {
     if (evt.keycode == K_MOUSE1) {

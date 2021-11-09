@@ -108,11 +108,29 @@ string getHelp () {
 
 //==========================================================================
 //
+//  isReadOnly
+//
+//==========================================================================
+final bool isReadOnly () {
+  if (!cvarSession) return false;
+  return CvarIsReadOnly(cvarSession);
+}
+
+
+//==========================================================================
+//
 //  FixLatchedColor
 //
 //==========================================================================
 void FixLatchedColor () {
   if (!cvarSession) return;
+  if (isReadOnly) {
+    TextColor = CR_BLACK;
+    TextColorFocus = CR_BLACK;
+    Enabled = false;
+    Focusable = false;
+    return;
+  }
   int cf = CvarGetFlags(cvarSession);
   if (cf == -1 || !(cf&CVAR_LATCH)) return;
   if (TextColor != default.TextColor) return;
@@ -131,6 +149,7 @@ final static void setSavedInt (name Name, int val) {
   if (!CvarExists(Name)) {
     CreateCvar(Name, va("%d", val), "___saved_menu__value___", CVAR_HIDDEN);
   } else {
+    if (CvarIsReadOnly(Name)) return;
     SetCvar(Name, val);
     int cf = CvarGetFlags(Name);
     if (cf > 0 && (cf&CVAR_LATCH)) CvarUnlatchAll();
@@ -158,6 +177,7 @@ final static void setSavedFloat (name Name, float val) {
   if (!CvarExists(Name)) {
     CreateCvarFloat(Name, val, "___saved_menu__value___", CVAR_HIDDEN);
   } else {
+    if (CvarIsReadOnly(Name)) return;
     SetCvarF(Name, val);
     int cf = CvarGetFlags(Name);
     if (cf > 0 && (cf&CVAR_LATCH)) CvarUnlatchAll();
@@ -275,6 +295,7 @@ override bool OnEvent (ref event_t evt) {
       if (evt.keycode == K_BACKSPACE) { // [R]estore
         string s = GetCvarDefault(cvarSession);
         if (s) {
+          if (isReadOnly) return true;
           bool err;
           float newValue = atof(s, out err);
           if (!err) {

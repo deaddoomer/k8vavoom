@@ -75,6 +75,7 @@ override void OnDraw () {
 
   int xx = (bLeftAlign ? TextWidth(Text)+8 : CursorXOffs+10);
   int Col2 = (IsFocused ? CR_YELLOW : Value ? CR_GREEN : CR_RED);
+  if (isReadOnly) Col2 = CR_BLACK;
   SetTextAlign(hleft, vtop);
   if (inverted) {
     DrawText(xx, ty, (Value ? "Off" : "On"), Col2);
