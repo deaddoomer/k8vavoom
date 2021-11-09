@@ -43,6 +43,8 @@ enum {
   //
   CVAR_User   = 0x20000u, // created with `set`
   CVAR_Hidden = 0x40000u,
+  //
+  CVAR_NoShadow = 0x80000u, // this cvar cannot be shadowed
 };
 
 
@@ -98,6 +100,8 @@ public:
   inline void SetUser () noexcept { Flags |= CVAR_User; }
 
   inline bool IsHidden () const noexcept { return (Flags&CVAR_Hidden); }
+
+  inline bool IsShadowed () const noexcept { return !!shadowVar; }
 
   inline CVType GetType () const noexcept { return Type; }
   // this will coerce values, if necessary

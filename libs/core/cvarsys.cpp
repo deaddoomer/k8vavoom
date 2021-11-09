@@ -210,6 +210,13 @@ VCvar::VCvar (const char *AName, VStr ADefault, VStr AHelp, int AFlags, CVType A
 //
 //==========================================================================
 void VCvar::EnsureShadow () {
+  if (Flags&CVAR_NoShadow) {
+    if (shadowVar) {
+      //delete shadowVar; // this doesn't work right!
+      shadowVar = nullptr;
+      return;
+    }
+  }
   if (shadowVar) return;
   // create nonamed cvar, so it won't go into hashtable
   shadowVar = new VCvar(nullptr, *StringValue, nullptr/*HelpString*/, 0/*flags*/, Type);
@@ -469,7 +476,7 @@ void VCvar::SetDefault (VStr value) {
 //==========================================================================
 void VCvar::SetShadowInt (int value) {
   EnsureShadow();
-  shadowVar->SetInt(value);
+  if (shadowVar) shadowVar->SetInt(value);
 }
 
 
@@ -480,7 +487,7 @@ void VCvar::SetShadowInt (int value) {
 //==========================================================================
 void VCvar::SetShadowFloat (float value) {
   EnsureShadow();
-  shadowVar->SetFloat(value);
+  if (shadowVar) shadowVar->SetFloat(value);
 }
 
 
@@ -491,7 +498,7 @@ void VCvar::SetShadowFloat (float value) {
 //==========================================================================
 void VCvar::SetShadowStr (VStr value) {
   EnsureShadow();
-  shadowVar->SetStr(value);
+  if (shadowVar) shadowVar->SetStr(value);
 }
 
 
@@ -502,7 +509,7 @@ void VCvar::SetShadowStr (VStr value) {
 //==========================================================================
 void VCvar::SetShadowBool (bool value) {
   EnsureShadow();
-  shadowVar->SetBool(value);
+  if (shadowVar) shadowVar->SetBool(value);
 }
 
 
