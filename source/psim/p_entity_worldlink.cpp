@@ -42,11 +42,11 @@
  */
 
 // ////////////////////////////////////////////////////////////////////////// //
-static VCvarB gm_smart_z("gm_smart_z", true, "Fix Z position for some things, so they won't fall thru ledge edges?", /*CVAR_Archive|*/CVAR_PreInit);
+static VCvarB gm_smart_z("gm_smart_z", true, "Fix Z position for some things, so they won't fall thru ledge edges?", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
 
-VCvarB r_limit_blood_spots("r_limit_blood_spots", true, "Limit blood spoit amount in a sector?", CVAR_Archive);
-VCvarI r_limit_blood_spots_max("r_limit_blood_spots_max", "96", "Maximum blood spots?", CVAR_Archive);
-VCvarI r_limit_blood_spots_leave("r_limit_blood_spots", "64", "Leva no more than this number of blood spots.", CVAR_Archive);
+VCvarB r_limit_blood_spots("r_limit_blood_spots", true, "Limit blood spoit amount in a sector?", CVAR_Archive|CVAR_NoShadow);
+VCvarI r_limit_blood_spots_max("r_limit_blood_spots_max", "96", "Maximum blood spots?", CVAR_Archive|CVAR_NoShadow);
+VCvarI r_limit_blood_spots_leave("r_limit_blood_spots", "64", "Leave no more than this number of blood spots.", CVAR_Archive|CVAR_NoShadow);
 
 
 //FIXME: sorry for this static

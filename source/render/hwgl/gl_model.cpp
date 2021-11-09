@@ -28,12 +28,12 @@
 //#define VV_MODEL_TEXTURES_DEBUG_NORMALS
 
 
-static VCvarB gl_dbg_adv_render_textures_models("gl_dbg_adv_render_textures_models", true, "Render model textures in advanced renderer?", 0);
-static VCvarB gl_dbg_adv_render_ambient_models("gl_dbg_adv_render_ambient_models", true, "Render model ambient light in advanced renderer?", 0);
-static VCvarB gl_dbg_adv_render_light_models("gl_dbg_adv_render_light_models", true, "Render model dynamic light in advanced renderer?", 0);
-static VCvarB gl_dbg_adv_render_alias_models("gl_dbg_adv_render_alias_models", true, "Render alias models?", 0);
-static VCvarB gl_dbg_adv_render_shadow_models("gl_dbg_adv_render_shadow_models", true, "Render model shadow volumes?", 0);
-static VCvarB gl_dbg_adv_render_fog_models("gl_dbg_adv_render_fog_models", true, "Render model fog?", 0);
+static VCvarB gl_dbg_adv_render_textures_models("gl_dbg_adv_render_textures_models", true, "Render model textures in advanced renderer?", CVAR_NoShadow);
+static VCvarB gl_dbg_adv_render_ambient_models("gl_dbg_adv_render_ambient_models", true, "Render model ambient light in advanced renderer?", CVAR_NoShadow);
+static VCvarB gl_dbg_adv_render_light_models("gl_dbg_adv_render_light_models", true, "Render model dynamic light in advanced renderer?", CVAR_NoShadow);
+static VCvarB gl_dbg_adv_render_alias_models("gl_dbg_adv_render_alias_models", true, "Render alias models?", CVAR_NoShadow);
+static VCvarB gl_dbg_adv_render_shadow_models("gl_dbg_adv_render_shadow_models", true, "Render model shadow volumes?", CVAR_NoShadow);
+static VCvarB gl_dbg_adv_render_fog_models("gl_dbg_adv_render_fog_models", true, "Render model fog?", CVAR_NoShadow);
 
 extern VCvarB r_shadowmaps;
 extern VCvarI gl_shadowmap_blur;
@@ -41,7 +41,7 @@ extern VCvarI gl_shadowmap_blur;
 static unsigned int smapBShaderIndex;
 static bool lpassDoShadowMap;
 
-static VCvarB gl_gpu_debug_models("gl_gpu_debug_models", false, "Show model GPUDEBUG messages?", CVAR_PreInit);
+static VCvarB gl_gpu_debug_models("gl_gpu_debug_models", false, "Show model GPUDEBUG messages?", CVAR_PreInit|CVAR_NoShadow);
 
 
 //==========================================================================

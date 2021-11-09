@@ -38,7 +38,7 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-VCvarB r_precalc_static_lights("r_precalc_static_lights", true, "Precalculate static lights?", CVAR_Archive);
+VCvarB r_precalc_static_lights("r_precalc_static_lights", true, "Precalculate static lights?", CVAR_Archive|CVAR_NoShadow);
 int r_precalc_static_lights_override = -1; // <0: not set
 
 extern VCvarB r_lmap_recalc_static;

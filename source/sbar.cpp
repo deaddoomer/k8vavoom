@@ -50,31 +50,31 @@ extern VCvarI screen_size;
 int sb_height = 32;
 
 // colors
-static VCvarS sb_color_ammo1("sb_color_ammo1", "default", "StatusBar ammo number color.", CVAR_Archive);
-static VCvarS sb_color_ammo2("sb_color_ammo2", "default", "StatusBar ammo number color.", CVAR_Archive);
-static VCvarS sb_color_armor("sb_color_armor", "default", "StatusBar armor number color.", CVAR_Archive);
-static VCvarS sb_color_health("sb_color_health", "default", "StatusBar health number color.", CVAR_Archive);
-static VCvarS sb_color_healthaccum("sb_color_healthaccum", "default", "StatusBar health accumulator number color.", CVAR_Archive);
-static VCvarS sb_color_frags("sb_color_frags", "default", "StatusBar frags number color.", CVAR_Archive);
+static VCvarS sb_color_ammo1("sb_color_ammo1", "default", "StatusBar ammo number color.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS sb_color_ammo2("sb_color_ammo2", "default", "StatusBar ammo number color.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS sb_color_armor("sb_color_armor", "default", "StatusBar armor number color.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS sb_color_health("sb_color_health", "default", "StatusBar health number color.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS sb_color_healthaccum("sb_color_healthaccum", "default", "StatusBar health accumulator number color.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS sb_color_frags("sb_color_frags", "default", "StatusBar frags number color.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarS sb_color_small_ammo("sb_color_small_ammo", "default", "StatusBar small ammo color.", CVAR_Archive);
-static VCvarS sb_color_small_ammomax("sb_color_small_ammomax", "default", "StatusBar small max ammo color.", CVAR_Archive);
-static VCvarS sb_color_itemamount("sb_color_itemamount", "default", "StatusBar item amount color.", CVAR_Archive);
+static VCvarS sb_color_small_ammo("sb_color_small_ammo", "default", "StatusBar small ammo color.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS sb_color_small_ammomax("sb_color_small_ammomax", "default", "StatusBar small max ammo color.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS sb_color_itemamount("sb_color_itemamount", "default", "StatusBar item amount color.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarS sb_color_weaponammo_full("sb_color_weaponammo_full", "default", "StatusBar FS small ammo number color (full).", CVAR_Archive);
-static VCvarS sb_color_weaponammo_normal("sb_color_weaponammo_normal", "default", "StatusBar FS small ammo number color (normal).", CVAR_Archive);
-static VCvarS sb_color_weaponammo_lower("sb_color_weaponammo_lower", "default", "StatusBar FS small ammo number color (lower).", CVAR_Archive);
-static VCvarS sb_color_weaponammo_low("sb_color_weaponammo_low", "default", "StatusBar FS small ammo number color (low).", CVAR_Archive);
-static VCvarS sb_color_weaponammo_verylow("sb_color_weaponammo_verylow", "default", "StatusBar FS small ammo number color (very low/empty).", CVAR_Archive);
+static VCvarS sb_color_weaponammo_full("sb_color_weaponammo_full", "default", "StatusBar FS small ammo number color (full).", CVAR_Archive|CVAR_NoShadow);
+static VCvarS sb_color_weaponammo_normal("sb_color_weaponammo_normal", "default", "StatusBar FS small ammo number color (normal).", CVAR_Archive|CVAR_NoShadow);
+static VCvarS sb_color_weaponammo_lower("sb_color_weaponammo_lower", "default", "StatusBar FS small ammo number color (lower).", CVAR_Archive|CVAR_NoShadow);
+static VCvarS sb_color_weaponammo_low("sb_color_weaponammo_low", "default", "StatusBar FS small ammo number color (low).", CVAR_Archive|CVAR_NoShadow);
+static VCvarS sb_color_weaponammo_verylow("sb_color_weaponammo_verylow", "default", "StatusBar FS small ammo number color (very low/empty).", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarS sb_color_weapon_name("sb_color_weapon_name", "default", "StatusBar FS weapon name color.", CVAR_Archive);
+static VCvarS sb_color_weapon_name("sb_color_weapon_name", "default", "StatusBar FS weapon name color.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarS sb_color_automap_mapname("sb_color_automap_mapname", "default", "Automap stats: map name color.", CVAR_Archive);
-static VCvarS sb_color_automap_mapcluster("sb_color_automap_mapcluster", "default", "Automap stats: map cluster info color.", CVAR_Archive);
-static VCvarS sb_color_automap_kills("sb_color_automap_kills", "default", "Automap stats: number of kills color.", CVAR_Archive);
-static VCvarS sb_color_automap_items("sb_color_automap_items", "default", "Automap stats: number of items color.", CVAR_Archive);
-static VCvarS sb_color_automap_secrets("sb_color_automap_secrets", "default", "Automap stats: number of secrets color.", CVAR_Archive);
-static VCvarS sb_color_automap_totaltime("sb_color_automap_totaltime", "default", "Automap stats: total playing time color.", CVAR_Archive);
+static VCvarS sb_color_automap_mapname("sb_color_automap_mapname", "default", "Automap stats: map name color.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS sb_color_automap_mapcluster("sb_color_automap_mapcluster", "default", "Automap stats: map cluster info color.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS sb_color_automap_kills("sb_color_automap_kills", "default", "Automap stats: number of kills color.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS sb_color_automap_items("sb_color_automap_items", "default", "Automap stats: number of items color.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS sb_color_automap_secrets("sb_color_automap_secrets", "default", "Automap stats: number of secrets color.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS sb_color_automap_totaltime("sb_color_automap_totaltime", "default", "Automap stats: total playing time color.", CVAR_Archive|CVAR_NoShadow);
 
 
 static ColorCV sbColorAmmo1(&sb_color_ammo1, nullptr, true); // allow "no color"

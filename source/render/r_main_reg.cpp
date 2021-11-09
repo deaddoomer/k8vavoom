@@ -30,9 +30,9 @@
 extern vuint32 gf_dynlights_processed;
 extern vuint32 gf_dynlights_traced;
 
-static VCvarB r_reg_disable_world("r_reg_disable_world", false, "Disable rendering of world (regular renderer).", 0/*CVAR_Archive*/);
-static VCvarB r_reg_disable_portals("r_reg_disable_portals", false, "Disable rendering of portals (regular renderer).", 0/*CVAR_Archive*/);
-static VCvarB dbg_show_dlight_trace_info("dbg_show_dlight_trace_info", false, "Show number of properly traced dynlights per frame.", 0/*CVAR_Archive*/);
+static VCvarB r_reg_disable_world("r_reg_disable_world", false, "Disable rendering of world (regular renderer).", CVAR_NoShadow/*|CVAR_Archive*/);
+static VCvarB r_reg_disable_portals("r_reg_disable_portals", false, "Disable rendering of portals (regular renderer).", CVAR_NoShadow/*|CVAR_Archive*/);
+static VCvarB dbg_show_dlight_trace_info("dbg_show_dlight_trace_info", false, "Show number of properly traced dynlights per frame.", CVAR_NoShadow/*|CVAR_Archive*/);
 
 
 //**************************************************************************

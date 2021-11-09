@@ -35,11 +35,11 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static VCvarB dbg_slide_code("dbg_slide_code", false, "Debug slide code?", CVAR_PreInit|CVAR_Hidden);
-static VCvarI gm_slide_code("gm_slide_code", "0", "Which slide code to use (0:vanilla; 1:new; 2:q3-like)?", CVAR_Archive);
-static VCvarB gm_slide_vanilla_newsel("gm_slide_vanilla_newsel", true, "Use same velocity-based selector in vanilla sliding code?", CVAR_Archive|CVAR_Hidden);
-static VCvarB gm_q3slide_use_timeleft("gm_q3slide_use_timeleft", false, "Use 'timeleft' method for Q3 sliding code (gives wrong velocities and bumpiness)?", CVAR_Archive|CVAR_Hidden);
-static VCvarB gm_slide_vanilla_finish("gm_slide_vanilla_finish", false, "Finish stuck slide with vanilla algo?", CVAR_Archive|CVAR_Hidden);
+static VCvarB dbg_slide_code("dbg_slide_code", false, "Debug slide code?", CVAR_PreInit|CVAR_Hidden|CVAR_NoShadow);
+static VCvarI gm_slide_code("gm_slide_code", "0", "Which slide code to use (0:vanilla; 1:new; 2:q3-like)?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB gm_slide_vanilla_newsel("gm_slide_vanilla_newsel", true, "Use same velocity-based selector in vanilla sliding code?", CVAR_Archive|CVAR_Hidden|CVAR_NoShadow);
+static VCvarB gm_q3slide_use_timeleft("gm_q3slide_use_timeleft", false, "Use 'timeleft' method for Q3 sliding code (gives wrong velocities and bumpiness)?", CVAR_Archive|CVAR_Hidden|CVAR_NoShadow);
+static VCvarB gm_slide_vanilla_finish("gm_slide_vanilla_finish", false, "Finish stuck slide with vanilla algo?", CVAR_Archive|CVAR_Hidden|CVAR_NoShadow);
 
 
 

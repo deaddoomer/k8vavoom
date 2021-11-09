@@ -27,25 +27,25 @@
 #include "gl_poly_adv_render.h"
 
 
-VCvarB gl_dbg_vbo_adv_ambient("gl_dbg_vbo_adv_ambient", false, "dump some VBO statistics for advrender abmient pass VBO utilisation?", CVAR_PreInit);
+VCvarB gl_dbg_vbo_adv_ambient("gl_dbg_vbo_adv_ambient", false, "dump some VBO statistics for advrender abmient pass VBO utilisation?", CVAR_PreInit|CVAR_NoShadow);
 
 
 //TODO: re-check and reimplement smart rejects
 //      also, "r_shadowvol_optimise_flats" seems to do the same as "gl_smart_reject_svol_flats"
-VCvarB gl_smart_reject_shadows("gl_smart_reject_shadows", false, "Reject some surfaces that cannot possibly produce shadows?", CVAR_Archive);
+VCvarB gl_smart_reject_shadows("gl_smart_reject_shadows", false, "Reject some surfaces that cannot possibly produce shadows?", CVAR_Archive|CVAR_NoShadow);
 
-VCvarB gl_smart_reject_svol_segs("gl_smart_reject_svol_segs", true, "Reject some surfaces that cannot possibly produce shadows?", CVAR_Archive);
-VCvarB gl_smart_reject_svol_flats("gl_smart_reject_svol_flats", true, "Reject some surfaces that cannot possibly produce shadows?", CVAR_Archive);
+VCvarB gl_smart_reject_svol_segs("gl_smart_reject_svol_segs", true, "Reject some surfaces that cannot possibly produce shadows?", CVAR_Archive|CVAR_NoShadow);
+VCvarB gl_smart_reject_svol_flats("gl_smart_reject_svol_flats", true, "Reject some surfaces that cannot possibly produce shadows?", CVAR_Archive|CVAR_NoShadow);
 
-VCvarI gl_shadowmap_blur("gl_shadowmap_blur", "1", "Shadowmap blur (pseudo-PCF or others)", /*CVAR_PreInit|*/CVAR_Archive);
+VCvarI gl_shadowmap_blur("gl_shadowmap_blur", "1", "Shadowmap blur (pseudo-PCF or others)", /*CVAR_PreInit|*/CVAR_Archive|CVAR_NoShadow);
 
 /*
 // this is for 128x128 shadowmaps
 // divide max to (shadowmapPOT+1)
-static VCvarF gl_shadowmap_bias_mul("gl_shadowmap_bias_mul", "0", "Shadowmap bias multiplier.", CVAR_PreInit);
-static VCvarF gl_shadowmap_bias_min("gl_shadowmap_bias_min", "0", "Shadowmap bias minimum (0: use default).", CVAR_PreInit);
-static VCvarF gl_shadowmap_bias_max("gl_shadowmap_bias_max", "0", "Shadowmap bias maximum.", CVAR_PreInit);
-static VCvarB gl_shadowmap_bias_adjust("gl_shadowmap_bias_adjust", true, "Adjust shadowmap bias according to shadowmap size?", CVAR_PreInit);
+static VCvarF gl_shadowmap_bias_mul("gl_shadowmap_bias_mul", "0", "Shadowmap bias multiplier.", CVAR_PreInit|CVAR_NoShadow);
+static VCvarF gl_shadowmap_bias_min("gl_shadowmap_bias_min", "0", "Shadowmap bias minimum (0: use default).", CVAR_PreInit|CVAR_NoShadow);
+static VCvarF gl_shadowmap_bias_max("gl_shadowmap_bias_max", "0", "Shadowmap bias maximum.", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB gl_shadowmap_bias_adjust("gl_shadowmap_bias_adjust", true, "Adjust shadowmap bias according to shadowmap size?", CVAR_PreInit|CVAR_NoShadow);
 
 
 //  128: 0.044

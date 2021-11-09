@@ -34,17 +34,17 @@ extern VCvarB r_decals;
 extern VCvarB r_decals_flat;
 extern VCvarB r_decals_wall;
 
-static VCvarB r_decal_switch_special("r_decal_switch_special", true, "Make decals more translucent on switch textures?", CVAR_Archive);
-static VCvarF r_decal_switch_blood_alpha("r_decal_switch_blood_alpha", "0.36", "Force this transparency for blood decals on switches.", CVAR_Archive);
-static VCvarF r_decal_switch_boot_alpha("r_decal_switch_boot_alpha", "0.36", "Force this transparency for boot decals on switches.", CVAR_Archive);
-static VCvarF r_decal_switch_other_alpha("r_decal_switch_other_alpha", "0.56", "Force this transparency for decals on switches.", CVAR_Archive);
+static VCvarB r_decal_switch_special("r_decal_switch_special", true, "Make decals more translucent on switch textures?", CVAR_Archive|CVAR_NoShadow);
+static VCvarF r_decal_switch_blood_alpha("r_decal_switch_blood_alpha", "0.36", "Force this transparency for blood decals on switches.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF r_decal_switch_boot_alpha("r_decal_switch_boot_alpha", "0.36", "Force this transparency for boot decals on switches.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF r_decal_switch_other_alpha("r_decal_switch_other_alpha", "0.56", "Force this transparency for decals on switches.", CVAR_Archive|CVAR_NoShadow);
 
 // make renderer life somewhat easier by not allowing alot of decals
 // main work is done by `VLevel->CleanupSegDecals()`
-VCvarI gl_bigdecal_limit("gl_bigdecal_limit", "16", "Limit for big decals on one seg (usually produced by gore mod).", /*CVAR_PreInit|*/CVAR_Archive);
-VCvarI gl_smalldecal_limit("gl_smalldecal_limit", "64", "Limit for small decals on one seg (usually produced by shots).", /*CVAR_PreInit|*/CVAR_Archive);
+VCvarI gl_bigdecal_limit("gl_bigdecal_limit", "16", "Limit for big decals on one seg (usually produced by gore mod).", /*CVAR_PreInit|*/CVAR_Archive|CVAR_NoShadow);
+VCvarI gl_smalldecal_limit("gl_smalldecal_limit", "64", "Limit for small decals on one seg (usually produced by shots).", /*CVAR_PreInit|*/CVAR_Archive|CVAR_NoShadow);
 
-VCvarI gl_flatdecal_limit("gl_flatdecal_limit", "16", "Limit for overlapping decals on floor/ceiling.", /*CVAR_PreInit|*/CVAR_Archive);
+VCvarI gl_flatdecal_limit("gl_flatdecal_limit", "16", "Limit for overlapping decals on floor/ceiling.", /*CVAR_PreInit|*/CVAR_Archive|CVAR_NoShadow);
 
 
 TMapNC<VName, bool> VLevel::baddecals;

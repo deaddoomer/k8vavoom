@@ -27,19 +27,19 @@
 
 extern VCvarI r_light_shadow_min_proj_dimension;
 
-static VCvarI r_dynlight_minimum("r_dynlight_minimum", "6", "Render at least this number of dynamic lights, regardless of total limit.", CVAR_Archive);
+static VCvarI r_dynlight_minimum("r_dynlight_minimum", "6", "Render at least this number of dynamic lights, regardless of total limit.", CVAR_Archive|CVAR_NoShadow);
 
 // this is wrong for now
-static VCvarB r_advlight_opt_frustum_full("r_advlight_opt_frustum_full", false, "Optimise 'light is in frustum' case.", CVAR_Archive);
-static VCvarB r_advlight_opt_frustum_back("r_advlight_opt_frustum_back", false, "Optimise 'light is in frustum' case.", CVAR_Archive);
+static VCvarB r_advlight_opt_frustum_full("r_advlight_opt_frustum_full", false, "Optimise 'light is in frustum' case.", CVAR_Archive|CVAR_NoShadow);
+static VCvarB r_advlight_opt_frustum_back("r_advlight_opt_frustum_back", false, "Optimise 'light is in frustum' case.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB r_advlight_opt_scissor("r_advlight_opt_scissor", true, "Use scissor rectangle to limit light overdraws.", CVAR_Archive);
+static VCvarB r_advlight_opt_scissor("r_advlight_opt_scissor", true, "Use scissor rectangle to limit light overdraws.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB r_shadowvol_use_pofs("r_shadowvol_use_pofs", true, "Use PolygonOffset for shadow volumes to reduce some flickering (WARNING: BUGGY!)?", CVAR_Archive);
-static VCvarF r_shadowvol_pofs("r_shadowvol_pofs", "20", "DEBUG");
-static VCvarF r_shadowvol_pslope("r_shadowvol_pslope", "-0.2", "DEBUG");
+static VCvarB r_shadowvol_use_pofs("r_shadowvol_use_pofs", true, "Use PolygonOffset for shadow volumes to reduce some flickering (WARNING: BUGGY!)?", CVAR_Archive|CVAR_NoShadow);
+static VCvarF r_shadowvol_pofs("r_shadowvol_pofs", "20", "DEBUG", CVAR_NoShadow);
+static VCvarF r_shadowvol_pslope("r_shadowvol_pslope", "-0.2", "DEBUG", CVAR_NoShadow);
 
-VCvarB r_shadowmap_fix_light_dist("r_shadowmap_fix_light_dist", false, "Move lights slightly away from surfaces?", /*CVAR_PreInit|*/CVAR_Archive);
+VCvarB r_shadowmap_fix_light_dist("r_shadowmap_fix_light_dist", false, "Move lights slightly away from surfaces?", /*CVAR_PreInit|*/CVAR_Archive|CVAR_NoShadow);
 VCvarI r_shadowmap_sprshadows("r_shadowmap_sprshadows", "2", "Render shadows from sprites (0:none;1:non-rotational;2:all)?", /*CVAR_PreInit|*/CVAR_Archive);
 
 static VCvarF r_shadowmap_quality_distance("r_shadowmap_quality_distance", "512", "If the camera is further than this (from the light sphere), no shadowmap bluring will be done.", CVAR_Archive);

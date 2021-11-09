@@ -45,11 +45,11 @@ extern VCvarB r_lmap_recalc_static;
 extern VCvarB r_lmap_bsp_trace_static;
 
 extern VCvarB loader_cache_data;
-VCvarF loader_cache_time_limit_lightmap("loader_cache_time_limit_lightmap", "3", "Cache lightmap data if building took more than this number of seconds.", CVAR_Archive);
-VCvarI loader_cache_compression_level_lightmap("loader_cache_compression_level_lightmap", "6", "Lightmap cache file compression level [0..9]", CVAR_Archive);
+VCvarF loader_cache_time_limit_lightmap("loader_cache_time_limit_lightmap", "3", "Cache lightmap data if building took more than this number of seconds.", CVAR_Archive|CVAR_NoShadow);
+VCvarI loader_cache_compression_level_lightmap("loader_cache_compression_level_lightmap", "6", "Lightmap cache file compression level [0..9]", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB dbg_cache_lightmap_always("dbg_cache_lightmap_always", false, "Always cache lightmaps?", /*CVAR_Archive|*/CVAR_PreInit);
-static VCvarB dbg_cache_lightmap_dump_missing("dbg_cache_lightmap_dump_missing", false, "Dump missing lightmaps?", /*CVAR_Archive|*/CVAR_PreInit);
+static VCvarB dbg_cache_lightmap_always("dbg_cache_lightmap_always", false, "Always cache lightmaps?", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
+static VCvarB dbg_cache_lightmap_dump_missing("dbg_cache_lightmap_dump_missing", false, "Dump missing lightmaps?", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
 
 
 // ////////////////////////////////////////////////////////////////////////// //

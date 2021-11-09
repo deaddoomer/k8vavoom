@@ -26,7 +26,7 @@
 #include "gl_local.h"
 #include "gl_poly_adv_render.h"
 
-static VCvarF gl_dbg_adv_lightdimdist("gl_dbg_adv_lightdimdist", "2048", "Max light diminishing distance?", 0);
+static VCvarF gl_dbg_adv_lightdimdist("gl_dbg_adv_lightdimdist", "2048", "Max light diminishing distance?", CVAR_NoShadow);
 
 
 //==========================================================================

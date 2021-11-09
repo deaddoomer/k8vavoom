@@ -45,12 +45,12 @@
 // ////////////////////////////////////////////////////////////////////////// //
 // this may create stuck monsters on Arch-Vile revival and such, but meh...
 // i REALLY HATE hanging corpses
-static VCvarB gm_smaller_corpses("gm_smaller_corpses", false, "Make corpses smaller, so they will not hang on ledges?", CVAR_Archive);
-static VCvarF gm_corpse_radius_mult("gm_corpse_radius_mult", "0.4", "Corpse radius multiplier for 'smaller corpese' mode.", CVAR_Archive);
+static VCvarB gm_smaller_corpses("gm_smaller_corpses", false, "Make corpses smaller, so they will not hang on ledges?", CVAR_Archive|CVAR_NoShadow);
+static VCvarF gm_corpse_radius_mult("gm_corpse_radius_mult", "0.4", "Corpse radius multiplier for 'smaller corpese' mode.", CVAR_Archive|CVAR_NoShadow);
 #ifdef CLIENT
-VCvarB r_interpolate_thing_movement("r_interpolate_thing_movement", true, "Interpolate mobj movement?", CVAR_Archive);
-VCvarB r_interpolate_thing_angles_models("r_interpolate_thing_angles_models", true, "Interpolate mobj rotation for 3D models?", CVAR_Archive);
-VCvarB r_interpolate_thing_angles_sprites("r_interpolate_thing_angles_sprites", false, "Interpolate mobj rotation for sprites?", CVAR_Archive);
+VCvarB r_interpolate_thing_movement("r_interpolate_thing_movement", true, "Interpolate mobj movement?", CVAR_Archive|CVAR_NoShadow);
+VCvarB r_interpolate_thing_angles_models("r_interpolate_thing_angles_models", true, "Interpolate mobj rotation for 3D models?", CVAR_Archive|CVAR_NoShadow);
+VCvarB r_interpolate_thing_angles_sprites("r_interpolate_thing_angles_sprites", false, "Interpolate mobj rotation for sprites?", CVAR_Archive|CVAR_NoShadow);
 #endif
 
 

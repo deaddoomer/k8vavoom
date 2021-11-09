@@ -32,18 +32,18 @@
 extern VCvarI r_max_lights;
 //extern VCvarB r_disable_world_update;
 
-static VCvarB r_advlight_sort_static("r_advlight_sort_static", true, "Sort visible static lights, so nearby lights will be rendered first?", CVAR_Archive|CVAR_PreInit);
-static VCvarB r_advlight_sort_dynamic("r_advlight_sort_dynamic", true, "Sort visible dynamic lights, so nearby lights will be rendered first?", CVAR_Archive|CVAR_PreInit);
+static VCvarB r_advlight_sort_static("r_advlight_sort_static", true, "Sort visible static lights, so nearby lights will be rendered first?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
+static VCvarB r_advlight_sort_dynamic("r_advlight_sort_dynamic", true, "Sort visible dynamic lights, so nearby lights will be rendered first?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
 // no need to do this, because light rendering will do it again anyway
 // yet it seems to be slightly faster for complex maps with alot of static lights
 // 'cmon, `RenderLightShadows()` builds lightvis, and checks this
-static VCvarB r_advlight_flood_check("r_advlight_flood_check", false, "Check static light visibility with floodfill before trying to render it?", CVAR_Archive|CVAR_PreInit);
+static VCvarB r_advlight_flood_check("r_advlight_flood_check", false, "Check static light visibility with floodfill before trying to render it?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
 
-static VCvarB dbg_adv_show_light_count("dbg_adv_show_light_count", false, "Show number of rendered lights?", CVAR_PreInit);
-static VCvarB dbg_adv_show_light_seg_info("dbg_adv_show_light_seg_info", false, "Show totals of rendered light/shadow segments?", CVAR_PreInit);
+static VCvarB dbg_adv_show_light_count("dbg_adv_show_light_count", false, "Show number of rendered lights?", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB dbg_adv_show_light_seg_info("dbg_adv_show_light_seg_info", false, "Show totals of rendered light/shadow segments?", CVAR_PreInit|CVAR_NoShadow);
 
-static VCvarI dbg_adv_force_static_lights_radius("dbg_adv_force_static_lights_radius", "0", "Force static light radius.", CVAR_PreInit);
-static VCvarI dbg_adv_force_dynamic_lights_radius("dbg_adv_force_dynamic_lights_radius", "0", "Force dynamic light radius.", CVAR_PreInit);
+static VCvarI dbg_adv_force_static_lights_radius("dbg_adv_force_static_lights_radius", "0", "Force static light radius.", CVAR_PreInit|CVAR_NoShadow);
+static VCvarI dbg_adv_force_dynamic_lights_radius("dbg_adv_force_dynamic_lights_radius", "0", "Force dynamic light radius.", CVAR_PreInit|CVAR_NoShadow);
 
 
 struct StLightInfo {

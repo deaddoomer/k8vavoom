@@ -37,10 +37,10 @@ enum { cli_DebugSound = 0 };
 #endif
 
 
-static VCvarB snd_verbose_truncate("snd_verbose_truncate", false, "Show silence-truncated sounds?", CVAR_Archive);
+static VCvarB snd_verbose_truncate("snd_verbose_truncate", false, "Show silence-truncated sounds?", CVAR_Archive|CVAR_NoShadow);
 
 //k8: it was weirdly unstable under windoze. seems to work ok now.
-static VCvarB snd_bgloading_sfx("snd_bgloading_sfx", true, "Load sounds in background thread?", CVAR_Archive);
+static VCvarB snd_bgloading_sfx("snd_bgloading_sfx", true, "Load sounds in background thread?", CVAR_Archive|CVAR_NoShadow);
 
 
 bool SoundHasBadApple = false;

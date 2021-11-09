@@ -30,11 +30,11 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-VCvarB r_hack_transparent_doors("r_hack_transparent_doors", true, "Transparent doors hack.", CVAR_Archive);
-VCvarB r_fix_tjunctions("r_fix_tjunctions", true, "Fix t-junctions to avoid occasional white dots?", CVAR_Archive);
+VCvarB r_hack_transparent_doors("r_hack_transparent_doors", true, "Transparent doors hack.", CVAR_Archive|CVAR_NoShadow);
+VCvarB r_fix_tjunctions("r_fix_tjunctions", true, "Fix t-junctions to avoid occasional white dots?", CVAR_Archive|CVAR_NoShadow);
 
-VCvarB dbg_fix_tjunctions("dbg_fix_tjunctions", false, "Show debug messages from t-junctions fixer?", CVAR_PreInit);
-VCvarB warn_fix_tjunctions("warn_fix_tjunctions", false, "Show t-junction fixer warnings?", CVAR_Archive);
+VCvarB dbg_fix_tjunctions("dbg_fix_tjunctions", false, "Show debug messages from t-junctions fixer?", CVAR_PreInit|CVAR_NoShadow);
+VCvarB warn_fix_tjunctions("warn_fix_tjunctions", false, "Show t-junction fixer warnings?", CVAR_Archive|CVAR_NoShadow);
 
 
 

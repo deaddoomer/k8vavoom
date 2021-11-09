@@ -33,24 +33,24 @@
 
 // ////////////////////////////////////////////////////////////////////////// //
 VCvarI r_light_mode("r_light_mode", "1", "Lighting mode (0:Vavoom; 1:Dark; 2:DarkBanded)?", CVAR_Archive);
-VCvarF r_light_globvis("r_light_globvis", "8", "Dark lighting mode visibility.", CVAR_Archive);
+VCvarF r_light_globvis("r_light_globvis", "8", "Dark lighting mode visibility.", CVAR_Archive|CVAR_NoShadow);
 
 VCvarB r_darken("r_darken", true, "Darken level to better match original Doom?", CVAR_Archive);
-VCvarI r_ambient_min("r_ambient_min", "0", "Minimal ambient light.", CVAR_Archive);
-VCvarB r_allow_ambient("r_allow_ambient", true, "Allow ambient lights?", CVAR_Archive);
+VCvarI r_ambient_min("r_ambient_min", "0", "Minimal ambient light.", CVAR_Archive|CVAR_NoShadow);
+VCvarB r_allow_ambient("r_allow_ambient", true, "Allow ambient lights?", CVAR_Archive|CVAR_NoShadow);
 VCvarB r_dynamic_lights("r_dynamic_lights", true, "Allow dynamic lights?", CVAR_Archive);
 VCvarB r_dynamic_clip("r_dynamic_clip", true, "Clip dynamic lights?", CVAR_Archive);
 VCvarB r_static_lights("r_static_lights", true, "Allow static lights?", CVAR_Archive);
-VCvarB r_light_opt_shadow("r_light_opt_shadow", false, "Check if light can potentially cast a shadow.", CVAR_Archive);
+VCvarB r_light_opt_shadow("r_light_opt_shadow", false, "Check if light can potentially cast a shadow.", CVAR_Archive|CVAR_NoShadow);
 VCvarF r_light_filter_dynamic_coeff("r_light_filter_dynamic_coeff", "0.2", "How close dynamic lights should be to be filtered out?\n(0.2-0.4 is usually ok).", CVAR_Archive);
 VCvarB r_allow_dynamic_light_filter("r_allow_dynamic_light_filter", true, "Allow filtering of dynamic lights?", CVAR_Archive);
 
 // currently affects only advanced renderer
 VCvarI r_light_shadow_min_proj_dimension("r_light_shadow_min_proj_dimension", "112", "Do not render shadows for lights smaller than this screen size.", CVAR_Archive);
 
-VCvarB r_shadowmaps("r_shadowmaps", false, "Use shadowmaps instead of shadow volumes?", /*CVAR_PreInit|*/CVAR_Archive);
+VCvarB r_shadowmaps("r_shadowmaps", false, "Use shadowmaps instead of shadow volumes?", /*CVAR_PreInit|*/CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB r_dynamic_light_better_vis_check("r_dynamic_light_better_vis_check", true, "Do better (but slower) dynlight visibility checking on spawn?", CVAR_Archive);
+static VCvarB r_dynamic_light_better_vis_check("r_dynamic_light_better_vis_check", true, "Do better (but slower) dynlight visibility checking on spawn?", CVAR_Archive|CVAR_NoShadow);
 
 extern VCvarB r_glow_flat;
 extern VCvarB r_lmap_recalc_moved_static;

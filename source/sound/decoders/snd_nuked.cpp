@@ -57,9 +57,9 @@ private:
 
 IMPLEMENT_AUDIO_CODEC(VNukedOPLAudioCodec, "NukedOPL");
 
-static VCvarI snd_nukedopl_type("snd_nukedopl_type", "1", "OPL chip type (0:OPL2; 1:OPL3)", CVAR_Archive);
-static VCvarB snd_nukedopl_stereo("snd_nukedopl_stereo", true, "Use stereo mode?", CVAR_Archive);
-static VCvarF snd_nukedopl_amplify("snd_nukedopl_amplify", "1", "Sound amplification.", CVAR_Archive);
+static VCvarI snd_nukedopl_type("snd_nukedopl_type", "1", "OPL chip type (0:OPL2; 1:OPL3)", CVAR_Archive|CVAR_NoShadow);
+static VCvarB snd_nukedopl_stereo("snd_nukedopl_stereo", true, "Use stereo mode?", CVAR_Archive|CVAR_NoShadow);
+static VCvarF snd_nukedopl_amplify("snd_nukedopl_amplify", "1", "Sound amplification.", CVAR_Archive|CVAR_NoShadow);
 
 TArray<vuint8> VNukedOPLAudioCodec::genmidi;
 int VNukedOPLAudioCodec::gmlumpTried = 0;

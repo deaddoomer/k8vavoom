@@ -94,20 +94,20 @@
 #define SDF_PERMANENT  (2)
 
 
-static VCvarI acs_screenblocks_override("acs_screenblocks_override", "-1", "Overrides 'screenblocks' variable for acs scripts (-1: don't).", CVAR_Archive);
-static VCvarB acs_halt_on_unimplemented_opcode("acs_halt_on_unimplemented_opcode", false, "Halt ACS VM on unimplemented opdode?", CVAR_Archive);
-static VCvarB acs_halt_on_unknown_opcode("acs_halt_on_unknown_opcode", true, "Halt ACS VM on unknown opdode?", CVAR_Archive);
-static VCvarB acs_warning_console_commands("acs_warning_console_commands", true, "Show warning when ACS script tries to execute console command?", CVAR_Archive);
-static VCvarB acs_dump_uservar_access("acs_dump_uservar_access", false, "Dump ACS uservar access?", CVAR_Archive);
-static VCvarB acs_use_doomtic_granularity("acs_use_doomtic_granularity", false, "Should ACS use DooM tic granularity for delays?", CVAR_Archive);
-static VCvarB acs_enabled("acs_enabled", true, "DEBUG: are ACS scripts enabled?", CVAR_PreInit);
-static VCvarB acs_show_started_scripts("acs_show_started_scripts", false, "DEBUG", CVAR_PreInit);
-static VCvarB acs_show_stopped_scripts("acs_show_stopped_scripts", false, "DEBUG", CVAR_PreInit);
-static VCvarB acs_show_typed_scripts("acs_show_typed_scripts", false, "DEBUG", CVAR_PreInit);
-static VCvarB acs_abort_on_unknown_acsf("acs_abort_on_unknown_acsf", true, "Abort on unknown ACSF function? (WARNING: setting this 'off' may break some maps)", CVAR_Archive);
-static VCvarB acs_emulate_zandronum_acsf("acs_emulate_zandronum_acsf", false, "Emulate some Zandronum ACSF functions? (WARNING: setting this 'off' may break some maps)", CVAR_Archive);
+static VCvarI acs_screenblocks_override("acs_screenblocks_override", "-1", "Overrides 'screenblocks' variable for acs scripts (-1: don't).", CVAR_Archive|CVAR_NoShadow);
+static VCvarB acs_halt_on_unimplemented_opcode("acs_halt_on_unimplemented_opcode", false, "Halt ACS VM on unimplemented opdode?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB acs_halt_on_unknown_opcode("acs_halt_on_unknown_opcode", true, "Halt ACS VM on unknown opdode?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB acs_warning_console_commands("acs_warning_console_commands", true, "Show warning when ACS script tries to execute console command?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB acs_dump_uservar_access("acs_dump_uservar_access", false, "Dump ACS uservar access?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB acs_use_doomtic_granularity("acs_use_doomtic_granularity", false, "Should ACS use DooM tic granularity for delays?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB acs_enabled("acs_enabled", true, "DEBUG: are ACS scripts enabled?", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB acs_show_started_scripts("acs_show_started_scripts", false, "DEBUG", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB acs_show_stopped_scripts("acs_show_stopped_scripts", false, "DEBUG", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB acs_show_typed_scripts("acs_show_typed_scripts", false, "DEBUG", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB acs_abort_on_unknown_acsf("acs_abort_on_unknown_acsf", true, "Abort on unknown ACSF function? (WARNING: setting this 'off' may break some maps)", CVAR_Archive|CVAR_NoShadow);
+static VCvarB acs_emulate_zandronum_acsf("acs_emulate_zandronum_acsf", false, "Emulate some Zandronum ACSF functions? (WARNING: setting this 'off' may break some maps)", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB dbg_acs_allow_unimplemented_opcodes("dbg_acs_allow_unimplemented_opcodes", false, "Override 'acs_halt_on_unimplemented_opcode', non-persistent", CVAR_PreInit);
+static VCvarB dbg_acs_allow_unimplemented_opcodes("dbg_acs_allow_unimplemented_opcodes", false, "Override 'acs_halt_on_unimplemented_opcode', non-persistent", CVAR_PreInit|CVAR_NoShadow);
 
 extern VCvarF mouse_x_sensitivity;
 extern VCvarF mouse_y_sensitivity;

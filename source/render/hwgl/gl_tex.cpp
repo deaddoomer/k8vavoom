@@ -29,11 +29,11 @@
 extern VCvarB r_allow_cameras;
 extern VCvarB gl_pic_filtering;
 
-static VCvarB gl_recreate_changed_textures("gl_recreate_changed_textures", false, "Destroy and create new OpenGL textures for changed DooM animated ones?", CVAR_Archive);
-static VCvarB gl_camera_texture_use_readpixels("gl_camera_texture_use_readpixels", true, "Use ReadPixels to update camera textures?", CVAR_Archive);
+static VCvarB gl_recreate_changed_textures("gl_recreate_changed_textures", false, "Destroy and create new OpenGL textures for changed DooM animated ones?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB gl_camera_texture_use_readpixels("gl_camera_texture_use_readpixels", true, "Use ReadPixels to update camera textures?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarI gl_s3tc_mode("gl_s3tc_mode", "0", "Use S3TC texture compression, if supported (0:no; 1:hires; 2:all)?", CVAR_PreInit|CVAR_Archive);
-static VCvarB gl_s3tc_dump("gl_s3tc_dump", false, "Show which textures are compressed.", CVAR_PreInit|CVAR_Hidden);
+static VCvarI gl_s3tc_mode("gl_s3tc_mode", "0", "Use S3TC texture compression, if supported (0:no; 1:hires; 2:all)?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
+static VCvarB gl_s3tc_dump("gl_s3tc_dump", false, "Show which textures are compressed.", CVAR_PreInit|CVAR_Hidden|CVAR_NoShadow);
 
 #ifndef COMPRESSED_RGB_S3TC_DXT1_EXT
 # define COMPRESSED_RGB_S3TC_DXT1_EXT                   0x83F0

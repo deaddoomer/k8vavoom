@@ -62,35 +62,35 @@ extern VCvarB r_draw_pobj;
 enum { r_draw_pobj = true };
 #endif
 
-static VCvarB clip_enabled("clip_enabled", true, "Do 1D geometry cliping optimizations?", CVAR_PreInit);
-static VCvarB clip_bbox("clip_bbox", true, "Clip BSP bboxes with 1D clipper?", CVAR_PreInit);
-static VCvarB clip_subregion("clip_subregion", true, "Clip subregions?", CVAR_PreInit);
-static VCvarB clip_with_polyobj("clip_with_polyobj", true, "Do clipping with polyobjects?", CVAR_PreInit);
-static VCvarB clip_platforms("clip_platforms", true, "Clip geometry behind some closed doors and lifts?", CVAR_PreInit);
-VCvarB clip_frustum("clip_frustum", true, "Clip geometry with frustum?", CVAR_PreInit);
-//VCvarB clip_frustum_mirror("clip_frustum_mirror", true, "Clip mirrored geometry with frustum?", CVAR_PreInit);
-VCvarB clip_frustum_init_range("clip_frustum_init_range", true, "Init clipper range with frustum?", CVAR_PreInit);
+static VCvarB clip_enabled("clip_enabled", true, "Do 1D geometry cliping optimizations?", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB clip_bbox("clip_bbox", true, "Clip BSP bboxes with 1D clipper?", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB clip_subregion("clip_subregion", true, "Clip subregions?", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB clip_with_polyobj("clip_with_polyobj", true, "Do clipping with polyobjects?", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB clip_platforms("clip_platforms", true, "Clip geometry behind some closed doors and lifts?", CVAR_PreInit|CVAR_NoShadow);
+VCvarB clip_frustum("clip_frustum", true, "Clip geometry with frustum?", CVAR_PreInit|CVAR_NoShadow);
+//VCvarB clip_frustum_mirror("clip_frustum_mirror", true, "Clip mirrored geometry with frustum?", CVAR_PreInit|CVAR_NoShadow);
+VCvarB clip_frustum_init_range("clip_frustum_init_range", true, "Init clipper range with frustum?", CVAR_PreInit|CVAR_NoShadow);
 // set to false, because 1d clipper can clip bboxes too, and node bsp z is miscalculated for some map trickery
-VCvarB clip_frustum_bsp("clip_frustum_bsp", true, "Clip BSP geometry with frustum?", CVAR_PreInit);
-//VCvarB clip_frustum_bsp_segs("clip_frustum_bsp_segs", false, "Clip segs in BSP rendering with frustum?", CVAR_PreInit);
-//VCvarI clip_frustum_check_mask("clip_frustum_check_mask", TFrustum::LeftBit|TFrustum::RightBit|TFrustum::BackBit, "Which frustum planes we should check?", CVAR_PreInit);
-//VCvarI clip_frustum_check_mask("clip_frustum_check_mask", "19", "Which frustum planes we should check?", CVAR_PreInit);
-VCvarI clip_frustum_check_mask("clip_frustum_check_mask", "255", "Which frustum planes we should check?", CVAR_PreInit);
+VCvarB clip_frustum_bsp("clip_frustum_bsp", true, "Clip BSP geometry with frustum?", CVAR_PreInit|CVAR_NoShadow);
+//VCvarB clip_frustum_bsp_segs("clip_frustum_bsp_segs", false, "Clip segs in BSP rendering with frustum?", CVAR_PreInit|CVAR_NoShadow);
+//VCvarI clip_frustum_check_mask("clip_frustum_check_mask", TFrustum::LeftBit|TFrustum::RightBit|TFrustum::BackBit, "Which frustum planes we should check?", CVAR_PreInit|CVAR_NoShadow);
+//VCvarI clip_frustum_check_mask("clip_frustum_check_mask", "19", "Which frustum planes we should check?", CVAR_PreInit|CVAR_NoShadow);
+VCvarI clip_frustum_check_mask("clip_frustum_check_mask", "255", "Which frustum planes we should check?", CVAR_PreInit|CVAR_NoShadow);
 
-static VCvarB clip_add_backface_segs("clip_add_backface_segs", false, "Add backfaced segs to 1D clipper (this prevents some clipping bugs, but makes \"noclip\" less usable)?", CVAR_PreInit);
+static VCvarB clip_add_backface_segs("clip_add_backface_segs", false, "Add backfaced segs to 1D clipper (this prevents some clipping bugs, but makes \"noclip\" less usable)?", CVAR_PreInit|CVAR_NoShadow);
 
-static VCvarB clip_skip_slopes_1side("clip_skip_slopes_1side", false, "Skip clipping with one-sided slopes?", CVAR_PreInit);
+static VCvarB clip_skip_slopes_1side("clip_skip_slopes_1side", false, "Skip clipping with one-sided slopes?", CVAR_PreInit|CVAR_NoShadow);
 
 // need to be public for portal rendering
-VCvarB clip_height("clip_height", true, "Clip with top and bottom frustum?", CVAR_PreInit);
-VCvarB clip_midsolid("clip_midsolid", true, "Clip with solid midtex?", CVAR_PreInit);
+VCvarB clip_height("clip_height", true, "Clip with top and bottom frustum?", CVAR_PreInit|CVAR_NoShadow);
+VCvarB clip_midsolid("clip_midsolid", true, "Clip with solid midtex?", CVAR_PreInit|CVAR_NoShadow);
 
-static VCvarB clip_use_transfers("clip_use_transfers", true, "Use transfer sectors to clip?", CVAR_PreInit);
+static VCvarB clip_use_transfers("clip_use_transfers", true, "Use transfer sectors to clip?", CVAR_PreInit|CVAR_NoShadow);
 
-VCvarB clip_use_1d_clipper("clip_use_1d_clipper", true, "Use 1d clipper?", CVAR_PreInit);
+VCvarB clip_use_1d_clipper("clip_use_1d_clipper", true, "Use 1d clipper?", CVAR_PreInit|CVAR_NoShadow);
 
-VCvarB dbg_clip_dump_added_ranges("dbg_clip_dump_added_ranges", false, "Dump added ranges in 1D clipper?", CVAR_PreInit);
-VCvarB dbg_clip_dump_sub_checks("dbg_clip_dump_sub_checks", false, "Dump subsector checks in 1D clipper?", CVAR_PreInit);
+VCvarB dbg_clip_dump_added_ranges("dbg_clip_dump_added_ranges", false, "Dump added ranges in 1D clipper?", CVAR_PreInit|CVAR_NoShadow);
+VCvarB dbg_clip_dump_sub_checks("dbg_clip_dump_sub_checks", false, "Dump subsector checks in 1D clipper?", CVAR_PreInit|CVAR_NoShadow);
 
 
 // ////////////////////////////////////////////////////////////////////////// //

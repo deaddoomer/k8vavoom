@@ -38,17 +38,17 @@
 extern VCvarF gl_alpha_threshold;
 static inline float getAlphaThreshold () { float res = gl_alpha_threshold; if (res < 0) res = 0; else if (res > 1) res = 1; return res; }
 
-static VCvarI mdl_verbose_loading("mdl_verbose_loading", "0", "Verbose alias model loading?", 0/*CVAR_Archive*/);
+static VCvarI mdl_verbose_loading("mdl_verbose_loading", "0", "Verbose alias model loading?", CVAR_NoShadow/*|CVAR_Archive*/);
 
-static VCvarB gl_dbg_log_model_rendering("gl_dbg_log_model_rendering", false, "Some debug log.", CVAR_PreInit);
+static VCvarB gl_dbg_log_model_rendering("gl_dbg_log_model_rendering", false, "Some debug log.", CVAR_PreInit|CVAR_NoShadow);
 
 static VCvarB r_model_autorotating("r_model_autorotating", true, "Allow model autorotation?", CVAR_Archive);
 static VCvarB r_model_autobobbing("r_model_autobobbing", true, "Allow model autobobbing?", CVAR_Archive);
-static VCvarB r_model_ignore_missing_textures("r_model_ignore_missing_textures", false, "Do not render models with missing textures (if `false`, renders with checkerboards)?", CVAR_Archive);
+static VCvarB r_model_ignore_missing_textures("r_model_ignore_missing_textures", false, "Do not render models with missing textures (if `false`, renders with checkerboards)?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB r_preload_alias_models("r_preload_alias_models", true, "Preload all alias models and their skins?", CVAR_Archive|CVAR_PreInit);
+static VCvarB r_preload_alias_models("r_preload_alias_models", true, "Preload all alias models and their skins?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
 
-static VCvarB dbg_dump_gzmodels("dbg_dump_gzmodels", false, "Dump xml files for gz modeldefs?", /*CVAR_Archive|*/CVAR_PreInit);
+static VCvarB dbg_dump_gzmodels("dbg_dump_gzmodels", false, "Dump xml files for gz modeldefs?", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
 
 
 static int cli_DisableModeldef = 0;

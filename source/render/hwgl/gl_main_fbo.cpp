@@ -38,10 +38,10 @@
 //#define VVGL_FBO_USE_DEPTH_TEXTURE
 
 static ColorCV letterboxColor(&gl_letterbox_color);
-static VCvarB gl_enable_fp_zbuffer("gl_enable_fp_zbuffer", false, "Enable using of floating-point depth buffer for OpenGL3+?", CVAR_Archive|CVAR_PreInit);
+static VCvarB gl_enable_fp_zbuffer("gl_enable_fp_zbuffer", false, "Enable using of floating-point depth buffer for OpenGL3+?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
 // this is much slower on my GPU than 8 bits, and visuals aren't better
-static VCvarB gl_use_better_color_precision("gl_use_better_color_precision", false, "Use slightly better color precision (10 bits)?", CVAR_Archive|CVAR_PreInit);
-static VCvarI gl_color_fp_format("gl_color_fp_format", "0", "Floating point format for FP color textures (0:10 bit; 1:16 bit; 2: 32 bit)", CVAR_Archive|CVAR_PreInit);
+static VCvarB gl_use_better_color_precision("gl_use_better_color_precision", false, "Use slightly better color precision (10 bits)?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
+static VCvarI gl_color_fp_format("gl_color_fp_format", "0", "Floating point format for FP color textures (0:10 bit; 1:16 bit; 2: 32 bit)", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
 
 
 

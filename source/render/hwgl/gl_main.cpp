@@ -45,84 +45,84 @@
 // ////////////////////////////////////////////////////////////////////////// //
 extern VCvarB r_bloom;
 
-static VCvarB gl_crippled_gpu("gl_crippled_gpu", false, "who cares.", CVAR_Rom|CVAR_Hidden);
+static VCvarB gl_crippled_gpu("gl_crippled_gpu", false, "who cares.", CVAR_Rom|CVAR_Hidden|CVAR_NoShadow);
 
-VCvarB gl_tonemap_pal_hires("gl_tonemap_pal_hires", true, "Use 128x128x128 color cube instead of 64x64x64?", CVAR_Archive);
-VCvarI gl_tonemap_pal_algo("gl_tonemap_pal_algo", "1", "Tonemap color distance algorithm (0-1; 1 is the best one)", CVAR_Archive);
+VCvarB gl_tonemap_pal_hires("gl_tonemap_pal_hires", true, "Use 128x128x128 color cube instead of 64x64x64?", CVAR_Archive|CVAR_NoShadow);
+VCvarI gl_tonemap_pal_algo("gl_tonemap_pal_algo", "1", "Tonemap color distance algorithm (0-1; 1 is the best one)", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB gl_can_bloom("gl_can_bloom", false, "who cares.", CVAR_Rom|CVAR_Hidden);
-static VCvarB gl_can_hires_tonemap("gl_can_hires_tonemap", false, "who cares.", CVAR_Rom|CVAR_Hidden);
-static VCvarB gl_can_shadowmaps("gl_can_shadowmaps", false, "who cares.", CVAR_Rom|CVAR_Hidden);
-static VCvarB gl_can_shadowvols("gl_can_shadowvols", false, "who cares.", CVAR_Rom|CVAR_Hidden);
-VCvarB gl_can_cas_filter("gl_can_cas_filter", false, "who cares.", CVAR_Rom|CVAR_Hidden);
-static VCvarB gl_can_clipcontrol("gl_can_clipcontrol", false, "who cares.", CVAR_Rom|CVAR_Hidden);
+static VCvarB gl_can_bloom("gl_can_bloom", false, "who cares.", CVAR_Rom|CVAR_Hidden|CVAR_NoShadow);
+static VCvarB gl_can_hires_tonemap("gl_can_hires_tonemap", false, "who cares.", CVAR_Rom|CVAR_Hidden|CVAR_NoShadow);
+static VCvarB gl_can_shadowmaps("gl_can_shadowmaps", false, "who cares.", CVAR_Rom|CVAR_Hidden|CVAR_NoShadow);
+static VCvarB gl_can_shadowvols("gl_can_shadowvols", false, "who cares.", CVAR_Rom|CVAR_Hidden|CVAR_NoShadow);
+VCvarB gl_can_cas_filter("gl_can_cas_filter", false, "who cares.", CVAR_Rom|CVAR_Hidden|CVAR_NoShadow);
+static VCvarB gl_can_clipcontrol("gl_can_clipcontrol", false, "who cares.", CVAR_Rom|CVAR_Hidden|CVAR_NoShadow);
 
-VCvarB gl_pic_filtering("gl_pic_filtering", false, "Filter interface pictures.", CVAR_Archive);
-VCvarB gl_font_filtering("gl_font_filtering", false, "Filter 2D interface.", CVAR_Archive);
+VCvarB gl_pic_filtering("gl_pic_filtering", false, "Filter interface pictures.", CVAR_Archive|CVAR_NoShadow);
+VCvarB gl_font_filtering("gl_font_filtering", false, "Filter 2D interface.", CVAR_Archive|CVAR_NoShadow);
 
-VCvarB gl_enable_clip_control("gl_enable_clip_control", true, "Allow using `glClipControl()`?", CVAR_Archive|CVAR_PreInit);
-static VCvarB gl_enable_reverse_z("gl_enable_reverse_z", true, "Allow using \"reverse z\" trick?", CVAR_Archive|CVAR_PreInit);
-static VCvarB gl_dbg_force_reverse_z("gl_dbg_force_reverse_z", false, "Force-enable reverse z when fp depth buffer is not available.", CVAR_PreInit);
-static VCvarB gl_dbg_ignore_gpu_blacklist("gl_dbg_ignore_gpu_blacklist", false, "Ignore GPU blacklist, and don't turn off features?", CVAR_PreInit);
-static VCvarB gl_dbg_force_gpu_blacklisting("gl_dbg_force_gpu_blacklisting", false, "Force GPU to be blacklisted.", CVAR_PreInit);
-static VCvarB gl_dbg_disable_depth_clamp("gl_dbg_disable_depth_clamp", false, "Disable depth clamping.", CVAR_PreInit);
+VCvarB gl_enable_clip_control("gl_enable_clip_control", true, "Allow using `glClipControl()`?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
+static VCvarB gl_enable_reverse_z("gl_enable_reverse_z", true, "Allow using \"reverse z\" trick?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
+static VCvarB gl_dbg_force_reverse_z("gl_dbg_force_reverse_z", false, "Force-enable reverse z when fp depth buffer is not available.", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB gl_dbg_ignore_gpu_blacklist("gl_dbg_ignore_gpu_blacklist", false, "Ignore GPU blacklist, and don't turn off features?", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB gl_dbg_force_gpu_blacklisting("gl_dbg_force_gpu_blacklisting", false, "Force GPU to be blacklisted.", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB gl_dbg_disable_depth_clamp("gl_dbg_disable_depth_clamp", false, "Disable depth clamping.", CVAR_PreInit|CVAR_NoShadow);
 
-VCvarB gl_letterbox("gl_letterbox", true, "Use letterbox for scaled FS mode?", CVAR_Archive);
-VCvarI gl_letterbox_filter("gl_letterbox_filter", "0", "Image filtering for letterbox mode (0:nearest; 1:linear).", CVAR_Archive);
-VCvarS gl_letterbox_color("gl_letterbox_color", "00 00 00", "Letterbox color", CVAR_Archive);
-VCvarF gl_letterbox_scale("gl_letterbox_scale", "1", "Letterbox scaling factor in range (0..1].", CVAR_Archive);
+VCvarB gl_letterbox("gl_letterbox", true, "Use letterbox for scaled FS mode?", CVAR_Archive|CVAR_NoShadow);
+VCvarI gl_letterbox_filter("gl_letterbox_filter", "0", "Image filtering for letterbox mode (0:nearest; 1:linear).", CVAR_Archive|CVAR_NoShadow);
+VCvarS gl_letterbox_color("gl_letterbox_color", "00 00 00", "Letterbox color", CVAR_Archive|CVAR_NoShadow);
+VCvarF gl_letterbox_scale("gl_letterbox_scale", "1", "Letterbox scaling factor in range (0..1].", CVAR_Archive|CVAR_NoShadow);
 
-VCvarI VOpenGLDrawer::texture_filter("gl_texture_filter", "0", "Texture filtering mode.", CVAR_Archive);
-VCvarI VOpenGLDrawer::sprite_filter("gl_sprite_filter", "0", "Sprite filtering mode.", CVAR_Archive);
-VCvarI VOpenGLDrawer::model_filter("gl_model_filter", "0", "Model filtering mode.", CVAR_Archive);
-VCvarI VOpenGLDrawer::gl_texture_filter_anisotropic("gl_texture_filter_anisotropic", "0", "Texture anisotropic filtering (<=1 is off).", CVAR_Archive);
-VCvarB VOpenGLDrawer::clear("gl_clear", true, "Clear screen before rendering new frame?", CVAR_Archive);
-VCvarB VOpenGLDrawer::ext_anisotropy("gl_ext_anisotropy", true, "Use OpenGL anisotropy extension (if present)?", CVAR_Archive|CVAR_PreInit);
-VCvarI VOpenGLDrawer::multisampling_sample("gl_multisampling_sample", "1", "Multisampling mode.", CVAR_Archive);
-VCvarB VOpenGLDrawer::gl_smooth_particles("gl_smooth_particles", false, "Draw smooth particles?", CVAR_Archive);
+VCvarI VOpenGLDrawer::texture_filter("gl_texture_filter", "0", "Texture filtering mode.", CVAR_Archive|CVAR_NoShadow);
+VCvarI VOpenGLDrawer::sprite_filter("gl_sprite_filter", "0", "Sprite filtering mode.", CVAR_Archive|CVAR_NoShadow);
+VCvarI VOpenGLDrawer::model_filter("gl_model_filter", "0", "Model filtering mode.", CVAR_Archive|CVAR_NoShadow);
+VCvarI VOpenGLDrawer::gl_texture_filter_anisotropic("gl_texture_filter_anisotropic", "0", "Texture anisotropic filtering (<=1 is off).", CVAR_Archive|CVAR_NoShadow);
+VCvarB VOpenGLDrawer::clear("gl_clear", true, "Clear screen before rendering new frame?", CVAR_Archive|CVAR_NoShadow);
+VCvarB VOpenGLDrawer::ext_anisotropy("gl_ext_anisotropy", true, "Use OpenGL anisotropy extension (if present)?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
+VCvarI VOpenGLDrawer::multisampling_sample("gl_multisampling_sample", "1", "Multisampling mode.", CVAR_Archive|CVAR_NoShadow);
+VCvarB VOpenGLDrawer::gl_smooth_particles("gl_smooth_particles", false, "Draw smooth particles?", CVAR_Archive|CVAR_NoShadow);
 
-VCvarB VOpenGLDrawer::gl_dump_vendor("gl_dump_vendor", false, "Dump OpenGL vendor?", CVAR_PreInit);
-VCvarB VOpenGLDrawer::gl_dump_extensions("gl_dump_extensions", false, "Dump available OpenGL extensions?", CVAR_PreInit);
+VCvarB VOpenGLDrawer::gl_dump_vendor("gl_dump_vendor", false, "Dump OpenGL vendor?", CVAR_PreInit|CVAR_NoShadow);
+VCvarB VOpenGLDrawer::gl_dump_extensions("gl_dump_extensions", false, "Dump available OpenGL extensions?", CVAR_PreInit|CVAR_NoShadow);
 
 // was 0.333
-VCvarF gl_alpha_threshold("gl_alpha_threshold", "0.01", "Alpha threshold (less than this will not be drawn).", CVAR_Archive);
+VCvarF gl_alpha_threshold("gl_alpha_threshold", "0.01", "Alpha threshold (less than this will not be drawn).", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarI gl_max_anisotropy("gl_max_anisotropy", "1", "Maximum anisotropy level (r/o).", CVAR_Rom);
-static VCvarB gl_is_shitty_gpu("gl_is_shitty_gpu", true, "Is shitty GPU detected (r/o)?", CVAR_Rom);
+static VCvarI gl_max_anisotropy("gl_max_anisotropy", "1", "Maximum anisotropy level (r/o).", CVAR_Rom|CVAR_NoShadow);
+static VCvarB gl_is_shitty_gpu("gl_is_shitty_gpu", true, "Is shitty GPU detected (r/o)?", CVAR_Rom|CVAR_NoShadow);
 
-VCvarB gl_enable_depth_bounds("gl_enable_depth_bounds", true, "Use depth bounds extension if found?", CVAR_Archive);
+VCvarB gl_enable_depth_bounds("gl_enable_depth_bounds", true, "Use depth bounds extension if found?", CVAR_Archive|CVAR_NoShadow);
 
-VCvarB gl_sort_textures("gl_sort_textures", true, "Sort surfaces by their textures (slightly faster on huge levels; affects only lightmapped renderer)?", CVAR_Archive|CVAR_PreInit);
+VCvarB gl_sort_textures("gl_sort_textures", true, "Sort surfaces by their textures (slightly faster on huge levels; affects only lightmapped renderer)?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
 
-VCvarB r_decals_wall_masked("r_decals_wall_masked", true, "Render decals on masked walls?", CVAR_Archive);
-VCvarB r_decals_wall_alpha("r_decals_wall_alpha", true, "Render decals on translucent walls?", CVAR_Archive);
+VCvarB r_decals_wall_masked("r_decals_wall_masked", true, "Render decals on masked walls?", CVAR_Archive|CVAR_NoShadow);
+VCvarB r_decals_wall_alpha("r_decals_wall_alpha", true, "Render decals on translucent walls?", CVAR_Archive|CVAR_NoShadow);
 
-VCvarB gl_decal_debug_nostencil("gl_decal_debug_nostencil", false, "Don't touch this!", 0);
-VCvarB gl_decal_debug_noalpha("gl_decal_debug_noalpha", false, "Don't touch this!", 0);
-VCvarB gl_decal_dump_max("gl_decal_dump_max", false, "Don't touch this!", 0);
-VCvarB gl_decal_reset_max("gl_decal_reset_max", false, "Don't touch this!", 0);
+VCvarB gl_decal_debug_nostencil("gl_decal_debug_nostencil", false, "Don't touch this!", CVAR_NoShadow);
+VCvarB gl_decal_debug_noalpha("gl_decal_debug_noalpha", false, "Don't touch this!", CVAR_NoShadow);
+VCvarB gl_decal_dump_max("gl_decal_dump_max", false, "Don't touch this!", CVAR_NoShadow);
+VCvarB gl_decal_reset_max("gl_decal_reset_max", false, "Don't touch this!", CVAR_NoShadow);
 
-VCvarB gl_dbg_adv_render_surface_textures("gl_dbg_adv_render_surface_textures", true, "Render surface textures in advanced renderer?", CVAR_PreInit);
-VCvarB gl_dbg_adv_render_surface_fog("gl_dbg_adv_render_surface_fog", true, "Render surface fog in advanced renderer?", CVAR_PreInit);
+VCvarB gl_dbg_adv_render_surface_textures("gl_dbg_adv_render_surface_textures", true, "Render surface textures in advanced renderer?", CVAR_PreInit|CVAR_NoShadow);
+VCvarB gl_dbg_adv_render_surface_fog("gl_dbg_adv_render_surface_fog", true, "Render surface fog in advanced renderer?", CVAR_PreInit|CVAR_NoShadow);
 
-VCvarB gl_dbg_render_stack_portal_bounds("gl_dbg_render_stack_portal_bounds", false, "Render sector stack portal bounds.", 0);
+VCvarB gl_dbg_render_stack_portal_bounds("gl_dbg_render_stack_portal_bounds", false, "Render sector stack portal bounds.", CVAR_NoShadow);
 
-VCvarB gl_use_stencil_quad_clear("gl_use_stencil_quad_clear", false, "Draw quad to clear stencil buffer instead of 'glClear'?", CVAR_Archive|CVAR_PreInit);
+VCvarB gl_use_stencil_quad_clear("gl_use_stencil_quad_clear", false, "Draw quad to clear stencil buffer instead of 'glClear'?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
 
 // 1: normal; 2: 1-skewed
-VCvarI gl_dbg_use_zpass("gl_dbg_use_zpass", "0", "DO NOT USE!", CVAR_PreInit);
+VCvarI gl_dbg_use_zpass("gl_dbg_use_zpass", "0", "DO NOT USE!", CVAR_PreInit|CVAR_NoShadow);
 
-//VCvarB gl_dbg_advlight_debug("gl_dbg_advlight_debug", false, "Draw non-fading lights?", CVAR_PreInit);
-//VCvarS gl_dbg_advlight_color("gl_dbg_advlight_color", "0xff7f7f", "Color for debug lights (only dec/hex).", CVAR_PreInit);
+//VCvarB gl_dbg_advlight_debug("gl_dbg_advlight_debug", false, "Draw non-fading lights?", CVAR_PreInit|CVAR_NoShadow);
+//VCvarS gl_dbg_advlight_color("gl_dbg_advlight_color", "0xff7f7f", "Color for debug lights (only dec/hex).", CVAR_PreInit|CVAR_NoShadow);
 
-VCvarB gl_dbg_wireframe("gl_dbg_wireframe", false, "Render wireframe level?", CVAR_PreInit);
+VCvarB gl_dbg_wireframe("gl_dbg_wireframe", false, "Render wireframe level?", CVAR_PreInit|CVAR_NoShadow);
 
 #ifdef GL4ES_HACKS
 # define FBO_WITH_TEXTURE_DEFAULT  true
 #else
 # define FBO_WITH_TEXTURE_DEFAULT  false
 #endif
-VCvarB gl_dbg_fbo_blit_with_texture("gl_dbg_fbo_blit_with_texture", FBO_WITH_TEXTURE_DEFAULT, "Always blit FBOs using texture mapping?", CVAR_PreInit);
+VCvarB gl_dbg_fbo_blit_with_texture("gl_dbg_fbo_blit_with_texture", FBO_WITH_TEXTURE_DEFAULT, "Always blit FBOs using texture mapping?", CVAR_PreInit|CVAR_NoShadow);
 
 VCvarB r_brightmaps("r_brightmaps", true, "Allow brightmaps?", CVAR_Archive);
 VCvarB r_brightmaps_sprite("r_brightmaps_sprite", true, "Allow sprite brightmaps?", CVAR_Archive);
@@ -131,27 +131,27 @@ VCvarB r_brightmaps_filter("r_brightmaps_filter", false, "Do bilinear filtering 
 
 VCvarB r_glow_flat("r_glow_flat", true, "Allow glowing flats?", CVAR_Archive);
 
-VCvarB gl_lmap_allow_partial_updates("gl_lmap_allow_partial_updates", true, "Allow partial updates of lightmap atlases (this is usually faster than full updates)?", CVAR_Archive);
+VCvarB gl_lmap_allow_partial_updates("gl_lmap_allow_partial_updates", true, "Allow partial updates of lightmap atlases (this is usually faster than full updates)?", CVAR_Archive|CVAR_NoShadow);
 
-VCvarI gl_release_ram_textures_mode("gl_release_ram_textures_mode", "2", "When the engine should release RAM (non-GPU) texture storage (0:never; 1:after map unload; 2:immediately)?", CVAR_Archive);
-VCvarI gl_release_ram_textures_mode_sprite("gl_release_ram_textures_mode_sprite", "2", "When the engine should release RAM (non-GPU) texture storage (0:never; 1:after map unload; 2:immediately)?", CVAR_Archive);
-VCvarB gl_crop_psprites("gl_crop_psprites", true, "Crop psprite textures?", CVAR_Archive);
-VCvarB gl_crop_sprites("gl_crop_sprites", false, "Crop all sprite textures?", CVAR_Archive);
+VCvarI gl_release_ram_textures_mode("gl_release_ram_textures_mode", "2", "When the engine should release RAM (non-GPU) texture storage (0:never; 1:after map unload; 2:immediately)?", CVAR_Archive|CVAR_NoShadow);
+VCvarI gl_release_ram_textures_mode_sprite("gl_release_ram_textures_mode_sprite", "2", "When the engine should release RAM (non-GPU) texture storage (0:never; 1:after map unload; 2:immediately)?", CVAR_Archive|CVAR_NoShadow);
+VCvarB gl_crop_psprites("gl_crop_psprites", true, "Crop psprite textures?", CVAR_Archive|CVAR_NoShadow);
+VCvarB gl_crop_sprites("gl_crop_sprites", false, "Crop all sprite textures?", CVAR_Archive|CVAR_NoShadow);
 
 // 0: 128
 // 1: 256
 // 2: 512
 // 3: 1024
-VCvarI gl_shadowmap_size("gl_shadowmap_size", "0", "Shadowmap size (0:128; 1:256; 2:512; 3:1024).", CVAR_PreInit|CVAR_Archive);
-VCvarB gl_shadowmap_precision("gl_shadowmap_precision", false, "Allow higher shadowmap precision for bigger lights?", CVAR_PreInit|CVAR_Archive);
-VCvarB gl_shadowmap_preclear("gl_shadowmap_preclear", true, "Clear shadowmaps after frame blit?", CVAR_PreInit|CVAR_Archive);
+VCvarI gl_shadowmap_size("gl_shadowmap_size", "0", "Shadowmap size (0:128; 1:256; 2:512; 3:1024).", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
+VCvarB gl_shadowmap_precision("gl_shadowmap_precision", false, "Allow higher shadowmap precision for bigger lights?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
+VCvarB gl_shadowmap_preclear("gl_shadowmap_preclear", true, "Clear shadowmaps after frame blit?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 // this seems to work slightly slower
-VCvarB gl_shadowmap_more_cubes("gl_shadowmap_more_cubes", false, "Use all available shadowmap cubes, and clear them in advanve?", CVAR_PreInit|CVAR_Archive);
+VCvarB gl_shadowmap_more_cubes("gl_shadowmap_more_cubes", false, "Use all available shadowmap cubes, and clear them in advanve?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 
 
-static VCvarB gl_s3tc_present("gl_s3tc_present", false, "Use S3TC texture compression, if supported?", CVAR_Rom|CVAR_Hidden);
+static VCvarB gl_s3tc_present("gl_s3tc_present", false, "Use S3TC texture compression, if supported?", CVAR_Rom|CVAR_Hidden|CVAR_NoShadow);
 
-VCvarB gl_use_srgb("gl_use_srgb", false, "Use sRGB FBO and textures? (DEBUG, DO NOT USE!)", /*CVAR_Archive|*/CVAR_PreInit|CVAR_Hidden);
+VCvarB gl_use_srgb("gl_use_srgb", false, "Use sRGB FBO and textures? (DEBUG, DO NOT USE!)", /*CVAR_Archive|*/CVAR_PreInit|CVAR_Hidden|CVAR_NoShadow);
 
 
 // ////////////////////////////////////////////////////////////////////////// //

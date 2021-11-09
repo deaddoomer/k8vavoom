@@ -31,17 +31,17 @@
 
 
 #ifdef VV_SND_ALLOW_VELOCITY
-static VCvarF snd_doppler_factor("snd_doppler_factor", "1", "OpenAL doppler factor.", 0/*CVAR_Archive*/);
-static VCvarF snd_doppler_velocity("snd_doppler_velocity", "10000", "OpenAL doppler velocity.", 0/*CVAR_Archive*/);
+static VCvarF snd_doppler_factor("snd_doppler_factor", "1", "OpenAL doppler factor.", CVAR_NoShadow/*|CVAR_Archive*/);
+static VCvarF snd_doppler_velocity("snd_doppler_velocity", "10000", "OpenAL doppler velocity.", CVAR_NoShadow/*|CVAR_Archive*/);
 #endif
-static VCvarF snd_rolloff_factor("snd_rolloff_factor", "1", "OpenAL rolloff factor.", 0/*CVAR_Archive*/);
-static VCvarF snd_reference_distance("snd_reference_distance", "192", "OpenAL reference distance.", 0/*CVAR_Archive*/); // was 384, and 64, and 192
+static VCvarF snd_rolloff_factor("snd_rolloff_factor", "1", "OpenAL rolloff factor.", CVAR_NoShadow/*|CVAR_Archive*/);
+static VCvarF snd_reference_distance("snd_reference_distance", "192", "OpenAL reference distance.", CVAR_NoShadow/*|CVAR_Archive*/); // was 384, and 64, and 192
 // it is 4096 in our main sound code; anything futher than this will be dropped
-static VCvarF snd_max_distance("snd_max_distance", "8192", "OpenAL max distance.", 0/*CVAR_Archive*/); // was 4096, and 2042, and 8192
+static VCvarF snd_max_distance("snd_max_distance", "8192", "OpenAL max distance.", CVAR_NoShadow/*|CVAR_Archive*/); // was 4096, and 2042, and 8192
 
-static VCvarI snd_resampler("snd_resampler", "-1", "OpenAL sound resampler (-1 means \"default\").", CVAR_Archive);
+static VCvarI snd_resampler("snd_resampler", "-1", "OpenAL sound resampler (-1 means \"default\").", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB openal_show_extensions("openal_show_extensions", false, "Show available OpenAL extensions?", /*CVAR_Archive|*/CVAR_PreInit);
+static VCvarB openal_show_extensions("openal_show_extensions", false, "Show available OpenAL extensions?", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
 
 // don't update if nothing was changed
 #ifdef VV_SND_ALLOW_VELOCITY

@@ -153,35 +153,35 @@ static bool GNetCheckForUserAbortCB (void *udata) {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-VCvarB ui_freemouse("ui_freemouse", false, "Don't pass mouse movement to the camera. Used in various debug modes.", CVAR_Hidden);
-VCvarB ui_want_mouse_at_zero("ui_want_mouse_at_zero", false, "Move real mouse cursor to (0,0) when UI activated?", CVAR_Archive);
-VCvarB ui_mouse_forced("ui_mouse_forced", false, "Forge-grab mouse for UI?", CVAR_Hidden);
-static VCvarB ui_mouse("ui_mouse", false, "Allow using mouse in UI?", CVAR_Archive);
-static VCvarB ui_active("ui_active", false, "Is UI active (used to stop mouse warping if \"ui_mouse\" is false)?", CVAR_Hidden);
-static VCvarB ui_control_waiting("ui_control_waiting", false, "Waiting for new control key (pass mouse buttons)?", CVAR_Hidden);
+VCvarB ui_freemouse("ui_freemouse", false, "Don't pass mouse movement to the camera. Used in various debug modes.", CVAR_Hidden|CVAR_NoShadow);
+VCvarB ui_want_mouse_at_zero("ui_want_mouse_at_zero", false, "Move real mouse cursor to (0,0) when UI activated?", CVAR_Archive|CVAR_NoShadow);
+VCvarB ui_mouse_forced("ui_mouse_forced", false, "Forge-grab mouse for UI?", CVAR_Hidden|CVAR_NoShadow);
+static VCvarB ui_mouse("ui_mouse", false, "Allow using mouse in UI?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB ui_active("ui_active", false, "Is UI active (used to stop mouse warping if \"ui_mouse\" is false)?", CVAR_Hidden|CVAR_NoShadow);
+static VCvarB ui_control_waiting("ui_control_waiting", false, "Waiting for new control key (pass mouse buttons)?", CVAR_Hidden|CVAR_NoShadow);
 
-static VCvarB m_dbg_cursor("m_dbg_cursor", false, "Do not hide (true) mouse cursor on startup?", CVAR_PreInit|CVAR_Hidden);
-static VCvarB m_dbg_motion("m_dbg_motion", false, "Dump motion events?", CVAR_PreInit|CVAR_Hidden);
+static VCvarB m_dbg_cursor("m_dbg_cursor", false, "Do not hide (true) mouse cursor on startup?", CVAR_PreInit|CVAR_Hidden|CVAR_NoShadow);
+static VCvarB m_dbg_motion("m_dbg_motion", false, "Dump motion events?", CVAR_PreInit|CVAR_Hidden|CVAR_NoShadow);
 
-static VCvarB m_grab("m_grab", true, "Grab mouse?", CVAR_Archive);
-static VCvarB m_relative("m_relative", true, "Use relative mouse motion events?", CVAR_Archive);
+static VCvarB m_grab("m_grab", true, "Grab mouse?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB m_relative("m_relative", true, "Use relative mouse motion events?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarI ms_rel_mode("ms_rel_mode", "1", "Relative acceleration mode (0: none; 1: hl-like).", CVAR_Archive);
+static VCvarI ms_rel_mode("ms_rel_mode", "1", "Relative acceleration mode (0: none; 1: hl-like).", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarF ms_rel_exponent("ms_rel_exponent", "1", "Relative acceletation distance exponent.", CVAR_Archive);
-static VCvarF ms_rel_senscap("ms_rel_senscap", "2.7", "Relative acceletation sensitivity cap.", CVAR_Archive);
-static VCvarF ms_rel_sensitivity("ms_rel_sensitivity", "0.8", "Relative acceletation sensitivity.", CVAR_Archive);
-static VCvarF ms_rel_sensscale("ms_rel_sensscale", "0.2", "Relative acceletation sensitivity scale.", CVAR_Archive);
+static VCvarF ms_rel_exponent("ms_rel_exponent", "1", "Relative acceletation distance exponent.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF ms_rel_senscap("ms_rel_senscap", "2.7", "Relative acceletation sensitivity cap.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF ms_rel_sensitivity("ms_rel_sensitivity", "0.8", "Relative acceletation sensitivity.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF ms_rel_sensscale("ms_rel_sensscale", "0.2", "Relative acceletation sensitivity scale.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB ms_rel_squaredist("ms_rel_squaredist", false, "Use squared distance for relative acceletation?", CVAR_Archive);
-static VCvarB ms_rel_expweird("ms_rel_expweird", false, "Use different exponent formula for relative acceleration?", CVAR_Archive);
+static VCvarB ms_rel_squaredist("ms_rel_squaredist", false, "Use squared distance for relative acceletation?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB ms_rel_expweird("ms_rel_expweird", false, "Use different exponent formula for relative acceleration?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarF ctl_deadzone_leftstick_x("ctl_deadzone_leftstick_x", "0.08", "Dead zone for left stick (horizontal motion) -- [0..1].", CVAR_Archive);
-static VCvarF ctl_deadzone_leftstick_y("ctl_deadzone_leftstick_y", "0.08", "Dead zone for left stick (vertical motion) -- [0..1].", CVAR_Archive);
-static VCvarF ctl_deadzone_rightstick_x("ctl_deadzone_rightstick_x", "0.08", "Dead zone for right stick (horizontal motion) -- [0..1].", CVAR_Archive);
-static VCvarF ctl_deadzone_rightstick_y("ctl_deadzone_rightstick_y", "0.08", "Dead zone for right stick (vertical motion) -- [0..1].", CVAR_Archive);
-static VCvarF ctl_trigger_left_edge("ctl_trigger_left_edge", "0.8", "Minimal level for registering trigger A -- [0..1].", CVAR_Archive);
-static VCvarF ctl_trigger_right_edge("ctl_trigger_right_edge", "0.8", "Minimal level for registering trigger B -- [0..1].", CVAR_Archive);
+static VCvarF ctl_deadzone_leftstick_x("ctl_deadzone_leftstick_x", "0.08", "Dead zone for left stick (horizontal motion) -- [0..1].", CVAR_Archive|CVAR_NoShadow);
+static VCvarF ctl_deadzone_leftstick_y("ctl_deadzone_leftstick_y", "0.08", "Dead zone for left stick (vertical motion) -- [0..1].", CVAR_Archive|CVAR_NoShadow);
+static VCvarF ctl_deadzone_rightstick_x("ctl_deadzone_rightstick_x", "0.08", "Dead zone for right stick (horizontal motion) -- [0..1].", CVAR_Archive|CVAR_NoShadow);
+static VCvarF ctl_deadzone_rightstick_y("ctl_deadzone_rightstick_y", "0.08", "Dead zone for right stick (vertical motion) -- [0..1].", CVAR_Archive|CVAR_NoShadow);
+static VCvarF ctl_trigger_left_edge("ctl_trigger_left_edge", "0.8", "Minimal level for registering trigger A -- [0..1].", CVAR_Archive|CVAR_NoShadow);
+static VCvarF ctl_trigger_right_edge("ctl_trigger_right_edge", "0.8", "Minimal level for registering trigger B -- [0..1].", CVAR_Archive|CVAR_NoShadow);
 
 static inline bool IsUIMouse () noexcept { return (ui_mouse.asBool() || ui_mouse_forced.asBool()); }
 
@@ -192,8 +192,8 @@ static inline bool IsUIMouse () noexcept { return (ui_mouse.asBool() || ui_mouse
 # define IN_HYPER_BLOCK_DEFAULT      false
 # define IN_FOCUSGAIN_DELAY_DEFAULT  "0"
 #endif
-static VCvarF in_focusgain_delay("in_focusgain_delay", IN_FOCUSGAIN_DELAY_DEFAULT, "Delay before resume keyboard processing after focus gain (seconds).", CVAR_Archive);
-static VCvarB in_hyper_block("in_hyper_block", IN_HYPER_BLOCK_DEFAULT, "Block keyboard input when `Hyper` is pressed.", CVAR_Archive);
+static VCvarF in_focusgain_delay("in_focusgain_delay", IN_FOCUSGAIN_DELAY_DEFAULT, "Delay before resume keyboard processing after focus gain (seconds).", CVAR_Archive|CVAR_NoShadow);
+static VCvarB in_hyper_block("in_hyper_block", IN_HYPER_BLOCK_DEFAULT, "Block keyboard input when `Hyper` is pressed.", CVAR_Archive|CVAR_NoShadow);
 
 //extern VCvarB screen_fsmode;
 extern VCvarB gl_current_screen_fsmode;

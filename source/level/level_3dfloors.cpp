@@ -37,7 +37,7 @@ static int cli_WFloors3D = 0;
 
 
 // debug
-static VCvarB map_dbg_ignore_3d_floors("map_dbg_ignore_3d_floors", false, "Can corpses hear sound propagation?", CVAR_PreInit);
+static VCvarB map_dbg_ignore_3d_floors("map_dbg_ignore_3d_floors", false, "Can corpses hear sound propagation?", CVAR_PreInit|CVAR_NoShadow);
 
 
 //==========================================================================

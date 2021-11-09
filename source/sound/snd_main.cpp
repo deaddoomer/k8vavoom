@@ -234,28 +234,28 @@ private:
 FAudioCodecDesc *FAudioCodecDesc::List = nullptr;
 VAudioPublic *GAudio = nullptr;
 
-VCvarF snd_master_volume("snd_master_volume", "1", "Master volume", CVAR_Archive);
+VCvarF snd_master_volume("snd_master_volume", "1", "Master volume", CVAR_Archive|CVAR_NoShadow);
 
-VCvarF VAudio::snd_sfx_volume("snd_sfx_volume", "0.5", "Sound effects volume.", CVAR_Archive);
-VCvarF VAudio::snd_music_volume("snd_music_volume", "0.5", "Music volume", CVAR_Archive);
-//VCvarB VAudio::snd_swap_stereo("snd_swap_stereo", false, "Swap stereo channels?", CVAR_Archive);
-VCvarI VAudio::snd_channels("snd_channels", "64", "Number of sound channels.", CVAR_Archive);
-VCvarB VAudio::snd_external_music("snd_external_music", false, "Allow external music remapping?", CVAR_Archive);
+VCvarF VAudio::snd_sfx_volume("snd_sfx_volume", "0.5", "Sound effects volume.", CVAR_Archive|CVAR_NoShadow);
+VCvarF VAudio::snd_music_volume("snd_music_volume", "0.5", "Music volume", CVAR_Archive|CVAR_NoShadow);
+//VCvarB VAudio::snd_swap_stereo("snd_swap_stereo", false, "Swap stereo channels?", CVAR_Archive|CVAR_NoShadow);
+VCvarI VAudio::snd_channels("snd_channels", "64", "Number of sound channels.", CVAR_Archive|CVAR_NoShadow);
+VCvarB VAudio::snd_external_music("snd_external_music", false, "Allow external music remapping?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB snd_random_pitch_enabled("snd_random_pitch_enabled", true, "Global random pitch control.", CVAR_Archive);
-static VCvarF snd_random_pitch_default("snd_random_pitch_default", "0.27", "Random pitch sounds without specified pitch (0: none, otherwise max change; 0.27 is ok).", CVAR_Archive);
-static VCvarF snd_random_pitch_boost("snd_random_pitch_boost", "2", "Random pitch will be multiplied by this value.", CVAR_Archive);
-static VCvarI snd_max_same_sounds("snd_max_same_sounds", "4", "Maximum number of simultaneously playing same sounds?", CVAR_Archive);
+static VCvarB snd_random_pitch_enabled("snd_random_pitch_enabled", true, "Global random pitch control.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF snd_random_pitch_default("snd_random_pitch_default", "0.27", "Random pitch sounds without specified pitch (0: none, otherwise max change; 0.27 is ok).", CVAR_Archive|CVAR_NoShadow);
+static VCvarF snd_random_pitch_boost("snd_random_pitch_boost", "2", "Random pitch will be multiplied by this value.", CVAR_Archive|CVAR_NoShadow);
+static VCvarI snd_max_same_sounds("snd_max_same_sounds", "4", "Maximum number of simultaneously playing same sounds?", CVAR_Archive|CVAR_NoShadow);
 
-VCvarI snd_midi_player("snd_midi_player", "3", "MIDI player type (0:none; 1:FluidSynth; 2:Timidity; 3:NukedOPL)", CVAR_Archive|CVAR_PreInit);
-VCvarI snd_module_player("snd_module_player", "1", "Module player type (0:none; 1:XMPLite)", CVAR_Archive);
+VCvarI snd_midi_player("snd_midi_player", "3", "MIDI player type (0:none; 1:FluidSynth; 2:Timidity; 3:NukedOPL)", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
+VCvarI snd_module_player("snd_module_player", "1", "Module player type (0:none; 1:XMPLite)", CVAR_Archive|CVAR_NoShadow);
 
 //k8: it was weirdly unstable under windoze. seems to work ok now.
-static VCvarB snd_bgloading_music("snd_bgloading_music", true, "Load music in the background thread?", CVAR_Archive|CVAR_PreInit);
+static VCvarB snd_bgloading_music("snd_bgloading_music", true, "Load music in the background thread?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
 
-static VCvarS snd_random_midi_dir("snd_random_midi_dir", "", "Directory to load random midis from.", CVAR_Archive);
-static VCvarB snd_random_midi_rescan("snd_random_midi_rescan", false, "Force random midi dir rescan.", 0);
-static VCvarB snd_random_midi_enabled("snd_random_midi_enabled", true, "Enable random midi replacements?", CVAR_Archive);
+static VCvarS snd_random_midi_dir("snd_random_midi_dir", "", "Directory to load random midis from.", CVAR_Archive|CVAR_NoShadow);
+static VCvarB snd_random_midi_rescan("snd_random_midi_rescan", false, "Force random midi dir rescan.", CVAR_NoShadow);
+static VCvarB snd_random_midi_enabled("snd_random_midi_enabled", true, "Enable random midi replacements?", CVAR_Archive|CVAR_NoShadow);
 
 
 static VStr sndLastRandomMidiDir;

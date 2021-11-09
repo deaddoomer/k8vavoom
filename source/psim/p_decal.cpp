@@ -30,9 +30,9 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-VCvarB r_decals("r_decals", true, "Enable decal spawning, processing and rendering?", CVAR_Archive);
-VCvarB r_decals_flat("r_decals_flat", true, "Enable decal spawning on floors/ceilings?", CVAR_Archive);
-VCvarB r_decals_wall("r_decals_wall", true, "Enable decal spawning on walls?", CVAR_Archive);
+VCvarB r_decals("r_decals", true, "Enable decal spawning, processing and rendering?", CVAR_Archive|CVAR_NoShadow);
+VCvarB r_decals_flat("r_decals_flat", true, "Enable decal spawning on floors/ceilings?", CVAR_Archive|CVAR_NoShadow);
+VCvarB r_decals_wall("r_decals_wall", true, "Enable decal spawning on walls?", CVAR_Archive|CVAR_NoShadow);
 
 static int cli_DebugDecals = 0;
 

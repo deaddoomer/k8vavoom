@@ -31,7 +31,7 @@
 #include "../snd_local.h"
 
 
-static VCvarB snd_mus_emulate_dmx_bugs("snd_mus_emulate_dmx_bugs", false, "Emulate some DMX bugs when converting MUS to MIDI?", CVAR_Archive);
+static VCvarB snd_mus_emulate_dmx_bugs("snd_mus_emulate_dmx_bugs", false, "Emulate some DMX bugs when converting MUS to MIDI?", CVAR_Archive|CVAR_NoShadow);
 
 
 const vuint8 VQMus2Mid::Mus2MidControl[15] = {

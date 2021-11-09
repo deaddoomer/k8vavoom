@@ -198,9 +198,9 @@ static HistoryLine c_history[MAXHISTORY]; // 0 is oldest
 
 static float cons_h = 0;
 
-static VCvarF con_height("con_height", "240", "Console height.", CVAR_Archive);
-static VCvarF con_speed("con_speed", "6666", "Console sliding speed.", CVAR_Archive);
-static VCvarB con_clear_input_on_open("con_clear_input_on_open", true, "Clear input line when console opens?", CVAR_Archive);
+static VCvarF con_height("con_height", "240", "Console height.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF con_speed("con_speed", "6666", "Console sliding speed.", CVAR_Archive|CVAR_NoShadow);
+static VCvarB con_clear_input_on_open("con_clear_input_on_open", true, "Clear input line when console opens?", CVAR_Archive|CVAR_NoShadow);
 
 static FConsoleLog ConsoleLog;
 

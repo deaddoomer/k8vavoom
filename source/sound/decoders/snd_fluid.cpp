@@ -44,33 +44,33 @@
 //             1 = FLUID_INTERP_LINEAR
 //             4 = FLUID_INTERP_4THORDER (the FluidSynth default)
 //             7 = FLUID_INTERP_7THORDER
-static VCvarI snd_fluid_interp("snd_fluid_interp", "2", "FluidSynth interpolation.", CVAR_Archive);
+static VCvarI snd_fluid_interp("snd_fluid_interp", "2", "FluidSynth interpolation.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarI snd_fluid_voices("snd_fluid_voices", "128", "Number of FluidSynth voices.", CVAR_Archive);
-static VCvarF snd_fluid_gain("snd_fluid_gain", "1", "FluidSynth global gain.", CVAR_Archive);
+static VCvarI snd_fluid_voices("snd_fluid_voices", "128", "Number of FluidSynth voices.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF snd_fluid_gain("snd_fluid_gain", "1", "FluidSynth global gain.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB snd_fluid_reverb("snd_fluid_reverb", false, "Allow FluidSynth reverb?", CVAR_Archive);
+static VCvarB snd_fluid_reverb("snd_fluid_reverb", false, "Allow FluidSynth reverb?", CVAR_Archive|CVAR_NoShadow);
 // [0..1.2]
-static VCvarF snd_fluid_reverb_roomsize("snd_fluid_reverb_roomsize", "0.61", "FluidSynth reverb room size.", CVAR_Archive);
+static VCvarF snd_fluid_reverb_roomsize("snd_fluid_reverb_roomsize", "0.61", "FluidSynth reverb room size.", CVAR_Archive|CVAR_NoShadow);
 // [0..1]
-static VCvarF snd_fluid_reverb_damping("snd_fluid_reverb_damping", "0.23", "FluidSynth reverb damping.", CVAR_Archive);
+static VCvarF snd_fluid_reverb_damping("snd_fluid_reverb_damping", "0.23", "FluidSynth reverb damping.", CVAR_Archive|CVAR_NoShadow);
 // [0..100]
-static VCvarF snd_fluid_reverb_width("snd_fluid_reverb_width", "0.76", "FluidSynth reverb width.", CVAR_Archive);
+static VCvarF snd_fluid_reverb_width("snd_fluid_reverb_width", "0.76", "FluidSynth reverb width.", CVAR_Archive|CVAR_NoShadow);
 // [0..1]
-static VCvarF snd_fluid_reverb_level("snd_fluid_reverb_level", "0.57", "FluidSynth reverb level.", CVAR_Archive);
+static VCvarF snd_fluid_reverb_level("snd_fluid_reverb_level", "0.57", "FluidSynth reverb level.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB snd_fluid_chorus("snd_fluid_chorus", false, "Allow FluidSynth chorus?", CVAR_Archive);
+static VCvarB snd_fluid_chorus("snd_fluid_chorus", false, "Allow FluidSynth chorus?", CVAR_Archive|CVAR_NoShadow);
 // [0..99]
-static VCvarI snd_fluid_chorus_voices("snd_fluid_chorus_voices", "3", "Number of FluidSynth chorus voices.", CVAR_Archive);
+static VCvarI snd_fluid_chorus_voices("snd_fluid_chorus_voices", "3", "Number of FluidSynth chorus voices.", CVAR_Archive|CVAR_NoShadow);
 // [0..1] -- wtf?
-static VCvarF snd_fluid_chorus_level("snd_fluid_chorus_level", "1.2", "FluidSynth chorus level.", CVAR_Archive);
+static VCvarF snd_fluid_chorus_level("snd_fluid_chorus_level", "1.2", "FluidSynth chorus level.", CVAR_Archive|CVAR_NoShadow);
 // [0.29..5]
-static VCvarF snd_fluid_chorus_speed("snd_fluid_chorus_speed", "0.3", "FluidSynth chorus speed.", CVAR_Archive);
+static VCvarF snd_fluid_chorus_speed("snd_fluid_chorus_speed", "0.3", "FluidSynth chorus speed.", CVAR_Archive|CVAR_NoShadow);
 // depth is in ms and actual maximum depends on the sample rate
 // [0..21]
-static VCvarF snd_fluid_chorus_depth("snd_fluid_chorus_depth", "8", "FluidSynth chorus depth.", CVAR_Archive);
+static VCvarF snd_fluid_chorus_depth("snd_fluid_chorus_depth", "8", "FluidSynth chorus depth.", CVAR_Archive|CVAR_NoShadow);
 // [0..1]
-static VCvarI snd_fluid_chorus_type("snd_fluid_chorus_type", "0", "FluidSynth chorus type (0:sine; 1:triangle).", CVAR_Archive);
+static VCvarI snd_fluid_chorus_type("snd_fluid_chorus_type", "0", "FluidSynth chorus type (0:sine; 1:triangle).", CVAR_Archive|CVAR_NoShadow);
 
 
 // ////////////////////////////////////////////////////////////////////////// //

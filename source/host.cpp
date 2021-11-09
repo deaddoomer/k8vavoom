@@ -108,7 +108,7 @@ public:
 void Host_Quit ();
 
 
-VCvarB developer("developer", false, "Developer (debug) mode?", CVAR_PreInit/*|CVAR_Archive*/);
+VCvarB developer("developer", false, "Developer (debug) mode?", CVAR_PreInit|CVAR_NoShadow/*|CVAR_Archive*/);
 
 #ifdef VAVOOM_K8_DEVELOPER
 # define CVAR_K8_DEV_VALUE  true
@@ -119,7 +119,7 @@ VCvarB developer("developer", false, "Developer (debug) mode?", CVAR_PreInit/*|C
 # undef CVAR_K8_DEV_VALUE
 # define CVAR_K8_DEV_VALUE  false
 #endif
-VCvarB k8vavoom_developer_version("k8vavoom_developer_version", CVAR_K8_DEV_VALUE, "Don't even think about this.", CVAR_Rom|CVAR_Hidden);
+VCvarB k8vavoom_developer_version("k8vavoom_developer_version", CVAR_K8_DEV_VALUE, "Don't even think about this.", CVAR_Rom|CVAR_Hidden|CVAR_NoShadow);
 
 
 static double hostLastGCTime = 0.0;
@@ -145,23 +145,23 @@ bool host_gdb_mode = false;
 #else
 # define VV_CVAR_RELEASE_MODE  false
 #endif
-VCvarB game_release_mode("release_mode", VV_CVAR_RELEASE_MODE, "Affects some default settings.", CVAR_Rom|CVAR_Hidden);
+VCvarB game_release_mode("release_mode", VV_CVAR_RELEASE_MODE, "Affects some default settings.", CVAR_Rom|CVAR_Hidden|CVAR_NoShadow);
 
 
 // for chex quest support
 //VCvarI game_override_mode("game_override", 0, "Override game type for DooM game.", CVAR_Rom|CVAR_Hidden);
 
-static VCvarF dbg_frametime("dbg_frametime", "0", "If greater or equal to 0.004, this is what be used instead of one Doom tic; DEBUG CVAR, DON'T USE!", CVAR_PreInit);
+static VCvarF dbg_frametime("dbg_frametime", "0", "If greater or equal to 0.004, this is what be used instead of one Doom tic; DEBUG CVAR, DON'T USE!", CVAR_PreInit|CVAR_NoShadow);
 //k8: this was `3`; why 3? looks like arbitrary number
-VCvarI host_max_skip_frames("dbg_host_max_skip_frames", "12", "Process no more than this number of full frames if frame rate is too slow; DEBUG CVAR, DON'T USE!", CVAR_PreInit);
-static VCvarB host_show_skip_limit("dbg_host_show_skip_limit", false, "Show skipframe limit hits? (DEBUG CVAR, DON'T USE!)", CVAR_PreInit);
-static VCvarB host_show_skip_frames("dbg_host_show_skip_frames", false, "Show skipframe hits? (DEBUG CVAR, DON'T USE!)", CVAR_PreInit);
+VCvarI host_max_skip_frames("dbg_host_max_skip_frames", "12", "Process no more than this number of full frames if frame rate is too slow; DEBUG CVAR, DON'T USE!", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB host_show_skip_limit("dbg_host_show_skip_limit", false, "Show skipframe limit hits? (DEBUG CVAR, DON'T USE!)", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB host_show_skip_frames("dbg_host_show_skip_frames", false, "Show skipframe hits? (DEBUG CVAR, DON'T USE!)", CVAR_PreInit|CVAR_NoShadow);
 
-static VCvarF host_gc_timeout("host_gc_timeout", "0.5", "Timeout in seconds between garbage collections.", CVAR_Archive);
+static VCvarF host_gc_timeout("host_gc_timeout", "0.5", "Timeout in seconds between garbage collections.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB randomclass("RandomClass", false, "Random player class?"); // checkparm of -randclass
-VCvarB respawnparm("RespawnMonsters", false, "Respawn monsters?", 0/*CVAR_PreInit*/); // checkparm of -respawn
-VCvarI fastparm("g_fast_monsters", "0", "Fast(1), slow(2), normal(0) monsters?", 0/*CVAR_PreInit*/); // checkparm of -fast
+static VCvarB randomclass("RandomClass", false, "Random player class?", 0); // checkparm of -randclass
+VCvarB respawnparm("RespawnMonsters", false, "Respawn monsters?", 0/*|CVAR_PreInit*/); // checkparm of -respawn
+VCvarI fastparm("g_fast_monsters", "0", "Fast(1), slow(2), normal(0) monsters?", 0/*|CVAR_PreInit*/); // checkparm of -fast
 
 static VCvarI g_fastmon_override("g_fast_monsters_override", "0", "Fast(1), slow(2), normal(0) monsters?", CVAR_PreInit|CVAR_Archive);
 static VCvarI g_respawn_override("g_monsters_respawn_override", "0", "Override monster respawn (time in seconds).", CVAR_PreInit|CVAR_Archive);
@@ -173,21 +173,21 @@ static VCvarF g_aggressiveness_override("g_skill_aggressiveness_override", "0", 
 static VCvarI g_switch_range_check_override("g_switch_range_check_override", "0", "Override switch range checking (0: default; 1: never; 2: always).", CVAR_PreInit|CVAR_Archive);
 
 
-static VCvarB show_time("dbg_show_times", false, "Show some debug times?", CVAR_PreInit);
+static VCvarB show_time("dbg_show_times", false, "Show some debug times?", CVAR_PreInit|CVAR_NoShadow);
 
-static VCvarB cfg_saving_allowed("cfg_saving_allowed", true, "Is config saving allowed?", CVAR_PreInit);
+static VCvarB cfg_saving_allowed("cfg_saving_allowed", true, "Is config saving allowed?", CVAR_PreInit|CVAR_NoShadow);
 
 static char CurrentLanguage[4];
-static VCvarS Language("language", "en", "Game language.", /*CVAR_Archive|CVAR_PreInit|*/CVAR_Rom);
+static VCvarS Language("language", "en", "Game language.", /*CVAR_Archive|CVAR_PreInit|*/CVAR_Rom|CVAR_NoShadow);
 
-static VCvarB cl_cap_framerate("cl_cap_framerate", true, "Cap framerate for non-networking games?", CVAR_Archive);
-static VCvarI cl_framerate("cl_framerate", "140", "Framerate cap for client rendering.", CVAR_Archive);
-static VCvarI sv_framerate("sv_framerate", "70", "Framerate cap for dedicated server.", CVAR_Archive);
+static VCvarB cl_cap_framerate("cl_cap_framerate", true, "Cap framerate for non-networking games?", CVAR_Archive|CVAR_NoShadow);
+static VCvarI cl_framerate("cl_framerate", "140", "Framerate cap for client rendering.", CVAR_Archive|CVAR_NoShadow);
+static VCvarI sv_framerate("sv_framerate", "70", "Framerate cap for dedicated server.", CVAR_Archive|CVAR_NoShadow);
 
 // this is hack for my GPU
 #ifdef CLIENT
 static double clientBadNetTimoutReleaseTime = 0.0;
-static VCvarI cl_framerate_net_timeout("cl_framerate_net_timeout", "28", "If we have a dangerous client timeout, slow down rendering for a while.", 0/*CVAR_Archive*/);
+static VCvarI cl_framerate_net_timeout("cl_framerate_net_timeout", "28", "If we have a dangerous client timeout, slow down rendering for a while.", CVAR_NoShadow/*|CVAR_Archive*/);
 #endif
 
 

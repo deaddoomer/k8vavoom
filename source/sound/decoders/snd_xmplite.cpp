@@ -30,9 +30,9 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static VCvarI snd_xmp_amp("snd_xmp_amp", "1", "XMP: amplification [0..3]", CVAR_Archive);
-static VCvarI snd_xmp_interpolator("snd_xmp_interpolator", "2", "XMP: interpolator (0:nearest; 1:linear; 2:spline)", CVAR_Archive);
-static VCvarB snd_xmp_full_dsp("snd_xmp_full_dsp", true, "XMP: turn on all DSP effects?", CVAR_Archive);
+static VCvarI snd_xmp_amp("snd_xmp_amp", "1", "XMP: amplification [0..3]", CVAR_Archive|CVAR_NoShadow);
+static VCvarI snd_xmp_interpolator("snd_xmp_interpolator", "2", "XMP: interpolator (0:nearest; 1:linear; 2:spline)", CVAR_Archive|CVAR_NoShadow);
+static VCvarB snd_xmp_full_dsp("snd_xmp_full_dsp", true, "XMP: turn on all DSP effects?", CVAR_Archive|CVAR_NoShadow);
 
 
 // ////////////////////////////////////////////////////////////////////////// //

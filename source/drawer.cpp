@@ -32,7 +32,7 @@
 #include "screen.h"
 
 
-VCvarF gl_maxdist("gl_maxdist", "8192", "Max view distance (too big values will cause z-buffer issues).", CVAR_Archive);
+VCvarF gl_maxdist("gl_maxdist", "8192", "Max view distance (too big values will cause z-buffer issues).", CVAR_Archive|CVAR_NoShadow);
 
 
 TArray<void (*) (int phase)> VDrawer::cbInitDeinit;

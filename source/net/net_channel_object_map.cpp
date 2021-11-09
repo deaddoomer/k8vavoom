@@ -29,7 +29,7 @@
 #include "net_message.h"
 
 
-static VCvarB net_debug_dump_chan_objmap("net_debug_dump_chan_objmap", false, "Dump objectmap communication?");
+static VCvarB net_debug_dump_chan_objmap("net_debug_dump_chan_objmap", false, "Dump objectmap communication?", CVAR_NoShadow);
 
 
 //==========================================================================

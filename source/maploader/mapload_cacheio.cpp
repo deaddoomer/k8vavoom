@@ -36,8 +36,8 @@ static_assert(CDSLEN == 32, "oops!");
 static bool cacheCleanupComplete = false; // do it only once, not on each map loading
 
 
-static VCvarI loader_cache_compression_level("loader_cache_compression_level", "9", "Cache file compression level [0..9]", CVAR_Archive);
-static VCvarI loader_cache_max_age_days("loader_cache_max_age_days", "7", "Remove cached data older than this number of days (<=0: none).", CVAR_Archive);
+static VCvarI loader_cache_compression_level("loader_cache_compression_level", "9", "Cache file compression level [0..9]", CVAR_Archive|CVAR_NoShadow);
+static VCvarI loader_cache_max_age_days("loader_cache_max_age_days", "7", "Remove cached data older than this number of days (<=0: none).", CVAR_Archive|CVAR_NoShadow);
 
 extern VCvarB loader_cache_data;
 

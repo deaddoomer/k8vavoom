@@ -28,8 +28,8 @@
 #include "../snd_local.h"
 
 
-VCvarB snd_sf2_autoload("snd_sf2_autoload", true, "Automatically load SF2 from a set of predefined directories?", CVAR_Archive|CVAR_PreInit);
-VCvarS snd_sf2_file("snd_sf2_file", "", "Use this soundfont file.", CVAR_Archive|CVAR_PreInit);
+VCvarB snd_sf2_autoload("snd_sf2_autoload", true, "Automatically load SF2 from a set of predefined directories?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
+VCvarS snd_sf2_file("snd_sf2_file", "", "Use this soundfont file.", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
 
 
 TArray<VStr> sf2FileList;

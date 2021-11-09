@@ -55,8 +55,9 @@ static const char *cli_IP = nullptr;
   VParsedArgs::RegisterStringOption("-ip", "explicitly set your IP address", &cli_IP);
 
 
-static VCvarB net_dbg_dump_udp_inbuffer("net_dbg_dump_udp_inbuffer", false, "Dump UDP input buffer size?");
-static VCvarB net_dbg_dump_udp_outbuffer("net_dbg_dump_udp_outbuffer", false, "Dump UDP output buffer size?");
+static VCvarB net_dbg_dump_udp_inbuffer("net_dbg_dump_udp_inbuffer", false, "Dump UDP input buffer size?", CVAR_NoShadow);
+static VCvarB net_dbg_dump_udp_outbuffer("net_dbg_dump_udp_outbuffer", false, "Dump UDP output buffer size?", CVAR_NoShadow);
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 class VUdpDriver : public VNetLanDriver {

@@ -41,9 +41,9 @@
 //#define VV_NET_TIMED_INTERPOLATOR
 
 
-static VCvarI net_dbg_dump_thinker_channels("net_dbg_dump_thinker_channels", "0", "Dump thinker channels creation/closing (bit 0)?");
-static VCvarB net_dbg_allow_simulated_proxies("net_dbg_allow_simulated_proxies", true, "Allow simulated proxies?");
-VCvarB net_dbg_dump_thinker_detach("net_dbg_dump_thinker_detach", false, "Dump thinker detaches?");
+static VCvarI net_dbg_dump_thinker_channels("net_dbg_dump_thinker_channels", "0", "Dump thinker channels creation/closing (bit 0)?", CVAR_NoShadow);
+static VCvarB net_dbg_allow_simulated_proxies("net_dbg_allow_simulated_proxies", true, "Allow simulated proxies?", CVAR_NoShadow);
+VCvarB net_dbg_dump_thinker_detach("net_dbg_dump_thinker_detach", false, "Dump thinker detaches?", CVAR_NoShadow);
 
 
 //==========================================================================

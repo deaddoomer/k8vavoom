@@ -92,11 +92,11 @@ ControlMode TimidityManager::MyControlMode = {
 
 
 #if defined(_WIN32)
-static VCvarS snd_timidity_patches("snd_timidity_patches", "\\TIMIDITY", "Path to timidity patches.", CVAR_Archive|CVAR_PreInit);
+static VCvarS snd_timidity_patches("snd_timidity_patches", "\\TIMIDITY", "Path to timidity patches.", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
 #else
-static VCvarS snd_timidity_patches("snd_timidity_patches", "/usr/share/timidity", "Path to timidity patches.", CVAR_Archive|CVAR_PreInit);
+static VCvarS snd_timidity_patches("snd_timidity_patches", "/usr/share/timidity", "Path to timidity patches.", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
 #endif
-static VCvarI snd_timidity_verbosity("snd_timidity_verbosity", "0", "Some timidity crap.", CVAR_Archive);
+static VCvarI snd_timidity_verbosity("snd_timidity_verbosity", "0", "Some timidity crap.", CVAR_Archive|CVAR_NoShadow);
 
 Sf2Data *TimidityManager::sf2_data = nullptr;
 DLS_Data *TimidityManager::patches = nullptr;

@@ -32,27 +32,27 @@
 #include "net_message.h"
 
 
-static VCvarF net_dbg_send_loss("net_dbg_send_loss", "0", "Emulated sent packet loss percentage (randomly skip sending some packets).", CVAR_PreInit);
-static VCvarF net_dbg_recv_loss("net_dbg_recv_loss", "0", "Emulated received packet loss percentage (randomly skip sending some packets).", CVAR_PreInit);
-static VCvarB net_dbg_conn_show_dgrams("net_dbg_conn_show_dgrams", false, "Show datagram activity?");
-static VCvarB net_dbg_report_stats("net_dbg_report_stats", false, "Report some stats to the console?");
+static VCvarF net_dbg_send_loss("net_dbg_send_loss", "0", "Emulated sent packet loss percentage (randomly skip sending some packets).", CVAR_PreInit|CVAR_NoShadow);
+static VCvarF net_dbg_recv_loss("net_dbg_recv_loss", "0", "Emulated received packet loss percentage (randomly skip sending some packets).", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB net_dbg_conn_show_dgrams("net_dbg_conn_show_dgrams", false, "Show datagram activity?", CVAR_NoShadow);
+static VCvarB net_dbg_report_stats("net_dbg_report_stats", false, "Report some stats to the console?", CVAR_NoShadow);
 
-static VCvarB net_dbg_conn_dump_tick("net_dbg_conn_dump_tick", false, "Dump tick/getmessage calls?");
-static VCvarB net_dbg_conn_dump_acks("net_dbg_conn_dump_acks", false, "Show ack info?");
+static VCvarB net_dbg_conn_dump_tick("net_dbg_conn_dump_tick", false, "Dump tick/getmessage calls?", CVAR_NoShadow);
+static VCvarB net_dbg_conn_dump_acks("net_dbg_conn_dump_acks", false, "Show ack info?", CVAR_NoShadow);
 
-static VCvarB net_dbg_detailed_disconnect_stats("net_dbg_detailed_disconnect_stats", false, "Show channels on disconnect?", 0/*CVAR_Archive*/);
+static VCvarB net_dbg_detailed_disconnect_stats("net_dbg_detailed_disconnect_stats", false, "Show channels on disconnect?", CVAR_NoShadow/*|CVAR_Archive*/);
 
-VCvarB net_debug_dump_recv_packets("net_debug_dump_recv_packets", false, "Dump received packets?");
+VCvarB net_debug_dump_recv_packets("net_debug_dump_recv_packets", false, "Dump received packets?", CVAR_NoShadow);
 
 //FIXME: autoadjust this according to average ping
-static VCvarI net_speed_limit("net_speed_limit", "560000", "Network speed limit, bauds (rough).", 0/*CVAR_Archive*/);
-//static VCvarI net_speed_limit("net_speed_limit", "28000", "Network speed limit, bauds (rough).", 0/*CVAR_Archive*/);
+static VCvarI net_speed_limit("net_speed_limit", "560000", "Network speed limit, bauds (rough).", CVAR_NoShadow/*|CVAR_Archive*/);
+//static VCvarI net_speed_limit("net_speed_limit", "28000", "Network speed limit, bauds (rough).", CVAR_NoShadow/*|CVAR_Archive*/);
 // the network layer will force packet sending after this interval
-static VCvarI net_keepalive("net_keepalive", "60", "Network keepalive time, in milliseconds.", 0);
-static VCvarF net_timeout("net_timeout", "4", "Network timeout, in seconds.", 0);
+static VCvarI net_keepalive("net_keepalive", "60", "Network keepalive time, in milliseconds.", CVAR_NoShadow);
+static VCvarF net_timeout("net_timeout", "4", "Network timeout, in seconds.", CVAR_NoShadow);
 
 // level will be updated twice as more times as this, until i wrote client-side interpolation code
-static VCvarF sv_fps("sv_fps", "35", "Server update frame rate (the server will use this to send updates to clients).", 0/*CVAR_Archive*/);
+static VCvarF sv_fps("sv_fps", "35", "Server update frame rate (the server will use this to send updates to clients).", CVAR_NoShadow/*|CVAR_Archive*/);
 
 
 //==========================================================================

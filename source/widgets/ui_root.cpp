@@ -30,8 +30,8 @@
 #include "ui.h"
 
 
-static VCvarI ui_click_threshold("ui_click_threshold", "6", "Amount of pixels mouse cursor can move before aborting a click event.", CVAR_Archive);
-static VCvarF ui_click_timeout("ui_click_timeout", "0.3", "Click timeout in seconds.", CVAR_Archive);
+static VCvarI ui_click_threshold("ui_click_threshold", "6", "Amount of pixels mouse cursor can move before aborting a click event.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF ui_click_timeout("ui_click_timeout", "0.3", "Click timeout in seconds.", CVAR_Archive|CVAR_NoShadow);
 
 extern VCvarB ui_mouse_forced;
 

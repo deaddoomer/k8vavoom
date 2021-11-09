@@ -117,10 +117,10 @@ static int cli_NoLAN = 0;
   VParsedArgs::RegisterAlias("-no-lan", "-nolan");
 
 
-static VCvarB net_dbg_dump_rejected_connections("net_dbg_dump_rejected_connections", true, "Dump rejected connections?");
+static VCvarB net_dbg_dump_rejected_connections("net_dbg_dump_rejected_connections", true, "Dump rejected connections?", CVAR_NoShadow);
 
-static VCvarS net_rcon_secret_key("net_rcon_secret_key", "", "Secret key for rcon commands");
-static VCvarS net_server_key("net_server_key", "", "Server key for password-protected servers");
+static VCvarS net_rcon_secret_key("net_rcon_secret_key", "", "Secret key for rcon commands", CVAR_NoShadow);
+static VCvarS net_server_key("net_server_key", "", "Server key for password-protected servers", CVAR_NoShadow);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -272,8 +272,8 @@ public: // rcon
 extern int num_connected;
 extern TArray<VStr> fsysWadFileNames; // this is from corelib
 
-static VCvarB UseMaster("master_allowed", false, "Is communication with master server allowed?", CVAR_Archive);
-static VCvarS MasterSrv("master_address", "ketmar.no-ip.org", "Master server domain name.", CVAR_Archive);
+static VCvarB UseMaster("master_allowed", false, "Is communication with master server allowed?", CVAR_Archive|CVAR_NoShadow);
+static VCvarS MasterSrv("master_address", "ketmar.no-ip.org", "Master server domain name.", CVAR_Archive|CVAR_NoShadow);
 
 static VDatagramDriver Impl;
 

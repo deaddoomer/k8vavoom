@@ -36,10 +36,10 @@
 #include "../../client/client.h"
 
 
-VCvarI dbg_shadowmaps("dbg_shadowmaps", "0", "Show shadowmap cubemap?", CVAR_PreInit);
+VCvarI dbg_shadowmaps("dbg_shadowmaps", "0", "Show shadowmap cubemap?", CVAR_PreInit|CVAR_NoShadow);
 
-static VCvarI acc_colorswap_mode("acc_colorswap_mode", "0", "Colorblind color swap mode: 0=RGB; 1=GBR; 2=GRB; 3=BRG; 4=BGR; 5=RBG", CVAR_Archive);
-static VCvarI acc_colormatrix_mode("acc_colormatrix_mode", "0", "Colormatrix colorblind emulation mode.", CVAR_Archive);
+static VCvarI acc_colorswap_mode("acc_colorswap_mode", "0", "Colorblind color swap mode: 0=RGB; 1=GBR; 2=GRB; 3=BRG; 4=BGR; 5=RBG", CVAR_Archive|CVAR_NoShadow);
+static VCvarI acc_colormatrix_mode("acc_colormatrix_mode", "0", "Colormatrix colorblind emulation mode.", CVAR_Archive|CVAR_NoShadow);
 
 extern VCvarB gl_shadowmap_preclear;
 extern VCvarB r_dbg_proj_aspect;

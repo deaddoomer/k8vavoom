@@ -32,8 +32,8 @@
 #include "../render/r_public.h"  /* R_IsAnySkyFlatPlane */
 
 
-static VCvarB r_bsp_bbox_sky_maxheight("r_bsp_bbox_sky_maxheight", false, "If `true`, use maximum map height for sky bboxes.", CVAR_Archive);
-static VCvarF r_bsp_bbox_sky_addheight("r_bsp_bbox_sky_addheight", "0.0", "Add this to sky sector height if 'sky maxheigh' is off (DEBUG).", CVAR_Archive);
+static VCvarB r_bsp_bbox_sky_maxheight("r_bsp_bbox_sky_maxheight", false, "If `true`, use maximum map height for sky bboxes.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF r_bsp_bbox_sky_addheight("r_bsp_bbox_sky_addheight", "0.0", "Add this to sky sector height if 'sky maxheigh' is off (DEBUG).", CVAR_Archive|CVAR_NoShadow);
 static int lastSkyHeightFlag = -1; // unknown yet
 
 

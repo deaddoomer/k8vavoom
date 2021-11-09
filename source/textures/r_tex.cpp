@@ -105,12 +105,12 @@ extern void SV_UpdateSkyFlat ();
 int skyflatnum = -2; // sky mapping
 int screenBackTexNum; // background filler for unused screen parts and status bar
 
-VCvarB r_hirestex("r_hirestex", true, "Allow high-resolution texture replacements?", /*CVAR_Archive|*/CVAR_PreInit);
-VCvarB r_showinfo("r_showinfo", false, "Show some info about loaded textures?", CVAR_Archive);
+VCvarB r_hirestex("r_hirestex", true, "Allow high-resolution texture replacements?", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
+VCvarB r_showinfo("r_showinfo", false, "Show some info about loaded textures?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB r_reupload_textures("r_reupload_textures", false, "Reupload textures to GPU when new map is loaded?", CVAR_Archive);
+static VCvarB r_reupload_textures("r_reupload_textures", false, "Reupload textures to GPU when new map is loaded?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB r_debug_fullpath_textures("r_debug_fullpath_textures", false, "Show some debug messages for fullpath textures?", CVAR_PreInit);
+static VCvarB r_debug_fullpath_textures("r_debug_fullpath_textures", false, "Show some debug messages for fullpath textures?", CVAR_PreInit|CVAR_NoShadow);
 
 
 // ////////////////////////////////////////////////////////////////////////// //

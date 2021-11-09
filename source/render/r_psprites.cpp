@@ -49,15 +49,15 @@ extern VCvarB r_chasecam;
 extern VCvarB gl_crop_psprites;
 extern VCvarB r_dbg_proj_aspect;
 
-static VCvarI crosshair("crosshair", "2", "Crosshair type (0-2).", CVAR_Archive);
-static VCvarF crosshair_alpha("crosshair_alpha", "0.6", "Crosshair opacity.", CVAR_Archive);
-static VCvarF crosshair_scale("crosshair_scale", "1", "Crosshair scale.", CVAR_Archive);
+static VCvarI crosshair("crosshair", "2", "Crosshair type (0-2).", CVAR_Archive|CVAR_NoShadow);
+static VCvarF crosshair_alpha("crosshair_alpha", "0.6", "Crosshair opacity.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF crosshair_scale("crosshair_scale", "1", "Crosshair scale.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB crosshair_force("crosshair_force", false, "Force menu selected crosshair (i.e. don't allow mods to set their own)?", CVAR_Archive);
-static VCvarF crosshair_big_scale("crosshair_big_scale", "0.5", "Scale for 'big' mod crosshairs.", CVAR_Archive);
-static VCvarB crosshair_big_prefer("crosshair_big_prefer", true, "Prefer 'big' mod crosshairs over small ones?", CVAR_Archive);
+static VCvarB crosshair_force("crosshair_force", false, "Force menu selected crosshair (i.e. don't allow mods to set their own)?", CVAR_Archive|CVAR_NoShadow);
+static VCvarF crosshair_big_scale("crosshair_big_scale", "0.5", "Scale for 'big' mod crosshairs.", CVAR_Archive|CVAR_NoShadow);
+static VCvarB crosshair_big_prefer("crosshair_big_prefer", true, "Prefer 'big' mod crosshairs over small ones?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarI r_crosshair_yofs("r_crosshair_yofs", "0", "Crosshair y offset (>0: down).", CVAR_Archive);
+static VCvarI r_crosshair_yofs("r_crosshair_yofs", "0", "Crosshair y offset (>0: down).", CVAR_Archive|CVAR_NoShadow);
 
 int VRenderLevelShared::prevCrosshairPic = -666;
 static int currCrosshairPicHandle = 0;

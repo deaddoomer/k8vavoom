@@ -34,7 +34,7 @@
 #include "gl_local.h"
 
 
-static VCvarB gl_shader_on_demand("gl_shader_on_demand", true, "Compile shaders on demand?", CVAR_PreInit|CVAR_Archive);
+static VCvarB gl_shader_on_demand("gl_shader_on_demand", true, "Compile shaders on demand?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 
 
 //==========================================================================

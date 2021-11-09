@@ -51,7 +51,7 @@
 #define MAX_FINGERS  (2)
 
 
-static VCvarB touch_enable("touch_enable", true, "Show and handle touch screen controls (when available).", CVAR_Archive);
+static VCvarB touch_enable("touch_enable", true, "Show and handle touch screen controls (when available).", CVAR_Archive|CVAR_NoShadow);
 
 
 static struct vfinger {

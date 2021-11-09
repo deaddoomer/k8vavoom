@@ -29,7 +29,7 @@
 #include "net_message.h"
 
 extern VCvarB net_debug_dump_recv_packets;
-static VCvarB net_debug_rpc("net_debug_rpc", false, "Dump RPC info?");
+static VCvarB net_debug_rpc("net_debug_rpc", false, "Dump RPC info?", CVAR_NoShadow);
 
 
 //==========================================================================

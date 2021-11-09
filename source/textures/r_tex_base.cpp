@@ -29,7 +29,7 @@
 #define VV_INTENSITY_FAST_GAMMA
 
 //#define VV_VERY_VERBOSE_TEXTURE_LOADER
-static VCvarB dbg_verbose_texture_loader("dbg_verbose_texture_loader", false, "WERY verbose texture loader?", CVAR_PreInit);
+static VCvarB dbg_verbose_texture_loader("dbg_verbose_texture_loader", false, "WERY verbose texture loader?", CVAR_PreInit|CVAR_NoShadow);
 
 VTexture *VTexture::gcHead = nullptr;
 VTexture *VTexture::gcTail = nullptr;

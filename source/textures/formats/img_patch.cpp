@@ -27,7 +27,7 @@
 #include "../r_tex.h"
 
 
-static VCvarB tex_strict_multipatch("tex_strict_multipatch", true, "Be strict in multipatch texture building?", CVAR_Archive|CVAR_PreInit);
+static VCvarB tex_strict_multipatch("tex_strict_multipatch", true, "Be strict in multipatch texture building?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
 
 
 //==========================================================================

@@ -161,41 +161,41 @@ static int setwidth = 0;
 static int setheight = 0;
 static float lastScrScale = 0;
 
-static VCvarB dbg_disable_world_render("dbg_disable_world_render", false, "Disable world rendering?", 0);
+static VCvarB dbg_disable_world_render("dbg_disable_world_render", false, "Disable world rendering?", CVAR_NoShadow);
 
-static VCvarF menu_darkening("menu_darkening", "0.7", "Screen darkening for active menus.", CVAR_Archive);
-static VCvarB draw_pause("draw_pause", true, "Draw \"paused\" text?", CVAR_Archive);
+static VCvarF menu_darkening("menu_darkening", "0.7", "Screen darkening for active menus.", CVAR_Archive|CVAR_NoShadow);
+static VCvarB draw_pause("draw_pause", true, "Draw \"paused\" text?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB crosshair_topmost("crosshair_topmost", false, "Render crosshair on the top of everything?", CVAR_Archive);
+static VCvarB crosshair_topmost("crosshair_topmost", false, "Render crosshair on the top of everything?", CVAR_Archive|CVAR_NoShadow);
 
-VCvarB r_wipe_enabled("r_wipe_enabled", true, "Is screen wipe effect enabled?", CVAR_Archive);
-VCvarI r_wipe_type("r_wipe_type", "0", "Wipe type?", CVAR_Archive);
-VCvarF r_wipe_duration("r_wipe_duration", "1", "Wipe duration, in seconds?", CVAR_Archive);
+VCvarB r_wipe_enabled("r_wipe_enabled", true, "Is screen wipe effect enabled?", CVAR_Archive|CVAR_NoShadow);
+VCvarI r_wipe_type("r_wipe_type", "0", "Wipe type?", CVAR_Archive|CVAR_NoShadow);
+VCvarF r_wipe_duration("r_wipe_duration", "1", "Wipe duration, in seconds?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarI ui_max_scale("ui_max_scale", "0", "Maximal UI scale (0 means unlimited).", CVAR_Archive);
-static VCvarI ui_min_scale("ui_min_scale", "0", "Minimal UI scale (0 means unlimited).", CVAR_Archive);
+static VCvarI ui_max_scale("ui_max_scale", "0", "Maximal UI scale (0 means unlimited).", CVAR_Archive|CVAR_NoShadow);
+static VCvarI ui_min_scale("ui_min_scale", "0", "Minimal UI scale (0 means unlimited).", CVAR_Archive|CVAR_NoShadow);
 
-VCvarF screen_scale("screen_scale", "1", "Screen scaling factor (you can set it to >1 to render screen in lower resolution).", CVAR_Archive);
-static VCvarI screen_width("screen_width", "0", "Custom screen width", CVAR_Archive);
-static VCvarI screen_height("screen_height", "0", "Custom screen height", CVAR_Archive);
-static VCvarI screen_width_internal("screen_width_internal", "0", "Internal (rendering) screen width", CVAR_Rom);
-static VCvarI screen_height_internal("screen_height_internal", "0", "Internal (rendering) screen height", CVAR_Rom);
-VCvarI screen_fsmode("screen_fsmode", "0", "Video mode: windowed(0), fullscreen scaled(1), fullscreen real(2)", CVAR_Archive);
-static VCvarI brightness("brightness", "0", "Brightness.", CVAR_Archive);
+VCvarF screen_scale("screen_scale", "1", "Screen scaling factor (you can set it to >1 to render screen in lower resolution).", CVAR_Archive|CVAR_NoShadow);
+static VCvarI screen_width("screen_width", "0", "Custom screen width", CVAR_Archive|CVAR_NoShadow);
+static VCvarI screen_height("screen_height", "0", "Custom screen height", CVAR_Archive|CVAR_NoShadow);
+static VCvarI screen_width_internal("screen_width_internal", "0", "Internal (rendering) screen width", CVAR_Rom|CVAR_NoShadow);
+static VCvarI screen_height_internal("screen_height_internal", "0", "Internal (rendering) screen height", CVAR_Rom|CVAR_NoShadow);
+VCvarI screen_fsmode("screen_fsmode", "0", "Video mode: windowed(0), fullscreen scaled(1), fullscreen real(2)", CVAR_Archive|CVAR_NoShadow);
+static VCvarI brightness("brightness", "0", "Brightness.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarI draw_fps("draw_fps", "0", "Draw FPS counter (1:FPS; 2:MSECS)?", CVAR_Archive);
-static VCvarI draw_fps_posx("draw_fps_posx", "0", "FPS counter position (<0:left; 0:center; >0:right)", CVAR_Archive);
+static VCvarI draw_fps("draw_fps", "0", "Draw FPS counter (1:FPS; 2:MSECS)?", CVAR_Archive|CVAR_NoShadow);
+static VCvarI draw_fps_posx("draw_fps_posx", "0", "FPS counter position (<0:left; 0:center; >0:right)", CVAR_Archive|CVAR_NoShadow);
 static double fps_start = 0.0;
 static double ms = 0.0;
 static int fps_frames = 0;
 static int show_fps = 0;
 static double lastTexGCTime = 0.0;
 
-VCvarB draw_lag("draw_lag", true, "Draw network lag value?", CVAR_Archive);
+VCvarB draw_lag("draw_lag", true, "Draw network lag value?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarI draw_gc_stats("draw_gc_stats", "0", "Draw GC stats (0: none; 1: brief; 2: full)?", CVAR_Archive);
+static VCvarI draw_gc_stats("draw_gc_stats", "0", "Draw GC stats (0: none; 1: brief; 2: full)?", CVAR_Archive|CVAR_NoShadow);
 
-//static VCvarB draw_cycles("draw_cycles", false, "Draw cycle counter?", 0); //NOOP
+//static VCvarB draw_cycles("draw_cycles", false, "Draw cycle counter?", CVAR_NoShadow); //NOOP
 
 
 //**************************************************************************
@@ -218,7 +218,7 @@ static VCvarI draw_gc_stats("draw_gc_stats", "0", "Draw GC stats (0: none; 1: br
 # define VV_SWR_CVAR_JPG  ""
 # define VV_SWR_CVAR_FMT  "png"
 #endif
-static VCvarS screenshot_type("screenshot_type", VV_SWR_CVAR_FMT, "Screenshot type (png" VV_SWR_CVAR_JPG "/tga/pcx).", CVAR_Archive);
+static VCvarS screenshot_type("screenshot_type", VV_SWR_CVAR_FMT, "Screenshot type (png" VV_SWR_CVAR_JPG "/tga/pcx).", CVAR_Archive|CVAR_NoShadow);
 
 extern void WriteTGA (VStr FileName, void *data, int width, int height, int bpp, bool bot2top);
 extern void WritePCX (VStr FileName, void *data, int width, int height, int bpp, bool bot2top);

@@ -35,14 +35,14 @@
 // lighting bugs are gone. of course, the lighting at geometry edges is
 // still somewhat wrong, but it is way better than totally missed light.
 // also, this creates cheap ambient-occlusion-like effect. ;-)
-static VCvarB r_lmap_stfix_enabled("r_lmap_stfix_enabled", true, "Enable lightmap \"inside wall\" fixing?", CVAR_Archive);
-static VCvarF r_lmap_stfix_step("r_lmap_stfix_step", "2", "Lightmap \"inside wall\" texel step", CVAR_Archive);
+static VCvarB r_lmap_stfix_enabled("r_lmap_stfix_enabled", true, "Enable lightmap \"inside wall\" fixing?", CVAR_Archive|CVAR_NoShadow);
+static VCvarF r_lmap_stfix_step("r_lmap_stfix_step", "2", "Lightmap \"inside wall\" texel step", CVAR_Archive|CVAR_NoShadow);
 
 static VCvarB r_lmap_texture_check_static("r_lmap_texture_check_static", true, "Check textures of two-sided lines?", CVAR_Archive);
 static VCvarB r_lmap_texture_check_dynamic("r_lmap_texture_check_dynamic", true, "Check textures of two-sided lines?", CVAR_Archive);
 static VCvarI r_lmap_texture_check_radius_dynamic("r_lmap_texture_check_radius_dynamic", "300", "Disable texture check for dynamic lights with radius lower than this.", CVAR_Archive);
 
-VCvarI r_lmap_recalc_timeout("r_lmap_recalc_timeout", "20", "Do not use more than this number of milliseconds for static lightmap updates (0 means 'no limit').", CVAR_Archive);
+VCvarI r_lmap_recalc_timeout("r_lmap_recalc_timeout", "20", "Do not use more than this number of milliseconds for static lightmap updates (0 means 'no limit').", CVAR_Archive|CVAR_NoShadow);
 VCvarB r_lmap_recalc_static("r_lmap_recalc_static", true, "Recalc static lightmaps when map geometry changed?", CVAR_Archive);
 VCvarB r_lmap_recalc_moved_static("r_lmap_recalc_moved_static", true, "Recalc static lightmaps when static light source moved?", CVAR_Archive);
 
@@ -63,8 +63,8 @@ static VCvarI r_lmap_filtering("r_lmap_filtering", "3", "Static lightmap filteri
 static VCvarB r_lmap_lowfilter("r_lmap_lowfilter", false, "Filter lightmaps without extra samples?", CVAR_Archive);
 static VCvarI r_lmap_atlas_limit("r_lmap_atlas_limit", "14", "Nuke lightmap cache if it reached this number of atlases.", CVAR_Archive);
 
-VCvarB r_lmap_bsp_trace_static("r_lmap_bsp_trace_static", false, "Trace static lightmaps with BSP tree instead of blockmap?", CVAR_Archive);
-VCvarB r_lmap_bsp_trace_dynamic("r_lmap_bsp_trace_dynamic", false, "Trace dynamic lightmaps with BSP tree instead of blockmap?", CVAR_Archive);
+VCvarB r_lmap_bsp_trace_static("r_lmap_bsp_trace_static", false, "Trace static lightmaps with BSP tree instead of blockmap?", CVAR_Archive|CVAR_NoShadow);
+VCvarB r_lmap_bsp_trace_dynamic("r_lmap_bsp_trace_dynamic", false, "Trace dynamic lightmaps with BSP tree instead of blockmap?", CVAR_Archive|CVAR_NoShadow);
 
 extern VCvarB dbg_adv_light_notrace_mark;
 

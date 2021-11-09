@@ -36,10 +36,10 @@
 #include "vc_dehacked.h"
 
 
-static VCvarB dbg_dehacked_codepointers("dbg_dehacked_codepointers", false, "Show DEHACKED replaced code pointers?", CVAR_PreInit);
-static VCvarB dbg_dehacked_thing_replaces("dbg_dehacked_thing_replaces", false, "Show DEHACKED thing replaces?", CVAR_PreInit);
-static VCvarB dbg_dehacked_frame_replaces("dbg_dehacked_frame_replaces", false, "Show DEHACKED frame sprite replaces?", CVAR_PreInit);
-static VCvarB dbg_dehacked_dump_all("dbg_dehacked_dump_all", false, "Show all DEHACKED debug dumps?", CVAR_PreInit);
+static VCvarB dbg_dehacked_codepointers("dbg_dehacked_codepointers", false, "Show DEHACKED replaced code pointers?", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB dbg_dehacked_thing_replaces("dbg_dehacked_thing_replaces", false, "Show DEHACKED thing replaces?", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB dbg_dehacked_frame_replaces("dbg_dehacked_frame_replaces", false, "Show DEHACKED frame sprite replaces?", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB dbg_dehacked_dump_all("dbg_dehacked_dump_all", false, "Show all DEHACKED debug dumps?", CVAR_PreInit|CVAR_NoShadow);
 
 
 static TArray<VStr> cli_DehList;

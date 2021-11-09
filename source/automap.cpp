@@ -218,11 +218,11 @@ struct mline_t {
 static int automapactive = 0; // In AutoMap mode? 0: no; 1: normal; -1: overlay
 static bool automapUpdateSeen = true; // set to `true` to trigger line visibility update (autoresets)
 
-static VCvarB am_active("am_active", false, "Is automap active?", 0);
+static VCvarB am_active("am_active", false, "Is automap active?", CVAR_NoShadow);
 extern VCvarI screen_size;
 extern VCvarB ui_freemouse;
 
-VCvarB am_always_update("am_always_update", true, "Update non-overlay automap?", CVAR_Archive);
+VCvarB am_always_update("am_always_update", true, "Update non-overlay automap?", CVAR_Archive|CVAR_NoShadow);
 
 static VClass *keyClass = nullptr;
 
@@ -251,101 +251,101 @@ static inline int getAMHeight () {
 }
 
 
-static VCvarB draw_world_timer("draw_world_timer", false, "Draw playing time?", CVAR_Archive);
-static VCvarF draw_map_stats_alpha("draw_map_stats_alpha", "0.6", "Non-automap map stats opacity.", CVAR_Archive);
-static VCvarB draw_map_stats("draw_map_stats", false, "Draw map stats when not on automap?", CVAR_Archive);
-static VCvarB draw_map_stats_title("draw_map_stats_title", true, "Draw map title when not on automap?", CVAR_Archive);
-static VCvarB draw_map_stats_name("draw_map_stats_name", true, "Draw internal map name when not on automap?", CVAR_Archive);
-static VCvarB draw_map_stats_kills("draw_map_stats_kills", true, "Draw map kill stats when not on automap?", CVAR_Archive);
-static VCvarB draw_map_stats_items("draw_map_stats_items", false, "Draw map item stats when not on automap?", CVAR_Archive);
-static VCvarB draw_map_stats_secrets("draw_map_stats_secrets", false, "Draw map secret stats when not on automap?", CVAR_Archive);
+static VCvarB draw_world_timer("draw_world_timer", false, "Draw playing time?", CVAR_Archive|CVAR_NoShadow);
+static VCvarF draw_map_stats_alpha("draw_map_stats_alpha", "0.6", "Non-automap map stats opacity.", CVAR_Archive|CVAR_NoShadow);
+static VCvarB draw_map_stats("draw_map_stats", false, "Draw map stats when not on automap?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB draw_map_stats_title("draw_map_stats_title", true, "Draw map title when not on automap?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB draw_map_stats_name("draw_map_stats_name", true, "Draw internal map name when not on automap?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB draw_map_stats_kills("draw_map_stats_kills", true, "Draw map kill stats when not on automap?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB draw_map_stats_items("draw_map_stats_items", false, "Draw map item stats when not on automap?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB draw_map_stats_secrets("draw_map_stats_secrets", false, "Draw map secret stats when not on automap?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB minimap_active("minimap_active", false, "Is minimap active?", CVAR_Archive);
-static VCvarB minimap_rotate("minimap_rotate", false, "Rotate minimap?", CVAR_Archive);
-static VCvarB minimap_draw_player("minimap_draw_player", true, "Draw player arrow on minimap?", CVAR_Archive);
-static VCvarB minimap_draw_border("minimap_draw_border", false, "Draw minimap border rectangle?", CVAR_Archive);
-static VCvarF minimap_scale("minimap_scale", "8", "Minimap scale (inverted).", CVAR_Archive);
-static VCvarF minimap_darken("minimap_darken", "0.4", "Minimap widget darkening.", CVAR_Archive);
-static VCvarF minimap_alpha("minimap_alpha", "0.6", "Minimap opacity.", CVAR_Archive);
-static VCvarF minimap_position_x("minimap_position_x", "-1", "Horizontal position of the minimap.", CVAR_Archive);
-static VCvarF minimap_position_y("minimap_position_y", "-0.88", "Vertical position of the minimap.", CVAR_Archive);
-static VCvarF minimap_size_x("minimap_size_x", "0.2", "Horizontal size of the minimap.", CVAR_Archive);
-static VCvarF minimap_size_y("minimap_size_y", "0.24", "Vertical size of the minimap.", CVAR_Archive);
+static VCvarB minimap_active("minimap_active", false, "Is minimap active?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB minimap_rotate("minimap_rotate", false, "Rotate minimap?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB minimap_draw_player("minimap_draw_player", true, "Draw player arrow on minimap?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB minimap_draw_border("minimap_draw_border", false, "Draw minimap border rectangle?", CVAR_Archive|CVAR_NoShadow);
+static VCvarF minimap_scale("minimap_scale", "8", "Minimap scale (inverted).", CVAR_Archive|CVAR_NoShadow);
+static VCvarF minimap_darken("minimap_darken", "0.4", "Minimap widget darkening.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF minimap_alpha("minimap_alpha", "0.6", "Minimap opacity.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF minimap_position_x("minimap_position_x", "-1", "Horizontal position of the minimap.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF minimap_position_y("minimap_position_y", "-0.88", "Vertical position of the minimap.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF minimap_size_x("minimap_size_x", "0.2", "Horizontal size of the minimap.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF minimap_size_y("minimap_size_y", "0.24", "Vertical size of the minimap.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarS minimap_color_border("minimap_color_border", "ff 7f 00", "Minimap color: border.", CVAR_Archive);
+static VCvarS minimap_color_border("minimap_color_border", "ff 7f 00", "Minimap color: border.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB am_overlay("am_overlay", true, "Show automap in overlay mode?", CVAR_Archive);
-static VCvarF am_back_darken("am_back_darken", "0", "Overlay automap darken factor", CVAR_Archive);
-static VCvarB am_full_lines("am_full_lines", false, "Render full line even if only some parts of it were seen?", CVAR_Archive);
-static VCvarB am_draw_grid("am_draw_grid", false, "Draw automap grid?", CVAR_Archive);
-static VCvarB am_mark_blink("am_mark_blink", true, "Should marks blink (to make them better visible)?", CVAR_Archive);
+static VCvarB am_overlay("am_overlay", true, "Show automap in overlay mode?", CVAR_Archive|CVAR_NoShadow);
+static VCvarF am_back_darken("am_back_darken", "0", "Overlay automap darken factor", CVAR_Archive|CVAR_NoShadow);
+static VCvarB am_full_lines("am_full_lines", false, "Render full line even if only some parts of it were seen?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB am_draw_grid("am_draw_grid", false, "Draw automap grid?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB am_mark_blink("am_mark_blink", true, "Should marks blink (to make them better visible)?", CVAR_Archive|CVAR_NoShadow);
 
 // automap colors
-static VCvarS am_color_wall("am_color_wall", "d0 b0 85", "Automap color: normal walls.", CVAR_Archive);
-static VCvarS am_color_tswall("am_color_tswall", "61 64 5f", "Automap color: same-height two-sided walls.", CVAR_Archive);
-static VCvarS am_color_fdwall("am_color_fdwall", "a0 6c 40", "Automap color: floor level change.", CVAR_Archive);
-static VCvarS am_color_cdwall("am_color_cdwall", "94 94 ac", "Automap color: ceiling level change.", CVAR_Archive);
-static VCvarS am_color_exwall("am_color_exwall", "7b 4b 27", "Automap color: walls with extra floors.", CVAR_Archive);
-static VCvarS am_color_secretwall("am_color_secretwall", "ff 7f 00", "Automap color: secret walls.", CVAR_Archive);
-//static VCvarS am_color_power("am_color_power", "7d 83 79", "Automap color: autorevealed walls.", CVAR_Archive);
-static VCvarS am_color_power("am_color_power", "2f 4f 9f", "Automap color: autorevealed walls.", CVAR_Archive);
-static VCvarS am_color_grid("am_color_grid", "4d 9d 42", "Automap color: grid.", CVAR_Archive);
+static VCvarS am_color_wall("am_color_wall", "d0 b0 85", "Automap color: normal walls.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS am_color_tswall("am_color_tswall", "61 64 5f", "Automap color: same-height two-sided walls.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS am_color_fdwall("am_color_fdwall", "a0 6c 40", "Automap color: floor level change.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS am_color_cdwall("am_color_cdwall", "94 94 ac", "Automap color: ceiling level change.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS am_color_exwall("am_color_exwall", "7b 4b 27", "Automap color: walls with extra floors.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS am_color_secretwall("am_color_secretwall", "ff 7f 00", "Automap color: secret walls.", CVAR_Archive|CVAR_NoShadow);
+//static VCvarS am_color_power("am_color_power", "7d 83 79", "Automap color: autorevealed walls.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS am_color_power("am_color_power", "2f 4f 9f", "Automap color: autorevealed walls.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS am_color_grid("am_color_grid", "4d 9d 42", "Automap color: grid.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarS am_color_thing("am_color_thing", "00 c0 00", "Automap color: thing.", CVAR_Archive);
-static VCvarS am_color_solid("am_color_solid", "e0 e0 e0", "Automap color: solid thing.", CVAR_Archive);
-static VCvarS am_color_monster("am_color_monster", "ff 00 00", "Automap color: monster.", CVAR_Archive);
-static VCvarS am_color_missile("am_color_missile", "cf 4f 00", "Automap color: missile.", CVAR_Archive);
-static VCvarS am_color_dead("am_color_dead", "80 80 80", "Automap color: dead thing.", CVAR_Archive);
-static VCvarS am_color_invisible("am_color_invisible", "f0 00 f0", "Automap color: invisible thing.", CVAR_Archive);
+static VCvarS am_color_thing("am_color_thing", "00 c0 00", "Automap color: thing.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS am_color_solid("am_color_solid", "e0 e0 e0", "Automap color: solid thing.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS am_color_monster("am_color_monster", "ff 00 00", "Automap color: monster.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS am_color_missile("am_color_missile", "cf 4f 00", "Automap color: missile.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS am_color_dead("am_color_dead", "80 80 80", "Automap color: dead thing.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS am_color_invisible("am_color_invisible", "f0 00 f0", "Automap color: invisible thing.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarS am_color_current_mark("am_color_current_mark", "00 ff 00", "Automap color: current map mark.", CVAR_Archive);
-static VCvarS am_color_mark_blink("am_color_mark_blink", "df 5f 00", "Automap color: mark blink color.", CVAR_Archive);
+static VCvarS am_color_current_mark("am_color_current_mark", "00 ff 00", "Automap color: current map mark.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS am_color_mark_blink("am_color_mark_blink", "df 5f 00", "Automap color: mark blink color.", CVAR_Archive|CVAR_NoShadow);
 
-//static VCvarS am_color_light_static("am_color_light_static", "ff ff ff", "Automap color: static light.", CVAR_Archive);
-//static VCvarS am_color_light_dynamic("am_color_light_dynamic", "00 ff ff", "Automap color: dynamic light.", CVAR_Archive);
+//static VCvarS am_color_light_static("am_color_light_static", "ff ff ff", "Automap color: static light.", CVAR_Archive|CVAR_NoShadow);
+//static VCvarS am_color_light_dynamic("am_color_light_dynamic", "00 ff ff", "Automap color: dynamic light.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarS am_color_player("am_color_player", "e6 e6 e6", "Automap color: player.", CVAR_Archive);
-static VCvarS am_color_miniseg("am_color_miniseg", "7f 00 7f", "Automap color: minisegs.", CVAR_Archive);
+static VCvarS am_color_player("am_color_player", "e6 e6 e6", "Automap color: player.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS am_color_miniseg("am_color_miniseg", "7f 00 7f", "Automap color: minisegs.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB dbg_am_no_player_arrow("dbg_am_no_player_arrow", false, "Type of player arrow.", CVAR_PreInit|CVAR_Hidden);
+static VCvarB dbg_am_no_player_arrow("dbg_am_no_player_arrow", false, "Type of player arrow.", CVAR_PreInit|CVAR_Hidden|CVAR_NoShadow);
 
-static VCvarI am_player_arrow("am_player_arrow", 0, "Type of player arrow.", CVAR_Archive);
-static VCvarB am_follow_player("am_follow_player", true, "Should automap follow player?", CVAR_Archive);
-static VCvarB am_rotate("am_rotate", false, "Should automap rotate?", CVAR_Archive);
-static VCvarB am_show_stats("am_show_stats", false, "Show stats on automap?", CVAR_Archive);
-static VCvarB am_show_map_name("am_show_map_name", false, "Show internal map name on automap?", CVAR_Archive);
+static VCvarI am_player_arrow("am_player_arrow", 0, "Type of player arrow.", CVAR_Archive|CVAR_NoShadow);
+static VCvarB am_follow_player("am_follow_player", true, "Should automap follow player?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB am_rotate("am_rotate", false, "Should automap rotate?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB am_show_stats("am_show_stats", false, "Show stats on automap?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB am_show_map_name("am_show_map_name", false, "Show internal map name on automap?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarI am_cheating("am_cheating", "0", "Oops! Automap cheats!", CVAR_Cheat);
-static VCvarB am_show_keys_cheat("am_show_keys_cheat", false, "Show keys on automap.", CVAR_Cheat);
-static VCvarB am_show_secrets("am_show_secrets", false, "Show secret walls on automap!", 0);
-static VCvarB am_show_minisegs("am_show_minisegs", false, "Show minisegs on automap (cheating should be turned on).", 0);
-static VCvarB am_show_static_lights("am_show_static_lights", false, "Show static lights on automap (cheating should be turned on).", 0);
-static VCvarB am_show_dynamic_lights("am_show_dynamic_lights", false, "Show static lights on automap (cheating should be turned on).", 0);
-static VCvarB am_show_rendered_nodes("am_show_rendered_nodes", false, "Show rendered BSP nodes on automap (cheating should be turned on).", 0);
-static VCvarB am_show_rendered_subs("am_show_rendered_subs", false, "Show rendered subsectors on automap (cheating should be turned on).", 0);
+static VCvarI am_cheating("am_cheating", "0", "Oops! Automap cheats!", CVAR_Cheat|CVAR_NoShadow);
+static VCvarB am_show_keys_cheat("am_show_keys_cheat", false, "Show keys on automap.", CVAR_Cheat|CVAR_NoShadow);
+static VCvarB am_show_secrets("am_show_secrets", false, "Show secret walls on automap!", CVAR_NoShadow);
+static VCvarB am_show_minisegs("am_show_minisegs", false, "Show minisegs on automap (cheating should be turned on).", CVAR_NoShadow);
+static VCvarB am_show_static_lights("am_show_static_lights", false, "Show static lights on automap (cheating should be turned on).", CVAR_NoShadow);
+static VCvarB am_show_dynamic_lights("am_show_dynamic_lights", false, "Show static lights on automap (cheating should be turned on).", CVAR_NoShadow);
+static VCvarB am_show_rendered_nodes("am_show_rendered_nodes", false, "Show rendered BSP nodes on automap (cheating should be turned on).", CVAR_NoShadow);
+static VCvarB am_show_rendered_subs("am_show_rendered_subs", false, "Show rendered subsectors on automap (cheating should be turned on).", CVAR_NoShadow);
 
-static VCvarI am_pobj_debug("am_pobj_debug", "0", "Oops! Automap cheats!", CVAR_Cheat);
+static VCvarI am_pobj_debug("am_pobj_debug", "0", "Oops! Automap cheats!", CVAR_Cheat|CVAR_NoShadow);
 
-static VCvarB am_render_thing_sprites("am_render_thing_sprites", false, "Render sprites instead of triangles for automap things?", CVAR_Archive);
+static VCvarB am_render_thing_sprites("am_render_thing_sprites", false, "Render sprites instead of triangles for automap things?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarF am_overlay_alpha("am_overlay_alpha", "0.4", "Automap overlay alpha", CVAR_Archive);
-static VCvarB am_show_parchment("am_show_parchment", true, "Show automap parchment?", CVAR_Archive);
+static VCvarF am_overlay_alpha("am_overlay_alpha", "0.4", "Automap overlay alpha", CVAR_Archive|CVAR_NoShadow);
+static VCvarB am_show_parchment("am_show_parchment", true, "Show automap parchment?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarF am_texture_alpha("am_texture_alpha", "0.6", "Automap texture alpha", CVAR_Archive);
-static VCvarI am_draw_type("am_draw_type", "0", "Automap rendering type (0:lines; 1:floors; 2:ceilings)", CVAR_Archive);
-static VCvarB am_draw_texture_lines("am_draw_texture_lines", true, "Draw automap lines on textured automap?", CVAR_Archive);
+static VCvarF am_texture_alpha("am_texture_alpha", "0.6", "Automap texture alpha", CVAR_Archive|CVAR_NoShadow);
+static VCvarI am_draw_type("am_draw_type", "0", "Automap rendering type (0:lines; 1:floors; 2:ceilings)", CVAR_Archive|CVAR_NoShadow);
+static VCvarB am_draw_texture_lines("am_draw_texture_lines", true, "Draw automap lines on textured automap?", CVAR_Archive|CVAR_NoShadow);
 // used by drawer
-VCvarB am_draw_texture_with_bsp("am_draw_texture_with_bsp", true, "Draw textured automap using BSP tree?", CVAR_Archive);
+VCvarB am_draw_texture_with_bsp("am_draw_texture_with_bsp", true, "Draw textured automap using BSP tree?", CVAR_Archive|CVAR_NoShadow);
 
 
-static VCvarB am_default_whole("am_default_whole", false, "Default scale is \"show all\"?", CVAR_Archive);
+static VCvarB am_default_whole("am_default_whole", false, "Default scale is \"show all\"?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB am_draw_keys("am_draw_keys", true, "Draw keys on automap?", CVAR_Archive);
-static VCvarF am_keys_blink_time("am_keys_blink_time", "0.4", "Keys blinking time in seconds (set to 0 to disable)", CVAR_Archive);
+static VCvarB am_draw_keys("am_draw_keys", true, "Draw keys on automap?", CVAR_Archive|CVAR_NoShadow);
+static VCvarF am_keys_blink_time("am_keys_blink_time", "0.4", "Keys blinking time in seconds (set to 0 to disable)", CVAR_Archive|CVAR_NoShadow);
 
 
-//static VCvarS am_cheat_pobj_active_color("am_pobj_active_color", "00 ff 00", "Automap color: active part of polyobject seg.", CVAR_Archive);
-//static VCvarS am_cheat_pobj_inactive_color("am_pobj_inactive_color", "ff 00 00", "Automap color: inactive part of polyobject seg.", CVAR_Archive);
+//static VCvarS am_cheat_pobj_active_color("am_pobj_active_color", "00 ff 00", "Automap color: active part of polyobject seg.", CVAR_Archive|CVAR_NoShadow);
+//static VCvarS am_cheat_pobj_inactive_color("am_pobj_inactive_color", "ff 00 00", "Automap color: inactive part of polyobject seg.", CVAR_Archive|CVAR_NoShadow);
 
 
 // cached colors

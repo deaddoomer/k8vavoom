@@ -68,7 +68,7 @@ struct VJpegClientData {
 };
 #endif
 
-static VCvarI jpeg_quality("jpeg_quality", "60", "Jpeg screenshot quality.", CVAR_Archive);
+static VCvarI jpeg_quality("jpeg_quality", "60", "Jpeg screenshot quality.", CVAR_Archive|CVAR_NoShadow);
 
 
 //==========================================================================

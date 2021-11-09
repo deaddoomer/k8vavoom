@@ -28,18 +28,18 @@
 #define DEBUG_DEEP_WATERS
 
 
-static VCvarB ldr_fix_udmf("ldr_fix_udmf", false, "Apply fixers for UDMF maps?", CVAR_Archive);
+static VCvarB ldr_fix_udmf("ldr_fix_udmf", false, "Apply fixers for UDMF maps?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB dbg_deep_water("dbg_deep_water", false, "Show debug messages in Deep Water processor?", CVAR_PreInit/*|CVAR_Archive*/);
-static VCvarB dbg_floodfill_fixer("dbg_floodfill_fixer", false, "Show debug messages from floodfill fixer?", CVAR_PreInit/*|CVAR_Archive*/);
+static VCvarB dbg_deep_water("dbg_deep_water", false, "Show debug messages in Deep Water processor?", CVAR_PreInit|CVAR_NoShadow/*|CVAR_Archive*/);
+static VCvarB dbg_floodfill_fixer("dbg_floodfill_fixer", false, "Show debug messages from floodfill fixer?", CVAR_PreInit|CVAR_NoShadow/*|CVAR_Archive*/);
 
-static VCvarB deepwater_hacks("deepwater_hacks", true, "Apply self-referenced deepwater hacks?", CVAR_Archive);
-static VCvarB deepwater_hacks_floor("deepwater_hacks_floor", true, "Apply deepwater hacks to fix some map errors?", CVAR_Archive);
-static VCvarB deepwater_hacks_ceiling("deepwater_hacks_ceiling", true, "Apply deepwater hacks to fix some map errors?", CVAR_Archive);
-static VCvarB deepwater_hacks_bridges("deepwater_hacks_bridges", true, "Apply hack for \"handing bridges\"?", CVAR_Archive);
+static VCvarB deepwater_hacks("deepwater_hacks", true, "Apply self-referenced deepwater hacks?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB deepwater_hacks_floor("deepwater_hacks_floor", true, "Apply deepwater hacks to fix some map errors?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB deepwater_hacks_ceiling("deepwater_hacks_ceiling", true, "Apply deepwater hacks to fix some map errors?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB deepwater_hacks_bridges("deepwater_hacks_bridges", true, "Apply hack for \"handing bridges\"?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB ldr_fix_slope_cracks("ldr_fix_slope_cracks", true, "Try to fix empty cracks near sloped floors?", /*CVAR_Archive|*/CVAR_PreInit);
-static VCvarB ldr_fix_transparent_doors("ldr_fix_transparent_doors", true, "Try to find and mark transparent doors?", CVAR_Archive);
+static VCvarB ldr_fix_slope_cracks("ldr_fix_slope_cracks", true, "Try to fix empty cracks near sloped floors?", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
+static VCvarB ldr_fix_transparent_doors("ldr_fix_transparent_doors", true, "Try to find and mark transparent doors?", CVAR_Archive|CVAR_NoShadow);
 
 
 //==========================================================================

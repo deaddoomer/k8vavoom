@@ -42,21 +42,21 @@ extern VCvarB r_brightmaps_sprite;
 extern VCvarI r_shadowmap_sprshadows;
 extern VCvarB gl_crop_sprites;
 
-VCvarI r_fix_sprite_offsets("r_fix_sprite_offsets", "2", "Sprite offset fixing algorithm (0:don't fix; 1:old; 2:new).", CVAR_Archive);
-VCvarB r_fix_sprite_offsets_missiles("r_fix_sprite_offsets_missiles", false, "Fix sprite offsets for projectiles?", CVAR_Archive);
-VCvarB r_fix_sprite_offsets_smart_corpses("r_fix_sprite_offsets_smart_corpses", true, "Let corpses sink a little?", CVAR_Archive);
-VCvarI r_sprite_fix_delta("r_sprite_fix_delta", "-7", "Sprite offset amount.", CVAR_Archive); // -6 seems to be ok for vanilla BFG explosion, and for imp fireball
-VCvarB r_use_real_sprite_offset("r_use_real_sprite_offset", true, "Use real picture height instead of texture height for sprite offset fixes (only for old aglorithm)?", CVAR_Archive);
-VCvarB r_use_sprofs_lump("r_use_sprofs_lump", true, "Use 'sprofs' lump for some hard-coded sprite offsets (only for the new algorithm)?", CVAR_Archive);
+VCvarI r_fix_sprite_offsets("r_fix_sprite_offsets", "2", "Sprite offset fixing algorithm (0:don't fix; 1:old; 2:new).", CVAR_Archive|CVAR_NoShadow);
+VCvarB r_fix_sprite_offsets_missiles("r_fix_sprite_offsets_missiles", false, "Fix sprite offsets for projectiles?", CVAR_Archive|CVAR_NoShadow);
+VCvarB r_fix_sprite_offsets_smart_corpses("r_fix_sprite_offsets_smart_corpses", true, "Let corpses sink a little?", CVAR_Archive|CVAR_NoShadow);
+VCvarI r_sprite_fix_delta("r_sprite_fix_delta", "-7", "Sprite offset amount.", CVAR_Archive|CVAR_NoShadow); // -6 seems to be ok for vanilla BFG explosion, and for imp fireball
+VCvarB r_use_real_sprite_offset("r_use_real_sprite_offset", true, "Use real picture height instead of texture height for sprite offset fixes (only for old aglorithm)?", CVAR_Archive|CVAR_NoShadow);
+VCvarB r_use_sprofs_lump("r_use_sprofs_lump", true, "Use 'sprofs' lump for some hard-coded sprite offsets (only for the new algorithm)?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB r_sprite_use_pofs("r_sprite_use_pofs", false, "Use PolygonOffset with sprite sorting to reduce sprite flickering?", CVAR_Archive);
-static VCvarF r_sprite_pofs("r_sprite_pofs", "128", "DEBUG");
-static VCvarF r_sprite_pslope("r_sprite_pslope", "-1.0", "DEBUG");
+static VCvarB r_sprite_use_pofs("r_sprite_use_pofs", false, "Use PolygonOffset with sprite sorting to reduce sprite flickering?", CVAR_Archive|CVAR_NoShadow);
+static VCvarF r_sprite_pofs("r_sprite_pofs", "128", "DEBUG", CVAR_NoShadow);
+static VCvarF r_sprite_pslope("r_sprite_pslope", "-1.0", "DEBUG", CVAR_NoShadow);
 
-static VCvarB r_thing_hiframe_use_camera_plane("r_thing_hiframe_use_camera_plane", true, "Use angle to camera plane to select rotation for sprites with detailed rotations?", CVAR_Archive);
-static VCvarB r_thing_monster_use_camera_plane("r_thing_monster_use_camera_plane", true, "Use angle to camera plane to select monster rotation?", CVAR_Archive);
-static VCvarB r_thing_missile_use_camera_plane("r_thing_missile_use_camera_plane", true, "Use angle to camera plane to select missile rotation?", CVAR_Archive);
-static VCvarB r_thing_other_use_camera_plane("r_thing_other_use_camera_plane", true, "Use angle to camera plane to select non-monster rotation?", CVAR_Archive);
+static VCvarB r_thing_hiframe_use_camera_plane("r_thing_hiframe_use_camera_plane", true, "Use angle to camera plane to select rotation for sprites with detailed rotations?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB r_thing_monster_use_camera_plane("r_thing_monster_use_camera_plane", true, "Use angle to camera plane to select monster rotation?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB r_thing_missile_use_camera_plane("r_thing_missile_use_camera_plane", true, "Use angle to camera plane to select missile rotation?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB r_thing_other_use_camera_plane("r_thing_other_use_camera_plane", true, "Use angle to camera plane to select non-monster rotation?", CVAR_Archive|CVAR_NoShadow);
 
 VCvarB r_fake_shadows_alias_models("r_fake_shadows_alias_models", false, "Render shadows from alias models (based on sprite frame)?", CVAR_Archive);
 static VCvarI r_fake_sprite_shadows("r_fake_sprite_shadows", "2", "Render fake sprite shadows (0:no; 1:2d; 2:pseudo-3d)?", CVAR_Archive);
@@ -77,9 +77,9 @@ static VCvarB r_fake_shadows_additive_monsters("r_fake_shadows_additive_monsters
 static VCvarF r_fake_3dshadow_scale("r_fake_3dshadow_scale", "0.4", "Fake sprite shadows height multiplier for pseudo-3d mode.", CVAR_Archive);
 static VCvarI r_fake_3dshadow_mode("r_fake_3dshadow_mode", "0", "Fake pseudo-3d shadow mode (0:direction to the thing; 1:camera yaw).", CVAR_Archive);
 
-static VCvarB dbg_disable_sprite_sorting("dbg_disable_sprite_sorting", false, "Disable sprite sorting (this WILL glitch renderer)?", /*CVAR_Archive|*/CVAR_PreInit);
+static VCvarB dbg_disable_sprite_sorting("dbg_disable_sprite_sorting", false, "Disable sprite sorting (this WILL glitch renderer)?", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
 
-static VCvarB dbg_disable_translucent_polys("dbg_disable_translucent_polys", false, "Disable rendering of translucent polygons?", CVAR_PreInit);
+static VCvarB dbg_disable_translucent_polys("dbg_disable_translucent_polys", false, "Disable rendering of translucent polygons?", CVAR_PreInit|CVAR_NoShadow);
 
 
 //==========================================================================

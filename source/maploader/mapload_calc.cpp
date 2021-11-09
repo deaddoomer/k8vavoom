@@ -32,10 +32,10 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static VCvarI nodes_builder_type("nodes_builder_type", "0", "Which internal node builder to use (0:auto; 1:ajbsp; 2:zdbsp)?", CVAR_Archive);
+static VCvarI nodes_builder_type("nodes_builder_type", "0", "Which internal node builder to use (0:auto; 1:ajbsp; 2:zdbsp)?", CVAR_Archive|CVAR_NoShadow);
 // default nodes builder for UDMF is still AJBSP, because it seems that i fixed UDMF bugs
-static VCvarI nodes_builder_normal("nodes_builder_normal", "1", "Which internal node builder to use for non-UDMF maps (0:auto; 1:ajbsp; 2:zdbsp)?", CVAR_Archive);
-static VCvarI nodes_builder_udmf("nodes_builder_udmf", "1", "Which internal node builder to use for UDMF maps (0:auto; 1:ajbsp; 2:zdbsp)?", CVAR_Archive);
+static VCvarI nodes_builder_normal("nodes_builder_normal", "1", "Which internal node builder to use for non-UDMF maps (0:auto; 1:ajbsp; 2:zdbsp)?", CVAR_Archive|CVAR_NoShadow);
+static VCvarI nodes_builder_udmf("nodes_builder_udmf", "1", "Which internal node builder to use for UDMF maps (0:auto; 1:ajbsp; 2:zdbsp)?", CVAR_Archive|CVAR_NoShadow);
 
 
 //==========================================================================

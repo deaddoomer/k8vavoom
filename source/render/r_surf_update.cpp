@@ -28,7 +28,7 @@
 #include "r_surf_update_utils_inc.cpp"
 
 
-VCvarB r_dbg_force_world_update("r_dbg_force_world_update", false, "Force world updates on each frame (for debugging).", CVAR_PreInit/*|CVAR_Archive*/);
+VCvarB r_dbg_force_world_update("r_dbg_force_world_update", false, "Force world updates on each frame (for debugging).", CVAR_PreInit|CVAR_NoShadow/*|CVAR_Archive*/);
 
 
 

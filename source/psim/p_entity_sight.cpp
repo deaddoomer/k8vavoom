@@ -35,7 +35,7 @@
 
 
 static VCvarB compat_better_sight("compat_better_sight", true, "Check more points in LOS calculations?", CVAR_Archive);
-static VCvarB dbg_disable_cansee("dbg_disable_cansee", false, "Disable CanSee processing (for debug)?", CVAR_PreInit);
+static VCvarB dbg_disable_cansee("dbg_disable_cansee", false, "Disable CanSee processing (for debug)?", CVAR_PreInit|CVAR_NoShadow);
 
 //k8: for some reason, sight checks ignores base sector region
 //    i don't think that this is a right thing to do, so i removed that

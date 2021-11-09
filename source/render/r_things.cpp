@@ -48,12 +48,12 @@ extern VCvarB r_brightmaps_sprite;
 extern VCvarB r_fake_shadows_alias_models;
 extern VCvarB r_model_advshadow_all;
 
-static VCvarB r_dbg_thing_dump_vislist("r_dbg_thing_dump_vislist", false, "Dump built list of visible things?", 0);
+static VCvarB r_dbg_thing_dump_vislist("r_dbg_thing_dump_vislist", false, "Dump built list of visible things?", CVAR_NoShadow);
 
-static VCvarB r_thing_faster_collect("r_thing_faster_collect", false, "Use faster by-sector thing collector? (This may miss some visible things in invisible sectors)", CVAR_Archive);
+static VCvarB r_thing_faster_collect("r_thing_faster_collect", false, "Use faster by-sector thing collector? (This may miss some visible things in invisible sectors)", CVAR_Archive|CVAR_NoShadow);
 
-VCvarB r_draw_mobjs("r_draw_mobjs", true, "Draw mobjs?", /*CVAR_Archive|*/CVAR_PreInit);
-VCvarB r_draw_psprites("r_draw_psprites", true, "Draw psprites?", CVAR_Archive);
+VCvarB r_draw_mobjs("r_draw_mobjs", true, "Draw mobjs?", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
+VCvarB r_draw_psprites("r_draw_psprites", true, "Draw psprites?", CVAR_Archive|CVAR_NoShadow);
 VCvarI r_drawfuzz("r_drawfuzz", "1", "Fuzz effect (0:alpha; 1:shadow)", CVAR_Archive);
 VCvarF r_fuzzalpha("r_fuzzalpha", "0.34", "Alpha for alpha-based fuzzy sprites.", CVAR_Archive);
 VCvarI r_fuzzmode("r_fuzzmode", "0", "Fuzzy mode (0:vanilla; 1..3:noise).", CVAR_Archive);
@@ -61,7 +61,7 @@ VCvarF r_transsouls("r_transsouls", "1", "Lost Souls alpha.", CVAR_Archive);
 
 VCvarB r_models("r_models", true, "Allow 3d models?", CVAR_Archive);
 VCvarB r_model_light("r_model_light", true, "Draw model light in advanced renderer?", CVAR_Archive);
-VCvarB r_models_view("r_models_view", true, "Allow HUD weapon models?", CVAR_Archive);
+VCvarB r_models_view("r_models_view", true, "Allow HUD weapon models?", CVAR_Archive|CVAR_NoShadow);
 VCvarB r_models_strict("r_models_strict", true, "Strict 3D model->class search?", CVAR_Archive);
 
 VCvarB r_models_monsters("r_models_monsters", true, "Render 3D models for monsters?", CVAR_Archive);
@@ -82,7 +82,7 @@ VCvarB r_shadows_decorations("r_shadows_decorations", true, "Render shadows for 
 VCvarB r_shadows_other("r_shadows_other", false, "Render shadows for things with unidentified types?", CVAR_Archive);
 VCvarB r_shadows_players("r_shadows_players", true, "Render shadows for players?", CVAR_Archive);
 
-static VCvarB r_draw_adjacent_sector_things("r_draw_adjacent_sector_things", true, "Draw things in sectors adjacent to visible sectors (can fix disappearing things, but somewhat slow)?", CVAR_Archive);
+static VCvarB r_draw_adjacent_sector_things("r_draw_adjacent_sector_things", true, "Draw things in sectors adjacent to visible sectors (can fix disappearing things, but somewhat slow)?", CVAR_Archive|CVAR_NoShadow);
 
 extern VCvarI r_fullbright_splevel_player;
 extern VCvarI r_fullbright_splevel_missile;

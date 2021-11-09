@@ -26,7 +26,7 @@
 #include "gl_local.h"
 
 
-VCvarB gl_regular_prefill_depth("gl_regular_prefill_depth", false, "Prefill depth buffer for regular renderer?", CVAR_Archive);
+VCvarB gl_regular_prefill_depth("gl_regular_prefill_depth", false, "Prefill depth buffer for regular renderer?", CVAR_Archive|CVAR_NoShadow);
 
 extern VCvarB r_lmap_overbright;
 extern VCvarF r_overbright_specular;

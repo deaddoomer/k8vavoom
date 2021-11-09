@@ -33,11 +33,11 @@
 // WARNING! dehacked parser requires this!
 #define VC_DECORATE_ACTION_BELONGS_TO_STATE
 
-static VCvarB dbg_show_decorate_unsupported("dbg_show_decorate_unsupported", false, "Show unsupported decorate props/flags?", CVAR_PreInit|CVAR_Archive);
-static VCvarB dbg_debug_weapon_slots("dbg_debug_weapon_slots", false, "Debug weapon slots?", CVAR_PreInit);
-static VCvarB dbg_dump_flag_changes("dbg_dump_flag_changes", false, "Dump all flag changes?", CVAR_PreInit);
-VCvarB dbg_show_missing_classes("dbg_show_missing_classes", false, "Show missing classes?", CVAR_PreInit|CVAR_Archive);
-VCvarB decorate_fail_on_unknown("decorate_fail_on_unknown", false, "Fail on unknown decorate properties?", CVAR_PreInit|CVAR_Archive);
+static VCvarB dbg_show_decorate_unsupported("dbg_show_decorate_unsupported", false, "Show unsupported decorate props/flags?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
+static VCvarB dbg_debug_weapon_slots("dbg_debug_weapon_slots", false, "Debug weapon slots?", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB dbg_dump_flag_changes("dbg_dump_flag_changes", false, "Dump all flag changes?", CVAR_PreInit|CVAR_NoShadow);
+VCvarB dbg_show_missing_classes("dbg_show_missing_classes", false, "Show missing classes?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
+VCvarB decorate_fail_on_unknown("decorate_fail_on_unknown", false, "Fail on unknown decorate properties?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 
 // sorry for this!
 extern int R_ParseDecorateTranslation (VScriptParser *sc, int GameMax, VStr trname=VStr::EmptyString);

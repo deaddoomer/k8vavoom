@@ -42,31 +42,31 @@
 // THIS IS GLITCHY!
 //#define VV_CHOOSE_SKY_BY_AREA
 
-static VCvarB r_skybox_clip_hack("r_skybox_clip_hack", false, "Relax clipping for skyboxes/portals? Most of the time this is not needed; might be useful for complex stacked sectors.", CVAR_Archive);
+static VCvarB r_skybox_clip_hack("r_skybox_clip_hack", false, "Relax clipping for skyboxes/portals? Most of the time this is not needed; might be useful for complex stacked sectors.", CVAR_Archive|CVAR_NoShadow);
 
-VCvarB r_draw_pobj("r_draw_pobj", true, "Render polyobjects?", CVAR_PreInit);
-static VCvarI r_maxmiror_depth("r_maxmiror_depth", "1", "Maximum allowed mirrors.", CVAR_Archive);
-VCvarI r_max_portal_depth("r_max_portal_depth", "1", "Maximum allowed portal depth (-1: infinite)", CVAR_Archive);
-VCvarI r_max_portal_depth_override("r_max_portal_depth_override", "-1", "Maximum allowed portal depth override for map fixer (-1: not active)", 0);
-static VCvarB r_allow_horizons("r_allow_horizons", true, "Allow horizon portal rendering?", CVAR_Archive);
-static VCvarB r_allow_mirrors("r_allow_mirrors", true, "Allow mirror portal rendering?", CVAR_Archive);
-static VCvarB r_allow_floor_mirrors("r_allow_floor_mirrors", false, "Allow floor/ceiling mirror portal rendering?", CVAR_Archive);
-static VCvarB r_allow_stacked_sectors("r_allow_stacked_sectors", true, "Allow non-mirror portal rendering (SLOW)?", CVAR_Archive);
+VCvarB r_draw_pobj("r_draw_pobj", true, "Render polyobjects?", CVAR_PreInit|CVAR_NoShadow);
+static VCvarI r_maxmiror_depth("r_maxmiror_depth", "1", "Maximum allowed mirrors.", CVAR_Archive|CVAR_NoShadow);
+VCvarI r_max_portal_depth("r_max_portal_depth", "1", "Maximum allowed portal depth (-1: infinite)", CVAR_Archive|CVAR_NoShadow);
+VCvarI r_max_portal_depth_override("r_max_portal_depth_override", "-1", "Maximum allowed portal depth override for map fixer (-1: not active)", CVAR_NoShadow);
+static VCvarB r_allow_horizons("r_allow_horizons", true, "Allow horizon portal rendering?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB r_allow_mirrors("r_allow_mirrors", true, "Allow mirror portal rendering?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB r_allow_floor_mirrors("r_allow_floor_mirrors", false, "Allow floor/ceiling mirror portal rendering?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB r_allow_stacked_sectors("r_allow_stacked_sectors", true, "Allow non-mirror portal rendering (SLOW)?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB r_enable_sky_portals("r_enable_sky_portals", true, "Enable rendering of sky portals.", 0/*CVAR_Archive*/);
+static VCvarB r_enable_sky_portals("r_enable_sky_portals", true, "Enable rendering of sky portals.", CVAR_NoShadow/*|CVAR_Archive*/);
 
-static VCvarB dbg_max_portal_depth_warning("dbg_max_portal_depth_warning", false, "Show maximum allowed portal depth warning?", 0/*CVAR_Archive*/);
+static VCvarB dbg_max_portal_depth_warning("dbg_max_portal_depth_warning", false, "Show maximum allowed portal depth warning?", CVAR_NoShadow/*|CVAR_Archive*/);
 
-static VCvarB r_ordered_subregions("r_ordered_subregions", true, "Order subregions in renderer (needed for translucency)?", CVAR_Archive);
+static VCvarB r_ordered_subregions("r_ordered_subregions", true, "Order subregions in renderer (required for translucency)?", CVAR_Archive|CVAR_NoShadow);
 
-VCvarB r_draw_queue_warnings("r_draw_queue_warnings", false, "Show 'queued twice' and other warnings?", CVAR_PreInit);
+VCvarB r_draw_queue_warnings("r_draw_queue_warnings", false, "Show 'queued twice' and other warnings?", CVAR_PreInit|CVAR_NoShadow);
 
-//static VCvarB dbg_dump_portal_list("dbg_dump_portal_list", false, "Dump portal list before rendering?", 0/*CVAR_Archive*/);
+//static VCvarB dbg_dump_portal_list("dbg_dump_portal_list", false, "Dump portal list before rendering?", CVAR_NoShadow/*|CVAR_Archive*/);
 
-VCvarB r_disable_world_update("r_disable_world_update", false, "Disable world updates.", 0/*CVAR_Archive*/);
+VCvarB r_disable_world_update("r_disable_world_update", false, "Disable world updates.", CVAR_NoShadow/*|CVAR_Archive*/);
 
-static VCvarB r_dbg_always_draw_flats("r_dbg_always_draw_flats", true, "Draw flat surfaces even if region is not visible (this is pobj hack)?", 0/*CVAR_Archive*/);
-//static VCvarB r_draw_adjacent_subsector_things("r_draw_adjacent_subsector_things", true, "Draw things subsectors adjacent to visible subsectors (can fix disappearing things)?", CVAR_Archive);
+static VCvarB r_dbg_always_draw_flats("r_dbg_always_draw_flats", true, "Draw flat surfaces even if region is not visible (this is pobj hack)?", CVAR_NoShadow/*|CVAR_Archive*/);
+//static VCvarB r_draw_adjacent_subsector_things("r_draw_adjacent_subsector_things", true, "Draw things subsectors adjacent to visible subsectors (can fix disappearing things)?", CVAR_Archive|CVAR_NoShadow);
 
 extern VCvarB r_underwater_colored_light;
 

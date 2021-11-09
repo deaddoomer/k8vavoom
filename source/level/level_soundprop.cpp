@@ -31,7 +31,7 @@ static VCvarB gm_compat_corpses_can_hear("gm_compat_corpses_can_hear", false, "C
 static VCvarB gm_compat_everything_can_hear("gm_compat_everything_can_hear", false, "Can everything hear sound propagation?", CVAR_Archive);
 static VCvarF gm_compat_max_hearing_distance("gm_compat_max_hearing_distance", "0", "Maximum hearing distance (0 means unlimited)?", CVAR_Archive);
 static VCvarB gm_compat_better_sound_distance("gm_compat_better_sound_distance", true, "Check line distance on sound propagation?", CVAR_Archive);
-static VCvarB dbg_disable_sound_alert("dbg_disable_sound_alert", false, "Disable sound alerting?", CVAR_PreInit);
+static VCvarB dbg_disable_sound_alert("dbg_disable_sound_alert", false, "Disable sound alerting?", CVAR_PreInit|CVAR_NoShadow);
 
 
 // ////////////////////////////////////////////////////////////////////////// //

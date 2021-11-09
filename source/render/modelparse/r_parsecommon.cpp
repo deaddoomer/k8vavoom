@@ -27,8 +27,8 @@
 #include "../r_local.h"
 
 
-VCvarB r_models_verbose_loading("r_models_verbose_loading", false, "Log loaded 3D models?", CVAR_PreInit);
-VCvarB mdl_report_errors("mdl_report_errors", false, "Show errors in alias models?", 0/*CVAR_Archive*/);
+VCvarB r_models_verbose_loading("r_models_verbose_loading", false, "Log loaded 3D models?", CVAR_PreInit|CVAR_NoShadow);
+VCvarB mdl_report_errors("mdl_report_errors", false, "Show errors in alias models?", CVAR_NoShadow/*|CVAR_Archive*/);
 
 
 

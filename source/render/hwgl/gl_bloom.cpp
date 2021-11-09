@@ -32,14 +32,14 @@
 
 // ////////////////////////////////////////////////////////////////////////// //
 VCvarB r_bloom("r_bloom", true, "Enable Bloom post-processing effect?", CVAR_Archive);
-VCvarF r_bloom_alpha("r_bloom_alpha", "0.2", "Bloom alpha.", CVAR_Archive);
-VCvarI r_bloom_diamond_size("r_bloom_diamond_size", "8", "Bloom diamond size.", CVAR_Archive);
-VCvarF r_bloom_intensity("r_bloom_intensity", "0.75", "Bloom intensity.", CVAR_Archive);
-VCvarF r_bloom_darken("r_bloom_darken", "8", "Bloom darken.", CVAR_Archive);
-VCvarF r_bloom_sample_scaledown("r_bloom_sample_scaledown", "2", "Bloom sample scale down.", CVAR_Archive);
-VCvarB r_bloom_autoexposure("r_bloom_autoexposure", true, "Use bloom autoexposure?", CVAR_Archive);
-VCvarF r_bloom_autoexposure_coeff("r_bloom_autoexposure_coeff", "1.5", "Bloom autoexposure coefficient.", CVAR_Archive);
-VCvarB r_bloom_id0_effect("r_bloom_id0_effect", false, "Special bloom effect for id0. ;-)", CVAR_Archive);
+VCvarF r_bloom_alpha("r_bloom_alpha", "0.2", "Bloom alpha.", CVAR_Archive|CVAR_NoShadow);
+VCvarI r_bloom_diamond_size("r_bloom_diamond_size", "8", "Bloom diamond size.", CVAR_Archive|CVAR_NoShadow);
+VCvarF r_bloom_intensity("r_bloom_intensity", "0.75", "Bloom intensity.", CVAR_Archive|CVAR_NoShadow);
+VCvarF r_bloom_darken("r_bloom_darken", "8", "Bloom darken.", CVAR_Archive|CVAR_NoShadow);
+VCvarF r_bloom_sample_scaledown("r_bloom_sample_scaledown", "2", "Bloom sample scale down.", CVAR_Archive|CVAR_NoShadow);
+VCvarB r_bloom_autoexposure("r_bloom_autoexposure", true, "Use bloom autoexposure?", CVAR_Archive|CVAR_NoShadow);
+VCvarF r_bloom_autoexposure_coeff("r_bloom_autoexposure_coeff", "1.5", "Bloom autoexposure coefficient.", CVAR_Archive|CVAR_NoShadow);
+VCvarB r_bloom_id0_effect("r_bloom_id0_effect", false, "Special bloom effect for id0. ;-)", CVAR_Archive|CVAR_NoShadow);
 
 
 //==========================================================================

@@ -35,7 +35,7 @@ static const char *cli_Port = nullptr;
   /*&& VParsedArgs::RegisterFlagSet("-listen", nullptr, &cli_Listen)*/;
 
 
-static VCvarS net_ui_last_join_address("net_ui_last_join_address", "127.0.0.1", "Last server address for manual connection (used in UI).", CVAR_Archive);
+static VCvarS net_ui_last_join_address("net_ui_last_join_address", "127.0.0.1", "Last server address for manual connection (used in UI).", CVAR_Archive|CVAR_NoShadow);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -97,7 +97,7 @@ private:
 // ////////////////////////////////////////////////////////////////////////// //
 VNetworkPublic *GNet = nullptr;
 
-VCvarS VNetworkLocal::HostName("hostname", "UNNAMED", "Name of this host.", CVAR_PreInit);
+VCvarS VNetworkLocal::HostName("hostname", "UNNAMED", "Name of this host.", CVAR_PreInit|CVAR_NoShadow);
 
 VNetDriver *VNetworkLocal::Drivers[MAX_NET_DRIVERS];
 int VNetworkLocal::NumDrivers = 0;

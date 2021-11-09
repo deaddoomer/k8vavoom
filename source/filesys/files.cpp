@@ -38,12 +38,12 @@ extern VCvarB game_release_mode;
 extern int cli_NoZMapinfo; // from mapinfo.cpp
 int cli_NoExternalDeh = 0;
 
-static VCvarB dbg_dump_gameinfo("dbg_dump_gameinfo", false, "Dump parsed game.txt?", CVAR_PreInit);
-static VCvarB gz_skip_menudef("gz_skip_menudef", false, "Skip gzdoom menudef parsing?", CVAR_PreInit|CVAR_Hidden);
+static VCvarB dbg_dump_gameinfo("dbg_dump_gameinfo", false, "Dump parsed game.txt?", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB gz_skip_menudef("gz_skip_menudef", false, "Skip gzdoom menudef parsing?", CVAR_PreInit|CVAR_Hidden|CVAR_NoShadow);
 
-static VCvarB __dbg_debug_preinit("dbg_debug_preinit", false, "Dump preinits?", CVAR_PreInit|CVAR_Hidden);
+static VCvarB __dbg_debug_preinit("dbg_debug_preinit", false, "Dump preinits?", CVAR_PreInit|CVAR_Hidden|CVAR_NoShadow);
 
-VCvarS game_name("game_name", "unknown", "The Name Of The Game.", CVAR_Rom);
+VCvarS game_name("game_name", "unknown", "The Name Of The Game.", CVAR_Rom|CVAR_NoShadow);
 
 int cli_WAll = 0;
 

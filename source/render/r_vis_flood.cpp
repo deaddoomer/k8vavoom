@@ -31,7 +31,7 @@
 #include "r_local.h"
 
 
-static VCvarB r_lightflood_check_plane_angles("r_lightflood_check_plane_angles", true, "Check seg planes angles in light floodfill?", CVAR_Archive);
+static VCvarB r_lightflood_check_plane_angles("r_lightflood_check_plane_angles", true, "Check seg planes angles in light floodfill?", CVAR_Archive|CVAR_NoShadow);
 
 extern VCvarB dbg_vischeck_time;
 

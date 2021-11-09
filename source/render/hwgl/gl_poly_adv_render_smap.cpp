@@ -46,7 +46,7 @@ extern VCvarB gl_shadowmap_more_cubes;
 static int saved_gl_shadowmap_size = -666;
 static bool saved_gl_shadowmap_precision = false;
 
-static VCvarB gl_dbg_smap_vbo("gl_dbg_smap_vbo", true, "Use VBO to render shadowmaps?", CVAR_PreInit);
+static VCvarB gl_dbg_smap_vbo("gl_dbg_smap_vbo", true, "Use VBO to render shadowmaps?", CVAR_PreInit|CVAR_NoShadow);
 
 
 //==========================================================================

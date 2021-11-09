@@ -27,8 +27,8 @@
 #include "../psim/p_thinker.h"
 #include "network.h"
 
-static VCvarB net_debug_name_io("net_debug_name_io", false, "Dump name i/o?");
-static VCvarB net_debug_send_initial_names("net_debug_send_initial_names", true, "If false, no initial names will be sent.");
+static VCvarB net_debug_name_io("net_debug_name_io", false, "Dump name i/o?", CVAR_NoShadow);
+static VCvarB net_debug_send_initial_names("net_debug_send_initial_names", true, "If false, no initial names will be sent.", CVAR_NoShadow);
 
 
 //==========================================================================

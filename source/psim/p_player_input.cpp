@@ -210,59 +210,59 @@ static int joyymove[2] = {0, 0};
 static int currImpulse = 0;
 
 
-static VCvarB always_run("always_run", false, "Always run?", CVAR_Archive);
-static VCvarB artiskip("artiskip", true, "Should Shift+Enter skip an artifact?", CVAR_Archive); // whether shift-enter skips an artifact
+static VCvarB always_run("always_run", false, "Always run?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB artiskip("artiskip", true, "Should Shift+Enter skip an artifact?", CVAR_Archive|CVAR_NoShadow); // whether shift-enter skips an artifact
 
-static VCvarB cl_input_pressure("cl_input_pressure", false, "Try to detect 'key pressure'?", CVAR_Archive);
+static VCvarB cl_input_pressure("cl_input_pressure", false, "Try to detect 'key pressure'?", CVAR_Archive|CVAR_NoShadow);
 
 
-static VCvarF cl_forwardspeed("cl_forwardspeed", "200", "Forward speed.", CVAR_Archive);
-static VCvarF cl_backspeed("cl_backspeed", "200", "Backward speed.", CVAR_Archive);
-static VCvarF cl_sidespeed("cl_sidespeed", "200", "Sidestepping speed.", CVAR_Archive);
-static VCvarF cl_flyspeed("cl_flyspeed", "80", "Flying speed.", CVAR_Archive);
+static VCvarF cl_forwardspeed("cl_forwardspeed", "200", "Forward speed.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF cl_backspeed("cl_backspeed", "200", "Backward speed.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF cl_sidespeed("cl_sidespeed", "200", "Sidestepping speed.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF cl_flyspeed("cl_flyspeed", "80", "Flying speed.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarF cl_movespeedkey("cl_movespeedkey", "2", "Running multiplier.", CVAR_Archive);
+static VCvarF cl_movespeedkey("cl_movespeedkey", "2", "Running multiplier.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarF cl_yawspeed("cl_yawspeed", "140", "Yaw speed.", CVAR_Archive);
-static VCvarF cl_pitchspeed("cl_pitchspeed", "150", "Pitch speed.", CVAR_Archive);
-static VCvarF cl_pitchdriftspeed("cl_pitchdriftspeed", "270", "Pitch drifting speed.", CVAR_Archive);
+static VCvarF cl_yawspeed("cl_yawspeed", "140", "Yaw speed.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF cl_pitchspeed("cl_pitchspeed", "150", "Pitch speed.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF cl_pitchdriftspeed("cl_pitchdriftspeed", "270", "Pitch drifting speed.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarF cl_anglespeedkey("cl_anglespeedkey", "1.5", "Fast turning multiplier.", CVAR_Archive);
+static VCvarF cl_anglespeedkey("cl_anglespeedkey", "1.5", "Fast turning multiplier.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB cl_deathroll_enabled("cl_deathroll_enabled", false, "Enable death roll?", CVAR_Archive);
-static VCvarF cl_deathroll_amount("cl_deathroll_amount", "75", "Deathroll amount.", CVAR_Archive);
-static VCvarF cl_deathroll_speed("cl_deathroll_speed", "80", "Deathroll speed.", CVAR_Archive);
+static VCvarB cl_deathroll_enabled("cl_deathroll_enabled", false, "Enable death roll?", CVAR_Archive|CVAR_NoShadow);
+static VCvarF cl_deathroll_amount("cl_deathroll_amount", "75", "Deathroll amount.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF cl_deathroll_speed("cl_deathroll_speed", "80", "Deathroll speed.", CVAR_Archive|CVAR_NoShadow);
 
-VCvarF mouse_x_sensitivity("mouse_x_sensitivity", "5.5", "Horizontal mouse sensitivity.", CVAR_Archive);
-VCvarF mouse_y_sensitivity("mouse_y_sensitivity", "5.5", "Vertical mouse sensitivity.", CVAR_Archive);
-static VCvarB mouse_look("mouse_look", true, "Allow mouselook?", CVAR_Archive);
-static VCvarB mouse_look_horisontal("mouse_look_horisontal", true, "Allow horisontal mouselook?", CVAR_Archive);
-static VCvarB mouse_look_vertical("mouse_look_vertical", true, "Allow vertical mouselook?", CVAR_Archive);
-static VCvarB invert_mouse("invert_mouse", false, "Invert mouse?", CVAR_Archive);
-static VCvarB invert_joystick("invert_joystick", false, "Invert joystick?", CVAR_Archive);
-static VCvarB lookstrafe("lookstrafe", false, "Allow lookstrafe?", CVAR_Archive);
-static VCvarB lookspring_mouse("lookspring_mouse", false, "Allow lookspring for mouselook key?", CVAR_Archive);
-static VCvarB lookspring_keyboard("lookspring_keyboard", false, "Allow lookspring for keyboard view keys?", CVAR_Archive);
+VCvarF mouse_x_sensitivity("mouse_x_sensitivity", "5.5", "Horizontal mouse sensitivity.", CVAR_Archive|CVAR_NoShadow);
+VCvarF mouse_y_sensitivity("mouse_y_sensitivity", "5.5", "Vertical mouse sensitivity.", CVAR_Archive|CVAR_NoShadow);
+static VCvarB mouse_look("mouse_look", true, "Allow mouselook?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB mouse_look_horisontal("mouse_look_horisontal", true, "Allow horisontal mouselook?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB mouse_look_vertical("mouse_look_vertical", true, "Allow vertical mouselook?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB invert_mouse("invert_mouse", false, "Invert mouse?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB invert_joystick("invert_joystick", false, "Invert joystick?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB lookstrafe("lookstrafe", false, "Allow lookstrafe?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB lookspring_mouse("lookspring_mouse", false, "Allow lookspring for mouselook key?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB lookspring_keyboard("lookspring_keyboard", false, "Allow lookspring for keyboard view keys?", CVAR_Archive|CVAR_NoShadow);
 
-VCvarF m_yaw("m_yaw", "0.022", "Mouse yaw speed.", CVAR_Archive);
-VCvarF m_pitch("m_pitch", "0.022", "Mouse pitch speed.", CVAR_Archive);
-static VCvarF m_forward("m_forward", "1", "Mouse forward speed.", CVAR_Archive);
-static VCvarF m_side("m_side", "0.8", "Mouse sidestepping speed.", CVAR_Archive);
+VCvarF m_yaw("m_yaw", "0.022", "Mouse yaw speed.", CVAR_Archive|CVAR_NoShadow);
+VCvarF m_pitch("m_pitch", "0.022", "Mouse pitch speed.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF m_forward("m_forward", "1", "Mouse forward speed.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF m_side("m_side", "0.8", "Mouse sidestepping speed.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarF joy_yaw("joy_yaw", "0.022", "Joystick yaw speed.", CVAR_Archive);
-static VCvarF joy_pitch("joy_pitch", "0.022", "Joystick pitch speed.", CVAR_Archive);
+static VCvarF joy_yaw("joy_yaw", "0.022", "Joystick yaw speed.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF joy_pitch("joy_pitch", "0.022", "Joystick pitch speed.", CVAR_Archive|CVAR_NoShadow);
 
-//static VCvarF joy_yaw("joy_yaw", "140", "Joystick yaw speed.", CVAR_Archive);
+//static VCvarF joy_yaw("joy_yaw", "140", "Joystick yaw speed.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarI joy_axis_rotate("joy_axis_rotate", "0", "Gamepad stick for camera rotation.", CVAR_Archive);
-static VCvarI joy_axis_pitch("joy_axis_pitch", "0", "Gamepad stick for looking up/down.", CVAR_Archive);
-static VCvarI joy_axis_walk("joy_axis_walk", "1", "Gamepad stick for forward/backward movement.", CVAR_Archive);
-static VCvarI joy_axis_strafe("joy_axis_strafe", "1", "Gamepad stick for strafing.", CVAR_Archive);
+static VCvarI joy_axis_rotate("joy_axis_rotate", "0", "Gamepad stick for camera rotation.", CVAR_Archive|CVAR_NoShadow);
+static VCvarI joy_axis_pitch("joy_axis_pitch", "0", "Gamepad stick for looking up/down.", CVAR_Archive|CVAR_NoShadow);
+static VCvarI joy_axis_walk("joy_axis_walk", "1", "Gamepad stick for forward/backward movement.", CVAR_Archive|CVAR_NoShadow);
+static VCvarI joy_axis_strafe("joy_axis_strafe", "1", "Gamepad stick for strafing.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarF joy_rotate_sensitivity("joy_rotate_sensitivity", "5", "Joystick rotation sensitivity.", CVAR_Archive);
-static VCvarF joy_pitch_sensitivity("joy_pitch_sensitivity", "5", "Joystick look up/down sensitivity.", CVAR_Archive);
-static VCvarF joy_walk_sensitivity("joy_walk_sensitivity", "5", "Joystick movement sensitivity.", CVAR_Archive);
-static VCvarF joy_strafe_sensitivity("joy_strafe_sensitivity", "5", "Joystick strafing sensitivity.", CVAR_Archive);
+static VCvarF joy_rotate_sensitivity("joy_rotate_sensitivity", "5", "Joystick rotation sensitivity.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF joy_pitch_sensitivity("joy_pitch_sensitivity", "5", "Joystick look up/down sensitivity.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF joy_walk_sensitivity("joy_walk_sensitivity", "5", "Joystick movement sensitivity.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF joy_strafe_sensitivity("joy_strafe_sensitivity", "5", "Joystick strafing sensitivity.", CVAR_Archive|CVAR_NoShadow);
 
 
 static TKButton *knownButtons = nullptr;

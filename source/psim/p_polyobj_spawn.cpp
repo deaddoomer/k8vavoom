@@ -29,7 +29,7 @@
 #endif
 
 
-static VCvarB dbg_pobj_verbose_spawn("dbg_pobj_verbose_spawn", false, "Verbose polyobject spawner?", CVAR_PreInit|CVAR_Hidden);
+static VCvarB dbg_pobj_verbose_spawn("dbg_pobj_verbose_spawn", false, "Verbose polyobject spawner?", CVAR_PreInit|CVAR_Hidden|CVAR_NoShadow);
 
 
 // polyobj line start special

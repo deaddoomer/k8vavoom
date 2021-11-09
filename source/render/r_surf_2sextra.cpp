@@ -30,7 +30,7 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static VCvarB r_3dfloor_clip_both_sides("r_3dfloor_clip_both_sides", false, "Clip 3d floors with both sectors?", CVAR_Archive);
+static VCvarB r_3dfloor_clip_both_sides("r_3dfloor_clip_both_sides", false, "Clip 3d floors with both sectors?", CVAR_Archive|CVAR_NoShadow);
 
 
 //**************************************************************************

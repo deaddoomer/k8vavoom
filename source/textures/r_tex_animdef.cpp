@@ -29,8 +29,8 @@
 #include "r_tex.h"
 
 
-static VCvarB dbg_dump_animdef_ranges("dbg_dump_animdef_ranges", false, "Dump ANIMDEF ranges?", CVAR_PreInit);
-static VCvarB r_texanim_boomhack("r_texanim_boomhack", false, "Animate all Boom textures as one?", CVAR_Archive);
+static VCvarB dbg_dump_animdef_ranges("dbg_dump_animdef_ranges", false, "Dump ANIMDEF ranges?", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB r_texanim_boomhack("r_texanim_boomhack", false, "Animate all Boom textures as one?", CVAR_Archive|CVAR_NoShadow);
 
 
 static int cli_WarnSwitchTextures = 0;

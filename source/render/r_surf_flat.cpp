@@ -28,7 +28,7 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static VCvarB r_hack_zero_sky("r_hack_zero_sky", true, "ZeroSky hack (Doom II MAP01 extra floor fix).", CVAR_Archive);
+static VCvarB r_hack_zero_sky("r_hack_zero_sky", true, "ZeroSky hack (Doom II MAP01 extra floor fix).", CVAR_Archive|CVAR_NoShadow);
 
 
 //**************************************************************************

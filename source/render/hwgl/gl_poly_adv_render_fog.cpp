@@ -26,7 +26,7 @@
 #include "gl_local.h"
 #include "gl_poly_adv_render.h"
 
-static VCvarB gl_dbg_adv_fog_nolightfade("gl_dbg_adv_fog_nolightfade", false, "Disable light fade fog?", 0);
+static VCvarB gl_dbg_adv_fog_nolightfade("gl_dbg_adv_fog_nolightfade", false, "Disable light fade fog?", CVAR_NoShadow);
 
 
 //==========================================================================

@@ -37,15 +37,15 @@
 
 extern VCvarB r_decals;
 
-VCvarB dbg_world_think_vm_time("dbg_world_think_vm_time", false, "Show time taken by VM thinkers (for debug)?", CVAR_Archive);
-VCvarB dbg_world_think_decal_time("dbg_world_think_decal_time", false, "Show time taken by decal thinkers (for debug)?", CVAR_Archive);
-VCvarB dbg_vm_disable_thinkers("dbg_vm_disable_thinkers", false, "Disable VM thinkers (for debug)?", CVAR_PreInit);
-VCvarB dbg_vm_enable_secthink("dbg_vm_enable_secthink", true, "Enable sector thinkers when VM thinkers are disabled (for debug)?", CVAR_PreInit);
-VCvarB dbg_vm_disable_specials("dbg_vm_disable_specials", false, "Disable updating specials (for debug)?", CVAR_PreInit);
-VCvarB dbg_vm_show_tick_stats("dbg_vm_show_tick_stats", false, "Show some debug tick statistics?", CVAR_PreInit);
+VCvarB dbg_world_think_vm_time("dbg_world_think_vm_time", false, "Show time taken by VM thinkers (for debug)?", CVAR_Archive|CVAR_NoShadow);
+VCvarB dbg_world_think_decal_time("dbg_world_think_decal_time", false, "Show time taken by decal thinkers (for debug)?", CVAR_Archive|CVAR_NoShadow);
+VCvarB dbg_vm_disable_thinkers("dbg_vm_disable_thinkers", false, "Disable VM thinkers (for debug)?", CVAR_PreInit|CVAR_NoShadow);
+VCvarB dbg_vm_enable_secthink("dbg_vm_enable_secthink", true, "Enable sector thinkers when VM thinkers are disabled (for debug)?", CVAR_PreInit|CVAR_NoShadow);
+VCvarB dbg_vm_disable_specials("dbg_vm_disable_specials", false, "Disable updating specials (for debug)?", CVAR_PreInit|CVAR_NoShadow);
+VCvarB dbg_vm_show_tick_stats("dbg_vm_show_tick_stats", false, "Show some debug tick statistics?", CVAR_PreInit|CVAR_NoShadow);
 
-static VCvarB dbg_limiter_counters("dbg_limiter_counters", false, "Show limiter counters?", CVAR_PreInit);
-static VCvarB dbg_limiter_remove_messages("dbg_limiter_remove_messages", false, "Show limiter remove messages?", CVAR_PreInit);
+static VCvarB dbg_limiter_counters("dbg_limiter_counters", false, "Show limiter counters?", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB dbg_limiter_remove_messages("dbg_limiter_remove_messages", false, "Show limiter remove messages?", CVAR_PreInit|CVAR_NoShadow);
 
 static VCvarI gm_corpse_limit("gm_corpse_limit", "-1", "Limit number of corpses per map (-1: no limit)?", CVAR_Archive);
 

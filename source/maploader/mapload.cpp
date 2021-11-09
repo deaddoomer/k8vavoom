@@ -36,16 +36,16 @@
 #include "../mapinfo.h"
 
 
-static VCvarB dbg_show_map_hash("dbg_show_map_hash", false, "Show map hash?", CVAR_PreInit|CVAR_Archive);
+static VCvarB dbg_show_map_hash("dbg_show_map_hash", false, "Show map hash?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 
 static VCvarI r_fakecontrast("r_fakecontrast", "1", "Controls fake contrast/smooth lighting for walls (0: disable; 1: fake contrast; 2: smooth lighting)?", CVAR_Archive);
-static VCvarB r_fakecontrast_ignore_mapinfo("r_fakecontrast_ignore_mapinfo", false, "Controls fake contrast/smooth lighting for walls (0: disable; 1: fake contrast; 2: smooth lighting)?", CVAR_Archive);
+static VCvarB r_fakecontrast_ignore_mapinfo("r_fakecontrast_ignore_mapinfo", false, "Controls fake contrast/smooth lighting for walls (0: disable; 1: fake contrast; 2: smooth lighting)?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB loader_cache_ignore_one("loader_cache_ignore_one", false, "Ignore (and remove) cache for next map loading?", CVAR_PreInit);
-static VCvarB loader_cache_rebuild_data("loader_cache_rebuild_data", true, "Cache rebuilt nodes, pvs, blockmap, and so on?", CVAR_Archive);
+static VCvarB loader_cache_ignore_one("loader_cache_ignore_one", false, "Ignore (and remove) cache for next map loading?", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB loader_cache_rebuild_data("loader_cache_rebuild_data", true, "Cache rebuilt nodes, pvs, blockmap, and so on?", CVAR_Archive|CVAR_NoShadow);
 
-VCvarB loader_cache_data("loader_cache_data", true, "Cache built level data?", CVAR_Archive);
-VCvarF loader_cache_time_limit("loader_cache_time_limit", "3", "Cache data if building took more than this number of seconds.", CVAR_Archive);
+VCvarB loader_cache_data("loader_cache_data", true, "Cache built level data?", CVAR_Archive|CVAR_NoShadow);
+VCvarF loader_cache_time_limit("loader_cache_time_limit", "3", "Cache data if building took more than this number of seconds.", CVAR_Archive|CVAR_NoShadow);
 
 
 //extern VCvarI nodes_builder_type;

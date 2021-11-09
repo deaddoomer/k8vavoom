@@ -56,19 +56,19 @@ extern VCvarB r_use_sprofs_lump;
 
 extern VCvarB gl_crop_sprites;
 
-static VCvarB r_dbg_advthing_dump_actlist("r_dbg_advthing_dump_actlist", false, "Dump built list of active/affected things in advrender?", 0);
-static VCvarB r_dbg_advthing_dump_ambient("r_dbg_advthing_dump_ambient", false, "Dump rendered ambient things?", 0);
-static VCvarB r_dbg_advthing_dump_textures("r_dbg_advthing_dump_textures", false, "Dump rendered textured things?", 0);
+static VCvarB r_dbg_advthing_dump_actlist("r_dbg_advthing_dump_actlist", false, "Dump built list of active/affected things in advrender?", CVAR_NoShadow);
+static VCvarB r_dbg_advthing_dump_ambient("r_dbg_advthing_dump_ambient", false, "Dump rendered ambient things?", CVAR_NoShadow);
+static VCvarB r_dbg_advthing_dump_textures("r_dbg_advthing_dump_textures", false, "Dump rendered textured things?", CVAR_NoShadow);
 
-static VCvarB r_dbg_advthing_draw_ambient("r_dbg_advthing_draw_ambient", true, "Draw ambient light for things?", 0);
-static VCvarB r_dbg_advthing_draw_texture("r_dbg_advthing_draw_texture", true, "Draw textures for things?", 0);
-static VCvarB r_dbg_advthing_draw_light("r_dbg_advthing_draw_light", true, "Draw textures for things?", 0);
-static VCvarB r_dbg_advthing_draw_shadow("r_dbg_advthing_draw_shadow", true, "Draw textures for things?", 0);
-static VCvarB r_dbg_advthing_draw_fog("r_dbg_advthing_draw_fog", true, "Draw fog for things?", 0);
+static VCvarB r_dbg_advthing_draw_ambient("r_dbg_advthing_draw_ambient", true, "Draw ambient light for things?", CVAR_NoShadow);
+static VCvarB r_dbg_advthing_draw_texture("r_dbg_advthing_draw_texture", true, "Draw textures for things?", CVAR_NoShadow);
+static VCvarB r_dbg_advthing_draw_light("r_dbg_advthing_draw_light", true, "Draw textures for things?", CVAR_NoShadow);
+static VCvarB r_dbg_advthing_draw_shadow("r_dbg_advthing_draw_shadow", true, "Draw textures for things?", CVAR_NoShadow);
+static VCvarB r_dbg_advthing_draw_fog("r_dbg_advthing_draw_fog", true, "Draw fog for things?", CVAR_NoShadow);
 
-VCvarB r_model_advshadow_all("r_model_advshadow_all", false, "Light all alias models, not only those that are in blockmap (slower)?", CVAR_Archive);
+VCvarB r_model_advshadow_all("r_model_advshadow_all", false, "Light all alias models, not only those that are in blockmap (slower)?", CVAR_Archive|CVAR_NoShadow);
 
-//static VCvarB r_shadowmap_spr_alias_models("r_shadowmap_spr_alias_models", false, "Render shadows from alias models (based on sprite frame)?", CVAR_Archive);
+//static VCvarB r_shadowmap_spr_alias_models("r_shadowmap_spr_alias_models", false, "Render shadows from alias models (based on sprite frame)?", CVAR_Archive|CVAR_NoShadow);
 
 static VCvarB r_shadowmap_spr_monsters("r_shadowmap_spr_monsters", true, "Render fake sprite shadows for monsters?", CVAR_Archive);
 static VCvarB r_shadowmap_spr_corpses("r_shadowmap_spr_corpses", true, "Render fake sprite shadows for corpses?", CVAR_Archive);

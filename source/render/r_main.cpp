@@ -47,66 +47,66 @@ extern VCvarB r_advlight_opt_optimise_scissor;
 extern VCvarB dbg_clip_dump_added_ranges;
 extern VCvarI gl_release_ram_textures_mode;
 
-VCvarB r_dbg_proj_aspect("r_dbg_proj_aspect", true, "Apply aspect correction to projection matrix?", CVAR_PreInit|CVAR_Hidden);
+VCvarB r_dbg_proj_aspect("r_dbg_proj_aspect", true, "Apply aspect correction to projection matrix?", CVAR_PreInit|CVAR_Hidden|CVAR_NoShadow);
 static bool prev_r_dbg_proj_aspect = true;
 
-static VCvarB dbg_autoclear_automap("dbg_autoclear_automap", false, "Clear automap before rendering?", 0/*CVAR_Archive*/);
-VCvarB dbg_vischeck_time("dbg_vischeck_time", false, "Show frame vischeck time?", 0/*CVAR_Archive*/);
+static VCvarB dbg_autoclear_automap("dbg_autoclear_automap", false, "Clear automap before rendering?", CVAR_NoShadow/*|CVAR_Archive*/);
+VCvarB dbg_vischeck_time("dbg_vischeck_time", false, "Show frame vischeck time?", CVAR_NoShadow/*|CVAR_Archive*/);
 
-static VCvarB r_clip_maxdist("r_clip_maxdist", true, "Clip with max view distance? This can speedup huge levels, trading details for speed.", CVAR_Archive);
+static VCvarB r_clip_maxdist("r_clip_maxdist", true, "Clip with max view distance? This can speedup huge levels, trading details for speed.", CVAR_Archive|CVAR_NoShadow);
 extern VCvarF gl_maxdist;
 //extern VCvarB r_disable_world_update;
 
-VCvarB dbg_show_lightmap_cache_messages("dbg_show_lightmap_cache_messages", false, "Show various lightmap debug messages?", CVAR_Archive);
+VCvarB dbg_show_lightmap_cache_messages("dbg_show_lightmap_cache_messages", false, "Show various lightmap debug messages?", CVAR_Archive|CVAR_NoShadow);
 
-VCvarB r_allow_cameras("r_allow_cameras", true, "Allow rendering live cameras?", CVAR_Archive);
+VCvarB r_allow_cameras("r_allow_cameras", true, "Allow rendering live cameras?", CVAR_Archive|CVAR_NoShadow);
 
-//VCvarB dbg_dlight_vis_check_messages("dbg_dlight_vis_check_messages", false, "Show dynlight vischeck debug messages?", 0);
-VCvarB r_vis_check_flood("r_vis_check_flood", false, "Use floodfill to perform dynlight visibility checks? (AT MAJORITY OF CASES THIS IS SLOWER THAN BSP!)", CVAR_Archive);
+//VCvarB dbg_dlight_vis_check_messages("dbg_dlight_vis_check_messages", false, "Show dynlight vischeck debug messages?", CVAR_NoShadow);
+VCvarB r_vis_check_flood("r_vis_check_flood", false, "Use floodfill to perform dynlight visibility checks? (AT MAJORITY OF CASES THIS IS SLOWER THAN BSP!)", CVAR_Archive|CVAR_Hidden|CVAR_NoShadow);
 
-static VCvarI r_tonemap("r_tonemap", "0", "Tonemap mode (0:off, 1:palette).", CVAR_Archive);
+static VCvarI r_tonemap("r_tonemap", "0", "Tonemap mode (0:off, 1:palette).", CVAR_Archive|CVAR_NoShadow);
 static VCvarB r_tonemap_psprites("r_tonemap_psprites", true, "Apply tonemap after rendering psprites?", CVAR_Archive);
 
 static VCvarI r_underwater("r_underwater", "1", "Underwater shader (0:off, 1:Quake-like).", CVAR_Archive);
 
-static VCvarI r_cas_filter("r_cas_filter", "0", "Use adaptive sharpening posprocess filter?", CVAR_Archive);
-static VCvarF r_cas_filter_coeff("r_cas_filter_coeff", "0.4", "Sharpen coeffecient for CAS, [0..1].", CVAR_Archive);
+static VCvarI r_cas_filter("r_cas_filter", "0", "Use adaptive sharpening posprocess filter?", CVAR_Archive|CVAR_NoShadow);
+static VCvarF r_cas_filter_coeff("r_cas_filter_coeff", "0.4", "Sharpen coeffecient for CAS, [0..1].", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarI r_dbg_force_colormap("r_dbg_force_colormap", "0", "DEBUG: force colormap.", 0);
+static VCvarI r_dbg_force_colormap("r_dbg_force_colormap", "0", "DEBUG: force colormap.", CVAR_NoShadow);
 
-static VCvarF r_hack_aspect_scale("r_hack_aspect_scale", "1.2", "Aspect ratio scale. As my aspect code is FUBARed, you can use this to make things look right.", CVAR_Archive);
+static VCvarF r_hack_aspect_scale("r_hack_aspect_scale", "1.2", "Aspect ratio scale. As my aspect code is FUBARed, you can use this to make things look right.", CVAR_Archive|CVAR_NoShadow);
 static float prev_r_hack_aspect_scale = 0.0f;
 
-static VCvarF r_hack_psprite_yofs("r_hack_psprite_yofs", "0", "PSprite offset for non-standard ration scales. Positive is down.", CVAR_Archive);
+static VCvarF r_hack_psprite_yofs("r_hack_psprite_yofs", "0", "PSprite offset for non-standard ration scales. Positive is down.", CVAR_Archive|CVAR_NoShadow);
 static float prev_r_hack_psprite_yofs = 0.0f;
 static float prev_r_light_globvis = -666.0f;
 
-static VCvarI k8ColormapInverse("k8ColormapInverse", "2", "Inverse colormap replacement (0: original inverse; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
-static VCvarI k8ColormapLightAmp("k8ColormapLightAmp", "9", "LightAmp colormap replacement (0: original; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive);
+static VCvarI k8ColormapInverse("k8ColormapInverse", "2", "Inverse colormap replacement (0: original inverse; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive|CVAR_NoShadow);
+static VCvarI k8ColormapLightAmp("k8ColormapLightAmp", "9", "LightAmp colormap replacement (0: original; 1: black-and-white; 2: gold; 3: green; 4: red).", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarI r_colormap_mode("r_colormap_mode", "0", "Powerups colormap mode: 0:default; 1:ignore fullbright; 2:ignore colormap; 3:ignore both.", CVAR_Archive);
-static VCvarI r_colortint_mode("r_colortint_mode", "0", "Powerups colormap mode: 0:default; 1:disabled.", CVAR_Archive);
-static VCvarI r_sectorflick_mode("r_sectorflick_mode", "0", "Sector light flickering mode: 0:default; 1:only when the sector is invisible.", CVAR_Archive);
-static VCvarI r_force_sector_light("r_force_sector_light", "0", "Force sector light level (0 means \"don't force\").", CVAR_Archive);
-static VCvarI r_level_extra_lighting("r_level_extra_lighting", "0", "Add extra light to all sectors ([0..255]).", CVAR_Archive);
-static VCvarI r_extralight_mode("r_extralight_mode", "0", "Extra light from weapon firing: 0:default; 1:disabled.", CVAR_Archive);
-static VCvarI r_dynlightfx_mode("r_dynlightfx_mode", "0", "Dynamic light change mode: 0:default; 1:disabled.", CVAR_Archive);
-static VCvarI r_sprlight_mode("r_sprlight_mode", "0", "Dynamic light change mode: 0:default; 1:disabled.", CVAR_Archive);
+static VCvarI r_colormap_mode("r_colormap_mode", "0", "Powerups colormap mode: 0:default; 1:ignore fullbright; 2:ignore colormap; 3:ignore both.", CVAR_Archive|CVAR_NoShadow);
+static VCvarI r_colortint_mode("r_colortint_mode", "0", "Powerups colormap mode: 0:default; 1:disabled.", CVAR_Archive|CVAR_NoShadow);
+static VCvarI r_sectorflick_mode("r_sectorflick_mode", "0", "Sector light flickering mode: 0:default; 1:only when the sector is invisible.", CVAR_Archive|CVAR_NoShadow);
+static VCvarI r_force_sector_light("r_force_sector_light", "0", "Force sector light level (0 means \"don't force\").", CVAR_Archive|CVAR_NoShadow);
+static VCvarI r_level_extra_lighting("r_level_extra_lighting", "0", "Add extra light to all sectors ([0..255]).", CVAR_Archive|CVAR_NoShadow);
+static VCvarI r_extralight_mode("r_extralight_mode", "0", "Extra light from weapon firing: 0:default; 1:disabled.", CVAR_Archive|CVAR_NoShadow);
+static VCvarI r_dynlightfx_mode("r_dynlightfx_mode", "0", "Dynamic light change mode: 0:default; 1:disabled.", CVAR_Archive|CVAR_NoShadow);
+static VCvarI r_sprlight_mode("r_sprlight_mode", "0", "Dynamic light change mode: 0:default; 1:disabled.", CVAR_Archive|CVAR_NoShadow);
 
-VCvarI r_fullbright_sprites_mode("r_fullbright_sprites_mode", "0", "Always render sprites as fullbright (0:none; 1:interesting; 2:all)?", CVAR_Archive);
-VCvarI r_fullbright_splevel_player("r_fullbright_splevel_player", "255", "Fullbright level for players (0 means \"disable fullbright\").", CVAR_Archive);
-VCvarI r_fullbright_splevel_missile("r_fullbright_splevel_missile", "255", "Fullbright level for projectiles (0 means \"disable fullbright\").", CVAR_Archive);
-VCvarI r_fullbright_splevel_corpse("r_fullbright_splevel_corpse", "255", "Fullbright level for corpses (0 means \"disable fullbright\").", CVAR_Archive);
-VCvarI r_fullbright_splevel_monster("r_fullbright_splevel_monster", "255", "Fullbright level for monsters (0 means \"disable fullbright\").", CVAR_Archive);
-VCvarI r_fullbright_splevel_decoration("r_fullbright_splevel_decoration", "255", "Fullbright level for decorations (0 means \"disable fullbright\").", CVAR_Archive);
-VCvarI r_fullbright_splevel_pickup("r_fullbright_splevel_pickup", "255", "Fullbright level for pickups (0 means \"disable fullbright\").", CVAR_Archive);
-VCvarI r_fullbright_splevel_other("r_fullbright_splevel_other", "255", "Fullbright level for other things (0 means \"disable fullbright\").", CVAR_Archive);
+VCvarI r_fullbright_sprites_mode("r_fullbright_sprites_mode", "0", "Always render sprites as fullbright (0:none; 1:interesting; 2:all)?", CVAR_Archive|CVAR_NoShadow);
+VCvarI r_fullbright_splevel_player("r_fullbright_splevel_player", "255", "Fullbright level for players (0 means \"disable fullbright\").", CVAR_Archive|CVAR_NoShadow);
+VCvarI r_fullbright_splevel_missile("r_fullbright_splevel_missile", "255", "Fullbright level for projectiles (0 means \"disable fullbright\").", CVAR_Archive|CVAR_NoShadow);
+VCvarI r_fullbright_splevel_corpse("r_fullbright_splevel_corpse", "255", "Fullbright level for corpses (0 means \"disable fullbright\").", CVAR_Archive|CVAR_NoShadow);
+VCvarI r_fullbright_splevel_monster("r_fullbright_splevel_monster", "255", "Fullbright level for monsters (0 means \"disable fullbright\").", CVAR_Archive|CVAR_NoShadow);
+VCvarI r_fullbright_splevel_decoration("r_fullbright_splevel_decoration", "255", "Fullbright level for decorations (0 means \"disable fullbright\").", CVAR_Archive|CVAR_NoShadow);
+VCvarI r_fullbright_splevel_pickup("r_fullbright_splevel_pickup", "255", "Fullbright level for pickups (0 means \"disable fullbright\").", CVAR_Archive|CVAR_NoShadow);
+VCvarI r_fullbright_splevel_other("r_fullbright_splevel_other", "255", "Fullbright level for other things (0 means \"disable fullbright\").", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarI r_screen_shake_mode("r_screen_shake_mode", "0", "Screen shake (from earthquakes and such) mode: 0:default, 1:disabled.", CVAR_Archive);
+static VCvarI r_screen_shake_mode("r_screen_shake_mode", "0", "Screen shake (from earthquakes and such) mode: 0:default, 1:disabled.", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarI r_cm_extralight_add("r_cm_extralight_add", "48", "Extra lighting added for \"Light Amp\" colormaps ([0..255]).", CVAR_Archive);
+static VCvarI r_cm_extralight_add("r_cm_extralight_add", "48", "Extra lighting added for \"Light Amp\" colormaps ([0..255]).", CVAR_Archive|CVAR_NoShadow);
 
-VCvarB r_underwater_colored_light("r_underwater_colored_light", true, "Allow underwater colored lighting? WARNING: DOESN'T WORK RIGHT YET!", CVAR_Archive);
+VCvarB r_underwater_colored_light("r_underwater_colored_light", true, "Allow underwater colored lighting? WARNING: DOESN'T WORK RIGHT YET!", CVAR_Archive|CVAR_NoShadow);
 
 
 static const char *videoDrvName = nullptr;
@@ -123,40 +123,40 @@ vuint8 light_remap[256];
 int screenblocks = 0; // viewport size
 bool render_last_quality_setting = false;
 
-static VCvarF r_aspect_pixel("r_aspect_pixel", "1", "Pixel aspect ratio.", CVAR_Rom);
-static VCvarI r_aspect_horiz("r_aspect_horiz", "4", "Horizontal aspect multiplier.", CVAR_Rom);
-static VCvarI r_aspect_vert("r_aspect_vert", "3", "Vertical aspect multiplier.", CVAR_Rom);
+static VCvarF r_aspect_pixel("r_aspect_pixel", "1", "Pixel aspect ratio.", CVAR_Rom|CVAR_NoShadow);
+static VCvarI r_aspect_horiz("r_aspect_horiz", "4", "Horizontal aspect multiplier.", CVAR_Rom|CVAR_NoShadow);
+static VCvarI r_aspect_vert("r_aspect_vert", "3", "Vertical aspect multiplier.", CVAR_Rom|CVAR_NoShadow);
 
-VCvarB r_chasecam("r_chasecam", false, "Chasecam mode.", /*CVAR_Archive*/0);
-VCvarB r_chase_front("r_chase_front", false, "Position chasecam in the front of the player (can be used to view weapons/player sprite, for example).", /*CVAR_Archive*/0); // debug setting
-VCvarF r_chase_delay("r_chase_delay", "0.1", "Chasecam interpolation delay.", CVAR_Archive);
-VCvarF r_chase_raise("r_chase_raise", "32", "Chasecam z raise before offseting by view direction.", CVAR_Archive);
-VCvarF r_chase_dist("r_chase_dist", "32", "Chasecam distance.", CVAR_Archive);
-VCvarF r_chase_up("r_chase_up", "32", "Chasecam offset up (using view direction).", CVAR_Archive);
-VCvarF r_chase_right("r_chase_right", "0", "Chasecam offset right (using view direction).", CVAR_Archive);
-VCvarF r_chase_radius("r_chase_radius", "16", "Chasecam entity radius (used for offsetting coldet).", CVAR_Archive);
+VCvarB r_chasecam("r_chasecam", false, "Chasecam mode.", CVAR_NoShadow/*|CVAR_Archive*/);
+VCvarB r_chase_front("r_chase_front", false, "Position chasecam in the front of the player (can be used to view weapons/player sprite, for example).", CVAR_NoShadow/*|CVAR_Archive*/); // debug setting
+VCvarF r_chase_delay("r_chase_delay", "0.1", "Chasecam interpolation delay.", CVAR_Archive|CVAR_NoShadow);
+VCvarF r_chase_raise("r_chase_raise", "32", "Chasecam z raise before offseting by view direction.", CVAR_Archive|CVAR_NoShadow);
+VCvarF r_chase_dist("r_chase_dist", "32", "Chasecam distance.", CVAR_Archive|CVAR_NoShadow);
+VCvarF r_chase_up("r_chase_up", "32", "Chasecam offset up (using view direction).", CVAR_Archive|CVAR_NoShadow);
+VCvarF r_chase_right("r_chase_right", "0", "Chasecam offset right (using view direction).", CVAR_Archive|CVAR_NoShadow);
+VCvarF r_chase_radius("r_chase_radius", "16", "Chasecam entity radius (used for offsetting coldet).", CVAR_Archive|CVAR_NoShadow);
 
-//VCvarI r_fog("r_fog", "0", "Fog mode (0:GL_LINEAR; 1:GL_LINEAR; 2:GL_EXP; 3:GL_EXP2; add 4 to get \"nicer\" fog).");
-VCvarB r_fog_test("r_fog_test", false, "Is fog testing enabled?");
-VCvarF r_fog_r("r_fog_r", "0.5", "Fog color: red component.");
-VCvarF r_fog_g("r_fog_g", "0.5", "Fog color: green component.");
-VCvarF r_fog_b("r_fog_b", "0.5", "Fog color: blue component.");
-VCvarF r_fog_start("r_fog_start", "1", "Fog start distance.");
-VCvarF r_fog_end("r_fog_end", "2048", "Fog end distance.");
-VCvarF r_fog_density("r_fog_density", "0.5", "Fog density.");
+//VCvarI r_fog("r_fog", "0", "Fog mode (0:GL_LINEAR; 1:GL_LINEAR; 2:GL_EXP; 3:GL_EXP2; add 4 to get \"nicer\" fog).", CVAR_NoShadow);
+VCvarB r_fog_test("r_fog_test", false, "Is fog testing enabled?", CVAR_NoShadow);
+VCvarF r_fog_r("r_fog_r", "0.5", "Fog color: red component.", CVAR_NoShadow);
+VCvarF r_fog_g("r_fog_g", "0.5", "Fog color: green component.", CVAR_NoShadow);
+VCvarF r_fog_b("r_fog_b", "0.5", "Fog color: blue component.", CVAR_NoShadow);
+VCvarF r_fog_start("r_fog_start", "1", "Fog start distance.", CVAR_NoShadow);
+VCvarF r_fog_end("r_fog_end", "2048", "Fog end distance.", CVAR_NoShadow);
+VCvarF r_fog_density("r_fog_density", "0.5", "Fog density.", CVAR_NoShadow);
 
-VCvarI r_aspect_ratio("r_aspect_ratio", "1", "Aspect ratio correction mode.", CVAR_Archive);
-VCvarB r_interpolate_frames("r_interpolate_frames", true, "Use frame interpolation for smoother rendering?", CVAR_Archive);
-VCvarB r_vsync("r_vsync", true, "VSync mode.", CVAR_Archive);
-VCvarB r_vsync_adaptive("r_vsync_adaptive", true, "Use adaptive VSync mode.", CVAR_Archive);
-VCvarB r_fade_light("r_fade_light", "0", "Fade light with distance?", CVAR_Archive);
-VCvarF r_fade_factor("r_fade_factor", "7", "Fading light coefficient.", CVAR_Archive);
-VCvarF r_fade_mult_regular("r_fade_mult_regular", "1", "Light fade multiplier for regular renderer.", CVAR_Archive);
-VCvarF r_fade_mult_advanced("r_fade_mult_advanced", "0.8", "Light fade multiplier for advanced renderer.", CVAR_Archive);
-VCvarF r_sky_bright_factor("r_sky_bright_factor", "1", "Skybright actor factor.", CVAR_Archive);
+VCvarI r_aspect_ratio("r_aspect_ratio", "1", "Aspect ratio correction mode.", CVAR_Archive|CVAR_NoShadow);
+VCvarB r_interpolate_frames("r_interpolate_frames", true, "Use frame interpolation for smoother rendering?", CVAR_Archive|CVAR_NoShadow);
+VCvarB r_vsync("r_vsync", true, "VSync mode.", CVAR_Archive|CVAR_NoShadow);
+VCvarB r_vsync_adaptive("r_vsync_adaptive", true, "Use adaptive VSync mode.", CVAR_Archive|CVAR_NoShadow);
+VCvarB r_fade_light("r_fade_light", "0", "Fade light with distance?", CVAR_Archive|CVAR_NoShadow);
+VCvarF r_fade_factor("r_fade_factor", "7", "Fading light coefficient.", CVAR_Archive|CVAR_NoShadow);
+VCvarF r_fade_mult_regular("r_fade_mult_regular", "1", "Light fade multiplier for regular renderer.", CVAR_Archive|CVAR_NoShadow);
+VCvarF r_fade_mult_advanced("r_fade_mult_advanced", "0.8", "Light fade multiplier for advanced renderer.", CVAR_Archive|CVAR_NoShadow);
+VCvarF r_sky_bright_factor("r_sky_bright_factor", "1", "Skybright actor factor.", CVAR_Archive|CVAR_NoShadow);
 
 // was 3072
-VCvarF r_lights_radius("r_lights_radius", "6192", "Lights out of this radius (from camera) will be dropped.", CVAR_Archive);
+VCvarF r_lights_radius("r_lights_radius", "6192", "Lights out of this radius (from camera) will be dropped.", CVAR_Archive|CVAR_NoShadow);
 //static VCvarB r_lights_cast_many_rays("r_lights_cast_many_rays", false, "Cast more rays to better check light visibility (usually doesn't make visuals any better)?", CVAR_Archive);
 //static VCvarB r_light_opt_separate_vis("r_light_opt_separate_vis", false, "Calculate light and render vis intersection as separate steps?", CVAR_Archive|CVAR_PreInit);
 
@@ -168,7 +168,7 @@ VCvarB r_lmap_overbright("r_lmap_overbright", true, "Use Quake-like (but gentlie
 VCvarB r_adv_overbright("r_adv_overbright", false, "Use Quake-like (but gentlier) overbright for static lights?", CVAR_Archive);
 VCvarF r_overbright_specular("r_overbright_specular", "0.1", "Specular light in regular renderer.", CVAR_Archive);
 
-static VCvarF r_hud_fullscreen_alpha("r_hud_fullscreen_alpha", "0.44", "Alpha for fullscreen HUD", CVAR_Archive);
+static VCvarF r_hud_fullscreen_alpha("r_hud_fullscreen_alpha", "0.44", "Alpha for fullscreen HUD", CVAR_Archive|CVAR_NoShadow);
 
 extern VCvarB r_light_opt_shadow;
 
@@ -187,43 +187,43 @@ static float CachedGlobVis = 1280.0f;
 
 static FDrawerDesc *DrawerList[DRAWER_MAX];
 
-VCvarI screen_size("screen_size", "12", "Screen size.", CVAR_Archive); // default is "fullscreen with stats"
-VCvarB allow_small_screen_size("allow_small_screen_size", false, "Allow small screen sizes.", /*CVAR_Archive*/CVAR_PreInit|CVAR_Hidden);
+VCvarI screen_size("screen_size", "12", "Screen size.", CVAR_Archive|CVAR_NoShadow); // default is "fullscreen with stats"
+VCvarB allow_small_screen_size("allow_small_screen_size", false, "Allow small screen sizes.", /*CVAR_Archive*/CVAR_PreInit|CVAR_Hidden|CVAR_NoShadow);
 static bool set_resolution_needed = true; // should we update screen size, FOV, and other such things?
 
 // angles in the SCREENWIDTH wide window
-VCvarF fov_main("fov", "90", "Field of vision.");
-VCvarF cl_fov("cl_fov", "0", "Client-enforced FOV (0 means 'default'.");
-VCvarB r_vertical_fov("r_vertical_fov", true, "Maintain vertical FOV for widescreen modes (i.e. keep vertical view area, and widen horizontal)?");
+VCvarF fov_main("fov", "90", "Field of vision.", CVAR_NoShadow);
+VCvarF cl_fov("cl_fov", "0", "Client-enforced FOV (0 means 'default'.", CVAR_NoShadow);
+VCvarB r_vertical_fov("r_vertical_fov", true, "Maintain vertical FOV for widescreen modes (i.e. keep vertical view area, and widen horizontal)?", CVAR_NoShadow);
 
 // translation tables
 VTextureTranslation *PlayerTranslations[MAXPLAYERS+1];
 
-static VCvarB r_dbg_disable_all_precaching("r_dbg_disable_all_precaching", false, "Disable all texture precaching?", CVAR_PreInit);
-static VCvarB r_reupload_level_textures("r_reupload_level_textures", true, "Reupload level textures to GPU when new map is loaded?", CVAR_Archive);
-static VCvarB r_precache_textures("r_precache_textures", true, "Precache level textures?", CVAR_Archive);
-static VCvarB r_precache_model_textures("r_precache_model_textures", true, "Precache alias model textures?", CVAR_Archive);
-static VCvarB r_precache_sprite_textures("r_precache_sprite_textures", true, "Precache sprite textures?", CVAR_Archive);
-static VCvarB r_precache_weapon_sprite_textures("r_precache_weapon_sprite_textures", true, "Precache weapon textures?", CVAR_Archive);
-static VCvarB r_precache_ammo_sprite_textures("r_precache_ammo_sprite_textures", true, "Precache ammo textures?", CVAR_Archive);
-static VCvarB r_precache_player_sprite_textures("r_precache_player_sprite_textures", false, "Precache player sprite textures?", CVAR_Archive);
-static VCvarB r_precache_all_sprite_textures("r_precache_all_sprite_textures", false, "Precache sprite textures?", CVAR_Archive);
-static VCvarI r_precache_max_sprites("r_precache_max_sprites", "3072", "Maxumum number of sprite textures to precache?", CVAR_Archive);
-static VCvarI r_level_renderer("r_level_renderer", "0", "Level renderer type (0:auto; 1:lightmap; 2:stenciled).", CVAR_Archive);
+static VCvarB r_dbg_disable_all_precaching("r_dbg_disable_all_precaching", false, "Disable all texture precaching?", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB r_reupload_level_textures("r_reupload_level_textures", true, "Reupload level textures to GPU when new map is loaded?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB r_precache_textures("r_precache_textures", true, "Precache level textures?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB r_precache_model_textures("r_precache_model_textures", true, "Precache alias model textures?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB r_precache_sprite_textures("r_precache_sprite_textures", true, "Precache sprite textures?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB r_precache_weapon_sprite_textures("r_precache_weapon_sprite_textures", true, "Precache weapon textures?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB r_precache_ammo_sprite_textures("r_precache_ammo_sprite_textures", true, "Precache ammo textures?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB r_precache_player_sprite_textures("r_precache_player_sprite_textures", false, "Precache player sprite textures?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB r_precache_all_sprite_textures("r_precache_all_sprite_textures", false, "Precache sprite textures?", CVAR_Archive|CVAR_NoShadow);
+static VCvarI r_precache_max_sprites("r_precache_max_sprites", "3072", "Maxumum number of sprite textures to precache?", CVAR_Archive|CVAR_NoShadow);
+static VCvarI r_level_renderer("r_level_renderer", "0", "Level renderer type (0:auto; 1:lightmap; 2:stenciled).", CVAR_Archive|CVAR_NoShadow);
 
 int r_precache_textures_override = -1;
 
-VCvarB r_dbg_lightbulbs_static("r_dbg_lightbulbs_static", false, "Draw lighbulbs for static lights?", 0);
-VCvarB r_dbg_lightbulbs_dynamic("r_dbg_lightbulbs_dynamic", false, "Draw lighbulbs for dynamic lights?", 0);
-VCvarF r_dbg_lightbulbs_zofs_static("r_dbg_lightbulbs_zofs_static", "0", "Z offset for static lightbulbs.", 0);
-VCvarF r_dbg_lightbulbs_zofs_dynamic("r_dbg_lightbulbs_zofs_dynamic", "0", "Z offset for dynamic lightbulbs.", 0);
+VCvarB r_dbg_lightbulbs_static("r_dbg_lightbulbs_static", false, "Draw lighbulbs for static lights?", CVAR_NoShadow);
+VCvarB r_dbg_lightbulbs_dynamic("r_dbg_lightbulbs_dynamic", false, "Draw lighbulbs for dynamic lights?", CVAR_NoShadow);
+VCvarF r_dbg_lightbulbs_zofs_static("r_dbg_lightbulbs_zofs_static", "0", "Z offset for static lightbulbs.", CVAR_NoShadow);
+VCvarF r_dbg_lightbulbs_zofs_dynamic("r_dbg_lightbulbs_zofs_dynamic", "0", "Z offset for dynamic lightbulbs.", CVAR_NoShadow);
 
 
-VCvarB prof_r_world_prepare("prof_r_world_prepare", false, "Show pre-render world preparation time.", 0);
-VCvarB prof_r_bsp_collect("prof_r_bsp_collect", false, "Show BSP surface collection time.", 0);
-VCvarB prof_r_bsp_world_render("prof_r_bsp_world_render", false, "Show world rendering time (GPU).", 0);
-VCvarB prof_r_bsp_mobj_render("prof_r_bsp_mobj_render", false, "Show total mobj rendering time (including collection time).", 0);
-VCvarB prof_r_bsp_mobj_collect("prof_r_bsp_mobj_collect", false, "Show total mobj collecting time.", 0);
+VCvarB prof_r_world_prepare("prof_r_world_prepare", false, "Show pre-render world preparation time.", CVAR_NoShadow);
+VCvarB prof_r_bsp_collect("prof_r_bsp_collect", false, "Show BSP surface collection time.", CVAR_NoShadow);
+VCvarB prof_r_bsp_world_render("prof_r_bsp_world_render", false, "Show world rendering time (GPU).", CVAR_NoShadow);
+VCvarB prof_r_bsp_mobj_render("prof_r_bsp_mobj_render", false, "Show total mobj rendering time (including collection time).", CVAR_NoShadow);
+VCvarB prof_r_bsp_mobj_collect("prof_r_bsp_mobj_collect", false, "Show total mobj collecting time.", CVAR_NoShadow);
 
 
 // ////////////////////////////////////////////////////////////////////////// //

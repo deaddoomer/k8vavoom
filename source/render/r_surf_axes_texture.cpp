@@ -27,7 +27,7 @@
 #include "r_local.h"
 
 
-static VCvarF r_dbg_wtrotate_tmult("r_dbg_wtrotate_tmult", "0.0", "Wall texture rotation time multiplier (for debug)", CVAR_PreInit/*|CVAR_Archive*/);
+static VCvarF r_dbg_wtrotate_tmult("r_dbg_wtrotate_tmult", "0.0", "Wall texture rotation time multiplier (for debug)", CVAR_PreInit|CVAR_NoShadow/*|CVAR_Archive*/);
 
 
 //==========================================================================

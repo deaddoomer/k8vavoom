@@ -49,12 +49,12 @@ IMPLEMENT_CLASS(V, Entity);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static VCvarB _decorate_dont_warn_about_invalid_labels("decorate_dont_warn_about_invalid_labels", false, "Don't do this!", CVAR_Archive|CVAR_PreInit|CVAR_Hidden);
-static VCvarB dbg_disable_state_advance("dbg_disable_state_advance", false, "Disable states processing (for debug)?", CVAR_PreInit);
+static VCvarB _decorate_dont_warn_about_invalid_labels("decorate_dont_warn_about_invalid_labels", false, "Don't do this!", CVAR_Archive|CVAR_PreInit|CVAR_Hidden|CVAR_NoShadow);
+static VCvarB dbg_disable_state_advance("dbg_disable_state_advance", false, "Disable states processing (for debug)?", CVAR_PreInit|CVAR_NoShadow);
 
-static VCvarB dbg_emulate_broken_gozzo_gotos("dbg_emulate_broken_gozzo_gotos", false, "Emulate (partially) broken GZDoom decorate gotos to missing labels?", CVAR_Archive);
+static VCvarB dbg_emulate_broken_gozzo_gotos("dbg_emulate_broken_gozzo_gotos", false, "Emulate (partially) broken GZDoom decorate gotos to missing labels?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB vm_optimise_statics("vm_optimise_statics", true, "Try to detect some static things, and don't run physics for them? (DO NOT USE, IT IS GLITCHY!)", CVAR_Archive);
+static VCvarB vm_optimise_statics("vm_optimise_statics", true, "Try to detect some static things, and don't run physics for them? (DO NOT USE, IT IS GLITCHY!)", CVAR_Archive|CVAR_NoShadow);
 
 extern VCvarB dbg_vm_show_tick_stats;
 

@@ -37,11 +37,11 @@
 extern VCvarB gl_dbg_wireframe;
 extern VCvarB clip_frustum;
 
-static VCvarB r_dbg_mirror_use_frustum("r_dbg_mirror_use_frustum", false, "Use frustum clipping for mirror portals? (DEBUG)", CVAR_Archive);
-static VCvarB r_dbg_mirror_no_cliprange("r_dbg_mirror_no_cliprange", false, "Do not build narrowed cliprange for mirror portals? (DEBUG)", CVAR_Archive);
+static VCvarB r_dbg_mirror_use_frustum("r_dbg_mirror_use_frustum", false, "Use frustum clipping for mirror portals? (DEBUG)", CVAR_Archive|CVAR_NoShadow);
+static VCvarB r_dbg_mirror_no_cliprange("r_dbg_mirror_no_cliprange", false, "Do not build narrowed cliprange for mirror portals? (DEBUG)", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB r_dbg_stack_use_frustum("r_dbg_stack_use_frustum", false, "Use frustum clipping for stack portals? (DEBUG)", CVAR_Archive);
-static VCvarB r_dbg_stack_no_cliprange("r_dbg_stack_no_cliprange", false, "Do not build narrowed cliprange for stack portals? (DEBUG)", CVAR_Archive);
+static VCvarB r_dbg_stack_use_frustum("r_dbg_stack_use_frustum", false, "Use frustum clipping for stack portals? (DEBUG)", CVAR_Archive|CVAR_NoShadow);
+static VCvarB r_dbg_stack_no_cliprange("r_dbg_stack_no_cliprange", false, "Do not build narrowed cliprange for stack portals? (DEBUG)", CVAR_Archive|CVAR_NoShadow);
 
 
 // ////////////////////////////////////////////////////////////////////////// //

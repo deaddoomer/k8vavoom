@@ -57,7 +57,7 @@ struct skyboxinfo_t {
 
 static TArray<skyboxinfo_t> skyboxinfo;
 
-static VCvarB r_skyboxes("r_skyboxes", true, "Allow skyboxes?", CVAR_Archive);
+static VCvarB r_skyboxes("r_skyboxes", true, "Allow skyboxes?", CVAR_Archive|CVAR_NoShadow);
 
 
 //==========================================================================

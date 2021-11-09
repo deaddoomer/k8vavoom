@@ -28,7 +28,7 @@
 #include "../snd_local.h"
 
 
-static VCvarB snd_midi_messages("snd_midi_messages", false, "Show messages from MIDI files?", CVAR_Archive);
+static VCvarB snd_midi_messages("snd_midi_messages", false, "Show messages from MIDI files?", CVAR_Archive|CVAR_NoShadow);
 
 
 //==========================================================================

@@ -27,7 +27,7 @@
 #include "gl_poly_adv_render.h"
 
 
-static VCvarB gl_smart_dirty_rects("gl_smart_dirty_rects", true, "Use dirty rectangles list to check for stencil buffer dirtyness?", CVAR_Archive);
+static VCvarB gl_smart_dirty_rects("gl_smart_dirty_rects", true, "Use dirty rectangles list to check for stencil buffer dirtyness?", CVAR_Archive|CVAR_NoShadow);
 
 
 /* TODO

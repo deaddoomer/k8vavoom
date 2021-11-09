@@ -46,7 +46,7 @@
 extern VCvarB ui_want_mouse_at_zero;
 extern VCvarF screen_scale;
 
-VCvarB gl_gpu_debug("gl_gpu_debug", false, "Enable OpenGL debugging?", CVAR_PreInit);
+VCvarB gl_gpu_debug("gl_gpu_debug", false, "Enable OpenGL debugging?", CVAR_PreInit|CVAR_NoShadow);
 
 typedef void (*VV_GLDEBUGPROC) (GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
 typedef void (*VV_GLDEBUGMESSAGECALLBACK) (VV_GLDEBUGPROC callback, const void *userParam);
@@ -274,8 +274,8 @@ private:
 
 IMPLEMENT_DRAWER(VSdlOpenGLDrawer, DRAWER_OpenGL, "OpenGL", "SDL OpenGL rasteriser device", "-opengl");
 
-VCvarI gl_current_screen_fsmode("gl_current_screen_fsmode", "0", "Video mode: windowed(0), fullscreen scaled(1), fullscreen real(2)", CVAR_Rom);
-VCvarB gl_allow_xrandr_aspect("gl_allow_xrandr_aspect", true, "Allow XRandR aspect ratio query?", CVAR_Archive);
+VCvarI gl_current_screen_fsmode("gl_current_screen_fsmode", "0", "Video mode: windowed(0), fullscreen scaled(1), fullscreen real(2)", CVAR_Rom|CVAR_NoShadow);
+VCvarB gl_allow_xrandr_aspect("gl_allow_xrandr_aspect", true, "Allow XRandR aspect ratio query?", CVAR_Archive|CVAR_NoShadow);
 
 
 extern float OS_SDL_GetMainWindowAspect (SDL_Window *win);
