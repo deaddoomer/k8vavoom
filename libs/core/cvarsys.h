@@ -113,6 +113,19 @@ public:
   inline void Set (int value) { SetInt(value); }
   inline void Set (float value) { SetFloat(value); }
   inline void Set (VStr value) { SetStr(value); }
+  inline void Set (bool value) { SetBool(value); }
+
+  // changes shadowvar if there is any
+  inline void ForceSetInt (int value) { if (shadowVar) shadowVar->SetInt(value); else SetInt(value); }
+  inline void ForceSetFloat (float value) { if (shadowVar) shadowVar->SetFloat(value); else SetFloat(value); }
+  inline void ForceSetStr (VStr value) { if (shadowVar) shadowVar->SetStr(value); else SetStr(value); }
+  inline void ForceSetBool (bool value) { if (shadowVar) shadowVar->SetBool(value); else SetBool(value); }
+
+  // changes shadowvar if there is any
+  inline void ForceSet (int value) { ForceSetInt(value); }
+  inline void ForceSet (float value) { ForceSetFloat(value); }
+  inline void ForceSet (VStr value) { ForceSetStr(value); }
+  inline void ForceSet (bool value) { ForceSetBool(value); }
 
   // WARNING! shadowed userinfo/serverinfo cvars won't work as expected!
   void SetShadowInt (int value);
