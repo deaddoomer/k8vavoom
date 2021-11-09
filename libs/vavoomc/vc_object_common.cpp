@@ -2084,6 +2084,13 @@ IMPLEMENT_FUNCTION(VObject, SetShadowCvarB) {
   if (cvar) cvar->SetShadow(value ? 1 : 0);
 }
 
+IMPLEMENT_FUNCTION(VObject, CvarIsReadOnly) {
+  VName name;
+  vobjGetParam(name);
+  VCvar *cvar = VCvar::FindVariable(*name);
+  if (cvar) RET_BOOL(cvar->IsShadowed() || cvar->IsReadOnly()); else RET_BOOL(true);
+}
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 // temporary name set functions

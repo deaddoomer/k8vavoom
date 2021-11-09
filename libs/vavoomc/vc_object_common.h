@@ -282,6 +282,8 @@
   //WARNING! must be defined by all api users separately!
   DECLARE_FUNCTION(CvarUnlatchAll)
 
+  DECLARE_FUNCTION(CvarIsReadOnly)
+
   DECLARE_FUNCTION(SetShadowCvar)
   DECLARE_FUNCTION(SetShadowCvarF)
   DECLARE_FUNCTION(SetShadowCvarS)
