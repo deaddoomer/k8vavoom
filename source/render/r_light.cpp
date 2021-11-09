@@ -1524,9 +1524,9 @@ vuint32 VRenderLevelShared::CalcEntityLight (VEntity *lowner, unsigned dflags) {
     LP_NothingZero;
   // we need real light
   //const int oldRM = r_light_mode.asInt();
-  //r_light_mode = 0; // switch to real ambient lighting
+  //r_light_mode.ForceSet(0); // switch to real ambient lighting
   vuint32 res = LightPoint(lowner, lowner->Origin, max2(1.0f, lowner->Radius), max2(0.0f, lowner->Height), lowner->SubSector, lflags);
-  //r_light_mode = oldRM; // restore lighting mode
+  //r_light_mode.ForceSet(oldRM); // restore lighting mode
   if (res == 0u) res = 0x01000000u;
   return res;
 }

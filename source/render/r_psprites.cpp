@@ -317,7 +317,7 @@ void VRenderLevelShared::DrawPlayerSprites () {
   if (!CalculateRenderStyleInfo(ri, RendStyle, Alpha)) return;
 
   const int oldRM = r_light_mode.asInt();
-  r_light_mode = 0; // switch to real ambient lighting
+  r_light_mode.ForceSet(0); // switch to real ambient lighting
 
   int ltxr = 0, ltxg = 0, ltxb = 0;
   {
@@ -443,7 +443,7 @@ void VRenderLevelShared::DrawPlayerSprites () {
     }
   }
 
-  r_light_mode = oldRM; // restore lighting mode
+  r_light_mode.ForceSet(oldRM); // restore lighting mode
 }
 
 
