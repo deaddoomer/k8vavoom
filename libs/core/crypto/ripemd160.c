@@ -107,19 +107,17 @@ extern "C" {
   (c) = RIPEMD160_ROL((c), 10); \
 
 
-static void ripemd160_compress (RIPEMD160_Ctx *ctx, const uint32_t *X) {
-  uint32_t aa = ctx->wkbuf[0];
-  uint32_t bb = ctx->wkbuf[1];
-  uint32_t cc = ctx->wkbuf[2];
-  uint32_t dd = ctx->wkbuf[3];
-  uint32_t ee = ctx->wkbuf[4];
-  uint32_t aaa = ctx->wkbuf[0];
-  uint32_t bbb = ctx->wkbuf[1];
-  uint32_t ccc = ctx->wkbuf[2];
-  uint32_t ddd = ctx->wkbuf[3];
-  uint32_t eee = ctx->wkbuf[4];
-
-  //const uint32_t *X = ctx->chunkd;
+static void ripemd160_compress (uint32_t *wkbuf, const uint32_t *X) {
+  uint32_t aa = wkbuf[0];
+  uint32_t bb = wkbuf[1];
+  uint32_t cc = wkbuf[2];
+  uint32_t dd = wkbuf[3];
+  uint32_t ee = wkbuf[4];
+  uint32_t aaa = wkbuf[0];
+  uint32_t bbb = wkbuf[1];
+  uint32_t ccc = wkbuf[2];
+  uint32_t ddd = wkbuf[3];
+  uint32_t eee = wkbuf[4];
 
   /* round 1 */
   RIPEMD160_FF(aa, bb, cc, dd, ee, X[ 0], 11);
@@ -302,12 +300,12 @@ static void ripemd160_compress (RIPEMD160_Ctx *ctx, const uint32_t *X) {
   RIPEMD160_FFF(bbb, ccc, ddd, eee, aaa, X[11] , 11);
 
   /* combine results */
-  ddd += cc+ctx->wkbuf[1]; /* final result for ctx->wkbuf[0] */
-  ctx->wkbuf[1] = ctx->wkbuf[2]+dd+eee;
-  ctx->wkbuf[2] = ctx->wkbuf[3]+ee+aaa;
-  ctx->wkbuf[3] = ctx->wkbuf[4]+aa+bbb;
-  ctx->wkbuf[4] = ctx->wkbuf[0]+bb+ccc;
-  ctx->wkbuf[0] = ddd;
+  ddd += cc+wkbuf[1]; /* final result for ctx->wkbuf[0] */
+  wkbuf[1] = wkbuf[2]+dd+eee;
+  wkbuf[2] = wkbuf[3]+ee+aaa;
+  wkbuf[3] = wkbuf[4]+aa+bbb;
+  wkbuf[4] = wkbuf[0]+bb+ccc;
+  wkbuf[0] = ddd;
 }
 
 
@@ -325,7 +323,7 @@ void ripemd160_init (RIPEMD160_Ctx *ctx) {
 static inline void ripemd160_putbyte (RIPEMD160_Ctx *ctx, uint8_t b) {
   ctx->chunkd[ctx->chunkpos>>2] |= ((uint32_t)b)<<((ctx->chunkpos&0x03U)<<3);
   if (++ctx->chunkpos == 64U) {
-    ripemd160_compress(ctx, ctx->chunkd);
+    ripemd160_compress(ctx->wkbuf, ctx->chunkd);
     memset(ctx->chunkd, 0, sizeof(ctx->chunkd));
     ctx->chunkpos = 0U;
   }
@@ -348,17 +346,24 @@ void ripemd160_put (RIPEMD160_Ctx *ctx, const void *data, size_t datasize) {
 #ifdef VAVOOM_BIG_ENDIAN
   while (datasize--) ripemd160_putbyte(ctx, *b++);
 #else
+  // process full chunks, if possible
+  if (ctx->chunkpos == 0 && datasize >= (size_t)64) {
+    do {
+      ripemd160_compress(ctx->wkbuf, (const uint32_t *)b);
+      b += 64;
+    } while ((datasize -= (size_t)64) >= (size_t)64);
+    if (datasize == 0) return;
+  }
   // we can use `memcpy()` here
   uint32_t left = 64U-ctx->chunkpos;
   if ((size_t)left > datasize) left = (uint32_t)datasize;
   memcpy(((uint8_t *)ctx->chunkd)+ctx->chunkpos, b, (size_t)left);
   if ((ctx->chunkpos += left) == 64U) {
-    ripemd160_compress(ctx, ctx->chunkd);
+    ripemd160_compress(ctx->wkbuf, ctx->chunkd);
     b += left;
     datasize -= (size_t)left;
     while (datasize >= (size_t)64) {
-      //memcpy(ctx->chunkd, b, (size_t)64);
-      ripemd160_compress(ctx, (const uint32_t *)b);
+      ripemd160_compress(ctx->wkbuf, (const uint32_t *)b);
       b += 64;
       datasize -= 64;
     }
@@ -392,12 +397,12 @@ void ripemd160_finish (const RIPEMD160_Ctx *ctx, void *hash) {
   // length in bits goes into two last dwords
   if (64U-rctx.chunkpos < 8) {
     //while (rctx.chunkpos) ripemd160_putbyte(&rctx, 0);
-    ripemd160_compress(&rctx, rctx.chunkd);
+    ripemd160_compress(rctx.wkbuf, rctx.chunkd);
     memset(rctx.chunkd, 0, sizeof(rctx.chunkd));
   }
   rctx.chunkd[14] = ctx->total<<3;
   rctx.chunkd[15] = (ctx->total>>29)|(ctx->totalhi<<3);
-  ripemd160_compress(&rctx, rctx.chunkd);
+  ripemd160_compress(rctx.wkbuf, rctx.chunkd);
 
   memcpy(hash, (void *)rctx.wkbuf, RIPEMD160_BYTES);
 }
