@@ -321,11 +321,16 @@ void ripemd160_init (RIPEMD160_Ctx *ctx) {
 
 
 static inline void ripemd160_putbyte (RIPEMD160_Ctx *ctx, uint8_t b) {
-  //ctx->chunkd[ctx->chunkpos>>2] |= ((uint32_t)b)<<((ctx->chunkpos&0x03U)<<3);
+#ifdef VAVOOM_BIG_ENDIAN
+  ((uint32_t *)ctx->chunkd)[ctx->chunkpos>>2] |= ((uint32_t)b)<<((ctx->chunkpos&0x03U)<<3);
+#else
   ctx->chunkd[ctx->chunkpos] = b;
+#endif
   if (++ctx->chunkpos == 64U) {
     ripemd160_compress(ctx->wkbuf, (const uint32_t *)ctx->chunkd);
-    //memset(ctx->chunkd, 0, sizeof(ctx->chunkd));
+    #ifdef VAVOOM_BIG_ENDIAN
+    memset(ctx->chunkd, 0, sizeof(ctx->chunkd));
+    #endif
     ctx->chunkpos = 0U;
   }
 }
@@ -399,16 +404,13 @@ void ripemd160_finish (const RIPEMD160_Ctx *ctx, void *hash) {
   // padding with `1` bit
   ripemd160_putbyte(&rctx, 0x80);
   // length in bits goes into two last dwords
-  uint32_t left = 64U-rctx.chunkpos;
-  if (left < 8U) {
-    //while (rctx.chunkpos) ripemd160_putbyte(&rctx, 0);
-    if (left) memset(((uint8_t *)rctx.chunkd)+64U-left, 0, left);
-    ripemd160_compress(rctx.wkbuf, (const uint32_t *)rctx.chunkd);
-    left = 64U;
-  }
-  left -= 8U;
-  if (left) memset(((uint8_t *)rctx.chunkd)+64U-8U-left, 0, left);
 #ifdef VAVOOM_BIG_ENDIAN
+  if (64U-rctx.chunkpos < 8U) {
+    while (rctx.chunkpos) ripemd160_putbyte(&rctx, 0);
+    ripemd160_compress(rctx.wkbuf, (const uint32_t *)rctx.chunkd);
+    memset(rctx.chunkd, 0, sizeof(rctx.chunkd));
+  }
+  // chunk is guaranteed to be properly cleared here
   const uint32_t t0 = ctx->total<<3;
   rctx.chunkd[56U] = t0&0xffU;
   rctx.chunkd[57U] = (t0>>8)&0xffU;
@@ -420,6 +422,14 @@ void ripemd160_finish (const RIPEMD160_Ctx *ctx, void *hash) {
   rctx.chunkd[62U] = (t1>>16)&0xffU;
   rctx.chunkd[63U] = (t1>>24)&0xffU;
 #else
+  uint32_t left = 64U-rctx.chunkpos;
+  if (left < 8U) {
+    if (left) memset(((uint8_t *)rctx.chunkd)+64U-left, 0, left);
+    ripemd160_compress(rctx.wkbuf, (const uint32_t *)rctx.chunkd);
+    left = 64U;
+  }
+  left -= 8U;
+  if (left) memset(((uint8_t *)rctx.chunkd)+64U-8U-left, 0, left);
   ((uint32_t *)rctx.chunkd)[14] = ctx->total<<3;
   ((uint32_t *)rctx.chunkd)[15] = (ctx->total>>29)|(ctx->totalhi<<3);
 #endif
