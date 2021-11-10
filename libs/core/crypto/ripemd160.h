@@ -22,7 +22,7 @@ extern "C" {
 */
 typedef struct {
   uint32_t wkbuf[RIPEMD160_BYTES>>2];
-  uint32_t chunkd[16];
+  uint8_t chunkd[64];
   uint32_t chunkpos;
   uint32_t total;
   uint32_t totalhi;

@@ -321,10 +321,11 @@ void ripemd160_init (RIPEMD160_Ctx *ctx) {
 
 
 static inline void ripemd160_putbyte (RIPEMD160_Ctx *ctx, uint8_t b) {
-  ctx->chunkd[ctx->chunkpos>>2] |= ((uint32_t)b)<<((ctx->chunkpos&0x03U)<<3);
+  //ctx->chunkd[ctx->chunkpos>>2] |= ((uint32_t)b)<<((ctx->chunkpos&0x03U)<<3);
+  ctx->chunkd[ctx->chunkpos] = b;
   if (++ctx->chunkpos == 64U) {
-    ripemd160_compress(ctx->wkbuf, ctx->chunkd);
-    memset(ctx->chunkd, 0, sizeof(ctx->chunkd));
+    ripemd160_compress(ctx->wkbuf, (const uint32_t *)ctx->chunkd);
+    //memset(ctx->chunkd, 0, sizeof(ctx->chunkd));
     ctx->chunkpos = 0U;
   }
 }
@@ -359,7 +360,7 @@ void ripemd160_put (RIPEMD160_Ctx *ctx, const void *data, size_t datasize) {
   if ((size_t)left > datasize) left = (uint32_t)datasize;
   memcpy(((uint8_t *)ctx->chunkd)+ctx->chunkpos, b, (size_t)left);
   if ((ctx->chunkpos += left) == 64U) {
-    ripemd160_compress(ctx->wkbuf, ctx->chunkd);
+    ripemd160_compress(ctx->wkbuf, (const uint32_t *)ctx->chunkd);
     b += left;
     datasize -= (size_t)left;
     while (datasize >= (size_t)64) {
@@ -367,6 +368,8 @@ void ripemd160_put (RIPEMD160_Ctx *ctx, const void *data, size_t datasize) {
       b += 64;
       datasize -= 64;
     }
+    if ((ctx->chunkpos = (uint32_t)datasize) != 0) memcpy(ctx->chunkd, b, datasize);
+    /*
     if (datasize) {
       memcpy(ctx->chunkd, b, datasize);
       memset(((uint8_t *)ctx->chunkd)+datasize, 0, (size_t)64-datasize);
@@ -375,6 +378,7 @@ void ripemd160_put (RIPEMD160_Ctx *ctx, const void *data, size_t datasize) {
       memset(ctx->chunkd, 0, sizeof(ctx->chunkd));
       ctx->chunkpos = 0U;
     }
+    */
   }
   #if 0
   // this is invariant
@@ -395,14 +399,18 @@ void ripemd160_finish (const RIPEMD160_Ctx *ctx, void *hash) {
   // padding with `1` bit
   ripemd160_putbyte(&rctx, 0x80);
   // length in bits goes into two last dwords
-  if (64U-rctx.chunkpos < 8) {
+  uint32_t left = 64U-rctx.chunkpos;
+  if (left < 8U) {
     //while (rctx.chunkpos) ripemd160_putbyte(&rctx, 0);
-    ripemd160_compress(rctx.wkbuf, rctx.chunkd);
-    memset(rctx.chunkd, 0, sizeof(rctx.chunkd));
+    if (left) memset(((uint8_t *)rctx.chunkd)+64U-left, 0, left);
+    ripemd160_compress(rctx.wkbuf, (const uint32_t *)rctx.chunkd);
+    left = 64U;
   }
-  rctx.chunkd[14] = ctx->total<<3;
-  rctx.chunkd[15] = (ctx->total>>29)|(ctx->totalhi<<3);
-  ripemd160_compress(rctx.wkbuf, rctx.chunkd);
+  left -= 8U;
+  if (left) memset(((uint8_t *)rctx.chunkd)+64U-8U-left, 0, left);
+  ((uint32_t *)rctx.chunkd)[14] = ctx->total<<3;
+  ((uint32_t *)rctx.chunkd)[15] = (ctx->total>>29)|(ctx->totalhi<<3);
+  ripemd160_compress(rctx.wkbuf, (const uint32_t *)rctx.chunkd);
 
   memcpy(hash, (void *)rctx.wkbuf, RIPEMD160_BYTES);
 }
