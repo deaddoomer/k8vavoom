@@ -408,8 +408,21 @@ void ripemd160_finish (const RIPEMD160_Ctx *ctx, void *hash) {
   }
   left -= 8U;
   if (left) memset(((uint8_t *)rctx.chunkd)+64U-8U-left, 0, left);
+#ifdef VAVOOM_BIG_ENDIAN
+  const uint32_t t0 = ctx->total<<3;
+  rctx.chunkd[56U] = t0&0xffU;
+  rctx.chunkd[57U] = (t0>>8)&0xffU;
+  rctx.chunkd[58U] = (t0>>16)&0xffU;
+  rctx.chunkd[59U] = (t0>>24)&0xffU;
+  const uint32_t t1 = (ctx->total>>29)|(ctx->totalhi<<3);
+  rctx.chunkd[60U] = t1&0xffU;
+  rctx.chunkd[61U] = (t1>>8)&0xffU;
+  rctx.chunkd[62U] = (t1>>16)&0xffU;
+  rctx.chunkd[63U] = (t1>>24)&0xffU;
+#else
   ((uint32_t *)rctx.chunkd)[14] = ctx->total<<3;
   ((uint32_t *)rctx.chunkd)[15] = (ctx->total>>29)|(ctx->totalhi<<3);
+#endif
   ripemd160_compress(rctx.wkbuf, (const uint32_t *)rctx.chunkd);
 
   memcpy(hash, (void *)rctx.wkbuf, RIPEMD160_BYTES);
