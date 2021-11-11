@@ -204,7 +204,9 @@ const [decorate] int CPF_DAGGER        = 2;
 const [decorate] int CPF_PULLIN        = 4;
 const [decorate] int CPF_NORANDOMPUFFZ = 8;
 const [decorate] int CPF_NOTURN        = 16;
-const [decorate] int CPF_STEALARMOR    = 32; // not implemented yet
+const [decorate] int CPF_STEALARMOR    = 32; // partially implemented (not tested!)
+// k8vavoom flag: set player pawn Tracer field to the monster we just attacket (or none)
+const [decorate] int CPF_SETTRACER     = 65536;
 
 // A_PlaySound constants
 const [decorate] int CHAN_AUTO = 0;
