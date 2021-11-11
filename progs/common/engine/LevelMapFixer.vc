@@ -294,7 +294,7 @@ void KnownMapBugFixer () {
   // TNT:Evilution: MAP31
   if (MapHashMD5 == "a53ae580a4af2b5d0b0893f86914781e") {
     // the famous missing yellow key...
-    Things[470].options |= 0x07;
+    Things[470].options |= LineSpecialLevelInfo::MTF_GSINGLE; // 0x07
     Things[470].SkillClassFilter |= 0x03|0x04|0x18;
     printwarn("MAPFIX: TNT:Evilution: MAP31 detected and fixed");
     return;
@@ -365,9 +365,9 @@ void KnownMapBugFixer () {
   // Heretic: E2M2
   if (MapHashMD5 == "397a0e17a39542e4e8294e156fab0502") {
     // missing green door statues on easy and hard difficulties
-    Things[17].options |= 0x07;
+    Things[17].options |= LineSpecialLevelInfo::MTF_GSINGLE; // 0x07
     Things[17].SkillClassFilter |= 0x03|0x04|0x18;
-    Things[18].options |= 0x07;
+    Things[18].options |= LineSpecialLevelInfo::MTF_GSINGLE; // 0x07
     Things[18].SkillClassFilter |= 0x03|0x04|0x18;
     printwarn("MAPFIX: Heretic: E2M2 detected and fixed");
     return;
@@ -379,7 +379,7 @@ void KnownMapBugFixer () {
     Things[373].options = 0;
     Things[373].SkillClassFilter &= ~(0x03|0x04|0x18);
     // missing wall torch on hard difficulty
-    Things[448].options |= 0x07;
+    Things[448].options |= LineSpecialLevelInfo::MTF_GSINGLE; // 0x07
     Things[448].SkillClassFilter |= 0x03|0x04|0x18;
     // missing textures
     Sides[Lines[343].sidenum[0]].TopTexture = LdrTexNumForName("MOSSRCK1", TEXTYPE_Wall);
