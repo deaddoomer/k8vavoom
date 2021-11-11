@@ -209,7 +209,7 @@ static void ParseConst (VScriptParser *sc, VMemberBase *parent, bool changeMode=
 static void ParseEnum (VScriptParser *sc, VMemberBase *parent, bool changeMode=true);
 
 #ifdef VAVOOM_K8_DEVELOPER
-# define VC_DECO_DEF_WARNS  0
+# define VC_DECO_DEF_WARNS  1
 #else
 # define VC_DECO_DEF_WARNS  1
 #endif
