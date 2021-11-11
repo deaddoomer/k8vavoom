@@ -164,7 +164,37 @@ static VMethod *ParseFunCallWithName (VScriptParser *sc, VStr FuncName, VClass *
     if (!sc->Check(")")) {
       do {
         ++totalCount;
-        Args[NumArgs] = ParseExpressionNoAssign(sc, Class);
+
+        // check for named arguments
+        auto saved = sc->SavePos();
+        bool gotArgName = false;
+        VStr argName = VStr();
+        TLocation argLoc;
+        if (sc->CheckIdentifier()) {
+          argName = sc->String;
+          if (sc->Check(":")) {
+            argLoc = sc->GetVCLoc();
+            gotArgName = true;
+            //GCon->Logf(NAME_Debug, "***** FOUND NAMEDARG '%s' *****", *argName);
+          }
+        }
+        if (!gotArgName) sc->RestorePos(saved);
+
+        if (sc->Check("__default")) {
+          // default
+          Args[NumArgs] = nullptr;
+        } else {
+          Args[NumArgs] = ParseExpressionNoAssign(sc, Class);
+        }
+
+        // named arg?
+        if (gotArgName && !argName.isEmpty()) {
+          //GCon->Logf(NAME_Debug, "***** NAMEDARG '%s': %s *****", *argName, (Args[NumArgs] ? *Args[NumArgs]->toString() : "<null>"));
+          VArgMarshall *arg = new VArgMarshall(VName(*argName), argLoc);
+          arg->e = Args[NumArgs];
+          Args[NumArgs] = arg;
+        }
+
         if (NumArgs == VMethod::MAX_PARAMS) {
           delete Args[NumArgs];
           Args[NumArgs] = nullptr;
