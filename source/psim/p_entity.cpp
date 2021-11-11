@@ -183,6 +183,61 @@ void VEntity::PostCtor () {
 }
 
 
+#if 0
+#define EXTRA_DATA_SIGNATURE  "EntityExtra0"
+
+//==========================================================================
+//
+//  VEntity::LoadExtraData
+//
+//  returns `false` if no extra data was found (stream need to be restored)
+//
+//==========================================================================
+void VEntity::LoadExtraData (VStream &Strm) {
+  //k8: i am dumb, so i had to write this fuckery to detect if we have extra data
+  if (Strm.TotalSize()-opos <= 3*8) return false; // there cannot be any extra data here
+  vuint32 sign0 = 0, sign1 = 0, sign2 = 0;
+  Strm << sign0 << sign1 << sign2;
+  if (Strm.IsError()) return false; // oops, it's dead anyway
+  // check hashes
+  if (!sign0) return; // it cannot be zero
+  const char *esign = EXTRA_DATA_SIGNATURE;
+  const size_t esignelen = strlen(esign);
+  // check first hash
+  XXH32_state_t xx32;
+  XXH32_reset(&xx32, sign0);
+  XXH32_update(&xx32, esign, esignelen);
+  if (XXH32_digest(&xx32) != sign1) return false; // invalid first hash
+  // first hash is ok, try second
+  if (bjHashBuf(esign, esignelen, sign1) != sign2) return false; // invalid second hash
+  GCon->Logf(NAME_Debug, "%s: EXTRA DATA!", GetClass()->GetName());
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VEntity::SaveExtraData
+//
+//==========================================================================
+void VEntity::SaveExtraData (VStream &Strm) {
+  vuint32 sign0, sign1, sign2;
+  sign0 = joaatHashBuf((uint32_t)(unitptr_t)this, 4);
+  sign0 += !sign0;
+  // first hash
+  XXH32_state_t xx32;
+  XXH32_reset(&xx32, sign0);
+  XXH32_update(&xx32, esign, esignelen);
+  sign1 = XXH32_digest(&xx32);
+  // second hash
+  sign2 = bjHashBuf(esign, esignelen, sign1);
+  // write them
+  Strm << sign0 << sign1 << sign2;
+  // write extra data
+}
+#endif
+
+
 //==========================================================================
 //
 //  VEntity::SerialiseOther
@@ -191,6 +246,7 @@ void VEntity::PostCtor () {
 void VEntity::SerialiseOther (VStream &Strm) {
   Super::SerialiseOther(Strm);
   if (Strm.IsLoading()) {
+    // loading
     FlagsEx &= ~(EFEX_IsEntityEx|EFEX_IsActor);
     if (classEntityEx && GetClass()->IsChildOf(classEntityEx)) FlagsEx |= EFEX_IsEntityEx;
     if (classActor && GetClass()->IsChildOf(classActor)) FlagsEx |= EFEX_IsActor;
@@ -215,8 +271,22 @@ void VEntity::SerialiseOther (VStream &Strm) {
         }
       }
     }
+    // restore sprite (because sprite index can change)
+    {
+      int sidx = 1;
+      if (DispSpriteName != NAME_None) sidx = VClass::FindAddSprite(DispSpriteName);
+      DispSpriteFrame = (DispSpriteFrame&~0x00ffffff)|(sidx&0x00ffffff);
+    }
+    #ifdef EXTRA_DATA_SIGNATURE
+    // has other data?
+    auto opos = Strm.Tell();
+    if (!LoadExtraData(Strm)) {
+      // no extra data, restore stream
+      Strm.Seek(opos);
+    }
+    #endif
     // dedicated server cannot load games anyway
-#ifdef CLIENT
+    #ifdef CLIENT
     // create and fix blood translation for actor if necessary
     int bcolor = fldiBloodColor->GetInt(this);
     if (bcolor) {
@@ -230,7 +300,12 @@ void VEntity::SerialiseOther (VStream &Strm) {
         fldiBloodTranslation->SetInt(this, btrans);
       }
     }
-#endif
+    #endif
+  } else {
+    // saving
+    #ifdef EXTRA_DATA_SIGNATURE
+    SaveExtraData();
+    #endif
   }
 }
 

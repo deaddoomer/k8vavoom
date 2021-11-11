@@ -433,6 +433,12 @@ public:
     }
   };
 
+protected:
+  #if 0
+  bool LoadExtraData (VStream &Strm);
+  void SaveExtraData (VStream &Strm);
+  #endif
+
 public:
   static VClass *clsInventory;
 
