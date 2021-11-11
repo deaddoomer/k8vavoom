@@ -452,8 +452,9 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
       // string?
       if (IsStrConst()) {
         VStr CName = GetStrConst(ec.Package);
+        VStr CNameStp = CName.xstrip();
         //TLocation ALoc = Loc;
-        if (CName.isEmpty() || CName.strEquCI("None") || CName.strEquCI("nil") || CName.strEquCI("null")) {
+        if (CNameStp.isEmpty() || CNameStp.strEquCI("None") || CNameStp.strEquCI("nil") || CNameStp.strEquCI("null")) {
           //ParseWarning(ALoc, "NONE CLASS `%s`", CName);
           VExpression *enew = new VNoneLiteral(Loc);
           delete this;
