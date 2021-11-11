@@ -1290,15 +1290,27 @@ final bool doRemoveSomethingCheck (EntityEx dest, int flags, optional name filte
 
   // find item class
   if (!itemname) return 0;
-  class!Inventory itemtype = class!Inventory(FindClassNoCase(itemname));
-  if (!itemtype) {
-    //printdebug("%C: no item '%s'", self, itemname);
-    return 0;
+
+  bool doHeal = false, doOverHeal = false;
+  class!Inventory itemtype;
+
+  //FIXME: convert this to real items?
+  if (itemname.strEquCI("__rgf_heal__")) {
+    doHeal = true;
+  } else if (itemname.strEquCI("__rgf_overheal__")) {
+    doHeal = true;
+    doOverHeal = true;
+  } else {
+    itemtype = class!Inventory(FindClassNoCase(itemname));
+    if (!itemtype) {
+      //printdebug("%C: no item '%s'", self, itemname);
+      return 0;
+    }
+    /*k8: i don't think so
+    itemtype = class!Inventory(GetClassReplacement(itemtype));
+    if (!itemtype) return 0;
+    */
   }
-  /*k8: i don't think so
-  itemtype = class!Inventory(GetClassReplacement(itemtype));
-  if (!itemtype) return 0;
-  */
 
   bool giveCube = (flags&RGF_CUBE);
   int count = 0;
@@ -1375,10 +1387,17 @@ final bool doRemoveSomethingCheck (EntityEx dest, int flags, optional name filte
 
     // it is ok to give an item
     //printdebug("%C: GIVING %s of '%C' to '%C'", self, amount, itemtype, ent);
-    if (DoGiveInventory(itemtype, amount, ent)) {
-      //printdebug("%C:   gifted!", self);
+    if (doHeal) {
+      //if (ent.bIsPlayer) printdebug("%C: maxplrhealth=%s", self, PlayerEx(ent.Player).GetMaxHealth());
+      if (amount > 0 && !ent.GiveBody(amount, asHealthBonus:doOverHeal)) continue;
       ++count;
       if (count >= limit) break;
+    } else {
+      if (DoGiveInventory(itemtype, amount, ent)) {
+        //printdebug("%C:   gifted!", self);
+        ++count;
+        if (count >= limit) break;
+      }
     }
   }
 

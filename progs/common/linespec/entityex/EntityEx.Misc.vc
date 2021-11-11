@@ -2737,11 +2737,12 @@ final void TouchDehackedSpecial (EntityEx Toucher) {
 //  Returns false if the body isn't needed at all
 //
 //==========================================================================
-final bool GiveBody (int num) {
+final bool GiveBody (int num, optional bool asHealthBonus/*=false*/) {
   int max;
 
   if (bIsPlayer) {
     max = PlayerEx(Player).GetMaxHealth();
+    if (asHealthBonus && num >= 0) max = min(200, max*2);
     if (num < 0) {
       // for Strife negative body sets you to the percentage of your full health
       num = max*(-num)/100;
