@@ -1020,11 +1020,11 @@ final void doDamageSomething (EntityEx dest, int amount, name adamagetype, int f
 //  decorate_A_DamageSelf
 //
 //==========================================================================
-[decorate] final void decorate_A_DamageSelf (int amount, optional name adamagetype, optional int flags,
-                                             optional name filter, optional name aspecies, optional int src,
+[decorate] final void decorate_A_DamageSelf (int amount, optional name damagetype, optional int flags,
+                                             optional name filter, optional name species, optional int src,
                                              optional int inflict)
 {
-  doDamageSomething(self, amount, adamagetype, flags, filter!optional, aspecies!optional, src!optional, inflict!optional);
+  doDamageSomething(self, amount, damagetype, flags, filter!optional, species!optional, src!optional, inflict!optional);
 }
 
 
@@ -1033,11 +1033,15 @@ final void doDamageSomething (EntityEx dest, int amount, name adamagetype, int f
 //  decorate_A_DamageTarget
 //
 //==========================================================================
-[decorate] final void decorate_A_DamageTarget (int amount, optional name adamagetype, optional int flags,
-                                               optional name filter, optional name aspecies, optional int src,
+[decorate] final void decorate_A_DamageTarget (int amount, optional name damagetype, optional int flags,
+                                               optional name filter, optional name species, optional int src,
                                                optional int inflict)
 {
-  doDamageSomething(Target, amount, adamagetype, flags, filter!optional, aspecies!optional, src!optional, inflict!optional);
+  /*
+  printdebug("%C: A_DamageTarget; amount=%s; dmg=%s(%s); flags=%s; filter=%s(%s); spec=%s(%s); src=%s(%s); infl=%s(%s)",
+    self, amount, damagetype, specified_damagetype, flags, filter, specified_filter, species, specified_species, src, specified_src, inflict, specified_inflict);
+  */
+  doDamageSomething(Target, amount, damagetype, flags, filter!optional, species!optional, src!optional, inflict!optional);
 }
 
 
@@ -1046,11 +1050,11 @@ final void doDamageSomething (EntityEx dest, int amount, name adamagetype, int f
 //  decorate_A_DamageMaster
 //
 //==========================================================================
-[decorate] final void decorate_A_DamageMaster (int amount, optional name adamagetype, optional int flags,
-                                               optional name filter, optional name aspecies, optional int src,
+[decorate] final void decorate_A_DamageMaster (int amount, optional name damagetype, optional int flags,
+                                               optional name filter, optional name species, optional int src,
                                                optional int inflict)
 {
-  doDamageSomething(Master, amount, adamagetype, flags, filter!optional, aspecies!optional, src!optional, inflict!optional);
+  doDamageSomething(Master, amount, damagetype, flags, filter!optional, species!optional, src!optional, inflict!optional);
 }
 
 
@@ -1059,11 +1063,11 @@ final void doDamageSomething (EntityEx dest, int amount, name adamagetype, int f
 //  decorate_A_DamageTracer
 //
 //==========================================================================
-[decorate] final void decorate_A_DamageTracer (int amount, optional name adamagetype, optional int flags,
-                                               optional name filter, optional name aspecies, optional int src,
+[decorate] final void decorate_A_DamageTracer (int amount, optional name damagetype, optional int flags,
+                                               optional name filter, optional name species, optional int src,
                                                optional int inflict)
 {
-  doDamageSomething(Tracer, amount, adamagetype, flags, filter!optional, aspecies!optional, src!optional, inflict!optional);
+  doDamageSomething(Tracer, amount, damagetype, flags, filter!optional, species!optional, src!optional, inflict!optional);
 }
 
 
@@ -1072,14 +1076,14 @@ final void doDamageSomething (EntityEx dest, int amount, name adamagetype, int f
 //  decorate_A_DamageChildren
 //
 //==========================================================================
-[decorate] final void decorate_A_DamageChildren (int amount, optional name adamagetype, optional int flags,
-                                                 optional name filter, optional name aspecies, optional int src,
+[decorate] final void decorate_A_DamageChildren (int amount, optional name damagetype, optional int flags,
+                                                 optional name filter, optional name species, optional int src,
                                                  optional int inflict)
 {
   Actor A;
   foreach AllThinkers(Actor, A) {
     if (A.Master != self) continue;
-    doDamageSomething(A, amount, adamagetype, flags, filter!optional, aspecies!optional, src!optional, inflict!optional);
+    doDamageSomething(A, amount, damagetype, flags, filter!optional, species!optional, src!optional, inflict!optional);
   }
 }
 
@@ -1089,8 +1093,8 @@ final void doDamageSomething (EntityEx dest, int amount, name adamagetype, int f
 //  decorate_A_DamageSiblings
 //
 //==========================================================================
-[decorate] final void decorate_A_DamageSiblings (int amount, optional name adamagetype, optional int flags,
-                                                 optional name filter, optional name aspecies, optional int src,
+[decorate] final void decorate_A_DamageSiblings (int amount, optional name damagetype, optional int flags,
+                                                 optional name filter, optional name species, optional int src,
                                                  optional int inflict)
 {
   EntityEx mainMaster = Master;
@@ -1098,7 +1102,7 @@ final void doDamageSomething (EntityEx dest, int amount, name adamagetype, int f
   Actor A;
   foreach AllThinkers(Actor, A) {
     if (A.Master == mainMaster && A != self) {
-      doDamageSomething(A, amount, adamagetype, flags, filter!optional, aspecies!optional, src!optional, inflict!optional);
+      doDamageSomething(A, amount, damagetype, flags, filter!optional, species!optional, src!optional, inflict!optional);
     }
   }
 }
