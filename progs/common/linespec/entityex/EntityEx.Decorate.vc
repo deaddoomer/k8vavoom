@@ -346,6 +346,8 @@ private final EntityEx dccDoAPtr (optional int aptr0) {
 [decorate] final Object decorate_GetOwner (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? sex.Owner : none); }
 [decorate] final float decorate_GetStateTime () { return StateTime; }
 [decorate] final int decorate_GetHealth (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? sex.Health : 0); }
+[decorate] final float decorate_GetHeight (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? sex.Height : 0); }
+[decorate] final float decorate_GetDefaultHeight (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? sex.default.Height : 0); }
 
 [decorate] final int decorate_GetSpawnHealth (optional int aptr0) {
   EntityEx sex = dccDoAPtr(aptr0!optional);
