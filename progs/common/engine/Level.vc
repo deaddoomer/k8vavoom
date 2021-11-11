@@ -92,7 +92,7 @@ struct VPolyLink3D {
 
 
 native readonly name MapName;
-native readonly string MapHash; // lowercase
+native readonly string MapHash; // lowercase, RIPEMD-160, 20 bytes
 native readonly string MapHashMD5; // lowercase
 native readonly int LSSHash; // xxHash32 of linedefs, sidedefs, sectors (in this order)
 native readonly int SegHash; // xxHash32 of segs

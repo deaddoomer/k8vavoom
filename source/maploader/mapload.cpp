@@ -191,7 +191,7 @@ void VLevel::FixKnownMapErrors () {
 //  hashLump
 //
 //==========================================================================
-static bool hashLump (sha224_ctx *sha224ctx, MD5Context *md5ctx, int lumpnum) {
+static bool hashLump (RIPEMD160_Ctx *ripectx, MD5Context *md5ctx, int lumpnum) {
   if (lumpnum < 0) return false;
   static vuint8 buf[65536];
   VStream *strm = W_CreateLumpReaderNum(lumpnum);
@@ -203,7 +203,7 @@ static bool hashLump (sha224_ctx *sha224ctx, MD5Context *md5ctx, int lumpnum) {
     if (rd > (int)sizeof(buf)) rd = (int)sizeof(buf);
     st.Serialise(buf, rd);
     if (st.IsError()) { VStream::Destroy(strm); return false; }
-    if (sha224ctx) sha224_update(sha224ctx, buf, rd);
+    if (ripectx) ripemd160_put(ripectx, buf, (unsigned)rd);
     if (md5ctx) md5ctx->Update(buf, (unsigned)rd);
     //if (xxhash) XXH32_update(xxhash, buf, (unsigned)rd);
     left -= rd;
@@ -325,10 +325,10 @@ load_again:
   const VMapInfo &MInfo = P_GetMapInfo(MapName);
   memset(GLNodesHdr, 0, sizeof(GLNodesHdr));
 
-  sha224_ctx sha224ctx;
+  RIPEMD160_Ctx ripectx;
   MD5Context md5ctx;
 
-  sha224_init(&sha224ctx);
+  ripemd160_init(&ripectx);
   md5ctx.Init();
 
   //sha224: k8vavoom hash
@@ -353,7 +353,7 @@ load_again:
       else if (LName == NAME_znodes) {}
     }
     mapHashValid = hashLump(nullptr, &md5ctx, lumpnum); // hash map header
-    if (mapHashValid) mapHashValid = hashLump(&sha224ctx, &md5ctx, lumpnum+1); // hash map text
+    if (mapHashValid) mapHashValid = hashLump(&ripectx, &md5ctx, lumpnum+1); // hash map text
   } else {
     // find all lumps
     int LIdx = lumpnum+1;
@@ -383,10 +383,10 @@ load_again:
 
     mapHashValid = hashLump(nullptr, &md5ctx, lumpnum); // map header: only in md5
     if (mapHashValid) mapHashValid = hashLump(nullptr, &md5ctx, ThingsLump); // things: only in md5
-    if (mapHashValid) mapHashValid = hashLump(&sha224ctx, &md5ctx, LinesLump); // lines: both
-    if (mapHashValid) mapHashValid = hashLump(&sha224ctx, &md5ctx, SidesLump); // sides: both
-    if (mapHashValid) mapHashValid = hashLump(&sha224ctx, nullptr, VertexesLump); // vertices: only sha
-    if (mapHashValid) mapHashValid = hashLump(&sha224ctx, &md5ctx, SectorsLump); // sectors: both
+    if (mapHashValid) mapHashValid = hashLump(&ripectx, &md5ctx, LinesLump); // lines: both
+    if (mapHashValid) mapHashValid = hashLump(&ripectx, &md5ctx, SidesLump); // sides: both
+    if (mapHashValid) mapHashValid = hashLump(&ripectx, nullptr, VertexesLump); // vertices: only sha
+    if (mapHashValid) mapHashValid = hashLump(&ripectx, &md5ctx, SectorsLump); // sectors: both
 
     // determine level format
     if (W_LumpName(LIdx) == NAME_behavior) {
@@ -400,9 +400,9 @@ load_again:
   if (AuxiliaryMap) GCon->Log("loading map from nested wad");
 
   if (mapHashValid) {
-    vuint8 sha224hash[SHA224_DIGEST_SIZE];
-    sha224_final(&sha224ctx, sha224hash);
-    MapHash = VStr::buf2hex(sha224hash, SHA224_DIGEST_SIZE);
+    vuint8 ripe[RIPEMD160_BYTES];
+    ripemd160_finish(&ripectx, ripe);
+    MapHash = VStr::buf2hex(ripe, RIPEMD160_BYTES);
 
     vuint8 md5digest[MD5Context::DIGEST_SIZE];
     md5ctx.Final(md5digest);
@@ -410,19 +410,19 @@ load_again:
 
     if (dbg_show_map_hash) {
       GCon->Logf("map hash, md5: %s", *MapHashMD5);
-      GCon->Logf("map hash, sha: %s", *MapHash);
+      GCon->Logf("map hash, ripemd-160: %s", *MapHash);
     } else if (developer) {
       GCon->Logf(NAME_Dev, "map hash, md5: %s", *MapHashMD5);
-      GCon->Logf(NAME_Dev, "map hash, sha: %s", *MapHash);
+      GCon->Logf(NAME_Dev, "map hash, ripemd-160: %s", *MapHash);
     }
     // BadApple.wad hack
     // md5: 3cca5044d82cf1d1a91eca7933d5b4f6
-    if (MapHash == "277172f699952090de13deb68cc635718ce6dd84cc7a0c3ef48c2907") LevelFlags |= LF_IsBadApple;
+    if (MapHashMD5 == "3cca5044d82cf1d1a91eca7933d5b4f6") LevelFlags |= LF_IsBadApple;
   }
 
   bool cachedDataLoaded = false;
   if (mapHashValid && cacheDir.length()) {
-    cacheFileName = VStr("mapcache_")+MapHash.left(32)+".cache"; // yeah, truncated
+    cacheFileName = VStr("mapcache_")+MapHash+".cache";
     cacheFileName = cacheDir+"/"+cacheFileName;
   } else {
     mapHashValid = false;

@@ -1232,11 +1232,9 @@ void Cheat_WarpTo () {
 //
 //==========================================================================
 void Cheat_MapHash () {
-  if (Cmd_GetArgC() > 1 && stricmp(Cmd_GetArgV(1), "sha224") == 0) {
-    print("MAP SHA224: %s", Level.XLevel.MapHash);
-  } else {
-    print("MAP MD5: %s", Level.XLevel.MapHashMD5);
-  }
+  //if (Cmd_GetArgC() > 1 && Cmd_GetArgV(1).startsWithCI("ripe"))
+  print("MAP RIPEMD-160: %s", Level.XLevel.MapHash);
+  print("MAP MD5: %s", Level.XLevel.MapHashMD5);
 }
 
 
@@ -1245,6 +1243,7 @@ void Cheat_MapHash () {
 //  Cheat_MapHash_AC
 //
 //==========================================================================
+/*
 void Cheat_MapHash_AC (const ref array!string args, bool newArg, out array!string aclist) {
   if (args.length == 1) {
     if (!newArg) return;
@@ -1254,8 +1253,9 @@ void Cheat_MapHash_AC (const ref array!string args, bool newArg, out array!strin
     return;
   }
 
-  aclist[$] = "sha224";
+  aclist[$] = "ripemd160";
 }
+*/
 
 
 //==========================================================================

@@ -363,8 +363,8 @@ class VLevel : public VGameObject {
   friend class VUdmfParser;
 
   VName MapName;
-  VStr MapHash;
-  VStr MapHashMD5;
+  VStr MapHash; // lowercase, RIPEMD-160, 20 bytes
+  VStr MapHashMD5; // lowercase
   vuint32 LSSHash; // xxHash32 of linedefs, sidedefs, sectors (in this order)
   vuint32 SegHash; // xxHash32 of segs
 

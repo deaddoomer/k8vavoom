@@ -201,7 +201,7 @@ COMMAND(MyPos) {
     const VLevel *lvl = Player->Level->XLevel;
     const subsector_t *ss = lvl->PointInSubsector_Buggy(Player->MO->Origin);
     TArray<VStr> info;
-    info.append(va("Map Hash (sha): %s", *Player->Level->XLevel->MapHash));
+    info.append(va("Map Hash (ripemd-160): %s", *Player->Level->XLevel->MapHash));
     info.append(va("Map Hash (md5): %s", *Player->Level->XLevel->MapHashMD5));
     info.append(va("sub: %d; sector: %d", (int)(ptrdiff_t)(ss-lvl->Subsectors), (int)(ptrdiff_t)(ss->sector-lvl->Sectors)));
     info.append(va("pos:(%g,%g,%g)  angles:(%g,%g)",
