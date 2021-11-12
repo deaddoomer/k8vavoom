@@ -717,6 +717,18 @@ IMPLEMENT_FUNCTION(VLevel, CheckBootPrints) {
 }
 
 
+// native /*final*/ void CheckFloorDecalDamage (bool isPlayer, TVec org, subsector_t *sub, void delegate (int damage, name damageType) dg);
+IMPLEMENT_FUNCTION(VLevel, CheckFloorDecalDamage) {
+  bool isPlayer;
+  TVec org;
+  subsector_t *sub;
+  VObject *dgSelf;
+  VMethod *dgFunc;
+  vobjGetParamSelf(isPlayer, org, sub, dgSelf, dgFunc);
+  if (dgFunc) Self->CheckFloorDecalDamage(isPlayer, org, sub, dgSelf, dgFunc);
+}
+
+
 COMMAND(RemoveAllDecals) {
   VLevel *lvl = (GLevel ? GLevel : GClLevel);
   if (!lvl) {

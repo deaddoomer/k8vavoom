@@ -59,7 +59,7 @@ bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VBootPrintDecalParams 
   for (const sec_region_t *reg = sub->sector->eregions; reg; reg = reg->next, ++eregidx) {
     const float fz = (eregidx || pobj3d ? reg->eceiling.GetPointZClamped(org) : reg->efloor.GetPointZClamped(org));
     if (fabsf(fz-org.z) <= 0.1f) {
-      //FIXME: we may several overlaping 3d floors, and decals for each one of them
+      //FIXME: we may have several overlaping 3d floors, and decals for each one of them
       //       ignore this for now
       ourreg = reg;
       break;
@@ -126,4 +126,75 @@ bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VBootPrintDecalParams 
 
   // oops
   return false;
+}
+
+
+//==========================================================================
+//
+//  VLevel::CheckFloorDecalDamage
+//
+//  `sub` can be `nullptr`
+//  `dgself` and `dgfunc` must be valid
+//
+//==========================================================================
+void VLevel::CheckFloorDecalDamage (bool isPlayer, TVec org, subsector_t *sub, VObject *dgself, VMethod *dgfunc) {
+  if (!subsectorDecalList) return;
+
+  if (!sub) sub = PointInSubsector(org);
+
+  // find out sector region (and its index)
+  int eregidx = 0;
+  const bool pobj3d = sub->isInnerPObj();
+  const sec_region_t *ourreg = nullptr;
+  for (const sec_region_t *reg = sub->sector->eregions; reg; reg = reg->next, ++eregidx) {
+    const float fz = (eregidx || pobj3d ? reg->eceiling.GetPointZClamped(org) : reg->efloor.GetPointZClamped(org));
+    if (fabsf(fz-org.z) <= 0.1f) {
+      //FIXME: we may have several overlaping 3d floors, and decals for each one of them
+      //       ignore this for now
+      ourreg = reg;
+      break;
+    }
+  }
+  if (!ourreg) return; // nothing to do here
+
+  // check if we are inside any blood decal
+  constexpr float shrinkRatio = 0.84f;
+  float dcbb2d[4];
+  for (decal_t *dc = subsectorDecalList[(unsigned)(ptrdiff_t)(sub-&Subsectors[0])].tail; dc; dc = dc->subprev) {
+    VDecalDef *dec = dc->proto;
+    if (!dec || !dec->hasFloorDamage) continue;
+    if (!dc->isFloor()) continue;
+    if (dc->eregindex != eregidx) continue;
+    if (isPlayer) {
+      dec->floorDamagePlayer.genValue(0.0f);
+      //GCon->Logf(NAME_Debug, "FLOOR DAMAGE from '%s': isPlayer=%d; dmg=%g", *dec->name, (int)isPlayer, dec->floorDamagePlayer.value);
+      if (dec->floorDamagePlayer.value < 1.0f) continue;
+    } else {
+      dec->floorDamageMonsters.genValue(0.0f);
+      //GCon->Logf(NAME_Debug, "FLOOR DAMAGE from '%s': isPlayer=%d; dmg=%g", *dec->name, (int)isPlayer, dec->floorDamageMonsters.value);
+      if (dec->floorDamageMonsters.value < 1.0f) continue;
+    }
+    // check tick
+    dec->floorDamageTick.genValue(0.0f);
+    const int ticks = (int)dec->floorDamageTick.value;
+    if (ticks < 1) continue;
+    if (TicTime%ticks) continue;
+    // gen damage
+    dec->floorDamage.genValue(0.0f);
+    const int dmg = (int)dec->floorDamage.value;
+    if (dmg < 1) continue;
+    // check coords
+    ShrinkBBox2D(dcbb2d, dc->bbox2d, shrinkRatio);
+    if (!IsPointInside2DBBox(org.x, org.y, dcbb2d)) continue;
+    dec->floorDamageSuitLeak.genValue(5.0f);
+    //GCon->Logf(NAME_Debug, "FLOOR DAMAGE from '%s': dmg=%d", *dec->name, dmg);
+    // it seems that we found it
+    // void delegate (int damage, name damageType, int suitLeak) dg
+    if (!dgfunc->IsStatic()) P_PASS_REF(dgself);
+    P_PASS_INT(dmg);
+    P_PASS_NAME(dec->floorDamageType);
+    P_PASS_INT((int)dec->floorDamageSuitLeak.value);
+    VObject::ExecuteFunction(dgfunc);
+    return; // only the top one can affect us
+  }
 }

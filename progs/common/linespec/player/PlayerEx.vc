@@ -74,6 +74,7 @@ TVec LocalQuakeHappening; // for each axis
 
 // for damaging flats: don't apply damage more than once per tick
 // this is last tick when sector damage was applied
+//FIXME: do not save this? it doesn't matter much
 int LastSectorDamageTic;
 
 float HazardTime;

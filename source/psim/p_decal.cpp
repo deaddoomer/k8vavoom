@@ -689,6 +689,13 @@ bool VDecalDef::parse (VScriptParser *sc) {
         if (!isOptionalDecal(name)) GCon->Logf(NAME_Warning, "decal '%s' has no pic '%s'", *name, *pic);
         return true;
       }
+
+      // has floor damage?
+      hasFloorDamage =
+        floorDamageTick.getMaxValue() >= 1.0f &&
+        floorDamage.getMaxValue() >= 1.0f &&
+        (floorDamageMonsters.getMaxValue() >= 1.0f || floorDamagePlayer.getMaxValue() >= 1.0f);
+
       return true;
     }
 
@@ -783,6 +790,13 @@ bool VDecalDef::parse (VScriptParser *sc) {
 
         if (sc->Check("wallangle")) { parseNumOrRandom(sc, &angleWall); continue; }
         if (sc->Check("flatangle")) { parseNumOrRandom(sc, &angleFlat); continue; }
+
+        if (sc->Check("floordamage")) { parseNumOrRandom(sc, &floorDamage); continue; }
+        if (sc->Check("floordamagetick")) { parseNumOrRandom(sc, &floorDamageTick); continue; }
+        if (sc->Check("floordamageplayer")) { parseNumOrRandom(sc, &floorDamagePlayer); continue; }
+        if (sc->Check("floordamagemonsters")) { parseNumOrRandom(sc, &floorDamageMonsters); continue; }
+        if (sc->Check("floordamagesuitleak")) { parseNumOrRandom(sc, &floorDamageSuitLeak); continue; }
+        if (sc->Check("floordamagetype")) { sc->ExpectString(); floorDamageType = VName(*sc->String); continue; }
 
         sc->Error(va("unknown k8vavoom decal keyword '%s'", *sc->String));
       }

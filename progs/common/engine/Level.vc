@@ -451,6 +451,9 @@ struct VBootPrintDecalParams {
 
 native /*final*/ bool CheckBootPrints (TVec org, subsector_t *sub, out VBootPrintDecalParams params);
 
+// `suitLeak` is [0..255]; if >255, suit is totally ignored
+native /*final*/ void CheckFloorDecalDamage (bool isPlayer, TVec org, subsector_t *sub, void delegate (int damage, name damageType, int suitLeak) dg);
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 // iterators

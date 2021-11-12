@@ -1503,6 +1503,10 @@ public: // used in renderer for flat decals
   // `sub` can be `nullptr`
   bool CheckBootPrints (TVec org, subsector_t *sub, VBootPrintDecalParams &params);
 
+  // `sub` can be `nullptr`
+  // `dgself` and `dgfunc` must be valid
+  void CheckFloorDecalDamage (bool isPlayer, TVec org, subsector_t *sub, VObject *dgself, VMethod *dgfunc);
+
   void KillAllMapDecals ();
 
 private:
@@ -1799,6 +1803,7 @@ private:
   DECLARE_FUNCTION(AddFlatDecal)
 
   DECLARE_FUNCTION(CheckBootPrints)
+  DECLARE_FUNCTION(CheckFloorDecalDamage)
 
   DECLARE_FUNCTION(doRecursiveSound)
 

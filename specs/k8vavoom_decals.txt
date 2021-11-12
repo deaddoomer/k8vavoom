@@ -44,6 +44,32 @@ FlatAngle <value>
   angle (in degrees) for flat decals. default is random.
 
 
+FloorDamage <value>
+  damage from floor decal; default is zero
+
+FloorDamageType <name>
+  damage type for floor decal. default is "no type".
+
+FloorDamageTick <value>
+  floor decal will deal gamage when (GameTic%FloorDamageTick) is zero.
+  note that zero value will turn off floor damage.
+  default is zero;
+
+FloorDamageMonsters <value>
+  should floor decal damage monsters?
+  0 or 1, default is 0.
+
+FloorDamagePlayer <value>
+  should floor decal damage player?
+  0 or 1, default is 0.
+
+FloorDamageSuitLeak <value>
+  how leaky is player protection suit for this decal?
+  [0..255]; 0 means "always active", >255 means "never active"
+  default is 5.
+  i.e. leak probability is `FloorDamageSuitLeak/256`.
+
+
 
 notes
 =====

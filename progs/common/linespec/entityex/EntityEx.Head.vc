@@ -575,6 +575,8 @@ transient float lastRipBloodTime = -666; // XLevel.Time
 transient int lastCrushTicTime = -666;
 transient int lastCrushTicBloodTime = -666;
 
+transient int LastFloorDecalDamageTic = 0;
+
 // so we can check it in various spawners
 // there is no need to save it
 // set in decorate parser

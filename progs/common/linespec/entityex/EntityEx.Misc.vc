@@ -2103,6 +2103,26 @@ final void EntityPreTick (float deltaTime) {
   }
 
   if (JumpTime) JumpTime = fmax(0, JumpTime-deltaTime);
+
+  // floor decal damage
+  if (!bIsPlayer && !bMonster) return;
+  if (Health <= 0) return;
+  if (bInvulnerable) return;
+  if (LastFloorDecalDamageTic == Level.XLevel.TicTime) return;
+  if (fabs(Origin.z-FloorZ) > 0.1) return;
+
+  //printdebug("%C: checking floor decals damage... (%B)", self, bIsPlayer);
+  LastFloorDecalDamageTic = Level.XLevel.TicTime;
+  XLevel.CheckFloorDecalDamage(bIsPlayer, Origin, SubSector, delegate void (int damage, name damageType, int suitLeak) {
+    //printdebug("%C: damage=%s; damageType=%s; suitLeak=%s; health=%s", self, damage, damageType, suitLeak, Health);
+    // suit prevents damage for players (yes, even for Voodoo dolls)
+    if (bIsPlayer && Player && PlayerEx(Player).IsProtectionSuitActive(suitLeak)) return;
+    if (damageType) {
+      Damage(none, none, damage, damageType);
+    } else {
+      Damage(none, none, damage);
+    }
+  });
 }
 
 

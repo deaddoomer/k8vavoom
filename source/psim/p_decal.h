@@ -139,6 +139,13 @@ public:
   int bootshade, boottranslation;
   float bootalpha;
   VTerrainBootprint *bootprint;
+  bool hasFloorDamage;
+  DecalFloatVal floorDamagePlayer; // default is true
+  DecalFloatVal floorDamageMonsters; // default is false
+  DecalFloatVal floorDamageSuitLeak; // default is 5
+  VName floorDamageType;
+  DecalFloatVal floorDamage;
+  DecalFloatVal floorDamageTick; // damage each this tick
 
 protected:
   bool useCommonScale;
@@ -172,6 +179,8 @@ public:
     , boottime(4.0f, 8.0f), bootanimator(NAME_None)
     , bootshade(-2), boottranslation(-2), bootalpha(-1.0f)
     , bootprint(nullptr)
+    , hasFloorDamage(false), floorDamagePlayer(1.0f), floorDamageMonsters(0.0f), floorDamageSuitLeak(5.0f)
+    , floorDamageType(NAME_None), floorDamage(0.0f), floorDamageTick(0.0f)
     , useCommonScale(false), scaleSpecial(Scale_No_Special), scaleMultiply(1.0f)
     {}
   ~VDecalDef () noexcept;
@@ -435,6 +444,12 @@ struct decal_t {
   decal_t *nextanimated; // so we can skip static decals
   // for flat decals
   float bbox2d[4]; // 2d bounding box for the original (maximum) flat decal size
+  /* will take it from proto
+  int flatDamageTicks; // >0: do flat damage
+  int flatDamageMin;
+  int flatDamageMax;
+  VName flatDamageType;
+  */
   // in VLevel subsector decal list
   decal_t *subprev;
   decal_t *subnext;
