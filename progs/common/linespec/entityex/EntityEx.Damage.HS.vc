@@ -502,13 +502,13 @@ int K8onBeforeDamage (EntityEx inflictor, TVec hitpos, int damage, name adamageT
 
       // if we will left victim with very small health, kill it instead
       bool instakill = false;
-      if (Health-dodmg <= smallHealth) dodmg = Health;
+      if (Health-dodmg <= smallHealth) dodmg = max(dodmg, Health);
       //int xdmg = dodmg;
       if (Health <= dodmg) {
         // instakill, gore (fe, 'cause +1)
         instakill = true;
-        dodmg = Health+5;
-        if (debugCrits) printdebug("  INSTAKILL");
+        //dodmg = Health+5;
+        if (debugCrits) printdebug("  INSTAKILL; dodmg=%s; Health=%s", dodmg, Health);
       }
       // preventing normal damage will prevent monster alerting too, heh
 
@@ -520,8 +520,30 @@ int K8onBeforeDamage (EntityEx inflictor, TVec hitpos, int damage, name adamageT
 
         if (instakill) {
           // so they won't gib
-          Health = 1;
-          dodmg = 2;
+          if (fromMissile) {
+            // k8vavoom hack for missile headshots
+            bool keepDamage = false;
+            if (inflictor.bNoExtremeDeath && inflictor.bNoFear && inflictor.bStayMorphed &&
+                inflictor.Target && inflictor.Target.bIsPlayer && inflictor.Target.FindInventory(PowerStrength))
+            {
+              if (debugCrits) printdebug("  INSTAKILL: extreme death override!");
+              inflictor.bNoExtremeDeath = false;
+              keepDamage = true;
+            }
+            if (inflictor.bNoExtremeDeath) {
+              Health = 1;
+              dodmg = 2;
+            } else if (inflictor.bExtremeDeath) {
+              Health = 1;
+              dodmg = -5666;
+            } else if (!keepDamage) {
+              Health = 1;
+              dodmg = 2;
+            }
+          } else {
+            Health = 1;
+            dodmg = 2;
+          }
         }
 
         // play headkill sound

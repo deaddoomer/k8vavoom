@@ -309,6 +309,7 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
 [decorate] final Object decorate_GetSelf () { return self; }
 [decorate] final Object decorate_GetSSR () { /*print("(SSR.self=%C)", self);*/ return _stateRouteSelf; }
 
+[decorate] final int decorate_MissileDamage (int Mask, int Add) { return GetMissileDamage(Mask, Add); }
 
 [decorate] final TVec decorate_fvector (float x, float y, optional float z) { return vector(x, y, z); }
 [decorate] final TAVec decorate_fangles (float yaw, optional float pitch, optional float roll) { return vector(pitch, yaw, roll); }
@@ -354,6 +355,12 @@ private final EntityEx dccDoAPtr (optional int aptr0) {
   if (!sex) return 0;
   if (PlayerPawn(sex)) return PlayerPawn(sex).MaxHealth;
   return sex.InitialHealth;
+}
+
+[decorate] final bool decorate_HasBerserk (optional int aptr0) {
+  EntityEx sex = dccDoAPtr(aptr0!optional);
+  if (!sex) return false;
+  return (sex.FindInventory(PowerStrength) ? true : false);
 }
 
 [decorate] final bool decorate_IsMonster (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? sex.bMonster : false); }

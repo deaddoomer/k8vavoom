@@ -172,6 +172,7 @@
     <flag name="NeverTarget" property="bReallyNeverTarget" />
     <flag name="NoInfighting" property="bNoInfighting" />
     <!--flag_unsupported name="NoTimeFreeze" warning="true" /-->
+    <!--k8: set "+NoFear" and "+StayMorphed" to cancel "+NoExtremeDeath" flag when missile Target has Berserker powerup -->
     <flag name="NoFear" property="bNoFear" />
     <flag name="CantSeek" property="bCantSeek" />
     <flag name="SeeInvisible" property="bSeeInvisible" />

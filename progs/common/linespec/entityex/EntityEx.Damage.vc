@@ -589,9 +589,15 @@ void Died (EntityEx source, EntityEx inflictor) {
     Target = source;
   }
 
-  if (inflictor && inflictor.bNoExtremeDeath) {
-    // prevent gibing animation
-    Health = -1;
+  if (inflictor) {
+    //printdebug("INFLICTOR: %C: bNoExtremeDeath=%B; bExtremeDeath=%B; health=%s", inflictor, inflictor.bNoExtremeDeath, inflictor.bExtremeDeath, Health);
+    if (inflictor.bNoExtremeDeath) {
+      // prevent gibing animation
+      Health = -1;
+    } else if (inflictor.bExtremeDeath) {
+      // always extreme death
+      Health = -5000;
+    }
   }
 
   if (source && source.bIsPlayer && PlayerEx(source.Player).IsWeaponAlwaysExtremeDeath()) {
