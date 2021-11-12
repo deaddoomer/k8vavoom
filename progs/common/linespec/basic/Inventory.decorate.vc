@@ -343,7 +343,9 @@
   optional int Flags, optional class!Actor PuffType,
   optional float Range, optional float LifeSteal,
   optional float lifestealmax, optional class!BasicArmorBonus armorbonustype,
-  optional name aMeleeSound, optional name misssound) self(Actor)
+  optional name meleeSound, optional name missSound,
+  // k8vavoom option
+  optional float berserkerMult/*=1*/) self(Actor)
 {
   TAVec aimAngles;
   TVec dir;
@@ -368,6 +370,13 @@
   }
 
   if (!NoRandom) PunchDamage *= (P_Random()%8+1);
+  if (specified_berserkerMult) {
+    if (FindInventory(PowerStrength)) {
+      //printdebug("%C: old punch: %s; mult=%s", self, PunchDamage, berserkerMult);
+      PunchDamage = roundi(PunchDamage*berserkerMult);
+      //printdebug("%C: new punch: %s", self, PunchDamage);
+    }
+  }
 
   LineAttack(dir, Range, PunchDamage, PuffType, DmgType:PuffType.default.DamageType);
 
@@ -386,7 +395,7 @@
         }
       }
     }
-    if (Wpn) PlaySound((aMeleeSound ? aMeleeSound : Wpn.AttackSound), CHAN_WEAPON);
+    if (Wpn) PlaySound((meleeSound ? meleeSound : Wpn.AttackSound), CHAN_WEAPON);
     if (!(Flags&CPF_NOTURN)) {
       Angles.yaw = atan2(AimTarget.Origin.y-Origin.y, AimTarget.Origin.x-Origin.x);
       if (bIsPlayer) Player.bFixAngle = true;
@@ -394,7 +403,7 @@
     if (Flags&CPF_PULLIN) bJustAttacked = true;
     if (Flags&CPF_DAGGER) DaggerAlert(self, AimTarget);
   } else {
-    if (misssound) PlaySound(misssound, CHAN_WEAPON);
+    if (missSound) PlaySound(missSound, CHAN_WEAPON);
   }
 }
 
