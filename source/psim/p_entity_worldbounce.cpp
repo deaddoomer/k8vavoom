@@ -31,6 +31,8 @@
 #include "p_entity.h"
 #include "p_world.h"
 
+//#define VV_DEBUG_BOUNCE
+
 
 //**************************************************************************
 //
@@ -47,6 +49,9 @@
 //============================================================================
 void VEntity::BounceWall (float DeltaTime, const line_t *blockline, float overbounce, float bouncefactor) {
   const line_t *BestSlideLine = nullptr; //blockline;
+  #ifdef VV_DEBUG_BOUNCE
+  GCon->Logf(NAME_Debug, "=======: BOUNCE %s:%u: START; line=%d; overbounce=%f; bouncefactor=%f", GetClass()->GetName(), GetUniqueId(), (blockline ? (intptr_t)(blockline-&XLevel->Lines[0]) : -666), overbounce, bouncefactor);
+  #endif
 
   if (!BestSlideLine || BestSlideLine->PointOnSide(Origin)) {
     BestSlideLine = nullptr;
@@ -59,7 +64,9 @@ void VEntity::BounceWall (float DeltaTime, const line_t *blockline, float overbo
     float BestSlideFrac = 99999.0f;
 
     //FIXME: use code from `SlidePathTraverse()` here!
-    //GCon->Logf(NAME_Debug, "%s:%u:xxx: vel=(%g,%g,%g); dt=%g; slide=(%g,%g,%g)", GetClass()->GetName(), GetUniqueId(), Velocity.x/35.0f, Velocity.y/35.0f, Velocity.z/35.0f, DeltaTime, SlideDir.x, SlideDir.y, SlideDir.z);
+    #ifdef VV_DEBUG_BOUNCE
+    GCon->Logf(NAME_Debug, "%s:%u:xxx: vel=(%g,%g,%g); dt=%g; slide=(%g,%g,%g)", GetClass()->GetName(), GetUniqueId(), Velocity.x/35.0f, Velocity.y/35.0f, Velocity.z/35.0f, DeltaTime, SlideDir.x, SlideDir.y, SlideDir.z);
+    #endif
     //for (VPathTraverse It(this, &in, SlideOrg.x, SlideOrg.y, SlideOrg.x+SlideDir.x, SlideOrg.y+SlideDir.y, PT_ADDLINES); It.GetNext(); )
     for (VPathTraverse It(this, &in, SlideOrg, SlideOrg+TVec(SlideDir.x, SlideDir.y, 0.0f), PT_ADDLINES|PT_NOOPENS|PT_RAILINGS); It.GetNext(); )
     {
@@ -92,10 +99,16 @@ void VEntity::BounceWall (float DeltaTime, const line_t *blockline, float overbo
       //break;
     }
     if (!BestSlideLine) {
-      //GCon->Logf(NAME_Debug, "%s:%u:999: cannot find slide line! vel=(%g,%g,%g)", GetClass()->GetName(), GetUniqueId(), Velocity.x/35.0f, Velocity.y/35.0f, Velocity.z/35.0f);
+      #ifdef VV_DEBUG_BOUNCE
+      GCon->Logf(NAME_Debug, "%s:%u:999: cannot find slide line! vel=(%g,%g,%g)", GetClass()->GetName(), GetUniqueId(), Velocity.x/35.0f, Velocity.y/35.0f, Velocity.z/35.0f);
+      #endif
       BestSlideLine = blockline;
     }
   }
+
+  #ifdef VV_DEBUG_BOUNCE
+  GCon->Logf(NAME_Debug, "=======: BOUNCE %s:%u: START; best-line=%d; overbounce=%f; bouncefactor=%f", GetClass()->GetName(), GetUniqueId(), (BestSlideLine ? (intptr_t)(BestSlideLine-&XLevel->Lines[0]) : -666), overbounce, bouncefactor);
+  #endif
 
   if (BestSlideLine) {
     /*
@@ -128,7 +141,7 @@ void VEntity::BounceWall (float DeltaTime, const line_t *blockline, float overbo
     #endif
     */
 
-    float lineangle = VectorAngleYaw(BestSlideLine->normal);
+    float lineangle = VectorAngleYaw(BestSlideLine->ndir);
     if (BestSlideLine->PointOnSide(Origin)) lineangle += 180.0f;
     lineangle = AngleMod(lineangle);
 
@@ -161,16 +174,20 @@ void VEntity::BounceWall (float DeltaTime, const line_t *blockline, float overbo
     }
     #endif
 
-    //GCon->Logf(NAME_Debug, "%s:%u:000: linedef=%d; lineangle=%g; moveangle=%g; deltaangle=%g; movelen=%g; vel.xy=(%g,%g,%g); side=%d", GetClass()->GetName(), GetUniqueId(), (int)(ptrdiff_t)(BestSlideLine-&XLevel->Lines[0]), lineangle, moveangle, deltaangle, movelen, Velocity.x/35.0f, Velocity.y/35.0f, Velocity.z/35.0f, BestSlideLine->PointOnSide(Origin));
+    #ifdef VV_DEBUG_BOUNCE
+    GCon->Logf(NAME_Debug, "%s:%u:000: linedef=%d; lineangle=%g; moveangle=%g; deltaangle=%g; movelen=%g; vel.xy=(%g,%g,%g); side=%d", GetClass()->GetName(), GetUniqueId(), (int)(ptrdiff_t)(BestSlideLine-&XLevel->Lines[0]), lineangle, moveangle, deltaangle, movelen, Velocity.x/35.0f, Velocity.y/35.0f, Velocity.z/35.0f, BestSlideLine->PointOnSide(Origin));
+    #endif
 
     if (movelen < 35.0f) movelen = 70.0f;
-    TVec newvel = AngleVectorYaw(deltaangle)*movelen;
+    const TVec newvel = AngleVectorYaw(deltaangle)*movelen;
     Velocity.x = newvel.x;
     Velocity.y = newvel.y;
 
-    //GCon->Logf(NAME_Debug, "%s:%u:001: oldangle=%g; newangle=%g; newvel.xy=(%g,%g,%g)", GetClass()->GetName(), GetUniqueId(), moveangle, deltaangle, Velocity.x/35.0f, Velocity.y/35.0f, Velocity.z/35.0f);
+    #ifdef VV_DEBUG_BOUNCE
+    GCon->Logf(NAME_Debug, "%s:%u:001: oldangle=%g; newangle=%g; newvel.xy=(%g,%g,%g)", GetClass()->GetName(), GetUniqueId(), moveangle, deltaangle, Velocity.x/35.0f, Velocity.y/35.0f, Velocity.z/35.0f);
+    #endif
 
-    #if 1
+    #if 0
     const float vz = Velocity.z;
     Velocity = ClipVelocity(Velocity, BestSlideLine->normal, overbounce);
     Velocity.z = vz; // just in case
