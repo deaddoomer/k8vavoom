@@ -152,6 +152,25 @@ final void InitSpawnedItem (EntityEx A, bool TransTransl, bool SetMaster,
 
 //==========================================================================
 //
+//  A_SpawnPuff
+//
+//  used in "hitscan projectiles"
+//  FIXME: add more args?
+//
+//==========================================================================
+[decorate] final void A_SpawnPuff (TVec Org, float Range, class!Actor PuffType, optional bool HitThing,
+                                   optional bool disableRandomZ, optional int aptr)
+{
+  KeepChainResult();
+  if (!PuffType) return;
+  EntityEx spw = EntityEx(DecorDoAAPtr('A_SpawnPuff', aptr!optional));
+  if (!spw) spw = self;
+  spw.SpawnPuff(Org, Range, PuffType, HitThing, disableRandomZ:disableRandomZ!optional);
+}
+
+
+//==========================================================================
+//
 //  A_SpawnItem
 //
 //==========================================================================

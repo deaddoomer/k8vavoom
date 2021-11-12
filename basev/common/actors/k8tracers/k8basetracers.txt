@@ -26,7 +26,8 @@ Actor K8HSHitscanTracer : FastProjectile {
     KKZZ A -1 BRIGHT
     Loop
   Death:
-    TNT1 A 0 A_SpawnItem(MissilePuffOverride())
+    //TNT1 A 0 A_SpawnItem(MissilePuffOverride())
+    TNT1 A 0 A_SpawnPuff(OriginVector, 8192, MissilePuffOverride(), aptr:AAPTR_MASTER)
     Stop
   XDeath:
     // do not spawn puff when hit something
