@@ -158,14 +158,43 @@ final void InitSpawnedItem (EntityEx A, bool TransTransl, bool SetMaster,
 //  FIXME: add more args?
 //
 //==========================================================================
-[decorate] final void A_SpawnPuff (TVec Org, float Range, class!Actor PuffType, optional bool HitThing,
-                                   optional bool disableRandomZ, optional int aptr)
+[decorate] final void A_SpawnPuffHitProj (TVec Org, float Range, class!Actor PuffType,
+                                          optional Actor Victim, optional int LADamage,
+                                          optional bool disableRandomZ, optional int aptr)
 {
   KeepChainResult();
   if (!PuffType) return;
-  EntityEx spw = EntityEx(DecorDoAAPtr('A_SpawnPuff', aptr!optional));
+  EntityEx spw = EntityEx(DecorDoAAPtr('A_SpawnPuffHitProj', aptr!optional));
   if (!spw) spw = self;
-  spw.SpawnPuff(Org, Range, PuffType, HitThing, disableRandomZ:disableRandomZ!optional);
+  if (Victim) {
+    //printdebug("%C: spawn on victim %C from %C", self, Victim, spw);
+    // spawn bullet puffs or blood spots, depending on target type
+    if (PuffType.default.bPuffOnActors || Victim.bNoBlood || Victim.bInvulnerable || Victim.bDormant) {
+      spw.SpawnPuff(Org, Range, PuffType, true, disableRandomZ:disableRandomZ!optional);
+    }
+
+    /*
+    bool UseAxeBlood = bIsPlayer && PlayerEx(Player).ReadyWeapon && PlayerEx(Player).ReadyWeapon.bAxeBlood;
+    bool UseBloodSplatter = UseAxeBlood || bBloodSplatter ||
+                            (bIsPlayer && PlayerEx(Player).ReadyWeapon && PlayerEx(Player).ReadyWeapon.bBloodSplatter);
+    */
+    if (!PuffType.default.bBloodlessImpact && LADamage > 0) {
+      if (/*!UseBloodSplatter &&*/ !Victim.bNoBlood && !Victim.bInvulnerable && !Victim.bDormant) {
+        //printdebug("   victim blood!");
+        Victim.SpawnBlood(Org, LADamage, Org-Velocity*10);
+      }
+      /*
+      if (LADamage && UseBloodSplatter) {
+        if (!Victim.bNoBlood && !Victim.bInvulnerable && !Victim.bDormant) {
+          if (UseAxeBlood) Victim.SpawnBloodSplatter2(hitPoint, shootOrigin);
+          if (P_Random() < 192) Victim.SpawnBloodSplatter(hitPoint, LADamage, shootOrigin);
+        }
+      }
+      */
+    }
+  } else {
+    spw.SpawnPuff(Org, Range, PuffType, false, disableRandomZ:disableRandomZ!optional);
+  }
 }
 
 

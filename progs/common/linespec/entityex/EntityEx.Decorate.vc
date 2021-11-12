@@ -310,6 +310,7 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
 [decorate] final Object decorate_GetSSR () { /*print("(SSR.self=%C)", self);*/ return _stateRouteSelf; }
 
 [decorate] final int decorate_MissileDamage (int Mask, int Add) { return GetMissileDamage(Mask, Add); }
+[decorate] final int decorate_MissileDamageOverride { get { return MissileDamageOverride; } }
 
 [decorate] final TVec decorate_fvector (float x, float y, optional float z) { return vector(x, y, z); }
 [decorate] final TAVec decorate_fangles (float yaw, optional float pitch, optional float roll) { return vector(pitch, yaw, roll); }
@@ -341,10 +342,10 @@ private final EntityEx dccDoAPtr (optional int aptr0) {
   return sex;
 }
 
-[decorate] final Object decorate_GetTarget (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? sex.Target : none); }
-[decorate] final Object decorate_GetTracer (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? sex.Tracer : none); }
-[decorate] final Object decorate_GetMaster (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? sex.Master : none); }
-[decorate] final Object decorate_GetOwner (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? sex.Owner : none); }
+[decorate] final Actor decorate_GetTarget (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? Actor(sex.Target) : none); }
+[decorate] final Actor decorate_GetTracer (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? Actor(sex.Tracer) : none); }
+[decorate] final Actor decorate_GetMaster (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? Actor(sex.Master) : none); }
+[decorate] final Actor decorate_GetOwner (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? Actor(sex.Owner) : none); }
 [decorate] final float decorate_GetStateTime () { return StateTime; }
 [decorate] final int decorate_GetHealth (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? sex.Health : 0); }
 [decorate] final float decorate_GetHeight (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? sex.Height : 0); }
