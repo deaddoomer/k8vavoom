@@ -1893,6 +1893,82 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
     // sprite name
     bool totalKeepSprite = false; // remember "----" for other frames of this state
     bool keepSpriteBase = false; // remember "----" or "####" for other frames of this state
+    bool wasAction;
+    VStr FramesString;
+    char FChar;
+
+    // JumpTo command (dynamic dispatch)
+    if (TmpName.ICmp("JumpTo") == 0) {
+      if (sc->IsAtEol()) sc->Error(va("`%s` without argument!", *TmpName));
+      //sc->ExpectIdentifier();
+      //sc->String = sc->String.xstrip();
+      VStr GotoLabel = ParseStateString(sc);
+      if (GotoLabel.isEmpty()) sc->Error(va("empty label in `%s`!", *TmpName));
+
+      // call `FindJumpState()`
+      VExpression *TmpArgs[1];
+      TmpArgs[0] = new VNameLiteral(VName(*GotoLabel), TmpLoc);
+      VExpression *exprState = new VInvocation(nullptr, Class->FindMethodChecked("FindJumpState"), nullptr, false, false, TmpLoc, 1, TmpArgs);
+      // call `decorate_A_RetDoJump`
+      TmpArgs[0] = exprState;
+      VExpression *einv = new VDecorateInvocation(VName("decorate_A_RetDoJump"), TmpLoc, 1, TmpArgs);
+      VStatement *stinv = new VExpressionStatement(ParseCreateDropResult(einv));
+      VCompound *cst = new VCompound(TmpLoc);
+      cst->Statements.append(stinv);
+      cst->Statements.append(new VReturn(nullptr, TmpLoc));
+      //return cst;
+      State->SpriteName = NAME_None; // don't change
+      State->Frame = VState::FF_DONTCHANGE|VState::FF_KEEPSPRITE|VState::FF_SKIPOFFS|VState::FF_SKIPMODEL;
+      State->Time = 0.0f;
+      State->TicType = VState::TCK_Normal;
+      State->Arg1 = 0;
+      State->Arg2 = 0;
+      State->LightName = VStr();
+      State->FunctionName = NAME_None;
+      State->Function = CreateStateActionCallWrapperStmt(cst, Class, State, TmpLoc);
+
+      if (!LastState) {
+        // there were no states after the label, insert dummy one; just in case
+        VState *dupState = new VState(va("S_%d", States.length()), Class, TmpLoc);
+        States.Append(dupState);
+        // copy real state data to duplicate one (it will be used as new "real" state)
+        dupState->SpriteName = State->SpriteName;
+        dupState->Frame = State->Frame;
+        dupState->Time = State->Time;
+        dupState->TicType = State->TicType;
+        dupState->Arg1 = State->Arg1;
+        dupState->Arg2 = State->Arg2;
+        dupState->Misc1 = State->Misc1;
+        dupState->Misc2 = State->Misc2;
+        dupState->LightName = State->LightName;
+        dupState->FunctionName = State->FunctionName;
+        dupState->Function = State->Function;
+        // dummy out "real" state (we copied all necessary data to duplicate one here)
+        State->Frame = (State->Frame&(VState::FF_FRAMEMASK|VState::FF_DONTCHANGE|VState::FF_KEEPSPRITE))|VState::FF_SKIPOFFS|VState::FF_SKIPMODEL;
+        State->Time = 0;
+        State->TicType = VState::TCK_Normal;
+        State->Arg1 = 0;
+        State->Arg2 = 0;
+        State->LightName = VStr();
+        State->FunctionName = NAME_None;
+        State->Function = nullptr;
+        // link previous state
+        if (PrevState) PrevState->NextState = State;
+        // assign state to the labels
+        for (int i = NewLabelsStart; i < Class->StateLabelDefs.length(); ++i) {
+          Class->StateLabelDefs[i].State = State;
+          LoopStart = State;
+        }
+        NewLabelsStart = Class->StateLabelDefs.length(); // no current label
+        PrevState = State;
+        LastState = State;
+        // and use duplicate state as a new state
+        State = dupState;
+      }
+
+      SkipSemicolonsToEOL(sc);
+      goto linkParsedState;
+    }
 
     if (TmpName.Length() != 4) sc->Error(va("Invalid sprite name '%s'", *TmpName));
     if (TmpName == "####" || TmpName == "----") {
@@ -1906,10 +1982,10 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
     // sprite frame
     sc->ExpectString();
     if (sc->String.length() == 0) sc->Error("Missing sprite frames");
-    VStr FramesString = sc->String;
+    FramesString = sc->String;
 
     // check first frame
-    char FChar = VStr::ToUpper(sc->String[0]);
+    FChar = VStr::ToUpper(sc->String[0]);
     if (totalKeepSprite || FChar == '#') {
       // frame letter is irrelevant
       State->Frame = VState::FF_DONTCHANGE;
@@ -1969,7 +2045,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
     //fprintf(stderr, "**0:%s: <%s> (%d)\n", *sc->GetVCLoc().toStringNoCol(), *sc->String, (sc->Crossed ? 1 : 0));
 
     // parse state action
-    bool wasAction = false;
+    wasAction = false;
     for (;;) {
       if (!sc->GetString()) break;
       if (sc->Crossed) { sc->UnGet(); break; }
@@ -2074,6 +2150,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
       SkipSemicolonsToEOL(sc);
     }
 
+  linkParsedState:
     // link previous state
     if (PrevState) PrevState->NextState = State;
 

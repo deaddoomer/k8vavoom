@@ -632,7 +632,8 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
       // none as literal?
       if (IsNoneLiteral()) {
         VExpression *TmpArgs[1];
-        TmpArgs[0] = new VStringLiteral("none", ec.Package->FindString(""), Loc);
+        //TmpArgs[0] = new VStringLiteral("none", ec.Package->FindString(""), Loc);
+        TmpArgs[0] = new VNameLiteral(VName("none"), Loc);
         VExpression *enew = new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpState"), nullptr, false, false, Loc, 1, TmpArgs);
         delete this;
         return enew;
