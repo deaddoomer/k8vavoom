@@ -1418,6 +1418,11 @@ IMPLEMENT_FUNCTION(VObject, GetClassFirstState) {
   RET_PTR(Cls ? Cls->States : nullptr);
 }
 
+// native static final state GetNoJumpState ();
+IMPLEMENT_FUNCTION(VObject, GetNoJumpState) {
+  RET_PTR(VState::GetNoJumpState());
+}
+
 // native static final name GetClassGameObjName (class C);
 IMPLEMENT_FUNCTION(VObject, GetClassGameObjName) {
   VClass *SomeClass;

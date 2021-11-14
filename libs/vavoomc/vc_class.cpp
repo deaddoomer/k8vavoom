@@ -919,13 +919,14 @@ int VClass::GetMethodIndex (VName AName) const {
 //
 //==========================================================================
 VState *VClass::FindState (VName AName) {
-  if (AName == NAME_None) return nullptr;
-  if (VStr::ICmp(*AName, "none") == 0) return nullptr;
+  if (AName == NAME_None) return nullptr/*VState::GetNoJumpState()*/;
+  //if (VStr::ICmp(*AName, "none") == 0) return /*nullptr*/VState::GetNoJumpState();
+  if (VStr::strEquCI(*AName, "none") || VStr::strEquCI(*AName, "false")) return nullptr/*VState::GetNoJumpState()*/;
   for (VState *s = States; s; s = s->Next) {
     if (VStr::ICmp(*s->Name, *AName) == 0) return s;
   }
   if (ParentClass) return ParentClass->FindState(AName);
-  if (VStr::ICmp(*AName, "null") == 0) return nullptr;
+  //if (VStr::ICmp(*AName, "null") == 0) return nullptr;
   return nullptr;
 }
 
@@ -936,11 +937,12 @@ VState *VClass::FindState (VName AName) {
 //
 //==========================================================================
 VState *VClass::FindStateChecked (VName AName) {
-  if (AName == NAME_None) return nullptr;
+  if (AName == NAME_None) return nullptr/*VState::GetNoJumpState()*/;
+  if (VStr::strEquCI(*AName, "none") || VStr::strEquCI(*AName, "false")) return nullptr/*VState::GetNoJumpState()*/;
   VState *s = FindState(AName);
   if (!s) {
     //HACK!
-    if (VStr::ICmp(*AName, "none") == 0 || VStr::ICmp(*AName, "null") == 0 || VStr::ICmp(*AName, "nil") == 0) return nullptr;
+    if (VStr::strEquCI(*AName, "null") || VStr::strEquCI(*AName, "nil")) return nullptr;
     VPackage::InternalFatalError(va("State `%s` not found in class `%s`", *AName, GetName()));
   }
   return s;
@@ -953,7 +955,10 @@ VState *VClass::FindStateChecked (VName AName) {
 //
 //==========================================================================
 VStateLabel *VClass::FindStateLabel (VName AName, VName SubLabel, bool Exact) {
-  if (AName == NAME_None || VStr::ICmp(*AName, "None") == 0 || VStr::ICmp(*AName, "Null") == 0) return nullptr;
+  if (AName == NAME_None) return nullptr/*VState::GetNoJumpState()*/;
+  //if (VStr::ICmp(*AName, "None") == 0 || VStr::ICmp(*AName, "Null") == 0) return nullptr;
+  if (VStr::strEquCI(*AName, "none") || VStr::strEquCI(*AName, "false")) return nullptr/*VState::GetNoJumpState()*/;
+  if (VStr::strEquCI(*AName, "null") || VStr::strEquCI(*AName, "nil")) return nullptr;
 
   if (SubLabel == NAME_None) {
     // remap old death state labels to proper names

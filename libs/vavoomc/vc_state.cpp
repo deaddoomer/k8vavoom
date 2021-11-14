@@ -25,6 +25,8 @@
 //**************************************************************************
 #include "vc_local.h"
 
+VState *VState::mNoJumpState = nullptr;
+
 
 //==========================================================================
 //
@@ -72,6 +74,22 @@ VState::VState (VName AName, VMemberBase *AOuter, TLocation ALoc)
 //
 //==========================================================================
 VState::~VState () {
+}
+
+
+//==========================================================================
+//
+//  VState::StaticInit
+//
+//  called from `VBaseMember::StaticInit()`
+//
+//==========================================================================
+void VState::StaticInit () {
+  mNoJumpState = new VState(" __dummy__state__ ", /*VClass*/nullptr, TLocation());
+  //InClass->AddState(mNoJumpState);
+  mNoJumpState->SpriteName = NAME_None;
+  mNoJumpState->Frame = 0|VState::FF_SKIPOFFS|VState::FF_SKIPMODEL|VState::FF_DONTCHANGE|VState::FF_KEEPSPRITE;
+  mNoJumpState->Time = 0;
 }
 
 

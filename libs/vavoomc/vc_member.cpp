@@ -313,6 +313,7 @@ void VMemberBase::StaticInit () {
   }
   VClass::InitSpriteList();
   GSystemInitialised = true;
+  VState::StaticInit();
 }
 
 

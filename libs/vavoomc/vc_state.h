@@ -107,6 +107,9 @@ public:
   // compiler flags
   bool funcIsCopy; // this will be set if there is no need to call `PostLoad()` for `Function`
 
+private:
+  static VState *mNoJumpState;
+
 public:
   VState (VName AName, VMemberBase *AOuter, TLocation ALoc);
   virtual ~VState () override;
@@ -127,6 +130,12 @@ public:
     res.spriteIndex = 1; // unknown
     return res;
   }
+
+  inline static VState *GetNoJumpState () noexcept { return mNoJumpState; }
+  inline static bool IsNoJumpState (const VState *st) noexcept { return (st == mNoJumpState); }
+
+  // called from `VBaseMember::StaticInit()`
+  static void StaticInit ();
 
   friend inline VStream &operator << (VStream &Strm, VState *&Obj) { return Strm << *(VMemberBase **)&Obj; }
 };
