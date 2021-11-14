@@ -1372,7 +1372,7 @@ void Cheat_VScriptCommand () {
     sincos(MO.Angles.yaw, out s, out c);
     TVec Offs = ofs*vector(c, s, 0.0);
     MO.Origin += Offs;
-    Actor A = Actor(Actor(MO).SpawnMissileAngles(mt, MO.Angles.yaw, MO.Angles.pitch, hgt, speedoverride:speed));
+    /*Actor A =*/ Actor(Actor(MO).SpawnMissileAngles(mt, MO.Angles.yaw, MO.Angles.pitch, hgt, speedoverride:speed));
     MO.Origin -= Offs;
     return;
   }
