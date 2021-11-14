@@ -999,11 +999,18 @@ final void doKillXXX (EntityEx dest, name adamagetype, int flags, optional name 
 
   if (!dest.DecorFilterCheck(invertFilter:!!(flags&KILS_EXFILTER), invertSpecies:!!(flags&KILS_EXSPECIES), either:!!(flags&KILS_EITHER), filter:filter!optional, aspecies:aspecies!optional)) return;
 
-  if (!(flags&KILS_KILLMISSILES)) {
-    if (dest.IsMissile(false)) return;
-  }
+  //printdebug("%C:%s: doKillXXX:%C:%s bMissile=%B (%B); bMonster=%B; flags=0x%08x", self, UniqueId, dest, dest.UniqueId, dest.bMissile, dest.IsMissile(false), dest.bMonster, flags);
+
   if (flags&KILS_NOMONSTERS) {
     if (dest.bMonster) return;
+  }
+
+  // ketmar's notes
+  // some idiots (yeah, DRL, i am looking at you!) assign both "projectile" and "monster" to their projectiles
+  // because, you know, specifying a correct flag in `A_KillChildren()` is soooo hard
+  // so i moved monster check up above, and added check for monster here
+  if (!(flags&KILS_KILLMISSILES) && !dest.bMonster) {
+    if (dest.IsMissile(false)) return;
   }
 
   // get source and inflictor
@@ -1066,11 +1073,14 @@ final void doKillXXX (EntityEx dest, name adamagetype, int flags, optional name 
                            optional name filter, optional name aspecies,
                            optional int src, optional int inflict)
 {
+  //printdebug("%C:%s: A_KillChildren:000", self, UniqueId);
   Actor A;
   foreach AllThinkers(Actor, A) {
     if (A.Master != self) continue;
+    //printdebug("%C:%s:   killing %C:%s", self, UniqueId, A, A.UniqueId);
     doKillXXX(A, adamagetype, flags, filter!optional, aspecies!optional, src!optional, inflict!optional);
   }
+  //printdebug("%C:%s: A_KillChildren:x_x", self, UniqueId);
 }
 
 
