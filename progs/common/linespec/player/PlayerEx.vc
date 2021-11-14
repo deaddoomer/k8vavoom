@@ -3553,7 +3553,7 @@ override void DisconnectClient () {
     Actor(MO).Damage(none, none, 10000, forced:true, spawnBlood:true);
   }
   Level.bprint("%s left the game", PlayerName);
-  MO.PlaySound('misc/chat', CHAN_AUTO, 1.0, ATTN_NONE);
+  if (MO) MO.PlaySound('misc/chat', CHAN_AUTO, 1.0, ATTN_NONE);
   HealthBarDeinit();
 }
 
@@ -5345,6 +5345,13 @@ void ProcessFlashligh () {
 //
 //==========================================================================
 override void SetViewPos () {
+  if (!MO) {
+    //printdebug("%C: fuck", self);
+    if (!Camera || Camera.isDestroyed) {
+      Error("this mod's player pawn code is totally fucked (dead player pawn)");
+    }
+  }
+
   // just in a case camera entity has been destroyed
   if (!Camera) Camera = MO;
 
