@@ -1923,7 +1923,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
       cst->Statements.append(stinv);
       cst->Statements.append(new VReturn(nullptr, TmpLoc));
       //return cst;
-      State->SpriteName = NAME_None; // don't change
+      State->SpriteName = "tnt1"; // don't change
       State->Frame = VState::FF_DONTCHANGE|VState::FF_KEEPSPRITE|VState::FF_SKIPOFFS|VState::FF_SKIPMODEL;
       State->Time = 0.0f;
       State->TicType = VState::TCK_Normal;
