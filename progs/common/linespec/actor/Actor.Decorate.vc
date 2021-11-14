@@ -1680,10 +1680,23 @@ final bool doRemoveSomethingCheck (EntityEx dest, int flags, optional name filte
 
       //TODO: WARPF_BOB
 
-      tomove.TryMoveEx(out tmtrace, tomove.Origin, AllowDropOff:true);
+      // restore old origin
+      TVec newOrigin = tomove.Origin;
+      tomove.UnlinkFromWorld();
+      tomove.Origin = oldOrigin;
+      tomove.LinkToWorld();
+      //tomove.SetOrigin(oldOrigin, dontRemember:true);
+
+      if (!(flags&WARPF_NOCHECKPOSITION)) {
+        // normal movement, use normal movement function
+        tomove.TryMoveEx(out tmtrace, newOrigin, AllowDropOff:true);
+      } else {
+        // forced movement, nobody cares
+        tomove.SetOrigin(newOrigin/*, dontRemember:true*/);
+      }
       tomove.bIntrJustMoved = !!(flags&WARPF_INTERPOLATE); // disable movement interpolation
     }
-    if (success_state) DoJump(success_state, affectStateCallResult:true); // chain result is not reset, so it will become `true`
+    if (specified_success_state && success_state) DoJump(success_state, affectStateCallResult:true); // chain result is not reset, so it will become `true`
     return true;
   } else {
     //FIXME: keep interpolation?
