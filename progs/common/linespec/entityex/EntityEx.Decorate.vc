@@ -317,6 +317,7 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
 
 [decorate] final TVec decorate_OriginVector () { return Origin; }
 [decorate] final TAVec decorate_AnglesVector () { return Angles; }
+[decorate] final TVec decorate_VelocityVector () { return Velocity; }
 
 [decorate] final TVec decorate_FVectorSetX (TVec fv, float v) { fv.x = v; return fv; }
 [decorate] final TVec decorate_FVectorSetY (TVec fv, float v) { fv.y = v; return fv; }
