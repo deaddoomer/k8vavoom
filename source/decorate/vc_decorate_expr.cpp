@@ -41,8 +41,7 @@ static VExpression *CheckParseSetUserVarExpr (VScriptParser *sc, VClass *Class, 
     sc->Expect("(");
     sc->ExpectString();
     VStr varName = sc->String;
-    VStr uvname = sc->String.toLowerCase();
-    if (!uvname.startsWith("user_")) sc->Error(va("%s: user variable name in DECORATE must start with `user_`", *sc->GetVCLoc().toStringNoCol()));
+    if (!varName.startsWithCI("user_")) sc->Error(va("%s: user variable name in DECORATE must start with `user_`", *sc->GetVCLoc().toStringNoCol()));
     sc->Expect(",");
     VExpression *val = ParseExpressionNoAssign(sc, Class);
     sc->Expect(")");
@@ -54,8 +53,7 @@ static VExpression *CheckParseSetUserVarExpr (VScriptParser *sc, VClass *Class, 
     sc->Expect("(");
     sc->ExpectString();
     VStr varName = sc->String;
-    VStr uvname = sc->String.toLowerCase();
-    if (!uvname.startsWith("user_")) sc->Error(va("%s: user variable name in DECORATE must start with `user_`", *sc->GetVCLoc().toStringNoCol()));
+    if (!varName.startsWithCI("user_")) sc->Error(va("%s: user variable name in DECORATE must start with `user_`", *sc->GetVCLoc().toStringNoCol()));
     sc->Expect(",");
     // index
     VExpression *idx = ParseExpressionNoAssign(sc, Class);

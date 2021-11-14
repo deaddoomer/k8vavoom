@@ -1025,6 +1025,7 @@ VExpression *VDecorateUserVar::ResolveCompleteAssign (VEmitContext &ec, VExpress
   args[2] = index;
   VExpression *e = new VInvocation(nullptr, mt, nullptr, false, false, Loc, 3, args);
   index = nullptr;
+  //GLog.Logf(NAME_Debug, "**** %s: assign user field '%s' (%s : %s)", *Loc.toString(), *fldname, *fldnamelo, *fldn);
   delete this;
   return e->Resolve(ec);
 }
