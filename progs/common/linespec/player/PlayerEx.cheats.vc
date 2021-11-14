@@ -1355,12 +1355,24 @@ void Cheat_VScriptCommand () {
     class!Actor mt = class!Actor(GetClassReplacement(FindClassNoCaseStr(Cmd_GetArgV(2))));
     if (!mt) { print("actor '%s' not found", Cmd_GetArgV(2)); return; }
     float ofs = 4;
-    if (argc > 3) ofs = atof(Cmd_GetArgV(3));
+    float speed = float.nan;
+    for (int aidx = 3; aidx < argc; ++aidx) {
+      if (Cmd_GetArgV(aidx).strEquCI("--speed")) {
+        ++aidx;
+        if (aidx >= argc) break;
+        speed = atof(Cmd_GetArgV(aidx))*35.0;
+        continue;
+      }
+      ofs = atof(Cmd_GetArgV(aidx));
+    }
+    //if (argc > 3) ofs = atof(Cmd_GetArgV(3));
     //Actor(MO).A_CustomMissile(mt, MO.Height/2, 0, AimMode:2);
     float hgt = MO.Height/2;
-    TVec Offs = ofs*vector(cos(MO.Angles.yaw), sin(MO.Angles.yaw), 0.0);
+    float s, c;
+    sincos(MO.Angles.yaw, out s, out c);
+    TVec Offs = ofs*vector(c, s, 0.0);
     MO.Origin += Offs;
-    /*EntityEx A =*/ Actor(MO).SpawnMissileAngles(mt, MO.Angles.yaw, MO.Angles.pitch, hgt);
+    Actor A = Actor(Actor(MO).SpawnMissileAngles(mt, MO.Angles.yaw, MO.Angles.pitch, hgt, speedoverride:speed));
     MO.Origin -= Offs;
     return;
   }

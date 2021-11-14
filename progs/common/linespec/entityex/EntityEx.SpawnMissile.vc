@@ -463,7 +463,7 @@ final EntityEx SpawnMissileZAimed (float z, EntityEx dest, class!EntityEx type) 
 //==========================================================================
 final EntityEx SpawnMissileAngles (class!EntityEx type, float yaw, float pitch,
                                    optional float spawnheight, optional float spawnxyofs,
-                                   optional TVec customOrigin)
+                                   optional TVec customOrigin, optional float speedOverride)
 {
   if (!type) return none;
   TVec dir;
@@ -485,6 +485,7 @@ final EntityEx SpawnMissileAngles (class!EntityEx type, float yaw, float pitch,
   EntityEx A = Spawn(type, org);
   if (!A) return none;
   if (!A.DecalName) A.DecalName = type.default.DecalName;
+  if (specified_speedOverride && speedOverride.isFinite && speedOverride >= 0) A.Speed = speedOverride;
   A.CarryBloodTranslations(self);
   A.PlayMissileSpawnSound(self);
   A.Target = self; // originator
