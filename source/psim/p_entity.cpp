@@ -777,7 +777,10 @@ bool VEntity::SetState (VState *InState) {
   vassert(setStateWatchCat == 0);
 
   if (!State || IsGoingToDie()) {
-    //GCon->Logf(NAME_Debug, "*** 001: STATE DYING THINKER %u: %s from %s", GetUniqueId(), GetClass()->GetName(), (InState ? *InState->Loc.toStringNoCol() : "<none>"));
+    if (developer) {
+      GCon->Logf(NAME_Dev, "*** 001: STATE DYING THINKER %u: %s from %s", GetUniqueId(), GetClass()->GetName(), (InState ? *InState->Loc.toStringNoCol() : "<none>"));
+      if (IsPlayer()) __builtin_trap();
+    }
     DispSpriteFrame = 0;
     DispSpriteName = NAME_None;
     StateTime = -1.0f;
