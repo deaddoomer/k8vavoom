@@ -1356,10 +1356,10 @@ void Cheat_VScriptCommand () {
     if (!mt) { print("actor '%s' not found", Cmd_GetArgV(2)); return; }
     float ofs = 4;
     float speed = float.nan;
-    for (int aidx = 3; aidx < argc; ++aidx) {
+    for (int aidx = 3; aidx <= argc; ++aidx) {
       if (Cmd_GetArgV(aidx).strEquCI("--speed")) {
         ++aidx;
-        if (aidx >= argc) break;
+        if (aidx > argc) break;
         speed = atof(Cmd_GetArgV(aidx))*35.0;
         continue;
       }
