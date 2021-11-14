@@ -621,13 +621,19 @@ static VExpression *ParseExpressionGeneral (VScriptParser *sc, VClass *Class, in
         int lcls = ClassifyLogicalExpression(lhs);
         switch (lcls) {
           case LHS_LOGICAL:
-            if (prio == 10 && !vcWarningsSilenced && !lhs->IsParens()) GCon->Logf(NAME_Warning, "%s: Spanish Inquisition says: `||` is suspicious (but lhs is logical)!", *sc->GetVCLoc().toStringNoCol());
+            if (prio == 10 && !vcWarningsSilenced && !lhs->IsParens() && cli_MoreSpanishInquisition) {
+              GCon->Logf(NAME_Warning, "%s: Spanish Inquisition says: `||` is suspicious (but lhs is logical)!", *sc->GetVCLoc().toStringNoCol());
+            }
             break;
           case LHS_COMPARISON:
-            if (prio == 10 && !vcWarningsSilenced && !lhs->IsParens()) GCon->Logf(NAME_Warning, "%s: Spanish Inquisition says: `||` is suspicious (but lhs is comparison)!", *sc->GetVCLoc().toStringNoCol());
+            if (prio == 10 && !vcWarningsSilenced && !lhs->IsParens() && cli_MoreSpanishInquisition) {
+              GCon->Logf(NAME_Warning, "%s: Spanish Inquisition says: `||` is suspicious (but lhs is comparison)!", *sc->GetVCLoc().toStringNoCol());
+            }
             break;
           default:
-            if (prio == 10 && !vcWarningsSilenced) GCon->Logf(NAME_Error, "%s: Spanish Inquisition says: in decorate, thou shalt use `|` to combine constants. Prepare to AUTO-DA-FE, APOSTATE!", *sc->GetVCLoc().toStringNoCol());
+            if (prio == 10 && !vcWarningsSilenced) {
+              GCon->Logf(NAME_Error, "%s: Spanish Inquisition says: in decorate, thou shalt use `|` to combine constants. Prepare to AUTO-DA-FE, APOSTATE!", *sc->GetVCLoc().toStringNoCol());
+            }
             token = "|";
             break;
         }
@@ -635,18 +641,26 @@ static VExpression *ParseExpressionGeneral (VScriptParser *sc, VClass *Class, in
         int lcls = ClassifyLogicalExpression(lhs);
         switch (lcls) {
           case LHS_LOGICAL:
-            if (prio == 8 && !vcWarningsSilenced && !lhs->IsParens()) GCon->Logf(NAME_Warning, "%s: Spanish Inquisition says: `&&` is suspicious (but lhs is logical)!", *sc->GetVCLoc().toStringNoCol());
+            if (prio == 8 && !vcWarningsSilenced && !lhs->IsParens() && cli_MoreSpanishInquisition) {
+              GCon->Logf(NAME_Warning, "%s: Spanish Inquisition says: `&&` is suspicious (but lhs is logical)!", *sc->GetVCLoc().toStringNoCol());
+            }
             break;
           case LHS_COMPARISON:
-            if (prio == 8 && !vcWarningsSilenced && !lhs->IsParens()) GCon->Logf(NAME_Warning, "%s: Spanish Inquisition says: `&&` is suspicious (but lhs is comparison)!", *sc->GetVCLoc().toStringNoCol());
+            if (prio == 8 && !vcWarningsSilenced && !lhs->IsParens() && cli_MoreSpanishInquisition) {
+              GCon->Logf(NAME_Warning, "%s: Spanish Inquisition says: `&&` is suspicious (but lhs is comparison)!", *sc->GetVCLoc().toStringNoCol());
+            }
             break;
           default:
-            if (prio == 8 && !vcWarningsSilenced) GCon->Logf(NAME_Error, "%s: Spanish Inquisition says: in decorate, thou shalt use `&` to mask constants. Prepare to AUTO-DA-FE, APOSTATE!", *sc->GetVCLoc().toStringNoCol());
+            if (prio == 8 && !vcWarningsSilenced) {
+              GCon->Logf(NAME_Error, "%s: Spanish Inquisition says: in decorate, thou shalt use `&` to mask constants. Prepare to AUTO-DA-FE, APOSTATE!", *sc->GetVCLoc().toStringNoCol());
+            }
             token = "&";
             break;
         }
       } else if (token.strEqu("=")) {
-        if (prio == 7 && !vcWarningsSilenced) GLog.Logf(NAME_Error, "%s: Spanish Inquisition says: in decorate, thou shalt use `==` for comparisons. Prepare to AUTO-DA-FE, APOSTATE!", *sc->GetVCLoc().toStringNoCol());
+        if (prio == 7 && !vcWarningsSilenced) {
+          GLog.Logf(NAME_Error, "%s: Spanish Inquisition says: in decorate, thou shalt use `==` for comparisons. Prepare to AUTO-DA-FE, APOSTATE!", *sc->GetVCLoc().toStringNoCol());
+        }
         token = "==";
       }
     }

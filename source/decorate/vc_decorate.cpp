@@ -225,6 +225,7 @@ static int cli_CompilerReport = 0;
 static int cli_ShowClassRTRouting = VC_DECO_DEF_WARNS;
 static int cli_ShowDropItemMissingClasses = VC_DECO_DEF_WARNS;
 static int cli_ShowRemoveStateWarning = VC_DECO_DEF_WARNS;
+static int cli_MoreSpanishInquisition = 0;
 static TArray<VStr> cli_DecorateIgnoreFiles;
 static TArray<VStr> cli_DecorateIgnoreActions;
 static TMap<VStrCI, bool> IgnoredDecorateActions;
@@ -237,6 +238,9 @@ static TMap<VStrCI, bool> IgnoredDecorateActions;
   VParsedArgs::RegisterFlagSet("-vc-decorate-dump-replaces", "!decorate parser tolerancy", &cli_DecorateDumpReplaces) &&
   VParsedArgs::RegisterFlagSet("-vc-decorate-lax-parents", "!decorate parser tolerancy", &cli_DecorateLaxParents) &&
   VParsedArgs::RegisterFlagSet("-vc-decorate-nonactor-replace", "!decorate parser tolerancy", &cli_DecorateNonActorReplace) &&
+
+  VParsedArgs::RegisterFlagSet("-vc-decorate-more-inquisition", "!more Spanish Inquisition", &cli_MoreSpanishInquisition) &&
+  VParsedArgs::RegisterAlias("-vc-decorate-more-spanish-inquisition", "-vc-decorate-more-inquisition") &&
 
   VParsedArgs::RegisterFlagSet("-vc-decorate-rt-warnings", "show \"class rt-routed\" decorate warnings", &cli_ShowClassRTRouting) &&
   VParsedArgs::RegisterFlagReset("-vc-no-decorate-rt-warnings", "hide \"class rt-routed\" decorate warnings", &cli_ShowClassRTRouting) &&
