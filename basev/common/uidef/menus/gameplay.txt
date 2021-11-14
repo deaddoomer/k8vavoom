@@ -32,9 +32,17 @@ menudef GameplayOptions {
 
   header "Monster AI";
 
-  option bool {
+  option enum {
     title = "Monsters Melee Backing";
     cvar = monster_backing;
+    list {
+      "Off",
+      "Normal",
+      "Forced",
+    }
+    help =
+      "Should monsters back away from melee attacker (normal),",
+      "or always back away when they have a ranged attack? (forced)";
   }
 
   option bool {

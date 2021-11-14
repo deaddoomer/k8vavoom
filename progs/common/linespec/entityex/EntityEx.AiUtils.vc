@@ -906,17 +906,21 @@ final void NewChaseDirTo (TVec destination, optional EntityEx aTarget) {
     }
   } else {
     float dist = Length2D(destination-GetCenter());
+    //printdebug("%C: checking; dist=%s", self, dist);
 
     if (aTarget && aTarget.Health > 0) {
+      //printdebug("%C:   aTarget=%C; aTarget.health=%s; back=%s; MissileState=%s", self, aTarget, aTarget.Health, GetCvar('monster_backing'), MissileState);
       // Enemy target is alive
       if ((bAvoidMelee || GetCvar('monster_backing')) && MissileState &&
           /*actor->type != MT_SKULL &&*/
           ((!aTarget.MissileState && dist < DEFAULT_MELEERANGE*2.0) ||
-           (aTarget.Player && PlayerEx(aTarget.Player).ReadyWeapon && PlayerEx(aTarget.Player).ReadyWeapon.bBotMelee &&
-            dist < DEFAULT_MELEERANGE*3.0)))
+           (aTarget.Player && dist < DEFAULT_MELEERANGE*3.0 &&
+            (GetCvar('monster_backing') > 1 ||
+             (PlayerEx(aTarget.Player).ReadyWeapon && PlayerEx(aTarget.Player).ReadyWeapon.bBotMelee)))))
       {
         // Back away from melee attacker
         StrafeCount = P_Random()&15;
+        //printdebug("%C: set new strafe count: %s", self, StrafeCount);
         deltax = -deltax;
         deltay = -deltay;
       }
