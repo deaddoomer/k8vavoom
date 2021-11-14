@@ -1115,6 +1115,23 @@ bool IsSecondaryBloodSpawnAllowed (EntityEx victim, int damage, name DmgType) {
 }
 
 
+//k8: player pawns should not be removed on death, game logic doesn't expect this
+states {
+Death:
+  TNT1 A 0
+  PLAY I 10 A_PlayerScream
+  PLAY J 10 A_NoBlocking
+  PLAY N -1
+  Stop
+XDeath:
+  TNT1 A 0
+  PLAY P 5 A_XScream
+  PLAY Q 5 A_NoBlocking
+  PLAY W -1
+  Stop
+}
+
+
 defaultproperties {
   Health = 100;
   Radius = 16.0;
