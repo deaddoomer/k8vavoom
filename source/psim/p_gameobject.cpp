@@ -517,6 +517,12 @@ float VGameObject::_get_user_var_float (VName fldname, int index) {
 //==========================================================================
 void VGameObject::_set_user_var_int (VName fldname, int value, int index) {
   VObject *xobj = getRedirection(fldname, this);
+  #if 0
+  if (VStr::strEquCI(*fldname, "user_trailstep")) {
+    GCon->Logf(NAME_Debug, "_set_user_var_int: fld='%s'; value=%d; self=%s:%u; redir=%s:%u", *fldname, value,
+      GetClass()->GetName(), GetUniqueId(), (xobj ? xobj->GetClass()->GetName() : "<none>"), (xobj ? xobj->GetUniqueId() : 0));
+  }
+  #endif
   if (!xobj) return;
   VFieldType type;
   vuint8 *dptr = getFieldPtr(&type, xobj, fldname, index, this);
@@ -600,54 +606,54 @@ int VGameObject::_get_user_var_dim (VName fldname) {
 // ////////////////////////////////////////////////////////////////////////// //
 //native final int _get_user_var_int (name fldname, optional int index);
 IMPLEMENT_FUNCTION(VGameObject, _get_user_var_int) {
-  P_GET_INT_OPT(index, 0);
-  P_GET_NAME(fldname);
-  P_GET_SELF;
+  VName fldname;
+  VOptParamInt index(0);
+  vobjGetParamSelf(fldname, index);
   if (!Self) { VObject::VMDumpCallStack(); Host_Error("cannot get field '%s' from null object", *fldname); }
   RET_INT(Self->_get_user_var_int(fldname, index));
 }
 
 //native final float _get_user_var_float (name fldname, optional int index);
 IMPLEMENT_FUNCTION(VGameObject, _get_user_var_float) {
-  P_GET_INT_OPT(index, 0);
-  P_GET_NAME(fldname);
-  P_GET_SELF;
+  VName fldname;
+  VOptParamInt index(0);
+  vobjGetParamSelf(fldname, index);
   if (!Self) { VObject::VMDumpCallStack(); Host_Error("cannot get field '%s' from null object", *fldname); }
   RET_FLOAT(Self->_get_user_var_float(fldname, index));
 }
 
 //native final void _set_user_var_int (name fldname, int value, optional int index);
 IMPLEMENT_FUNCTION(VGameObject, _set_user_var_int) {
-  P_GET_INT_OPT(index, 0);
-  P_GET_INT(value);
-  P_GET_NAME(fldname);
-  P_GET_SELF;
+  VName fldname;
+  int value;
+  VOptParamInt index(0);
+  vobjGetParamSelf(fldname, value, index);
   if (!Self) { VObject::VMDumpCallStack(); Host_Error("cannot set field '%s' in null object", *fldname); }
   Self->_set_user_var_int(fldname, value, index);
 }
 
 //native final void _set_user_var_float (name fldname, float value, optional int index);
 IMPLEMENT_FUNCTION(VGameObject, _set_user_var_float) {
-  P_GET_INT_OPT(index, 0);
-  P_GET_FLOAT(value);
-  P_GET_NAME(fldname);
-  P_GET_SELF;
+  VName fldname;
+  float value;
+  VOptParamInt index(0);
+  vobjGetParamSelf(fldname, value, index);
   if (!Self) { VObject::VMDumpCallStack(); Host_Error("cannot set field '%s' in null object", *fldname); }
   Self->_set_user_var_float(fldname, value, index);
 }
 
 // native final UserVarFieldType _get_user_var_type (name fldname);
 IMPLEMENT_FUNCTION(VGameObject, _get_user_var_type) {
-  P_GET_NAME(fldname);
-  P_GET_SELF;
+  VName fldname;
+  vobjGetParamSelf(fldname);
   if (!Self) { VObject::VMDumpCallStack(); Host_Error("cannot check field '%s' in null object", *fldname); }
   RET_INT(Self->_get_user_var_type(fldname));
 }
 
 // native final int _get_user_var_dim (name fldname); // array dimension; -1: not an array, or absent
 IMPLEMENT_FUNCTION(VGameObject, _get_user_var_dim) {
-  P_GET_NAME(fldname);
-  P_GET_SELF;
+  VName fldname;
+  vobjGetParamSelf(fldname);
   if (!Self) { VObject::VMDumpCallStack(); Host_Error("cannot check field '%s' in null object", *fldname); }
   RET_INT(Self->_get_user_var_dim(fldname));
 }
@@ -655,106 +661,153 @@ IMPLEMENT_FUNCTION(VGameObject, _get_user_var_dim) {
 
 //native static final TVec spGetNormal (const ref TSecPlaneRef sp);
 IMPLEMENT_FUNCTION(VGameObject, spGetNormal) {
-  P_GET_PTR(TSecPlaneRef, sp);
+  TSecPlaneRef *sp;
+  vobjGetParam(sp);
+  //P_GET_PTR(TSecPlaneRef, sp);
   RET_VEC(sp->GetNormal());
 }
 
 //native static final float spGetNormalZ (const ref TSecPlaneRef sp);
 IMPLEMENT_FUNCTION(VGameObject, spGetNormalZ) {
-  P_GET_PTR(TSecPlaneRef, sp);
+  TSecPlaneRef *sp;
+  vobjGetParam(sp);
+  //P_GET_PTR(TSecPlaneRef, sp);
   RET_FLOAT(sp->GetNormalZ());
 }
 
 //native static final float spGetDist (const ref TSecPlaneRef sp);
 IMPLEMENT_FUNCTION(VGameObject, spGetDist) {
-  P_GET_PTR(TSecPlaneRef, sp);
+  TSecPlaneRef *sp;
+  vobjGetParam(sp);
+  //P_GET_PTR(TSecPlaneRef, sp);
   RET_FLOAT(sp->GetDist());
 }
 
 //native static final float spGetPointZ (const ref TSecPlaneRef sp, const ref TVec p);
 IMPLEMENT_FUNCTION(VGameObject, spGetPointZ) {
-  P_GET_PTR(TVec, point);
-  P_GET_PTR(TSecPlaneRef, sp);
+  TSecPlaneRef *sp;
+  TVec *point;
+  vobjGetParam(sp, point);
+  //P_GET_PTR(TVec, point);
+  //P_GET_PTR(TSecPlaneRef, sp);
   RET_FLOAT(sp->GetPointZClamped(point->x, point->y));
 }
 
 //native static final float spDotPoint (const ref TSecPlaneRef sp, const ref TVec point);
 IMPLEMENT_FUNCTION(VGameObject, spDotPoint) {
-  P_GET_PTR(TVec, point);
-  P_GET_PTR(TSecPlaneRef, sp);
+  TSecPlaneRef *sp;
+  TVec *point;
+  vobjGetParam(sp, point);
+  //P_GET_PTR(TVec, point);
+  //P_GET_PTR(TSecPlaneRef, sp);
   RET_FLOAT(sp->DotPoint(*point));
 }
 
 //native static final float spPointDistance (const ref TSecPlaneRef sp, const ref TVec point);
 IMPLEMENT_FUNCTION(VGameObject, spPointDistance) {
-  P_GET_PTR(TVec, point);
-  P_GET_PTR(TSecPlaneRef, sp);
+  TSecPlaneRef *sp;
+  TVec *point;
+  vobjGetParam(sp, point);
+  //P_GET_PTR(TVec, point);
+  //P_GET_PTR(TSecPlaneRef, sp);
   RET_FLOAT(sp->PointDistance(*point));
 }
 
 //native static final int spPointOnSide (const ref TSecPlaneRef sp, const ref TVec point);
 IMPLEMENT_FUNCTION(VGameObject, spPointOnSide) {
-  P_GET_PTR(TVec, point);
-  P_GET_PTR(TSecPlaneRef, sp);
+  TSecPlaneRef *sp;
+  TVec *point;
+  vobjGetParam(sp, point);
+  //P_GET_PTR(TVec, point);
+  //P_GET_PTR(TSecPlaneRef, sp);
   RET_INT(sp->PointOnSide(*point));
 }
 
 //native static final int spPointOnSideThreshold (const ref TSecPlaneRef sp, const ref TVec point);
 IMPLEMENT_FUNCTION(VGameObject, spPointOnSideThreshold) {
-  P_GET_PTR(TVec, point);
-  P_GET_PTR(TSecPlaneRef, sp);
+  TSecPlaneRef *sp;
+  TVec *point;
+  vobjGetParam(sp, point);
+  //P_GET_PTR(TVec, point);
+  //P_GET_PTR(TSecPlaneRef, sp);
   RET_INT(sp->PointOnSideThreshold(*point));
 }
 
 //native static final int spPointOnSideFri (const ref TSecPlaneRef sp, const ref TVec point);
 IMPLEMENT_FUNCTION(VGameObject, spPointOnSideFri) {
-  P_GET_PTR(TVec, point);
-  P_GET_PTR(TSecPlaneRef, sp);
+  TSecPlaneRef *sp;
+  TVec *point;
+  vobjGetParam(sp, point);
+  //P_GET_PTR(TVec, point);
+  //P_GET_PTR(TSecPlaneRef, sp);
   RET_INT(sp->PointOnSideFri(*point));
 }
 
 //native static final int spPointOnSide2 (const ref TSecPlaneRef sp, const ref TVec point);
 IMPLEMENT_FUNCTION(VGameObject, spPointOnSide2) {
-  P_GET_PTR(TVec, point);
-  P_GET_PTR(TSecPlaneRef, sp);
+  TSecPlaneRef *sp;
+  TVec *point;
+  vobjGetParam(sp, point);
+  //P_GET_PTR(TVec, point);
+  //P_GET_PTR(TSecPlaneRef, sp);
   RET_INT(sp->PointOnSide2(*point));
 }
 
 //native static final bool spSphereTouches (const ref TSecPlaneRef sp, const ref TVec center, float radius);
 IMPLEMENT_FUNCTION(VGameObject, spSphereTouches) {
-  P_GET_FLOAT(radius);
-  P_GET_PTR(TVec, center);
-  P_GET_PTR(TSecPlaneRef, sp);
+  TSecPlaneRef *sp;
+  TVec *center;
+  float radius;
+  vobjGetParam(sp, center, radius);
+  //P_GET_FLOAT(radius);
+  //P_GET_PTR(TVec, center);
+  //P_GET_PTR(TSecPlaneRef, sp);
   RET_BOOL(sp->SphereTouches(*center, radius));
 }
 
 //native static final int spSphereOnSide (const ref TSecPlaneRef sp, const ref TVec center, float radius);
 IMPLEMENT_FUNCTION(VGameObject, spSphereOnSide) {
-  P_GET_FLOAT(radius);
-  P_GET_PTR(TVec, center);
-  P_GET_PTR(TSecPlaneRef, sp);
+  TSecPlaneRef *sp;
+  TVec *center;
+  float radius;
+  vobjGetParam(sp, center, radius);
+  //P_GET_FLOAT(radius);
+  //P_GET_PTR(TVec, center);
+  //P_GET_PTR(TSecPlaneRef, sp);
   RET_INT(sp->SphereOnSide(*center, radius));
 }
 
 //native static final int spSphereOnSide2 (const ref TSecPlaneRef sp, const ref TVec center, float radius);
 IMPLEMENT_FUNCTION(VGameObject, spSphereOnSide2) {
-  P_GET_FLOAT(radius);
-  P_GET_PTR(TVec, center);
-  P_GET_PTR(TSecPlaneRef, sp);
+  TSecPlaneRef *sp;
+  TVec *center;
+  float radius;
+  vobjGetParam(sp, center, radius);
+  //P_GET_FLOAT(radius);
+  //P_GET_PTR(TVec, center);
+  //P_GET_PTR(TSecPlaneRef, sp);
   RET_INT(sp->SphereOnSide2(*center, radius));
 }
 
+//native static final float GetPointZClamped (const ref sec_plane_t plane, const TVec point);
 IMPLEMENT_FUNCTION(VGameObject, GetPointZClamped) {
-  P_GET_VEC(point);
-  P_GET_PTR(sec_plane_t, plane);
+  sec_plane_t *plane;
+  TVec point;
+  vobjGetParam(plane, point);
+  //P_GET_VEC(point);
+  //P_GET_PTR(sec_plane_t, plane);
   const float res = plane->GetPointZClamped(point);
   if (!isFiniteF(res)) { VObject::VMDumpCallStack(); Sys_Error("invalid call to `GetPlanePointZ()` (probably called with vertical plane)"); }
   RET_FLOAT(res);
 }
 
+//native static final float GetPointZRevClamped (const ref sec_plane_t plane, const TVec point);
 IMPLEMENT_FUNCTION(VGameObject, GetPointZRevClamped) {
-  P_GET_VEC(point);
-  P_GET_PTR(sec_plane_t, plane);
+  sec_plane_t *plane;
+  TVec point;
+  vobjGetParam(plane, point);
+  //P_GET_VEC(point);
+  //P_GET_PTR(sec_plane_t, plane);
   const float res = plane->GetPointZRevClamped(point);
   if (!isFiniteF(res)) { VObject::VMDumpCallStack(); Sys_Error("invalid call to `GetPlanePointZ()` (probably called with vertical plane)"); }
   RET_FLOAT(res);
@@ -762,7 +815,9 @@ IMPLEMENT_FUNCTION(VGameObject, GetPointZRevClamped) {
 
 //native static final bool SectorHas3DFloors (const sector_t *sector);
 IMPLEMENT_FUNCTION(VGameObject, SectorHas3DFloors) {
-  P_GET_PTR(sector_t, sector);
+  sector_t *sector;
+  vobjGetParam(sector);
+  //P_GET_PTR(sector_t, sector);
   if (sector) {
     RET_BOOL(sector->Has3DFloors());
   } else {
@@ -772,7 +827,9 @@ IMPLEMENT_FUNCTION(VGameObject, SectorHas3DFloors) {
 
 //native static final bool SectorHas3DSlopes (const sector_t *sector);
 IMPLEMENT_FUNCTION(VGameObject, SectorHas3DSlopes) {
-  P_GET_PTR(sector_t, sector);
+  sector_t *sector;
+  vobjGetParam(sector);
+  //P_GET_PTR(sector_t, sector);
   if (sector) {
     RET_BOOL(sector->Has3DSlopes());
   } else {
