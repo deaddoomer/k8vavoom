@@ -303,6 +303,15 @@ void VBasePlayer::SetViewState (int position, VState *InState) {
     return;
   }
 
+  if (VState::IsNoJumpState(InState)) {
+    if (!VSt.State) {
+      GCon->Logf(NAME_Error, "invalid continuation state in `%s::SetViewState()` (%s)", *GetClass()->GetFullName(), (VSt.State ? *VSt.State->Loc.toStringNoCol() : "<null>"));
+      InState = nullptr;
+    } else {
+      InState = VSt.State->NextState;
+    }
+  }
+
   {
     SetViewStateGuard guard(this, position);
     ++validcountState;
@@ -392,7 +401,7 @@ void VBasePlayer::SetViewState (int position, VState *InState) {
           ExecuteFunctionNoArgs(MO, state->Function); // allow VMT lookups
         }
         if (!VSt.State) break;
-        if (ViewStates[position].NewState) {
+        if (ViewStates[position].NewState && !VState::IsNoJumpState(ViewStates[position].NewState)) {
           state = ViewStates[position].NewState;
           VSLOGF("SetViewState(%d): current is %s, next is %s", position, (VSt.State ? *VSt.State->Loc.toStringNoCol() : "<none>"), *state->Loc.toStringNoCol());
           VSt.StateTime = 0.0f;

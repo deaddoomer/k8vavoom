@@ -49,7 +49,7 @@ IMPLEMENT_CLASS(V, Entity);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static VCvarB _decorate_dont_warn_about_invalid_labels("decorate_dont_warn_about_invalid_labels", false, "Don't do this!", CVAR_Archive|CVAR_PreInit|CVAR_Hidden|CVAR_NoShadow);
+//static VCvarB _decorate_dont_warn_about_invalid_labels("decorate_dont_warn_about_invalid_labels", false, "Don't do this!", CVAR_Archive|CVAR_PreInit|CVAR_Hidden|CVAR_NoShadow);
 static VCvarB dbg_disable_state_advance("dbg_disable_state_advance", false, "Disable states processing (for debug)?", CVAR_PreInit|CVAR_NoShadow);
 
 static VCvarB dbg_emulate_broken_gozzo_gotos("dbg_emulate_broken_gozzo_gotos", false, "Emulate (partially) broken GZDoom decorate gotos to missing labels?", CVAR_Archive|CVAR_NoShadow);
@@ -708,6 +708,15 @@ bool VEntity::SetState (VState *InState) {
     return true;
   }
 
+  if (VState::IsNoJumpState(InState)) {
+    if (!State) {
+      GCon->Logf(NAME_Error, "invalid continuation state in `%s::SetState()` (%s)", *GetClass()->GetFullName(), (State ? *State->Loc.toStringNoCol() : "<null>"));
+      InState = nullptr;
+    } else {
+      InState = State->NextState;
+    }
+  }
+
   {
     SetStateGuard guard(this);
     ++validcountState;
@@ -752,7 +761,7 @@ bool VEntity::SetState (VState *InState) {
             State = nullptr;
             break;
           }
-          if (setStateNewState) {
+          if (setStateNewState && !VState::IsNoJumpState(setStateNewState)) {
             // recursive invocation set a new state
             st = setStateNewState;
             StateTime = 0.0f;

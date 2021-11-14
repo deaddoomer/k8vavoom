@@ -3649,17 +3649,27 @@ final bool IsMissile (bool Precise) {
 
 //===========================================================================
 //
-//  k8CheckIfSpecialStateLabel
+//  FindJumpStateOfsForState
 //
 //===========================================================================
-final bool k8CheckIfSpecialStateLabel (name Label) {
-  if (!Label) return true; // why not?
-  if (GetCvarB('decorate_dont_warn_about_invalid_labels')) return true;
-  return
-    nameEquCI(Label, 'none') ||
-    nameEquCI(Label, 'null') ||
-    nameEquCI(Label, 'nil') ||
-    nameEquCI(Label, 'empty');
+final state FindJumpStateOfsForState (state res, int offset) {
+  if (!res) return none;
+  if (offset == 0) return GetNextState(res);
+  if (offset < 0) {
+    // abort it, this is a bug
+    printerror("Bad negative jump offset in decorate action for '%C' (%s)", self, res);
+    return none;
+  }
+  res = GetStatePlus(res, offset, IgnoreJump:true);
+  if (!res) {
+    printwarn("Bad jump offset (runaway) in decorate action for '%C' (%s)", self, res);
+  }
+  #if 0
+  else {
+    printdebug("%C: ROUTING WITH `FindJumpStateOfs(%s)`! dest is %s", self, offset, res);
+  }
+  #endif
+  return res;
 }
 
 
@@ -3672,16 +3682,28 @@ final bool k8CheckIfSpecialStateLabel (name Label) {
 //  but i don't care what gzshit does, really.
 //  i'll try to spam console with invalid label name, though
 //
+//  decorate codegen will strip leading and trailing spaces
+//
 //===========================================================================
-final state FindJumpState (name Label) {
+final state FindJumpState (name Label, int offset) {
+  if (Label.nameEquCI('null') || Label.endsWithCI('::null')) return none;
+
+  if (!Label || Label.nameEquCI('none') /*|| Label.nameEquCI('nil')*/ || Label.nameEquCI('empty') ||
+      Label.endsWithCI('::none') /*|| Label.endsWithCI('::nil')*/ || Label.endsWithCI('::empty') ||
+      Label == '::' || Label.nameEquCI('Super::'))
+  {
+    return FindJumpStateOfs(offset);
+  }
+
   // in state call chain?
   if (XLevel.StateCall) {
     // `item` is the original caller, we should follow its states here
     state res = XLevel.StateCall->Item.FindState(Label);
-    if (!res && !k8CheckIfSpecialStateLabel(Label)) {
+    if (offset && res) res = FindJumpStateOfsForState(res, offset);
+    if (!res) {
       printwarn("unknown item `%C` decorate label (statecall) '%s' (actor is `%C`) -- probably broken code!", XLevel.StateCall->Item, Label, self);
       if (XLevel.CallingState) printwarn("... current state: %s", XLevel.CallingState);
-      if (GetCvarB('dbg_emulate_broken_gozzo_gotos')) res = GetNextState(XLevel.CallingState);
+      if (!offset && GetCvarB('dbg_emulate_broken_gozzo_gotos')) res = GetNextState(XLevel.CallingState);
     }
     return res;
   }
@@ -3696,10 +3718,11 @@ final state FindJumpState (name Label) {
     {
       if (!PlayerEx(Player).ReadyWeapon) return none;
       state res = PlayerEx(Player).ReadyWeapon.FindState(Label);
-      if (!res && !k8CheckIfSpecialStateLabel(Label)) {
+      if (offset && res) res = FindJumpStateOfsForState(res, offset);
+      if (!res) {
         printwarn("unknown weapon `%C` decorate label '%s' -- probably broken code!", PlayerEx(Player).ReadyWeapon, Label);
         if (XLevel.CallingState) printwarn("... current state: %s", XLevel.CallingState);
-        if (GetCvarB('dbg_emulate_broken_gozzo_gotos')) res = GetNextState(XLevel.CallingState);
+        if (!offset && GetCvarB('dbg_emulate_broken_gozzo_gotos')) res = GetNextState(XLevel.CallingState);
       }
       return res;
     }
@@ -3707,10 +3730,11 @@ final state FindJumpState (name Label) {
 
   // normal state jump
   state res = FindState(Label);
-  if (!res && !k8CheckIfSpecialStateLabel(Label)) {
+  if (offset && res) res = FindJumpStateOfsForState(res, offset);
+  if (!res) {
     printwarn("unknown actor `%C` decorate label '%s' -- probably broken code!", self, Label);
     if (XLevel.CallingState) printwarn("... current state: %s", XLevel.CallingState);
-    if (GetCvarB('dbg_emulate_broken_gozzo_gotos')) res = GetNextState(XLevel.CallingState);
+    if (!offset && GetCvarB('dbg_emulate_broken_gozzo_gotos')) res = GetNextState(XLevel.CallingState);
   }
 
   return res;
@@ -3726,28 +3750,7 @@ final state FindJumpState (name Label) {
 //===========================================================================
 final state FindJumpStateOfs (int offset) {
   //printdebug("%C: ROUTING WITH `FindJumpStateOfs(%s)`!", self, offset);
-  state res = XLevel.CallingState;
-  if (!res) return none;
-  if (offset == 0) {
-    // this is fuckin' bug, but some idiots may rely on it
-    printwarn("Bad zero jump offset in decorate action for '%C' (%s)", self, XLevel.CallingState);
-    return GetNextState(res);
-  }
-  if (offset < 0) {
-    // abort it, this is a bug
-    printwarn("Bad negative jump offset in decorate action for '%C' (%s)", self, XLevel.CallingState);
-    return none;
-  }
-  res = GetStatePlus(res, offset, IgnoreJump:true);
-  if (!res) {
-    printwarn("Bad jump offset (runaway) in decorate action for '%C' (%s)", self, XLevel.CallingState);
-  }
-  #if 0
-  else {
-    printdebug("%C: ROUTING WITH `FindJumpStateOfs(%s)`! dest is %s", self, offset, res);
-  }
-  #endif
-  return res;
+  return FindJumpStateOfsForState(XLevel.CallingState, offset);
 }
 
 

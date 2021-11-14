@@ -97,8 +97,8 @@ protected:
 //==========================================================================
 class VDecorateAJump : public VExpression {
 private:
-  VExpression *xstc; // bool(`XLevel.StateCall`) access expression
-  VExpression *xass; // XLevel.StateCall->Result = false
+  //VExpression *xstc; // bool(`XLevel.StateCall`) access expression
+  //VExpression *xass; // XLevel.StateCall->Result = false
   VExpression *crnd0; // first call to P_Random()
   VExpression *crnd1; // second call to P_Random()
 
@@ -524,122 +524,90 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
       // some very bright person does this: `A_JumpIfTargetInLOS("1")` -- brilliant!
       // string?
       if (IsStrConst() || IsDecorateSingleName()) {
-        //VStr str = GetStrConst(ec.Package).xstrip();
-        VStr str;
-        if (IsStrConst()) str = GetStrConst(ec.Package).xstrip(); else { VDecorateSingleName *e = (VDecorateSingleName *)this; str = VStr(e->Name).xstrip(); }
-        if (str.isEmpty() || str.strEquCI("none") || str.strEquCI("null") || str.strEquCI("nil") || str.strEquCI("false")) {
-          if (isOptional) {
-            // this is perfectly legal
-            //!ParseWarningAsError((aloc ? *aloc : Loc), "`%s` argument #%d EMPTY STATE!", funcName, argnum);
-            VExpression *enew = new VNoneLiteral(Loc);
-            delete this;
-            return enew;
-          }
-        }
+        const TLocation ALoc = Loc;
+        VStr lblName;
+        if (IsStrConst()) lblName = GetStrConst(ec.Package); else { VDecorateSingleName *e = (VDecorateSingleName *)this; lblName = VStr(e->Name); }
+        lblName = lblName.xstrip();
+        // any special names will be resolved by rt-router
         // try to convert a string to a number
         int lbl = -1;
-        if (str.convertInt(&lbl)) {
+        // string-as-a-number?
+        if (lblName.convertInt(&lbl)) {
           // try to find the corresponding label
           bool useNumber = true;
           if (ec.SelfClass) {
-            VStateLabel *StLbl = ec.SelfClass->FindStateLabel(VName(*str), NAME_None, true);
+            VStateLabel *StLbl = ec.SelfClass->FindStateLabel(VName(*lblName), NAME_None, true);
             if (StLbl) {
-              ParseWarningAsError((aloc ? *aloc : Loc), "do not use numeric labels in `%s` (argument #%d, label '%s')", funcName, argnum, *str);
+              ParseWarningAsError((aloc ? *aloc : ALoc), "do not use numeric labels in `%s` (argument #%d, label '%s')", funcName, argnum, *lblName);
               useNumber = false;
             }
           }
           if (useNumber) {
-            //TLocation ALoc = Args[i]->Loc;
             if (lbl < 0) {
-              ParseError((aloc ? *aloc : Loc), "Negative state jumps are not allowed (function `%s`, argument #%d)", funcName, argnum);
+              ParseError((aloc ? *aloc : ALoc), "Negative state jumps are not allowed (function `%s`, argument #%d)", funcName, argnum);
               delete this;
               return nullptr;
             }
-            if (lbl == 0) {
-              if (isOptional) {
-                // this is perfectly legal
-                //!ParseWarningAsError((aloc ? *aloc : Loc), "`%s` argument #%d EMPTY STATE!", funcName, argnum);
-                VExpression *enew = new VNoneLiteral(Loc);
-                delete this;
-                return enew;
-              }
-              ParseWarningAsError((aloc ? *aloc : Loc), "zero string jump offset in `%s` (argument #%d). wtf?!", funcName, argnum);
-              lbl = 1;
-            }
-            ParseWarningAsError((aloc ? *aloc : Loc), "`%s` argument #%d should be number %d instead of string \"%s\"; PLEASE, FIX THE CODE!", funcName, argnum, lbl, *str.quote());
-            VExpression *enew = new VIntLiteral(lbl, Loc);
+            ParseWarningAsError((aloc ? *aloc : ALoc), "`%s` argument #%d should be number %d instead of string \"%s\"; PLEASE, FIX THE CODE!", funcName, argnum, lbl, *lblName.quote());
+            VExpression *TmpArgs[1];
+            TmpArgs[0] = new VIntLiteral(lbl, ALoc);
             delete this;
-            return enew->MassageDecorateArg(ec, invokation, CallerState, funcName, argnum, destType, isOptional, aloc, massaged);
+            return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, ALoc, 1, TmpArgs);
           }
+        }
+        //k8: don't resolve any "::" here, our dynamic resolver will do this for us
+        // it's a virtual state jump
+        //ParseWarning(Args[i]->Loc, "***VSJMP `%s`: <%s>", Func->GetName(), *lblName);
+        VExpression *TmpArgs[2];
+        //FIXME: support user arrays here!
+        if (lblName.startsWithCI("user_")) {
+          //ParseWarningAsError(ALoc, "uservars for state jumps are not supported (arg #%d for action `%s`). please, don't do this, this is a misfeature!", argnum, funcName);
+          // uservar; route with `FindJumpStateOfs()`
+          //GCon->Logf(NAME_Debug, "DECORATE: %s: routing uservar (%s) state with `FindJumpStateOfs()`", *ALoc.toStringNoCol(), *lblName);
+          delete this;
+          TmpArgs[0] = new VDecorateUserVar(lblName, ALoc);
+          return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, ALoc, 1, TmpArgs);
+        } else {
+          // final state FindJumpState (name Label, int offset);
+          //TmpArgs[0] = this;
+          delete this;
+          TmpArgs[0] = new VNameLiteral(VName(*lblName), ALoc);
+          TmpArgs[1] = new VIntLiteral(0, ALoc);
+          return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpState"), nullptr, false, false, ALoc, 2, TmpArgs);
         }
       }
       // integer?
       if (IsIntConst()) {
+        const TLocation ALoc = Loc;
         int Offs = GetIntConst();
-        //TLocation ALoc = Args[i]->Loc;
         if (Offs < 0) {
-          ParseError((aloc ? *aloc : Loc), "Negative state jumps are not allowed (function `%s`, argument #%d)", funcName, argnum);
+          ParseError((aloc ? *aloc : ALoc), "Negative state jumps are not allowed (function `%s`, argument #%d)", funcName, argnum);
           delete this;
           return nullptr;
         }
-        if (Offs == 0) {
-          if (isOptional) {
-            // this is perfectly legal
-            //!ParseWarningAsError((aloc ? *aloc : Loc), "`%s` argument #%d EMPTY STATE!", funcName, argnum);
-            VExpression *enew = new VNoneLiteral(Loc);
-            delete this;
-            return enew;
-          }
-          // 0 *usually* means "mod author is a clueless retard"
-          ParseWarningAsError((aloc ? *aloc : Loc), "zero jump offset in `%s` (argument #%d). wtf?!", funcName, argnum);
-          Offs = 1;
-        }
-        // positive jump
-        vassert(CallerState);
-        VState *S = CallerState->GetPlus(Offs, true);
-        if (!S) {
-          ParseError((aloc ? *aloc : Loc), "Bad state jump offset in `%s` (argument #%d)", funcName, argnum);
-          delete this;
-          return nullptr;
-        }
-        VExpression *enew = new VStateConstant(S, Loc);
-        delete this;
-        return enew;
-      }
-      // string? (parsing it as a number was tried above, so just route it)
-      if (IsStrConst() || IsDecorateSingleName()) {
-        //VStr Lbl = GetStrConst(ec.Package);
-        VStr Lbl;
-        if (IsStrConst()) Lbl = GetStrConst(ec.Package); else { VDecorateSingleName *e = (VDecorateSingleName *)this; Lbl = VStr(e->Name); }
-        //k8: don't resolve any "::" here, our dynamic resolver will do this for us
-        // it's a virtual state jump
-        //ParseWarning(Args[i]->Loc, "***VSJMP `%s`: <%s>", Func->GetName(), *Lbl);
         VExpression *TmpArgs[1];
-        //FIXME: support user arrays here!
-        if (Lbl.startsWithCI("user_")) {
-          //ParseWarningAsError(Loc, "uservars for state jumps are not supported (arg #%d for action `%s`). please, don't do this, this is a misfeature!", argnum, funcName);
-          // uservar; route with `FindJumpStateOfs()`
-          //GCon->Logf(NAME_Debug, "DECORATE: %s: routing uservar (%s) state with `FindJumpStateOfs()`", *Loc.toStringNoCol(), *Lbl);
-          VExpression *enew = new VDecorateUserVar(Lbl, Loc);
-          delete this;
-          TmpArgs[0] = enew;
-          return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, Loc, 1, TmpArgs);
-        } else {
-          TmpArgs[0] = this;
-          return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpState"), nullptr, false, false, Loc, 1, TmpArgs);
-        }
+        TmpArgs[0] = this;
+        return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, ALoc, 1, TmpArgs);
       }
-      // none as literal?
+      // none as literal? this usually means "no jump"
+      // but let rt-router decide
       if (IsNoneLiteral()) {
-        VExpression *TmpArgs[1];
-        //TmpArgs[0] = new VStringLiteral("none", ec.Package->FindString(""), Loc);
-        TmpArgs[0] = new VNameLiteral(VName("none"), Loc);
-        VExpression *enew = new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpState"), nullptr, false, false, Loc, 1, TmpArgs);
+        const TLocation ALoc = Loc;
+        VExpression *TmpArgs[2];
+        /*
+        TmpArgs[0] = new VIntLiteral(0, ALoc);
         delete this;
-        return enew;
+        return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, ALoc, 1, TmpArgs);
+        */
+        // final state FindJumpState (name Label, int offset);
+        delete this;
+        TmpArgs[0] = new VNameLiteral(VName("none"), ALoc);
+        TmpArgs[1] = new VIntLiteral(0, ALoc);
+        return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpState"), nullptr, false, false, ALoc, 2, TmpArgs);
       }
-      // support idiocity like `A_Jump(n, func())`
+      // support things like `A_Jump(n, func())`
       if (Type.Type != TYPE_State) {
+        const TLocation ALoc = Loc;
         //GCon->Logf("A_Jump: type=%s; expr=<%s>", *lbl->Type.GetName(), *lbl->toString());
         VGagErrors gag;
         VExpression *lx = this->SyntaxCopy()->Resolve(ec);
@@ -651,10 +619,10 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
               VExpression *TmpArgs[1];
               TmpArgs[0] = this->SyntaxCopy();
               if (lx->Type.Type == TYPE_Float) {
-                ParseWarningAsError(Loc, "jump offset argument #%d for `%s` should be integer, not float! PLEASE, FIX THE CODE!", argnum, funcName);
+                ParseWarningAsError(ALoc, "jump offset argument #%d for `%s` should be integer, not float! PLEASE, FIX THE CODE!", argnum, funcName);
                 TmpArgs[0] = new VScalarToInt(TmpArgs[0]); // not resolved
               }
-              VExpression *eres = new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, Loc, 1, TmpArgs);
+              VExpression *eres = new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, ALoc, 1, TmpArgs);
               //GCon->Logf("   NEW: type=%s; expr=<%s>", *lbl->Type.GetName(), *lbl->toString());
               delete this;
               return eres;
@@ -1274,8 +1242,8 @@ bool VDecorateSingleName::IsDecorateSingleName () const {
 //==========================================================================
 VDecorateAJump::VDecorateAJump (const TLocation &aloc)
   : VExpression(aloc)
-  , xstc(nullptr)
-  , xass(nullptr)
+  //, xstc(nullptr)
+  //, xass(nullptr)
   , crnd0(nullptr)
   , crnd1(nullptr)
   , prob(nullptr)
@@ -1291,8 +1259,8 @@ VDecorateAJump::VDecorateAJump (const TLocation &aloc)
 //
 //==========================================================================
 VDecorateAJump::~VDecorateAJump () {
-  delete xstc; xstc = nullptr;
-  delete xass; xass = nullptr;
+  //delete xstc; xstc = nullptr;
+  //delete xass; xass = nullptr;
   delete crnd0; crnd0 = nullptr;
   delete crnd1; crnd1 = nullptr;
   delete prob; prob = nullptr;
@@ -1386,13 +1354,15 @@ VExpression *VDecorateAJump::DoResolve (VEmitContext &ec) {
         }
       }
     }
-    if (XLevel.StateCall) XLevel.StateCall->Result = false;
+    // this is not needed, because `DoJump()` does it for us
+    //if (XLevel.StateCall) XLevel.StateCall->Result = false;
 
     do it by allocate local array for labels, populate it, and generate code
     for checks and sets
    */
 
   // create `XLevel.StateCall` access expression
+  /*
   {
     VExpression *xlvl = new VSingleName("XLevel", Loc);
     xstc = new VDotField(xlvl, "StateCall", Loc);
@@ -1401,17 +1371,18 @@ VExpression *VDecorateAJump::DoResolve (VEmitContext &ec) {
   VExpression *xres = new VPointerField(xstc->SyntaxCopy(), "Result", Loc);
   // XLevel.StateCall->Result = false
   xass = new VAssignment(VAssignment::Assign, xres, new VIntLiteral(0, Loc), Loc);
+  */
   // call to `P_Random()`
   crnd0 = new VCastOrInvocation("P_Random", Loc, 0, nullptr);
   crnd1 = crnd0->SyntaxCopy();
 
   // now resolve all generated expressions
-  xstc = xstc->ResolveBoolean(ec);
-  if (!xstc) { delete this; return nullptr; }
+  //xstc = xstc->ResolveBoolean(ec);
+  //if (!xstc) { delete this; return nullptr; }
 
-  xass = xass->Resolve(ec);
-  if (!xass) { delete this; return nullptr; }
-  vassert(xass->Type.Type == TYPE_Void);
+  //xass = xass->Resolve(ec);
+  //if (!xass) { delete this; return nullptr; }
+  //vassert(xass->Type.Type == TYPE_Void);
 
   crnd0 = crnd0->Resolve(ec);
   if (!crnd0) { delete this; return nullptr; }
@@ -1544,12 +1515,14 @@ void VDecorateAJump::Emit (VEmitContext &ec) {
   if (doDrop) ec.AddStatement(OPC_DropPOD, Loc);
 
   //if (XLevel.StateCall) XLevel.StateCall->Result = false;
+  /*
   VLabel falseTarget = ec.DefineLabel();
   // expression
   xstc->EmitBranchable(ec, falseTarget, false);
   // true statement
   xass->Emit(ec);
   ec.MarkLabel(falseTarget);
+  */
 }
 
 
