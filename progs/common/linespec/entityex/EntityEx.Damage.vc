@@ -739,6 +739,7 @@ void Died (EntityEx source, EntityEx inflictor) {
   //printdebug("%C:   DeathState=%s", self, DeathState);
 
   if (DeathState) {
+    //if (bIsPlayer) printdebug("%C: player pawn %shas is dying; source=%C; inflictor=%C; DeathState=%s", self, (self.Player && self.Player.MO == self ? "" : "(Voodoo Doll) "), source, inflictor, DeathState);
     SetState(DeathState);
     StateTime -= Random()*0.1;
     if (StateTime < 1.0/35.0) StateTime = 1.0/35.0;
@@ -750,7 +751,7 @@ void Died (EntityEx source, EntityEx inflictor) {
     }
     */
   } else {
-    //if (bIsPlayer) writeln("************ DESTROYING PLAYER!");
+    if (bIsPlayer) printerror("%C: player pawn %shas no death state and will be destroyed; source=%C; inflictor=%C", self, (self.Player && self.Player.MO == self ? "" : "(Voodoo Doll) "), source, inflictor);
     Destroy();
   }
 }

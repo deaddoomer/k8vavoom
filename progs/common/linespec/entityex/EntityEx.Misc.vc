@@ -374,9 +374,9 @@ final void RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
 
       // k8: zero damage should still push a player to make mikoveyors work
       //     actually, it deals 1 damage in vanilla, but meh, i won't bother emulating it
-      float dmgfloat = ((float(BombDamage)*RDFactor*(BombDistance-dist2))/BombDistance);
+      float dmgfloat = ((float(BombDamage)*Other.RDFactor*(BombDistance-dist2))/BombDistance);
       int damage = int(dmgfloat);
-      //print("000: %C: damage=%s; BombDamage=%s; RDFactor=%s; BombDistance=%s; flt=%s", Other, damage, BombDamage, RDFactor, BombDistance, dmgfloat);
+      //print("%C: 000: %C: damage=%s; BombDamage=%s; RDFactor=%s (%s); BombDistance=%s; flt=%s", self, Other, damage, BombDamage, RDFactor, Other.RDFactor, BombDistance, dmgfloat);
       if (damage < 0) damage = 0;
       //if (damage <= 0) continue;
 
@@ -395,7 +395,7 @@ final void RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
       if (!bDontThrust && !Other.bIceCorpse && (!DoDamage || !bNoDamageThrust)) {
         float Thrust = dmgfloat*0.5;
         if (specified_fullthrustdistance && fullthrustdistance != 0 && dist <= fullthrustdistance) {
-          Thrust = BombDamage*RDFactor*0.5;
+          Thrust = BombDamage*Other.RDFactor*0.5;
         }
         //k8: this is purely experimental, and prolly not right at all
         //    but with `10` it is more-or-less of the vanilla speed
