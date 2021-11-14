@@ -461,6 +461,7 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
           return enew;
         } else {
           VClass *Cls = VClass::FindClassNoCase(*CName);
+          if (!Cls && CNameStp.length() && CNameStp.length() != CName.length()) Cls = VClass::FindClassNoCase(*CNameStp);
           if (!Cls) {
             if (!destType.Class) {
               ParseWarningAsError((aloc ? *aloc : Loc), "No such class `%s` for argument #%d of `%s`", *CName, argnum, funcName);
