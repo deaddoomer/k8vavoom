@@ -34,7 +34,12 @@
 
 static VCvarB r_bsp_bbox_sky_maxheight("r_bsp_bbox_sky_maxheight", false, "If `true`, use maximum map height for sky bboxes.", CVAR_Archive|CVAR_NoShadow);
 static VCvarF r_bsp_bbox_sky_addheight("r_bsp_bbox_sky_addheight", "0.0", "Add this to sky sector height if 'sky maxheigh' is off (DEBUG).", CVAR_Archive|CVAR_NoShadow);
+
+static VCvarI r_dbg_subbbox_use_bsp("r_dbg_subbbox_use_bsp", "2", "Use BSP boinding box for subsectors if it is higher/lower (DEBUG). [1: only for slopes; 2: for all]", CVAR_Archive|CVAR_NoShadow);
+
+
 static int lastSkyHeightFlag = -1; // unknown yet
+static int lastSubBBoxBSP = -1; // unknown yet
 
 
 //==========================================================================
@@ -77,7 +82,7 @@ void VLevel::UpdateSectorHeightCache (sector_t *sector) {
 
   float minz = sector->floor.minz;
   float maxz = sector->ceiling.maxz;
-  if (minz > maxz) { const float tmp = minz; minz = maxz; maxz = tmp; }
+  minswap2(minz, maxz);
 
   const sector_t *hs = sector->heightsec;
   if (hs && !(hs->SectorFlags&sector_t::SF_IgnoreHeightSec)) {
@@ -91,12 +96,33 @@ void VLevel::UpdateSectorHeightCache (sector_t *sector) {
       const sector_t *bsec = *nbslist;
       if (bsec->isAnyPObj()) continue; // pobj sectors should not come here, but just in case...
       float zmin, zmax;
+      /*
       if (bsec->floor.minz < bsec->ceiling.maxz) {
         zmin = bsec->floor.minz;
         zmax = bsec->ceiling.maxz;
       } else {
         zmin = bsec->ceiling.maxz;
         zmax = bsec->floor.minz;
+      }
+      */
+      if (FASI(bsec->floor.minz) == FASI(bsec->floor.maxz) &&
+          FASI(bsec->ceiling.minz) == FASI(bsec->ceiling.maxz))
+      {
+        // flat sector
+        if (bsec->floor.minz < bsec->ceiling.maxz) {
+          zmin = bsec->floor.minz;
+          zmax = bsec->ceiling.maxz;
+        } else {
+          zmin = bsec->ceiling.maxz;
+          zmax = bsec->floor.minz;
+        }
+      } else {
+        // sloped sector
+        zmin = bsec->floor.minz;
+        if (zmin > bsec->ceiling.minz) zmin = bsec->ceiling.minz;
+        zmax = bsec->ceiling.maxz;
+        if (zmax < bsec->floor.maxz) zmax = bsec->floor.maxz;
+        minswap2(zmin, zmax); // just in case
       }
       const sector_t *bhs = bsec->heightsec;
       if (bhs && !(bhs->SectorFlags&sector_t::SF_IgnoreHeightSec)) {
@@ -122,27 +148,30 @@ void VLevel::UpdateSectorHeightCache (sector_t *sector) {
     //GCon->Logf("  sub %d; pc=%d; nodeparent=%d; next=%d", (int)(ptrdiff_t)(sub-Subsectors), sub->parentChild, (int)(ptrdiff_t)(node-Nodes), (sub->seclink ? (int)(ptrdiff_t)(sub->seclink-Subsectors) : -1));
     if (!node) continue;
     int childnum = sub->parentChild;
-    if (node->bbox[childnum][2] <= minz && node->bbox[childnum][5] >= maxz) continue;
+    float currMinZ = node->bbox[childnum][BOX3D_MINZ];
+    float currMaxZ = node->bbox[childnum][BOX3D_MAXZ];
+    if (currMinZ <= minz && currMaxZ >= maxz) continue;
     // fix bounding boxes
-    float currMinZ = min2(node->bbox[childnum][2], minz);
-    float currMaxZ = max2(node->bbox[childnum][5], maxz);
-    if (currMinZ > currMaxZ) { float tmp = currMinZ; currMinZ = currMaxZ; currMaxZ = tmp; } // just in case
-    node->bbox[childnum][2] = currMinZ;
-    node->bbox[childnum][5] = currMaxZ;
+    currMinZ = min2(currMinZ, minz);
+    currMaxZ = max2(currMaxZ, maxz);
+    minswap2(currMinZ, currMaxZ); // just in case
+    node->bbox[childnum][BOX3D_MINZ] = currMinZ;
+    node->bbox[childnum][BOX3D_MAXZ] = currMaxZ;
+    // fix parent nodes
     for (; node->parent; node = node->parent) {
       node_t *pnode = node->parent;
            if (pnode->children[0] == node->index) childnum = 0;
       else if (pnode->children[1] == node->index) childnum = 1;
       else Sys_Error("invalid BSP tree");
-      const float parCMinZ = pnode->bbox[childnum][2];
-      const float parCMaxZ = pnode->bbox[childnum][5];
+      const float parCMinZ = pnode->bbox[childnum][BOX3D_MINZ];
+      const float parCMaxZ = pnode->bbox[childnum][BOX3D_MAXZ];
       if (parCMinZ <= currMinZ && parCMaxZ >= currMaxZ) continue; // we're done here
-      pnode->bbox[childnum][2] = min2(parCMinZ, currMinZ);
-      pnode->bbox[childnum][5] = max2(parCMaxZ, currMaxZ);
+      pnode->bbox[childnum][BOX3D_MINZ] = min2(parCMinZ, currMinZ);
+      pnode->bbox[childnum][BOX3D_MAXZ] = max2(parCMaxZ, currMaxZ);
       FixBBoxZ(pnode->bbox[childnum]);
-      currMinZ = min2(min2(parCMinZ, pnode->bbox[childnum^1][2]), currMinZ);
-      currMaxZ = max2(max2(parCMaxZ, pnode->bbox[childnum^1][5]), currMaxZ);
-      if (currMinZ > currMaxZ) { float tmp = currMinZ; currMinZ = currMaxZ; currMaxZ = tmp; } // just in case
+      currMinZ = min2(min2(parCMinZ, pnode->bbox[childnum^1][BOX3D_MINZ]), currMinZ);
+      currMaxZ = max2(max2(parCMaxZ, pnode->bbox[childnum^1][BOX3D_MAXZ]), currMaxZ);
+      minswap2(currMinZ, currMaxZ); // just in case
     }
   }
 }
@@ -155,16 +184,39 @@ void VLevel::UpdateSectorHeightCache (sector_t *sector) {
 //==========================================================================
 void VLevel::GetSubsectorBBox (subsector_t *sub, float bbox[6]) {
   // min
-  bbox[0+0] = sub->bbox2d[BOX2D_LEFT];
-  bbox[0+1] = sub->bbox2d[BOX2D_BOTTOM];
+  bbox[BOX3D_MINX] = sub->bbox2d[BOX2D_LEFT];
+  bbox[BOX3D_MINY] = sub->bbox2d[BOX2D_BOTTOM];
   // max
-  bbox[3+0] = sub->bbox2d[BOX2D_RIGHT];
-  bbox[3+1] = sub->bbox2d[BOX2D_TOP];
+  bbox[BOX3D_MAXX] = sub->bbox2d[BOX2D_RIGHT];
+  bbox[BOX3D_MAXY] = sub->bbox2d[BOX2D_TOP];
 
   sector_t *sector = sub->sector;
   if (sector->ZExtentsCacheId != validcountSZCache) UpdateSectorHeightCache(sector);
-  bbox[0+2] = sector->LastMinZ;
-  bbox[3+2] = sector->LastMaxZ;
+
+  // update with BSP bounding box here, it should be more correct, and
+  // should fix some  clipper problems with slopes
+  // this can cause some overdraw, but it is way better than missing walls, i believe
+  const int bxbb = r_dbg_subbbox_use_bsp.asInt();
+  if (bxbb <= 0) return;
+  if (bxbb > 1 ||
+      ((FASI(sector->floor.minz)^FASI(sector->floor.maxz))|
+       (FASI(sector->ceiling.minz)^FASI(sector->ceiling.maxz))))
+  {
+    const node_t *node = sub->parent;
+    if (node) {
+      const float *nbb = node->bbox[sub->parentChild];
+      if (bxbb > 1) {
+        bbox[BOX3D_MINZ] = min2(sector->LastMinZ, nbb[BOX3D_MINZ]);
+        bbox[BOX3D_MAXZ] = max2(sector->LastMaxZ, nbb[BOX3D_MAXZ]);
+      } else {
+        bbox[BOX3D_MINZ] = (FASI(sector->floor.minz) != FASI(sector->floor.maxz) ? min2(sector->LastMinZ, nbb[BOX3D_MINZ]) : sector->LastMinZ);
+        bbox[BOX3D_MAXZ] = (FASI(sector->ceiling.minz) != FASI(sector->ceiling.maxz) ? max2(sector->LastMaxZ, nbb[BOX3D_MAXZ]) : sector->LastMaxZ);
+      }
+    }
+  } else {
+    bbox[BOX3D_MINZ] = sector->LastMinZ;
+    bbox[BOX3D_MAXZ] = sector->LastMaxZ;
+  }
   //FixBBoxZ(bbox); // no need to do this, minz/maxz *MUST* be correct here
 }
 
@@ -229,13 +281,13 @@ void VLevel::CalcSecMinMaxs (sector_t *sector, bool fixTexZ) {
       }
     }
     if (slopedFC&SlopedFloor) {
-      if (minzf > maxzf) { const float tmp = minzf; minzf = maxzf; maxzf = tmp; } // just in case
+      minswap2(minzf, maxzf); // just in case
       sector->floor.minz = minzf;
       sector->floor.maxz = maxzf;
       if (fixTexZ) sector->floor.TexZ = sector->floor.minz;
     }
     if (slopedFC&SlopedCeiling) {
-      if (minzc > maxzc) { const float tmp = minzc; minzc = maxzc; maxzc = tmp; } // just in case
+      minswap2(minzc, maxzc); // just in case
       sector->ceiling.minz = minzc;
       sector->ceiling.maxz = maxzc;
       if (fixTexZ) sector->ceiling.TexZ = sector->ceiling.minz;
@@ -337,15 +389,16 @@ void VLevel::RecalcWorldBBoxes () {
   ITER_CHECKER(Things, allThingsIdx, mthing_t)
   */
   ResetSZValidCount();
-  lastSkyHeightFlag = (r_bsp_bbox_sky_maxheight ? 1 : 0);
+  lastSkyHeightFlag = (r_bsp_bbox_sky_maxheight.asBool() ? 1 : 0);
+  lastSubBBoxBSP = r_dbg_subbbox_use_bsp.asInt();
   if (NumSectors == 0 || NumSubsectors == 0) return; // just in case
   const float skyheight = CalcSkyHeight();
   for (auto &&node : allNodes()) {
     // special values
-    node.bbox[0][0+2] = -99999.0f;
-    node.bbox[0][3+2] = +99999.0f;
-    node.bbox[1][0+2] = -99999.0f;
-    node.bbox[1][3+2] = +99999.0f;
+    node.bbox[0][BOX3D_MINZ] = -99999.0f;
+    node.bbox[0][BOX3D_MAXZ] = +99999.0f;
+    node.bbox[1][BOX3D_MINZ] = -99999.0f;
+    node.bbox[1][BOX3D_MAXZ] = +99999.0f;
   }
   // special values
   if (NumNodes) {
@@ -363,8 +416,9 @@ void VLevel::RecalcWorldBBoxes () {
 //
 //==========================================================================
 void VLevel::CheckAndRecalcWorldBBoxes () {
-  const int nbbh = (r_bsp_bbox_sky_maxheight ? 1 : 0);
-  if (lastSkyHeightFlag != nbbh) {
+  const int nbbh = (r_bsp_bbox_sky_maxheight.asBool() ? 1 : 0);
+  const int sbbx = r_dbg_subbbox_use_bsp.asInt();
+  if (lastSkyHeightFlag != nbbh || lastSubBBoxBSP != sbbx) {
     double stime = -Sys_Time();
     RecalcWorldBBoxes();
     stime += Sys_Time();
