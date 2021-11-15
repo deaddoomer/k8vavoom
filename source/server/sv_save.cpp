@@ -1777,6 +1777,8 @@ static void SV_SaveMap (bool savePlayers) {
 static bool SV_SaveCheckpoint () {
   if (!GGameInfo) return false;
   if (GGameInfo->NetMode != NM_Standalone) return false; // oops
+  // do not create checkpoints if we have several player classes
+  if (GGameInfo->PlayerClasses.length() != 1) return false;
 
   VBasePlayer *plr = nullptr;
   // check if checkpoints are possible
@@ -2034,10 +2036,10 @@ static void SV_SaveGame (int slot, VStr Description, bool checkpoint, bool isAut
   if (checkpoint) {
     // if we have no maps in our base slot, checkpoints are enabled
     if (BaseSlot.Maps.length() != 0) {
-      GCon->Logf("AUTOSAVE: cannot use checkpoints, perform a full save sequence (this is normal)");
+      GCon->Logf("AUTOSAVE: cannot use checkpoints, perform a full save sequence (this is not a bug!)");
       checkpoint = false;
     } else {
-      GCon->Logf("AUTOSAVE: checkpoints allowed");
+      GCon->Logf("AUTOSAVE: checkpoints might be allowed.");
     }
   }
 
@@ -2053,7 +2055,7 @@ static void SV_SaveGame (int slot, VStr Description, bool checkpoint, bool isAut
   if (checkpoint) {
     // player state save
     if (!SV_SaveCheckpoint()) {
-      GCon->Logf("AUTOSAVE: cannot use checkpoints, perform a full save sequence (this is normal)");
+      GCon->Logf("AUTOSAVE: cannot use checkpoints, perform a full save sequence (this is not a bug!)");
       checkpoint = false;
       SV_SaveMap(true); // true = save player info
     }
