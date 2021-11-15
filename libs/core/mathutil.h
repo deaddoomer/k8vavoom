@@ -102,8 +102,8 @@ template <class T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T max3 
 
 template <class T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T signval (const T a) noexcept { return (a < (T)0 ? (T)-1 : a > (T)0 ? (T)+1 : (T)0); }
 
-template <class T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE void swap2 (T &a, T &b) noexcept { const T tmp = a; a = b; b = tmp; }
-template <class T> constexpr VVA_CONST VVA_ALWAYS_INLINE void minswap2 (T &vmin, T &vmax) noexcept { if (vmin > vmax) { const T tmp = vmin; vmin = vmax; vmax = tmp; } }
+template <class T> VVA_ALWAYS_INLINE void swap2 (T &a, T &b) noexcept { const T tmp = a; a = b; b = tmp; }
+template <class T> VVA_ALWAYS_INLINE void minswap2 (T &vmin, T &vmax) noexcept { if (vmin > vmax) { const T tmp = vmin; vmin = vmax; vmax = tmp; } }
 
 
 //==========================================================================
