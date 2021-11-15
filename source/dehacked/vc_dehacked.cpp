@@ -902,9 +902,10 @@ static void ReadThing (int num) {
     if (VStr::strEquCI(String, "Melee threshold") ||
         VStr::strEquCI(String, "Max target range") ||
         VStr::strEquCI(String, "Min missile chance") ||
-        VStr::strEquCI(String, "Missile chance multiplier"))
+        VStr::strEquCI(String, "Missile chance multiplier") ||
+        VStr::strEquCI(String, "Dropped item"))
     {
-      DehFatal("DEHEXTRA extensions are not supported and will never be. Sorry.");
+      DehFatal("DEHEXTRA thing extensions are not supported and will never be. Sorry.");
     }
 
     Warning("Invalid mobj param '%s'", String);
@@ -1384,7 +1385,13 @@ static void ReadCodePtr (int) {
         }
       }
 
-      if (!found) Warning("Invalid code pointer '%s'", ValueString);
+      if (!found) {
+        // reject dehextra
+        if (VStr::strEquCI(ValueString, "Spawn")) {
+          DehFatal("DEHEXTRA frame extensions are not supported and will never be. Sorry.");
+        }
+        Warning("Invalid code pointer '%s'", ValueString);
+      }
       continue;
     }
 
