@@ -1092,7 +1092,7 @@ override void SetHeight (float newvalue) {
 //
 //==========================================================================
 bool IsPrimaryBloodSpawnAllowed (EntityEx victim, int damage, name DmgType) {
-  secondaryBloodCount = (GetCvarI('k8GoreOpt_BloodAmount') >= 3 ? 3+P_Random()%4 : 0);
+  secondaryBloodCount = (CvarExists('k8GoreOpt_BloodAmount') && GetCvarI('k8GoreOpt_BloodAmount') >= 3 ? 3+P_Random()%4 : 0);
   //printdebug("%C: IsPrimaryBloodSpawnAllowed; victim=%C; cnt=%s", self, victim, secondaryBloodCount);
   return true;
 }
