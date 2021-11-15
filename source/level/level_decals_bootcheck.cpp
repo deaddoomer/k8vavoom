@@ -168,11 +168,11 @@ void VLevel::CheckFloorDecalDamage (bool isPlayer, TVec org, subsector_t *sub, V
     if (isPlayer) {
       dec->floorDamagePlayer.genValue(0.0f);
       //GCon->Logf(NAME_Debug, "FLOOR DAMAGE from '%s': isPlayer=%d; dmg=%g", *dec->name, (int)isPlayer, dec->floorDamagePlayer.value);
-      if (dec->floorDamagePlayer.value < 1.0f) continue;
+      if (dec->floorDamagePlayer.value < 0.5f) continue;
     } else {
       dec->floorDamageMonsters.genValue(0.0f);
       //GCon->Logf(NAME_Debug, "FLOOR DAMAGE from '%s': isPlayer=%d; dmg=%g", *dec->name, (int)isPlayer, dec->floorDamageMonsters.value);
-      if (dec->floorDamageMonsters.value < 1.0f) continue;
+      if (dec->floorDamageMonsters.value < 0.5f) continue;
     }
     // check tick
     dec->floorDamageTick.genValue(0.0f);
