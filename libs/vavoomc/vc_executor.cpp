@@ -374,7 +374,7 @@ static inline VCvar *GetAndCacheCVar (vuint8 *ip, bool allownull=false) noexcept
       canCache = true;
       vp = (varname != NAME_None ? VCvar::FindVariable(*varname) : nullptr);
     }
-    if (!vp && !allownull) VPackage::InternalFatalError(va("cannot get value of non-existent cvar '%s'", *varname));
+    if (!vp && !allownull) { cstDump(ip); VPackage::InternalFatalError(va("cannot get value of non-existent cvar '%s'", *varname)); }
     if (canCache) {
       #ifdef VCC_DEBUG_CVAR_CACHE
       GLog.Logf(NAME_Debug, "*** CACHING CVAR '%s' ADDRESS %p (%d) (%s)", *varname, vp, (int)allownull, (vp ? vp->GetName() : "<none>"));

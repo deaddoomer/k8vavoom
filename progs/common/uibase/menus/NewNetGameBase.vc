@@ -41,7 +41,7 @@ MenuChoiceEnum Level;
 //
 //==========================================================================
 name CreateCvarName (name base) {
-  return name(va("_netgame_%s_%s_", GetCvarS('game'), base));
+  return name(va("_netgame_%s_%s_", GetCvarS('game_name'), base));
 }
 
 
