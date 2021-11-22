@@ -125,7 +125,7 @@ struct FInstruction {
   VName NameArg;
   VFieldType TypeArg;
   VFieldType TypeArg1;
-  TLocation loc;
+  TLocationLine loc;
 
   FInstruction () : /*Address(0),*/ Opcode(0), Arg1(0), Arg2(0), Arg1IsFloat(false), Member(nullptr), NameArg(NAME_None), TypeArg(TYPE_Unknown), loc(TLocation()) {}
 
@@ -142,7 +142,7 @@ class VMethodParam {
 public:
   VExpression *TypeExpr;
   VName Name;
-  TLocation Loc;
+  TLocationLine Loc;
   TArray<VName> NamedFlags; // used in decorate
 
   inline VMethodParam () : TypeExpr(nullptr), Name(NAME_None), Loc() {}

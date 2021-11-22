@@ -86,7 +86,7 @@ public:
   vint32 MemberIndex;
   VName Name;
   VMemberBase *Outer;
-  TLocation Loc;
+  TLocationLine Loc;
 
 private:
   VMemberBase *HashNext;

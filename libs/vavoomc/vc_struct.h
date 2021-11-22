@@ -49,7 +49,7 @@ public:
 
   // compiler fields
   VName ParentStructName;
-  TLocation ParentStructLoc;
+  TLocationLine ParentStructLoc;
   bool Defined;
 
   // run-time fields
@@ -62,7 +62,7 @@ public:
   struct AliasInfo {
     VName aliasName;
     VName origName;
-    TLocation loc;
+    TLocationLine loc;
     int aframe; // for loop checking
   };
 

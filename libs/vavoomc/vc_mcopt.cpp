@@ -90,7 +90,7 @@ struct Instr {
   VName NameArg;
   VFieldType TypeArg;
   VFieldType TypeArg1;
-  TLocation loc;
+  TLocationLine loc;
   // copied from statement info list
   int opcArgType;
   // optimizer internal data

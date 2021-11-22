@@ -29,7 +29,7 @@
 // ////////////////////////////////////////////////////////////////////////// //
 struct VImportedPackage {
   VName Name;
-  TLocation Loc;
+  TLocationLine Loc;
   VPackage *Pkg;
 };
 

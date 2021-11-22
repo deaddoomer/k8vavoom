@@ -75,6 +75,9 @@ struct SaveIntVal {
 };
 
 
+vuint32 VEmitContext::maxInstrUsed = 0;
+
+
 //==========================================================================
 //
 //  VEmitContext::VEmitContext
@@ -88,6 +91,9 @@ VEmitContext::VEmitContext (VMemberBase *Member)
   , IndArray(nullptr)
   , OuterClass(nullptr)
   , FuncRetType(TYPE_Unknown)
+  , Instrs(nullptr)
+  , InstrsUsed(0)
+  , InstrsAlloted(0)
   //, localsofs(0)
   , InDefaultProperties(false)
   , VCallsDisabled(false)
@@ -168,6 +174,33 @@ VEmitContext::VEmitContext (VMemberBase *Member)
 
 //==========================================================================
 //
+//  VEmitContext::~VEmitContext
+//
+//==========================================================================
+VEmitContext::~VEmitContext () {
+  if (Instrs) Z_Free(Instrs);
+}
+
+
+//==========================================================================
+//
+//  VEmitContext::allocInstruction
+//
+//==========================================================================
+FInstruction &VEmitContext::allocInstruction () {
+  if (InstrsUsed == InstrsAlloted) {
+    InstrsAlloted += 2048;
+    Instrs = (FInstruction*)Z_Realloc(Instrs, sizeof(Instrs[0])*InstrsAlloted);
+  }
+  FInstruction* res = &Instrs[InstrsUsed++];
+  memset((void *)res, 0, sizeof(*res));
+  if (maxInstrUsed < InstrsUsed) maxInstrUsed = InstrsUsed;
+  return *res;
+}
+
+
+//==========================================================================
+//
 //  VEmitContext::EndCode
 //
 //==========================================================================
@@ -180,23 +213,26 @@ void VEmitContext::EndCode () {
   for (int i = 0; i < Fixups.length(); ++i) {
     if (Labels[Fixups[i].LabelIdx] < 0) VCFatalError("Label was not marked");
     if (Fixups[i].Arg == 1) {
-      CurrentFunc->Instructions[Fixups[i].Pos].Arg1 = Labels[Fixups[i].LabelIdx];
+      getInstr(Fixups[i].Pos).Arg1 = Labels[Fixups[i].LabelIdx];
     } else {
-      CurrentFunc->Instructions[Fixups[i].Pos].Arg2 = Labels[Fixups[i].LabelIdx];
+      getInstr(Fixups[i].Pos).Arg2 = Labels[Fixups[i].LabelIdx];
     }
   }
 
 #ifdef OPCODE_STATS
-  for (int i = 0; i < CurrentFunc->Instructions.length(); ++i) {
-    ++StatementInfo[CurrentFunc->Instructions[i].Opcode].usecount;
+  for (int i = 0; i < getInstrCount(); ++i) {
+    ++StatementInfo[getInstr(i).Opcode].usecount;
   }
 #endif
 
   // dummy finishing instruction should always present
-  FInstruction &Dummy = CurrentFunc->Instructions.Alloc();
+  FInstruction &Dummy = allocInstruction();
   Dummy.Opcode = OPC_Done;
 
-  CurrentFunc->Instructions.condense();
+  CurrentFunc->Instructions.setLength(getInstrCount());
+  for (int f = 0; f < getInstrCount(); ++f) CurrentFunc->Instructions[f] = getInstr(f);
+
+  //CurrentFunc->Instructions.condense(); // just in case
 
   //CurrentFunc->DumpAsm();
 }
@@ -652,7 +688,7 @@ VLabel VEmitContext::DefineLabel () {
 void VEmitContext::MarkLabel (VLabel l) {
   if (l.Index < 0 || l.Index >= Labels.length()) VCFatalError("Bad label index %d", l.Index);
   if (Labels[l.Index] >= 0) VCFatalError("Label has already been marked");
-  Labels[l.Index] = CurrentFunc->Instructions.length();
+  Labels[l.Index] = getInstrCount();
 }
 
 
@@ -663,7 +699,7 @@ void VEmitContext::MarkLabel (VLabel l) {
 //==========================================================================
 void VEmitContext::AddStatement (int statement, const TLocation &aloc) {
   if (StatementInfo[statement].Args != OPCARGS_None) VCFatalError("Opcode doesn't take 0 params");
-  FInstruction &I = CurrentFunc->Instructions.Alloc();
+  FInstruction &I = allocInstruction();
   I.Opcode = statement;
   I.Arg1 = 0;
   I.Arg2 = 0;
@@ -684,7 +720,7 @@ void VEmitContext::AddStatement (int statement, int parm1, const TLocation &aloc
   {
     VCFatalError("Opcode doesn't take 1 param");
   }
-  FInstruction &I = CurrentFunc->Instructions.Alloc();
+  FInstruction &I = allocInstruction();
   I.Opcode = statement;
   I.Arg1 = parm1;
   I.Arg2 = 0;
@@ -699,7 +735,7 @@ void VEmitContext::AddStatement (int statement, int parm1, const TLocation &aloc
 //==========================================================================
 void VEmitContext::AddStatement (int statement, float FloatArg, const TLocation &aloc) {
   if (StatementInfo[statement].Args != OPCARGS_Int) VCFatalError("Opcode doesn't take float argument");
-  FInstruction &I = CurrentFunc->Instructions.Alloc();
+  FInstruction &I = allocInstruction();
   I.Opcode = statement;
   I.Arg1 = *(vint32 *)&FloatArg;
   I.Arg1IsFloat = true;
@@ -714,7 +750,7 @@ void VEmitContext::AddStatement (int statement, float FloatArg, const TLocation 
 //==========================================================================
 void VEmitContext::AddStatement (int statement, VName NameArg, const TLocation &aloc) {
   if (StatementInfo[statement].Args != OPCARGS_Name) VCFatalError("Opcode doesn't take name argument");
-  FInstruction &I = CurrentFunc->Instructions.Alloc();
+  FInstruction &I = allocInstruction();
   I.Opcode = statement;
   I.NameArg = NameArg;
   I.loc = aloc;
@@ -733,7 +769,7 @@ void VEmitContext::AddStatement (int statement, VMemberBase *Member, const TLoca
   {
     VCFatalError("Opcode doesn't take member as argument");
   }
-  FInstruction &I = CurrentFunc->Instructions.Alloc();
+  FInstruction &I = allocInstruction();
   I.Opcode = statement;
   I.Member = Member;
   I.loc = aloc;
@@ -752,7 +788,7 @@ void VEmitContext::AddStatement (int statement, VMemberBase *Member, int Arg, co
   {
     VCFatalError("Opcode doesn't take member and byte as argument");
   }
-  FInstruction &I = CurrentFunc->Instructions.Alloc();
+  FInstruction &I = allocInstruction();
   I.Opcode = statement;
   I.Member = Member;
   I.Arg2 = Arg;
@@ -772,7 +808,7 @@ void VEmitContext::AddStatement (int statement, const VFieldType &TypeArg, const
   {
     VCFatalError("Opcode doesn't take type as argument");
   }
-  FInstruction &I = CurrentFunc->Instructions.Alloc();
+  FInstruction &I = allocInstruction();
   I.Opcode = statement;
   I.TypeArg = TypeArg;
   I.loc = aloc;
@@ -791,7 +827,7 @@ void VEmitContext::AddStatement (int statement, const VFieldType &TypeArg, int A
   {
     VCFatalError("Opcode doesn't take type as argument");
   }
-  FInstruction &I = CurrentFunc->Instructions.Alloc();
+  FInstruction &I = allocInstruction();
   I.Opcode = statement;
   I.TypeArg = TypeArg;
   I.Arg2 = Arg;
@@ -808,7 +844,7 @@ void VEmitContext::AddStatement (int statement, const VFieldType &TypeArg, const
   if (StatementInfo[statement].Args != OPCARGS_TypeDD) {
     VCFatalError("Opcode doesn't take types as argument");
   }
-  FInstruction &I = CurrentFunc->Instructions.Alloc();
+  FInstruction &I = allocInstruction();
   I.Opcode = statement;
   I.TypeArg = TypeArg;
   I.TypeArg1 = TypeArg1;
@@ -824,13 +860,13 @@ void VEmitContext::AddStatement (int statement, const VFieldType &TypeArg, const
 //==========================================================================
 void VEmitContext::AddStatement (int statement, VLabel Lbl, const TLocation &aloc) {
   if (StatementInfo[statement].Args != OPCARGS_BranchTarget) VCFatalError("Opcode doesn't take label as argument");
-  FInstruction &I = CurrentFunc->Instructions.Alloc();
+  FInstruction &I = allocInstruction();
   I.Opcode = statement;
   I.Arg1 = 0;
   I.Arg2 = 0;
 
   VLabelFixup &Fix = Fixups.Alloc();
-  Fix.Pos = CurrentFunc->Instructions.length()-1;
+  Fix.Pos = getInstrCount()-1;
   Fix.Arg = 1;
   Fix.LabelIdx = Lbl.Index;
   I.loc = aloc;
@@ -850,13 +886,13 @@ void VEmitContext::AddStatement (int statement, int parm1, VLabel Lbl, const TLo
   {
     VCFatalError("Opcode doesn't take 2 params");
   }
-  FInstruction &I = CurrentFunc->Instructions.Alloc();
+  FInstruction &I = allocInstruction();
   I.Opcode = statement;
   I.Arg1 = parm1;
   I.Arg2 = 0;
 
   VLabelFixup &Fix = Fixups.Alloc();
-  Fix.Pos = CurrentFunc->Instructions.length()-1;
+  Fix.Pos = getInstrCount()-1;
   Fix.Arg = 2;
   Fix.LabelIdx = Lbl.Index;
   I.loc = aloc;
@@ -870,7 +906,7 @@ void VEmitContext::AddStatement (int statement, int parm1, VLabel Lbl, const TLo
 //==========================================================================
 void VEmitContext::AddBuiltin (int b, const TLocation &aloc) {
   //if (StatementInfo[statement].Args != OPCARGS_Builtin) VCFatalError("Opcode doesn't take builtin");
-  FInstruction &I = CurrentFunc->Instructions.Alloc();
+  FInstruction &I = allocInstruction();
   I.Opcode = OPC_Builtin;
   I.Arg1 = b;
   I.Arg2 = 0;
@@ -884,7 +920,7 @@ void VEmitContext::AddBuiltin (int b, const TLocation &aloc) {
 //
 //==========================================================================
 void VEmitContext::AddCVarBuiltin (int b, VName n, const TLocation &aloc) {
-  FInstruction &I = CurrentFunc->Instructions.Alloc();
+  FInstruction &I = allocInstruction();
   I.Opcode = OPC_BuiltinCVar;
   I.Arg1 = b;
   I.Arg2 = n.GetIndex();

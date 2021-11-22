@@ -95,7 +95,7 @@ struct VStateLabel {
 struct VStateLabelDef {
   VStr Name;
   VState *State;
-  TLocation Loc;
+  TLocationLine Loc;
   VName GotoLabel;
   vint32 GotoOffset;
 
@@ -110,7 +110,7 @@ struct VStateLabelDef {
 //==========================================================================
 struct VRepField {
   VName Name;
-  TLocation Loc;
+  TLocationLine Loc;
   VMemberBase *Member;
 
   friend VStream &operator << (VStream &Strm, VRepField &Fld) { return Strm << Fld.Member; }
@@ -138,7 +138,7 @@ struct VRepInfo {
 //==========================================================================
 struct VDecorateUserVarDef {
   VName name;
-  TLocation loc;
+  TLocationLine loc;
   VFieldType type; // can be array too
 };
 
@@ -347,7 +347,7 @@ public:
 
   // compiler fields
   VName ParentClassName;
-  TLocation ParentClassLoc;
+  TLocationLine ParentClassLoc;
   ReplaceType DoesReplacement;
   VExpression *GameExpr;
   VExpression *MobjInfoExpr;
@@ -404,7 +404,7 @@ public:
   struct AliasInfo {
     VName aliasName;
     VName origName;
-    TLocation loc;
+    TLocationLine loc;
     int aframe; // for loop checking
   };
 

@@ -84,8 +84,8 @@ VStr TLocation::GetSourceFileByIndex (int sidx) noexcept {
 //==========================================================================
 VStr TLocation::GetSourceFile () const noexcept {
   if (isInternal()) return "(external)"; // confusing, yeah?
-  if (SrcIdx < 0 || SrcIdx >= SourceFiles.length()) return "<wutafuck>";
-  return SourceFiles[SrcIdx];
+  if (GetSrcIndex() < 0 || GetSrcIndex() >= SourceFiles.length()) return "<wutafuck>";
+  return SourceFiles[GetSrcIndex()];
 }
 
 
@@ -143,7 +143,7 @@ VStr TLocation::toStringLineCol () const noexcept {
 //
 //  TLocation::toStringShort
 //
-// only file name and line number
+//  only file name and line number
 //
 //==========================================================================
 VStr TLocation::toStringShort () const noexcept {
@@ -153,3 +153,33 @@ VStr TLocation::toStringShort () const noexcept {
   s = s.mid(pos, s.length());
   return s+":"+VStr(GetLine());
 }
+
+
+#ifdef VAVOOMC_SMALL_TLOCATION
+TLocation::TLocation (const TLocationLine &aloc) noexcept
+  : LineCol(0)
+  , SrcIdx16(0)
+{
+  SetSrcIdx(aloc.GetSrcIndex());
+  SetLine(aloc.GetLine());
+}
+void TLocation::operator = (const TLocationLine &other) noexcept {
+  LineCol = 0;
+  SetLine(other.GetLine());
+  SetSrcIdx(other.GetSrcIndex());
+}
+#else
+TLocation::TLocation (const TLocationLine &aloc) noexcept
+  : Line(0)
+  , Col(0)
+  , SrcIdx(0)
+{
+  SetSrcIdx(aloc.GetSrcIndex());
+  SetLine(aloc.GetLine());
+}
+void TLocation::operator = (const TLocationLine &other) noexcept {
+  Col = 0;
+  Line = other.GetLine();
+  SrcIdx = other.GetSrcIndex();
+}
+#endif

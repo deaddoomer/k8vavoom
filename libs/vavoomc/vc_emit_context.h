@@ -82,7 +82,7 @@ class VEmitContext {
 public:
   struct VCompExit {
     int lidx; // local index
-    TLocation loc;
+    TLocationLine loc;
     bool inLoop;
   };
 
@@ -100,7 +100,7 @@ private:
   struct VGotoListItem {
     VLabel jlbl;
     VName name;
-    TLocation loc;
+    TLocationLine loc;
     bool defined;
   };
 
@@ -117,6 +117,10 @@ public:
   VClass *OuterClass;
 
   VFieldType FuncRetType;
+
+  FInstruction* Instrs;
+  vuint32 InstrsUsed;
+  vuint32 InstrsAlloted;
 
   //int localsofs;
   //FIXME: rewrite this!
@@ -138,6 +142,15 @@ public:
   // maintained by loop statements; if in loop, always sets `reused` for new locals
   int InLoop;
 
+public:
+  static vuint32 maxInstrUsed;
+
+private:
+  FInstruction &allocInstruction ();
+
+  inline int getInstrCount () noexcept { return (int)InstrsUsed; }
+  inline FInstruction &getInstr (int idx) { vassert(idx >= 0 && (unsigned)idx < InstrsUsed); return Instrs[(unsigned)idx]; }
+
 private:
   // called in ctor, and to reset locals
   void stackInit ();
@@ -148,6 +161,7 @@ private:
 
 public:
   VEmitContext (VMemberBase *Member);
+  ~VEmitContext ();
   void EndCode ();
 
   // this doesn't modify `localsofs`
