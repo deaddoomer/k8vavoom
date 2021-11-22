@@ -40,7 +40,7 @@ static void *vm_labels_builtins[] = {
 #if USE_COMPUTED_GOTO
 # define PR_VMBN_BREAK  ip += 2; PR_VM_BREAK
 #else
-# define PR_VMBN_BREAK  ip += 2; goto vm_labels_builtins_done
+# define PR_VMBN_BREAK  goto vm_labels_builtins_done
 #endif
 
 #ifdef VCC_DEBUG_CVAR_CACHE_VMDUMP

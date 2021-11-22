@@ -36,9 +36,13 @@ public:
   static int AddSourceFile (VStr SName) noexcept;
   static void ClearSourceFiles () noexcept;
 
+  static VStr GetSourceFileByIndex (int sidx) noexcept;
+
 public:
   inline TLocation () noexcept : Line(0), Col(0), SrcIdx(0) {}
   inline TLocation (int ASrcIdx, int ALine, int ACol) noexcept : Line(ALine > 0 ? ALine : 0), Col(ACol > 0 ? ACol : 0), SrcIdx(ASrcIdx > 0 ? ASrcIdx : 0) {}
+
+  inline bool isEmpty () const noexcept { return ((SrcIdx|Line|Col) == 0); }
 
   inline bool isInternal () const noexcept { return (SrcIdx == 0); }
 
@@ -46,6 +50,8 @@ public:
   inline void SetLine (int ALine) noexcept { Line = ALine; }
 
   inline int GetCol () const noexcept { return Col; }
+
+  inline int GetSrcIndex () const noexcept { return SrcIdx; }
 
   VStr GetSourceFile () const noexcept;
 

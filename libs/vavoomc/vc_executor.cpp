@@ -28,6 +28,7 @@
 //**
 //**************************************************************************
 //#define VCC_STUPID_TRACER
+//#define VCC_STUPID_TRACER_EXTRADUMP
 //#define VMEXEC_RUNDUMP
 //#define VCC_DEBUG_CVAR_CACHE_VMDUMP
 //#define VCC_DEBUG_CVAR_CACHE
@@ -459,7 +460,10 @@ static void RunFunction (VMethod *func) {
   if (func->NumLocals-func->ParamsSize != 0) memset(sp, 0, (func->NumLocals-func->ParamsSize)*sizeof(VStack));
   sp += func->NumLocals-func->ParamsSize;
 
-  ip = func->Statements.Ptr();
+//#define VMEXEC_STMTS  (func->Statements.Ptr())
+#define VMEXEC_STMTS  (func->vmCodeStart)
+
+  ip = VMEXEC_STMTS;
 
 #ifdef VMEXEC_RUNDUMP
   enterIndent(); printIndent(); fprintf(stderr, "ENTERING VC FUNCTION `%s`; sp=%d\n", *func->GetFullName(), (int)(sp-local_vars));
@@ -483,12 +487,26 @@ static void RunFunction (VMethod *func) {
 
   const vuint8 *origip = nullptr;
 
+#ifdef VCC_STUPID_TRACER_EXTRADUMP
+  #if 1
+  fprintf(stderr, "**** VM OPCODES: 0x%08x (%u) ****\n", (unsigned)func->vmCodeStart, func->vmCodeSize);
+  for (vuint32 ofs = 0; ofs < func->vmCodeSize; ofs += 16) {
+    VStr ds = va("  0x%08x:", (unsigned)(func->vmCodeStart+ofs));
+    for (unsigned n = 0; n < 16 && ofs+n < func->vmCodeSize; ++n) {
+      if (n == 8) ds += " ";
+      ds += va(" %02x", func->vmCodeStart[ofs+n]);
+    }
+    fprintf(stderr, "%s\n", *ds);
+  }
+  #endif
+#endif
+
   // the main execution loop
   for (;;) {
 func_loop:
 
 #ifdef VCC_STUPID_TRACER
-    fprintf(stderr, "*** %s: %6u: %s (sp=%d)\n", *func->GetFullName(), (unsigned)(ip-func->Statements.Ptr()), StatementInfo[*ip].name, (int)(sp-local_vars));
+    fprintf(stderr, "*** %s: 0x%08x: %6u: %s (sp=%d)  0x%02X 0x%02X 0x%02X 0x%02X\n", *func->GetFullName(), (unsigned)ip, (unsigned)(ip-VMEXEC_STMTS), StatementInfo[*ip].name, (int)(sp-local_vars), ip[0], ip[1], ip[2], ip[3]);
 #endif
 
     PR_VM_SWITCH(*ip) {
@@ -627,7 +645,7 @@ func_loop:
 
       PR_VM_CASE(OPC_Return)
         //vensure(sp == local_vars+func->NumLocals);
-        if (sp != local_vars+func->NumLocals) { cstDump(ip); VPackage::InternalFatalError(va("assertion failed: `sp == local_vars+func->NumLocals`: ip=%d; diff=%d; func->NumLocals=%d", (int)(ptrdiff_t)(ip-func->Statements.Ptr()), (int)(ptrdiff_t)(sp-(local_vars+func->NumLocals)), func->NumLocals)); }
+        if (sp != local_vars+func->NumLocals) { cstDump(ip); VPackage::InternalFatalError(va("assertion failed: `sp == local_vars+func->NumLocals`: ip=%d; diff=%d; func->NumLocals=%d", (int)(ptrdiff_t)(ip-VMEXEC_STMTS), (int)(ptrdiff_t)(sp-(local_vars+func->NumLocals)), func->NumLocals)); }
         #ifdef VMEXEC_RUNDUMP
         printIndent(); fprintf(stderr, "LEAVING VC FUNCTION `%s`; sp=%d\n", *func->GetFullName(), (int)(sp-pr_stack)); leaveIndent();
         #endif
@@ -636,7 +654,8 @@ func_loop:
         return;
 
       PR_VM_CASE(OPC_ReturnL)
-        vensure(sp == local_vars+func->NumLocals+1);
+        //vensure(sp == local_vars+func->NumLocals+1);
+        if (sp != local_vars+func->NumLocals+1) { cstDump(ip); VPackage::InternalFatalError(va("assertion failed: `sp == local_vars+func->NumLocals+1`: ip=%d; diff=%d; func->NumLocals=%d", (int)(ptrdiff_t)(ip-VMEXEC_STMTS), (int)(ptrdiff_t)(sp-(local_vars+func->NumLocals)), func->NumLocals)); }
         #ifdef VMEXEC_RUNDUMP
         printIndent(); fprintf(stderr, "LEAVING VC FUNCTION `%s`; sp=%d\n", *func->GetFullName(), (int)(sp-pr_stack)); leaveIndent();
         #endif
@@ -646,7 +665,8 @@ func_loop:
         return;
 
       PR_VM_CASE(OPC_ReturnV)
-        vensure(sp == local_vars+func->NumLocals+3);
+        //vensure(sp == local_vars+func->NumLocals+3);
+        if (sp != local_vars+func->NumLocals+3) { cstDump(ip); VPackage::InternalFatalError(va("assertion failed: `sp == local_vars+func->NumLocals+3`: ip=%d; diff=%d; func->NumLocals=%d", (int)(ptrdiff_t)(ip-VMEXEC_STMTS), (int)(ptrdiff_t)(sp-(local_vars+func->NumLocals)), func->NumLocals)); }
         #ifdef VMEXEC_RUNDUMP
         printIndent(); fprintf(stderr, "LEAVING VC FUNCTION `%s`; sp=%d\n", *func->GetFullName(), (int)(sp-pr_stack)); leaveIndent();
         #endif
@@ -2618,7 +2638,7 @@ func_loop:
         PR_VM_BREAK;
 
       PR_VM_CASE(OPC_DupPOD)
-        //{ fprintf(stderr, "OPC_DupPOD at %6u in FUNCTION `%s`; sp=%d\n", (unsigned)(ip-func->Statements.Ptr()), *func->GetFullName(), (int)(sp-pr_stack)); cstDump(ip); }
+        //{ fprintf(stderr, "OPC_DupPOD at %6u in FUNCTION `%s`; sp=%d\n", (unsigned)(ip-VMEXEC_STMTS), *func->GetFullName(), (int)(sp-pr_stack)); cstDump(ip); }
         ++ip;
         sp->p = sp[-1].p; // pointer copies everything
         ++sp;

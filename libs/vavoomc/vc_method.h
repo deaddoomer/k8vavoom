@@ -209,8 +209,13 @@ public:
   ProfileInfo Profile;
 
   // run-time fields
-  TArray<vuint8> Statements; // generated VM bytecode
-  TArray<TLocation> StatLocs; // locations for each code point
+  //TArray<vuint8> Statements; // generated VM bytecode
+  //TArray<TLocation> StatLocs; // locations for each code point
+  vuint8* vmCodeStart;
+  void* vmDebugInfo;
+  vuint32 vmCodeSize;
+  vuint32 vmDebugInfoSize;
+  //
   builtin_t NativeFunc;
   vint16 VTableIndex; // -666 means "not determined yet"
   vint32 NetIndex;
@@ -220,6 +225,13 @@ public:
   // guard them, why not?
   int defineResult; // -1: not called yet; 0: error; 1: ok; 666: ok, don't show warning
   bool emitCalled;
+
+public:
+  static unsigned GetCodePoolCount () noexcept;
+  static size_t GetTotalCodePoolSize () noexcept;
+
+  static unsigned GetDebugPoolCount () noexcept;
+  static size_t GetTotalDebugPoolSize () noexcept;
 
 public:
   VMethod (VName, VMemberBase *, TLocation);

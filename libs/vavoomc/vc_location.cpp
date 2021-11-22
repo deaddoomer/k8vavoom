@@ -67,6 +67,18 @@ void TLocation::ClearSourceFiles () noexcept {
 
 //==========================================================================
 //
+//  TLocation::GetSourceFileByIndex
+//
+//==========================================================================
+VStr TLocation::GetSourceFileByIndex (int sidx) noexcept {
+  if (sidx <= 0) return "(external)"; // confusing, yeah?
+  if (sidx >= SourceFiles.length()) return "<wutafuck>";
+  return SourceFiles[sidx];
+}
+
+
+//==========================================================================
+//
 //  TLocation::GetSourceFile
 //
 //==========================================================================

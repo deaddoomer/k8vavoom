@@ -28,6 +28,279 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+#define BYTES_POOL_SIZE  (1024*1024*4)
+
+struct VMBytesPool {
+  vuint8* code; // points after the pool end
+  size_t used;
+  size_t alloted;
+  VMBytesPool *next;
+};
+
+
+struct VMPoolInfo {
+  VMBytesPool* head;
+  VMBytesPool* tail;
+  size_t stpos;
+
+  inline VMPoolInfo () noexcept : head(nullptr), tail(nullptr), stpos(~(size_t)0) {}
+};
+
+
+static VMPoolInfo vmCodePool = VMPoolInfo();
+static VMPoolInfo vmDebugPool = VMPoolInfo();
+
+
+//==========================================================================
+//
+//  vmStartPool
+//
+//==========================================================================
+static void vmStartPool (VMPoolInfo* nfo) {
+  vassert(nfo->stpos == ~(size_t)0);
+  if (!nfo->tail) {
+    vassert(!nfo->head);
+    VMBytesPool* pp = (VMBytesPool*)Z_Malloc(sizeof(VMBytesPool)+BYTES_POOL_SIZE+64);
+    vassert(pp);
+    pp->code = (vuint8*)(pp+1);
+    pp->used = 0;
+    pp->alloted = BYTES_POOL_SIZE;
+    pp->next = nullptr;
+    nfo->head = nfo->tail = pp;
+  }
+  nfo->stpos = nfo->tail->used;
+}
+
+
+//==========================================================================
+//
+//  vmEndPool
+//
+//==========================================================================
+static vuint8 *vmEndPool (VMPoolInfo* nfo) {
+  vassert(nfo->head);
+  vassert(nfo->tail);
+  vassert(!nfo->tail->next);
+  vassert(nfo->stpos != ~(size_t)0);
+  vuint8 *res = nfo->tail->code+nfo->stpos;
+  nfo->stpos = ~(size_t)0;
+  return res;
+}
+
+
+//==========================================================================
+//
+//  vmCodeOffset
+//
+//==========================================================================
+static int vmCodeOffset (const VMPoolInfo *nfo) {
+  vassert(nfo->stpos != ~(size_t)0);
+  return (int)(nfo->tail->used-nfo->stpos);
+}
+
+
+//==========================================================================
+//
+//  vmEmitBytes
+//
+//==========================================================================
+static void vmEmitBytes (VMPoolInfo* nfo, const void *buf, const unsigned len) {
+  if (!len) return;
+  vassert(len < BYTES_POOL_SIZE);
+  vassert(nfo->stpos != ~(size_t)0);
+  VMBytesPool* pool = nfo->tail;
+  // if we don't have enough room, allocate a new pool, and move the code there
+  if (pool->alloted-pool->used < len) {
+    const size_t codesz = pool->used-nfo->stpos;
+    vassert(codesz+len <= BYTES_POOL_SIZE);
+    VMBytesPool* pp = (VMBytesPool*)Z_Malloc(sizeof(VMBytesPool)+BYTES_POOL_SIZE+64);
+    vassert(pp);
+    pp->code = (vuint8*)(pp+1);
+    pp->used = 0;
+    pp->alloted = BYTES_POOL_SIZE;
+    pp->next = nullptr;
+    nfo->tail->next = pp;
+    nfo->tail = pp;
+    if (codesz) memcpy(pp->code, pool->code+nfo->stpos, codesz);
+    pp->used = codesz;
+    pool = pp;
+    nfo->stpos = 0;
+  }
+  vassert(pool->alloted-pool->used >= len);
+  memcpy(pool->code+pool->used, buf, len);
+  pool->used += len;
+}
+
+
+static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmEmitUByte (VMPoolInfo* nfo, const vuint8 v) { vmEmitBytes(nfo, &v, 1); }
+//static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmEmitUShort (VMPoolInfo* nfo, const vuint16 v) { vmEmitBytes(nfo, &v, 2); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmEmitUInt (VMPoolInfo* nfo, const vuint32 v) { vmEmitBytes(nfo, &v, 4); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmEmitPtr (VMPoolInfo* nfo, const void *ptr) { vmEmitBytes(nfo, &ptr, sizeof(void*)); }
+
+static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmEmitSShort (VMPoolInfo* nfo, const vint16 v) { vmEmitBytes(nfo, &v, 2); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmEmitSInt (VMPoolInfo* nfo, const vint32 v) { vmEmitBytes(nfo, &v, 4); }
+
+static void vmPatchBytes (VMPoolInfo* nfo, const int offset, const void *buf, const unsigned len) {
+  if (!len) return;
+  vassert(len < BYTES_POOL_SIZE);
+  vassert(offset >= 0 && offset < BYTES_POOL_SIZE);
+  vassert(nfo->stpos != ~(size_t)0);
+  VMBytesPool* pool = nfo->tail;
+  const size_t csize = (nfo->tail->used-nfo->stpos);
+  vassert((unsigned)offset < csize && (unsigned)offset+len <= csize);
+  memcpy(pool->code+nfo->stpos+(unsigned)offset, buf, len);
+}
+
+//static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmPutUByte (VMPoolInfo* nfo, const int offset, const vuint8 v) { vmPutBytes(nfo, offset, &v, 1); }
+//static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmPutUShort (VMPoolInfo* nfo, const int offset, const vuint16 v) { vmPutBytes(nfo, offset, &v, 2); }
+//static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmPutUInt (VMPoolInfo* nfo, const int offset, const vuint32 v) { vmPutBytes(nfo, offset, &v, 4); }
+//static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmPutPtr (VMPoolInfo* nfo, const int offset, const void *ptr) { vmPutBytes(nfo, offset, &ptr, sizeof(void*)); }
+
+static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmPatchSByte (VMPoolInfo* nfo, const int offset, const vint8 v) { vmPatchBytes(nfo, offset, &v, 1); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmPatchSShort (VMPoolInfo* nfo, const int offset, const vint16 v) { vmPatchBytes(nfo, offset, &v, 2); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmPatchSInt (VMPoolInfo* nfo, const int offset, const vint32 v) { vmPatchBytes(nfo, offset, &v, 4); }
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+unsigned VMethod::GetCodePoolCount () noexcept {
+  unsigned res = 0;
+  for (const VMBytesPool *pool = vmCodePool.head; pool; pool = pool->next) ++res;
+  return res;
+}
+
+size_t VMethod::GetTotalCodePoolSize () noexcept {
+  size_t res = 0;
+  for (const VMBytesPool *pool = vmCodePool.head; pool; pool = pool->next) res += pool->alloted;
+  return res;
+}
+
+unsigned VMethod::GetDebugPoolCount () noexcept {
+  unsigned res = 0;
+  for (const VMBytesPool *pool = vmDebugPool.head; pool; pool = pool->next) ++res;
+  return res;
+}
+
+size_t VMethod::GetTotalDebugPoolSize () noexcept {
+  size_t res = 0;
+  for (const VMBytesPool *pool = vmDebugPool.head; pool; pool = pool->next) res += pool->alloted;
+  return res;
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+/*
+  debug info header:
+    dd elementCount
+    dd fileIndex;
+
+  debug info element:
+    db bytes  ; if 0: file index change; next 3 bytes is new file index
+    db(3) line;
+ */
+
+//==========================================================================
+//
+//  vmStartDebugPool
+//
+//==========================================================================
+static inline void vmStartDebugPool (VMPoolInfo* nfo) {
+  vmStartPool(nfo);
+  vmEmitUInt(nfo, 0); // elementCount
+  vmEmitUInt(nfo, 0); // fileIndex
+}
+
+
+//==========================================================================
+//
+//  vmDebugEmitLoc
+//
+//==========================================================================
+static void vmDebugEmitLoc (VMPoolInfo* nfo, int len, const TLocation &loc) {
+  if (!len) return;
+  vassert(len > 0);
+
+  const vuint32 ln = (vuint32)loc.GetLine();
+  const vuint32 sidx = (vuint32)loc.GetSrcIndex();
+
+  do {
+    vuint32 *cptr = (vuint32*)(nfo->tail->code+nfo->stpos);
+    // fix file index
+    if (*cptr == 0) {
+      // set first file index
+      cptr[1] = sidx;
+    } else {
+      // check if we need to record a new file index
+      if (cptr[1] != sidx) {
+        // "change index" command
+        vmEmitUByte(nfo, 0);
+        // new index
+        vmEmitUByte(nfo, (vuint8)sidx);
+        vmEmitUByte(nfo, (vuint8)(sidx>>8));
+        vmEmitUByte(nfo, (vuint8)(sidx>>16));
+      }
+    }
+
+    // emit line
+    vmEmitUByte(nfo, (vuint8)(len > 255 ? 255 : len));
+    vmEmitUByte(nfo, (vuint8)ln);
+    vmEmitUByte(nfo, (vuint8)(ln>>8));
+    vmEmitUByte(nfo, (vuint8)(ln>>16));
+
+    // fix counter
+    cptr = (vuint32*)(nfo->tail->code+nfo->stpos);
+    *cptr += 1;
+  } while ((len -= 255) > 0);
+}
+
+
+//==========================================================================
+//
+//  vmDebugFindLocForOfs
+//
+//==========================================================================
+static TLocation vmDebugFindLocForOfs (const void *debugInfo, size_t pc) {
+  if (!debugInfo) return TLocation();
+  const vuint8* pp = (const vuint8 *)debugInfo;
+  vuint32 count = *(const vuint32 *)pp; pp += 4;
+  vuint32 fidx = *(const vuint32 *)pp; pp += 4;
+  while (count--) {
+    // special command?
+    if (*pp == 0) {
+      // yes, new file index
+      fidx = pp[1]|(pp[2]<<8)|(pp[3]<<16);
+      pp += 4;
+      continue;
+    }
+    if (pc < *pp) {
+      // i found her!
+      vuint32 lidx = pp[1]|(pp[2]<<8)|(pp[3]<<16);
+      return TLocation((int)fidx, (int)lidx, 1);
+    }
+    // skip this item, and adjust pc
+    pc -= *pp;
+    pp += 4;
+  }
+  return TLocation();
+}
+
+
+//==========================================================================
+//
+//  vmEndDebugPool
+//
+//==========================================================================
+static inline void *vmEndDebugPool (VMPoolInfo* nfo) {
+  vassert(nfo->head);
+  vassert(nfo->tail);
+  vassert(!nfo->tail->next);
+  vassert(nfo->stpos != ~(size_t)0);
+  vuint8 *res = nfo->tail->code+nfo->stpos;
+  nfo->stpos = ~(size_t)0;
+  return (void*)res;
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 FBuiltinInfo *FBuiltinInfo::Builtins;
 
 
@@ -775,14 +1048,26 @@ void VMethod::WriteType (const VFieldType &tp) {
   vuint8 *ptr = tbuf;
   tp.WriteTypeMem(ptr);
   vassert((ptrdiff_t)(ptr-tbuf) == VFieldType::MemSize);
-  for (vuint8 *p = tbuf; p != ptr; ++p) Statements.append(*p);
+  //for (vuint8 *p = tbuf; p != ptr; ++p) Statements.append(*p);
+  vmEmitBytes(&vmCodePool, tbuf, (unsigned)(ptrdiff_t)(ptr-tbuf));
 }
 
 
+/*
 #define WriteUInt8(p)  Statements.Append(p)
 #define WriteInt16(p)  Statements.SetNum(Statements.length()+2); *(vint16 *)&Statements[Statements.length()-2] = (p)
 #define WriteInt32(p)  Statements.SetNum(Statements.length()+4); *(vint32 *)&Statements[Statements.length()-4] = (p)
 #define WritePtr(p)    Statements.SetNum(Statements.length()+sizeof(void *)); *(void **)&Statements[Statements.length()-sizeof(void *)] = (p)
+*/
+
+#define WriteUInt8(p)  vmEmitUByte(&vmCodePool, (p))
+#define WriteInt16(p)  vmEmitSShort(&vmCodePool, (p))
+#define WriteInt32(p)  vmEmitSInt(&vmCodePool, (p))
+#define WritePtr(p)    vmEmitPtr(&vmCodePool, (p))
+
+#define PatchInt8(ofs,p)   vmPatchSByte(&vmCodePool, (ofs), (p))
+#define PatchInt16(ofs,p)  vmPatchSShort(&vmCodePool, (ofs), (p))
+#define PatchInt32(ofs,p)  vmPatchSInt(&vmCodePool, (ofs), (p))
 
 
 //==========================================================================
@@ -794,18 +1079,31 @@ void VMethod::WriteType (const VFieldType &tp) {
 //
 //==========================================================================
 void VMethod::GenerateCode () {
-  Statements.Clear();
+  vassert(!vmCodeStart);
+  vassert(!vmDebugInfo);
+  //Statements.Clear();
   if (!Instructions.length()) return;
+
+  vmStartPool(&vmCodePool);
+  vmStartDebugPool(&vmDebugPool);
 
   TArray<int> iaddr; // addresses of all generated instructions
   iaddr.resize(Instructions.length()); // we know the size beforehand
 
   // generate VM bytecode
+  // `-1`, because the last one is always DONE opcode
+  assert(Instructions[Instructions.length()-1].Opcode == OPC_Done);
+  int prevIEnd = 0;
   for (int i = 0; i < Instructions.length()-1; ++i) {
     //Instructions[i].Address = Statements.length();
     vassert(iaddr.length() == i);
-    iaddr.append(Statements.length());
-    Statements.Append(Instructions[i].Opcode);
+    //iaddr.append(Statements.length());
+    //Statements.Append(Instructions[i].Opcode);
+    const int istart = vmCodeOffset(&vmCodePool);
+    vassert(istart == prevIEnd);
+    iaddr.append(istart);
+    WriteUInt8(Instructions[i].Opcode);
+    // emit opcode arguments
     switch (StatementInfo[Instructions[i].Opcode].Args) {
       case OPCARGS_None: break;
       case OPCARGS_Member: WritePtr(Instructions[i].Member); break;
@@ -921,43 +1219,90 @@ void VMethod::GenerateCode () {
       case OPCARGS_ArrElemType_Int: WriteType(Instructions[i].TypeArg); WriteInt32(Instructions[i].Arg2); break;
       case OPCARGS_TypeAD: WriteType(Instructions[i].TypeArg); WriteUInt8(Instructions[i].Arg2); break;
     }
-    while (StatLocs.length() < Statements.length()) StatLocs.Append(Instructions[i].loc);
+    //while (StatLocs.length() < Statements.length()) StatLocs.Append(Instructions[i].loc);
+    const int cend = vmCodeOffset(&vmCodePool);
+    vmDebugEmitLoc(&vmDebugPool, cend-prevIEnd, Instructions[i].loc);
+    prevIEnd = cend;
   }
+  vmDebugEmitLoc(&vmDebugPool, vmCodeOffset(&vmCodePool)-prevIEnd, Instructions[Instructions.length()-1].loc);
+
   //Instructions[Instructions.length()-1].Address = Statements.length();
+  vmCodeSize = vmCodeOffset(&vmCodePool);
+  vmDebugInfoSize = vmCodeOffset(&vmDebugPool);
+
+  vmDebugInfo = vmEndDebugPool(&vmDebugPool);
+
   vassert(iaddr.length() == Instructions.length()-1);
-  iaddr.append(Statements.length());
+  //iaddr.append(Statements.length());
+  iaddr.append(vmCodeOffset(&vmCodePool));
+
+  vmEmitUInt(&vmCodePool, 0);
+  while (vmCodeOffset(&vmCodePool)&0x03) vmEmitUByte(&vmCodePool, 0);
 
   // fix jump destinations
   for (int i = 0; i < Instructions.length()-1; ++i) {
     switch (StatementInfo[Instructions[i].Opcode].Args) {
       case OPCARGS_BranchTargetB:
-        Statements[iaddr[i]+1] = iaddr[Instructions[i].Arg1]-iaddr[i];
+        //Statements[iaddr[i]+1] = iaddr[Instructions[i].Arg1]-iaddr[i];
+        PatchInt8(iaddr[i]+1, iaddr[Instructions[i].Arg1]-iaddr[i]);
         break;
       case OPCARGS_BranchTargetNB:
-        Statements[iaddr[i]+1] = iaddr[i]-iaddr[Instructions[i].Arg1];
+        //Statements[iaddr[i]+1] = iaddr[i]-iaddr[Instructions[i].Arg1];
+        PatchInt8(iaddr[i]+1, iaddr[i]-iaddr[Instructions[i].Arg1]);
         break;
       //case OPCARGS_BranchTargetS:
       //  *(vint16 *)&Statements[iaddr[i]+1] = iaddr[Instructions[i].Arg1]-iaddr[i];
       //  break;
       case OPCARGS_BranchTarget:
-        *(vint32 *)&Statements[iaddr[i]+1] = iaddr[Instructions[i].Arg1]-iaddr[i];
+        //*(vint32 *)&Statements[iaddr[i]+1] = iaddr[Instructions[i].Arg1]-iaddr[i];
+        PatchInt32(iaddr[i]+1, iaddr[Instructions[i].Arg1]-iaddr[i]);
         break;
       case OPCARGS_ByteBranchTarget:
-        *(vint16 *)&Statements[iaddr[i]+2] = iaddr[Instructions[i].Arg2]-iaddr[i];
+        //*(vint16 *)&Statements[iaddr[i]+2] = iaddr[Instructions[i].Arg2]-iaddr[i];
+        PatchInt16(iaddr[i]+2, iaddr[Instructions[i].Arg2]-iaddr[i]);
         break;
       case OPCARGS_ShortBranchTarget:
-        *(vint16 *)&Statements[iaddr[i]+3] = iaddr[Instructions[i].Arg2]-iaddr[i];
+        //*(vint16 *)&Statements[iaddr[i]+3] = iaddr[Instructions[i].Arg2]-iaddr[i];
+        PatchInt16(iaddr[i]+3, iaddr[Instructions[i].Arg2]-iaddr[i]);
         break;
       case OPCARGS_IntBranchTarget:
       case OPCARGS_NameBranchTarget:
-        *(vint16 *)&Statements[iaddr[i]+5] = iaddr[Instructions[i].Arg2]-iaddr[i];
+        //*(vint16 *)&Statements[iaddr[i]+5] = iaddr[Instructions[i].Arg2]-iaddr[i];
+        PatchInt16(iaddr[i]+5, iaddr[Instructions[i].Arg2]-iaddr[i]);
         break;
     }
   }
 
+  vmCodeStart = vmEndPool(&vmCodePool);
+
+  #if 0
+  DumpAsm();
+  GLog.Logf(NAME_Debug, " ** VM OPCODES: 0x%08x (%u) **", (unsigned)vmCodeStart, vmCodeSize);
+  for (int i = 0; i < Instructions.length()-1; ++i) {
+    int ofs = iaddr[i];
+    int len = iaddr[i+1]-ofs;
+    VStr ds = va("  0x%08x: %5d:(%d): %16s ", (unsigned)(vmCodeStart+ofs), ofs, len, StatementInfo[Instructions[i].Opcode].name);
+    for (int n = 0; n < len; ++n) {
+      vassert(ofs+n < (int)vmCodeSize);
+      ds += va(" %02x", vmCodeStart[ofs+n]);
+    }
+    GLog.Logf(NAME_Debug, "%s", *ds);
+  }
+  /*
+  for (vuint32 ofs = 0; ofs < vmCodeSize; ofs += 16) {
+    VStr ds = va("  0x%08x:", (unsigned)(vmCodeStart+ofs));
+    for (unsigned n = 0; n < 16 && ofs+n < vmCodeSize; ++n) {
+      if (n == 8) ds += " ";
+      ds += va(" %02x", vmCodeStart[ofs+n]);
+    }
+    GLog.Logf(NAME_Debug, "%s", *ds);
+  }
+  */
+  #endif
+
   // we don't need instructions anymore
   Instructions.Clear();
-  Statements.condense();
+  //Statements.condense();
 }
 
 
@@ -985,12 +1330,17 @@ void VMethod::OptimizeInstructions () {
 //
 //==========================================================================
 TLocation VMethod::FindPCLocation (const vuint8 *pc) {
+  /*
   if (!pc || Statements.length() == 0) return TLocation();
   if (pc < Statements.Ptr()) return TLocation();
   size_t stidx = (size_t)(pc-Statements.Ptr());
   if (stidx >= (size_t)Statements.length()) return TLocation();
   if (stidx >= (size_t)StatLocs.length()) return TLocation(); // just in case
   return StatLocs[(int)stidx];
+  */
+  if (!pc || !vmCodeStart || vmCodeSize == 0 || pc < vmCodeStart) return TLocation();
+  if (!vmDebugInfo) return TLocation();
+  return vmDebugFindLocForOfs(vmDebugInfo, (size_t)(ptrdiff_t)(pc-vmCodeStart));
 }
 
 
@@ -1100,6 +1450,7 @@ bool VMethod::ReportUnusedBuiltins () {
 //  operator <<
 //
 //==========================================================================
+/*
 VStream &operator << (VStream &Strm, FInstruction &Instr) {
   vuint8 Opc;
   if (Strm.IsLoading()) {
@@ -1180,3 +1531,4 @@ VStream &operator << (VStream &Strm, FInstruction &Instr) {
   }
   return Strm;
 }
+*/

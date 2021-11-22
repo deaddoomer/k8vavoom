@@ -541,7 +541,8 @@ void VPackage::StaticEmitPackages () {
           VMemberBase *m = pm->m;
           if (!m || m->MemberType != MEMBER_Method) continue;
           ++mtcount;
-          codesize += ((VMethod *)m)->Statements.length();
+          //codesize += ((VMethod *)m)->Statements.length();
+          codesize += ((VMethod *)m)->vmCodeSize;
         }
       }
       // we can free others list now
@@ -630,8 +631,14 @@ void VPackage::DumpCodeSizeStats () {
     } else {
       if (mt->IsStatic() || mt->IsFinal()) ++vstcount; else ++vmtcound;
     }
-    codesize += mt->Statements.length();
+    //codesize += mt->Statements.length();
+    codesize += mt->vmCodeSize;
   }
+
   GLog.Logf(NAME_Init, "%s VavoomC methods (%s native, %s virtual, %s static, %s struct); %s bytes of code generated.",
     comatoze(mtcount), comatoze(vnatcount), comatoze(vmtcound), comatoze(vstcount), comatoze(vsmcount), comatoze(codesize));
+
+  GLog.Logf(NAME_Init, "VavoomC used %u code pool%s (%s bytes), and %u debug pool%s (%s bytes).",
+    VMethod::GetCodePoolCount(), (VMethod::GetCodePoolCount() == 1 ? "" : "s"), comatoze((int)VMethod::GetTotalCodePoolSize()),
+    VMethod::GetDebugPoolCount(), (VMethod::GetDebugPoolCount() == 1 ? "" : "s"), comatoze((int)VMethod::GetTotalDebugPoolSize()));
 }
