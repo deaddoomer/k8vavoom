@@ -30,7 +30,8 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-#define BYTES_POOL_SIZE  (1024*1024*4)
+#define BYTES_CODE_POOL_SIZE   (1024*1024*1)
+#define BYTES_DEBUG_POOL_SIZE  (1024*1024*1/4)
 
 struct VMBytesPool {
   vuint8* code; // points after the pool end
@@ -47,13 +48,21 @@ struct VMPoolInfo {
   unsigned lastline;
   unsigned lastfile;
   unsigned lastwasnorm; // 666: initial write
+  size_t poolSize;
 
-  inline VMPoolInfo () noexcept : head(nullptr), tail(nullptr), stpos(~(size_t)0), lastline(0u), lastfile(0u), lastwasnorm(0u) {}
+  inline VMPoolInfo (const size_t apoosize) noexcept
+    : head(nullptr)
+    , tail(nullptr)
+    , stpos(~(size_t)0)
+    , lastline(0u)
+    , lastfile(0u)
+    , lastwasnorm(0u)
+    , poolSize(apoosize) {}
 };
 
 
-static VMPoolInfo vmCodePool = VMPoolInfo();
-static VMPoolInfo vmDebugPool = VMPoolInfo();
+static VMPoolInfo vmCodePool = VMPoolInfo(BYTES_CODE_POOL_SIZE);
+static VMPoolInfo vmDebugPool = VMPoolInfo(BYTES_DEBUG_POOL_SIZE);
 
 
 //==========================================================================
@@ -65,11 +74,11 @@ static void vmStartPool (VMPoolInfo* nfo) {
   vassert(nfo->stpos == ~(size_t)0);
   if (!nfo->tail) {
     vassert(!nfo->head);
-    VMBytesPool* pp = (VMBytesPool*)Z_Malloc(sizeof(VMBytesPool)+BYTES_POOL_SIZE+64);
+    VMBytesPool* pp = (VMBytesPool*)Z_Malloc(sizeof(VMBytesPool)+nfo->poolSize+4);
     vassert(pp);
     pp->code = (vuint8*)(pp+1);
     pp->used = 0;
-    pp->alloted = BYTES_POOL_SIZE;
+    pp->alloted = nfo->poolSize;
     pp->next = nullptr;
     nfo->head = nfo->tail = pp;
   }
@@ -112,18 +121,18 @@ static int vmCodeOffset (const VMPoolInfo *nfo) {
 //==========================================================================
 static void vmEmitBytes (VMPoolInfo* nfo, const void *buf, const unsigned len) {
   if (!len) return;
-  vassert(len < BYTES_POOL_SIZE);
+  vassert(len < nfo->poolSize);
   vassert(nfo->stpos != ~(size_t)0);
   VMBytesPool* pool = nfo->tail;
   // if we don't have enough room, allocate a new pool, and move the code there
   if (pool->alloted-pool->used < len) {
     const size_t codesz = pool->used-nfo->stpos;
-    vassert(codesz+len <= BYTES_POOL_SIZE);
-    VMBytesPool* pp = (VMBytesPool*)Z_Malloc(sizeof(VMBytesPool)+BYTES_POOL_SIZE+64);
+    vassert(codesz+len <= nfo->poolSize);
+    VMBytesPool* pp = (VMBytesPool*)Z_Malloc(sizeof(VMBytesPool)+nfo->poolSize+4);
     vassert(pp);
     pp->code = (vuint8*)(pp+1);
     pp->used = 0;
-    pp->alloted = BYTES_POOL_SIZE;
+    pp->alloted = nfo->poolSize;
     pp->next = nullptr;
     nfo->tail->next = pp;
     nfo->tail = pp;
@@ -148,8 +157,8 @@ static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmEmitSInt (VMPoolInfo* nfo, const vi
 
 static void vmPatchBytes (VMPoolInfo* nfo, const int offset, const void *buf, const unsigned len) {
   if (!len) return;
-  vassert(len < BYTES_POOL_SIZE);
-  vassert(offset >= 0 && offset < BYTES_POOL_SIZE);
+  vassert(len < nfo->poolSize);
+  vassert(offset >= 0 && offset < (int)nfo->poolSize);
   vassert(nfo->stpos != ~(size_t)0);
   VMBytesPool* pool = nfo->tail;
   const size_t csize = (nfo->tail->used-nfo->stpos);
