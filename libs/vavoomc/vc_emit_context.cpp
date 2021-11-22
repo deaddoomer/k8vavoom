@@ -78,6 +78,102 @@ struct SaveIntVal {
 vuint32 VEmitContext::maxInstrUsed = 0;
 
 
+struct EmitBuffer {
+  FInstruction* Instrs;
+  vuint32 InstrsUsed;
+  vuint32 InstrsAlloted;
+  EmitBuffer *next;
+  int used;
+
+  inline EmitBuffer () noexcept : Instrs(nullptr), InstrsUsed(0), InstrsAlloted(0), next(nullptr), used(0) {}
+
+  inline void clear () noexcept {
+    if (Instrs) Z_Free(Instrs);
+    Instrs = nullptr;
+    InstrsUsed = InstrsAlloted = 0;
+  }
+
+  FInstruction &allocInstruction () {
+    if (InstrsUsed == InstrsAlloted) {
+      InstrsAlloted += 2048;
+      Instrs = (FInstruction*)Z_Realloc(Instrs, sizeof(Instrs[0])*InstrsAlloted);
+    }
+    FInstruction* res = &Instrs[InstrsUsed++];
+    memset((void *)res, 0, sizeof(*res));
+    if (VEmitContext::maxInstrUsed < InstrsUsed) VEmitContext::maxInstrUsed = InstrsUsed;
+    return *res;
+  }
+
+  inline int getInstrCount () noexcept { return (int)InstrsUsed; }
+  inline FInstruction &getInstr (int idx) { vassert(idx >= 0 && (unsigned)idx < InstrsUsed); return Instrs[(unsigned)idx]; }
+};
+
+
+static EmitBuffer *ebHead = nullptr;
+
+
+//==========================================================================
+//
+//  allocEmitBuffer
+//
+//==========================================================================
+static EmitBuffer *allocEmitBuffer () {
+  for (EmitBuffer *eb = ebHead; eb; eb = eb->next) if (eb->used == 0) return eb;
+  EmitBuffer *res = (EmitBuffer*)Z_Calloc(sizeof(EmitBuffer));
+  if (ebHead) ebHead->next = res; else ebHead = res;
+  res->used = 1;
+  return res;
+}
+
+
+//==========================================================================
+//
+//  releaseEmitBuffer
+//
+//==========================================================================
+void releaseEmitBuffer (EmitBuffer *eb) {
+  if (!eb) return;
+  assert(eb->used);
+  eb->used = 0;
+  eb->InstrsUsed = 0;
+}
+
+
+//==========================================================================
+//
+//  VEmitContext::getEmitBufferCount
+//
+//==========================================================================
+int VEmitContext::getEmitBufferCount () noexcept {
+  int res = 0;
+  for (EmitBuffer *eb = ebHead; eb; eb = eb->next) ++res;
+  return res;
+}
+
+
+//==========================================================================
+//
+//  VEmitContext::getTotalEmitBufferSize
+//
+//==========================================================================
+int VEmitContext::getTotalEmitBufferSize () noexcept {
+  int res = 0;
+  for (EmitBuffer *eb = ebHead; eb; eb = eb->next) res += (int)eb->InstrsAlloted;
+  return res;
+}
+
+
+//==========================================================================
+//
+//  VEmitContext::releaseAllEmitBuffers
+//
+//==========================================================================
+void VEmitContext::releaseAllEmitBuffers () noexcept {
+  for (EmitBuffer *eb = ebHead; eb; eb = eb->next) if (!eb->used) eb->clear();
+}
+
+
+
 //==========================================================================
 //
 //  VEmitContext::VEmitContext
@@ -91,9 +187,7 @@ VEmitContext::VEmitContext (VMemberBase *Member)
   , IndArray(nullptr)
   , OuterClass(nullptr)
   , FuncRetType(TYPE_Unknown)
-  , Instrs(nullptr)
-  , InstrsUsed(0)
-  , InstrsAlloted(0)
+  , EmitBuf(nullptr)
   //, localsofs(0)
   , InDefaultProperties(false)
   , VCallsDisabled(false)
@@ -178,7 +272,8 @@ VEmitContext::VEmitContext (VMemberBase *Member)
 //
 //==========================================================================
 VEmitContext::~VEmitContext () {
-  if (Instrs) Z_Free(Instrs);
+  releaseEmitBuffer(EmitBuf);
+  EmitBuf = nullptr;
 }
 
 
@@ -188,14 +283,29 @@ VEmitContext::~VEmitContext () {
 //
 //==========================================================================
 FInstruction &VEmitContext::allocInstruction () {
-  if (InstrsUsed == InstrsAlloted) {
-    InstrsAlloted += 2048;
-    Instrs = (FInstruction*)Z_Realloc(Instrs, sizeof(Instrs[0])*InstrsAlloted);
-  }
-  FInstruction* res = &Instrs[InstrsUsed++];
-  memset((void *)res, 0, sizeof(*res));
-  if (maxInstrUsed < InstrsUsed) maxInstrUsed = InstrsUsed;
-  return *res;
+  if (!EmitBuf) EmitBuf = allocEmitBuffer();
+  return EmitBuf->allocInstruction();
+}
+
+
+//==========================================================================
+//
+//  VEmitContext::getInstrCount
+//
+//==========================================================================
+int VEmitContext::getInstrCount () noexcept {
+  return (EmitBuf ? EmitBuf->getInstrCount() : 0);
+}
+
+
+//==========================================================================
+//
+//  VEmitContext::getInstr
+//
+//==========================================================================
+FInstruction &VEmitContext::getInstr (int idx) {
+  vassert(EmitBuf);
+  return EmitBuf->getInstr(idx);
 }
 
 
@@ -233,6 +343,9 @@ void VEmitContext::EndCode () {
   for (int f = 0; f < getInstrCount(); ++f) CurrentFunc->Instructions[f] = getInstr(f);
 
   //CurrentFunc->Instructions.condense(); // just in case
+
+  releaseEmitBuffer(EmitBuf);
+  EmitBuf = nullptr;
 
   //CurrentFunc->DumpAsm();
 }

@@ -118,9 +118,7 @@ public:
 
   VFieldType FuncRetType;
 
-  FInstruction* Instrs;
-  vuint32 InstrsUsed;
-  vuint32 InstrsAlloted;
+  struct EmitBuffer *EmitBuf;
 
   //int localsofs;
   //FIXME: rewrite this!
@@ -145,11 +143,15 @@ public:
 public:
   static vuint32 maxInstrUsed;
 
+  static int getEmitBufferCount () noexcept;
+  static int getTotalEmitBufferSize () noexcept;
+  static void releaseAllEmitBuffers () noexcept;
+
 private:
   FInstruction &allocInstruction ();
 
-  inline int getInstrCount () noexcept { return (int)InstrsUsed; }
-  inline FInstruction &getInstr (int idx) { vassert(idx >= 0 && (unsigned)idx < InstrsUsed); return Instrs[(unsigned)idx]; }
+  int getInstrCount () noexcept;
+  FInstruction &getInstr (int idx);
 
 private:
   // called in ctor, and to reset locals

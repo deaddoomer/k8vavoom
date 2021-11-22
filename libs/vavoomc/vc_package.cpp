@@ -643,4 +643,10 @@ void VPackage::DumpCodeSizeStats () {
     VMethod::GetCodePoolCount(), (VMethod::GetCodePoolCount() == 1 ? "" : "s"), comatoze((int)VMethod::GetTotalCodePoolSize()),
     VMethod::GetDebugPoolCount(), (VMethod::GetDebugPoolCount() == 1 ? "" : "s"), comatoze((int)VMethod::GetTotalDebugPoolSize()),
     comatoze((int)VEmitContext::maxInstrUsed));
+
+  GLog.Logf(NAME_Init, "VavoomC used %d emit buffer%s (%s bytes).",
+    VEmitContext::getEmitBufferCount(), (VEmitContext::getEmitBufferCount() == 1 ? "" : "s"),
+    comatoze(VEmitContext::getTotalEmitBufferSize()));
+
+  VEmitContext::releaseAllEmitBuffers();
 }
