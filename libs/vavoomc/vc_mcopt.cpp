@@ -1270,7 +1270,11 @@ void VMCOptimizer::setupFrom (VMethod *afunc, TArray<FInstruction> *aorig) {
 //==========================================================================
 void VMCOptimizer::finish () {
   TArray<FInstruction> &olist = *origInstrList;
-  olist.setLength(countInstrs()+1); // one for `Done`
+  const int iccount = countInstrs()+1;
+  if (olist.length() < iccount) {
+    //GLog.Logf(NAME_Debug, "*** RESIZED! ***");
+    olist.setLength(iccount); // one for `Done`
+  }
   int iofs = 0;
   for (Instr *it = ilistHead; it; it = it->next, ++iofs) {
     if (iofs != it->idx) VCFatalError("VCOPT: internal optimizer inconsistency");

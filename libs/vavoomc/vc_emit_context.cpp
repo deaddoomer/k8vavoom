@@ -95,7 +95,7 @@ struct EmitBuffer {
 
   FInstruction &allocInstruction () {
     if (InstrsUsed == InstrsAlloted) {
-      InstrsAlloted += 2048;
+      InstrsAlloted += 3072;
       Instrs = (FInstruction*)Z_Realloc(Instrs, sizeof(Instrs[0])*InstrsAlloted);
     }
     FInstruction* res = &Instrs[InstrsUsed++];
@@ -159,7 +159,7 @@ int VEmitContext::getEmitBufferCount () noexcept {
 int VEmitContext::getTotalEmitBufferSize () noexcept {
   int res = 0;
   for (EmitBuffer *eb = ebHead; eb; eb = eb->next) res += (int)eb->InstrsAlloted;
-  return res;
+  return res*(int)sizeof(ebHead->Instrs[0]);
 }
 
 

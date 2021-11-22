@@ -639,7 +639,7 @@ void VPackage::DumpCodeSizeStats () {
   GLog.Logf(NAME_Init, "%s VavoomC methods (%s native, %s virtual, %s static, %s struct); %s bytes of code generated (%s bytes of debug info).",
     comatoze(mtcount), comatoze(vnatcount), comatoze(vmtcound), comatoze(vstcount), comatoze(vsmcount), comatoze(codesize), comatoze(debugsize));
 
-  GLog.Logf(NAME_Init, "VavoomC used %u code pool%s (%s bytes), and %u debug pool%s (%s bytes); max function size %s bytes.",
+  GLog.Logf(NAME_Init, "VavoomC used %u code pool%s (%s bytes), and %u debug pool%s (%s bytes); max function size %s instructions.",
     VMethod::GetCodePoolCount(), (VMethod::GetCodePoolCount() == 1 ? "" : "s"), comatoze((int)VMethod::GetTotalCodePoolSize()),
     VMethod::GetDebugPoolCount(), (VMethod::GetDebugPoolCount() == 1 ? "" : "s"), comatoze((int)VMethod::GetTotalDebugPoolSize()),
     comatoze((int)VEmitContext::maxInstrUsed));
