@@ -26,6 +26,8 @@
 #include "vc_local.h"
 #include "vc_mcopt.h"
 
+//#define VCM_DEBUG_DEBUGINFO
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 #define BYTES_POOL_SIZE  (1024*1024*4)
@@ -42,8 +44,11 @@ struct VMPoolInfo {
   VMBytesPool* head;
   VMBytesPool* tail;
   size_t stpos;
+  unsigned lastline;
+  unsigned lastfile;
+  unsigned lastwasnorm;
 
-  inline VMPoolInfo () noexcept : head(nullptr), tail(nullptr), stpos(~(size_t)0) {}
+  inline VMPoolInfo () noexcept : head(nullptr), tail(nullptr), stpos(~(size_t)0), lastline(0u), lastfile(0u), lastwasnorm(0u) {}
 };
 
 
@@ -133,7 +138,7 @@ static void vmEmitBytes (VMPoolInfo* nfo, const void *buf, const unsigned len) {
 
 
 static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmEmitUByte (VMPoolInfo* nfo, const vuint8 v) { vmEmitBytes(nfo, &v, 1); }
-//static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmEmitUShort (VMPoolInfo* nfo, const vuint16 v) { vmEmitBytes(nfo, &v, 2); }
+static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmEmitUShort (VMPoolInfo* nfo, const vuint16 v) { vmEmitBytes(nfo, &v, 2); }
 static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmEmitUInt (VMPoolInfo* nfo, const vuint32 v) { vmEmitBytes(nfo, &v, 4); }
 static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmEmitPtr (VMPoolInfo* nfo, const void *ptr) { vmEmitBytes(nfo, &ptr, sizeof(void*)); }
 
@@ -191,11 +196,21 @@ size_t VMethod::GetTotalDebugPoolSize () noexcept {
 /*
   debug info header:
     dd elementCount
-    dd fileIndex;
+    dw fileIndex
+    dw firstline
 
   debug info element:
-    db bytes  ; if 0: file index change; next 3 bytes is new file index
-    db(3) line;
+    db byteline
+
+    byteline is:
+      low 4 bits is command length; if 0 -- this is a special command
+      high 4 bits is line offset from the previous record (can be 0)
+
+  special commands when byte is 0:
+    db 0: file index change; next 2 bytes is new file index
+    db 255: next 2 bytes is new line index
+    db 254: next 2 bytes is line add
+    otherwise just line add
  */
 
 //==========================================================================
@@ -206,7 +221,11 @@ size_t VMethod::GetTotalDebugPoolSize () noexcept {
 static inline void vmStartDebugPool (VMPoolInfo* nfo) {
   vmStartPool(nfo);
   vmEmitUInt(nfo, 0); // elementCount
-  vmEmitUInt(nfo, 0); // fileIndex
+  vmEmitUShort(nfo, 0); // fileIndex
+  vmEmitUShort(nfo, 0); // firstLine
+  nfo->lastline = 0u;
+  nfo->lastfile = 0u;
+  nfo->lastwasnorm = 0u;
 }
 
 
@@ -220,36 +239,97 @@ static void vmDebugEmitLoc (VMPoolInfo* nfo, int len, const TLocation &loc) {
   vassert(len > 0);
 
   const vuint32 ln = (vuint32)loc.GetLine();
-  const vuint32 sidx = (vuint32)loc.GetSrcIndex();
+  vuint32 sidx = (vuint32)loc.GetSrcIndex();
+  if (sidx > 65535) sidx = 0; // this cannot happen, but well...
 
   do {
+    const unsigned lastWN = nfo->lastwasnorm;
+    nfo->lastwasnorm = 0u;
+
     vuint32 *cptr = (vuint32*)(nfo->tail->code+nfo->stpos);
-    // fix file index
+
+    // fix initial file index
     if (*cptr == 0) {
+      vuint16 *nptr = (vuint16*)(cptr+1);
       // set first file index
-      cptr[1] = sidx;
-    } else {
-      // check if we need to record a new file index
-      if (cptr[1] != sidx) {
-        // "change index" command
-        vmEmitUByte(nfo, 0);
-        // new index
-        vmEmitUByte(nfo, (vuint8)sidx);
-        vmEmitUByte(nfo, (vuint8)(sidx>>8));
-        vmEmitUByte(nfo, (vuint8)(sidx>>16));
-      }
+      nptr[0] = sidx;
+      nfo->lastfile = sidx;
+      // set first line index
+      nptr[1] = (ln < 65536 ? ln : 65535);
+      nfo->lastline = nptr[1];
+      vassert(!lastWN);
     }
 
-    // emit line
-    vmEmitUByte(nfo, (vuint8)(len > 255 ? 255 : len));
-    vmEmitUByte(nfo, (vuint8)ln);
-    vmEmitUByte(nfo, (vuint8)(ln>>8));
-    vmEmitUByte(nfo, (vuint8)(ln>>16));
-
-    // fix counter
-    cptr = (vuint32*)(nfo->tail->code+nfo->stpos);
+    // we almost always have a new command here
     *cptr += 1;
-  } while ((len -= 255) > 0);
+
+    #if 0
+    // this is roughly what the previous code did
+    // it was storing 3 ints for each VM instruction
+    vmEmitUInt(nfo, 0);
+    vmEmitUInt(nfo, 0);
+    vmEmitUInt(nfo, 0);
+    return;
+    #endif
+
+    // check if we need to record a new file index
+    if (nfo->lastfile != sidx) {
+      nfo->lastfile = sidx;
+      // new file index command
+      vmEmitUByte(nfo, 0);
+      vmEmitUByte(nfo, 0);
+      vmEmitUShort(nfo, (vuint16)sidx);
+      continue;
+    }
+
+    // need to emit new line?
+    if (ln < nfo->lastline) {
+      // newline command
+      vmEmitUByte(nfo, 0);
+      vmEmitUByte(nfo, 255);
+      nfo->lastline = (ln < 65536 ? ln : 65535);
+      vmEmitUShort(nfo, (vuint16)nfo->lastline);
+      continue;
+    }
+
+    // need to emit line shift?
+    vuint32 sft = ln-nfo->lastline;
+    if (sft > 15) {
+      vmEmitUByte(nfo, 0);
+      if (sft > 253) {
+        // big lineshift command
+        vmEmitUByte(nfo, 254);
+        if (sft > 65535) sft = 65535;
+        vmEmitUShort(nfo, (vuint16)sft);
+      } else {
+        // small lineshift command
+        vmEmitUByte(nfo, (vuint8)sft);
+      }
+      nfo->lastline += sft;
+      continue;
+    }
+
+    vuint8 *ccp = nfo->tail->code+nfo->tail->used-1;
+    // check if we can merge command lengthes
+    if (lastWN && sft == 0 && (ccp[0]&0x0f)+len < 16) {
+      // fix old command
+      *cptr -= 1;
+      *ccp += len; // this will never overflow
+      vassert(len > 0 && len < 15);
+      len = 0;
+    } else {
+      vassert(sft < 16);
+      vassert(len > 0);
+      // emit line and command length
+      vuint8 cbt = (len > 15 ? 15 : len);
+      cbt |= (sft<<4);
+      vmEmitUByte(nfo, cbt);
+      len -= cbt;
+    }
+
+    nfo->lastwasnorm = 1u;
+    nfo->lastline += sft;
+  } while (len > 0);
 }
 
 
@@ -262,23 +342,68 @@ static TLocation vmDebugFindLocForOfs (const void *debugInfo, size_t pc) {
   if (!debugInfo) return TLocation();
   const vuint8* pp = (const vuint8 *)debugInfo;
   vuint32 count = *(const vuint32 *)pp; pp += 4;
-  vuint32 fidx = *(const vuint32 *)pp; pp += 4;
+  vuint16 fidx = *(const vuint16 *)pp; pp += 2;
+  vuint32 lidx = *(const vuint16 *)pp; pp += 2;
+  #ifdef VCM_DEBUG_DEBUGINFO
+  GLog.Logf(NAME_Debug, "count=%u; fidx=%u; lidx=%u", count, fidx, lidx);
+  #endif
   while (count--) {
+    vuint8 bb = *pp++;
+    #ifdef VCM_DEBUG_DEBUGINFO
+    GLog.Logf(NAME_Debug, "  bb=0x%02x pc=%u; fidx=%u; lidx=%u; (commands left: %u)", bb, (unsigned)pc, fidx, lidx, count);
+    #endif
     // special command?
-    if (*pp == 0) {
-      // yes, new file index
-      fidx = pp[1]|(pp[2]<<8)|(pp[3]<<16);
-      pp += 4;
+    if ((bb&0x0f) == 0) {
+      bb = *pp++;
+      #ifdef VCM_DEBUG_DEBUGINFO
+      GLog.Logf(NAME_Debug, "    cmdbb=0x%02x", bb);
+      #endif
+      // new file index?
+      if (bb == 0) {
+        memcpy(&fidx, pp, 2);
+        pp += 2;
+        #ifdef VCM_DEBUG_DEBUGINFO
+        GLog.Logf(NAME_Debug, "    NEW FIDX: %u", fidx);
+        #endif
+        continue;
+      }
+      // new line index?
+      if (bb == 255) {
+        vuint16 nlx;
+        memcpy(&nlx, pp, 2);
+        pp += 2;
+        lidx = nlx;
+        #ifdef VCM_DEBUG_DEBUGINFO
+        GLog.Logf(NAME_Debug, "    NEW LIDX: %u", lidx);
+        #endif
+        continue;
+      }
+      // long line offset?
+      if (bb == 254) {
+        vuint16 nlx;
+        memcpy(&nlx, pp, 2);
+        pp += 2;
+        lidx += nlx;
+        #ifdef VCM_DEBUG_DEBUGINFO
+        GLog.Logf(NAME_Debug, "    LONGOFS: %u", nlx);
+        #endif
+        continue;
+      }
+      // short line offset
+      lidx += bb;
+      #ifdef VCM_DEBUG_DEBUGINFO
+      GLog.Logf(NAME_Debug, "    SHORTOFS: %u", bb);
+      #endif
       continue;
     }
-    if (pc < *pp) {
+    // adjust line
+    lidx += (bb>>4);
+    // check pc
+    if (pc < (bb&0x0f)) {
       // i found her!
-      vuint32 lidx = pp[1]|(pp[2]<<8)|(pp[3]<<16);
       return TLocation((int)fidx, (int)lidx, 1);
     }
-    // skip this item, and adjust pc
-    pc -= *pp;
-    pp += 4;
+    pc -= (bb&0x0f);
   }
   return TLocation();
 }
@@ -1227,17 +1352,26 @@ void VMethod::GenerateCode () {
   vmDebugEmitLoc(&vmDebugPool, vmCodeOffset(&vmCodePool)-prevIEnd, Instructions[Instructions.length()-1].loc);
 
   //Instructions[Instructions.length()-1].Address = Statements.length();
-  vmCodeSize = vmCodeOffset(&vmCodePool);
   vmDebugInfoSize = vmCodeOffset(&vmDebugPool);
-
   vmDebugInfo = vmEndDebugPool(&vmDebugPool);
 
   vassert(iaddr.length() == Instructions.length()-1);
   //iaddr.append(Statements.length());
   iaddr.append(vmCodeOffset(&vmCodePool));
 
-  vmEmitUInt(&vmCodePool, 0);
-  while (vmCodeOffset(&vmCodePool)&0x03) vmEmitUByte(&vmCodePool, 0);
+// there is no reason to generate last empty byte at all
+// the compiler should properly terminate all methods, and if it didn't... well, everything is fubared then
+#if 0
+  #if 0
+  if (vmCodeOffset(&vmCodePool)&0x03) {
+    while (vmCodeOffset(&vmCodePool)&0x03) vmEmitUByte(&vmCodePool, 0);
+  } else {
+    vmEmitUInt(&vmCodePool, 0);
+  }
+  #else
+  vmEmitUByte(&vmCodePool, 0);
+  #endif
+#endif
 
   // fix jump destinations
   for (int i = 0; i < Instructions.length()-1; ++i) {
@@ -1273,6 +1407,7 @@ void VMethod::GenerateCode () {
     }
   }
 
+  vmCodeSize = vmCodeOffset(&vmCodePool);
   vmCodeStart = vmEndPool(&vmCodePool);
 
   #if 0

@@ -620,7 +620,7 @@ void VPackage::LoadSourceObject (VStream *Strm, VStr filename, const TLocation &
 //
 //==========================================================================
 void VPackage::DumpCodeSizeStats () {
-  int mtcount = 0, vmtcound = 0, vstcount = 0, vnatcount = 0, vsmcount = 0, codesize = 0;
+  int mtcount = 0, vmtcound = 0, vstcount = 0, vnatcount = 0, vsmcount = 0, codesize = 0, debugsize = 0;
   for (VMemberBase *m : GMembers) {
     if (!m || m->MemberType != MEMBER_Method) continue;
     VMethod *mt = (VMethod *)m;
@@ -633,10 +633,11 @@ void VPackage::DumpCodeSizeStats () {
     }
     //codesize += mt->Statements.length();
     codesize += mt->vmCodeSize;
+    debugsize += mt->vmDebugInfoSize;
   }
 
-  GLog.Logf(NAME_Init, "%s VavoomC methods (%s native, %s virtual, %s static, %s struct); %s bytes of code generated.",
-    comatoze(mtcount), comatoze(vnatcount), comatoze(vmtcound), comatoze(vstcount), comatoze(vsmcount), comatoze(codesize));
+  GLog.Logf(NAME_Init, "%s VavoomC methods (%s native, %s virtual, %s static, %s struct); %s bytes of code generated (%s bytes of debug info).",
+    comatoze(mtcount), comatoze(vnatcount), comatoze(vmtcound), comatoze(vstcount), comatoze(vsmcount), comatoze(codesize), comatoze(debugsize));
 
   GLog.Logf(NAME_Init, "VavoomC used %u code pool%s (%s bytes), and %u debug pool%s (%s bytes).",
     VMethod::GetCodePoolCount(), (VMethod::GetCodePoolCount() == 1 ? "" : "s"), comatoze((int)VMethod::GetTotalCodePoolSize()),
