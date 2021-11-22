@@ -46,7 +46,7 @@ struct VMPoolInfo {
   size_t stpos;
   unsigned lastline;
   unsigned lastfile;
-  unsigned lastwasnorm;
+  unsigned lastwasnorm; // 666: initial write
 
   inline VMPoolInfo () noexcept : head(nullptr), tail(nullptr), stpos(~(size_t)0), lastline(0u), lastfile(0u), lastwasnorm(0u) {}
 };
@@ -82,11 +82,12 @@ static void vmStartPool (VMPoolInfo* nfo) {
 //  vmEndPool
 //
 //==========================================================================
-static vuint8 *vmEndPool (VMPoolInfo* nfo) {
+static vuint8 *vmEndPool (VMPoolInfo* nfo, vuint32 *dbgsize) {
   vassert(nfo->head);
   vassert(nfo->tail);
   vassert(!nfo->tail->next);
   vassert(nfo->stpos != ~(size_t)0);
+  if (dbgsize) *dbgsize = (vuint32)(nfo->tail->used-nfo->stpos);
   vuint8 *res = nfo->tail->code+nfo->stpos;
   nfo->stpos = ~(size_t)0;
   return res;
@@ -195,7 +196,6 @@ size_t VMethod::GetTotalDebugPoolSize () noexcept {
 // ////////////////////////////////////////////////////////////////////////// //
 /*
   debug info header:
-    dd elementCount
     dw fileIndex
     dw firstline
 
@@ -206,11 +206,13 @@ size_t VMethod::GetTotalDebugPoolSize () noexcept {
       low 4 bits is command length; if 0 -- this is a special command
       high 4 bits is line offset from the previous record (can be 0)
 
-  special commands when byte is 0:
-    db 0: file index change; next 2 bytes is new file index
-    db 255: next 2 bytes is new line index
-    db 254: next 2 bytes is line add
-    otherwise just line add
+  special commands when byte is 0 is stored in high 4 bits:
+    db 0: no more debug data
+    db 1: file index change; next 2 bytes is new file index (65535 means "no more data")
+    db 2: next 2 bytes is new line index
+    db 3: next 2 bytes is line add
+    db 4: (actually, any other value)
+    otherwise just add the next byte to line index
  */
 
 //==========================================================================
@@ -220,12 +222,22 @@ size_t VMethod::GetTotalDebugPoolSize () noexcept {
 //==========================================================================
 static inline void vmStartDebugPool (VMPoolInfo* nfo) {
   vmStartPool(nfo);
-  vmEmitUInt(nfo, 0); // elementCount
   vmEmitUShort(nfo, 0); // fileIndex
   vmEmitUShort(nfo, 0); // firstLine
   nfo->lastline = 0u;
   nfo->lastfile = 0u;
-  nfo->lastwasnorm = 0u;
+  nfo->lastwasnorm = 666u;
+}
+
+
+//==========================================================================
+//
+//  vmEndDebugPool
+//
+//==========================================================================
+static inline void *vmEndDebugPool (VMPoolInfo* nfo, vuint32 *dbgsize) {
+  vmEmitUByte(nfo, 0); // end of data flag
+  return vmEndPool(nfo, dbgsize);
 }
 
 
@@ -240,28 +252,23 @@ static void vmDebugEmitLoc (VMPoolInfo* nfo, int len, const TLocation &loc) {
 
   const vuint32 ln = (vuint32)loc.GetLine();
   vuint32 sidx = (vuint32)loc.GetSrcIndex();
-  if (sidx > 65535) sidx = 0; // this cannot happen, but well...
+  if (sidx > 65534) sidx = 0; // this cannot happen, but well...
 
   do {
     const unsigned lastWN = nfo->lastwasnorm;
     nfo->lastwasnorm = 0u;
 
-    vuint32 *cptr = (vuint32*)(nfo->tail->code+nfo->stpos);
-
     // fix initial file index
-    if (*cptr == 0) {
-      vuint16 *nptr = (vuint16*)(cptr+1);
+    if (lastWN == 666u) {
+      vuint16 *nptr = (vuint16*)(nfo->tail->code+nfo->stpos);
       // set first file index
       nptr[0] = sidx;
       nfo->lastfile = sidx;
       // set first line index
       nptr[1] = (ln < 65536 ? ln : 65535);
       nfo->lastline = nptr[1];
-      vassert(!lastWN);
+      //GLog.Logf(NAME_Debug, "0x%08x: LASTFILE=%u; LASTLINE=%u; 0x%08x", (unsigned)nptr, nfo->lastfile, nfo->lastline, (unsigned)(nfo->tail->code+nfo->tail->used));
     }
-
-    // we almost always have a new command here
-    *cptr += 1;
 
     #if 0
     // this is roughly what the previous code did
@@ -276,18 +283,16 @@ static void vmDebugEmitLoc (VMPoolInfo* nfo, int len, const TLocation &loc) {
     if (nfo->lastfile != sidx) {
       nfo->lastfile = sidx;
       // new file index command
-      vmEmitUByte(nfo, 0);
-      vmEmitUByte(nfo, 0);
+      vmEmitUByte(nfo, 0x10);
       vmEmitUShort(nfo, (vuint16)sidx);
       continue;
     }
 
     // need to emit new line?
     if (ln < nfo->lastline) {
-      // newline command
-      vmEmitUByte(nfo, 0);
-      vmEmitUByte(nfo, 255);
       nfo->lastline = (ln < 65536 ? ln : 65535);
+      // newline command
+      vmEmitUByte(nfo, 0x20);
       vmEmitUShort(nfo, (vuint16)nfo->lastline);
       continue;
     }
@@ -295,14 +300,14 @@ static void vmDebugEmitLoc (VMPoolInfo* nfo, int len, const TLocation &loc) {
     // need to emit line shift?
     vuint32 sft = ln-nfo->lastline;
     if (sft > 15) {
-      vmEmitUByte(nfo, 0);
-      if (sft > 253) {
+      if (sft > 255) {
         // big lineshift command
-        vmEmitUByte(nfo, 254);
+        vmEmitUByte(nfo, 0x30);
         if (sft > 65535) sft = 65535;
         vmEmitUShort(nfo, (vuint16)sft);
       } else {
         // small lineshift command
+        vmEmitUByte(nfo, 0x40);
         vmEmitUByte(nfo, (vuint8)sft);
       }
       nfo->lastline += sft;
@@ -311,9 +316,8 @@ static void vmDebugEmitLoc (VMPoolInfo* nfo, int len, const TLocation &loc) {
 
     vuint8 *ccp = nfo->tail->code+nfo->tail->used-1;
     // check if we can merge command lengthes
-    if (lastWN && sft == 0 && (ccp[0]&0x0f)+len < 16) {
+    if (lastWN == 1u && sft == 0 && (ccp[0]&0x0f)+len < 16) {
       // fix old command
-      *cptr -= 1;
       *ccp += len; // this will never overflow
       vassert(len > 0 && len < 15);
       len = 0;
@@ -341,25 +345,22 @@ static void vmDebugEmitLoc (VMPoolInfo* nfo, int len, const TLocation &loc) {
 static TLocation vmDebugFindLocForOfs (const void *debugInfo, size_t pc) {
   if (!debugInfo) return TLocation();
   const vuint8* pp = (const vuint8 *)debugInfo;
-  vuint32 count = *(const vuint32 *)pp; pp += 4;
+  //GLog.Logf(NAME_Debug, "0x%08x: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x", (unsigned)pp, pp[0], pp[1], pp[2], pp[3], pp[4]);
   vuint16 fidx = *(const vuint16 *)pp; pp += 2;
   vuint32 lidx = *(const vuint16 *)pp; pp += 2;
   #ifdef VCM_DEBUG_DEBUGINFO
-  GLog.Logf(NAME_Debug, "count=%u; fidx=%u; lidx=%u", count, fidx, lidx);
+  GLog.Logf(NAME_Debug, "0x%08x: fidx=%u; lidx=%u", (unsigned)(pp-4), fidx, lidx);
   #endif
-  while (count--) {
+  for (;;) {
     vuint8 bb = *pp++;
     #ifdef VCM_DEBUG_DEBUGINFO
-    GLog.Logf(NAME_Debug, "  bb=0x%02x pc=%u; fidx=%u; lidx=%u; (commands left: %u)", bb, (unsigned)pc, fidx, lidx, count);
+    GLog.Logf(NAME_Debug, "  0x%08x: bb=0x%02x pc=%u; fidx=%u; lidx=%u", (unsigned)(pp-1), bb, (unsigned)pc, fidx, lidx);
     #endif
     // special command?
     if ((bb&0x0f) == 0) {
-      bb = *pp++;
-      #ifdef VCM_DEBUG_DEBUGINFO
-      GLog.Logf(NAME_Debug, "    cmdbb=0x%02x", bb);
-      #endif
+      if (!bb) break;
       // new file index?
-      if (bb == 0) {
+      if (bb == 0x10) {
         memcpy(&fidx, pp, 2);
         pp += 2;
         #ifdef VCM_DEBUG_DEBUGINFO
@@ -368,7 +369,7 @@ static TLocation vmDebugFindLocForOfs (const void *debugInfo, size_t pc) {
         continue;
       }
       // new line index?
-      if (bb == 255) {
+      if (bb == 0x20) {
         vuint16 nlx;
         memcpy(&nlx, pp, 2);
         pp += 2;
@@ -379,7 +380,7 @@ static TLocation vmDebugFindLocForOfs (const void *debugInfo, size_t pc) {
         continue;
       }
       // long line offset?
-      if (bb == 254) {
+      if (bb == 0x30) {
         vuint16 nlx;
         memcpy(&nlx, pp, 2);
         pp += 2;
@@ -390,7 +391,7 @@ static TLocation vmDebugFindLocForOfs (const void *debugInfo, size_t pc) {
         continue;
       }
       // short line offset
-      lidx += bb;
+      lidx += *pp++;
       #ifdef VCM_DEBUG_DEBUGINFO
       GLog.Logf(NAME_Debug, "    SHORTOFS: %u", bb);
       #endif
@@ -403,25 +404,11 @@ static TLocation vmDebugFindLocForOfs (const void *debugInfo, size_t pc) {
       // i found her!
       return TLocation((int)fidx, (int)lidx, 1);
     }
+    #ifndef VCM_DEBUG_DEBUGINFO
     pc -= (bb&0x0f);
+    #endif
   }
   return TLocation();
-}
-
-
-//==========================================================================
-//
-//  vmEndDebugPool
-//
-//==========================================================================
-static inline void *vmEndDebugPool (VMPoolInfo* nfo) {
-  vassert(nfo->head);
-  vassert(nfo->tail);
-  vassert(!nfo->tail->next);
-  vassert(nfo->stpos != ~(size_t)0);
-  vuint8 *res = nfo->tail->code+nfo->stpos;
-  nfo->stpos = ~(size_t)0;
-  return (void*)res;
 }
 
 
@@ -1349,11 +1336,10 @@ void VMethod::GenerateCode () {
     vmDebugEmitLoc(&vmDebugPool, cend-prevIEnd, Instructions[i].loc);
     prevIEnd = cend;
   }
-  vmDebugEmitLoc(&vmDebugPool, vmCodeOffset(&vmCodePool)-prevIEnd, Instructions[Instructions.length()-1].loc);
+  //vmDebugEmitLoc(&vmDebugPool, vmCodeOffset(&vmCodePool)-prevIEnd, Instructions[Instructions.length()-1].loc);
 
   //Instructions[Instructions.length()-1].Address = Statements.length();
-  vmDebugInfoSize = vmCodeOffset(&vmDebugPool);
-  vmDebugInfo = vmEndDebugPool(&vmDebugPool);
+  vmDebugInfo = vmEndDebugPool(&vmDebugPool, &vmDebugInfoSize);
 
   vassert(iaddr.length() == Instructions.length()-1);
   //iaddr.append(Statements.length());
@@ -1407,8 +1393,7 @@ void VMethod::GenerateCode () {
     }
   }
 
-  vmCodeSize = vmCodeOffset(&vmCodePool);
-  vmCodeStart = vmEndPool(&vmCodePool);
+  vmCodeStart = vmEndPool(&vmCodePool, &vmCodeSize);
 
   #if 0
   DumpAsm();
