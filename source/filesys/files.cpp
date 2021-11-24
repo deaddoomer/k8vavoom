@@ -2781,6 +2781,7 @@ void FL_Init () {
   if (cli_GoreModForce != 0) {
     GCon->Logf(NAME_Init, "Forcing gore mod.");
     //AddGameDir("basev/mods/gore"); // not disabled
+    wpklist.append("basev/mods/gore/"); // to not invalidate saves
     cli_GoreMod = cli_GoreModForce;
     k8gore_enabled_override = 1;
     k8gore_enabled_override_decal = 1;
@@ -2796,6 +2797,8 @@ void FL_Init () {
     if (cli_GoreMod == 0) {
       k8gore_enabled_override = -1;
       k8gore_enabled_override_decal = -1;
+    } else {
+      wpklist.append("basev/mods/gore/"); // to not invalidate saves
     }
     #endif
   } else {
