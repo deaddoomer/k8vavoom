@@ -490,11 +490,17 @@ static bool skipCallbackInited = false;
 //
 //==========================================================================
 static bool checkSkipClassCB (VObject *self, VName clsname) {
+  // as gore mod is build into the engine now, we don't need to subclass `VLevel` anymore
+  // this allows loading of old saves: all old gore mod data will be simply ignored
   if (clsname == NAME_Level_K8BDW || clsname == NAME_Level_K8Gore) {
     // allow any level descendant
     for (VClass *cls = self->GetClass(); cls; cls = cls->GetSuperClass()) {
       //if (VStr::strEqu(cls->GetName(), "VLevel")) return true;
-      if (cls->GetVName() == NAME_VLevel) return true;
+      if (cls->GetVName() == NAME_VLevel) {
+        GCon->Logf(NAME_Debug, "VLevel subclass `%s` replaced with `%s` (this is normal gore fix).",
+          *clsname, self->GetClass()->GetName());
+        return true;
+      }
     }
   }
   return false;
