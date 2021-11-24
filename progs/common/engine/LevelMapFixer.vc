@@ -633,4 +633,18 @@ void KnownMapBugFixer () {
     bForceUseZDBSP = true;
     return;
   }
+
+
+  // Edge.wad
+  if (MapHashMD5 == "92a572490ef74d39a31620750ce45b5a") {
+    printwarn("MAPFIX: Execution Deathmatch MAP05 DM start fix");
+    // DM start
+    //assert(Things[23].type == 11);
+    Things[23].x -= 2;
+    Things[23].y -= 2;
+    // shotgun
+    //assert(Things[15].type == 82);
+    Things[15].x -= 6;
+    Things[15].y -= 6;
+  }
 }
