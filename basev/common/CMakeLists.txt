@@ -9,6 +9,7 @@ file(GLOB basepak_SRC CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/actors/doom/*
   ${CMAKE_CURRENT_SOURCE_DIR}/actors/heretic/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/actors/hexen/*.txt
+  ${CMAKE_CURRENT_SOURCE_DIR}/actors/k8gore/*
   ${CMAKE_CURRENT_SOURCE_DIR}/actors/k8tracers/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/actors/raven/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/actors/shared/*.txt
@@ -28,11 +29,13 @@ file(GLOB basepak_SRC CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/progbar/*.png
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/healthbar/*.png
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/screenback/*.png
+  ${CMAKE_CURRENT_SOURCE_DIR}/graphics/k8goreBloodDecals/*.png
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/k8vavoom_special/*.png
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/msgbox/*.png
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/ui/*.png
 
   ${CMAKE_CURRENT_SOURCE_DIR}/sounds/*
+  ${CMAKE_CURRENT_SOURCE_DIR}/sounds/k8gore/*
 
   ${CMAKE_CURRENT_SOURCE_DIR}/models/*
   ${CMAKE_CURRENT_SOURCE_DIR}/models/k8lightbulb/*
@@ -40,6 +43,7 @@ file(GLOB basepak_SRC CONFIGURE_DEPENDS
 
   ${CMAKE_CURRENT_SOURCE_DIR}/sprites/*.png
   ${CMAKE_CURRENT_SOURCE_DIR}/sprites/dogs/*
+  ${CMAKE_CURRENT_SOURCE_DIR}/sprites/gore/*
 
   ${CMAKE_CURRENT_SOURCE_DIR}/uidef/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/uidef/menus/*.txt

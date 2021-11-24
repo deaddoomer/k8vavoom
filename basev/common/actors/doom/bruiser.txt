@@ -16,7 +16,8 @@ actor BaronOfHell 3003
   Obituary "$ob_baron"
   HitObituary "$ob_baronhit"
   //BloodType BloodGreen, BloodSplatterGreen
-  BloodColor "00 40 00" // for particles and blood decals
+  // no need to do this, it will be done by the engine
+  //!BloodColor "00 40 00" // for particles and blood decals
   //k8 no need to do this
   //!BloodTranslation "16:48=112:127", "64:79=112:127", "164:167=117:127", "168:191=112:127", "232:235=119:127", "236:239=123:127"
   Monster

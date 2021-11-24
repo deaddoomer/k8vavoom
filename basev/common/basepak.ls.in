@@ -59,7 +59,9 @@ vavoom_class_ignores.rc  @CMAKE_CURRENT_SOURCE_DIR@/vavoom_class_ignores.rc
 gamecontrollerdb.txt  @CMAKE_CURRENT_SOURCE_DIR@/gamecontrollerdb.txt
 
 // decals
-decaldef.txt  @CMAKE_CURRENT_SOURCE_DIR@/decaldef.txt
+decaldef.txt          @CMAKE_CURRENT_SOURCE_DIR@/decaldef.txt
+k8_decaldef_test.txt  @CMAKE_CURRENT_SOURCE_DIR@/k8_decaldef_test.txt
+k8_decaldef_gore.txt  @CMAKE_CURRENT_SOURCE_DIR@/k8_decaldef_gore.txt
 
 // decorate scripts
 decorate.txt                  @CMAKE_CURRENT_SOURCE_DIR@/decorate.txt
@@ -69,6 +71,8 @@ $recursedirext|.txt| actors/  @CMAKE_CURRENT_SOURCE_DIR@/actors/
 vfxdefs.txt                   @CMAKE_CURRENT_SOURCE_DIR@/vfxdefs.txt
 $recursedirext|.txt| fxdefs/  @CMAKE_CURRENT_SOURCE_DIR@/fxdefs/
 gldefs.txt                    @CMAKE_CURRENT_SOURCE_DIR@/gldefs.txt
+
+sndinfo.txt  @CMAKE_CURRENT_SOURCE_DIR@/sndinfo.txt
 
 // GLSL shaders
 $recursedirext| .fs| glshaders/  @CMAKE_CURRENT_SOURCE_DIR@/glshaders/

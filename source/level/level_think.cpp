@@ -36,6 +36,8 @@
 
 
 extern VCvarB r_decals;
+extern VCvarB k8gore_enabled;
+extern VCvarI k8gore_enabled_override;
 
 VCvarB dbg_world_think_vm_time("dbg_world_think_vm_time", false, "Show time taken by VM thinkers (for debug)?", CVAR_Archive|CVAR_NoShadow);
 VCvarB dbg_world_think_decal_time("dbg_world_think_decal_time", false, "Show time taken by decal thinkers (for debug)?", CVAR_Archive|CVAR_NoShadow);
@@ -57,6 +59,91 @@ static TArray<VEntity *> corpseQueue;
 int dbgEntityTickTotal = 0;
 int dbgEntityTickSimple = 0;
 int dbgEntityTickNoTick = 0;
+
+static VClass *clsBlood = nullptr;
+static VClass *clsBloodSplatter = nullptr;
+static VClass *clsBloodAxe = nullptr;
+
+static VClass *clsGoreBlood = nullptr;
+static VClass *clsGoreBloodSplatter = nullptr;
+static VClass *clsGoreBloodAxe = nullptr;
+
+bool VLevel::canReplaceBlood = false;
+VName VLevel::goreBloodDecalSplat = NAME_None;
+VName VLevel::goreBloodDecalSmear = NAME_None;
+VName VLevel::goreBloodDecalSplatRadius = NAME_None;
+VName VLevel::goreBloodDecalSmearRadius = NAME_None;
+
+
+//==========================================================================
+//
+//  isGoreEnabled
+//
+//==========================================================================
+static VVA_ALWAYS_INLINE bool isGoreEnabled () {
+  const int ov = k8gore_enabled_override.asInt();
+  if (ov < 0) return false;
+  if (ov > 0) return true;
+  return k8gore_enabled.asBool();
+}
+
+
+//==========================================================================
+//
+//  VLevel::LevelStaticInit
+//
+//==========================================================================
+void VLevel::LevelStaticInit () {
+  clsBlood = VClass::FindClass("Blood");
+  clsBloodSplatter = VClass::FindClass("BloodSplatter");
+  clsBloodAxe = VClass::FindClass("AxeBlood");
+
+  clsGoreBlood = VClass::FindClass("K8Gore_Blood");
+  clsGoreBloodSplatter = VClass::FindClass("K8Gore_Blood_SplatterReplacer");
+  clsGoreBloodAxe = VClass::FindClass("K8Gore_AxeBlood");
+  if (!clsGoreBloodAxe) clsGoreBloodAxe = clsGoreBlood;
+
+  if (clsBlood && !clsBlood->IsChildOf(VEntity::StaticClass())) {
+    GCon->Logf(NAME_Error, "`Blood` class is not an entity!");
+    clsBlood = nullptr;
+  }
+
+  if (clsBloodSplatter && !clsBloodSplatter->IsChildOf(VEntity::StaticClass())) {
+    GCon->Logf(NAME_Error, "`BloodSplatter` class is not an entity!");
+    clsBloodSplatter = nullptr;
+  }
+
+  if (clsBloodAxe && !clsBloodAxe->IsChildOf(VEntity::StaticClass())) {
+    GCon->Logf(NAME_Error, "`AxeBlood` class is not an entity!");
+    clsBloodSplatter = nullptr;
+  }
+
+  if (clsGoreBlood && !clsGoreBlood->IsChildOf(VEntity::StaticClass())) {
+    GCon->Logf(NAME_Error, "Gore `Blood` class is not an entity!");
+    clsGoreBlood = nullptr;
+  }
+
+  if (clsGoreBloodSplatter && !clsGoreBloodSplatter->IsChildOf(VEntity::StaticClass())) {
+    GCon->Logf(NAME_Error, "Gore `BloodSplatter` class is not an entity!");
+    clsGoreBloodSplatter = nullptr;
+  }
+
+  if (clsGoreBloodAxe && !clsGoreBloodAxe->IsChildOf(VEntity::StaticClass())) {
+    GCon->Logf(NAME_Error, "Gore `AxeBlood` class is not an entity!");
+    clsGoreBloodSplatter = nullptr;
+  }
+
+  canReplaceBlood =
+    (clsBlood || clsBloodSplatter || clsBloodAxe) &&
+    (clsGoreBlood || clsGoreBloodSplatter || clsGoreBloodAxe);
+
+  if (canReplaceBlood) {
+    goreBloodDecalSplat = VName("K8GDC_BloodSplat");
+    goreBloodDecalSmear = VName("K8GDC_BloodSmear");
+    goreBloodDecalSplatRadius = VName("K8GDC_BloodSplatRadius");
+    goreBloodDecalSmearRadius = VName("K8GDC_BloodSmearRadius");
+  }
+}
 
 
 //==========================================================================
@@ -436,7 +523,10 @@ void VLevel::TickWorld (float DeltaTime) {
         // object is already dead, or dying
         if (c->IsDelayedDestroy()) RemoveThinker(c);
         // if it is just destroyed, call level notifier
-        if (!c->IsDestroyed() && c->IsA(VEntity::StaticClass())) eventEntityDying((VEntity *)c);
+        if (!c->IsDestroyed() && c->IsA(VEntity::StaticClass())) {
+          //HACK! do not call it for `VLevel`, as it is empty anyway
+          if (GetClass() != VLevel::StaticClass()) eventEntityDying((VEntity *)c);
+        }
         c->ConditionalDestroy();
       } else {
         // collect instances for limiters
@@ -482,7 +572,10 @@ void VLevel::TickWorld (float DeltaTime) {
         if (c->IsGoingToDie()) {
           if (c->IsDelayedDestroy()) RemoveThinker(c);
           // if it is just destroyed, call level notifier
-          if (!c->IsDestroyed() && c->IsA(VEntity::StaticClass())) eventEntityDying((VEntity *)c);
+          if (!c->IsDestroyed() && c->IsA(VEntity::StaticClass())) {
+            //HACK! do not call it for `VLevel`, as it is empty anyway
+            if (GetClass() != VLevel::StaticClass()) eventEntityDying((VEntity *)c);
+          }
           c->ConditionalDestroy();
         } else if (c->IsA(SSClass)) {
           c->Tick(DeltaTime);
@@ -620,6 +713,17 @@ VThinker *VLevel::SpawnThinker (VClass *AClass, const TVec &AOrigin,
     if (Class != ocls) GCon->Logf(NAME_Debug, "force-replaced spawning of `%s` with `%s`", ocls->GetName(), Class->GetName());
   }
 
+  // check for gore blood replacements
+  if (canReplaceBlood && isGoreEnabled()) {
+    VClass *brepl = nullptr;
+    for (const VClass *c = Class; c; c = c->ParentClass) {
+      if (c == clsBlood) { brepl = clsGoreBlood; break; }
+      if (c == clsBloodSplatter) { brepl = clsGoreBloodSplatter; break; }
+      if (c == clsGoreBloodAxe) { brepl = clsGoreBloodAxe; break; }
+    }
+    if (brepl) Class = brepl; // it is guaranteed to be a VEntity
+  }
+
   // spawn it
   VThinker *Ret = (VThinker *)StaticSpawnNoReplace(Class);
   if (!Ret) {
@@ -671,7 +775,12 @@ VThinker *VLevel::SpawnThinker (VClass *AClass, const TVec &AOrigin,
           }
         }
       }
-      if (!e->IsGoingToDie()) eventEntitySpawned(e);
+      if (!e->IsGoingToDie()) {
+        // force colored blood for some entities
+        e->CheckForceColoredBlood();
+        //HACK! do not call it for `VLevel`, as it is empty anyway
+        if (GetClass() != VLevel::StaticClass()) eventEntitySpawned(e);
+      }
     }
   }
 

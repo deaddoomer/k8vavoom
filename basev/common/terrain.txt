@@ -251,3 +251,27 @@ bootprint StrifeMood {
   //translucent 0.6
   animator LiquidBootPrintFader
 }
+
+
+// gore mode bootprints ----------------------------------------------------------------
+// blood decal translation will be used
+bootprint K8Gore_BootPrint {
+  time   4 8
+  // do not change shade!
+  //shade "50 00 00"
+  shade fromdecal
+  usesourcedecalalpha
+  //translucent random 0.84 0.96
+  animator K8GoreBloodPrint_FaderAnim
+}
+
+// blood decal translation will be used
+bootprint K8Gore_BootPrintTransient {
+  time   4 8
+  // do not change shade!
+  //shade "4f 00 00"
+  shade fromdecal
+  usesourcedecalalpha
+  //translucent random 0.84 0.96
+  animator K8GoreBloodPrint_FaderAnimTransient
+}

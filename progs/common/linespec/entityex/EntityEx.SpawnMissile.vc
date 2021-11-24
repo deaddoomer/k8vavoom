@@ -84,7 +84,7 @@ final bool CheckMissileSpawn () {
     }
   }
 
-  XLevel.OnMissileSpawned(self);
+  //if (XLevel.bCallOnMissileSpawned) XLevel.OnMissileSpawned(self);
   return true;
 }
 

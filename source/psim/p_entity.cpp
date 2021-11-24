@@ -58,9 +58,39 @@ static VCvarB vm_optimise_statics("vm_optimise_statics", true, "Try to detect so
 
 extern VCvarB dbg_vm_show_tick_stats;
 
+// k8gore cvars
+VCvarB k8gore_enabled("k8GoreOpt_Enabled", true, "Enable extra blood and gore?", CVAR_Archive);
+VCvarI k8gore_enabled_override("k8GoreOpt_Enabled_Override", "0", "-1: disable; 0: default; 1: enable.", CVAR_Hidden|CVAR_NoShadow);
+VCvarI k8gore_enabled_override_decal("k8GoreOpt_Enabled_Override_Decals", "0", "-1: disable; 0: default; 1: enable.", CVAR_Hidden|CVAR_NoShadow);
+
+static VCvarB k8gore_force_colored_blood("k8GoreOpt_ForceColoredBlood", true, "Force colored blood for Bruisers and Cacos?", CVAR_Archive);
+static VCvarS k8gore_bruiser_blood_color("k8GoreOpt_BloodColorBruiser", "00 40 00", "Blood color for Hell Knight and Baron of Hell.", CVAR_Archive);
+static VCvarS k8gore_cacodemon_blood_color("k8GoreOpt_BloodColorCacodemon", "00 00 40", "Blood color for Cacodemon.", CVAR_Archive);
+
+static ColorCV BruiserBloodColor(&k8gore_bruiser_blood_color, nullptr, true); // allow "no color"
+static ColorCV CacoBloodColor(&k8gore_cacodemon_blood_color, nullptr, true); // allow "no color"
+
+static VCvarB k8GoreOpt_CeilBlood("k8GoreOpt_CeilBlood", true, "Spawn blood splats on ceiling?", CVAR_Archive);
+static VCvarB k8GoreOpt_CeilBloodDrip("k8GoreOpt_CeilBloodDrip", true, "Should ceiling blood spots drip some blood?", CVAR_Archive);
+static VCvarB k8GoreOpt_FloorBlood("k8GoreOpt_FloorBlood", true, "Spawn blood splats on floor?", CVAR_Archive);
+static VCvarB k8GoreOpt_FlatDecals("k8GoreOpt_FlatDecals", true, "Use decals instead of sprites for floor/ceiling blood?", CVAR_Archive);
+static VCvarB k8GoreOpt_ExtraFlatDecals("k8GoreOpt_ExtraFlatDecals", false, "Add more floor/ceiling decals?", CVAR_Archive);
+static VCvarI k8GoreOpt_BloodAmount("k8GoreOpt_BloodAmount", "2", "Blood amount: [0..3] (some, normal, a lot, bloodbath).", CVAR_Archive);
+static VCvarI k8GoreOpt_MaxBloodEntities("k8GoreOpt_MaxBloodEntities", "3500", "Limit number of spawned blood actors. It is recommended to keep this under 4000.", CVAR_Archive);
+static VCvarI k8GoreOpt_MaxBloodSplatEntities("k8GoreOpt_MaxBloodSplatEntities", "2200", "Limit number of spawned blood splats.", CVAR_Archive);
+static VCvarI k8GoreOpt_MaxCeilBloodSplatEntities("k8GoreOpt_MaxCeilBloodSplatEntities", "250", "Limit number of spawned ceiling blood splats sprites.", CVAR_Archive);
+static VCvarI k8GoreOpt_MaxTransientBloodEntities("k8GoreOpt_MaxTransientBloodEntities", "620", "Limit number of spawned transient (temporary) blood actors.", CVAR_Archive);
+static VCvarB k8GoreOpt_BloodDripSound("k8GoreOpt_BloodDripSound", true, "Play small splashes when flying/dropping blood landed?", CVAR_Archive);
+static VCvarB k8GoreOpt_HeadshotSound("k8GoreOpt_HeadshotSound", false, "Play special sound on headshot kill?", CVAR_Archive);
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 VClass *VEntity::clsInventory = nullptr;
+
+static VClass *clsBaronOfHell = nullptr;
+static VClass *clsHellKnight = nullptr;
+static VClass *clsCacodemon = nullptr;
+static VClass *clsBlood = nullptr;
 
 static VClass *classSectorThinker = nullptr;
 static VField *fldNextAffector = nullptr;
@@ -84,6 +114,7 @@ static VField *fldbDormant = nullptr;
 
 static VField *fldiBloodColor = nullptr;
 static VField *fldiBloodTranslation = nullptr;
+static VField *fldcBloodType = nullptr;
 
 static VClass *classActor = nullptr;
 
@@ -141,6 +172,12 @@ void VEntity::EntityStaticInit () {
   classScroller = FindClassChecked("Scroller");
   clsInventory = FindClassChecked("Inventory");
 
+  // they may be absent, it is ok
+  clsBaronOfHell = VClass::FindClass("BaronOfHell");
+  clsHellKnight = VClass::FindClass("HellKnight");
+  clsCacodemon = VClass::FindClass("Cacodemon");
+  clsBlood = VClass::FindClass("Blood");
+
   // prepare fields
 
   // `SectorThinker`
@@ -165,6 +202,7 @@ void VEntity::EntityStaticInit () {
   // blood
   fldiBloodColor = FindTypedField(classEntityEx, "BloodColor", TYPE_Int);
   fldiBloodTranslation = FindTypedField(classEntityEx, "BloodTranslation", TYPE_Int);
+  fldcBloodType = FindTypedField(classEntityEx, "BloodType", TYPE_Class);
 
   // `Actor` -- no fields yet
 }
@@ -180,6 +218,51 @@ void VEntity::PostCtor () {
   if (classEntityEx && GetClass()->IsChildOf(classEntityEx)) FlagsEx |= EFEX_IsEntityEx;
   if (classActor && GetClass()->IsChildOf(classActor)) FlagsEx |= EFEX_IsActor; else
   Super::PostCtor();
+}
+
+
+//==========================================================================
+//
+//  VEntity::CheckForceColoredBlood
+//
+//  called from `VLevel::SpawnThinker()`
+//
+//==========================================================================
+void VEntity::CheckForceColoredBlood () {
+  if (!k8gore_force_colored_blood.asBool()) return;
+  if (!IsMonster()) return;
+  if (!clsBlood) return; // just in case
+
+  // check for the existing blood translation
+  int bcolor = fldiBloodColor->GetInt(this);
+  if (bcolor) return; // already translated
+
+  VClass *bt = (VClass *)fldcBloodType->GetObjectValue(this);
+  if (bt && bt != clsBlood) return; // not a default blood class, do nothing
+
+  // check class
+  int ctrans = 0;
+  for (const VClass *c = GetClass(); c; c = c->ParentClass) {
+    if (c == classActor || c == classEntityEx) return;
+    if (c == clsHellKnight || c == clsBaronOfHell) {
+      ctrans = BruiserBloodColor.getColor();
+      if (!ctrans) return; // "no color"
+      ctrans |= 0xff000000; // just in case
+      break;
+    }
+    if (c == clsCacodemon) {
+      ctrans = CacoBloodColor.getColor();
+      if (!ctrans) return; // "no color"
+      ctrans |= 0xff000000; // just in case
+      break;
+    }
+  }
+  if (!ctrans) return;
+
+  fldiBloodColor->SetInt(this, ctrans);
+  int btrans = R_GetBloodTranslation(ctrans, true/*allowAdd*/);
+  fldiBloodTranslation->SetInt(this, btrans);
+  //ee.BloodSplatterType = K8Gore_Blood_SplatterReplacer;
 }
 
 

@@ -16,3 +16,4 @@ k8vavoom { basepak = tan }
 #include "chex/all.txt"
 
 #include "k8tracers/all.txt"
+#include "k8gore/all.txt"

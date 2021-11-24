@@ -25,6 +25,7 @@
 //**************************************************************************
 //  BLOOD UTILITIES
 //**************************************************************************
+// this doesn't work anymore
 //#define VAVOOM_BLOOD_ALLOW_BLOOD_POOLS
 
 
@@ -45,6 +46,7 @@ final bool BloodCanSplat (class!Actor aBloodType) {
 //  GetBloodSmearDecalName
 //
 //==========================================================================
+/*
 final name GetBloodSmearDecalName () {
   if (bNoBlood || !self.BloodType) return '';
   name dcn = GetClassName(GetClassReplacee(self.BloodType));
@@ -54,6 +56,7 @@ final name GetBloodSmearDecalName () {
   //if (GetClassName(GetClassReplacee(self.BloodType)) == 'BloodBlue') return 'BloodSmearBlue';
   return 'BloodSmear';
 }
+*/
 
 
 //==========================================================================
@@ -61,6 +64,7 @@ final name GetBloodSmearDecalName () {
 //  GetBloodSplatRadiusDecalName
 //
 //==========================================================================
+/*
 final name GetBloodSplatRadiusDecalName () {
   if (bNoBlood || !self.BloodType) return '';
   name dcn = GetClassName(GetClassReplacee(self.BloodType));
@@ -70,6 +74,7 @@ final name GetBloodSplatRadiusDecalName () {
   //if (GetClassName(GetClassReplacee(self.BloodType)) == 'BloodBlue') return 'BloodSplatRadiusBlue';
   return 'BloodSplatRadius';
 }
+*/
 
 
 //==========================================================================
@@ -91,6 +96,7 @@ final name GetBloodSmearRadiusDecalName () {
 //  GetBloodSplatDecalName
 //
 //==========================================================================
+/*
 final name GetBloodSplatDecalName () {
   if (bNoBlood || !self.BloodType) return '';
   name dcn = GetClassName(GetClassReplacee(self.BloodType));
@@ -100,8 +106,10 @@ final name GetBloodSplatDecalName () {
   //if (GetClassName(GetClassReplacee(self.BloodType)) == 'BloodBlue') return 'BloodSplatBlue';
   return 'BloodSplat';
 }
+*/
 
 
+#ifdef VAVOOM_BLOOD_ALLOW_BLOOD_POOLS
 //==========================================================================
 //
 //  k8GetBloodClassName
@@ -115,6 +123,7 @@ final static name k8GetBloodClassName (name newblood, name oldblood) {
   //print("GB: new=%s; old=%s; res=%s", newblood, oldblood, oldblood);
   return oldblood;
 }
+#endif
 
 
 //==========================================================================
@@ -326,12 +335,14 @@ final void TraceBleed (int damage, TVec pos, float angle, float pitch, bool radi
   //bool isHighDamage = false;
   bool isSmallDamage = false;
 
-  name bclasssplat = GetBloodSplatDecalName();
-  name bclasssmear = GetBloodSmearDecalName();
+  name bclasssplat = /*GetBloodSplatDecalName()*/'BloodSplat';
+  name bclasssmear = /*GetBloodSmearDecalName()*/'BloodSmear';
 
   if (radiusDamage) {
-    if (HasDecal(GetBloodSplatRadiusDecalName())) bclasssplat = GetBloodSplatRadiusDecalName();
-    if (HasDecal(GetBloodSmearRadiusDecalName())) bclasssmear = GetBloodSmearRadiusDecalName();
+    //if (HasDecal(GetBloodSplatRadiusDecalName())) bclasssplat = GetBloodSplatRadiusDecalName();
+    //if (HasDecal(GetBloodSmearRadiusDecalName())) bclasssmear = GetBloodSmearRadiusDecalName();
+    bclasssplat = 'BloodSplatRadius';
+    bclasssmear = 'BloodSmearRadius';
   }
 
   name bloodTypeName = bclasssplat;
@@ -366,10 +377,12 @@ final void TraceBleed (int damage, TVec pos, float angle, float pitch, bool radi
     }
   }
 
+  /*
   if (!HasDecal(bloodTypeName)) {
     //print("*** NO BLOOD DECAL '%s'", bloodTypeName);
     return;
   }
+  */
 
   if (isSmallDamage && !radiusDamage) return; // oops
 
@@ -438,14 +451,21 @@ void SpawnBloodSprayHead (int damage, optional bool notDead, optional bool spawn
 
   if (GetCvarB('dbg_blood_disable_entities')) return;
 
-  name bloodClassName = k8GetBloodClassName('K8Gore_BloodTransient', 'Blood');
+  //name bloodClassName = k8GetBloodClassName('K8Gore_BloodTransient', 'Blood');
+  name bloodClassName = 'Blood';
+       if (GetCvarI('k8GoreOpt_Enabled_Override') > 0) bloodClassName = 'K8Gore_BloodTransient';
+  else if (GetCvarB('k8GoreOpt_Enabled') && !GetCvarI('k8GoreOpt_Enabled_Override')) bloodClassName = 'K8Gore_BloodTransient';
   #ifdef VAVOOM_BLOOD_ALLOW_BLOOD_POOLS
+  // this doesn't work anymore
   poolClassName = k8GetBloodClassName('K8Gore_GrowingBloodPool', '');
   #endif
   //print("bloodtype: %C/%C", self.BloodType, GetClassReplacee(self.BloodType));
 
+  //printdebug("bloodClassName: %s; k8GoreOpt_Enabled_Override=%s; k8GoreOpt_Enabled=%B", bloodClassName, GetCvarI('k8GoreOpt_Enabled_Override'), GetCvarB('k8GoreOpt_Enabled'));
+
   if (self.BloodType) {
     name brname = GetClassName(GetClassReplacee(self.BloodType));
+    #if 0
     //print("brname=%s", brname);
     if (brname == 'BloodGreen') {
       bloodClassName = 'BloodGreen';
@@ -458,6 +478,7 @@ void SpawnBloodSprayHead (int damage, optional bool notDead, optional bool spawn
       //mistClassName = 'K8Gore_BloodmistSmallBlue';
       //!!:poolClassName = k8GetBloodClassName('K8Gore_GrowingBloodPool_Blue', poolClassName);
     }
+    #endif
   }
 
   //writeln("  bloodclass: ", bloodClassName);
@@ -599,8 +620,7 @@ void SpawnBlood (TVec Org, int damage, optional TVec shootOrg, optional float zo
         damage += 2;
       }
     }
-
-    if (GetCvarB('zdoom_blood_hack')) {
+    if (GetCvarB('zdoom_blood_hack') && !GetCvarB('k8GoreOpt_Enabled')) {
       /*
       if (string(GetClassName(A.Class)).startsWith("K8Gore")) {
       } else

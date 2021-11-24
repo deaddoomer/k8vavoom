@@ -2,9 +2,13 @@
 //    K8GoreBloodSplat
 //    K8GoreBloodSuper
 
-// engine scripts will use:
-//    BloodSmear[Radius][Color]
-//    BloodSplat[Radius][Color]
+// for normal blood, engine scripts will use:
+//    BloodSmear[Radius]
+//    BloodSplat[Radius]
+
+// for gore blood, engine scripts will use:
+//    K8GDC_BloodSmear[Radius]
+//    K8GDC_BloodSplat[Radius]
 
 
 //==========================================================================
@@ -307,7 +311,8 @@ DECAL K8Gore_NewBloodSplat10${Color} {
 }
 
 
-DECALGROUP BloodSplat${Color} {
+// K8GDC
+DECALGROUP K8GDC_BloodSplat${Color} {
   K8Gore_NewBloodSplat01${Color} 6
   K8Gore_NewBloodSplat02${Color} 6
   K8Gore_NewBloodSplat03${Color} 6
@@ -422,18 +427,21 @@ DECAL K8Gore_NewBloodSmear2${Color} {
 }
 
 
-DECALGROUP BloodSmear${Color} {
+// K8GDC
+DECALGROUP K8GDC_BloodSmear${Color} {
   K8Gore_NewBloodSmear1${Color} 6
   K8Gore_NewBloodSmear2${Color} 6
 }
 
 
-decalgroup BloodSmearRadius${Color} {
-  BloodSmear${Color} 1
+// K8GDC
+decalgroup K8GDC_BloodSmearRadius${Color} {
+  K8GDC_BloodSmear${Color} 1
 }
 
-decalgroup BloodSplatRadius${Color} {
-  BloodSmear${Color} 1
+// K8GDC
+decalgroup K8GDC_BloodSplatRadius${Color} {
+  K8GDC_BloodSmear${Color} 1
 }
 
 

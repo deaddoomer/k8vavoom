@@ -2,8 +2,17 @@
 // this is main blood actor; it is spawned by the engine
 // Args[0] is damage (0 means "unknown")
 // Tracer is damaged actor (can be empty)
+//
+// for normal blood, the engine will spawn:
+//   Blood[Color]
+//   BloodSplatter[Color]
+//
+// for gore blood, the engine will spawn:
+//   K8Gore_Blood[Color]
+//   K8Gore_BloodSplatter[Color]
+//
 #ifndef TRANSIENT
-Actor K8Gore_Blood$(Color) : Blood$(Color) /*: K8Gore_BloodBase$(TransientSfx)*/ Replaces Blood$(Color) {
+Actor K8Gore_Blood$(Color) : Blood$(Color) /*: K8Gore_BloodBase$(TransientSfx)*/ /*Replaces Blood$(Color)*/ {
 #else
 Actor K8Gore_Blood$(Color) /*: K8Gore_BloodBase$(TransientSfx)*/ {
 #endif
@@ -1111,7 +1120,7 @@ Actor K8Gore_GrowingBloodPool$(Color) : K8Gore_BloodSpot$(Color) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 #ifndef TRANSIENT
-Actor K8Gore_Blood_SplatterReplacer$(Color) : K8Gore_Blood Replaces BloodSplatter$(Color) {
+Actor K8Gore_Blood_SplatterReplacer$(Color) : K8Gore_Blood /*Replaces BloodSplatter$(Color)*/ {
   $(Translation)
   +NoTeleport
   +k8DetachFromServer

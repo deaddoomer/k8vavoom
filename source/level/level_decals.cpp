@@ -33,6 +33,9 @@
 extern VCvarB r_decals;
 extern VCvarB r_decals_flat;
 extern VCvarB r_decals_wall;
+extern VCvarB k8gore_enabled;
+extern VCvarI k8gore_enabled_override;
+extern VCvarI k8gore_enabled_override_decal;
 
 static VCvarB r_decal_switch_special("r_decal_switch_special", true, "Make decals more translucent on switch textures?", CVAR_Archive|CVAR_NoShadow);
 static VCvarF r_decal_switch_blood_alpha("r_decal_switch_blood_alpha", "0.36", "Force this transparency for blood decals on switches.", CVAR_Archive|CVAR_NoShadow);
@@ -56,6 +59,22 @@ int VLevel::dcLineTouchCounter = 0;
 // sorry for this static
 // it is used in decal cleanup code
 static TArray<decal_t *> dc2kill;
+
+
+//==========================================================================
+//
+//  isGoreEnabled
+//
+//==========================================================================
+static VVA_ALWAYS_INLINE bool isGoreEnabled () {
+  const int ovd = k8gore_enabled_override_decal.asInt();
+  if (ovd < 0) return false;
+  if (ovd > 0) return true;
+  const int ov = k8gore_enabled_override.asInt();
+  if (ov < 0) return false;
+  if (ov > 0) return true;
+  return k8gore_enabled.asBool();
+}
 
 
 //==========================================================================
@@ -562,6 +581,14 @@ void VLevel::DestroyDecal (decal_t *dc) {
 void VLevel::AddDecal (TVec org, VName dectype, int side, line_t *li, int level, DecalParams &params) {
   if (!r_decals || !r_decals_wall) return;
   if (!li || dectype == NAME_None || VStr::strEquCI(*dectype, "none")) return; // just in case
+
+  // replace blood decals
+  if (canReplaceBlood && isGoreEnabled()) {
+         if (VStr::strEquCI(*dectype, "BloodSplat")) dectype = goreBloodDecalSplat;
+    else if (VStr::strEquCI(*dectype, "BloodSmear")) dectype = goreBloodDecalSmear;
+         if (VStr::strEquCI(*dectype, "BloodSplatRadius")) dectype = goreBloodDecalSplatRadius;
+    else if (VStr::strEquCI(*dectype, "BloodSmearRadius")) dectype = goreBloodDecalSmearRadius;
+  }
 
   //GCon->Logf(NAME_Debug, "%s: oorg:(%g,%g,%g); org:(%g,%g,%g); trans=%d", *dectype, org.x, org.y, org.z, li->landAlongNormal(org).x, li->landAlongNormal(org).y, li->landAlongNormal(org).z, translation);
 

@@ -38,6 +38,11 @@ extern VCvarB game_release_mode;
 extern int cli_NoZMapinfo; // from mapinfo.cpp
 int cli_NoExternalDeh = 0;
 
+//extern VCvarB k8gore_enabled;
+extern VCvarI k8gore_enabled_override;
+extern VCvarI k8gore_enabled_override_decal;
+
+
 static VCvarB dbg_dump_gameinfo("dbg_dump_gameinfo", false, "Dump parsed game.txt?", CVAR_PreInit|CVAR_NoShadow);
 static VCvarB gz_skip_menudef("gz_skip_menudef", false, "Skip gzdoom menudef parsing?", CVAR_PreInit|CVAR_Hidden|CVAR_NoShadow);
 
@@ -2775,7 +2780,10 @@ void FL_Init () {
 
   if (cli_GoreModForce != 0) {
     GCon->Logf(NAME_Init, "Forcing gore mod.");
-    AddGameDir("basev/mods/gore"); // not disabled
+    //AddGameDir("basev/mods/gore"); // not disabled
+    cli_GoreMod = cli_GoreModForce;
+    k8gore_enabled_override = 1;
+    k8gore_enabled_override_decal = 1;
   } else if (!customMode.disableGoreMod) {
     #if 0
     if (/*game_release_mode ||*/ isChex) {
@@ -2784,10 +2792,16 @@ void FL_Init () {
       if (cli_GoreMod != 0) AddGameDir("basev/mods/gore"); // not disabled
     }
     #else
-    if (cli_GoreMod != 0) AddGameDir("basev/mods/gore"); // not disabled
+    //if (cli_GoreMod != 0) AddGameDir("basev/mods/gore"); // not disabled
+    if (cli_GoreMod == 0) {
+      k8gore_enabled_override = -1;
+      k8gore_enabled_override_decal = -1;
+    }
     #endif
   } else {
     GCon->Logf(NAME_Init, "Gore mod disabled.");
+    k8gore_enabled_override = -1;
+    k8gore_enabled_override_decal = -1;
   }
 
   //if (isChex) AddGameDir("basev/mods/chex");

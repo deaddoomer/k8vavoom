@@ -504,6 +504,9 @@ public:
   // cannot return `nullptr`
   VTerrainInfo *GetActorTerrain ();
 
+  // called from `VLevel::SpawnThinker()`
+  void CheckForceColoredBlood ();
+
   /*
   bool eventSkyBoxGetAlways () { static VMethodProxy method("SkyBoxGetAlways"); vobjPutParamSelf(); VMT_RET_BOOL(method); }
   VEntity *eventSkyBoxGetMate () { static VMethodProxy method("SkyBoxGetMate"); vobjPutParamSelf(); VMT_RET_REF(VEntity, method); }

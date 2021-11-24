@@ -876,7 +876,16 @@ public:
 
   //inline bool VVA_CHECKRESULT HasFullSegs () const noexcept { return (LevelFlags&LF_HasFullSegs); }
 
+private:
+  static bool canReplaceBlood;
+  static VName goreBloodDecalSplat;
+  static VName goreBloodDecalSmear;
+  static VName goreBloodDecalSplatRadius;
+  static VName goreBloodDecalSmearRadius;
+
 public:
+  static void LevelStaticInit ();
+
   virtual void PostCtor () override;
   virtual void SerialiseOther (VStream &Strm) override;
   virtual void ClearReferences () override;

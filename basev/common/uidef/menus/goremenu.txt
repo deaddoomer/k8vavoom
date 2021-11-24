@@ -1,5 +1,13 @@
-menudef GoreModMenu {
-  title = "Gore Mod Options";
+menudef K8GoreOptions {
+  title = "Built-In Gore Options";
+
+  option bool {
+    title = "Built-In Gore";
+    cvar = k8GoreOpt_Enabled;
+    help = "Enable built-in blood and gore?";
+  }
+
+  header "";
 
   option bool {
     title = "Ceiling Blood";
@@ -28,7 +36,7 @@ menudef GoreModMenu {
   option bool {
     title = "Extra Floor/Ceiling Decals";
     cvar = k8GoreOpt_ExtraFlatDecals;
-    help = "Add many more floor/ceiling decals, if used?";
+    help = "Add more floor/ceiling decals?";
   }
 
   option enum {
@@ -37,7 +45,7 @@ menudef GoreModMenu {
     list {
       "Some",
       "Normal",
-      "Alot",
+      "A Lot",
       "Bloodbath",
     }
     help = "Amount of blood to spawn.";
@@ -53,12 +61,6 @@ menudef GoreModMenu {
     title = "Headshot Sound";
     cvar = k8GoreOpt_HeadshotSound;
     help = "Play special sound on headshot kill?";
-  }
-
-  option bool {
-    title = "Force Colored Blood";
-    cvar = k8GoreOpt_ForceColoredBlood;
-    help = "Force Gore Colored Blood on Bruisers and Cacodemon?";
   }
 
 
@@ -138,14 +140,27 @@ menudef GoreModMenu {
       "Limit number of spawned ceiling blood splats.",
       "Note that differently colored splats are different actors.";
   }
-}
 
 
-// advanced video options menu
-menudef OptionsMenu extend {
-  //header "Gore Mod";
-  option submenu {
-    title = "Gore Mod Options";
-    submenu = GoreModMenu;
+  header "Colored Blood";
+
+  option bool {
+    title = "Force Colored Blood";
+    cvar = k8GoreOpt_ForceColoredBlood;
+    help =
+      "Force Gore Colored Blood on Bruisers and Cacodemons?",
+      "Please, note that already spawned actors will not be affected by this setting.";
+  }
+
+  option color {
+    title = "Bruisers Blood Color";
+    cvar = k8GoreOpt_BloodColorBruiser;
+    help = "Blood color for Hell Knight and Baron of Hell.";
+  }
+
+  option color {
+    title = "Cacodemon Blood Color";
+    cvar = k8GoreOpt_BloodColorCacodemon;
+    help = "Blood color for Cacodemon.";
   }
 }

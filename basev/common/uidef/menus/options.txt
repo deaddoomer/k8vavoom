@@ -78,6 +78,11 @@ menudef OptionsMenu {
   }
 
   option submenu {
+    title = "Built-In Gore Options";
+    submenu = K8GoreOptions;
+  }
+
+  option submenu {
     title = "Accessibility Options";
     submenu = AccessibilityOptions;
   }

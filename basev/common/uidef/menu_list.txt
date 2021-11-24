@@ -3,6 +3,7 @@ menus {
   "menus/accessibility.txt",
   "menus/amoptions.txt",
   "menus/gameplay.txt",
+  "menus/goremenu.txt",
   "menus/healthaccum.txt",
   "menus/hudoptions.txt",
   "menus/maphacks.txt",

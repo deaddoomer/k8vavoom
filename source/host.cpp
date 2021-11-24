@@ -448,6 +448,7 @@ void Host_Init () {
 
   VThinker::ThinkerStaticInit();
   VEntity::EntityStaticInit();
+  VLevel::LevelStaticInit();
 
 #ifdef CLIENT
   GInput = VInputPublic::Create();

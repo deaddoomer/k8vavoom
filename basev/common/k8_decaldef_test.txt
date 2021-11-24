@@ -1,0 +1,40 @@
+/***** Test Decals *********************************************************/
+
+/*
+decal k8TestDecal {
+  pic K8TESTDC
+  shade "ff 7f 00"
+  x-scale 1.0
+  y-scale 1.0
+  fullbright
+  //randomflipy
+}
+*/
+
+
+decal K8BigScorchTest {
+  pic BSMEAR1
+  //Pic BSPK8X04
+  shade "ff 7f 00"
+  //shade "00 00 00"
+  // x-scale 0.75
+  // y-scale 0.75
+  //randomflipx
+  //randomflipy
+  flatangle random 0 360
+  wallangle random 0 360
+}
+
+decal K8BigScorchTestRot {
+  pic BSMEAR1
+  //Pic BSPK8X04
+  shade "00 ff 00"
+  //shade "00 00 00"
+  // x-scale 0.75
+  // y-scale 0.75
+  //randomflipx
+  //randomflipy
+  flatangle random 0 360
+  wallangle random 0 360
+  //wallangle 36
+}
