@@ -457,8 +457,37 @@ static void RunFunction (VMethod *func) {
   //fprintf(stderr, "FUNC: <%s> (%s) ParamsSize=%d; NumLocals=%d; NumParams=%d\n", *func->GetFullName(), *func->Loc.toStringNoCol(), func->ParamsSize, func->NumLocals, func->NumParams);
   if (func->NumLocals < func->ParamsSize) { cstDump(nullptr); VPackage::InternalFatalError(va("Miscompiled function (locals=%d, params=%d)", func->NumLocals, func->ParamsSize)); }
   local_vars = sp-func->ParamsSize;
-  if (func->NumLocals-func->ParamsSize != 0) memset(sp, 0, (func->NumLocals-func->ParamsSize)*sizeof(VStack));
-  sp += func->NumLocals-func->ParamsSize;
+  const size_t pfill = (size_t)(func->NumLocals-func->ParamsSize);
+  //memset(sp, 0, pfill*sizeof(VStack));
+  if (pfill) {
+    // gcc will inline memsets with known sizes, and should be slightly faster this way
+    if (pfill <= 15) {
+#define XFCASE(n_)  case n_: memset(sp, 0, n_*sizeof(VStack)); break;
+      // make sure that the oprimiser knows the exact number of cases here with `&0x0fu`
+      switch (pfill&0x0fu) {
+        case 0: break;
+        XFCASE(1u)
+        XFCASE(2u)
+        XFCASE(3u)
+        XFCASE(4u)
+        XFCASE(5u)
+        XFCASE(6u)
+        XFCASE(7u)
+        XFCASE(8u)
+        XFCASE(9u)
+        XFCASE(10u)
+        XFCASE(11u)
+        XFCASE(12u)
+        XFCASE(13u)
+        XFCASE(14u)
+        XFCASE(15u)
+      }
+#undef XFCASE
+    } else {
+      memset(sp, 0, pfill*sizeof(VStack));
+    }
+  }
+  sp += pfill; //func->NumLocals-func->ParamsSize;
 
 //#define VMEXEC_STMTS  (func->Statements.Ptr())
 #define VMEXEC_STMTS  (func->vmCodeStart)
