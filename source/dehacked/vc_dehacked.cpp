@@ -529,10 +529,11 @@ static bool ParseParam () {
 //==========================================================================
 static void ParseFlag (VStr FlagName, int *Values, bool *Changed) {
   if (FlagName.Length() == 0) return;
-  if (FlagName[0] >= '0' && FlagName[0] <= '9') {
+  if (FlagName[0] == '-' || (FlagName[0] >= '0' && FlagName[0] <= '9')) {
     // clear flags that were not used by Doom engine as well as SLIDE flag which dosen't exist anymore
     Values[0] = VStr::atoi(*FlagName)&0x0fffdfff;
     Changed[0] = true;
+    //GCon->Logf(NAME_Debug, "DEHACKED: ParseFlag: '%s' -> %d 0x%08x", *FlagName, Values[0], (unsigned)Values[0]);
     return;
   }
   for (size_t i = 0; i < ARRAY_COUNT(DehFlags); ++i) {
