@@ -82,6 +82,7 @@ final name GetBloodSplatRadiusDecalName () {
 //  GetBloodSmearRadiusDecalName
 //
 //==========================================================================
+/*
 final name GetBloodSmearRadiusDecalName () {
   if (bNoBlood || !self.BloodType) return '';
   name dcn = GetClassName(GetClassReplacee(self.BloodType));
@@ -89,6 +90,7 @@ final name GetBloodSmearRadiusDecalName () {
   if (dcn == 'BloodBlue') return 'BloodSmearRadiusBlue';
   return 'BloodSmearRadius';
 }
+*/
 
 
 //==========================================================================
@@ -444,6 +446,8 @@ final void TraceBleed (int damage, TVec pos, float angle, float pitch, bool radi
 //
 //  this will be called on XDeath
 //
+//  it has any sense only for Gore
+//
 //==========================================================================
 void SpawnBloodSprayHead (int damage, optional bool notDead, optional bool spawnBloodPool) {
   bool doSpray = IsBloodAllowed() && GetCvarB('k8HSHeadKillBloodSpray');
@@ -451,10 +455,20 @@ void SpawnBloodSprayHead (int damage, optional bool notDead, optional bool spawn
 
   if (GetCvarB('dbg_blood_disable_entities')) return;
 
+  if (GetCvarI('k8GoreOpt_Enabled_Override') < 0) return;
+  if (!GetCvarB('k8GoreOpt_Enabled') && GetCvarI('k8GoreOpt_Enabled_Override') <= 0) return;
+
   //name bloodClassName = k8GetBloodClassName('K8Gore_BloodTransient', 'Blood');
+  /*
   name bloodClassName = 'Blood';
+  if (self.BloodType) {
+    bloodClassName = GetClassName(GetClassReplacee(self.BloodType));
+    if (!bloodClassName) bloodClassName = 'Blood';
+  }
        if (GetCvarI('k8GoreOpt_Enabled_Override') > 0) bloodClassName = 'K8Gore_BloodTransient';
   else if (GetCvarB('k8GoreOpt_Enabled') && !GetCvarI('k8GoreOpt_Enabled_Override')) bloodClassName = 'K8Gore_BloodTransient';
+  */
+  name bloodClassName = 'K8Gore_BloodTransient';
   #ifdef VAVOOM_BLOOD_ALLOW_BLOOD_POOLS
   // this doesn't work anymore
   poolClassName = k8GetBloodClassName('K8Gore_GrowingBloodPool', '');
@@ -463,9 +477,10 @@ void SpawnBloodSprayHead (int damage, optional bool notDead, optional bool spawn
 
   //printdebug("bloodClassName: %s; k8GoreOpt_Enabled_Override=%s; k8GoreOpt_Enabled=%B", bloodClassName, GetCvarI('k8GoreOpt_Enabled_Override'), GetCvarB('k8GoreOpt_Enabled'));
 
+  #if 0
+  // this tried to detect blood color, but we don't even have a separate colored blood actors anymore
   if (self.BloodType) {
     name brname = GetClassName(GetClassReplacee(self.BloodType));
-    #if 0
     //print("brname=%s", brname);
     if (brname == 'BloodGreen') {
       bloodClassName = 'BloodGreen';
@@ -478,8 +493,8 @@ void SpawnBloodSprayHead (int damage, optional bool notDead, optional bool spawn
       //mistClassName = 'K8Gore_BloodmistSmallBlue';
       //!!:poolClassName = k8GetBloodClassName('K8Gore_GrowingBloodPool_Blue', poolClassName);
     }
-    #endif
   }
+  #endif
 
   //writeln("  bloodclass: ", bloodClassName);
 
@@ -620,11 +635,8 @@ void SpawnBlood (TVec Org, int damage, optional TVec shootOrg, optional float zo
         damage += 2;
       }
     }
-    if (GetCvarB('zdoom_blood_hack') && !GetCvarB('k8GoreOpt_Enabled')) {
-      /*
-      if (string(GetClassName(A.Class)).startsWith("K8Gore")) {
-      } else
-      */
+    if (GetCvarB('zdoom_blood_hack')) {
+      if ((!GetCvarI('k8GoreOpt_Enabled_Override') && GetCvarB('k8GoreOpt_Enabled')) || (GetCvarI('k8GoreOpt_Enabled_Override') > 0)) return;
       if (damage <= 12 && damage >= 9) {
         A.SetState(GetStatePlus(A.IdleState, 1));
         //A.SetInitialState(GetStatePlus(A.IdleState, 1));
@@ -676,6 +688,13 @@ void SpawnBloodAtHeadExplosion (int damage, optional EntityEx src) {
 
   if (GetCvarB('dbg_blood_disable_entities')) return;
 
+  // don't spawn excessive blood for Gore mod, it have enough blood already ;-)
+  bool goremod =
+    (!GetCvarI('k8GoreOpt_Enabled_Override') && GetCvarB('k8GoreOpt_Enabled')) ||
+    (GetCvarI('k8GoreOpt_Enabled_Override') > 0);
+  printdebug("%C: GM=%B", self, goremod);
+  //goremod = false;
+
   bool isSmallDamage = false;
   bool isHighDamage = false;
 
@@ -684,11 +703,14 @@ void SpawnBloodAtHeadExplosion (int damage, optional EntityEx src) {
   else isHighDamage = true;
 
   SpawnBloodAtHead(damage);
-  SpawnBloodAtHead(damage);
+  if (!goremod) SpawnBloodAtHead(damage);
   if (!isSmallDamage) {
     if (Health <= damage) SpawnBloodAtHead(damage);
     SpawnBloodAtHead(damage);
   }
+
+  if (goremod) return;
+
   // spawn more blood for high damage
   if (isHighDamage) {
     if (Health <= damage) SpawnBloodAtHead(damage);
