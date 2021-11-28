@@ -181,7 +181,7 @@ static char CurrentLanguage[4];
 static VCvarS Language("language", "en", "Game language.", /*CVAR_Archive|CVAR_PreInit|*/CVAR_Rom|CVAR_NoShadow);
 
 static VCvarB cl_cap_framerate("cl_cap_framerate", true, "Cap framerate for non-networking games?", CVAR_Archive|CVAR_NoShadow);
-static VCvarI cl_framerate("cl_framerate", "140", "Framerate cap for client rendering.", CVAR_Archive|CVAR_NoShadow);
+static VCvarI cl_framerate("cl_framerate", "60", "Framerate cap for client rendering.", CVAR_Archive|CVAR_NoShadow);
 static VCvarI sv_framerate("sv_framerate", "70", "Framerate cap for dedicated server.", CVAR_Archive|CVAR_NoShadow);
 
 // this is hack for my GPU
@@ -777,38 +777,32 @@ static bool FilterTime () {
 //  CalcYieldTime
 //
 //==========================================================================
-static unsigned CalcYieldTime () {
+static VVA_OKUNUSED unsigned CalcYieldTime () {
   #ifdef CLIENT
     #ifdef VV_USE_U64_SYSTIME_FOR_FRAME_TIMES
-    if (!host_systime64_usec || !host_prevsystime64_usec) return 50;
-    if (host_systime64_usec == host_prevsystime64_usec) return 50;
+    if (!host_systime64_usec || !host_prevsystime64_usec) return 0;
+    if (host_systime64_usec == host_prevsystime64_usec) return 0;
     unsigned ftime;
-    if (GGameInfo->NetMode <= NM_Standalone) {
-      // local game
-      if (cl_cap_framerate.asBool()) {
-        const unsigned frate = (unsigned)clampval(cl_framerate.asInt(), 1, 250);
-        ftime = CalcFrameMSecs(frate);
-      } else {
-        ftime = 4u; // no more than 250 frames per second
-      }
+    if (GGameInfo->NetMode > NM_Standalone) return 100; // network game
+    // local game
+    if (cl_cap_framerate.asBool()) {
+      const unsigned frate = (unsigned)clampval(cl_framerate.asInt(), 1, 250);
+      ftime = CalcFrameMSecs(frate);
     } else {
-      // network game
-      return 100;
+      ftime = 4u; // no more than 250 frames per second
     }
-    //GCon->Logf("*** FilterTime; lasttime=%g; ctime=%g; time=%g; ftime=%g; cfr=%g", last_time, curr_time, time, ftime, 1.0/(double)ftime);
-    const uint64_t nft = host_systime64_usec+(uint64_t)ftime*1000U;
-    uint64_t ctt;
+    const uint64_t nft = host_systime64_usec+(uint64_t)(ftime*1000U); // next frame time (mircoseconds)
+    uint64_t ctt; // current time in microseconds
     (void)Sys_Time_ExU(&ctt);
-    if (ctt >= nft) return 0;
+    if (ctt >= nft) return 0; // oops, right now
     ctt = nft-ctt;
-    //if (ctt > 100000) ctt = 100000;
-         if (ctt > 1000) ctt = 1000;
-    else if (ctt > 5) ctt -= 5;
+    if (ctt > 3000) ctt = 3000; // no more than 3 msec
     return (unsigned)ctt;
     #else
-    return 50;
+    return 100;
     #endif
   #else
+    // dedicated server
     return 100;
   #endif
 }
@@ -859,28 +853,46 @@ void Host_Frame () {
       // don't run frames too fast
       // but still process network activity, we may want to re-send packets and such
       if (lastNetFrameTime > host_systime) lastNetFrameTime = host_systime; // just in case
-      //const double ctt = Sys_Time();
-      const double dtt = (GGameInfo->NetMode >= NM_DedicatedServer ? 1.0/200.0 : 1.0/70.0);
-      if (host_systime-lastNetFrameTime >= dtt) {
-        // perform network activity
-        lastNetFrameTime = host_systime;
+      if (GGameInfo->NetMode <= NM_Standalone) {
+        // not a network game
         #ifdef CLIENT
         // process client
         CL_NetInterframe(); // this does all necessary checks
         #endif
-        #ifdef SERVER
-        // if we're running a server (either dedicated, or combined, and we are in game), process server bookkeeping
-        SV_ServerInterframeBK(); // this does all necessary checks
-        #endif
-      } else {
         // don't do it too often, tho
-        #ifdef WIN32
-        Sys_YieldMicro(50); // sleep for 0.05 milliseconds
-        #else
         const unsigned yt = CalcYieldTime();
         //fprintf(stderr, "***SLEEP MICROSECS: %u\n", yt);
-        if (yt) Sys_YieldMicro(yt);
-        #endif
+        if (yt) {
+          #ifdef WIN32
+          Sys_YieldMicro(50); // sleep for 0.05 milliseconds
+          #else
+          Sys_YieldMicro(yt);
+          #endif
+        }
+      } else {
+        //const double ctt = Sys_Time();
+        const double dtt = (GGameInfo->NetMode >= NM_DedicatedServer ? 1.0/200.0 : 1.0/70.0);
+        if (host_systime-lastNetFrameTime >= dtt) {
+          // perform network activity
+          lastNetFrameTime = host_systime;
+          #ifdef CLIENT
+          // process client
+          CL_NetInterframe(); // this does all necessary checks
+          #endif
+          #ifdef SERVER
+          // if we're running a server (either dedicated, or combined, and we are in game), process server bookkeeping
+          SV_ServerInterframeBK(); // this does all necessary checks
+          #endif
+        } else {
+          // don't do it too often, tho
+          #ifdef WIN32
+          Sys_YieldMicro(50); // sleep for 0.05 milliseconds
+          #else
+          const unsigned yt = CalcYieldTime();
+          //fprintf(stderr, "***SLEEP MICROSECS: %u\n", yt);
+          if (yt) Sys_YieldMicro(yt);
+          #endif
+        }
       }
       return;
     }
