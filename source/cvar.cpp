@@ -357,7 +357,9 @@ COMMAND_WITH_AC(cvar_reset) {
   } else {
     VCvar *cvar = VCvar::FindVariable(*(Args[1]));
     if (cvar) {
-      cvar->Set(cvar->GetDefault());
+      GCon->Logf("%s: default is %s", cvar->GetName(), *VStr(cvar->GetDefault()).quote(true, true));
+      cvar->SetStr(nullptr); // reset to default
+      //GCon->Logf("%s: value is %s (int:%d)", cvar->GetName(), *cvar->asStr().quote(true, true), cvar->asInt());
     } else {
       GCon->Logf("Unknown cvar: '%s'", *Args[1]);
     }
