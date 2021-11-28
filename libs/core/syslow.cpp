@@ -1364,7 +1364,7 @@ vuint64 Sys_GetTimeCPUNano () {
 //
 //==========================================================================
 void Sys_YieldMicro (unsigned microsecs) {
-  if (microsecs <= 10000) {
+  if (microsecs <= 20000) {
     Sleep(0);
   } else {
     Sleep(microsecs/1000);
