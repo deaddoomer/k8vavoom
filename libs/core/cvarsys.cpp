@@ -454,6 +454,17 @@ void VCvar::SetStr (VStr AValue) {
 
 //==========================================================================
 //
+//  VCvar::SetStr
+//
+//==========================================================================
+void VCvar::SetStr (const char *val) {
+  VStr AValue(val ? val : GetDefault());
+  SetStr(AValue);
+}
+
+
+//==========================================================================
+//
 //  VCvar::SetAsDefault
 //
 //==========================================================================
@@ -499,6 +510,22 @@ void VCvar::SetShadowFloat (float value) {
 void VCvar::SetShadowStr (VStr value) {
   EnsureShadow();
   if (shadowVar) shadowVar->SetStr(value);
+}
+
+
+//==========================================================================
+//
+//  VCvar::SetShadowStr
+//
+//==========================================================================
+void VCvar::SetShadowStr (const char *value) {
+  if (!value) {
+    if (!shadowVar) { SetStr(value); return; }
+  }
+  EnsureShadow();
+  if (shadowVar) {
+    if (!value) shadowVar->SetStr(VStr(GetDefault())); else shadowVar->SetStr(value);
+  }
 }
 
 

@@ -111,6 +111,7 @@ public:
   void SetFloat (float value);
   void SetStr (VStr value);
   void SetBool (bool value);
+  void SetStr (const char *value); // "null" means "default"
 
   void SetDefault (VStr value);
 
@@ -118,28 +119,33 @@ public:
   inline void Set (float value) { SetFloat(value); }
   inline void Set (VStr value) { SetStr(value); }
   inline void Set (bool value) { SetBool(value); }
+  inline void Set (const char *value) { SetStr(value); } // "null" means "default"
 
   // changes shadowvar if there is any
   inline void ForceSetInt (int value) { if (shadowVar) shadowVar->SetInt(value); else SetInt(value); }
   inline void ForceSetFloat (float value) { if (shadowVar) shadowVar->SetFloat(value); else SetFloat(value); }
   inline void ForceSetStr (VStr value) { if (shadowVar) shadowVar->SetStr(value); else SetStr(value); }
   inline void ForceSetBool (bool value) { if (shadowVar) shadowVar->SetBool(value); else SetBool(value); }
+  inline void ForceSetStr (const char *value) { if (shadowVar) shadowVar->SetStr(value ? value : GetDefault()); else SetStr(value); }
 
   // changes shadowvar if there is any
   inline void ForceSet (int value) { ForceSetInt(value); }
   inline void ForceSet (float value) { ForceSetFloat(value); }
   inline void ForceSet (VStr value) { ForceSetStr(value); }
   inline void ForceSet (bool value) { ForceSetBool(value); }
+  inline void ForceSet (const char *value) { ForceSetStr(value); }
 
   // WARNING! shadowed userinfo/serverinfo cvars won't work as expected!
   void SetShadowInt (int value);
   void SetShadowFloat (float value);
   void SetShadowStr (VStr value);
   void SetShadowBool (bool value);
+  void SetShadowStr (const char *value);
 
   inline void SetShadow (int value) { SetShadowInt(value); }
   inline void SetShadow (float value) { SetShadowFloat(value); }
   inline void SetShadow (VStr value) { SetShadowStr(value); }
+  inline void SetShadow (const char *value) { SetShadowStr(value); }
 
   inline bool IsReadOnly () const noexcept { return (Flags&CVAR_Rom); }
   inline void SetReadOnly (bool v) noexcept { if (v) Flags |= CVAR_Rom; else Flags &= ~CVAR_Rom; }
