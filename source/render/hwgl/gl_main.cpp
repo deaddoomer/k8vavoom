@@ -298,7 +298,7 @@ void VOpenGLDrawer::DoneShaderProgress () {
   /*
   GCon->Logf(NAME_Debug, "waiting... (%dx%d, %u)", ScreenWidth, ScreenHeight, shadMsgTexture);
   double stt = Sys_Time();
-  while (Sys_Time()-stt < 2.0) Sys_Yield();
+  while (Sys_Time()-stt < 2.0) Sys_YieldMicro(100);
   */
 #endif
 }

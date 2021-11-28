@@ -59,7 +59,7 @@ extern bool host_gdb_mode;
 
 extern float host_frametime; // time delta for the current frame
 extern double host_systime; // current `Sys_Time()`; used for consistency, updated in `FilterTime()`
-extern vuint64 host_systime64_msec; // monotonic time, in milliseconds
+extern uint64_t host_systime64_usec; // monotonic time, in microseconds
 extern int host_framecount; // used in demo playback
 
 extern int cli_ShowEndText;

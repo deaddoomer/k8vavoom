@@ -126,11 +126,11 @@ static double hostLastGCTime = 0.0;
 
 float host_frametime = 0.0f; // time delta for the current frame
 double host_systime = 0.0; // current `Sys_Time()`; used for consistency, updated in `FilterTime()`
-vuint64 host_systime64_msec = 0; // monotonic time, in milliseconds
+uint64_t host_systime64_usec = 0; // monotonic time, in microseconds
 int host_framecount = 0; // used in demo playback
 
 #ifdef VV_USE_U64_SYSTIME_FOR_FRAME_TIMES
-static vuint64 host_prevsystime64_msec = 0; // monotonic time, in milliseconds
+static uint64_t host_prevsystime64_usec = 0; // monotonic time, in microseconds
 #else
 static double last_time = 0.0; // last time `FilterTime()` was returned `true`
 #endif
@@ -576,9 +576,9 @@ static void Host_GetConsoleCommands () {
 //
 //==========================================================================
 void Host_ResetSkipFrames () {
-  host_systime = Sys_Time_Ex(&host_systime64_msec);
+  host_systime = Sys_Time_ExU(&host_systime64_usec);
   #ifdef VV_USE_U64_SYSTIME_FOR_FRAME_TIMES
-  host_prevsystime64_msec = host_systime64_msec;
+  host_prevsystime64_usec = host_systime64_usec;
   #else
   last_time = host_systime;
   #endif
@@ -632,15 +632,17 @@ static VVA_ALWAYS_INLINE unsigned CalcFrameMSecs (const unsigned fps) noexcept {
 //
 //==========================================================================
 static bool FilterTime () {
-  const double curr_time = Sys_Time_Ex(&host_systime64_msec);
+  const double curr_time = Sys_Time_ExU(&host_systime64_usec);
   // update it here, it is used as a substitute for `Sys_Time()` in demo and other code
   host_systime = curr_time;
 
   #ifdef VV_USE_U64_SYSTIME_FOR_FRAME_TIMES
-  if (!host_prevsystime64_msec) host_prevsystime64_msec = host_systime64_msec;
+  if (!host_prevsystime64_usec) host_prevsystime64_usec = host_systime64_usec;
   // start of U64 ticker
-  const unsigned msDelta = (unsigned)(host_systime64_msec-host_prevsystime64_msec);
-  if (msDelta < 4u) return false; // no more than 250 frames per second
+  unsigned usDelta = (unsigned)(host_systime64_usec-host_prevsystime64_usec);
+  if (usDelta < 4000u) return false; // no more than 250 frames per second
+  if (usDelta > 10000000U) usDelta = 10000000U; // 10 seconds
+  const unsigned msDelta = usDelta/1000U;
 
   float timeDelta;
   if (dbg_frametime < max_fps_cap_float) {
@@ -676,10 +678,10 @@ static bool FilterTime () {
     const unsigned ftime = CalcFrameMSecs(frate);
     if (msDelta < ftime) return false; // framerate is too high
     #endif
-    timeDelta = (float)msDelta/1000.0f;
+    timeDelta = (float)usDelta/1000000.0f;
   } else {
     // force ticker time per Doom tick
-    if (msDelta < 28u) return false; // one Doom tick is ~28.571428571429 milliseconds
+    if (usDelta < 28571u) return false; // one Doom tick is ~28.571428571429 milliseconds
     timeDelta = dbg_frametime;
   }
   // end of U64 ticker
@@ -734,7 +736,7 @@ static bool FilterTime () {
 
   // here we can advance our "last success call" mark
   #ifdef VV_USE_U64_SYSTIME_FOR_FRAME_TIMES
-  host_prevsystime64_msec = host_systime64_msec;
+  host_prevsystime64_usec = host_systime64_usec;
   #else
   last_time = curr_time;
   #endif
@@ -767,6 +769,48 @@ static bool FilterTime () {
   }
 
   return true;
+}
+
+
+//==========================================================================
+//
+//  CalcYieldTime
+//
+//==========================================================================
+static unsigned CalcYieldTime () {
+  #ifdef CLIENT
+    #ifdef VV_USE_U64_SYSTIME_FOR_FRAME_TIMES
+    if (!host_systime64_usec || !host_prevsystime64_usec) return 50;
+    if (host_systime64_usec == host_prevsystime64_usec) return 50;
+    unsigned ftime;
+    if (GGameInfo->NetMode <= NM_Standalone) {
+      // local game
+      if (cl_cap_framerate.asBool()) {
+        const unsigned frate = (unsigned)clampval(cl_framerate.asInt(), 1, 250);
+        ftime = CalcFrameMSecs(frate);
+      } else {
+        ftime = 4u; // no more than 250 frames per second
+      }
+    } else {
+      // network game
+      return 100;
+    }
+    //GCon->Logf("*** FilterTime; lasttime=%g; ctime=%g; time=%g; ftime=%g; cfr=%g", last_time, curr_time, time, ftime, 1.0/(double)ftime);
+    const uint64_t nft = host_systime64_usec+(uint64_t)ftime*1000U;
+    uint64_t ctt;
+    (void)Sys_Time_ExU(&ctt);
+    if (ctt >= nft) return 0;
+    ctt = nft-ctt;
+    //if (ctt > 100000) ctt = 100000;
+         if (ctt > 1000) ctt = 1000;
+    else if (ctt > 5) ctt -= 5;
+    return (unsigned)ctt;
+    #else
+    return 50;
+    #endif
+  #else
+    return 100;
+  #endif
 }
 
 
@@ -830,7 +874,13 @@ void Host_Frame () {
         #endif
       } else {
         // don't do it too often, tho
-        Sys_Yield();
+        #ifdef WIN32
+        Sys_YieldMicro(50); // sleep for 0.05 milliseconds
+        #else
+        const unsigned yt = CalcYieldTime();
+        //fprintf(stderr, "***SLEEP MICROSECS: %u\n", yt);
+        if (yt) Sys_YieldMicro(yt);
+        #endif
       }
       return;
     }

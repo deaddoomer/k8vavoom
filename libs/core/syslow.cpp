@@ -763,12 +763,12 @@ void Sys_PinOtherThread () {
 
 //==========================================================================
 //
-//  Sys_Time_Ex
+//  Sys_Time_ExU
 //
 //  return valud should not be zero
 //
 //==========================================================================
-double Sys_Time_Ex (vuint64 *msecs) {
+double Sys_Time_ExU (uint64_t *usecs) {
 #ifdef __linux__
   struct timespec ts;
   #ifdef ANDROID // CrystaX 10.3.2 supports only this
@@ -780,9 +780,9 @@ double Sys_Time_Ex (vuint64 *msecs) {
   // we don't actually need nanosecond precision here
   // one second is 1,000,000,000 nanoseconds
   // therefore, one millisecond is 1,000,000 nanoseconds
-  const vuint64 msc =
-    ((vuint64)(ts.tv_sec-systimeSecBase+1)*(vuint64)1000)+ // seconds->milliseconds
-    ((vuint64)ts.tv_nsec/(vuint64)1000000); // nanoseconds->milliseconds
+  const uint64_t msc =
+    ((uint64_t)(ts.tv_sec-systimeSecBase+1)*(uint64_t)1000000)+ // seconds->microseconds
+    ((uint64_t)ts.tv_nsec/(uint64_t)1000); // nanoseconds->microseconds
 #else
   struct timeval tp;
   struct timezone tzp;
@@ -790,12 +790,12 @@ double Sys_Time_Ex (vuint64 *msecs) {
   SYSTIME_CHECK_INIT();
   // one second is 1,000,000 microseconds
   // therefore, one millisecond is 1,000 microseconds
-  const vuint64 msc =
-    ((vuint64)(tp.tv_sec-systimeSecBase+1)*(vuint64)1000)+ // seconds->milliseconds
-    ((vuint64)tp.tv_usec/(vuint64)1000); // microseconds->milliseconds
+  const uint64_t msc =
+    ((uint64_t)(tp.tv_sec-systimeSecBase+1)*(uint64_t)1000000)+ // seconds->microseconds
+    ((uint64_t)tp.tv_usec);
 #endif
-  if (msecs) *msecs = msc;
-  return (timeOffset+(double)msc)/1000.0;
+  if (usecs) *usecs = msc;
+  return (timeOffset+(double)msc)/1000000.0;
 }
 
 
@@ -815,12 +815,12 @@ vuint64 Sys_GetTimeNano () {
     if (clock_gettime(/*CLOCK_MONOTONIC*/CLOCK_MONOTONIC_RAW, &ts) != 0) Sys_Error("clock_gettime failed");
   #endif
   SYSTIME_CHECK_INIT();
-  return (vuint64)(ts.tv_sec-systimeSecBase+1)*(vuint64)1000000000ULL+(vuint64)ts.tv_nsec;
+  return (uint64_t)(ts.tv_sec-systimeSecBase+1)*(uint64_t)1000000000+(uint64_t)ts.tv_nsec;
 #else
   // in shitdoze, we have millisecond precision at best anyway
-  vuint64 msecs;
-  (void)Sys_Time_Ex(&msecs);
-  return msecs*(vuint64)1000000;
+  uint64_t usecs;
+  (void)Sys_Time_ExU(&usecs);
+  return usecs*(uint64_t)1000;
 #endif
 }
 
@@ -846,7 +846,7 @@ double Sys_Time_CPU () {
   return (ts.tv_sec-systimeCPUSecBase)+ts.tv_nsec/1000000000.0+1.0;
 #else
   // in shitdoze, we have millisecond precision at best anyway
-  return Sys_Time_Ex(nullptr);
+  return Sys_Time_ExU(nullptr);
 #endif
 }
 
@@ -876,10 +876,10 @@ vuint64 Sys_GetTimeCPUNano () {
 
 //==========================================================================
 //
-//  Sys_Yield
+//  Sys_YieldMicro
 //
 //==========================================================================
-void Sys_Yield () {
+void Sys_YieldMicro (unsigned microsecs) {
   //usleep(1);
   /*#ifdef HAVE_YIELD*/
   #if 0
@@ -887,8 +887,14 @@ void Sys_Yield () {
   #else
   //const struct timespec sleepTime = {0, 28500000};
   //const struct timespec sleepTime = {0, 1000000}; // one millisecond
+  #if 0
   const struct timespec sleepTime = {0, 100000}; // 0.1 millisecond
   nanosleep(&sleepTime, nullptr);
+  #else
+  if (microsecs >= 1000000) microsecs = 1000000-1; else if (!microsecs) microsecs = 50; // 0.05 millisecs
+  const struct timespec sleepTime = {0, (int32_t)microsecs};
+  nanosleep(&sleepTime, nullptr);
+  #endif
   #endif
 }
 
@@ -1306,16 +1312,16 @@ void Sys_PinOtherThread () {
 
 //==========================================================================
 //
-//  Sys_Time_Ex
+//  Sys_Time_ExU
 //
 //==========================================================================
-double Sys_Time_Ex (vuint64 *msecs) {
+double Sys_Time_ExU (uint64_t *usecs) {
   if (!shitdozeTimerInited) Sys_Error("shitdoze shits itself");
   const vuint32 currtime = (vuint32)timeGetTime();
   // this properly deals with wraparounds
   shitdozeCurrTime += currtime-shitdozeLastTime;
   shitdozeLastTime = currtime;
-  if (msecs) *msecs = shitdozeCurrTime;
+  if (usecs) *usecs = (uint64_t)shitdozeCurrTime*(uint64_t)1000;
   return (timeOffset+(double)shitdozeCurrTime)/1000.0;
 }
 
@@ -1326,9 +1332,9 @@ double Sys_Time_Ex (vuint64 *msecs) {
 //
 //==========================================================================
 vuint64 Sys_GetTimeNano () {
-  vuint64 msecs;
-  (void)Sys_Time_Ex(&msecs);
-  return (vuint64)(msecs+1000)*1000000ULL; // msecs -> nsecs
+  uint64_t usecs;
+  (void)Sys_Time_ExU(&usecs);
+  return (uint64_t)(usecs+1000)*(uint64_t)1000; // microsecs -> nsecs
 }
 
 
@@ -1354,11 +1360,15 @@ vuint64 Sys_GetTimeCPUNano () {
 
 //==========================================================================
 //
-//  Sys_Yield
+//  Sys_YieldMicro
 //
 //==========================================================================
-void Sys_Yield () {
-  Sleep(0);
+void Sys_YieldMicro (unsigned microsecs) {
+  if (microsecs <= 10000) {
+    Sleep(0);
+  } else {
+    Sleep(microsecs/1000);
+  }
 }
 
 

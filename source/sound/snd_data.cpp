@@ -456,7 +456,7 @@ void VSoundManager::InitThreads () {
         MyThreadLocker lock(&loaderLock);
         if (loaderIsIdle) break;
       }
-      Sys_Yield();
+      Sys_YieldMicro(100); // 0.1 msecs
     }
     GCon->Log(NAME_Init, "sound loader thread initialised.");
   }
@@ -491,7 +491,7 @@ void VSoundManager::StopSoundLoaderThread (bool loadQueuedSounds) {
         MyThreadLocker lock(&loaderLock);
         if (loaderDoQuit == 2) break;
       }
-      Sys_Yield();
+      Sys_YieldMicro(100); // 0.1 msecs
       const double ctt = stt+Sys_Time();
       if (ctt >= 1.0/1000.0*100.0) break;
     }
