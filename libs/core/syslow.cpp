@@ -892,7 +892,7 @@ void Sys_YieldMicro (unsigned microsecs) {
   nanosleep(&sleepTime, nullptr);
   #else
   if (microsecs >= 1000000) microsecs = 1000000-1; else if (!microsecs) microsecs = 50; // 0.05 millisecs
-  const struct timespec sleepTime = {0, (int32_t)microsecs};
+  const struct timespec sleepTime = {0, (int32_t)microsecs*1000};
   nanosleep(&sleepTime, nullptr);
   #endif
   #endif
