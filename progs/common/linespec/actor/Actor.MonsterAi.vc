@@ -683,6 +683,69 @@ final bool CheckForResurrect (bool UseVileStates) {
 
 //==========================================================================
 //
+//  DoChasePerfectHatred
+//
+//  switch target if we cannot see it for long enough
+//
+//  WARNING! caller should do all the checks
+//
+//==========================================================================
+final void DoChasePerfectHatred () {
+  if (pfgLastCheckGameTic == XLevel.TicTime) return;
+  pfgLastCheckGameTic = XLevel.TicTime;
+
+  Actor tgt = Actor(Target);
+  if (!tgt || !tgt.bMonster || tgt.Health <= 0) {
+    //if (pfhLastTarget) printdebug("%C: dropping pfh target %C(%s)", self, pfhLastTarget, (pfhLastTarget ? pfhLastTarget.UniqueId : 0));
+    pfhLastTarget = none;
+    pfhLastTargetTics = 0;
+    pfgLastTargetSeenTics = 0;
+    return;
+  }
+
+  if (tgt != pfhLastTarget) {
+    //if (pfhLastTarget) printdebug("%C: switching pfh target from %C(%s) to %C(%s)", self, pfhLastTarget, (pfhLastTarget ? pfhLastTarget.UniqueId : 0), tgt, (tgt ? tgt.UniqueId : 0));
+    pfhLastTarget = tgt;
+    pfhLastTargetTics = 0;
+    pfgLastTargetSeenTics = 0;
+    return;
+  }
+
+  ++pfhLastTargetTics;
+  if (pfhLastTargetTics < 35*2) return;
+  if (pfhLastTargetTics == 35*2) {
+    pfgLastTargetSeenTics = pfhLastTargetTics;
+    return;
+  }
+
+  if (CanSee(tgt)) ++pfgLastTargetSeenTics;
+
+  //printdebug("%C: pfh target is `%C`, total tics is %s, seen tics is %s", self, tgt, pfhLastTargetTics, pfgLastTargetSeenTics);
+
+  if (pfhLastTargetTics-pfgLastTargetSeenTics <= 35*5) return;
+
+  // total "unseen time" is 5 or more seconds
+  // actually, much more, because this is not called on each tic
+
+  printdebug("%C: haven't seen target %C(%s) long enough (%s), trying to find a new target...", self, tgt, (tgt ? tgt.UniqueId : 0), pfhLastTargetTics-pfgLastTargetSeenTics);
+  //LookForPlayers(bLookAllAround ? 360 : 0);
+  LookForMonstersPH(Target); // ignore last target
+  tgt = Actor(Target);
+  if (tgt) {
+    printdebug("%C: new target found! it is %C(%d)", self, tgt, (tgt ? tgt.UniqueId : 0));
+    if (!tgt.bMonster) {
+      printdebug("%C: ...but it's not a monster, so dropping it", self);
+      tgt = none;
+    }
+    pfhLastTarget = tgt;
+    pfhLastTargetTics = 0;
+    pfgLastTargetSeenTics = 0;
+  }
+}
+
+
+//==========================================================================
+//
 //  A_Chase
 //
 //==========================================================================
@@ -691,6 +754,8 @@ final bool CheckForResurrect (bool UseVileStates) {
     NightmareFast:LineSpecialGameInfo(Level.Game).bNightmareFastChase,
     PlayActive:true,
     DontMove:false);
+  // in "perfect hatred" mode, switch target if we haven't seen it for long enough
+  if (bMonster && (Level.PerfectHatredMode&LevelInfo::PHM_HUNT_MONSTERS)) DoChasePerfectHatred();
 }
 
 
@@ -716,6 +781,8 @@ final bool CheckForResurrect (bool UseVileStates) {
       noPostAttackTurn:!!(Flags&CHF_NOPOSTATTACKTURN),
       stopIfBlocked:!!(Flags&CHF_STOPIFBLOCKED));
   }
+  // in "perfect hatred" mode, switch target if we haven't seen it for long enough
+  if (bMonster && (Level.PerfectHatredMode&LevelInfo::PHM_HUNT_MONSTERS)) DoChasePerfectHatred();
   /*
   if (specified_AMeleeState) {
     if ((Flags&8) && CheckForResurrect(false)) return;
@@ -736,6 +803,8 @@ final bool CheckForResurrect (bool UseVileStates) {
 //============================================================================
 [decorate] final void A_FastChase () {
   DoChase(true, MeleeState, MissileState, true, true, false);
+  // in "perfect hatred" mode, switch target if we haven't seen it for long enough
+  if (bMonster && (Level.PerfectHatredMode&LevelInfo::PHM_HUNT_MONSTERS)) DoChasePerfectHatred();
 }
 
 
@@ -761,6 +830,8 @@ final bool CheckForResurrect (bool UseVileStates) {
   state Missile = MissileState;
   if (!UseMissile) Missile = none;
   DoChase(false, Melee, Missile, NightmareFast, PlayActive, false);
+  // in "perfect hatred" mode, switch target if we haven't seen it for long enough
+  if (bMonster && (Level.PerfectHatredMode&LevelInfo::PHM_HUNT_MONSTERS)) DoChasePerfectHatred();
 }
 
 

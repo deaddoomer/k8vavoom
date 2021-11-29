@@ -182,24 +182,40 @@ final bool LookForMonsters (optional bool deadInfight) {
 //  LookForMonstersPH
 //
 //==========================================================================
-final bool LookForMonstersPH () {
+final bool LookForMonstersPH (optional EntityEx exingore) {
   //k8: this is used only in "perfect hatred" mode
   if (!(Level.PerfectHatredMode&LevelInfo::PHM_HUNT_MONSTERS)) return false;
-  if (LookForMonsters()) return true; // just in case
+  //if (LookForMonsters()) return true; // just in case
   float currDist = float.inf;
   Actor bestDist = none;
+  float currSeenDist = float.inf;
+  Actor seenBest = none;
   Actor mo;
   foreach AllThinkers(Actor, out mo) {
     if (!mo) continue;
     if (!mo.bMonster || mo == self || mo.Health <= 0) continue; // not a valid monster
     if (mo.bReallyNeverTarget) continue;
-    float dist = DistTo(mo);
-    if (dist > currDist) continue;
+    if (mo == exingore) continue;
     if (P_Random() < 16) continue; // skip
-    //if (!CanSee(mo)) continue; // out of sight
     if (IsNotAttackingMaster(mo)) continue;
-    currDist = dist;
-    bestDist = mo;
+    float dist = DistTo(mo);
+    if (dist >= currDist && dist >= currSeenDist) continue;
+    if (dist < currSeenDist) {
+      if (CanSee(mo)) {
+        currSeenDist = dist;
+        seenBest = mo;
+        continue;
+      }
+    }
+    if (dist < currDist) {
+      currDist = dist;
+      bestDist = mo;
+    }
+  }
+  if (seenBest) {
+    // found a target monster
+    Target = seenBest;
+    return true;
   }
   if (bestDist) {
     // found a target monster

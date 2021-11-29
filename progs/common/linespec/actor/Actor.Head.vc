@@ -29,6 +29,12 @@
 //**************************************************************************
 class Actor : EntityEx abstract [decorate];
 
+// this is for "perfect hatred" mode
+transient Actor pfhLastTarget;
+transient int pfhLastTargetTics;
+transient int pfgLastTargetSeenTics;
+transient int pfgLastCheckGameTic;
+
 
 //==========================================================================
 //
