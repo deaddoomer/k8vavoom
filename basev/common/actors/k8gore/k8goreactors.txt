@@ -5,7 +5,7 @@ Actor K8Gore_BloodBase { LimitWithSubCvar "k8GoreOpt_MaxBloodEntities" +NoTelepo
 Actor K8Gore_BloodBaseTransient : K8Gore_BloodBase { LimitWithSubCvar "k8GoreOpt_MaxTransientBloodEntities" +NoTeleport }
 k8vavoom { AllowBloodReplacement = true }
 ////////////////////////////////////////////////////////////////////////////////
-// RED BLOOD
+// BASE RED BLOOD
 ////////////////////////////////////////////////////////////////////////////////
 // ////////////////////////////////////////////////////////////////////////// //
 // this is main blood actor; it is spawned by the engine
@@ -13,15 +13,19 @@ k8vavoom { AllowBloodReplacement = true }
 // Tracer is damaged actor (can be empty)
 //
 // for normal blood, the engine will spawn:
-//   Blood[Color]
-//   BloodSplatter[Color]
+//   Blood
+//   BloodSplatter
 //
 // for gore blood, the engine will spawn:
-//   K8Gore_Blood[Color]
-//   K8Gore_BloodSplatter[Color]
+//   K8Gore_Blood
+//   K8Gore_BloodSplatter
+// and for XDeath:
+//   K8Gore_BloodTransient
 //
-Actor K8Gore_Blood : Blood /*: K8Gore_BloodBase*/ /*Replaces Blood*/ {
-  
+//  "Type" var is empty or "Transient" here
+//
+Actor K8Gore_Blood : Blood /*: K8Gore_BloodBase*/ {
+  LimitWithSubCvar "k8GoreOpt_MaxBloodEntities"
   Decal None
   +NOSECTOR
   +NOINTERACTION
@@ -114,7 +118,6 @@ Actor K8Gore_Blood : Blood /*: K8Gore_BloodBase*/ /*Replaces Blood*/ {
 // fast "in-place" blood hit
 /*!nope!:
 Actor K8Gore_BloodHit : K8Gore_BloodBase {
-  
   height 8
   radius 4
   +NOBLOCKMAP
@@ -143,7 +146,7 @@ Actor K8Gore_BloodHit : K8Gore_BloodBase {
 ////////////////////////////////////////////////////////////////////////////////
 // flying blood; will spawn blood spots and ceiling blood
 Actor K8Gore_FlyingBlood /*: K8Gore_BloodBase*/ {
-  
+  LimitWithSubCvar "k8GoreOpt_MaxBloodEntities"
   game Doom
   scale 0.5
   speed 4
@@ -256,7 +259,6 @@ Actor K8Gore_FlyingBlood /*: K8Gore_BloodBase*/ {
 
 
 Actor K8Gore_FlyingBloodLevel3 : K8Gore_FlyingBlood {
-  
   Scale 1.0
   Speed 5 //7
   Mass 1
@@ -287,7 +289,6 @@ Actor K8Gore_FlyingBloodLevel3 : K8Gore_FlyingBlood {
 
 // blood trails spawned by FlyingBlood
 Actor K8Gore_FlyingBloodTrail : K8Gore_BloodBase {
-  
   game Doom
   scale 0.70
   mass 1
@@ -334,7 +335,6 @@ Actor K8Gore_FlyingBloodTrail : K8Gore_BloodBase {
 
 
 Actor K8Gore_FlyingBloodFake : K8Gore_BloodBase {
-  
   game Doom
   scale 0.5
   speed 3
@@ -394,7 +394,6 @@ Actor K8Gore_FlyingBloodFake : K8Gore_BloodBase {
 
 
 Actor K8Gore_FlyingBloodFakeNoDecal : K8Gore_FlyingBloodFake {
-  
   Decal None
   -SeparateFlatDecal
   -Decals2SPass
@@ -409,7 +408,6 @@ Actor K8Gore_FlyingBloodFakeNoDecal : K8Gore_FlyingBloodFake {
 // this is floor blood spot (it may be spawned in the air, though)
 Actor K8Gore_BloodSpot : K8Gore_BloodBase {
   LimitWithSubCvar "k8GoreOpt_MaxBloodSplatEntities"
-  
   game Doom
   radius 0
   height 0
@@ -537,7 +535,6 @@ Actor K8Gore_BloodSpot : K8Gore_BloodBase {
 // ceiling blood mechanics
 
 Actor K8Gore_CeilingDecalSpawner : K8Gore_BloodBase {
-  
   game Doom
   scale 0.5
   speed 300
@@ -588,7 +585,6 @@ Actor K8Gore_CeilingDecalSpawner : K8Gore_BloodBase {
 // ceiling blood spot
 Actor K8Gore_CeilBloodSpot : K8Gore_BloodSpot {
   LimitWithSubCvar "k8GoreOpt_MaxCeilBloodSplatEntities"
-  
   //Projectile
   +SPAWNCEILING
   +StickToCeiling
@@ -627,10 +623,14 @@ Actor K8Gore_CeilBloodSpot : K8Gore_BloodSpot {
       "####" "#" 0
         {
           if (GetCVar("k8GoreOpt_CeilBloodDrip")) {
+            /*
+            // why did i done this? it seems to spawn a blood splat, but meh...
+            // flat decals is the new blood splats
             if (!GetCVar("k8GoreOpt_FlatDecals") || !IsFlatDecalsAllowed()) {
-              A_SpawnItem("K8Gore_DripingBloodLeavesSmallPool",0,0,0,true);
+              A_SpawnItem("K8Gore_DripingBloodLeavesSmallPool", 0, 0, 0, true);
             }
-            A_SpawnItem("K8Gore_CeilBloodTinyBloodSpawner",0,0,0,true);
+            */
+            A_SpawnItem("K8Gore_CeilBloodTinyBloodSpawner", 0, 0, 0, true);
           }
           if (GetCVar("k8GoreOpt_FlatDecals") && IsFlatDecalsAllowed()) {
             //A_k8ConLog("firing ceiling decal spawner...");
@@ -687,7 +687,6 @@ Actor K8Gore_CeilBloodSpot : K8Gore_BloodSpot {
 
 // ////////////////////////////////////////////////////////////////////////// //
 Actor K8Gore_TinyBlood : K8Gore_BloodBase {
-  
   game Doom
   scale 0.2
   speed 7
@@ -745,7 +744,6 @@ Actor K8Gore_TinyBlood : K8Gore_BloodBase {
 
 
 Actor K8Gore_CeilBloodTinyBloodSpawner : K8Gore_TinyBlood {
-  
   +NOGRAVITY
   +THRUACTORS
   +NOCLIP
@@ -775,9 +773,8 @@ Actor K8Gore_CeilBloodTinyBloodSpawner : K8Gore_TinyBlood {
 }
 
 
-// blood drops falling from ceiling (yet they're spawned on a floor, wtf?!)
+// blood drop falling from ceiling (yet they're spawned on a floor, wtf?!)
 Actor K8Gore_BloodDripingFromCeiling : K8Gore_TinyBlood {
-  
   +THRUACTORS
   +CLIENTSIDEONLY
   +SpawnCeiling
@@ -801,8 +798,9 @@ Actor K8Gore_BloodDripingFromCeiling : K8Gore_TinyBlood {
 }
 
 
+// blood drop falling from ceiling; spawns "minuscle blood spot" on floor hit
+// this isn't used anymore, but left here for save compatibility
 Actor K8Gore_DripingBloodLeavesSmallPool : K8Gore_TinyBlood {
-  
   +THRUACTORS
   +CLIENTSIDEONLY
   +SpawnCeiling
@@ -849,7 +847,6 @@ Actor K8Gore_DripingBloodLeavesSmallPool : K8Gore_TinyBlood {
 
 
 Actor K8Gore_MinuscleBloodSpot : K8Gore_BloodSpot {
-  
   game Doom
   radius 0
   height 0
@@ -935,124 +932,9 @@ Actor K8Gore_MinuscleBloodSpot : K8Gore_BloodSpot {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-// this is spawned by EntityEx instakill code
-// it may be replaced by a 3d model
-// "BPDL A" and "BPDL B" could be used to select 3d model
-// currently not used
-Actor K8Gore_GrowingBloodPool : K8Gore_BloodSpot {
-  
-  game Doom
-  radius 0
-  height 0
-  Mass 99999
-  Health 600
-  +NOTELEPORT
-  +CLIENTSIDEONLY
-  +MOVEWITHSECTOR
-  +FLOORCLIP
-  +MISSILE
-  -DONTSPLASH
-  +NOBLOCKMAP
-  +OrientedOfs
-  +CopyBloodTranslation
-  +NoExtremeDeath
-  -NoLiftDrop
-  +NoTeleport
-  +NoTrigger
-  +k8DetachFromServer
-  Scale 1.0
-  Decal None
-  -SeparateFlatDecal
-  -Decals2SPass
-  //Decal K8GoreBloodSplat
-  //+Decals2SPass
-  Renderstyle Dark
-  Alpha 0.99
-  +k8ServerSideOnly
-  +k8AllowSimpleTick
-
-  States {
-    Spawn:
-      BPDL A 0
-      "####" "#" 0 {
-        if (!GetCVar("k8GoreOpt_FlatDecals")) {
-          A_SetFlatDecal("None");
-        }
-      }
-      // if flat decals are allowed, get lost
-      "####" "#" 0 A_JumpIfCVarFalse("k8GoreOpt_FlatDecals", "GoOnPool")
-      "####" "#" 0 A_JumpIf(IsFlatDecalsAllowed(), "Die")
-    GoOnPool:
-      BPDL A 0 A_Jump(256, "Pool1", "Pool2")
-
-    Pool1:
-      BPDL A 0
-      Goto MainProcessor
-
-    Pool2:
-      BPDL B 0
-      Goto MainProcessor
-
-    MainProcessor:
-      "####" "#" 0 A_JumpIf(waterlevel > 1, "Splash")
-      "####" "#" 0 A_LayToFloorWithYawSprite(Random(0, 360))
-      "####" "#" 0 A_SetScaleXExt(Random(6, 12)/10.0)
-
-    WaitFloor:
-      "####" "#" 5 A_CheckFloor("ItLanded")
-      Loop
-    ItLanded:
-      "####" "#" 0
-        {
-          A_ChangeVelocity(0, 0, 0, CVF_REPLACE);
-          A_ChangeFlag("NoInteraction", true);
-          if (!A_k8JumpIfOnFloorSky("Die")) {
-            A_k8JumpIfLiquidFloor("ItLandedOnWater");
-          }
-        }
-
-    Live:
-      "####" "#" random(400, 900)
-      "####" "#" 0 A_Jump(16, "ItLandedOnWater") // fadeout
-      Loop
-
-    ItLandedOnWater:
-      "####" "#" 5 A_FadeOut(0.1)
-      Loop
-
-    Splash:
-      B8OD A 0
-      Stop
-
-    Death:
-      "####" "#" 0
-        {
-          A_ChangeVelocity(0, 0, 0, CVF_REPLACE);
-          A_ChangeFlag("NoInteraction", true);
-        }
-      Goto WaitFloor
-
-    Die:
-      TNT1 A 1
-      Stop
-  }
-}
-
-
-// ////////////////////////////////////////////////////////////////////////// //
-Actor K8Gore_Blood_SplatterReplacer : K8Gore_Blood /*Replaces BloodSplatter*/ {
-  
-  +NoTeleport
-  +k8DetachFromServer
-  +k8ServerSideOnly
-  +k8AllowSimpleTick
-}
-
-
 
 ////////////////////////////////////////////////////////////////////////////////
-// RED TRANSIENT BLOOD
+// BASE RED TRANSIENT BLOOD
 ////////////////////////////////////////////////////////////////////////////////
 // ////////////////////////////////////////////////////////////////////////// //
 // this is main blood actor; it is spawned by the engine
@@ -1060,15 +942,20 @@ Actor K8Gore_Blood_SplatterReplacer : K8Gore_Blood /*Replaces BloodSplatter*/ {
 // Tracer is damaged actor (can be empty)
 //
 // for normal blood, the engine will spawn:
-//   Blood[Color]
-//   BloodSplatter[Color]
+//   Blood
+//   BloodSplatter
 //
 // for gore blood, the engine will spawn:
-//   K8Gore_Blood[Color]
-//   K8Gore_BloodSplatter[Color]
+//   K8Gore_Blood
+//   K8Gore_BloodSplatter
+// and for XDeath:
+//   K8Gore_BloodTransient
 //
+//  "Type" var is empty or "Transient" here
+//
+//WARNING! keep this in sync with "classes_decorate.vc"
 Actor K8Gore_BloodTransient /*: K8Gore_BloodBaseTransient*/ {
-  
+  LimitWithSubCvar "k8GoreOpt_MaxTransientBloodEntities"
   //old:Decal K8GoreBloodSplatTransient
   //new start
   Decal K8GoreBloodSplatTransient
@@ -1159,7 +1046,6 @@ Actor K8Gore_BloodTransient /*: K8Gore_BloodBaseTransient*/ {
 // fast "in-place" blood hit
 /*!nope!:
 Actor K8Gore_BloodHitTransient : K8Gore_BloodBaseTransient {
-  
   height 8
   radius 4
   +NOBLOCKMAP
@@ -1188,7 +1074,7 @@ Actor K8Gore_BloodHitTransient : K8Gore_BloodBaseTransient {
 ////////////////////////////////////////////////////////////////////////////////
 // flying blood; will spawn blood spots and ceiling blood
 Actor K8Gore_FlyingBloodTransient /*: K8Gore_BloodBaseTransient*/ {
-  
+  LimitWithSubCvar "k8GoreOpt_MaxTransientBloodEntities"
   game Doom
   scale 0.5
   speed 4
@@ -1301,7 +1187,6 @@ Actor K8Gore_FlyingBloodTransient /*: K8Gore_BloodBaseTransient*/ {
 
 
 Actor K8Gore_FlyingBloodLevel3Transient : K8Gore_FlyingBloodTransient {
-  
   Scale 1.0
   Speed 5 //7
   Mass 1
@@ -1332,7 +1217,6 @@ Actor K8Gore_FlyingBloodLevel3Transient : K8Gore_FlyingBloodTransient {
 
 // blood trails spawned by FlyingBlood
 Actor K8Gore_FlyingBloodTrailTransient : K8Gore_BloodBaseTransient {
-  
   game Doom
   scale 0.70
   mass 1
@@ -1379,7 +1263,6 @@ Actor K8Gore_FlyingBloodTrailTransient : K8Gore_BloodBaseTransient {
 
 
 Actor K8Gore_FlyingBloodFakeTransient : K8Gore_BloodBaseTransient {
-  
   game Doom
   scale 0.5
   speed 3
@@ -1439,7 +1322,6 @@ Actor K8Gore_FlyingBloodFakeTransient : K8Gore_BloodBaseTransient {
 
 
 Actor K8Gore_FlyingBloodFakeNoDecalTransient : K8Gore_FlyingBloodFakeTransient {
-  
   Decal None
   -SeparateFlatDecal
   -Decals2SPass
@@ -1454,7 +1336,6 @@ Actor K8Gore_FlyingBloodFakeNoDecalTransient : K8Gore_FlyingBloodFakeTransient {
 // this is floor blood spot (it may be spawned in the air, though)
 Actor K8Gore_BloodSpotTransient : K8Gore_BloodBaseTransient {
   LimitWithSubCvar "k8GoreOpt_MaxBloodSplatEntities"
-  
   game Doom
   radius 0
   height 0
@@ -1576,7 +1457,6 @@ Actor K8Gore_BloodSpotTransient : K8Gore_BloodBaseTransient {
 // ceiling blood mechanics
 
 Actor K8Gore_CeilingDecalSpawnerTransient : K8Gore_BloodBaseTransient {
-  
   game Doom
   scale 0.5
   speed 300
@@ -1627,7 +1507,6 @@ Actor K8Gore_CeilingDecalSpawnerTransient : K8Gore_BloodBaseTransient {
 // ceiling blood spot
 Actor K8Gore_CeilBloodSpotTransient : K8Gore_BloodSpotTransient {
   LimitWithSubCvar "k8GoreOpt_MaxCeilBloodSplatEntities"
-  
   //Projectile
   +SPAWNCEILING
   +StickToCeiling
@@ -1666,10 +1545,14 @@ Actor K8Gore_CeilBloodSpotTransient : K8Gore_BloodSpotTransient {
       "####" "#" 0
         {
           if (GetCVar("k8GoreOpt_CeilBloodDrip")) {
+            /*
+            // why did i done this? it seems to spawn a blood splat, but meh...
+            // flat decals is the new blood splats
             if (!GetCVar("k8GoreOpt_FlatDecals") || !IsFlatDecalsAllowed()) {
-              A_SpawnItem("K8Gore_DripingBloodLeavesSmallPoolTransient",0,0,0,true);
+              A_SpawnItem("K8Gore_DripingBloodLeavesSmallPoolTransient", 0, 0, 0, true);
             }
-            A_SpawnItem("K8Gore_CeilBloodTinyBloodSpawnerTransient",0,0,0,true);
+            */
+            A_SpawnItem("K8Gore_CeilBloodTinyBloodSpawnerTransient", 0, 0, 0, true);
           }
           if (GetCVar("k8GoreOpt_FlatDecals") && IsFlatDecalsAllowed()) {
             //A_k8ConLog("firing ceiling decal spawner...");
@@ -1726,7 +1609,6 @@ Actor K8Gore_CeilBloodSpotTransient : K8Gore_BloodSpotTransient {
 
 // ////////////////////////////////////////////////////////////////////////// //
 Actor K8Gore_TinyBloodTransient : K8Gore_BloodBaseTransient {
-  
   game Doom
   scale 0.2
   speed 7
@@ -1785,7 +1667,6 @@ Actor K8Gore_TinyBloodTransient : K8Gore_BloodBaseTransient {
 
 
 Actor K8Gore_CeilBloodTinyBloodSpawnerTransient : K8Gore_TinyBloodTransient {
-  
   +NOGRAVITY
   +THRUACTORS
   +NOCLIP
@@ -1815,9 +1696,8 @@ Actor K8Gore_CeilBloodTinyBloodSpawnerTransient : K8Gore_TinyBloodTransient {
 }
 
 
-// blood drops falling from ceiling (yet they're spawned on a floor, wtf?!)
+// blood drop falling from ceiling (yet they're spawned on a floor, wtf?!)
 Actor K8Gore_BloodDripingFromCeilingTransient : K8Gore_TinyBloodTransient {
-  
   +THRUACTORS
   +CLIENTSIDEONLY
   +SpawnCeiling
@@ -1841,8 +1721,9 @@ Actor K8Gore_BloodDripingFromCeilingTransient : K8Gore_TinyBloodTransient {
 }
 
 
+// blood drop falling from ceiling; spawns "minuscle blood spot" on floor hit
+// this isn't used anymore, but left here for save compatibility
 Actor K8Gore_DripingBloodLeavesSmallPoolTransient : K8Gore_TinyBloodTransient {
-  
   +THRUACTORS
   +CLIENTSIDEONLY
   +SpawnCeiling
@@ -1889,7 +1770,6 @@ Actor K8Gore_DripingBloodLeavesSmallPoolTransient : K8Gore_TinyBloodTransient {
 
 
 Actor K8Gore_MinuscleBloodSpotTransient : K8Gore_BloodSpotTransient {
-  
   game Doom
   radius 0
   height 0
@@ -1973,111 +1853,3 @@ Actor K8Gore_MinuscleBloodSpotTransient : K8Gore_BloodSpotTransient {
       Stop
   }
 }
-
-
-// ////////////////////////////////////////////////////////////////////////// //
-// this is spawned by EntityEx instakill code
-// it may be replaced by a 3d model
-// "BPDL A" and "BPDL B" could be used to select 3d model
-// currently not used
-Actor K8Gore_GrowingBloodPoolTransient : K8Gore_BloodSpotTransient {
-  
-  game Doom
-  radius 0
-  height 0
-  Mass 99999
-  Health 600
-  +NOTELEPORT
-  +CLIENTSIDEONLY
-  +MOVEWITHSECTOR
-  +FLOORCLIP
-  +MISSILE
-  -DONTSPLASH
-  +NOBLOCKMAP
-  +OrientedOfs
-  +CopyBloodTranslation
-  +NoExtremeDeath
-  -NoLiftDrop
-  +NoTeleport
-  +NoTrigger
-  +k8DetachFromServer
-  Scale 1.0
-  Decal None
-  -SeparateFlatDecal
-  -Decals2SPass
-  //Decal K8GoreBloodSplatTransient
-  //+Decals2SPass
-  Renderstyle Dark
-  Alpha 0.99
-  +k8ServerSideOnly
-  +k8AllowSimpleTick
-
-  States {
-    Spawn:
-      BPDL A 0
-      "####" "#" 0 {
-        if (!GetCVar("k8GoreOpt_FlatDecals")) {
-          A_SetFlatDecal("None");
-        }
-      }
-      // if flat decals are allowed, get lost
-      "####" "#" 0 A_JumpIfCVarFalse("k8GoreOpt_FlatDecals", "GoOnPool")
-      "####" "#" 0 A_JumpIf(IsFlatDecalsAllowed(), "Die")
-    GoOnPool:
-      BPDL A 0 A_Jump(256, "Pool1", "Pool2")
-
-    Pool1:
-      BPDL A 0
-      Goto MainProcessor
-
-    Pool2:
-      BPDL B 0
-      Goto MainProcessor
-
-    MainProcessor:
-      "####" "#" 0 A_JumpIf(waterlevel > 1, "Splash")
-      "####" "#" 0 A_LayToFloorWithYawSprite(Random(0, 360))
-      "####" "#" 0 A_SetScaleXExt(Random(6, 12)/10.0)
-
-    WaitFloor:
-      "####" "#" 5 A_CheckFloor("ItLanded")
-      Loop
-    ItLanded:
-      "####" "#" 0
-        {
-          A_ChangeVelocity(0, 0, 0, CVF_REPLACE);
-          A_ChangeFlag("NoInteraction", true);
-          if (!A_k8JumpIfOnFloorSky("Die")) {
-            A_k8JumpIfLiquidFloor("ItLandedOnWater");
-          }
-        }
-
-    Live:
-      "####" "#" random(400, 900)
-      "####" "#" 0 A_Jump(16, "ItLandedOnWater") // fadeout
-      Loop
-
-    ItLandedOnWater:
-      "####" "#" 5 A_FadeOut(0.1)
-      Loop
-
-    Splash:
-      B8OD A 0
-      Stop
-
-    Death:
-      "####" "#" 0
-        {
-          A_ChangeVelocity(0, 0, 0, CVF_REPLACE);
-          A_ChangeFlag("NoInteraction", true);
-        }
-      Goto WaitFloor
-
-    Die:
-      TNT1 A 1
-      Stop
-  }
-}
-
-
-// ////////////////////////////////////////////////////////////////////////// //

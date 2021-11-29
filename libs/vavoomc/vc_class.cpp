@@ -143,9 +143,9 @@ VClass::VClass (VName AName, VMemberBase *AOuter, const TLocation &ALoc)
   , KnownEnums()
   , InstanceCount(0)
   , InstanceCountWithSub(0)
-  , InstanceLimit(0)
+  //, InstanceLimit(0)
+  //, InstanceLimitCvar()
   , InstanceLimitWithSub(0)
-  , InstanceLimitCvar()
   , InstanceLimitWithSubCvar()
   , InstanceLimitBaseClass(nullptr)
   , InstanceLimitList()
@@ -197,9 +197,9 @@ VClass::VClass (ENativeConstructor, size_t ASize, vuint32 AClassFlags, VClass *A
   , KnownEnums()
   , InstanceCount(0)
   , InstanceCountWithSub(0)
-  , InstanceLimit(0)
+  //, InstanceLimit(0)
+  //, InstanceLimitCvar()
   , InstanceLimitWithSub(0)
-  , InstanceLimitCvar()
   , InstanceLimitWithSubCvar()
   , InstanceLimitBaseClass(nullptr)
   , InstanceLimitList()
@@ -2685,16 +2685,16 @@ VClass *VClass::CreateDerivedClass (VName AName, VMemberBase *AOuter, TArray<VDe
 
 //==========================================================================
 //
-//  VClass::GetReplacement
+//  VClass::GetReplacementRecursive
 //
 //==========================================================================
-VClass *VClass::GetReplacement () {
-  vassert(this);
-  if (!Replacement) return this;
-  // avoid looping recursion by temporarely nullptr-ing the field
+VClass *VClass::GetReplacementRecursive () noexcept {
   VClass *Temp = Replacement;
+  if (!Temp) return this;
+  if (!Temp->Replacement) return Temp; // fast exit
+  // avoid looping recursion by temporarely nullptr-ing the field
   Replacement = nullptr;
-  VClass *Ret = Temp->GetReplacement();
+  VClass *Ret = Temp->GetReplacementRecursive();
   Replacement = Temp;
   return Ret;
 }
@@ -2705,12 +2705,13 @@ VClass *VClass::GetReplacement () {
 //  VClass::GetReplacee
 //
 //==========================================================================
-VClass *VClass::GetReplacee () {
-  if (!Replacee) return this;
-  // avoid looping recursion by temporarely nullptr-ing the field
+VClass *VClass::GetReplaceeRecursive () noexcept {
   VClass *Temp = Replacee;
+  if (!Temp) return this;
+  if (!Temp->Replacee) return Temp;
+  // avoid looping recursion by temporarely nullptr-ing the field
   Replacee = nullptr;
-  VClass *Ret = Temp->GetReplacee();
+  VClass *Ret = Temp->GetReplaceeRecursive();
   Replacee = Temp;
   return Ret;
 }

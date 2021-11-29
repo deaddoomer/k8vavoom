@@ -36,7 +36,7 @@ enum EClassFlags {
   CLASS_DecorateVisible       = 0x1000u, // this class, and all its children are visible to decorate code
   CLASS_Transient             = 0x8000u,
   // note that limiting is done by the main engine, VC does nothing with those flags
-  CLASS_LimitInstances        = 0x10000u, // limit number of instances of this class
+  //CLASS_LimitInstances        = 0x10000u, // limit number of instances of this class (this is not used)
   CLASS_LimitInstancesWithSub = 0x20000u, // limit number of instances of this class and all its subclasses
 };
 
@@ -420,14 +420,18 @@ public:
   int InstanceCount; // number of alive instances of this class
   int InstanceCountWithSub; // number of alive instances of this class and its subclasses (includes `InstanceCount`)
 
-  // used by the main engine only
-  int InstanceLimit;
-  int InstanceLimitWithSub;
-  VStr InstanceLimitCvar;
-  VStr InstanceLimitWithSubCvar;
+  // instance limiter; used by the main game engine only
+  // library user should take care of propagating required valued
+  // all limiting is done only via cvars
+  // currently, k8vavoom is using `InstanceLimitBaseClass` to get the actual values
+  //int InstanceLimit;
+  //VStr InstanceLimitCvar;
+  int InstanceLimitWithSub; // current limit value (used as a cache, and updated by the main engine)
+  VStr InstanceLimitWithSubCvar; // limiter cvar name
+  VCvar *InstanceLimitWithSubCvarPtr; // cached cvar, to avoid searches
   // this is used to reroute limit counters from this class to base class
   VClass *InstanceLimitBaseClass;
-  // in the main engine thinker this list will be filled with all alive instances
+  // in the main engine thinker this list will be filled with all alive instances (used by the main engine)
   TArray<VObject *> InstanceLimitList;
 
 private:
@@ -437,6 +441,9 @@ private:
   static void RebuildSpriteMap ();
 
   static int FindSpriteInternal (VName Name, bool Append);
+
+  VClass *GetReplacementRecursive () noexcept;
+  VClass *GetReplaceeRecursive () noexcept;
 
 public:
   // property renames for various types
@@ -457,10 +464,9 @@ public:
   static inline VName GetSpriteNameAt (int idx) noexcept { return (idx >= 0 && idx < GSpriteNames.length() ? GSpriteNames[idx] : NAME_None); }
 
 public:
-  inline bool GetLimitInstances () const noexcept { return (ClassFlags&CLASS_LimitInstances); }
+  //inline bool GetLimitInstances () const noexcept { return (ClassFlags&CLASS_LimitInstances); }
+  //inline void SetLimitInstances (bool v) noexcept { if (v) ClassFlags |= CLASS_LimitInstances; else ClassFlags &= ~CLASS_LimitInstances; }
   inline bool GetLimitInstancesWithSub () const noexcept { return (ClassFlags&CLASS_LimitInstancesWithSub); }
-
-  inline void SetLimitInstances (bool v) noexcept { if (v) ClassFlags |= CLASS_LimitInstances; else ClassFlags &= ~CLASS_LimitInstances; }
   inline void SetLimitInstancesWithSub (bool v) noexcept { if (v) ClassFlags |= CLASS_LimitInstancesWithSub; else ClassFlags &= ~CLASS_LimitInstancesWithSub; }
 
 public:
@@ -596,8 +602,21 @@ public:
   void DestructObject (VObject *);
 
   VClass *CreateDerivedClass (VName, VMemberBase *, TArray<VDecorateUserVarDef> &, const TLocation &);
-  VClass *GetReplacement ();
-  VClass *GetReplacee ();
+
+  inline VClass *GetReplacement () noexcept {
+    VClass *Temp = Replacement;
+    if (!Temp) return this;
+    if (!Temp->Replacement) return Temp; // fast exit
+    return GetReplacementRecursive();
+  }
+
+  inline VClass *GetReplacee () noexcept {
+    VClass *Temp = Replacee;
+    if (!Temp) return this;
+    if (!Temp->Replacee) return Temp; // fast exit
+    return GetReplaceeRecursive();
+  }
+
   // returns `false` if replacee cannot be set for some reason
   bool SetReplacement (VClass *cls); // assign `cls` as a replacement for this
 

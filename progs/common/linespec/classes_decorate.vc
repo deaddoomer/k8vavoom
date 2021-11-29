@@ -38,6 +38,10 @@ class MapSpot : Actor decorate;
 class ItemFog : Actor decorate;
 class BloodySkull : PlayerChunk decorate;
 
+// Gore Mod
+//WARNING! keep this in sync with decorate code!
+class K8Gore_BloodTransient : Actor;
+
 class BulletPuff : Actor decorate;
 class Clip : Ammo decorate;
 class Shell : Ammo decorate;

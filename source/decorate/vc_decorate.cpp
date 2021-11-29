@@ -684,8 +684,8 @@ static bool thisIsBasePak = false;
 // ////////////////////////////////////////////////////////////////////////// //
 struct PropLimitSub {
   VClass *baseClass;
-  bool isInt;
-  int amount;
+  //bool isInt;
+  //int amount;
   VStr cvar;
 };
 
@@ -769,6 +769,7 @@ static int FindPropLimitSub (VClass *aclass) noexcept {
 //  NewPropLimitSubInt
 //
 //==========================================================================
+/*
 static void NewPropLimitSubInt (VClass *abaseClass, int amount) noexcept {
   vassert(abaseClass);
   if (amount > 0) {
@@ -786,6 +787,7 @@ static void NewPropLimitSubInt (VClass *abaseClass, int amount) noexcept {
     }
   }
 }
+*/
 
 
 //==========================================================================
@@ -798,14 +800,14 @@ static void NewPropLimitSubCvar (VClass *abaseClass, VStr cvar) {
   if (!cvar.isEmpty()) {
     int idx = FindPropLimitSub(abaseClass);
     if (idx >= 0) {
-      limitSubs[idx].isInt = false;
-      limitSubs[idx].amount = 0;
+      //limitSubs[idx].isInt = false;
+      //limitSubs[idx].amount = 0;
       limitSubs[idx].cvar = cvar;
     } else {
       PropLimitSub &ls = limitSubs.alloc();
       ls.baseClass = abaseClass;
-      ls.isInt = false;
-      ls.amount = 0;
+      //ls.isInt = false;
+      //ls.amount = 0;
       ls.cvar = cvar;
     }
   }
@@ -3370,12 +3372,14 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
       SkipSemicolonsToEOL(sc);
       continue;
     }
+    /* removed
     if (Prop.strEquCI("limitwithsubint")) {
       sc->ExpectNumber();
       NewPropLimitSubInt(Class, sc->Number);
       SkipSemicolonsToEOL(sc);
       continue;
     }
+    */
 
     if (decorate_fail_on_unknown) {
       sc->Error(va("Unknown property \"%s\"", *Prop));
@@ -4202,12 +4206,18 @@ static void SetupLimiters () {
   for (auto &&lsb : limitSubs) {
     vassert(lsb.baseClass);
     if (!lsb.baseClass->IsChildOf(EntityClass)) continue;
+    /*
     if (lsb.isInt) {
       vassert(lsb.amount > 0);
       lsb.baseClass->InstanceLimitWithSub = lsb.amount;
-    } else {
+    } else
+    */
+    {
       vassert(!lsb.cvar.isEmpty());
       lsb.baseClass->InstanceLimitWithSubCvar = lsb.cvar;
+      // cache cvar name if we can
+      // note that some cvars may be created by VC code later, so it is ok to not have a cvar here
+      lsb.baseClass->InstanceLimitWithSubCvarPtr = VCvar::FindVariable(*lsb.cvar);
     }
     lsb.baseClass->SetLimitInstancesWithSub(true);
     NumberLimitedClasses.append(lsb.baseClass);
@@ -4215,17 +4225,20 @@ static void SetupLimiters () {
 
   // now link all classes to base limits
   VClass::ForEachClass([](VClass *cls) -> FERes {
+    // if it is already marked, no need to process it again
+    if (cls->GetLimitInstancesWithSub()) return FERes::FOREACH_NEXT;
     VClass *bc = cls;
+    // check parents, stop if we found a base limiting class
     while (bc) {
       if (!bc->InstanceLimitBaseClass && bc->GetLimitInstancesWithSub()) break;
       bc = bc->GetSuperClass();
     }
-    if (bc) {
-      // yay, i found good base class!
-      for (VClass *cc = cls; cc != bc; cc = cc->GetSuperClass()) {
-        cc->SetLimitInstancesWithSub(true);
-        cc->InstanceLimitBaseClass = bc;
-      }
+    if (!bc) return FERes::FOREACH_NEXT; // not found
+    // yay, i found good base class!
+    // propagate "limited" and base limiter class
+    for (VClass *cc = cls; cc != bc; cc = cc->GetSuperClass()) {
+      cc->SetLimitInstancesWithSub(true);
+      cc->InstanceLimitBaseClass = bc;
     }
     return FERes::FOREACH_NEXT;
   });

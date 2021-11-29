@@ -1069,13 +1069,20 @@ final int CalcEntityFlags () {
 //
 //  IsBloodAllowed
 //
+//  final for now, but this may change
+//
 //==========================================================================
-bool IsBloodAllowed () {
+final bool IsBloodAllowed () {
+  if (GetCvarB('dbg_blood_disable_entities')) return false;
+
   if (bNoBlood) return false;
 
-  if (bInvisible || bInvulnerable) return false; // don't spawn blood for invulnerable things
-  if (!bMonster && !bIsPlayer) return false; // only mosters and players has blood
-  if (bMonster && Health >= 10_000) return false; // this looks like something stationary, skip it
+  // don't spawn blood for invisible or invulnerable things
+  if (bInvisible || bInvulnerable) return false;
+  // only mosters and players has blood
+  if (!bMonster && !bIsPlayer) return false;
+  // if this looks like something stationary, skip it
+  if (bMonster && Health >= 10_000 && !Velocity.xy) return false;
 
   return true;
 }

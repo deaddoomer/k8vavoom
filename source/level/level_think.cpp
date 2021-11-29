@@ -99,7 +99,8 @@ void VLevel::LevelStaticInit () {
   clsBloodAxe = VClass::FindClass("AxeBlood");
 
   clsGoreBlood = VClass::FindClass("K8Gore_Blood");
-  clsGoreBloodSplatter = VClass::FindClass("K8Gore_Blood_SplatterReplacer");
+  clsGoreBloodSplatter = VClass::FindClass("K8Gore_BloodSplatter");
+  if (!clsGoreBloodSplatter) clsGoreBloodSplatter = clsGoreBlood;
   clsGoreBloodAxe = VClass::FindClass("K8Gore_AxeBlood");
   if (!clsGoreBloodAxe) clsGoreBloodAxe = clsGoreBlood;
 
@@ -402,17 +403,6 @@ void VLevel::RunScriptThinkers (float DeltaTime) {
 }
 
 
-extern "C" {
-  static int cmpLimInstance (const void *aa, const void *bb, void *) {
-    if (aa == bb) return 0;
-    const VThinker *a = (const VThinker *)aa;
-    const VThinker *b = (const VThinker *)bb;
-    const float sts = a->SpawnTime-b->SpawnTime;
-    return (sts < 0 ? -1 : sts > 0 ? 1 : 0);
-  }
-}
-
-
 //==========================================================================
 //
 //  VLevel::TickDecals
@@ -434,6 +424,20 @@ void VLevel::TickDecals (float DeltaTime) {
     if (removeIt) RemoveDecalAnimator(c);
   }
   worldThinkTimeDecal = (dbg_world_think_decal_time ? Sys_Time()+stimed : -1);
+}
+
+
+//==========================================================================
+//
+//  cmpLimInstance
+//
+//==========================================================================
+static VVA_OKUNUSED int cmpLimInstance (const void *aa, const void *bb, void *) {
+  if (aa == bb) return 0;
+  const VThinker *a = (const VThinker *)aa;
+  const VThinker *b = (const VThinker *)bb;
+  const float sts = a->SpawnTime-b->SpawnTime;
+  return (sts < 0 ? -1 : sts > 0 ? 1 : 0);
 }
 
 
@@ -461,15 +465,25 @@ void VLevel::TickWorld (float DeltaTime) {
   if (dbg_world_think_vm_time) stimet = -Sys_Time();
 
   // setup limiter info
-  for (auto &&cls : NumberLimitedClasses) {
-    if (!cls->InstanceLimitWithSubCvar.isEmpty()) {
-      VCvar *cv = VCvar::FindVariable(*cls->InstanceLimitWithSubCvar);
-      if (cv) {
-        cls->InstanceLimitWithSub = max2(0, cv->asInt());
-      } else {
+  // `NumberLimitedClasses` contains only base limiter classes
+  for (VClass *cls : NumberLimitedClasses) {
+    if (!cls->GetLimitInstancesWithSub()) {
+      cls->InstanceLimitWithSub = 0;
+      continue;
+    }
+    VCvar *cv = cls->InstanceLimitWithSubCvarPtr;
+    if (!cv) {
+      if (!cls->InstanceLimitWithSubCvar.isEmpty()) cv = VCvar::FindVariable(*cls->InstanceLimitWithSubCvar);
+      cls->InstanceLimitWithSubCvarPtr = cv;
+      if (!cv) {
+        cls->InstanceLimitWithSubCvar.clear();
+        cls->SetLimitInstancesWithSub(false);
         cls->InstanceLimitWithSub = 0;
+        cls->InstanceLimitList.clear(); // it will never contain anything
+        continue;
       }
     }
+    cls->InstanceLimitWithSub = max2(0, cv->asInt());
     cls->InstanceLimitList.reset();
   }
 
@@ -506,6 +520,7 @@ void VLevel::TickWorld (float DeltaTime) {
   }
   #endif
 
+  bool shouldProcessLimiters = false;
   //GCon->Log(NAME_Debug, "========================");
   VThinker *Th = ThinkerHead;
   if (!dbg_vm_disable_thinkers) {
@@ -534,8 +549,9 @@ void VLevel::TickWorld (float DeltaTime) {
         if (lcls->GetLimitInstancesWithSub()) {
           lcls = (lcls->InstanceLimitBaseClass ?: lcls);
           vassert(lcls);
-          if (lcls->InstanceLimitWithSub > 0 && lcls->InstanceCountWithSub >= lcls->InstanceLimitWithSub) {
+          if (lcls->InstanceLimitWithSub > 0 && lcls->InstanceCountWithSub > lcls->InstanceLimitWithSub) {
             lcls->InstanceLimitList.append(c);
+            shouldProcessLimiters = true;
             //GCon->Logf(NAME_Debug, ":ADDING:%s: count=%d; limit=%d (lcls=%s)", c->GetClass()->GetName(), lcls->InstanceCountWithSub, lcls->InstanceLimitWithSub, lcls->GetName());
           }
         }
@@ -601,33 +617,50 @@ void VLevel::TickWorld (float DeltaTime) {
   }
 
   // process limiters
-  const bool limdbg = dbg_limiter_counters.asBool();
-  const bool limdbgmsg = dbg_limiter_remove_messages.asBool();
-  for (auto &&cls : NumberLimitedClasses) {
-    if (cls->InstanceLimitWithSub < 1) continue;
-    int maxCount = cls->InstanceLimitWithSub-(cls->InstanceLimitWithSub/3);
-    if (maxCount >= cls->InstanceLimitWithSub) maxCount -= 10;
-    if (maxCount < 1) maxCount = 1;
-    if (cls->InstanceLimitList.length() <= maxCount) continue;
-    // limit hit, remove furthest
-    if (limdbg) GCon->Logf(NAME_Debug, "%s: limit is %d, current is %d, reducing to %d", cls->GetName(), cls->InstanceLimitWithSub, cls->InstanceLimitList.length(), maxCount);
-    //FIXME: remove by proximity to the camera?
-    // sort by spawn time
-    // note that it is guaranteed that all objects are `VEntity` instances here (see decorate parsing code)
-    timsort_r(cls->InstanceLimitList.ptr(), cls->InstanceLimitList.length(), sizeof(VObject *), &cmpLimInstance, nullptr);
-    const int tokill = cls->InstanceLimitList.length()-maxCount;
-    vassert(tokill > 0);
-    for (int f = 0; f < tokill; ++f) {
-      VThinker *c = (VThinker *)cls->InstanceLimitList.ptr()[f]; // no need to perform range checking
-      if (c->IsDestroyed()) {
-        if (limdbgmsg) GCon->Logf(NAME_Debug, "  %s(%u): destroyed", c->GetClass()->GetName(), c->GetUniqueId());
-        continue;
+  //FIXME: make this faster: we know exactly what classes to process
+  if (shouldProcessLimiters) {
+    const bool limdbg = dbg_limiter_counters.asBool();
+    const bool limdbgmsg = dbg_limiter_remove_messages.asBool();
+    for (VClass *cls : NumberLimitedClasses) {
+      if (cls->InstanceLimitWithSub < 1) continue;
+      // remove ~1/3 of instances
+      int maxCount = cls->InstanceLimitWithSub-(cls->InstanceLimitWithSub/3);
+      if (maxCount >= cls->InstanceLimitWithSub) maxCount -= 10;
+      if (maxCount < 1) maxCount = 1;
+      const int instTotal = cls->InstanceLimitList.length();
+      if (instTotal <= maxCount) continue; // just in case
+      // limit hit, remove furthest
+      if (limdbg) GCon->Logf(NAME_Debug, "%s: limit is %d, current is %d, reducing to %d", cls->GetName(), cls->InstanceLimitWithSub, cls->InstanceLimitList.length(), maxCount);
+      //FIXME: remove by proximity to the camera?
+      // sort by spawn time
+      // note that it is guaranteed that all objects are `VEntity` instances here (see decorate parsing code)
+      const int tokill = instTotal-maxCount;
+      vassert(tokill > 0);
+      #if 0
+      timsort_r(cls->InstanceLimitList.ptr(), instTotal, sizeof(VObject *), &cmpLimInstance, nullptr);
+      #else
+      // shuffle first `tokill` elements, it is much faster than sorting
+      // this will effectively remove some random instances; it may not be as nice-looking as sorting by spawn time, but meh...
+      for (int f = 0; f < tokill; ++f) {
+        int swapidx = (int)(GenRandomU31()%(unsigned)instTotal);
+        if (swapidx == f) continue;
+        VObject *tmp = cls->InstanceLimitList.ptr()[f];
+        cls->InstanceLimitList.ptr()[f] = cls->InstanceLimitList.ptr()[swapidx];
+        cls->InstanceLimitList.ptr()[swapidx] = tmp;
       }
-      if (!c->IsDelayedDestroy()) {
-        if (limdbgmsg) GCon->Logf(NAME_Debug, "  %s(%u): removing", c->GetClass()->GetName(), c->GetUniqueId());
-        RemoveThinker(c);
-        //WARNING! death notifier will not be called for this entity!
-        c->ConditionalDestroy();
+      #endif
+      for (int f = 0; f < tokill; ++f) {
+        VThinker *c = (VThinker *)cls->InstanceLimitList.ptr()[f]; // no need to perform range checking
+        if (c->IsDestroyed()) {
+          if (limdbgmsg) GCon->Logf(NAME_Debug, "  %s(%u): destroyed", c->GetClass()->GetName(), c->GetUniqueId());
+          continue;
+        }
+        if (!c->IsDelayedDestroy()) {
+          if (limdbgmsg) GCon->Logf(NAME_Debug, "  %s(%u): removing", c->GetClass()->GetName(), c->GetUniqueId());
+          RemoveThinker(c);
+          //WARNING! death notifier will not be called for this entity!
+          c->ConditionalDestroy();
+        }
       }
     }
   }
@@ -639,7 +672,7 @@ void VLevel::TickWorld (float DeltaTime) {
     // shuffle corpse queue, so we'll remove random corpses
     for (int f = 0; f < end; ++f) {
       // swap current and another random corpse
-      int n = (int)(GenRandomU31()%end);
+      int n = (int)(GenRandomU31()%(unsigned)end);
       VEntity *e0 = corpseQueue.ptr()[f];
       VEntity *e1 = corpseQueue.ptr()[n];
       corpseQueue.ptr()[f] = e1;
@@ -684,18 +717,11 @@ VThinker *VLevel::SpawnThinker (VClass *AClass, const TVec &AOrigin,
 {
   vassert(AClass);
   VClass *Class = (AllowReplace ? AClass->GetReplacement() : AClass);
-  if (!Class) Class = AClass;
+  //if (!Class) Class = AClass;
 
   if (!Class) {
     VObject::VMDumpCallStack();
     GCon->Log(NAME_Error, "cannot spawn object without a class (expect engine crash soon!)");
-    return nullptr;
-  }
-
-  // check for valid class
-  if (!Class->IsChildOf(VThinker::StaticClass())) {
-    VObject::VMDumpCallStack();
-    GCon->Logf(NAME_Error, "cannot spawn non-thinker object with class `%s` (expect engine crash soon!)", Class->GetName());
     return nullptr;
   }
 
@@ -716,12 +742,73 @@ VThinker *VLevel::SpawnThinker (VClass *AClass, const TVec &AOrigin,
   // check for gore blood replacements
   if (canReplaceBlood && isGoreEnabled()) {
     VClass *brepl = nullptr;
-    for (const VClass *c = Class; c; c = c->ParentClass) {
+    #if 0
+    for (const VClass *c = AClass; c; c = c->ParentClass) {
       if (c == clsBlood) { brepl = clsGoreBlood; break; }
       if (c == clsBloodSplatter) { brepl = clsGoreBloodSplatter; break; }
       if (c == clsGoreBloodAxe) { brepl = clsGoreBloodAxe; break; }
     }
-    if (brepl) Class = brepl; // it is guaranteed to be a VEntity
+    #else
+           if (AClass == clsBlood) brepl = clsGoreBlood;
+      else if (AClass == clsBloodSplatter) brepl = clsGoreBloodSplatter;
+      else if (AClass == clsGoreBloodAxe) brepl = clsGoreBloodAxe;
+    #endif
+    if (brepl) {
+      Class = brepl; // it is guaranteed to be a VEntity
+      if (AllowReplace) Class = Class->GetReplacement();
+    }
+  }
+
+  // check for valid class
+  if (!Class->IsChildOf(VThinker::StaticClass())) {
+    VObject::VMDumpCallStack();
+    GCon->Logf(NAME_Error, "cannot spawn non-thinker object with class `%s` (expect engine crash soon!)", Class->GetName());
+    return nullptr;
+  }
+
+  // instance limiter
+  if (Class->GetLimitInstancesWithSub()) {
+    do {
+      VClass *limClass = (Class->InstanceLimitBaseClass ?: Class);
+      if (!limClass->GetLimitInstancesWithSub()) {
+        Class->InstanceLimitWithSubCvar.clear();
+        Class->SetLimitInstancesWithSub(false);
+        Class->InstanceLimitWithSub = 0;
+        Class->InstanceLimitList.clear(); // it will never contain anything
+        break;
+      }
+      // limiting enabled, check cvar
+      VCvar *cv = limClass->InstanceLimitWithSubCvarPtr;
+      if (!cv) {
+        if (!limClass->InstanceLimitWithSubCvar.isEmpty()) cv = VCvar::FindVariable(*limClass->InstanceLimitWithSubCvar);
+        limClass->InstanceLimitWithSubCvarPtr = cv;
+        if (!cv) {
+          limClass->InstanceLimitWithSubCvar.clear();
+          limClass->SetLimitInstancesWithSub(false);
+          limClass->InstanceLimitWithSub = 0;
+          limClass->InstanceLimitList.clear(); // it will never contain anything
+          // just in case
+          Class->InstanceLimitWithSubCvar.clear();
+          Class->SetLimitInstancesWithSub(false);
+          Class->InstanceLimitWithSub = 0;
+          Class->InstanceLimitList.clear(); // it will never contain anything
+          break;
+        }
+      }
+      int instlimit = cv->asInt();
+      if (instlimit < 1) break;
+      if (instlimit >= 0x3fffffff) break; // wtf?!
+      instlimit += 1; // so thinker limiter could kick in
+      //WARNING! some code may expect the proper spawn here, and will crash on `nullptr` result!
+      //WARNING! this must be checked and fixed everywhere. maybe.
+      // `>`, so thinker limiter could kick in
+      if (limClass->InstanceCountWithSub > instlimit) {
+        if (dbg_limiter_remove_messages.asBool()) {
+          GCon->Logf(NAME_Debug, "prevented spawning of thinker object with class `%s` (limiter: %d/%d/%d)", Class->GetName(), instlimit, limClass->InstanceCountWithSub, Class->InstanceCountWithSub);
+        }
+        return nullptr;
+      }
+    } while (0);
   }
 
   // spawn it

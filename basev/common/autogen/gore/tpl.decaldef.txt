@@ -16,173 +16,113 @@
 //  NEW DECALS
 //
 //==========================================================================
-DECAL K8Gore_NewBloodSplat01${Color} {
+DECAL K8Gore_NewBloodSplat01$(Type) {
   Pic BSPK8X01
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     // how long this decal bootprint time should last, in seconds; no value means "default"
     //BootPrintTime random 4 8  // use one from bootprint
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.26
   Scale random 0.22 0.37
   RandomFlipX
   RandomFlipY
 #ifdef TRANSIENT
-  animator K8GoreBloodSplat_FaderAnim${Color}
+  animator K8GoreBloodSplat_FaderAnim$(Type)
 #endif
 }
 
-DECAL K8Gore_NewBloodSplat02${Color} {
+DECAL K8Gore_NewBloodSplat02$(Type) {
   Pic BSPK8X02
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.28
   Scale random 0.22 0.37
   RandomFlipX
   RandomFlipY
 #ifdef TRANSIENT
-  animator K8GoreBloodSplat_FaderAnim${Color}
+  animator K8GoreBloodSplat_FaderAnim$(Type)
 #endif
 }
 
-DECAL K8Gore_NewBloodSplat03${Color} {
+DECAL K8Gore_NewBloodSplat03$(Type) {
   Pic BSPK8X03
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.26
   Scale random 0.22 0.37
   RandomFlipX
   RandomFlipY
 #ifdef TRANSIENT
-  animator K8GoreBloodSplat_FaderAnim${Color}
+  animator K8GoreBloodSplat_FaderAnim$(Type)
 #endif
 }
 
-DECAL K8Gore_NewBloodSplat04${Color} {
+DECAL K8Gore_NewBloodSplat04$(Type) {
   Pic BSPK8X04
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.28
   Scale random 0.22 0.37
   RandomFlipX
   RandomFlipY
 #ifdef TRANSIENT
-  animator K8GoreBloodSplat_FaderAnim${Color}
+  animator K8GoreBloodSplat_FaderAnim$(Type)
 #endif
 }
 
-DECAL K8Gore_NewBloodSplat05${Color} {
+DECAL K8Gore_NewBloodSplat05$(Type) {
   Pic BSPK8X05
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.26
   Scale random 0.22 0.37
   RandomFlipX
   RandomFlipY
 #ifdef TRANSIENT
-  animator K8GoreBloodSplat_FaderAnim${Color}
+  animator K8GoreBloodSplat_FaderAnim$(Type)
 #endif
 }
 
-DECAL K8Gore_NewBloodSplat06${Color} {
+DECAL K8Gore_NewBloodSplat06$(Type) {
   Pic BSPK8X06
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //X-Scale 0.3
   //Y-Scale 0.6
   X-Scale random 0.22 0.40
@@ -190,189 +130,149 @@ DECAL K8Gore_NewBloodSplat06${Color} {
   RandomFlipX
   RandomFlipY
 #ifdef TRANSIENT
-  animator K8GoreBloodSplat_FaderAnim${Color}
+  animator K8GoreBloodSplat_FaderAnim$(Type)
 #endif
 }
 
-DECAL K8Gore_NewBloodSplat07${Color} {
+DECAL K8Gore_NewBloodSplat07$(Type) {
   Pic BSPK8X07
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.28
   Scale random 0.22 0.37
   RandomFlipX
   RandomFlipY
 #ifdef TRANSIENT
-  animator K8GoreBloodSplat_FaderAnim${Color}
+  animator K8GoreBloodSplat_FaderAnim$(Type)
 #endif
 }
 
-DECAL K8Gore_NewBloodSplat08${Color} {
+DECAL K8Gore_NewBloodSplat08$(Type) {
   Pic BSPK8X08
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.26
   Scale random 0.22 0.37
   RandomFlipX
   RandomFlipY
 #ifdef TRANSIENT
-  animator K8GoreBloodSplat_FaderAnim${Color}
+  animator K8GoreBloodSplat_FaderAnim$(Type)
 #endif
 }
 
-DECAL K8Gore_NewBloodSplat09${Color} {
+DECAL K8Gore_NewBloodSplat09$(Type) {
   Pic BSPK8X09
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.28
   Scale random 0.22 0.37
   RandomFlipX
   RandomFlipY
 #ifdef TRANSIENT
-  animator K8GoreBloodSplat_FaderAnim${Color}
+  animator K8GoreBloodSplat_FaderAnim$(Type)
 #endif
 }
 
-DECAL K8Gore_NewBloodSplat10${Color} {
+DECAL K8Gore_NewBloodSplat10$(Type) {
   Pic BSPK8X10
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.26
   Scale random 0.22 0.37
   RandomFlipX
   RandomFlipY
 #ifdef TRANSIENT
-  animator K8GoreBloodSplat_FaderAnim${Color}
+  animator K8GoreBloodSplat_FaderAnim$(Type)
 #endif
 }
 
 
 // K8GDC
-DECALGROUP K8GDC_BloodSplat${Color} {
-  K8Gore_NewBloodSplat01${Color} 6
-  K8Gore_NewBloodSplat02${Color} 6
-  K8Gore_NewBloodSplat03${Color} 6
-  K8Gore_NewBloodSplat04${Color} 6
-  K8Gore_NewBloodSplat05${Color} 6
-  K8Gore_NewBloodSplat06${Color} 6
-  K8Gore_NewBloodSplat07${Color} 6
-  K8Gore_NewBloodSplat08${Color} 6
-  K8Gore_NewBloodSplat09${Color} 6
-  K8Gore_NewBloodSplat10${Color} 6
+DECALGROUP K8GDC_BloodSplat$(Type) {
+  K8Gore_NewBloodSplat01$(Type) 6
+  K8Gore_NewBloodSplat02$(Type) 6
+  K8Gore_NewBloodSplat03$(Type) 6
+  K8Gore_NewBloodSplat04$(Type) 6
+  K8Gore_NewBloodSplat05$(Type) 6
+  K8Gore_NewBloodSplat06$(Type) 6
+  K8Gore_NewBloodSplat07$(Type) 6
+  K8Gore_NewBloodSplat08$(Type) 6
+  K8Gore_NewBloodSplat09$(Type) 6
+  K8Gore_NewBloodSplat10$(Type) 6
 }
 
 
-STRETCHER K8Gore_NewBloodStretcher1${Color} {
+STRETCHER K8Gore_NewBloodStretcher1$(Type) {
   StretchStart 0
   StretchTime random 12 18
   //!GoalX random 1.35 1.65
   GoalY random 1.6 1.9
 }
 
-STRETCHER K8Gore_NewBloodStretcher2${Color} {
+STRETCHER K8Gore_NewBloodStretcher2$(Type) {
   StretchStart 0
   StretchTime random 16 20
   //!GoalX random 1.35 1.65 //0.45
   GoalY random 1.6 1.95 //0.8
 }
 
-SLIDER K8Gore_NewBloodSlider${Color} {
+SLIDER K8Gore_NewBloodSlider$(Type) {
   SlideTime random 17 24 // 22
   //DistY -132
   DistY random 4 8
   //!k8reversey
 }
 
-COMBINER K8Gore_NewBloodSmearer1${Color} {
-  K8Gore_NewBloodStretcher1${Color}
-  //K8Gore_NewBloodStretcher2${Color}
-  //K8Gore_NewBloodSlider${Color}
+COMBINER K8Gore_NewBloodSmearer1$(Type) {
+  K8Gore_NewBloodStretcher1$(Type)
+  //K8Gore_NewBloodStretcher2$(Type)
+  //K8Gore_NewBloodSlider$(Type)
 #ifdef TRANSIENT
-  K8GoreBloodSplat_FaderAnim${Color}
+  K8GoreBloodSplat_FaderAnim$(Type)
 #else
   // meh, let it stay
-  //K8GoreBloodSplat_FaderAnimSmear${Color}
+  //K8GoreBloodSplat_FaderAnimSmear$(Type)
 #endif
 }
 
-COMBINER K8Gore_NewBloodSmearer2${Color} {
-  K8Gore_NewBloodStretcher2${Color}
-  //K8Gore_NewBloodStretcher2${Color}
-  K8Gore_NewBloodSlider${Color}
+COMBINER K8Gore_NewBloodSmearer2$(Type) {
+  K8Gore_NewBloodStretcher2$(Type)
+  //K8Gore_NewBloodStretcher2$(Type)
+  K8Gore_NewBloodSlider$(Type)
 #ifdef TRANSIENT
-  K8GoreBloodSplat_FaderAnim${Color}
+  K8GoreBloodSplat_FaderAnim$(Type)
 #else
   // meh, let it stay
-  //K8GoreBloodSplat_FaderAnimSmear${Color}
+  //K8GoreBloodSplat_FaderAnimSmear$(Type)
 #endif
 }
 
 
-DECAL K8Gore_NewBloodSmear1${Color} {
+DECAL K8Gore_NewBloodSmear1$(Type) {
   //!Pic BSMEAR01
   //X-Scale 0.46
   //Y-Scale 0.46
@@ -383,23 +283,13 @@ DECAL K8Gore_NewBloodSmear1${Color} {
     NoFlat
   }
   Scale random 0.8 1.3
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   RandomFlipX
   //RandomFlipY
-  Animator K8Gore_NewBloodSmearer1${Color}
+  Animator K8Gore_NewBloodSmearer1$(Type)
 }
 
-DECAL K8Gore_NewBloodSmear2${Color} {
+DECAL K8Gore_NewBloodSmear2$(Type) {
   //!Pic BSMEAR02
   //X-Scale 0.44
   //Y-Scale 0.44
@@ -410,353 +300,243 @@ DECAL K8Gore_NewBloodSmear2${Color} {
     NoFlat
   }
   Scale random 0.8 1.3
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   RandomFlipX
   //RandomFlipY
-  Animator K8Gore_NewBloodSmearer2${Color}
+  Animator K8Gore_NewBloodSmearer2$(Type)
 }
 
 
 // K8GDC
-DECALGROUP K8GDC_BloodSmear${Color} {
-  K8Gore_NewBloodSmear1${Color} 6
-  K8Gore_NewBloodSmear2${Color} 6
+DECALGROUP K8GDC_BloodSmear$(Type) {
+  K8Gore_NewBloodSmear1$(Type) 6
+  K8Gore_NewBloodSmear2$(Type) 6
 }
 
 
 // K8GDC
-decalgroup K8GDC_BloodSmearRadius${Color} {
-  K8GDC_BloodSmear${Color} 1
+decalgroup K8GDC_BloodSmearRadius$(Type) {
+  K8GDC_BloodSmear$(Type) 1
 }
 
 // K8GDC
-decalgroup K8GDC_BloodSplatRadius${Color} {
-  K8GDC_BloodSmear${Color} 1
+decalgroup K8GDC_BloodSplatRadius$(Type) {
+  K8GDC_BloodSmear$(Type) 1
 }
 
 
-fader K8GoreBloodSplat_FaderAnim${Color} {
+fader K8GoreBloodSplat_FaderAnim$(Type) {
   DecayStart random 10 20
   DecayTime random 10 40
 }
 
 
 // non-transient
-fader K8GoreBloodSplat_FaderAnimSmear${Color} {
+fader K8GoreBloodSplat_FaderAnimSmear$(Type) {
   DecayStart random 30 120
   DecayTime random 10 40
 }
 
 
 
-DECAL K8Gore_NewBloodSplatFade01${Color} {
+DECAL K8Gore_NewBloodSplatFade01$(Type) {
   Pic BSPK8X01
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.26
   Scale random 0.22 0.37
   RandomFlipX
   RandomFlipY
-  animator K8GoreBloodSplat_FaderAnim${Color}
+  animator K8GoreBloodSplat_FaderAnim$(Type)
 }
 
-DECAL K8Gore_NewBloodSplatFade02${Color} {
+DECAL K8Gore_NewBloodSplatFade02$(Type) {
   Pic BSPK8X02
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.28
   Scale random 0.22 0.37
   RandomFlipX
   RandomFlipY
-  animator K8GoreBloodSplat_FaderAnim${Color}
+  animator K8GoreBloodSplat_FaderAnim$(Type)
 }
 
-DECAL K8Gore_NewBloodSplatFade03${Color} {
+DECAL K8Gore_NewBloodSplatFade03$(Type) {
   Pic BSPK8X03
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.26
   Scale random 0.22 0.37
   RandomFlipX
   RandomFlipY
-  animator K8GoreBloodSplat_FaderAnim${Color}
+  animator K8GoreBloodSplat_FaderAnim$(Type)
 }
 
-DECAL K8Gore_NewBloodSplatFade04${Color} {
+DECAL K8Gore_NewBloodSplatFade04$(Type) {
   Pic BSPK8X04
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.28
   Scale random 0.22 0.37
   RandomFlipX
   RandomFlipY
-  animator K8GoreBloodSplat_FaderAnim${Color}
+  animator K8GoreBloodSplat_FaderAnim$(Type)
 }
 
-DECAL K8Gore_NewBloodSplatFade05${Color} {
+DECAL K8Gore_NewBloodSplatFade05$(Type) {
   Pic BSPK8X05
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.26
   Scale random 0.22 0.37
   RandomFlipX
   RandomFlipY
-  animator K8GoreBloodSplat_FaderAnim${Color}
+  animator K8GoreBloodSplat_FaderAnim$(Type)
 }
 
-DECAL K8Gore_NewBloodSplatFade06${Color} {
+DECAL K8Gore_NewBloodSplatFade06$(Type) {
   Pic BSPK8X06
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //X-Scale 0.3
   //Y-Scale 0.6
   X-Scale random 0.22 0.40
   Y-Scale multiply X-Scale 2
   RandomFlipX
   RandomFlipY
-  animator K8GoreBloodSplat_FaderAnim${Color}
+  animator K8GoreBloodSplat_FaderAnim$(Type)
 }
 
-DECAL K8Gore_NewBloodSplatFade07${Color} {
+DECAL K8Gore_NewBloodSplatFade07$(Type) {
   Pic BSPK8X07
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.28
   Scale random 0.22 0.37
   RandomFlipX
   RandomFlipY
-  animator K8GoreBloodSplat_FaderAnim${Color}
+  animator K8GoreBloodSplat_FaderAnim$(Type)
 }
 
-DECAL K8Gore_NewBloodSplatFade08${Color} {
+DECAL K8Gore_NewBloodSplatFade08$(Type) {
   Pic BSPK8X08
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.26
   Scale random 0.22 0.37
   RandomFlipX
   RandomFlipY
-  animator K8GoreBloodSplat_FaderAnim${Color}
+  animator K8GoreBloodSplat_FaderAnim$(Type)
 }
 
-DECAL K8Gore_NewBloodSplatFade09${Color} {
+DECAL K8Gore_NewBloodSplatFade09$(Type) {
   Pic BSPK8X09
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.28
   Scale random 0.22 0.37
   RandomFlipX
   RandomFlipY
-  animator K8GoreBloodSplat_FaderAnim${Color}
+  animator K8GoreBloodSplat_FaderAnim$(Type)
 }
 
-DECAL K8Gore_NewBloodSplatFade10${Color} {
+DECAL K8Gore_NewBloodSplatFade10$(Type) {
   Pic BSPK8X10
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.26
   Scale random 0.22 0.37
   RandomFlipX
   RandomFlipY
-  animator K8GoreBloodSplat_FaderAnim${Color}
+  animator K8GoreBloodSplat_FaderAnim$(Type)
 }
 
 
-decalgroup K8GoreBloodSplat${Color} {
-  K8Gore_NewBloodSplatFade01${Color} 6
-  K8Gore_NewBloodSplatFade02${Color} 6
-  K8Gore_NewBloodSplatFade03${Color} 6
-  K8Gore_NewBloodSplatFade04${Color} 6
-  K8Gore_NewBloodSplatFade05${Color} 6
-  K8Gore_NewBloodSplatFade06${Color} 6
-  K8Gore_NewBloodSplatFade07${Color} 6
-  K8Gore_NewBloodSplatFade08${Color} 6
-  K8Gore_NewBloodSplatFade09${Color} 6
-  K8Gore_NewBloodSplatFade10${Color} 6
+decalgroup K8GoreBloodSplat$(Type) {
+  K8Gore_NewBloodSplatFade01$(Type) 6
+  K8Gore_NewBloodSplatFade02$(Type) 6
+  K8Gore_NewBloodSplatFade03$(Type) 6
+  K8Gore_NewBloodSplatFade04$(Type) 6
+  K8Gore_NewBloodSplatFade05$(Type) 6
+  K8Gore_NewBloodSplatFade06$(Type) 6
+  K8Gore_NewBloodSplatFade07$(Type) 6
+  K8Gore_NewBloodSplatFade08$(Type) 6
+  K8Gore_NewBloodSplatFade09$(Type) 6
+  K8Gore_NewBloodSplatFade10$(Type) 6
 }
 
 
-decalgroup K8GoreBloodSuper${Color} {
-  K8Gore_NewBloodSplatFade01${Color} 6
-  K8Gore_NewBloodSplatFade02${Color} 6
-  K8Gore_NewBloodSplatFade03${Color} 6
-  K8Gore_NewBloodSplatFade04${Color} 6
-  K8Gore_NewBloodSplatFade05${Color} 6
-  K8Gore_NewBloodSplatFade06${Color} 6
-  K8Gore_NewBloodSplatFade07${Color} 6
-  K8Gore_NewBloodSplatFade08${Color} 6
-  K8Gore_NewBloodSplatFade09${Color} 6
-  K8Gore_NewBloodSplatFade10${Color} 6
+decalgroup K8GoreBloodSuper$(Type) {
+  K8Gore_NewBloodSplatFade01$(Type) 6
+  K8Gore_NewBloodSplatFade02$(Type) 6
+  K8Gore_NewBloodSplatFade03$(Type) 6
+  K8Gore_NewBloodSplatFade04$(Type) 6
+  K8Gore_NewBloodSplatFade05$(Type) 6
+  K8Gore_NewBloodSplatFade06$(Type) 6
+  K8Gore_NewBloodSplatFade07$(Type) 6
+  K8Gore_NewBloodSplatFade08$(Type) 6
+  K8Gore_NewBloodSplatFade09$(Type) 6
+  K8Gore_NewBloodSplatFade10$(Type) 6
 }
 
 
@@ -765,156 +545,96 @@ decalgroup K8GoreBloodSuper${Color} {
 //  non-transient flat decals for flying blood
 //
 //==========================================================================
-DECAL K8Gore_NewBloodSplatPers01${Color} {
+DECAL K8Gore_NewBloodSplatPers01$(Type) {
   Pic BSPK8X01
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.26
   Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
 
-DECAL K8Gore_NewBloodSplatPers02${Color} {
+DECAL K8Gore_NewBloodSplatPers02$(Type) {
   Pic BSPK8X02
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.28
   Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
 
-DECAL K8Gore_NewBloodSplatPers03${Color} {
+DECAL K8Gore_NewBloodSplatPers03$(Type) {
   Pic BSPK8X03
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.26
   Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
 
-DECAL K8Gore_NewBloodSplatPers04${Color} {
+DECAL K8Gore_NewBloodSplatPers04$(Type) {
   Pic BSPK8X04
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.28
   Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
 
-DECAL K8Gore_NewBloodSplatPers05${Color} {
+DECAL K8Gore_NewBloodSplatPers05$(Type) {
   Pic BSPK8X05
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.26
   Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
 
-DECAL K8Gore_NewBloodSplatPers06${Color} {
+DECAL K8Gore_NewBloodSplatPers06$(Type) {
   Pic BSPK8X06
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //X-Scale 0.3
   //Y-Scale 0.6
   X-Scale random 0.22 0.40
@@ -923,104 +643,64 @@ DECAL K8Gore_NewBloodSplatPers06${Color} {
   RandomFlipY
 }
 
-DECAL K8Gore_NewBloodSplatPers07${Color} {
+DECAL K8Gore_NewBloodSplatPers07$(Type) {
   Pic BSPK8X07
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.28
   Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
 
-DECAL K8Gore_NewBloodSplatPers08${Color} {
+DECAL K8Gore_NewBloodSplatPers08$(Type) {
   Pic BSPK8X08
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.26
   Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
 
-DECAL K8Gore_NewBloodSplatPers09${Color} {
+DECAL K8Gore_NewBloodSplatPers09$(Type) {
   Pic BSPK8X09
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.28
   Scale random 0.10 0.24
   RandomFlipX
   RandomFlipY
 }
 
-DECAL K8Gore_NewBloodSplatPers10${Color} {
+DECAL K8Gore_NewBloodSplatPers10$(Type) {
   Pic BSPK8X10
   k8vavoom {
     TypeBloodSplat
-    //BootPrintDecal K8Gore_BootPrintDecal${Color} // for bootprints
-    BootPrint K8Gore_BootPrint${Color}
+    //BootPrintDecal K8Gore_BootPrintDecal$(Type) // for bootprints
+    BootPrint K8Gore_BootPrint$(Type)
     flatangle random 0 360
     wallangle random 0 360
   }
-#ifndef BLUE
-# ifndef GREEN
   shade "$(Shade) 00 00"
-# endif
-#endif
-#ifdef BLUE
-  shade "00 00 $(Shade)"
-#endif
-#ifdef GREEN
-  shade "00 $(Shade) 00"
-#endif
   //Scale 0.26
   Scale random 0.10 0.24
   RandomFlipX
@@ -1028,22 +708,22 @@ DECAL K8Gore_NewBloodSplatPers10${Color} {
 }
 
 
-decalgroup K8GoreBloodSuperPers${Color} {
-  K8Gore_NewBloodSplatPers01${Color} 6
-  K8Gore_NewBloodSplatPers02${Color} 6
-  K8Gore_NewBloodSplatPers03${Color} 6
-  K8Gore_NewBloodSplatPers04${Color} 6
-  K8Gore_NewBloodSplatPers05${Color} 6
-  K8Gore_NewBloodSplatPers06${Color} 6
-  K8Gore_NewBloodSplatPers07${Color} 6
-  K8Gore_NewBloodSplatPers08${Color} 6
-  K8Gore_NewBloodSplatPers09${Color} 6
-  K8Gore_NewBloodSplatPers10${Color} 6
+decalgroup K8GoreBloodSuperPers$(Type) {
+  K8Gore_NewBloodSplatPers01$(Type) 6
+  K8Gore_NewBloodSplatPers02$(Type) 6
+  K8Gore_NewBloodSplatPers03$(Type) 6
+  K8Gore_NewBloodSplatPers04$(Type) 6
+  K8Gore_NewBloodSplatPers05$(Type) 6
+  K8Gore_NewBloodSplatPers06$(Type) 6
+  K8Gore_NewBloodSplatPers07$(Type) 6
+  K8Gore_NewBloodSplatPers08$(Type) 6
+  K8Gore_NewBloodSplatPers09$(Type) 6
+  K8Gore_NewBloodSplatPers10$(Type) 6
 }
 
 
 /***** BootPrints **********************************************************/
-fader K8GoreBloodPrint_FaderAnim${Color} {
+fader K8GoreBloodPrint_FaderAnim$(Type) {
 #ifdef TRANSIENT
   DecayStart random 10 20
   DecayTime random 10 40

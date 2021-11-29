@@ -728,7 +728,13 @@ void Died (EntityEx source, EntityEx inflictor) {
     if (extremeDeath) {
       //DeathState = FindState('Death', 'Extreme', true);
       DeathState = FindState('Death', 'Extreme', true);
-      if (DeathState) SpawnBloodSprayHead(damage:InitialHealth, notDead:false, spawnBloodPool:true);
+      if (DeathState) {
+        // monsters will not cause blood sprays on each other, only the player
+        if ((source && source.bIsPlayer) || (inflictor && inflictor.bIsPlayer)) {
+          //printdebug("%C: doing EXTREME; src=%C; inf=%C", self, source, inflictor);
+          SpawnBloodSprayHead(damage:InitialHealth, notDead:false, spawnBloodPool:true);
+        }
+      }
       //if (DeathState) printdebug("%C: FOUND XDEATH %s", self, DeathState);
     }
 

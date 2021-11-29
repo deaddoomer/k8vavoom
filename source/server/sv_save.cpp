@@ -503,6 +503,16 @@ static bool checkSkipClassCB (VObject *self, VName clsname) {
       }
     }
   }
+
+  //TODO: skip any Gore Mod related things?
+  if (VStr::strEqu(*clsname, "K8Gore_Blood_SplatterReplacer")) {
+    // K8Gore_Blood_SplatterReplacer (it is removed)
+    for (VClass *cls = self->GetClass(); cls; cls = cls->GetSuperClass()) {
+      if (VStr::strEqu(cls->GetName(), "K8Gore_Blood")) return true;
+      //if (VStr::strEqu(cls->GetName(), "K8Gore_BloodBase")) return true;
+    }
+  }
+
   return false;
 }
 
@@ -517,7 +527,7 @@ static void SV_SetupSkipCallback () {
   skipCallbackInited = true;
   VObject::CanSkipReadingClassCBList.append(&checkSkipClassCB);
   // translate old `Level` class to `VLevel`
-  // nope, don;t do that
+  // nope, don't do that
   //VObject::IOClassNameTranslation.put(VName("Level"), NAME_VLevel);
 }
 #endif

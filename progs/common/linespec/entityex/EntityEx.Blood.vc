@@ -25,107 +25,43 @@
 //**************************************************************************
 //  BLOOD UTILITIES
 //**************************************************************************
-// this doesn't work anymore
-//#define VAVOOM_BLOOD_ALLOW_BLOOD_POOLS
-
 
 const float BloodHeightMult = 0.65;
 
 
-final bool BloodCanSplat (class!Actor aBloodType) {
-  if (!aBloodType) return true;
-  aBloodType = class!Actor(GetClassReplacement(aBloodType));
-  if (!aBloodType) return true;
-  //print("cansplat for %s: %B", aBloodType, !aBloodType.default.bBloodDisableSplats);
-  return !aBloodType.default.bBloodDisableSplats;
-}
-
-
 //==========================================================================
 //
-//  GetBloodSmearDecalName
+//  SpawnBloodParticles
+//
+//  pass some info to spawned blood actor, so decorate/vc can use 'em.
+//  should be called on blood entity
+//
+//  Tracer, Target: bleeding Entity (can be none)
+//  Args[0]: damage (can be 0)
 //
 //==========================================================================
-/*
-final name GetBloodSmearDecalName () {
-  if (bNoBlood || !self.BloodType) return '';
-  name dcn = GetClassName(GetClassReplacee(self.BloodType));
-  if (dcn == 'BloodGreen') return 'BloodSmearGreen';
-  if (dcn == 'BloodBlue') return 'BloodSmearBlue';
-  //if (GetClassName(GetClassReplacee(self.BloodType)) == 'BloodGreen') return 'BloodSmearGreen';
-  //if (GetClassName(GetClassReplacee(self.BloodType)) == 'BloodBlue') return 'BloodSmearBlue';
-  return 'BloodSmear';
-}
-*/
-
-
-//==========================================================================
-//
-//  GetBloodSplatRadiusDecalName
-//
-//==========================================================================
-/*
-final name GetBloodSplatRadiusDecalName () {
-  if (bNoBlood || !self.BloodType) return '';
-  name dcn = GetClassName(GetClassReplacee(self.BloodType));
-  if (dcn == 'BloodGreen') return 'BloodSplatRadiusGreen';
-  if (dcn == 'BloodBlue') return 'BloodSplatRadiusBlue';
-  //if (GetClassName(GetClassReplacee(self.BloodType)) == 'BloodGreen') return 'BloodSplatRadiusGreen';
-  //if (GetClassName(GetClassReplacee(self.BloodType)) == 'BloodBlue') return 'BloodSplatRadiusBlue';
-  return 'BloodSplatRadius';
-}
-*/
-
-
-//==========================================================================
-//
-//  GetBloodSmearRadiusDecalName
-//
-//==========================================================================
-/*
-final name GetBloodSmearRadiusDecalName () {
-  if (bNoBlood || !self.BloodType) return '';
-  name dcn = GetClassName(GetClassReplacee(self.BloodType));
-  if (dcn == 'BloodGreen') return 'BloodSmearRadiusGreen';
-  if (dcn == 'BloodBlue') return 'BloodSmearRadiusBlue';
-  return 'BloodSmearRadius';
-}
-*/
-
-
-//==========================================================================
-//
-//  GetBloodSplatDecalName
-//
-//==========================================================================
-/*
-final name GetBloodSplatDecalName () {
-  if (bNoBlood || !self.BloodType) return '';
-  name dcn = GetClassName(GetClassReplacee(self.BloodType));
-  if (dcn == 'BloodGreen') return 'BloodSplatGreen';
-  if (dcn == 'BloodBlue') return 'BloodSplatBlue';
-  //if (GetClassName(GetClassReplacee(self.BloodType)) == 'BloodGreen') return 'BloodSplatGreen';
-  //if (GetClassName(GetClassReplacee(self.BloodType)) == 'BloodBlue') return 'BloodSplatBlue';
-  return 'BloodSplat';
-}
-*/
-
-
-#ifdef VAVOOM_BLOOD_ALLOW_BLOOD_POOLS
-//==========================================================================
-//
-//  k8GetBloodClassName
-//
-//==========================================================================
-final static name k8GetBloodClassName (name newblood, name oldblood) {
-  if (FindClass(newblood)) {
-    //print("GB: new=%s; old=%s; res=%s", newblood, oldblood, newblood);
-    return newblood;
+final void SpawnBloodParticles (TVec Org, int damage) {
+  if (!GetCvarB('r_particle_blood')) return;
+  int c = P_Random()>>1;
+  if (BloodColor) {
+    c = -7+(c>>3);
+    int r = clamp(((BloodColor>>16)&0xff)+c, 0, 255);
+    int g = clamp(((BloodColor>>8)&0xff)+c, 0, 255);
+    int b = clamp((BloodColor&0xff)+c, 0, 255);
+    c = RGB(r, g, b);
+    //print("BloodColor=0x%08x; c=0x%08x", BloodColor, c);
+  } else {
+    c = RGB(32+c, c>>4, c>>4);
   }
-  //print("GB: new=%s; old=%s; res=%s", newblood, oldblood, oldblood);
-  return oldblood;
+  foreach (int i; 0..MAXPLAYERS) {
+    if (!Level.Game.Players[i]) continue;
+    if (!Level.Game.Players[i].bSpawned) continue;
+    PlayerEx(Level.Game.Players[i]).ParticleEffect(damage,
+      LineSpecialLevelInfo::pt_static, 0, Org, 0.0,
+      vector(32.0, 32.0, 32.0), 0.5, 10.0, 40.0,
+      c/*color*/, 0.6, 0.0);
+  }
 }
-#endif
 
 
 //==========================================================================
@@ -187,7 +123,7 @@ final void BloodAddZClamped (ref TVec spos, float delta, float aheight) {
 //  IsGood2SLineForBloodSplat
 //
 //==========================================================================
-bool IsGood2SLineForBloodSplat (const line_t *li) {
+final bool IsGood2SLineForBloodSplat (const line_t *li) {
   // alpha check for various special fx (additive lines are mostly used for fx too)
   return
     li.special != LNSPEC_LineHorizon &&
@@ -449,104 +385,55 @@ final void TraceBleed (int damage, TVec pos, float angle, float pitch, bool radi
 //  it has any sense only for Gore
 //
 //==========================================================================
-void SpawnBloodSprayHead (int damage, optional bool notDead, optional bool spawnBloodPool) {
-  bool doSpray = IsBloodAllowed() && GetCvarB('k8HSHeadKillBloodSpray');
-  if (!doSpray) return;
+final void SpawnBloodSprayHead (int damage, optional bool notDead, optional bool spawnBloodPool) {
+  int bcc = int(GetCvarF('k8HSHeadKillBloodCount'));
+  if (bcc <= 0) return;
 
-  if (GetCvarB('dbg_blood_disable_entities')) return;
+  if (!BloodType || !GetCvarB('k8HSHeadKillBloodSpray') || !IsBloodAllowed()) return;
 
   if (GetCvarI('k8GoreOpt_Enabled_Override') < 0) return;
   if (!GetCvarB('k8GoreOpt_Enabled') && GetCvarI('k8GoreOpt_Enabled_Override') <= 0) return;
 
-  //name bloodClassName = k8GetBloodClassName('K8Gore_BloodTransient', 'Blood');
-  /*
-  name bloodClassName = 'Blood';
-  if (self.BloodType) {
-    bloodClassName = GetClassName(GetClassReplacee(self.BloodType));
-    if (!bloodClassName) bloodClassName = 'Blood';
+  if (BloodType.Name != 'Blood' && GetCvarI('k8GoreOpt_Enabled_Override') <= 0) {
+    printdebug("%C: SpawnBloodSprayHead: non-standard blood, skipping", self);
+    return;
   }
-       if (GetCvarI('k8GoreOpt_Enabled_Override') > 0) bloodClassName = 'K8Gore_BloodTransient';
-  else if (GetCvarB('k8GoreOpt_Enabled') && !GetCvarI('k8GoreOpt_Enabled_Override')) bloodClassName = 'K8Gore_BloodTransient';
-  */
-  name bloodClassName = 'K8Gore_BloodTransient';
-  #ifdef VAVOOM_BLOOD_ALLOW_BLOOD_POOLS
-  // this doesn't work anymore
-  poolClassName = k8GetBloodClassName('K8Gore_GrowingBloodPool', '');
-  #endif
-  //print("bloodtype: %C/%C", self.BloodType, GetClassReplacee(self.BloodType));
-
-  //printdebug("bloodClassName: %s; k8GoreOpt_Enabled_Override=%s; k8GoreOpt_Enabled=%B", bloodClassName, GetCvarI('k8GoreOpt_Enabled_Override'), GetCvarB('k8GoreOpt_Enabled'));
 
   #if 0
-  // this tried to detect blood color, but we don't even have a separate colored blood actors anymore
-  if (self.BloodType) {
-    name brname = GetClassName(GetClassReplacee(self.BloodType));
-    //print("brname=%s", brname);
-    if (brname == 'BloodGreen') {
-      bloodClassName = 'BloodGreen';
-      bloodClassName = k8GetBloodClassName('K8Gore_BloodTransient_Green', bloodClassName);
-      //mistClassName = 'K8Gore_BloodmistSmallGreen';
-      //!!:poolClassName = k8GetBloodClassName('K8Gore_GrowingBloodPool_Green', poolClassName);
-    } else if (brname == 'BloodBlue') {
-      bloodClassName = 'BloodBlue';
-      bloodClassName = k8GetBloodClassName('K8Gore_BloodTransient_Blue', bloodClassName);
-      //mistClassName = 'K8Gore_BloodmistSmallBlue';
-      //!!:poolClassName = k8GetBloodClassName('K8Gore_GrowingBloodPool_Blue', poolClassName);
-    }
-  }
-  #endif
-
-  //writeln("  bloodclass: ", bloodClassName);
-
+  name bloodClassName = 'K8Gore_BloodTransient';
+  //print("bloodtype: %C/%C", self.BloodType, GetClassReplacee(self.BloodType));
+  //printdebug("bloodClassName: %s; k8GoreOpt_Enabled_Override=%s; k8GoreOpt_Enabled=%B", bloodClassName, GetCvarI('k8GoreOpt_Enabled_Override'), GetCvarB('k8GoreOpt_Enabled'));
   class!Actor bloodClass = class!Actor(FindClass(bloodClassName));
-  if (bloodClass) bloodClass = class!Actor(GetClassReplacement(bloodClass));
-
-  if (bloodClass) {
-    //print("BLOOD CLASS: %C (blcn=%s)", bloodClass, bloodClassName);
-    int bcc = int(GetCvarF('k8HSHeadKillBloodCount'));
-    if (bcc > 0) {
-      bcc += int(Random()*7-3); // -3..3
-      if (bcc < 3) bcc = 3;
-      if (bcc > 32) bcc = 32;
-    }
-
-    if (!specified_notDead) notDead = (damage < Health);
-
-    if (bcc > 0 && !spawnBloodPool && notDead) bcc = max(1, bcc-bcc/3);
-
-    float hgt = Height;
-    if (hgt < 1 || (bMonster && bCorpse)) hgt = default.Height;
-
-    TVec spos;
-    foreach (; 0..bcc) {
-      // k8: the blood will fly away on its own, but help it a little
-      spos = Origin+vector((FRandomFull()*16-8)/10.0, (FRandomFull()*16-8)/10.0);
-      float zmax = hgt+((FRandomFull()*22-11)/10.0);
-      BloodAddZClamped(spos, zmax, bloodClass.default.Height);
-      EntityEx bld = EntityEx(Level.Spawn(bloodClass, spos)); // optional TAVec AAngles, optional mthing_t *mthing, optional bool AllowReplace
-      if (bld) {
-        bld.CopyBloodTranslations(self, copyNormalTranslation:true);
-        bld.SetBloodArgs(self, damage);
-        bld.Velocity = Velocity;
-      }
-    }
-  }
-
-  #ifdef VAVOOM_BLOOD_ALLOW_BLOOD_POOLS
-  if (spawnBloodPool && GetCvarB('k8HSHeadKillBloodPool')) {
-    //poolClassName = 'SmallBloodPool';
-    class!Actor poolClass = class!Actor(FindClass(poolClassName));
-    if (poolClass) poolClass = class!Actor(GetClassReplacement(bloodClass));
-    if (poolClass) {
-      //printdebug("***SPAWNING BLOOD POOL: '%C'", poolClass);
-      EntityEx bld = EntityEx(Level.Spawn(poolClass, Origin));
-      if (bld) {
-        bld.CopyBloodTranslations(self, copyNormalTranslation:true);
-        bld.SetBloodArgs(self, damage);
-      }
-    }
-  }
+  if (!bloodClass) return;
+  // spawner will do this for us
+  //bloodClass = class!Actor(GetClassReplacement(bloodClass));
+  //if (!bloodClass) return;
+  #else
+  class!Actor bloodClass = class!Actor(GetClassReplacement(K8Gore_BloodTransient));
   #endif
+
+  //print("BLOOD CLASS: %C (blcn=%s)", bloodClass, bloodClassName);
+  bcc = clamp(bcc+int(Random()*7-3), 3, 32); // -3..3
+
+  if (!specified_notDead) notDead = (damage < Health);
+
+  if (!spawnBloodPool && notDead) bcc = max(1, bcc-bcc/3);
+
+  float hgt = Height;
+  if (hgt < 1 || (bMonster && bCorpse)) hgt = default.Height;
+
+  TVec spos;
+  foreach (; 0..bcc) {
+    // k8: the blood will fly away on its own, but help it a little
+    spos = Origin+vector((FRandomFull()*16-8)/10.0, (FRandomFull()*16-8)/10.0);
+    float zmax = hgt+((FRandomFull()*22-11)/10.0);
+    BloodAddZClamped(spos, zmax, bloodClass.default.Height);
+    EntityEx bld = EntityEx(Level.Spawn(bloodClass, spos)); // optional TAVec AAngles, optional mthing_t *mthing, optional bool AllowReplace
+    if (!bld) break; // limiter hit, no reason to try more
+    bld.CopyBloodTranslations(self, copyNormalTranslation:true);
+    bld.SetBloodArgs(self, damage);
+    bld.Velocity = Velocity;
+  }
 }
 
 
@@ -555,14 +442,17 @@ void SpawnBloodSprayHead (int damage, optional bool notDead, optional bool spawn
 //  SpawnBlood
 //
 //==========================================================================
-void SpawnBlood (TVec Org, int damage, optional TVec shootOrg, optional float zofs) {
-  if (!IsBloodAllowed()) return;
+final void SpawnBlood (TVec Org, int damage, optional TVec shootOrg, optional float zofs) {
+  if (!BloodType || !IsBloodAllowed()) return;
+
+  class!Actor bloodClass = class!Actor(GetClassReplacement(BloodType));
+  if (!bloodClass) return;
 
   // keep z, but set x and y to our coords
   //Org.x = Origin.x;
   //Org.y = Origin.y;
 
-  if (specified_shootOrg && BloodCanSplat(BloodType)) {
+  if (specified_shootOrg && !bloodClass.default.bBloodDisableSplats) {
     TVec goup = Origin;
     //if (Radius > 0) goup.z += Radius+4+Random()*4;
     // it just looks better this way; originally `Radius` was a typo, but it is roughly at half-height
@@ -574,40 +464,15 @@ void SpawnBlood (TVec Org, int damage, optional TVec shootOrg, optional float zo
     TraceBleed(damage, goup, av.yaw, av.pitch, false);
   }
 
-  if (GetCvarB('dbg_blood_disable_entities')) return;
-
   //Org.z += (Random()-Random())*4.0;
   if (!specified_zofs) zofs = (Random()-Random())*4.0;
-  BloodAddZClamped(Org, zofs, (BloodType ? BloodType.default.Height : 0));
+  BloodAddZClamped(Org, zofs, (bloodClass ? bloodClass.default.Height : 0));
   damage = (damage > 255 ? 255 : damage);
 
-  bool spawnParticles = GetCvarB('r_particle_blood');
-  if (spawnParticles) {
-    int c = P_Random()>>1;
-    if (BloodColor) {
-      c = -7+(c>>3);
-      int r = clamp(((BloodColor>>16)&0xff)+c, 0, 255);
-      int g = clamp(((BloodColor>>8)&0xff)+c, 0, 255);
-      int b = clamp((BloodColor&0xff)+c, 0, 255);
-      c = RGB(r, g, b);
-      //print("BloodColor=0x%08x; c=0x%08x", BloodColor, c);
-    } else {
-      c = RGB(32+c, c>>4, c>>4);
-    }
-    foreach (int i; 0..MAXPLAYERS) {
-      if (!Level.Game.Players[i]) continue;
-      if (!Level.Game.Players[i].bSpawned) continue;
-      PlayerEx(Level.Game.Players[i]).ParticleEffect(damage,
-        LineSpecialLevelInfo::pt_static, 0, Org, 0.0,
-        vector(32.0, 32.0, 32.0), 0.5, 10.0, 40.0,
-        c/*color*/, 0.6, 0.0);
-    }
-  }
+  if (GetCvarB('r_particle_blood')) SpawnBloodParticles(Org, damage);
 
-  if (!BloodType) return;
-
-  EntityEx A = Spawn(BloodType, Org);
-  //printdebug("%C:000: spawning blood! (%C)", self, BloodType);
+  EntityEx A = Spawn(bloodClass, Org);
+  //printdebug("%C:000: spawning blood! (%C)", self, bloodClass);
   if (!A) return; // oops
   //printdebug("%C:001: spawned blood! (%C)", self, A);
   A.CopyBloodTranslations(self, copyNormalTranslation:true);
@@ -618,15 +483,18 @@ void SpawnBlood (TVec Org, int damage, optional TVec shootOrg, optional float zo
 
   A.Velocity.z = 2.0*35.0;
   if (LineSpecialGameInfo(Level.Game).bBloodRandomiseTime) {
-    A.StateTime -= Random()*0.1;
-    if (A.StateTime < 0.1) A.StateTime = 0.1;
+    if (!A.Class.Name.nameStartsWithCI('K8Gore_')) {
+      A.StateTime -= Random()*0.1;
+      if (A.StateTime < 0.1) A.StateTime = 0.1;
+    }
   }
   //if (!A.bDontTranslate) A.CopyTranslations(self);
   //if (BloodTranslation && !A.bDontTranslate) { A.Translation = BloodTranslation; A.BloodTranslation = BloodTranslation; }
   A.CopyBloodTranslations(self, copyNormalTranslation:true);
 
   // gore mod blood is detached
-  if (!bDetachFromServer) {
+  if (!A.bDetachFromServer) {
+    if ((!GetCvarI('k8GoreOpt_Enabled_Override') && GetCvarB('k8GoreOpt_Enabled')) || GetCvarI('k8GoreOpt_Enabled_Override') > 0) return;
     if (LineSpecialGameInfo(Level.Game).bBloodSpray) {
       if (damage > 13) {
         state sps = A.FindState('Spray');
@@ -636,7 +504,6 @@ void SpawnBlood (TVec Org, int damage, optional TVec shootOrg, optional float zo
       }
     }
     if (GetCvarB('zdoom_blood_hack')) {
-      if ((!GetCvarI('k8GoreOpt_Enabled_Override') && GetCvarB('k8GoreOpt_Enabled')) || (GetCvarI('k8GoreOpt_Enabled_Override') > 0)) return;
       if (damage <= 12 && damage >= 9) {
         A.SetState(GetStatePlus(A.IdleState, 1));
         //A.SetInitialState(GetStatePlus(A.IdleState, 1));
@@ -656,7 +523,7 @@ void SpawnBlood (TVec Org, int damage, optional TVec shootOrg, optional float zo
 //  SpawnBloodAtHead
 //
 //==========================================================================
-void SpawnBloodAtHead (int damage, optional TVec shootOrg) {
+final void SpawnBloodAtHead (int damage, optional TVec shootOrg) {
   TVec goup = Origin;
   //float zofs = (Radius > 0 ? Radius+4+Random()*4 : 0);
   // it just looks better this way; originally `Radius` was a typo, but it is roughly at half-height
@@ -670,10 +537,13 @@ void SpawnBloodAtHead (int damage, optional TVec shootOrg) {
 //  SpawnBloodAtHeadExplosion
 //
 //==========================================================================
-void SpawnBloodAtHeadExplosion (int damage, optional EntityEx src) {
-  if (bNoBlood || damage < 1 || !IsBloodAllowed()) return;
+final void SpawnBloodAtHeadExplosion (int damage, optional EntityEx src) {
+  if (damage < 1 || !BloodType || !IsBloodAllowed()) return;
 
-  if (src && BloodCanSplat(BloodType)) {
+  class!Actor bloodClass = class!Actor(GetClassReplacement(BloodType));
+  if (!bloodClass) return;
+
+  if (src && !bloodClass.default.bBloodDisableSplats) {
     TVec goup = Origin;
     //if (Radius > 0) goup.z += Radius+4+Random()*4;
     // it just looks better this way; originally `Radius` was a typo, but it is roughly at half-height
@@ -686,13 +556,11 @@ void SpawnBloodAtHeadExplosion (int damage, optional EntityEx src) {
     TraceBleed(damage, goup, av.yaw, av.pitch, true);
   }
 
-  if (GetCvarB('dbg_blood_disable_entities')) return;
-
   // don't spawn excessive blood for Gore mod, it have enough blood already ;-)
   bool goremod =
     (!GetCvarI('k8GoreOpt_Enabled_Override') && GetCvarB('k8GoreOpt_Enabled')) ||
     (GetCvarI('k8GoreOpt_Enabled_Override') > 0);
-  printdebug("%C: GM=%B", self, goremod);
+  //printdebug("%C: GM=%B", self, goremod);
   //goremod = false;
 
   bool isSmallDamage = false;
@@ -729,40 +597,32 @@ void SpawnBloodAtHeadExplosion (int damage, optional EntityEx src) {
 //  SpawnBloodSplatter
 //
 //==========================================================================
-void SpawnBloodSplatter (TVec org, int damage, TVec shootOrg) {
-  if (!IsBloodAllowed()) return;
+final void SpawnBloodSplatter (TVec org, int damage, TVec shootOrg) {
+  if (damage < 1 || !BloodSplatterType || !IsBloodAllowed()) return;
+
+  class!Actor bloodClass = class!Actor(GetClassReplacement(BloodSplatterType));
+  if (!bloodClass) return;
 
   damage = (damage > 255 ? 255 : damage);
-  int c = P_Random()>>1;
-  foreach (auto i; 0..MAXPLAYERS) {
-    if (!Level.Game.Players[i]) continue;
-    if (!Level.Game.Players[i].bSpawned) continue;
-    if (GetCvarB('r_particle_blood')) {
-      PlayerEx(Level.Game.Players[i]).ParticleEffect(damage, LineSpecialLevelInfo::pt_static,
-          0, org, 0.0, vector(32.0, 32.0, 32.0), 0.5, 10.0, 40.0, RGB(32+c, c>>4, c>>4),
-          0.6, 0.0);
-    }
-  }
 
-  if (BloodSplatterType && !GetCvarB('dbg_blood_disable_entities')) {
-    EntityEx mo = Spawn(BloodSplatterType, org);
-    if (mo) {
-      mo.SetBloodArgs(self, damage);
-      mo.Target = self;
-      mo.Velocity.x = (Random()-Random())*4.0*35.0;
-      mo.Velocity.y = (Random()-Random())*4.0*35.0;
-      mo.Velocity.z = 3.0*35.0;
-      mo.CopyBloodTranslations(self, copyNormalTranslation:true);
-    }
-  }
+  if (GetCvarB('r_particle_blood')) SpawnBloodParticles(org, damage);
 
-  {
+  if (!bloodClass.default.bBloodDisableSplats) {
     TAVec av;
     TVec v = org-shootOrg;
     VectorAngles(v, out av);
     //print("bleed angles: vel=(%f,%f,%f); pitch=%f; roll=%f; yaw=%f", v.x, v.y, v.z, av.pitch, av.roll, av.yaw);
     TraceBleed(damage, org, av.yaw, av.pitch, false);
   }
+
+  EntityEx mo = Spawn(bloodClass, org);
+  if (!mo) return;
+  mo.SetBloodArgs(self, damage);
+  mo.Target = self;
+  mo.Velocity.x = (Random()-Random())*4.0*35.0;
+  mo.Velocity.y = (Random()-Random())*4.0*35.0;
+  mo.Velocity.z = 3.0*35.0;
+  mo.CopyBloodTranslations(self, copyNormalTranslation:true);
 }
 
 
@@ -771,29 +631,28 @@ void SpawnBloodSplatter (TVec org, int damage, TVec shootOrg) {
 //  SpawnBloodSplatter2
 //
 //===========================================================================
-void SpawnBloodSplatter2 (TVec org, TVec shootOrg) {
-  if (!IsBloodAllowed()) return;
-  if (!AxeBloodType) return;
+final void SpawnBloodSplatter2 (TVec org, TVec shootOrg) {
+  if (!AxeBloodType || !IsBloodAllowed()) return;
+
+  class!Actor bloodClass = class!Actor(GetClassReplacement(AxeBloodType));
+  if (!bloodClass) return;
 
   org.x += (Random()-0.5)*8.0;
   org.y += (Random()-0.5)*8.0;
 
-  if (!GetCvarB('dbg_blood_disable_entities')) {
-    EntityEx mo = Spawn(AxeBloodType, org);
-    if (mo) {
-      mo.SetBloodArgs(self);
-      mo.Target = self;
-      mo.CopyBloodTranslations(self, copyNormalTranslation:true);
-    }
-  }
-
-  {
+  if (!bloodClass.default.bBloodDisableSplats) {
     TAVec av;
     TVec v = org-shootOrg;
     VectorAngles(v, out av);
     //print("bleed angles: vel=(%f,%f,%f); pitch=%f; roll=%f; yaw=%f", v.x, v.y, v.z, av.pitch, av.roll, av.yaw);
     TraceBleed(500, org, av.yaw, av.pitch, false);
   }
+
+  EntityEx mo = Spawn(bloodClass, org);
+  if (!mo) return;
+  mo.SetBloodArgs(self);
+  mo.Target = self;
+  mo.CopyBloodTranslations(self, copyNormalTranslation:true);
 }
 
 
@@ -802,9 +661,11 @@ void SpawnBloodSplatter2 (TVec org, TVec shootOrg) {
 //  SpawnBloodRipper
 //
 //==========================================================================
-void SpawnBloodRipper (int damage, optional EntityEx src) {
-  if (damage <= 0 || !IsBloodAllowed() || !BloodType) return;
-  if (GetCvarB('dbg_blood_disable_entities')) return;
+final void SpawnBloodRipper (int damage, optional EntityEx src) {
+  if (damage <= 0 || !BloodType || !IsBloodAllowed()) return;
+
+  class!Actor bloodClass = class!Actor(GetClassReplacement(BloodType));
+  if (!bloodClass) return;
 
   float ltm = XLevel.Time;
   if (lastRipBloodTime >= ltm) return;
@@ -814,17 +675,16 @@ void SpawnBloodRipper (int damage, optional EntityEx src) {
   org.x = Origin.x+(Random()-Random())*16.0;
   org.y = Origin.y+(Random()-Random())*16.0;
   org.z = Origin.z;
-  BloodAddZClamped(org, (Random()-Random())*16.0, BloodType.default.Height);
+  BloodAddZClamped(org, (Random()-Random())*16.0, bloodClass.default.Height);
 
-  EntityEx th = Spawn(BloodType, org);
-  if (th) {
-    th.SetBloodArgs(self);
-    if (LineSpecialGameInfo(Level.Game).bRipperBloodNoGravity) th.bNoGravity = true;
-    th.Velocity.x = Velocity.x/2.0;
-    th.Velocity.y = Velocity.y/2.0;
-    th.StateTime += Random()*0.1;
-    th.CopyBloodTranslations(self, copyNormalTranslation:true);
-  }
+  EntityEx th = Spawn(bloodClass, org);
+  if (!th) return; // limiter hit
+  th.SetBloodArgs(self);
+  if (LineSpecialGameInfo(Level.Game).bRipperBloodNoGravity) th.bNoGravity = true;
+  th.Velocity.x = Velocity.x/2.0;
+  th.Velocity.y = Velocity.y/2.0;
+  th.StateTime += Random()*0.1;
+  th.CopyBloodTranslations(self, copyNormalTranslation:true);
 
   //if (damage > 0) SpawnBloodAtHeadExplosion(damage, src!optional);
 }
