@@ -154,6 +154,7 @@ final bool LookForMonsters (optional bool deadInfight) {
     if (!deadInfight || !Level.Game.Players[0].MO.CanSee(self)) return false; // player can't see monster
   } else {
     if (!(Level.PerfectHatredMode&LevelInfo::PHM_WANDER) && !Level.Game.Players[0].MO.CanSee(self)) return false; // player can't see monster
+    return LookForMonstersPH(Target);
   }
   int count = 0;
   Entity ee;
@@ -191,9 +192,9 @@ final bool LookForMonstersPH (optional EntityEx exingore) {
   float currSeenDist = float.inf;
   Actor seenBest = none;
   Actor mo;
-  foreach AllThinkers(Actor, out mo) {
+  foreach AllMonsters(Actor, out mo, radius:8192) {
     if (!mo) continue;
-    if (!mo.bMonster || mo == self || mo.Health <= 0) continue; // not a valid monster
+    //if (!mo.bMonster || mo == self || mo.Health <= 0) continue; // not a valid monster (done by iterator)
     if (mo.bReallyNeverTarget) continue;
     if (mo == exingore) continue;
     if (P_Random() < 16) continue; // skip

@@ -156,6 +156,8 @@ public:
   DECLARE_FUNCTION(PathTraverse)
   DECLARE_FUNCTION(RadiusThings)
 
+  DECLARE_FUNCTION(AllMonsters)
+
   void eventClientTick (float DeltaTime) {
     if (DeltaTime <= 0.0f) return;
     static VMethodProxy method("ClientTick");

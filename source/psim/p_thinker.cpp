@@ -47,6 +47,7 @@
 
 
 static VClass *eexCls = nullptr;
+static VClass *actorCls = nullptr;
 
 
 IMPLEMENT_CLASS(V, Thinker)
@@ -88,6 +89,7 @@ VField *VThinker::FindTypedField (VClass *klass, const char *fldname, EType type
 //==========================================================================
 void VThinker::ThinkerStaticInit () {
   eexCls = FindClassChecked("EntityEx");
+  actorCls = FindClassChecked("Actor");
 }
 
 
@@ -551,6 +553,84 @@ IMPLEMENT_FUNCTION(VThinker, AllThinkers) {
   VThinker **Thinker;
   vobjGetParamSelf(Class, Thinker);
   RET_PTR(new VScriptThinkerIterator(Self, Class, Thinker));
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+class VScriptMonsterLevelIterator : public VScriptIterator {
+private:
+  VEntity *Self;
+  VClass *Class;
+  VThinker **Out;
+  VThinker *Current;
+  unsigned Flags;
+  float Radius;
+
+  enum {
+    FlagNone = 0u,
+    FlagOnlyVisible  = 1u<<0,
+    FlagAllowPlayers = 1u<<1,
+    FlagRadiusCheck  = 1u<<2,
+    FlagAllowSelf    = 1u<<3,
+  };
+
+public:
+  VScriptMonsterLevelIterator (VThinker *ASelf, VClass *AClass, VThinker **AOut,
+                               bool AOnlyVisible, bool AAllowPlayers,
+                               bool AAllowSelf, float ARadius)
+    : Self(nullptr)
+    , Class(AClass)
+    , Out(AOut)
+    , Current(nullptr)
+    , Radius(ARadius*ARadius)
+  {
+         if (!AClass->IsChildOf(actorCls)) Class = nullptr;
+    else if (!ASelf->IsA(VEntity::StaticClass())) Class = nullptr;
+    else Self = (VEntity *)ASelf;
+    Flags =
+     (AOnlyVisible ? FlagOnlyVisible : FlagNone)|
+     (AAllowPlayers ? FlagAllowPlayers : FlagNone)|
+     (AAllowSelf ? FlagAllowSelf : FlagNone)|
+     (ARadius == ARadius && ARadius > 0.0f ? FlagRadiusCheck : FlagNone)|
+     FlagNone;
+  }
+
+  virtual bool GetNext () override {
+    Current = (Current ? Current->Next : Class ? Self->XLevel->ThinkerHead : nullptr);
+    *Out = nullptr;
+    for (; Current; Current = Current->Next) {
+      if (Current->IsGoingToDie()) continue;
+      if (!Current->IsA(Class)) continue;
+      VEntity *e = (VEntity *)Current;
+      if (e->Health <= 0) continue;
+      if (!e->IsMonster()) {
+        if (!(Flags&FlagAllowPlayers) || !e->IsPlayer()) continue;
+      }
+      if (!(Flags&FlagAllowSelf) && e == Self) continue;
+      if ((Flags&FlagRadiusCheck) && (e->Origin-Self->Origin).lengthSquared() > Radius) continue;
+      if ((Flags&FlagOnlyVisible) && !e->CanSee(Self)) continue;
+      *Out = Current;
+      break;
+    }
+    return !!*Out;
+  }
+};
+
+
+/*
+native final iterator AllMonsters (class!Actor Class, out Actor Thinker,
+                                   optional bool onlyVisible, optional bool allowPlayers,
+                                   optional bool allowSelf, optional float radius);
+*/
+IMPLEMENT_FUNCTION(VThinker, AllMonsters) {
+  VClass *Class;
+  VThinker **Thinker;
+  VOptParamBool onlyVisible(false);
+  VOptParamBool allowPlayers(false);
+  VOptParamBool allowSelf(false);
+  VOptParamFloat radius(0.0f);
+  vobjGetParamSelf(Class, Thinker, onlyVisible, allowPlayers, allowSelf, radius);
+  RET_PTR(new VScriptMonsterLevelIterator(Self, Class, Thinker, onlyVisible, allowPlayers, allowSelf, radius));
 }
 
 IMPLEMENT_FUNCTION(VThinker, AllActivePlayers) {

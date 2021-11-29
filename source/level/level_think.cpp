@@ -896,7 +896,7 @@ public:
   {}
 
   virtual bool GetNext () override {
-    Current = (Current ? Current->Next : Self->ThinkerHead);
+    Current = (Current ? Current->Next : Class ? Self->ThinkerHead : nullptr);
     *Out = nullptr;
     for (; Current; Current = Current->Next) {
       if (!Current->IsGoingToDie() && Current->IsA(Class)) {
@@ -933,14 +933,24 @@ public:
 
 
 IMPLEMENT_FUNCTION(VLevel, AllThinkers) {
+  /*
   P_GET_PTR(VThinker *, Thinker);
   P_GET_PTR(VClass, Class);
   P_GET_SELF;
+  */
+  VThinker **Thinker;
+  VClass *Class;
+  vobjGetParamSelf(Class, Thinker);
   RET_PTR(new VScriptThinkerLevelIterator(Self, Class, Thinker));
 }
 
 
 IMPLEMENT_FUNCTION(VLevel, AllActivePlayers) {
+  /*
   P_GET_PTR(VBasePlayer *, Out);
+  P_GET_SELF;
+  */
+  VBasePlayer **Out;
+  vobjGetParam(Out);
   RET_PTR(new VActivePlayersLevelIterator(Out));
 }
