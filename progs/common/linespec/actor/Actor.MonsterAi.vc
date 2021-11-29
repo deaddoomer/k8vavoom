@@ -354,10 +354,14 @@ final void SetSeeOrWanderState () {
   if (Level.PerfectHatredMode&LevelInfo::PHM_WANDER) {
     // in perfect hatred mode, try to find an enemy sometimes
     if (P_Random() >= 180) {
-      printdebug("%C(%s): trying to find an enemy", self, UniqueId);
+      if (GetCvarB('dbg_verbose_perfect_hatred')) {
+        printdebug("%C(%s): trying to find an enemy", self, UniqueId);
+      }
       if (LookForMonstersPH()) {
         if (Target) {
-          printdebug("%C(%s):   found enemy: %C(%s)", self, UniqueId, Target, Target.UniqueId);
+          if (GetCvarB('dbg_verbose_perfect_hatred')) {
+            printdebug("%C(%s):   found enemy: %C(%s)", self, UniqueId, Target, Target.UniqueId);
+          }
           return;
         }
       }
@@ -727,14 +731,20 @@ final void DoChasePerfectHatred () {
   // total "unseen time" is 5 or more seconds
   // actually, much more, because this is not called on each tic
 
-  printdebug("%C: haven't seen target %C(%s) long enough (%s), trying to find a new target...", self, tgt, (tgt ? tgt.UniqueId : 0), pfhLastTargetTics-pfgLastTargetSeenTics);
+  if (GetCvarB('dbg_verbose_perfect_hatred')) {
+    printdebug("%C: haven't seen target %C(%s) long enough (%s), trying to find a new target...", self, tgt, (tgt ? tgt.UniqueId : 0), pfhLastTargetTics-pfgLastTargetSeenTics);
+  }
   //LookForPlayers(bLookAllAround ? 360 : 0);
   LookForMonstersPH(Target); // ignore last target
   tgt = Actor(Target);
   if (tgt) {
-    printdebug("%C: new target found! it is %C(%d)", self, tgt, (tgt ? tgt.UniqueId : 0));
+    if (GetCvarB('dbg_verbose_perfect_hatred')) {
+      printdebug("%C: new target found! it is %C(%d)", self, tgt, (tgt ? tgt.UniqueId : 0));
+    }
     if (!tgt.bMonster) {
-      printdebug("%C: ...but it's not a monster, so dropping it", self);
+      if (GetCvarB('dbg_verbose_perfect_hatred')) {
+        printdebug("%C: ...but it's not a monster, so dropping it", self);
+      }
       tgt = none;
     }
     pfhLastTarget = tgt;
