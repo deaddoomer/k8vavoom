@@ -5746,8 +5746,19 @@ void StartDeathSlideShow () {
 //
 //  GotAmmo
 //
+//  default action for all games
+//
 //==========================================================================
 void GotAmmo (Ammo NewAmmo) {
+  if (!NewAmmo) return;
+  // we were down to zero, so select a new weapon
+  // preferences are not user selectable
+  if (!ReadyWeapon || (ReadyWeapon.bWimpyWeapon && !ReadyWeapon.bNoAutoSwitch)) {
+    Weapon Best = BestWeapon(class!Ammo(NewAmmo.Class));
+    if (Best && (!ReadyWeapon || Best.SelectionOrder < ReadyWeapon.SelectionOrder)) {
+      PendingWeapon = Best;
+    }
+  }
 }
 
 

@@ -88,20 +88,6 @@ override int GetRebornHealth () {
 
 //==========================================================================
 //
-//  GotAmmo
-//
-//==========================================================================
-override void GotAmmo (Ammo NewAmmo) {
-  if (!NewAmmo) return;
-  if (!ReadyWeapon || (ReadyWeapon.bWimpyWeapon && !ReadyWeapon.bNoAutoSwitch) /*&& GetCvarB('wpn_autoswitch')*/) {
-    Weapon Best = BestWeapon(class!Ammo(NewAmmo.Class));
-    if (Best && Best.SelectionOrder < ReadyWeapon.SelectionOrder) PendingWeapon = Best;
-  }
-}
-
-
-//==========================================================================
-//
 //  PlayerImpulse
 //
 //==========================================================================
