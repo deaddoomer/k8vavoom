@@ -25,8 +25,8 @@
 //**************************************************************************
 class HereticLevelInfo : LineSpecialLevelInfo;
 
-defaultproperties
-{
+
+defaultproperties {
   DefaultDoorSound = 'HereticDoor';
   DefaultFloorAltSound = 'FloorAlt';
   DefaultStairStepSound = 'FloorStairStep';

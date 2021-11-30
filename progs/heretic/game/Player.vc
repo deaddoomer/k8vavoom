@@ -27,83 +27,73 @@ class Player : PlayerEx;
 
 BotPlayer Bot;
 
+
 //==========================================================================
 //
 //  CreateBot
 //
 //==========================================================================
-
-override void CreateBot()
-{
+override void CreateBot () {
   Bot = BotPlayer(SpawnObject(BotPlayer, skipReplacement:false));
   Bot.player = self;
   Bot.OnBeginPlay();
   bAutoAim = true;
 }
 
+
 //==========================================================================
 //
 //  DestroyBot
 //
 //==========================================================================
-
-override void DestroyBot()
-{
-  if (Bot != none)
-  {
+override void DestroyBot () {
+  if (Bot) {
     Bot.Destroy();
     Bot = none;
   }
 }
+
 
 //==========================================================================
 //
 //  BotOnSpawn
 //
 //==========================================================================
-
-override void BotOnSpawn()
-{
+override void BotOnSpawn () {
   Bot.OnSpawn();
 }
+
 
 //==========================================================================
 //
 //  DoClearPlayer
 //
 //==========================================================================
-
-override void DoClearPlayer()
-{
-  BotPlayer b;
-
-  b = Bot;
+override void DoClearPlayer () {
+  BotPlayer b = Bot;
   ::DoClearPlayer();
   Bot = b;
 }
+
 
 //==========================================================================
 //
 //  GetRebornHealth
 //
 //==========================================================================
-
-override int GetRebornHealth()
-{
+override int GetRebornHealth () {
   return MAXHEALTH;
 }
+
 
 //==========================================================================
 //
 //  GotAmmo
 //
 //==========================================================================
-
-override void GotAmmo(Ammo NewAmmo)
-{
+override void GotAmmo (Ammo NewAmmo) {
   if (!NewAmmo) return;
-  if (!ReadyWeapon || (ReadyWeapon.bWimpyWeapon && !ReadyWeapon.bNoAutoSwitch) /*&& GetCvarB('wpn_autoswitch')*/)
-  {
+  if (!ReadyWeapon || (ReadyWeapon.bWimpyWeapon && !ReadyWeapon.bNoAutoSwitch) /*&& GetCvarB('wpn_autoswitch')*/) {
     Weapon Best = BestWeapon(class!Ammo(NewAmmo.Class));
     if (Best && Best.SelectionOrder < ReadyWeapon.SelectionOrder) PendingWeapon = Best;
   }
@@ -143,12 +133,9 @@ override void PlayerImpulse () {
 //  BotTick
 //
 //==========================================================================
-
-override void BotTick(float deltaTime)
-{
+override void BotTick (float deltaTime) {
   Bot.BotTick(deltaTime);
 }
-
 
 
 //==========================================================================
@@ -264,59 +251,40 @@ void Cheat_Gimme () {
 //  Cheat_Morph
 //
 //==========================================================================
-
-void Cheat_Morph()
-{
-  if (MorphTime)
-  {
-    if (UndoPlayerMorph(false, self))
-    {
+void Cheat_Morph () {
+  if (MorphTime) {
+    if (UndoPlayerMorph(false, self)) {
       cprint("CHICKEN OFF");
     }
-  }
-  else
-  {
+  } else {
     if (Actor(MO).MorphPlayer(EggFX.default.PlayerClass, 40.0,
-      EggFX.default.MorphStyle, none, none, Actor(MO)))
+        EggFX.default.MorphStyle, none, none, Actor(MO)))
     {
       cprint("CHICKEN ON");
     }
   }
 }
 
+
 //==========================================================================
 //
 //  KilledActor
 //
 //==========================================================================
+override void KilledActor (EntityEx Victim) {
+  // check for frag changes
+  if (Victim.bIsPlayer) {
+    if (bIsBot) Bot.Killed(Victim);
+    if (Victim.Player.bIsBot) Player(Victim.Player).Bot.Died(EntityEx(MO));
 
-override void KilledActor(EntityEx Victim)
-{
-  // Check for frag changes
-  if (Victim.bIsPlayer)
-  {
-    if (bIsBot)
-    {
-      Bot.Killed(Victim);
-    }
-
-    if (Victim.Player.bIsBot)
-    {
-      Player(Victim.Player).Bot.Died(EntityEx(MO));
-    }
-
-    // Frag stuff
-    if (Victim == MO)
-    {
-      // Self-frag
-      Frags--;
-    }
-    else
-    {
-      Frags++;
+    // frag stuff
+    if (Victim == MO) {
+      // self-frag
+      --Frags;
+    } else {
+      ++Frags;
       MO.PlaySound('misc/frag', CHAN_ITEM);
-      if (MorphTime)
-      {
+      if (MorphTime) {
         // Make a super chicken
         EntityEx(MO).GiveInventoryType(PowerWeaponLevel2);
       }
@@ -324,6 +292,6 @@ override void KilledActor(EntityEx Victim)
   }
 }
 
-defaultproperties
-{
+
+defaultproperties {
 }
