@@ -100,7 +100,7 @@ void ActivateSlot () {
 //==========================================================================
 override bool OnEvent (ref event_t evt) {
   // "on click"
-  if (evt.bubbling && evt.type == ev_click && evt.dest == self) {
+  if (evt.type == ev_click && evt.dest == self) {
     if (evt.keycode == K_MOUSE1) {
       SetFocus();
       waitingDeletion = false;
@@ -119,7 +119,7 @@ override bool OnEvent (ref event_t evt) {
     }
   }
 
-  if (evt.bubbling && evt.type == ev_keydown) {
+  if (evt.type == ev_keydown) {
     if (bEnteringText) {
       // save game string input
       switch (evt.keycode) {
@@ -188,7 +188,7 @@ override bool OnEvent (ref event_t evt) {
     }
   }
 
-  if (evt.bubbling && evt.type == ev_keyup && bEnteringText) {
+  if (evt.type == ev_keyup && bEnteringText) {
     return true;
   }
 

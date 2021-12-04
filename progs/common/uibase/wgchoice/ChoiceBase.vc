@@ -271,12 +271,12 @@ override void OnFocusReceived () {
 //==========================================================================
 override bool OnEvent (ref event_t evt) {
   /*
-  if (evt.bubbling && evt.dest == self) {
+  if (evt.dest == self) {
     printdebug("%C: evt=%s; Parent.Width=%s; Width=%s; Height=%s", self, evt.type, Parent.Width, Width, Height);
   }
   */
 
-  if (evt.bubbling && evt.type == ev_keydown) {
+  if (evt.type == ev_keydown) {
     /*
     if (evt.keycode == K_MOUSE1 && evt.dest == self) {
       printdebug("%s: mdown!", self);
@@ -309,7 +309,7 @@ override bool OnEvent (ref event_t evt) {
   }
 
   // "on mouse down"
-  if (evt.bubbling && evt.dest == self && evt.type == ev_keydown && evt.keycode == K_MOUSE1) {
+  if (evt.dest == self && evt.type == ev_keydown && evt.keycode == K_MOUSE1) {
     // focus if we're clicked
     if (evt.x >= 0 && evt.y >= 0 && evt.x < Width && evt.y < Height) {
       if (!IsFocused) SetFocus();
@@ -318,7 +318,7 @@ override bool OnEvent (ref event_t evt) {
   }
 
   // "on click"
-  if (evt.bubbling && evt.type == ev_click && evt.dest == self) {
+  if (evt.type == ev_click && evt.dest == self) {
     if (evt.keycode == K_MOUSE1) {
       SetFocus();
       return true;

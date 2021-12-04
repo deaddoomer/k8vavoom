@@ -198,7 +198,7 @@ override bool OnBeforePopMenu (bool userAbort) {
 //==========================================================================
 override bool OnEvent (ref event_t evt) {
   /*
-  if (evt.bubbling && evt.type == ev_keydown) {
+  if (evt.type == ev_keydown) {
     int key = ConvertBoundKey(evt.keycode);
     switch (key) {
       case K_ESCAPE:

@@ -187,11 +187,10 @@ void AbortKnobDrag () {
 
 //==========================================================================
 //
-//  OnEvent
+//  OnEventSink
 //
 //==========================================================================
-override bool OnEvent (ref event_t evt) {
-  // if dragging knob, eat mouse movement events
+override bool OnEventSink (ref event_t evt) {
   if (draggingKnob) {
     if (evt.type == ev_mouse) {
       float newValue = GetSliderValue(evt.msx-GetSliderStartX());
@@ -201,12 +200,35 @@ override bool OnEvent (ref event_t evt) {
       }
     }
     if (evt.type == ev_mouse || (evt.type == ev_keydown && evt.keycode == K_MOUSE1)) return true; // eat it
-    if (evt.bubbling && evt.type == ev_keyup && evt.keycode == K_MOUSE1) {
+  }
+  return ::OnEventSink(evt);
+}
+
+
+//==========================================================================
+//
+//  OnEvent
+//
+//==========================================================================
+override bool OnEvent (ref event_t evt) {
+  // if dragging knob, eat mouse movement events
+  if (draggingKnob) {
+    /*
+    if (evt.type == ev_mouse) {
+      float newValue = GetSliderValue(evt.msx-GetSliderStartX());
+      if (newValue != Value) {
+        if (SetNewValue(ref newValue)) LocalSound('menu/change');
+        return true;
+      }
+    }
+    if (evt.type == ev_mouse || (evt.type == ev_keydown && evt.keycode == K_MOUSE1)) return true; // eat it
+    */
+    if (evt.type == ev_keyup && evt.keycode == K_MOUSE1) {
       AbortKnobDrag();
     }
   }
 
-  if (IsFocused && evt.bubbling && evt.type == ev_keydown && MinValue < MaxValue) {
+  if (IsFocused && evt.type == ev_keydown && MinValue < MaxValue) {
     bool eatIt = false;
     float newValue = Value;
     if (evt.keycode == K_MWHEELDOWN) {
@@ -233,6 +255,7 @@ override bool OnEvent (ref event_t evt) {
     }
     if (eatIt) return true;
   }
+
   return ::OnEvent(evt);
 }
 #endif

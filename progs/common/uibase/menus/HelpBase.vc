@@ -179,7 +179,7 @@ override void OnDraw () {
 //==========================================================================
 override bool OnEvent (ref event_t evt) {
   #ifdef VV_TEST_HEX_WHEEL
-  if (evt.bubbling && evt.type == ev_mouse) {
+  if (evt.type == ev_mouse) {
     lastMouseX = evt.msx+ClipRect.OriginX/ClipRect.ScaleX;
     lastMouseY = evt.msy+ClipRect.OriginY/ClipRect.ScaleY;
     Widget root = GetRootWidget;
@@ -189,7 +189,7 @@ override bool OnEvent (ref event_t evt) {
   }
   #endif
 
-  if (evt.bubbling && evt.type == ev_keydown) {
+  if (evt.type == ev_keydown) {
     int key = ConvertBoundKey(evt.keycode);
     switch (key) {
       case K_ESCAPE:
@@ -215,6 +215,7 @@ override bool OnEvent (ref event_t evt) {
 
     return true;
   }
+
   return ::OnEvent(evt);
 }
 

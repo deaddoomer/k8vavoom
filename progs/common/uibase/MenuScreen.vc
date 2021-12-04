@@ -1154,12 +1154,12 @@ override bool OnEvent (ref event_t evt) {
     return ::OnEvent(evt);
   }
 
-  if (evt.bubbling && evt.type == ev_keydown && evt.keycode == K_MOUSE2) {
+  if (evt.type == ev_keydown && evt.keycode == K_MOUSE2) {
     DoPopMenu(userAbort:true);
     return true;
   }
 
-  if (evt.bubbling && evt.type == ev_keydown) {
+  if (evt.type == ev_keydown) {
     int key = ConvertBoundKey(evt.keycode);
     switch (key) {
       case K_UPARROW:

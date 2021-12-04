@@ -177,8 +177,9 @@ override void OnDraw () {
 //==========================================================================
 override bool OnEvent (ref event_t evt) {
   if (isReadOnly) return ::OnEvent(evt);
+
   // "on click"
-  if (evt.bubbling && evt.type == ev_click && evt.dest == self) {
+  if (evt.type == ev_click && evt.dest == self) {
     if (evt.keycode == K_MOUSE1) {
       if (IsFocused) {
         if (vallist) OpenComboPopup(/*X*/default, /*Y*/default);
@@ -189,7 +190,7 @@ override bool OnEvent (ref event_t evt) {
     }
   }
 
-  if (evt.bubbling && evt.type == ev_keydown && vallist.length != 0) {
+  if (evt.type == ev_keydown && vallist.length != 0) {
     float newValue;
     int idx;
     if (evt.keycode >= K_MOUSE1 && evt.keycode <= K_MOUSE9) return ::OnEvent(evt);
@@ -212,6 +213,7 @@ override bool OnEvent (ref event_t evt) {
         break;
     }
   }
+
   return ::OnEvent(evt);
 }
 

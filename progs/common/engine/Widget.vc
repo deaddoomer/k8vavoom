@@ -547,15 +547,29 @@ void Tick (float DeltaTime) {}
 //
 //  OnEvent
 //
-//  this is called before any other specific handler.
 //  return `true` to prevent other handlers from being called
 //  (i.e. to "eat" the event).
-//  if `evt.bubbling` is set, we're in bubble phase.
+//  we're in bubble phase here.
 //  deepest child (destination) will have `evt.bubbling` set too.
 //  also, `evt.dest` is usually the deepest child.
+//  broadcast events will be processed with this handler too.
 //
 //==========================================================================
 bool OnEvent (ref event_t evt) { return false; }
+
+
+//==========================================================================
+//
+//  OnEventSink
+//
+//  return `true` to prevent other handlers from being called
+//  (i.e. to "eat" the event).
+//  we're in sinking phase here.
+//  deepest child (destination) will omit this handler.
+//  also, `evt.dest` is usually the deepest child.
+//
+//==========================================================================
+bool OnEventSink (ref event_t evt) { return false; }
 
 
 //==========================================================================

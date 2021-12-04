@@ -492,6 +492,7 @@ public:
   virtual void OnPostDraw () { static VMethodProxy method("OnPostDraw"); vobjPutParamSelf(); VMT_RET_VOID(method); }
   virtual void Tick (float DeltaTime) { if (DeltaTime <= 0.0f) return; static VMethodProxy method("Tick"); vobjPutParamSelf(DeltaTime); VMT_RET_VOID(method); }
   virtual bool OnEvent (event_t *evt) { static VMethodProxy method("OnEvent"); if (!evt) return false; vobjPutParamSelf(evt); VMT_RET_BOOL(method); }
+  virtual bool OnEventSink (event_t *evt) { static VMethodProxy method("OnEventSink"); if (!evt) return false; vobjPutParamSelf(evt); VMT_RET_BOOL(method); }
 
   // script natives
   DECLARE_FUNCTION(NewChild)

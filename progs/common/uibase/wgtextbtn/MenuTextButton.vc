@@ -162,7 +162,7 @@ void ActivateEvent () {
 //==========================================================================
 override bool OnEvent (ref event_t evt) {
   // "on click"
-  if (evt.bubbling && evt.type == ev_click && evt.dest == self) {
+  if (evt.type == ev_click && evt.dest == self) {
     if (evt.keycode == K_MOUSE1) {
       SetFocus();
       ActivateEvent();
@@ -171,7 +171,7 @@ override bool OnEvent (ref event_t evt) {
     }
   }
 
-  if (evt.bubbling && evt.type == ev_keydown) {
+  if (evt.type == ev_keydown) {
     int key = ConvertBoundKey(evt.keycode);
     if (key == K_ENTER || /*key == K_MOUSE1 ||*/ key == K_JOY1) {
       ActivateEvent();

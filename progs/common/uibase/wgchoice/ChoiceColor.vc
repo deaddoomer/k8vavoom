@@ -151,7 +151,7 @@ override void OnDraw () {
 //==========================================================================
 override bool OnEvent (ref event_t evt) {
   // "on click"
-  if (evt.bubbling && evt.type == ev_click && evt.dest == self) {
+  if (evt.type == ev_click && evt.dest == self) {
     if (evt.keycode == K_MOUSE1) {
       if (IsFocused) {
         OpenColorPopup(/*X*/default, /*Y*/default);
@@ -162,7 +162,7 @@ override bool OnEvent (ref event_t evt) {
     }
   }
 
-  if (evt.bubbling && evt.type == ev_keydown) {
+  if (evt.type == ev_keydown) {
     if (evt.keycode >= K_MOUSE1 && evt.keycode <= K_MOUSE9) return ::OnEvent(evt);
     switch (ConvertBoundKey(evt.keycode)) {
       case K_ENTER:

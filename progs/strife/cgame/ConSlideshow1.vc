@@ -94,7 +94,7 @@ void PlayPage()
 //
 //==========================================================================
 override bool OnEvent (ref event_t evt) {
-  if (evt.bubbling && evt.type == ev_keydown) {
+  if (evt.type == ev_keydown) {
     switch (ConvertBoundKey(evt.keycode)) {
       case K_ESCAPE:
       case K_MOUSE2:

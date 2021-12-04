@@ -128,15 +128,16 @@ override void OnDraw () {
 //==========================================================================
 override bool OnEvent (ref event_t evt) {
   if (isReadOnly) return ::OnEvent(evt);
+
   // "on click"
-  if (evt.bubbling && evt.type == ev_click && evt.dest == self) {
+  if (evt.type == ev_click && evt.dest == self) {
     if (evt.keycode == K_MOUSE1) {
       SetFocus();
       return true;
     }
   }
 
-  if (evt.bubbling && evt.type == ev_keydown) {
+  if (evt.type == ev_keydown) {
     float newValue = Value;
     switch (ConvertBoundKey(evt.keycode)) {
       case K_LEFTARROW:
@@ -157,6 +158,7 @@ override bool OnEvent (ref event_t evt) {
       return true;
     }
   }
+
   return ::OnEvent(evt);
 }
 

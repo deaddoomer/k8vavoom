@@ -80,7 +80,7 @@ override bool OnEvent (ref event_t evt) {
   //if (!EDef || EDef.Key.length != 1) return ::OnEvent(evt);
 
   // "on click"
-  if (evt.bubbling && evt.type == ev_keydown && evt.keycode >= "a" && evt.keycode <= "z") {
+  if (evt.type == ev_keydown && evt.keycode >= "a" && evt.keycode <= "z") {
     foreach (auto it; Items) {
       MenuChoiceEpisode ep = MenuChoiceEpisode(it);
       if (!ep) continue;

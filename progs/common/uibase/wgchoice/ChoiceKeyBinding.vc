@@ -111,7 +111,7 @@ override void OnDraw () {
 //==========================================================================
 override bool OnEvent (ref event_t evt) {
   // "on click"
-  if (evt.bubbling && evt.type == ev_click && evt.dest == self) {
+  if (evt.type == ev_click && evt.dest == self) {
     if (!Disabled) {
       if (evt.keycode == K_MOUSE1) {
         SetFocus();
@@ -121,7 +121,7 @@ override bool OnEvent (ref event_t evt) {
     }
   }
 
-  if (evt.bubbling && evt.type == ev_keydown) {
+  if (evt.type == ev_keydown) {
     switch (ConvertBoundKey(evt.keycode)) {
       case K_LEFTARROW:
         if (GetClGame().ControlColumn > 0) {

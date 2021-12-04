@@ -226,17 +226,24 @@ bool VRootWidget::DispatchEvent (event_t *evt) {
     if (dir == 1 && widx == EventPath.length()-1) dir = -1; // stop sinking, start bubbling
     VWidget *w = EventPath[widx];
     if (w->IsGoingToDie()) {
-      // if sinking, don't sink furhter
+      // if sinking, don't sink further
       // if bubbling, do nothing
       dir = -1;
     } else {
       // protect from accidental changes
       if (dir == 1) evt->setSinking(); else evt->setBubbling();
+      // restore destination
       evt->dest = EventPath[EventPath.length()-1];
       // fix mouse coords
       FixEventCoords(w, evt, svparts);
       // call event handler
-      if (w->OnEvent(evt)) evt->setEaten();
+      if (dir == 1) {
+        // sinking
+        if (w->OnEventSink(evt)) evt->setEaten();
+      } else {
+        // bubbling
+        if (w->OnEvent(evt)) evt->setEaten();
+      }
       // restore modified event fields
       RestoreEventCoords(evt, svparts);
       // get out if event is consumed or cancelled
