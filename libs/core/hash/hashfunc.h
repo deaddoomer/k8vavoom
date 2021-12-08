@@ -117,7 +117,7 @@ static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline uint32_t permuteU32Inv (uin
 // fnv-1a: http://www.isthe.com/chongo/tech/comp/fnv/
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashBufCI (const VVA_MAYALIAS void *buf, size_t len) noexcept {
   uint32_t hash = 2166136261U; // fnv offset basis
-  const vuint8 *s = (const vuint8 *)buf;
+  const VVA_MAYALIAS uint8_t *s = (const uint8_t *)buf;
   while (len--) {
     //hash ^= (uint8_t)locase1251(*s++);
     hash ^= (*s++)|0x20; // this converts ASCII capitals to locase (and destroys other, but who cares)
@@ -131,7 +131,7 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashBufCI (const
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashBuf (const VVA_MAYALIAS void *buf, size_t len) noexcept {
   uint32_t hash = 2166136261U; // fnv offset basis
   if (len) {
-    const vuint8 *s = (const vuint8 *)buf;
+    const VVA_MAYALIAS uint8_t *s = (const uint8_t *)buf;
     while (len--) {
       hash ^= *s++;
       hash *= 16777619U; // 32-bit fnv prime
@@ -145,7 +145,7 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashBuf (const V
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashStr (const VVA_MAYALIAS void *buf) noexcept {
   uint32_t hash = 2166136261U; // fnv offset basis
   if (buf) {
-    const vuint8 *s = (const vuint8 *)buf;
+    const VVA_MAYALIAS uint8_t *s = (const uint8_t *)buf;
     while (*s) {
       hash ^= *s++;
       hash *= 16777619U; // 32-bit fnv prime
@@ -159,7 +159,7 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashStr (const V
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashStrCI (const VVA_MAYALIAS void *buf) noexcept {
   uint32_t hash = 2166136261U; // fnv offset basis
   if (buf) {
-    const vuint8 *s = (const vuint8 *)buf;
+    const VVA_MAYALIAS uint8_t *s = (const uint8_t *)buf;
     while (*s) {
       //hash ^= (uint8_t)locase1251(*s++);
       hash ^= (*s++)|0x20; // this converts ASCII capitals to locase (and destroys other, but who cares)
@@ -173,7 +173,7 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashStrCI (const
 // djb
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t djbHashBufCI (const VVA_MAYALIAS void *buf, size_t len) noexcept {
   uint32_t hash = 5381;
-  const vuint8 *s = (const vuint8 *)buf;
+  const VVA_MAYALIAS uint8_t *s = (const uint8_t *)buf;
   //while (len--) hash = ((hash<<5)+hash)+(uint8_t)locase1251(*s++);
   while (len--) hash = ((hash<<5)+hash)+((*s++)|0x20); // this converts ASCII capitals to locase (and destroys other, but who cares)
   return hash;
@@ -183,7 +183,7 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t djbHashBufCI (const
 // djb
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t djbHashBuf (const VVA_MAYALIAS void *buf, size_t len) noexcept {
   uint32_t hash = 5381;
-  const vuint8 *s = (const vuint8 *)buf;
+  const VVA_MAYALIAS uint8_t *s = (const uint8_t *)buf;
   while (len-- > 0) hash = ((hash<<5)+hash)+(*s++);
   return hash;
 }
@@ -191,7 +191,7 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t djbHashBuf (const V
 
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t joaatHashBuf (const VVA_MAYALIAS void *buf, size_t len, uint32_t seed=0u) noexcept {
   uint32_t hash = seed;
-  const vuint8 *s = (const vuint8 *)buf;
+  const VVA_MAYALIAS uint8_t *s = (const uint8_t *)buf;
   while (len--) {
     hash += *s++;
     hash += hash<<10;
@@ -207,7 +207,7 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t joaatHashBuf (const
 
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t joaatHashBufCI (const VVA_MAYALIAS void *buf, size_t len, uint32_t seed=0u) noexcept {
   uint32_t hash = seed;
-  const vuint8 *s = (const vuint8 *)buf;
+  const VVA_MAYALIAS uint8_t *s = (const uint8_t *)buf;
   while (len--) {
     //hash += (uint8_t)locase1251(*s++);
     hash += (*s++)|0x20; // this converts ASCII capitals to locase (and destroys other, but who cares)
