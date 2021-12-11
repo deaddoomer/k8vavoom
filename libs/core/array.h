@@ -372,24 +372,29 @@ public:
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+// this is used to hold "delay destroy" VObject indicies
 // didn't found a better place for this
 // this does allocations in 8KB chunks
 // `T` should be a POD, as it won't be properly copied/destructed
 // blocks are never moved on allocation
 template<class T> class VQueueLifo {
 private:
+  /* block format:
+     two last pointer-sized cells are reserved for "prev block" and "next block" pointers.
+     everything else is used for objects.
+   */
   enum {
-    BlockSize = 8192, // 8KB blocks
-    ItemsPerBlock = (BlockSize-2*sizeof(void **))/sizeof(T),
-    PrevIndex = BlockSize/sizeof(void **)-2,
-    NextIndex = BlockSize/sizeof(void **)-1,
+    BlockSize = 8192U, // 8KB blocks
+    ItemsPerBlock = (unsigned)((BlockSize-2*sizeof(void **))/sizeof(T)),
+    PrevIndex = (unsigned)(BlockSize/sizeof(void **)-2),
+    NextIndex = (unsigned)(BlockSize/sizeof(void **)-1),
   };
 
 private:
   T *first; // first alloted block
   T *currblock; // currently using block
-  int blocksAlloted; // number of allocated blocks, for stats
-  int used; // total number of elements pushed
+  unsigned blocksAlloted; // number of allocated blocks, for stats
+  unsigned used; // total number of elements pushed
 
 private:
   inline static T *getPrevBlock (T *blk) noexcept { return (blk ? (T *)(((void **)blk)[PrevIndex]) : nullptr); }
@@ -398,26 +403,26 @@ private:
   inline static void setPrevBlock (T *blk, T* ptr) noexcept { if (blk) ((void **)blk)[PrevIndex] = ptr; }
   inline static void setNextBlock (T *blk, T* ptr) noexcept { if (blk) ((void **)blk)[NextIndex] = ptr; }
 
-  inline int freeInCurrBlock () const noexcept { return (used%ItemsPerBlock ?: ItemsPerBlock); }
+  inline unsigned freeInCurrBlock () const noexcept { return (used%ItemsPerBlock ?: ItemsPerBlock); }
 
 public:
   VV_DISABLE_COPY(VQueueLifo)
   inline VQueueLifo () noexcept : first(nullptr), currblock(nullptr), blocksAlloted(0), used(0) {}
   inline ~VQueueLifo () noexcept { clear(); }
 
-  T operator [] (int idx) noexcept {
+  inline T operator [] (const int idx) noexcept {
     vassert(idx >= 0 && idx < used);
-    int bnum = idx/ItemsPerBlock;
+    unsigned bnum = (unsigned)idx/ItemsPerBlock;
     T *blk = first;
     while (bnum--) blk = getNextBlock(blk);
-    return blk[idx%ItemsPerBlock];
+    return blk[(unsigned)idx%ItemsPerBlock];
   }
 
-  inline int length () const noexcept { return used; }
-  inline int capacity () const noexcept { return blocksAlloted*ItemsPerBlock; }
+  inline int length () const noexcept { return (int)used; }
+  inline int capacity () const noexcept { return (int)(blocksAlloted*ItemsPerBlock); }
 
   // free all pool memory
-  inline void clear () noexcept {
+  void clear () noexcept {
     while (first) {
       T *nb = getNextBlock(first);
       Z_Free(first);
@@ -439,7 +444,7 @@ public:
   inline T *alloc () noexcept {
     if (currblock) {
       if (used) {
-        int cbpos = freeInCurrBlock();
+        const unsigned cbpos = freeInCurrBlock();
         if (cbpos < ItemsPerBlock) {
           // can use it
           ++used;
@@ -479,8 +484,8 @@ public:
     return nblk;
   }
 
-  inline void push (const T &value) noexcept { T *cp = alloc(); *cp = value; }
-  inline void append (const T &value) noexcept { T *cp = alloc(); *cp = value; }
+  inline void push (const T &value) noexcept { (*alloc()) = value; }
+  inline void append (const T &value) noexcept { (*alloc()) = value; }
 
   // forget last element
   inline void pop () noexcept {
