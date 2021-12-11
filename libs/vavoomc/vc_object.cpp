@@ -947,9 +947,11 @@ void VObject::SerialiseFields (VStream &Strm) {
       }
     }
     // now load fields
+    if (debugDump) GLog.WriteLine("VC I/O: loading %d (of %d) fields of class `%s`...", fldcount, fldmap.length(), GetClass()->GetName());
     while (fldcount--) {
       VName fldname = NAME_None;
       Strm << fldname;
+      if (debugDump) GLog.WriteLine("VC I/O:   field '%s'...", *fldname);
       auto fpp = fldmap.get(fldname);
       if (!fpp) {
         GLog.WriteLine(NAME_Warning, "saved field `%s` not found in class `%s`, value ignored", *fldname, GetClass()->GetName());
@@ -977,6 +979,7 @@ void VObject::SerialiseFields (VStream &Strm) {
     // serialise fields
     TMapNC<VName, bool> fldseen;
     TArray<VField *> fldlist;
+    if (debugDump) GLog.WriteLine("VC I/O: scanning fields of class `%s`...", GetClass()->GetName());
     for (VClass *cls = GetClass(); cls; cls = cls->GetSuperClass()) {
       for (VField *fld = cls->Fields; fld; fld = fld->Next) {
         if (fld->Flags&(FIELD_Native|FIELD_Transient)) continue;
@@ -1001,15 +1004,18 @@ void VObject::SerialiseFields (VStream &Strm) {
           GLog.Logf(NAME_Warning, "  field at %s", *fld->Loc.toStringNoCol());
           // do not save duplicate
         } else {
+          if (debugDump) GLog.WriteLine("VC I/O:   found field `%s`",  *fld->Name);
           fldlist.append(fld);
         }
       }
     }
     // now write all fields in backwards order, so they'll appear in natural order in stream
     vint32 fldcount = fldlist.length();
+    if (debugDump) GLog.WriteLine("VC I/O: writing %d fields of class `%s`...", fldcount, GetClass()->GetName());
     Strm << STRM_INDEX(fldcount);
     for (int f = fldlist.length()-1; f >= 0; --f) {
       VField *fld = fldlist[f];
+      if (debugDump) GLog.WriteLine("VC I/O:   writing field `%s` of type `%s`",  *fld->Name, *fld->Type.GetName());
       Strm << fld->Name;
       VField::SerialiseFieldValue(Strm, (vuint8 *)this+fld->Ofs, fld->Type);
     }
