@@ -40,7 +40,7 @@ class BloodySkull : PlayerChunk decorate;
 
 // Gore Mod
 //WARNING! keep this in sync with decorate code!
-class K8Gore_BloodTransient : Actor;
+class K8Gore_BloodTransient : Actor decorate;
 
 class BulletPuff : Actor decorate;
 class Clip : Ammo decorate;
