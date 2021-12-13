@@ -168,7 +168,7 @@ void *Z_MallocNoClear (size_t size) VV_ZONE_NOEXCEPT {
 }
 
 
-__attribute__((malloc)) __attribute__((alloc_size(1))) __attribute__((returns_nonnull))
+__attribute__((malloc)) __attribute__((alloc_size(1)))
 void *Z_MallocNoClearNoFail (size_t size) VV_ZONE_NOEXCEPT {
 #ifdef VAVOOM_CORE_COUNT_ALLOCS
   ++zone_malloc_call_count;
