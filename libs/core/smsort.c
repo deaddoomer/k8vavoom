@@ -27,6 +27,8 @@
 
 #include <string.h>
 
+//#define SMSORT_DEBUG_000
+
 #if 0
 // non-asm implementation
 static inline int a_ctz_l (uint32_t x) {
@@ -46,6 +48,10 @@ static inline int a_ctz_64 (uint64_t x) {
   }
   return a_ctz_l(y);
 }
+#endif
+
+#ifdef SMSORT_DEBUG_000
+# include <stdio.h>
 #endif
 
 
@@ -69,18 +75,35 @@ static inline int pntz (size_t p[2]) {
 }
 
 
+#define CYCLEI(tp_)  do { \
+  --n; /* to avoid doing `-1` in the loop, and in the last line */ \
+  const tp_ v0 = *(const tp_ *)ar[0]; \
+  for (i = 0; i < n; ++i) *(tp_ *)ar[i] = *(const tp_ *)ar[i+1]; \
+  *(tp_ *)ar[n] = v0; \
+} while (0)
+
+
 static void cycle (size_t width, unsigned char* ar[], int n) {
-  unsigned char tmp[256];
-  size_t l;
+  if (n < 2) return;
   int i;
 
-  if (n < 2) return;
+  // common type sizes
+  if (width <= 8) {
+    switch (width) {
+      case 1: CYCLEI(uint8_t); return;
+      case 2: CYCLEI(uint16_t); return;
+      case 4: CYCLEI(uint32_t); return;
+      case 8: CYCLEI(uint64_t); return;
+    }
+  }
 
+  unsigned char tmp[256];
+  size_t l;
   ar[n] = tmp;
   while (width) {
     l = (sizeof(tmp) < width ? sizeof(tmp) : width);
     memcpy(ar[n], ar[0], l);
-    for (i = 0; i < n; i++) {
+    for (i = 0; i < n; ++i) {
       memcpy(ar[i], ar[i+1], l);
       ar[i] += l;
     }
@@ -120,7 +143,7 @@ static void sift (unsigned char *head, size_t width, smsort_cmpfun cmp, void *ar
   int i = 1;
 
   ar[0] = head;
-  while(pshift > 1) {
+  while (pshift > 1) {
     rt = head-width;
     lf = head-width-lp[pshift-2];
 
@@ -180,15 +203,53 @@ static void trinkle (unsigned char *head, size_t width, smsort_cmpfun cmp, void 
 }
 
 
+#ifdef SMSORT_DEBUG_000
+# define DBGINS  fprintf(stderr, "INS! (%u:%u)\n", width, nel);
+#else
+# define DBGINS
+#endif
+
+
+// insertion sort using integer types
+#define INSSORT(tp_)  do { \
+  tp_ *arr = (tp_ *)base; \
+  unsigned i = 1; \
+  while (i < (unsigned)nel) { \
+    unsigned j = i; \
+    while (j && cmp(arr+j-1U, arr+j, arg) > 0) { \
+      const tp_ tmpv = arr[j-1U]; \
+      arr[j-1U] = arr[j]; \
+      arr[j] = tmpv; \
+      --j; \
+    } \
+    ++i; \
+  } \
+} while (0)
+
+
 void smsort_r (void *base, size_t nel, size_t width, smsort_cmpfun cmp, void *arg) {
-  size_t lp[12*sizeof(size_t)];
   size_t i, size = width*nel;
+
+  if (!size || nel < 2) return;
+
+  // use insertion sort for small arrays
+  if (nel <= 16 && width <= 8) {
+    switch (width) {
+      case 1: DBGINS INSSORT(uint8_t); return;
+      case 2: DBGINS INSSORT(uint16_t); return;
+      case 4: DBGINS INSSORT(uint32_t); return;
+      case 8: DBGINS INSSORT(uint64_t); return;
+    }
+  }
+  #ifdef SMSORT_DEBUG_000
+  fprintf(stderr, "SMOOTH! (%u:%u)\n", width, nel);
+  #endif
+
+  size_t lp[12*sizeof(size_t)];
   unsigned char *head, *high;
   size_t p[2] = {1, 0};
   int pshift = 1;
   int trail;
-
-  if (!size || nel < 2) return;
 
   head = base;
   high = head+size-width;
