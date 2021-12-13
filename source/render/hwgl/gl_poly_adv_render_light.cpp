@@ -282,6 +282,6 @@ void VOpenGLDrawer::RenderSolidLightSurfaces (TArray<surface_t *> &slist) {
 //
 //==========================================================================
 void VOpenGLDrawer::RenderMaskedLightSurfaces (TArray<surface_t *> &slist) {
-  timsort_r(slist.ptr(), slist.length(), sizeof(surface_t *), &glAdvCompareTextureIdOnly, nullptr);
+  xxsort_r(slist.ptr(), slist.length(), sizeof(surface_t *), &glAdvCompareTextureIdOnly, nullptr);
   for (auto &&surf : slist) DrawSurfaceLight(surf);
 }

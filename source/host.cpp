@@ -258,7 +258,7 @@ static VVA_OKUNUSED void CountAllEntities () {
     nfo.cc = it.getKey();
     nfo.count = it.getValue();
   }
-  timsort_r(olist.ptr(), olist.length(), sizeof(ECounterInfo), &cmpCounterInfo, nullptr);
+  smsort_r(olist.ptr(), olist.length(), sizeof(ECounterInfo), &cmpCounterInfo, nullptr);
   GCon->Logf(NAME_Debug, "=== %c object types ===", olist.length());
   for (auto &&it : olist) GCon->Logf("  %5d: %s", it.count, it.cc->GetName());
 }

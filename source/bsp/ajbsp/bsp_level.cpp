@@ -310,7 +310,7 @@ static void CompressBlockmap(void)
 		block_dups[i] = i;
 
 	//qsort(block_dups, block_count, sizeof(u16_t), BlockCompare);
-	timsort_r(block_dups, block_count, sizeof(u16_t), &BlockCompare, nullptr);
+	xxsort_r(block_dups, block_count, sizeof(u16_t), &BlockCompare, nullptr);
 
 	// scan duplicate array and build up offset array
 
@@ -1092,7 +1092,7 @@ void SortSegs()
 {
 	// sort segs into ascending index
 	//qsort(segs, num_segs, sizeof(seg_t *), SegCompare);
-	timsort_r(segs, num_segs, sizeof(seg_t *), &SegCompare, nullptr);
+	xxsort_r(segs, num_segs, sizeof(seg_t *), &SegCompare, nullptr);
 }
 
 

@@ -75,10 +75,10 @@ void VOpenGLDrawer::DrawWorldAmbientPass () {
     // other passes can skip surface sorting
 
     // sort masked textures by shader class and texture
-    timsort_r(dls.DrawSurfListMasked.ptr(), dls.DrawSurfListMasked.length(), sizeof(surface_t *), &glAdvRenderDrawListItemCmpByShaderTexture, nullptr);
+    xxsort_r(dls.DrawSurfListMasked.ptr(), dls.DrawSurfListMasked.length(), sizeof(surface_t *), &glAdvRenderDrawListItemCmpByShaderTexture, nullptr);
     // sort solid textures too, so we can avoid shader switches
     // but do this only by shader class, to retain as much front-to-back order as possible
-    timsort_r(dls.DrawSurfListSolid.ptr(), dls.DrawSurfListSolid.length(), sizeof(surface_t *), &glAdvRenderDrawListItemCmpByShaderBMTexture, nullptr);
+    xxsort_r(dls.DrawSurfListSolid.ptr(), dls.DrawSurfListSolid.length(), sizeof(surface_t *), &glAdvRenderDrawListItemCmpByShaderBMTexture, nullptr);
     #if 0
     CheckListSortValidity(dls.DrawSurfListSolid, "solid");
     CheckListSortValidity(dls.DrawSurfListMasked, "masked");

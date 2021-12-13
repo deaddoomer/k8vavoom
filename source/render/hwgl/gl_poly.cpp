@@ -748,7 +748,7 @@ void VOpenGLDrawer::DrawLightmapWorld () {
       SurfZBufMasked.Activate();
       SurfZBufMasked.SetTexture(0);
       currentActiveShader->UploadChangedUniforms();
-      timsort_r(surfList.ptr(), surfList.length(), sizeof(SurfListItem), &surfListItemCmp, nullptr);
+      xxsort_r(surfList.ptr(), surfList.length(), sizeof(SurfListItem), &surfListItemCmp, nullptr);
       lastTexinfo.resetLastUsed();
       for (auto &&sli : surfList) {
         surface_t *surf = sli.surf;
@@ -779,8 +779,8 @@ void VOpenGLDrawer::DrawLightmapWorld () {
   if (dls.DrawSurfListSolid.length() != 0 || dls.DrawSurfListMasked.length() != 0) {
     // sort by texture, to minimise texture switches
     if (gl_sort_textures) {
-      timsort_r(dls.DrawSurfListSolid.ptr(), dls.DrawSurfListSolid.length(), sizeof(surface_t *), &drawListItemCmp, nullptr);
-      timsort_r(dls.DrawSurfListMasked.ptr(), dls.DrawSurfListMasked.length(), sizeof(surface_t *), &drawListItemCmp, nullptr);
+      xxsort_r(dls.DrawSurfListSolid.ptr(), dls.DrawSurfListSolid.length(), sizeof(surface_t *), &drawListItemCmp, nullptr);
+      xxsort_r(dls.DrawSurfListMasked.ptr(), dls.DrawSurfListMasked.length(), sizeof(surface_t *), &drawListItemCmp, nullptr);
     }
 
     SurfSimpleMasked.Activate();
@@ -917,7 +917,7 @@ void VOpenGLDrawer::DrawLightmapWorld () {
           surfListAppend(surf, cache);
         }
         if (surfList.length() > 0) {
-          timsort_r(surfList.ptr(), surfList.length(), sizeof(SurfListItem), &surfListItemCmp, nullptr);
+          xxsort_r(surfList.ptr(), surfList.length(), sizeof(SurfListItem), &surfListItemCmp, nullptr);
           for (auto &&sli : surfList) {
             surface_t *surf = sli.surf;
             const texinfo_t *currTexinfo = surf->texinfo;

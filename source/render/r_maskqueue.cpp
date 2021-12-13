@@ -1045,7 +1045,9 @@ void VRenderLevelShared::DrawTranslucentPolys () {
 
   if (dls.DrawSpriListAlpha.length()) {
     // we have some translucent sprites; sort them
-    if (!dbg_disable_sprite_sorting) timsort_r(dls.DrawSpriListAlpha.ptr(), dls.DrawSpriListAlpha.length(), sizeof(dls.DrawSpriListAlpha[0]), &traspSpriteCmp, nullptr);
+    if (!dbg_disable_sprite_sorting) {
+      xxsort_r(dls.DrawSpriListAlpha.ptr(), dls.DrawSpriListAlpha.length(), sizeof(dls.DrawSpriListAlpha[0]), &traspSpriteCmp, nullptr);
+    }
     if (!dls.DrawSurfListAlpha.length()) {
       // but no translucent surfaces, so simply sort sprites by distance, and render
       for (auto &&spr : dls.DrawSpriListAlpha) DrawTransSpr(spr);

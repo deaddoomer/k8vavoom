@@ -549,7 +549,7 @@ void DetectOverlappingVertices(void)
 		array[i] = i;
 
 	//qsort(array, num_vertices, sizeof(u16_t), VertexCompare);
-	timsort_r(array, num_vertices, sizeof(u32_t), &VertexCompare, nullptr);
+	xxsort_r(array, num_vertices, sizeof(u32_t), &VertexCompare, nullptr);
 
 	// now mark them off
 	for (i=0 ; i < num_vertices - 1 ; i++)
@@ -730,7 +730,7 @@ void DetectOverlappingLines(void)
 		array[i] = i;
 
 	//qsort(array, num_linedefs, sizeof(int), LineStartCompare);
-	timsort_r(array, num_linedefs, sizeof(int), &LineStartCompare, nullptr);
+	xxsort_r(array, num_linedefs, sizeof(int), &LineStartCompare, nullptr);
 
 	for (i=0 ; i < num_linedefs - 1 ; i++)
 	{

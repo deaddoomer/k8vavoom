@@ -2526,7 +2526,7 @@ COMMAND_AC(ExportTexture) {
     GTextureManager.FillNameAutocompletion(prefix, list);
     if (!list.length()) return VStr::EmptyString;
     // sort
-    timsort_r(list.ptr(), list.length(), sizeof(VStr), &sortCmpVStrCI, nullptr);
+    smsort_r(list.ptr(), list.length(), sizeof(VStr), &sortCmpVStrCI, nullptr);
     // remove possible duplicates
     int pos = 1;
     while (pos < list.length()) {

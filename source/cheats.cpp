@@ -114,7 +114,7 @@ COMMAND_AC(Summon) {
   */
   if (!list.length()) return VStr::EmptyString;
   // sort
-  timsort_r(list.ptr(), list.length(), sizeof(VStr), &sortCmpVStrCI, nullptr);
+  smsort_r(list.ptr(), list.length(), sizeof(VStr), &sortCmpVStrCI, nullptr);
   // drop unspawnable actors
   TArray<VStr> newlist;
   for (int f = 0; f < list.length(); ++f) {
@@ -450,7 +450,7 @@ COMMAND(vc_count_all_objects) {
     nfo.cls = it.getKey();
     nfo.count = it.getValue();
   }
-  timsort_r(list.ptr(), list.length(), sizeof(CInfo), &CInfoCmp, nullptr);
+  smsort_r(list.ptr(), list.length(), sizeof(CInfo), &CInfoCmp, nullptr);
 
   for (auto &&it : list) {
     GCon->Logf(NAME_Debug, "  %5d: %s", it.count, it.cls->GetName());

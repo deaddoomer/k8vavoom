@@ -429,7 +429,7 @@ static bool DoUnstuckByAverage (TArray<UnstuckInfo> &uvlist, VEntity *mobj) {
 
   // try non-average
   // sort unstuck vectors by distance
-  timsort_r(uvlist.ptr(), uvlist.length(), sizeof(UnstuckInfo), &unstuckVectorCompare, nullptr);
+  smsort_r(uvlist.ptr(), uvlist.length(), sizeof(UnstuckInfo), &unstuckVectorCompare, nullptr);
 
   // try each unstuck vector
   //bool wasAtLeastOneGood = false;
@@ -786,7 +786,7 @@ static void ProcessStackingAffectedUpFrom (VEntity *mobj, int idx, const unsigne
 //==========================================================================
 static void ProcessStackingAffected () {
   // sort by z position
-  timsort_r(poAffectedEnitities.ptr(), poAffectedEnitities.length(), sizeof(SavedEntityData), &entityDataCompareZ, nullptr);
+  smsort_r(poAffectedEnitities.ptr(), poAffectedEnitities.length(), sizeof(SavedEntityData), &entityDataCompareZ, nullptr);
   const int len = poAffectedEnitities.length();
   for (int eidx = 0; eidx < len; ++eidx) {
     SavedEntityData &edata = poAffectedEnitities.ptr()[eidx]; // no need to do range checking

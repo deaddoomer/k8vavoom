@@ -1424,7 +1424,7 @@ void VRenderLevelShared::RenderSubRegions (subsector_t *sub) {
   }
 
   if (hasAlpha && r_ordered_subregions.asBool()) {
-    timsort_r(sortedRegs.ptr(), sortedRegs.length(), sizeof(sortedRegs[0]), &sortRegionsCmp, nullptr);
+    xxsort_r(sortedRegs.ptr(), sortedRegs.length(), sizeof(sortedRegs[0]), &sortRegionsCmp, nullptr);
   }
 
   hasAlpha = false; // don't override

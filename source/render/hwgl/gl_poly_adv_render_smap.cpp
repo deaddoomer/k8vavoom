@@ -523,7 +523,7 @@ void VOpenGLDrawer::UploadShadowSurfaces (TArray<surface_t *> &solid, TArray<sur
   int totalSurfs = solid.length()+masked.length();
   if (totalSurfs == 0) return;
 
-  timsort_r(masked.ptr(), masked.length(), sizeof(surface_t *), &glAdvCompareTextureIdOnly, nullptr);
+  xxsort_r(masked.ptr(), masked.length(), sizeof(surface_t *), &glAdvCompareTextureIdOnly, nullptr);
 
   if (gl_dbg_smap_vbo.asBool()) {
     // upload solid surfaces

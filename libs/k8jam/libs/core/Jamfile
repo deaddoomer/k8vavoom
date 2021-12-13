@@ -19,6 +19,7 @@ Library libcore.a :
   src/strtod_plan9.c
   src/syslow.cpp
   src/timsort.c
+  src/smsort.c
   src/xml.cpp
   src/cvarsys.cpp
   src/micropather.cpp

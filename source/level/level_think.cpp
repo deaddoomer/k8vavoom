@@ -637,7 +637,7 @@ void VLevel::TickWorld (float DeltaTime) {
       const int tokill = instTotal-maxCount;
       vassert(tokill > 0);
       #if 0
-      timsort_r(cls->InstanceLimitList.ptr(), instTotal, sizeof(VObject *), &cmpLimInstance, nullptr);
+      smsort_r(cls->InstanceLimitList.ptr(), instTotal, sizeof(VObject *), &cmpLimInstance, nullptr);
       #else
       // shuffle first `tokill` elements, it is much faster than sorting
       // this will effectively remove some random instances; it may not be as nice-looking as sorting by spawn time, but meh...

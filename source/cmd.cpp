@@ -307,7 +307,7 @@ void VCommand::WriteAlias (VStream *st) {
   for (auto &&al : AliasList) if (al.Save) alist.append(&al);
   if (alist.length() == 0) return;
   // sort list
-  timsort_r(alist.ptr(), alist.length(), sizeof(VAlias *), &vapcmp, nullptr);
+  smsort_r(alist.ptr(), alist.length(), sizeof(VAlias *), &vapcmp, nullptr);
   // write list
   for (auto &&al : alist) {
     st->writef("alias %s \"%s\"\n", *al->Name, *al->CmdLine.quote());
@@ -516,7 +516,7 @@ VStr VCommand::AutoCompleteFromList (VStr prefix, const TArray <VStr> &list, boo
           TArray<VStr> sortedlist;
           sortedlist.resize(list.length());
           for (int f = 0; f < list.length(); ++f) sortedlist.append(list[f]);
-          timsort_r(sortedlist.ptr(), sortedlist.length(), sizeof(VStr), &vstrptrcmpci, nullptr);
+          smsort_r(sortedlist.ptr(), sortedlist.length(), sizeof(VStr), &vstrptrcmpci, nullptr);
           for (int f = 0; f < sortedlist.length(); ++f) {
             VStr mt = sortedlist[f];
             if (mt.length() < prefix.length()) continue;
@@ -603,7 +603,7 @@ VStr VCommand::GetAutoComplete (VStr prefix) {
         newlist.setLength(AutoCompleteTable.length());
         for (int f = 0; f < AutoCompleteTable.length(); ++f) newlist[f] = AutoCompleteTable[f];
         AutoCompleteTable.setLength(otbllen, false); // don't resize
-        timsort_r(newlist.ptr(), newlist.length(), sizeof(VStr), &sortCmpVStrCI, nullptr);
+        smsort_r(newlist.ptr(), newlist.length(), sizeof(VStr), &sortCmpVStrCI, nullptr);
         return AutoCompleteFromList(prefix, newlist);
       }
     }
@@ -660,7 +660,7 @@ VStr VCommand::GetAutoComplete (VStr prefix) {
         }
         // several matches
         // sort
-        timsort_r(aclist.ptr(), aclist.length(), sizeof(VStr), &sortCmpVStrCI, nullptr);
+        smsort_r(aclist.ptr(), aclist.length(), sizeof(VStr), &sortCmpVStrCI, nullptr);
         //for (int f = 0; f < aclist.length(); ++f) GCon->Logf(" %d:<%s>", f, *aclist[f]);
         VStr ac = AutoCompleteFromList((endsWithBlank ? VStr() : args[args.length()-1]), aclist, false, true, true);
         /*!

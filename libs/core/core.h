@@ -26,6 +26,9 @@
 #ifndef VAVOOM_CORE_HEADER
 #define VAVOOM_CORE_HEADER
 
+// define to make `xxsort_r` use timsort, otherwise it will use smoothsort
+//#define XXSORT_IS_TIMSORT
+
 #if (-1 & 3) != 3
 # error "You need two's complement system to compile k8vavoom!"
 #endif
@@ -232,6 +235,13 @@ VVA_OKUNUSED VVA_ALWAYS_INLINE uint32_t GetTypeHash (const VCustomKeyInfo_NamedV
 #include "syslow.h"
 
 #include "timsort.h"
+#include "smsort.h"
+
+#ifdef XXSORT_IS_TIMSORT
+# define xxsort_r  timsort_r
+#else
+# define xxsort_r  smsort_r
+#endif
 
 #include "micropather.h"
 

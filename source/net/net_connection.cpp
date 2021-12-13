@@ -882,12 +882,12 @@ static int cmpAcks (const void *aa, const void *bb, void * /*ncptr*/) {
 void VNetConnection::ResendAcks () {
   if (!AutoAck && AcksToResend.length() > 0) {
     // make sure that the sequence is right
-    timsort_r(AcksToResend.ptr(), AcksToResend.length(), sizeof(AcksToResend[0]), &cmpAcks, nullptr);
+    smsort_r(AcksToResend.ptr(), AcksToResend.length(), sizeof(AcksToResend[0]), &cmpAcks, nullptr);
     if (OutLastWrittenAck > AcksToResend[0]) {
       GCon->Logf(NAME_Warning, "NET: ResendAcks: OutLastWrittenAck=%u; FirstToResend=%u", OutLastWrittenAck, AcksToResend[0]); // something is VERY wrong here
       Flush();
       // `Flush()` can update this queue
-      timsort_r(AcksToResend.ptr(), AcksToResend.length(), sizeof(AcksToResend[0]), &cmpAcks, nullptr);
+      smsort_r(AcksToResend.ptr(), AcksToResend.length(), sizeof(AcksToResend[0]), &cmpAcks, nullptr);
     }
     for (auto &&ack : AcksToResend) {
       PutOneAckForced(ack);
@@ -990,7 +990,7 @@ void VNetConnection::Flush () {
         vassert(AcksToResend.length() == 0);
         if (QueuedAcks.length()) {
           // sort queued acks, just to be sure that the sequence is right
-          timsort_r(QueuedAcks.ptr(), QueuedAcks.length(), sizeof(QueuedAcks[0]), &cmpAcks, nullptr);
+          smsort_r(QueuedAcks.ptr(), QueuedAcks.length(), sizeof(QueuedAcks[0]), &cmpAcks, nullptr);
           while (QueuedAcks.length()) {
             if (PutOneAck(QueuedAcks[0])) break; // no room
             QueuedAcks.removeAt(0);
@@ -1709,7 +1709,7 @@ void VNetConnection::CollectAndSortAliveThinkerChans (ThinkerSortInfo *snfo) {
   }
   static_assert(sizeof(AliveThinkerChans[0]) == sizeof(VThinker *), "wtf?!");
   // sort them
-  timsort_r(AliveThinkerChans.ptr(), AliveThinkerChans.length(), sizeof(AliveThinkerChans[0]), &cmpPendingThinkers, (void *)snfo);
+  smsort_r(AliveThinkerChans.ptr(), AliveThinkerChans.length(), sizeof(AliveThinkerChans[0]), &cmpPendingThinkers, (void *)snfo);
 }
 
 
@@ -1778,7 +1778,7 @@ void VNetConnection::UpdateThinkers () {
   // sort and update existing thinkers first
   if (PendingThinkers.length()) {
     //GCon->Logf(NAME_DevNet, "000: PendingThinkers.length()=%d", PendingThinkers.length());
-    timsort_r(PendingThinkers.ptr(), PendingThinkers.length(), sizeof(PendingThinkers[0]), &cmpPendingThinkers, (void *)&snfo);
+    smsort_r(PendingThinkers.ptr(), PendingThinkers.length(), sizeof(PendingThinkers[0]), &cmpPendingThinkers, (void *)&snfo);
     for (auto &&th : PendingThinkers) {
       VThinkerChannel *chan = ThinkerChannels.findptr(th);
       if (!chan) continue;
@@ -1864,7 +1864,7 @@ void VNetConnection::UpdateThinkers () {
   if (PendingThinkers.length()) {
     static_assert(sizeof(PendingThinkers[0]) == sizeof(VThinker *), "wtf?!");
     // sort them
-    timsort_r(PendingThinkers.ptr(), PendingThinkers.length(), sizeof(PendingThinkers[0]), &cmpPendingThinkers, (void *)&snfo);
+    smsort_r(PendingThinkers.ptr(), PendingThinkers.length(), sizeof(PendingThinkers[0]), &cmpPendingThinkers, (void *)&snfo);
 
     // if we have not enough free channels, remove gore entities (they will be removed in the future)
     if (AliveGoreChans.length() && MAX_CHANNELS-OpenChannels.length() < PendingThinkers.length()) {
@@ -1951,7 +1951,7 @@ void VNetConnection::UpdateThinkers () {
   // append gore entities if we have any free slots
   if (PendingGoreEnts.length() && MAX_CHANNELS-OpenChannels.length() > 0) {
     // sort them
-    timsort_r(PendingGoreEnts.ptr(), PendingGoreEnts.length(), sizeof(PendingGoreEnts[0]), &cmpPendingGoreEnts, (void *)&snfo);
+    smsort_r(PendingGoreEnts.ptr(), PendingGoreEnts.length(), sizeof(PendingGoreEnts[0]), &cmpPendingGoreEnts, (void *)&snfo);
     for (auto &&it : PendingGoreEnts) {
       if (!CanSendData()) {
         // there's no need to mark for updates here, as client ack will do that for us

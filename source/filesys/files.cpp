@@ -187,7 +187,7 @@ void FL_CollectPreinits () {
     TArray<VParsedArgs::ArgHelp> list;
     VParsedArgs::GetArgList(list);
     if (list.length()) {
-      timsort_r(list.ptr(), list.length(), sizeof(VParsedArgs::ArgHelp), &cliHelpSorter, nullptr);
+      smsort_r(list.ptr(), list.length(), sizeof(VParsedArgs::ArgHelp), &cliHelpSorter, nullptr);
       int maxlen = 0;
       for (auto &&ainfo : list) {
         int len = (int)strlen(ainfo.argname);
@@ -210,7 +210,7 @@ void FL_CollectPreinits () {
     TArray<VParsedArgs::ArgHelp> list;
     VParsedArgs::GetArgList(list, true);
     if (list.length()) {
-      timsort_r(list.ptr(), list.length(), sizeof(VParsedArgs::ArgHelp), &cliHelpSorter, nullptr);
+      smsort_r(list.ptr(), list.length(), sizeof(VParsedArgs::ArgHelp), &cliHelpSorter, nullptr);
       int maxlen = 0;
       for (auto &&ainfo : list) {
         int len = (int)strlen(ainfo.argname);
@@ -1089,7 +1089,7 @@ static void performPWadScan () {
     }
   }
   // sort collected maps
-  timsort_r(fsys_PWadMaps.ptr(), fsys_PWadMaps.length(), sizeof(PWadMapLump), &cmpPWadMapLump, nullptr);
+  smsort_r(fsys_PWadMaps.ptr(), fsys_PWadMaps.length(), sizeof(PWadMapLump), &cmpPWadMapLump, nullptr);
   GCon->Log(NAME_Init, "pwad map detection complete.");
 
   fsys_hasMapPwads = (fsys_PWadMaps.length() > 0);
@@ -1361,8 +1361,8 @@ static void AddGameAutoloads (VStr basedir, bool addAutoload=true) {
       else if (ext.strEquCI(".pk3")) ZipFiles.Append(test);
     }
     Sys_CloseDir(dirit);
-    timsort_r(WadFiles.Ptr(), WadFiles.length(), sizeof(VStr), cmpfuncCINoExt, nullptr);
-    timsort_r(ZipFiles.Ptr(), ZipFiles.length(), sizeof(VStr), cmpfuncCINoExt, nullptr);
+    smsort_r(WadFiles.Ptr(), WadFiles.length(), sizeof(VStr), cmpfuncCINoExt, nullptr);
+    smsort_r(ZipFiles.Ptr(), ZipFiles.length(), sizeof(VStr), cmpfuncCINoExt, nullptr);
   }
 
   basedir = basedir.appendTrailingSlash();
@@ -1411,8 +1411,8 @@ static void AddGameDir (VStr basedir, VStr dir) {
       else if (ext.strEquCI(".pk3")) ZipFiles.Append(test);
     }
     Sys_CloseDir(dirit);
-    timsort_r(WadFiles.Ptr(), WadFiles.length(), sizeof(VStr), cmpfuncCINoExt, nullptr);
-    timsort_r(ZipFiles.Ptr(), ZipFiles.length(), sizeof(VStr), cmpfuncCINoExt, nullptr);
+    smsort_r(WadFiles.Ptr(), WadFiles.length(), sizeof(VStr), cmpfuncCINoExt, nullptr);
+    smsort_r(ZipFiles.Ptr(), ZipFiles.length(), sizeof(VStr), cmpfuncCINoExt, nullptr);
   }
 
   // use `VStdFileStreamRead` so android port can override it

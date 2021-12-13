@@ -236,7 +236,7 @@ void VRenderLevelShadowVolume::RenderSceneStaticLights (const refdef_t *RD, cons
   if (visstatlightCount > 0) {
     visibleStaticLightCount = visstatlightCount;
     if (r_advlight_sort_static) {
-      timsort_r(visstatlights.ptr(), visstatlightCount, sizeof(StLightInfo), &stLightCompare, nullptr);
+      smsort_r(visstatlights.ptr(), visstatlightCount, sizeof(StLightInfo), &stLightCompare, nullptr);
     }
     //GCon->Logf(NAME_Debug, "=== %d static lights ===", visstatlightCount);
     for (const StLightInfo *sli = visstatlights.ptr(); visstatlightCount--; ++sli) {
@@ -333,7 +333,7 @@ void VRenderLevelShadowVolume::RenderSceneDynamicLights (const refdef_t *RD, con
   if (visdynlightCount > 0) {
     visibleDynamicLightCount = visdynlightCount;
     if (r_advlight_sort_dynamic) {
-      timsort_r(visdynlights.ptr(), visdynlightCount, sizeof(DynLightInfo), &dynLightCompare, nullptr);
+      smsort_r(visdynlights.ptr(), visdynlightCount, sizeof(DynLightInfo), &dynLightCompare, nullptr);
     }
     //GCon->Logf(NAME_Debug, "=== %d dynamic lights ===", visdynlightCount);
     for (const DynLightInfo *dli = visdynlights.ptr(); visdynlightCount--; ++dli) {

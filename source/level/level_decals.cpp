@@ -346,7 +346,7 @@ void VLevel::CleanupSegDecals (seg_t *seg) {
   int dcCount = toKillBig+toKillSmall;
 
   // sort by preference
-  timsort_r(dc2kill.ptr(), dc2kill.length(), sizeof(decal_t *), &decalAreaCompare, nullptr);
+  smsort_r(dc2kill.ptr(), dc2kill.length(), sizeof(decal_t *), &decalAreaCompare, nullptr);
   for (decal_t *dcdie : dc2kill) {
     if (dcCount) {
       --dcCount;
@@ -481,7 +481,7 @@ void VLevel::AppendDecalToSubsectorList (decal_t *dc) {
       //GCon->Logf(NAME_Debug, "%d flat decals to remove (%d total)...", dcCount-dclimit, dcCount);
       dcCount -= dclimit; // decals left to remove
       // sort by preference
-      timsort_r(dc2kill.ptr(), dc2kill.length(), sizeof(decal_t *), &decalAreaCompare, nullptr);
+      smsort_r(dc2kill.ptr(), dc2kill.length(), sizeof(decal_t *), &decalAreaCompare, nullptr);
       for (decal_t *dcdie : dc2kill) {
         if (dcCount) {
           --dcCount;

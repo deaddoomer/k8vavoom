@@ -428,7 +428,7 @@ void VInput::ClearAutomapBindings () {
 //==========================================================================
 void VInput::sortModKeys () {
   if (ModBindings.length() < 2) return;
-  timsort_r(ModBindings.ptr(), ModBindings.length(), sizeof(Binding), &cmpKeyBinding, nullptr);
+  smsort_r(ModBindings.ptr(), ModBindings.length(), sizeof(Binding), &cmpKeyBinding, nullptr);
 }
 
 

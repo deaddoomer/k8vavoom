@@ -180,7 +180,7 @@ void VRenderLevelShared::RenderTexturedAutomap (float m_x, float m_y, float m_x2
   //GCon->Logf("am: nodes reject=%d; accept=%d", amFlatsRej, amFlatsAcc);
 
   // sort surfaces by texture
-  timsort_r(amSurfList.ptr(), amSurfList.length(), sizeof(sec_surface_t *), &ssurfCmp, nullptr);
+  smsort_r(amSurfList.ptr(), amSurfList.length(), sizeof(sec_surface_t *), &ssurfCmp, nullptr);
 
   // render surfaces
   Drawer->BeginTexturedPolys();

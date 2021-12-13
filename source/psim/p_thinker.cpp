@@ -743,7 +743,7 @@ COMMAND(Info_ThinkerCountDetail) {
       e.cls = it.getKey();
       e.count = it.getValue();
     }
-    timsort_r(list.ptr(), list.length(), sizeof(ThinkerListEntry), &classTLECompare, nullptr);
+    smsort_r(list.ptr(), list.length(), sizeof(ThinkerListEntry), &classTLECompare, nullptr);
     // dump
     for (int f = 0; f < list.length(); ++f) {
       GCon->Logf("\034K%*s\034-: \034D%d", maxlen, list[f].cls->GetName(), list[f].count);
@@ -751,7 +751,7 @@ COMMAND(Info_ThinkerCountDetail) {
   } else {
     TArray<VClass *> list;
     for (auto it = thmap.first(); it; ++it) list.append(it.getKey());
-    timsort_r(list.ptr(), list.length(), sizeof(VClass *), &classNameCompare, nullptr);
+    smsort_r(list.ptr(), list.length(), sizeof(VClass *), &classNameCompare, nullptr);
     // dump
     for (int f = 0; f < list.length(); ++f) {
       auto tcp = thmap.get(list[f]);

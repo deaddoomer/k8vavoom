@@ -80,6 +80,8 @@ add_library(core STATIC
   timsort-impl.h
   timsort.h
   timsort.c
+  smsort.c
+  smsort.h
   strtod_plan9.h
   strtod_plan9.c
   micropather.h

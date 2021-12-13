@@ -94,12 +94,12 @@ void VOpenGLDrawer::DrawWorldTexturesPass () {
   //GLDisableBlend();
 
   // sort surfaces with solid textures, because here we need them fully sorted
-  //timsort_r(dls.DrawSurfListSolid.ptr(), dls.DrawSurfListSolid.length(), sizeof(surface_t *), &glAdvRenderDrawListItemCmpByShaderTexture, nullptr);
+  //xxsort_r(dls.DrawSurfListSolid.ptr(), dls.DrawSurfListSolid.length(), sizeof(surface_t *), &glAdvRenderDrawListItemCmpByShaderTexture, nullptr);
 
   // sort all surfaces by texture only, it is faster this way
   // this also sorts by fade, so we can avoid resorting in fog pass
-  timsort_r(dls.DrawSurfListMasked.ptr(), dls.DrawSurfListMasked.length(), sizeof(surface_t *), &glAdvRenderDrawListItemCmpByTextureAndFade, nullptr);
-  timsort_r(dls.DrawSurfListSolid.ptr(), dls.DrawSurfListSolid.length(), sizeof(surface_t *), &glAdvRenderDrawListItemCmpByTextureAndFade, nullptr);
+  xxsort_r(dls.DrawSurfListMasked.ptr(), dls.DrawSurfListMasked.length(), sizeof(surface_t *), &glAdvRenderDrawListItemCmpByTextureAndFade, nullptr);
+  xxsort_r(dls.DrawSurfListSolid.ptr(), dls.DrawSurfListSolid.length(), sizeof(surface_t *), &glAdvRenderDrawListItemCmpByTextureAndFade, nullptr);
 
   texinfo_t lastTexinfo;
   lastTexinfo.initLastUsed();

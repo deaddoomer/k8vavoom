@@ -297,7 +297,7 @@ static void SF2_KnownScan () {
   }
 #endif
 
-  timsort_r(sf2KnownFiles.ptr(), sf2KnownFiles.length(), sizeof(sf2KnownFiles[0]), &cmpSF2FileNames, nullptr);
+  xxsort_r(sf2KnownFiles.ptr(), sf2KnownFiles.length(), sizeof(sf2KnownFiles[0]), &cmpSF2FileNames, nullptr);
 }
 
 

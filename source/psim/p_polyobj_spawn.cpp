@@ -154,7 +154,7 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
 
   // sort explicit lines by order (it doesn't matter, but why not?)
   if (!lstart && explines.length() > 1) {
-    timsort_r(explines.ptr(), explines.length(), sizeof(explines[0]), &explinesCompare, nullptr);
+    smsort_r(explines.ptr(), explines.length(), sizeof(explines[0]), &explinesCompare, nullptr);
   }
 
   // now collect lines for "start line" type
