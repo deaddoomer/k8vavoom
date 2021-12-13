@@ -59,6 +59,9 @@
 extern "C" {
 #endif
 
+/*k8: uncomment the following to use malloc/free instead of a pool for temp arrays*/
+/*#define TIMSORT_NO_TEMP_POOL*/
+
 int timsort_r(void *base, size_t nel, size_t width,
                 int (*compar) (const void *, const void *, void *),
 		void *context);

@@ -14,13 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+//#define TIMSORT_POOL_DEBUG
 
 #include <assert.h>		// assert
 #include <errno.h>		// EINVAL
 #include <stddef.h>		// size_t, NULL
 #include <stdlib.h>		// malloc, free
 #include <string.h>		// memcpy, memmove
+#ifdef TIMSORT_POOL_DEBUG
+# include <stdio.h>
+#endif
 #include "timsort.h"
+//#include "vassert.h"
 #include "zone.h" // zone memory allocation
 
 
@@ -32,6 +37,14 @@
 #else
 # error "Environment not 32 or 64-bit."
 #endif
+
+/*k8: pool requires thread locals */
+#if !defined(__x86_64__) && !defined(__i386__)
+# ifndef TIMSORT_NO_TEMP_POOL
+#  define TIMSORT_NO_TEMP_POOL
+# endif
+#endif
+
 
 /**
  * This is the minimum sized sequence that will be merged.  Shorter
@@ -70,7 +83,12 @@
 /**
  * Maximum stack size.  This depends on MIN_MERGE and sizeof(size_t).
  */
-#define MAX_STACK 85
+#ifdef VAVOOM_TIMSORT_64
+# define MAX_STACK 85
+#else
+/*k8: on 32-bit systems, we cannot sort more than 2^32-1 elements, so this is enough*/
+# define MAX_STACK 39
+#endif
 
 /**
  * Define MALLOC_STACK if you want to allocate the run stack on the heap.
@@ -106,6 +124,30 @@ typedef int (*comparator) (const void *x, const void *y, void *thunk);
 #define CMPARGS(compar, thunk) (compar), (thunk)
 #define CMP(compar, thunk, x, y) (compar((x), (y), (thunk)))
 #define TIMSORT timsort_r
+
+
+/*k8: temp pool, to avoid mallocs*/
+#ifndef TIMSORT_NO_TEMP_POOL
+// recursive calls to timsort will switch to mallocs
+// they are detected by non-zero `poolUsed`
+static __thread uint8_t *pool = NULL;
+static __thread size_t poolUsed = 0;
+static __thread size_t poolAlloted = 0;
+
+static inline void *poolAlloc (size_t size) {
+  if (poolUsed) __builtin_trap(); // this should not happen, ever
+  size += !size;
+  if (size > poolAlloted) {
+    // (re)allocate pool
+    size_t newsize = (size|0xffffU)+1U;
+    if (!newsize) newsize = size; // oops
+    pool = (uint8_t*)Z_Realloc(pool, newsize);
+    poolAlloted = newsize;
+  }
+  poolUsed += size;
+  return (void *)pool;
+}
+#endif
 
 
 struct timsort_run {
@@ -156,6 +198,10 @@ struct timsort {
 #else
 	struct timsort_run run[MAX_STACK];
 #endif
+
+#ifndef TIMSORT_NO_TEMP_POOL
+	int tmp_in_pool; // bool
+#endif
 };
 
 static int timsort_init(struct timsort *ts, void *a, size_t len,
@@ -194,11 +240,27 @@ static int timsort_init(struct timsort *ts, void *a, size_t len,
 	ts->c = c;
 	ts->carg = carg;
 
+	// can we use temp pool here?
+#ifndef TIMSORT_NO_TEMP_POOL
+	ts->tmp_in_pool = (poolUsed == 0);
+	#ifdef TIMSORT_POOL_DEBUG
+	fprintf(stderr, "*** ENTER: tmp_in_pool=%d\n", ts->tmp_in_pool);
+	#endif
+#endif
+
 	// Allocate temp storage (which may be increased later if necessary)
 	ts->tmp_length = (len < 2 * INITIAL_TMP_STORAGE_LENGTH ?
 			  len >> 1 : INITIAL_TMP_STORAGE_LENGTH);
 	if (ts->tmp_length) {
-		ts->tmp = Z_Malloc(ts->tmp_length * width);
+#ifndef TIMSORT_NO_TEMP_POOL
+		if (ts->tmp_in_pool) {
+			ts->tmp = poolAlloc(ts->tmp_length * width);
+			#ifdef TIMSORT_POOL_DEBUG
+			fprintf(stderr, "  allocated %u pool bytes (need %u, capacity %u)\n", (unsigned)poolUsed, (unsigned)(ts->tmp_length*width), (unsigned)poolAlloted);
+			#endif
+		} else
+#endif
+		ts->tmp = Z_MallocNoClear/*NoFail*/(ts->tmp_length * width);
 		err |= ts->tmp == NULL;
 	} else {
 		ts->tmp = NULL;
@@ -267,9 +329,16 @@ static int timsort_init(struct timsort *ts, void *a, size_t len,
 	 * If len < B[m], then stackLen < m:
 	 */
 #ifdef MALLOC_STACK
+#ifdef VAVOOM_TIMSORT_64
 	ts->stackLen = (len < 359 ? 5
 			: len < 4220 ? 10
 			: len < 76210 ? 16 : len < 4885703256ULL ? 39 : 85);
+/*k8: on 32-bit systems, we cannot sort more than 2^32-1 elements, so this is enough*/
+#else
+	ts->stackLen = (len < 359 ? 5
+			: len < 4220 ? 10
+			: len < 76210 ? 16 : 39);
+#endif
 
 	/* Note that this is slightly more liberal than in the Java
 	 * implementation.  The discrepancy might be because the Java
@@ -277,7 +346,7 @@ static int timsort_init(struct timsort *ts, void *a, size_t len,
 	 */
 	//stackLen = (len < 120 ? 5 : len < 1542 ? 10 : len < 119151 ? 19 : 40);
 
-	ts->run = Z_Malloc(ts->stackLen * sizeof(ts->run[0]));
+	ts->run = Z_MallocNoClear/*NoFail*/(ts->stackLen * sizeof(ts->run[0]));
 	err |= ts->run == NULL;
 #else
 	ts->stackLen = MAX_STACK;
@@ -293,6 +362,14 @@ static int timsort_init(struct timsort *ts, void *a, size_t len,
 
 static void timsort_deinit(struct timsort *ts)
 {
+#ifndef TIMSORT_NO_TEMP_POOL
+	if (ts->tmp_in_pool) {
+		#ifdef TIMSORT_POOL_DEBUG
+		fprintf(stderr, "LEAVING: allocated %u pool bytes (capacity %u)\n", (unsigned)poolUsed, (unsigned)poolAlloted);
+		#endif
+		poolUsed = 0; // free pool (we can do this, because we're the only pool user)
+	} else
+#endif
 	Z_Free(ts->tmp);
 #ifdef MALLOC_STACK
 	Z_Free(ts->run);
@@ -371,9 +448,23 @@ static void *ensureCapacity(struct timsort *ts, size_t minCapacity,
 			newSize = minCapacity;
 		}
 
+		#if 0
 		Z_Free(ts->tmp);
 		ts->tmp_length = newSize;
-		ts->tmp = Z_Malloc(ts->tmp_length * width);
+		ts->tmp = Z_MallocNoClear/*NoFail*/(ts->tmp_length * width);
+		#else
+		ts->tmp_length = newSize;
+#ifndef TIMSORT_NO_TEMP_POOL
+		if (ts->tmp_in_pool) {
+			poolUsed = 0; // free pool (we can do this, because we're the only pool user)
+			#ifdef TIMSORT_POOL_DEBUG
+			fprintf(stderr, "  reallocating %u pool bytes (was %u, capacity %u)\n", (unsigned)(ts->tmp_length*width), (unsigned)poolUsed, (unsigned)poolAlloted);
+			#endif
+			ts->tmp = poolAlloc(ts->tmp_length * width);
+		} else
+#endif
+		ts->tmp = Z_Realloc(ts->tmp, ts->tmp_length * width);
+		#endif
 	}
 
 	return ts->tmp;
