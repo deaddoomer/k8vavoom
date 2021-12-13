@@ -76,8 +76,8 @@ public:
       elemSize = newSize;
     }
     #ifndef VV_HEAP_NO_CLEAR
-    memset((void *)&elem[elemUsed], 0, sizeof(T));
-    new(&elem[elemUsed], E_ArrayNew, E_ArrayNew)T;
+    // this ctor zeroes the memory first
+    new(&elem[elemUsed], E_ArrayNew, E_ArrayNew) T;
     #endif
     ++elemUsed;
     while (i != 0) {
@@ -123,8 +123,9 @@ public:
     }
     elemUsed = acount;
     #ifndef VV_HEAP_NO_CLEAR
+    // it is faster to clear the whole block first
     memset((void *)&elem[0], 0, elemUsed*sizeof(T));
-    for (size_t f = 0; f < elemUsed; ++f) new(&elem[f], E_ArrayNew, E_ArrayNew)T;
+    for (size_t f = 0; f < elemUsed; ++f) new(&elem[f], E_ArrayNew, E_NoInit) T;
     #endif
     for (size_t n = 0; n < acount; ++n) elem[n] = arr[n];
     // making sure that heap property satisfied; loop from last parent up to (and including) first item

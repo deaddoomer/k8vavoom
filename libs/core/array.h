@@ -112,6 +112,7 @@ public:
   }
 
   // this changes only capacity, length will not be increased (but can be decreased)
+  // new memory will not be cleared and inited (there's no need to do that here)
   void Resize (int NewSize) noexcept {
     vassert(NewSize >= 0);
 
@@ -132,6 +133,10 @@ public:
   }
   inline void resize (int NewSize) noexcept { Resize(NewSize); }
 
+  // reserve memory for at least the given number of items
+  // will not shrink the array
+  inline void reserve (int maxsize) noexcept { if (maxsize > ArrSize) resize(maxsize); }
+
   void SetNum (int NewNum, bool bResize=true) noexcept {
     vassert(NewNum >= 0);
     Flatten(); // just in case
@@ -142,8 +147,9 @@ public:
       for (int i = NewNum; i < ArrNum; ++i) ArrData[i].~T();
     } else if (ArrNum < NewNum) {
       // initialize new elements
+      // it is faster to clear the whole block first
       memset((void *)(ArrData+ArrNum), 0, (NewNum-ArrNum)*sizeof(T));
-      for (int i = ArrNum; i < NewNum; ++i) new(&ArrData[i], E_ArrayNew, E_ArrayNew)T;
+      for (int i = ArrNum; i < NewNum; ++i) new(&ArrData[i], E_ArrayNew, E_NoInit) T;
     }
     ArrNum = NewNum;
   }
@@ -176,9 +182,10 @@ public:
     if (newsz) {
       ArrNum = ArrSize = newsz;
       ArrData = (T *)Z_Malloc(newsz*sizeof(T));
+      // it is faster to clear the whole block first
       memset((void *)ArrData, 0, newsz*sizeof(T));
       for (int i = 0; i < newsz; ++i) {
-        new(&ArrData[i], E_ArrayNew, E_ArrayNew)T;
+        new(&ArrData[i], E_ArrayNew, E_NoInit) T;
         ArrData[i] = other.ArrData[i];
       }
     }
@@ -263,7 +270,7 @@ public:
   }
   inline int remove (const T &item) noexcept { return Remove(item); }
 
-  friend VStream &operator << (VStream &Strm, TArray<T> &Array) noexcept {
+  friend VStream &operator << (VStream &Strm, TArray<T> &Array) /*noexcept*/ {
     vassert(!Array.Is2D());
     int NumElem = Array.length();
     Strm << STRM_INDEX(NumElem);

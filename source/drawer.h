@@ -217,7 +217,6 @@ public:
     // no need to setup this
     inline trans_sprite_t () noexcept {}
     inline trans_sprite_t (ENoInit) noexcept {}
-    inline trans_sprite_t (EArrayNew) noexcept {}
     inline ~trans_sprite_t () noexcept {}
   };
 

@@ -87,6 +87,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 
 /*#include <inttypes.h>*/
 typedef int8_t    __attribute__((__may_alias__)) vint8;
@@ -114,19 +115,33 @@ static_assert(sizeof(vuint64) == 8, "invalid vuint64");
 static_assert(sizeof(vfloat) == 4, "invalid vfloat");
 static_assert(sizeof(vdouble) == 8, "invalid vdouble");
 
+#include <string.h>
+
 
 // ctor argument to avoid initialisation
+// must be explicitly defined in the corresponding class/struct
 enum ENoInit { E_NoInit };
 
-// "placement new"
+// "clearing placement new"
+// use it like this:
+//   T myobj;
+//   new(&myobj, E_ArrayNew, E_ArrayNew) T();
 enum EArrayNew { E_ArrayNew };
+VVA_ALWAYS_INLINE VVA_OKUNUSED void *operator new (size_t sz, void *ptr, EArrayNew, EArrayNew) noexcept { if (sz) memset(ptr, 0, sz); return ptr; }
 
-inline VVA_OKUNUSED void *operator new (size_t, void *ptr, EArrayNew, EArrayNew) noexcept { return ptr; }
+// "non-clearing placement new"
+// use it like this:
+//   T myobj;
+//   new(&myobj, E_ArrayNew, E_NoInit) T();
+VVA_ALWAYS_INLINE VVA_OKUNUSED void *operator new (size_t sz, void *ptr, EArrayNew, ENoInit) noexcept { return ptr; }
+#endif
 
-static inline VVA_CHECKRESULT VVA_CONST uint16_t foldHash32to16 (const uint32_t h) noexcept { return (uint16_t)(h+(h>>16)); }
-static inline VVA_CHECKRESULT VVA_CONST uint8_t foldHash32to8 (uint32_t h) noexcept { h = foldHash32to16(h); return (uint8_t)(h+(h>>8)); }
+
+static inline VVA_CHECKRESULT VVA_CONST uint16_t foldHash32to16 (const uint32_t h) VVA_NOEXCEPT { return (uint16_t)(h+(h>>16)); }
+static inline VVA_CHECKRESULT VVA_CONST uint8_t foldHash32to8 (uint32_t h) VVA_NOEXCEPT { h = foldHash32to16(h); return (uint8_t)(h+(h>>8)); }
 
 
+#ifdef __cplusplus
 //==========================================================================
 //
 //  Standard C++ macros

@@ -124,8 +124,9 @@ private:
     // will not clear hash
     VVA_ALWAYS_INLINE void initEntry () noexcept {
       #if !defined(TMAP_NO_CLEAR)
-      new(&key, E_ArrayNew, E_ArrayNew)TK;
-      new(&value, E_ArrayNew, E_ArrayNew)TV;
+      // the entry is guaranteed to be zeroed, so we can use non-clearing placement new
+      new(&key, E_ArrayNew, E_NoInit) TK;
+      new(&value, E_ArrayNew, E_NoInit) TV;
       #endif
     }
 

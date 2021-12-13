@@ -64,9 +64,6 @@ public:
 
 //private:
   vint32 nextidx; // -1, or next info with the same DoomEdNum
-
-//public:
-  //friend VStream &operator << (VStream &, mobjinfo_t &);
 };
 
 
