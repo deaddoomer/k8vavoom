@@ -1335,7 +1335,6 @@ uint64_t Sys_Time_Micro () {
   // this properly deals with wraparounds
   shitdozeCurrTime += currtime-shitdozeLastTime;
   shitdozeLastTime = currtime;
-  if (usecs) *usecs = (uint64_t)shitdozeCurrTime*(uint64_t)1000;
   return (uint64_t)shitdozeCurrTime*(uint64_t)1000;
 }
 
