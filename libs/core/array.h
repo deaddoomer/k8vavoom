@@ -181,7 +181,7 @@ public:
     int newsz = other.ArrNum;
     if (newsz) {
       ArrNum = ArrSize = newsz;
-      ArrData = (T *)Z_Malloc(newsz*sizeof(T));
+      ArrData = (T *)Z_MallocNoClear(newsz*sizeof(T));
       // it is faster to clear the whole block first
       memset((void *)ArrData, 0, newsz*sizeof(T));
       for (int i = 0; i < newsz; ++i) {

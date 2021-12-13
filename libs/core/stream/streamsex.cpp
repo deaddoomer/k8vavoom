@@ -361,7 +361,7 @@ void VMemoryStreamRO::Setup (VStr strmName, VStream *strm) {
     vassert(cpos >= 0);
     if (cpos < tsz) {
       int len = tsz-cpos;
-      void *dta = Z_Malloc(len);
+      void *dta = Z_MallocNoClear(len);
       strm->Serialize(dta, len);
       bError = strm->IsError();
       if (bError) {

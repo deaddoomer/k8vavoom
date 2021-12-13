@@ -580,7 +580,7 @@ void VZLibStreamReader::Serialise (void* buf, int len) {
 
   //if (currpos < nextpos) fprintf(stderr, "+++ SKIPPING <%s>: currpos=%d; nextpos=%d; toskip=%d\n", *GetName(), currpos, nextpos, nextpos-currpos);
   if (currpos < nextpos) {
-    if (!wholeBuf) wholeBuf = (vuint8 *)Z_Malloc(65536);
+    if (!wholeBuf) wholeBuf = (vuint8 *)Z_MallocNoClear(65536);
     while (currpos < nextpos) {
       int toread = nextpos-currpos;
       if (toread > 65536) toread = 65536;
@@ -624,7 +624,7 @@ void VZLibStreamReader::cacheAllData () {
     //TODO: find the better way to do this
     //GLog.Logf(NAME_Debug, "caching unknown number of bytes from '%s'...", *GetName());
     wholeSize = 0;
-    vuint8 *rdbuf = (vuint8 *)Z_Malloc(BUFFER_SIZE);
+    vuint8 *rdbuf = (vuint8 *)Z_MallocNoClear(BUFFER_SIZE);
     for (;;) {
       int rd = readSomeBytes(rdbuf, BUFFER_SIZE);
       if (rd < 0) { Z_Free(rdbuf); SetError(); return; }

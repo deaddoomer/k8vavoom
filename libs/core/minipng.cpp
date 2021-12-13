@@ -820,7 +820,7 @@ void M_FreePNG (PNGHandle *&png) {
 // ////////////////////////////////////////////////////////////////////////// //
 struct TempBuff {
   void *ptr;
-  inline TempBuff (int sz) noexcept { vassert(sz >= 0); ptr = Z_Malloc(sz+128); }
+  inline TempBuff (int sz) noexcept { vassert(sz >= 0); ptr = Z_MallocNoClear(sz+128); }
   TempBuff (const TempBuff &) = delete;
   TempBuff &operator = (const TempBuff &) = delete;
   inline ~TempBuff () noexcept { if (ptr) Z_Free(ptr); ptr = nullptr; }

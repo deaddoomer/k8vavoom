@@ -96,7 +96,7 @@ private:
     vassert(blobSize == 0);
     vassert(len >= 0);
     if (len > 0) {
-      blobRC = (vuint32 *)Z_Malloc(sizeof(vuint32));
+      blobRC = (vuint32 *)Z_MallocNoClear(sizeof(vuint32));
       *blobRC = 1;
       blob = (vuint8 *)Z_Malloc(len);
       //GLog.Logf(NAME_Debug, "allocated blob %p (%d) rc %p; rc=%d", blob, len, blobRC, *blobRC);

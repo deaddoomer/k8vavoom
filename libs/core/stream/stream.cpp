@@ -481,7 +481,7 @@ void VStream::vawritef (const char *text, va_list ap) {
   if (size < 0) { Serialise(errorText, (int)strlen(errorText)); return; }
 
   if (size >= (int)sizeof(buf)-1) {
-    char *dynbuf = (char *)Z_Malloc(size+32);
+    char *dynbuf = (char *)Z_MallocNoClear(size+32);
     if (!dynbuf) { Serialise(errorText, (int)strlen(errorText)); return; }
     try {
       va_copy(apcopy, ap);
