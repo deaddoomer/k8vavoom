@@ -763,12 +763,12 @@ void Sys_PinOtherThread () {
 
 //==========================================================================
 //
-//  Sys_Time_ExU
+//  Sys_Time_Micro
 //
-//  return valud should not be zero
+//  never returns 0; returns the time in microseconds(msecs*1000)
 //
 //==========================================================================
-double Sys_Time_ExU (uint64_t *usecs) {
+uint64_t Sys_Time_Micro () {
 #ifdef __linux__
   struct timespec ts;
   #ifdef ANDROID // CrystaX 10.3.2 supports only this
@@ -780,7 +780,7 @@ double Sys_Time_ExU (uint64_t *usecs) {
   // we don't actually need nanosecond precision here
   // one second is 1,000,000,000 nanoseconds
   // therefore, one millisecond is 1,000,000 nanoseconds
-  const uint64_t msc =
+  return
     ((uint64_t)(ts.tv_sec-systimeSecBase+1)*(uint64_t)1000000)+ // seconds->microseconds
     ((uint64_t)ts.tv_nsec/(uint64_t)1000); // nanoseconds->microseconds
 #else
@@ -790,10 +790,22 @@ double Sys_Time_ExU (uint64_t *usecs) {
   SYSTIME_CHECK_INIT();
   // one second is 1,000,000 microseconds
   // therefore, one millisecond is 1,000 microseconds
-  const uint64_t msc =
+  return
     ((uint64_t)(tp.tv_sec-systimeSecBase+1)*(uint64_t)1000000)+ // seconds->microseconds
     ((uint64_t)tp.tv_usec);
 #endif
+}
+
+
+//==========================================================================
+//
+//  Sys_Time_ExU
+//
+//  return valud should not be zero
+//
+//==========================================================================
+double Sys_Time_ExU (uint64_t *usecs) {
+  const uint64_t msc = Sys_Time_Micro();
   if (usecs) *usecs = msc;
   return (timeOffset+(double)msc)/1000000.0;
 }
@@ -1235,7 +1247,7 @@ void Sys_CloseDir (void *adir) {
 #include <mmsystem.h>
 static bool shitdozeTimerInited = false;
 static vuint32 shitdozeLastTime = 0;
-static vuint64 shitdozeCurrTime = 0;
+static vuint64 shitdozeCurrTime = 1;
 static vuint32 shitdozePeriodMin = 0;
 static vuint32 shitdozePeriodMax = 0;
 static vuint32 shitdozePeriodSet = 0;
@@ -1312,6 +1324,24 @@ void Sys_PinOtherThread () {
 
 //==========================================================================
 //
+//  Sys_Time_Micro
+//
+//  never returns 0; returns the time in microseconds(msecs*1000)
+//
+//==========================================================================
+uint64_t Sys_Time_Micro () {
+  if (!shitdozeTimerInited) Sys_Error("shitdoze shits itself");
+  const vuint32 currtime = (vuint32)timeGetTime();
+  // this properly deals with wraparounds
+  shitdozeCurrTime += currtime-shitdozeLastTime;
+  shitdozeLastTime = currtime;
+  if (usecs) *usecs = (uint64_t)shitdozeCurrTime*(uint64_t)1000;
+  return (uint64_t)shitdozeCurrTime*(uint64_t)1000;
+}
+
+
+//==========================================================================
+//
 //  Sys_Time_ExU
 //
 //==========================================================================
@@ -1364,10 +1394,12 @@ vuint64 Sys_GetTimeCPUNano () {
 //
 //==========================================================================
 void Sys_YieldMicro (unsigned microsecs) {
-  if (microsecs <= 20000) {
+  if (microsecs < 1500) { Sleep(0); return; } // oops
+  if (microsecs < ((unsigned)shitdozePeriodSet+2)*1000) {
     Sleep(0);
   } else {
-    Sleep(microsecs/1000);
+    // at lest 3 msecs here
+    Sleep(microsecs/1000-2);
   }
 }
 

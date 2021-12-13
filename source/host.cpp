@@ -181,7 +181,7 @@ static char CurrentLanguage[4];
 static VCvarS Language("language", "en", "Game language.", /*CVAR_Archive|CVAR_PreInit|*/CVAR_Rom|CVAR_NoShadow);
 
 static VCvarB cl_cap_framerate("cl_cap_framerate", true, "Cap framerate for non-networking games?", CVAR_Archive|CVAR_NoShadow);
-static VCvarI cl_framerate("cl_framerate", "60", "Framerate cap for client rendering.", CVAR_Archive|CVAR_NoShadow);
+static VCvarI cl_framerate("cl_framerate", "64", "Framerate cap for client rendering.", CVAR_Archive|CVAR_NoShadow);
 static VCvarI sv_framerate("sv_framerate", "70", "Framerate cap for dedicated server.", CVAR_Archive|CVAR_NoShadow);
 
 // this is hack for my GPU
@@ -611,15 +611,11 @@ bool Host_IsDangerousTimeout () {
 #ifdef VV_USE_U64_SYSTIME_FOR_FRAME_TIMES
 //==========================================================================
 //
-//  CalcFrameMSecs
+//  CalcFrameMicro
 //
 //==========================================================================
-static VVA_ALWAYS_INLINE unsigned CalcFrameMSecs (const unsigned fps) noexcept {
-  #if 0
-  return 1000u/fps+(unsigned)(10000u/fps%10u >= 5u); // round it
-  #else
-  return 1000u/fps+(unsigned)(10000u/fps%10u >= 8u); // round it
-  #endif
+static VVA_ALWAYS_INLINE unsigned CalcFrameMicro (const unsigned fps) noexcept {
+  return 1000000u/fps;
 }
 #endif
 
@@ -642,7 +638,6 @@ static bool FilterTime () {
   unsigned usDelta = (unsigned)(host_systime64_usec-host_prevsystime64_usec);
   if (usDelta < 4000u) return false; // no more than 250 frames per second
   if (usDelta > 10000000U) usDelta = 10000000U; // 10 seconds
-  const unsigned msDelta = usDelta/1000U;
 
   float timeDelta;
   if (dbg_frametime < max_fps_cap_float) {
@@ -651,7 +646,7 @@ static bool FilterTime () {
     if (Host_IsDangerousTimeout()) {
       const unsigned capfr = (unsigned)clampval(cl_framerate_net_timeout.asInt(), 0, 42);
       if (capfr > 0u) {
-        if (msDelta < CalcFrameMSecs(capfr)) return false; // framerate is too high
+        if (usDelta < CalcFrameMicro(capfr)) return false; // framerate is too high
       }
     } else {
       // cap client fps
@@ -660,23 +655,23 @@ static bool FilterTime () {
         // local game
         if (cl_cap_framerate.asBool()) {
           const unsigned frate = (unsigned)clampval(cl_framerate.asInt(), 1, 250);
-          ftime = CalcFrameMSecs(frate);
+          ftime = CalcFrameMicro(frate);
         } else {
-          ftime = 4u; // no more than 250 frames per second
+          ftime = 4000u/2u; // no more than 250^w 500 frames per second
         }
       } else {
         // network game
         const unsigned frate = (unsigned)clampval(sv_framerate.asInt(), 5, 70);
-        ftime = CalcFrameMSecs(frate);
+        ftime = CalcFrameMicro(frate);
       }
       //GCon->Logf("*** FilterTime; lasttime=%g; ctime=%g; time=%g; ftime=%g; cfr=%g", last_time, curr_time, time, ftime, 1.0/(double)ftime);
-      if (msDelta < ftime) return false; // framerate is too high
+      if (usDelta < ftime) return false; // framerate is too high
     }
     #else
     // dedicated server
     const unsigned frate = (unsigned)clampval(sv_framerate.asInt(), 5, 70);
-    const unsigned ftime = CalcFrameMSecs(frate);
-    if (msDelta < ftime) return false; // framerate is too high
+    const unsigned ftime = CalcFrameMicro(frate);
+    if (usDelta < ftime) return false; // framerate is too high
     #endif
     timeDelta = (float)usDelta/1000000.0f;
   } else {
@@ -787,15 +782,16 @@ static VVA_OKUNUSED unsigned CalcYieldTime () {
     // local game
     if (cl_cap_framerate.asBool()) {
       const unsigned frate = (unsigned)clampval(cl_framerate.asInt(), 1, 250);
-      ftime = CalcFrameMSecs(frate);
+      ftime = CalcFrameMicro(frate);
     } else {
-      ftime = 4u; // no more than 250 frames per second
+      ftime = 4000u/2u; // no more than 250^w 500 frames per second
     }
     const uint64_t nft = host_systime64_usec+(uint64_t)(ftime*1000U); // next frame time (mircoseconds)
-    uint64_t ctt; // current time in microseconds
-    (void)Sys_Time_ExU(&ctt);
+    uint64_t ctt = Sys_Time_Micro(); // current time in microseconds
     if (ctt >= nft) return 0; // oops, right now
     ctt = nft-ctt;
+    //if (ctt < 100) return 0; // don't wait
+    //ctt -= 100; // just in case
     if (ctt > 3000) ctt = 3000; // no more than 3 msec
     return (unsigned)ctt;
     #else
@@ -864,7 +860,7 @@ void Host_Frame () {
         //fprintf(stderr, "***SLEEP MICROSECS: %u\n", yt);
         if (yt) {
           #ifdef WIN32
-          Sys_YieldMicro(50); // sleep for 0.05 milliseconds
+          Sys_YieldMicro(0);
           #else
           Sys_YieldMicro(yt);
           #endif
