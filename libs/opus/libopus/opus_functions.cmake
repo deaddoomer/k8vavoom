@@ -153,7 +153,7 @@ function(opus_detect_sse COMPILER_SUPPORT_SIMD)
   endif()
 
   check_include_file(smmintrin.h HAVE_SMMINTRIN_H) # SSE4.1
-  if(HAVE_SMMINTRIN_H)
+  if(NOT WIN32 AND HAVE_SMMINTRIN_H)
     if(MSVC)
       if(CMAKE_SIZEOF_VOID_P EQUAL 4)
         check_flag(SSE4_1 /arch:SSE2) # SSE2 and above
@@ -172,7 +172,7 @@ function(opus_detect_sse COMPILER_SUPPORT_SIMD)
   endif()
 
   check_include_file(immintrin.h HAVE_IMMINTRIN_H) # AVX
-  if(HAVE_IMMINTRIN_H)
+  if(NOT WIN32 AND HAVE_IMMINTRIN_H)
     if(MSVC)
       check_flag(AVX /arch:AVX)
     else()
