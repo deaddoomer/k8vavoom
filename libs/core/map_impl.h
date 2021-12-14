@@ -120,7 +120,7 @@ private:
   struct TEntry {
     TK key; // copied key
     TV value; // copied value
-    uint32_t hash; // 0 means "empty" (has any meaning only inside "used entries range"
+    uint32_t hash; // 0 means "empty" (has any meaning only inside "used entries range")
     TEntry *nextFree; // next free entry in the free entries list (and garbage for used entry)
 
     VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT bool isEmpty () const noexcept { return (hash == 0u); }
@@ -605,7 +605,7 @@ public:
   }
 
   // clear the table, but don't free memory, and don't shrink arrays
-  void reset () noexcept {
+  VVA_ALWAYS_INLINE void reset () noexcept {
     freeEntries();
     if (mBucketsUsed) {
       memset(mBuckets, 0, mBSize*sizeof(TBucket)); // sadly, we have to
@@ -650,10 +650,18 @@ public:
       const uint32_t stx = (uint32_t)mFirstEntry;
       TEntry *e = &mEntries[0];
       if (stx) {
-        e->markUnused();
+        // they should be already marked due to how `releaseEntry()` works
+        #ifdef CORE_MAP_TEST
+        vassert(e->isEmpty());
+        //e->markUnused();
+        #endif
         lastfree = mFreeEntryHead = e++;
         for (uint32_t eidt = 1u; eidt < stx; ++eidt, ++e) {
-          e->markUnused();
+          // they should be already marked due to how `releaseEntry()` works
+          #ifdef CORE_MAP_TEST
+          vassert(e->isEmpty());
+          //e->markUnused();
+          #endif
           lastfree->nextFree = e;
           lastfree = e;
         }
@@ -764,7 +772,7 @@ public:
   VVA_ALWAYS_INLINE void rehashRekeyLeaveFirst () noexcept { rehash<RehashRekey|RehashLeaveFirst>(); }
   VVA_ALWAYS_INLINE void rehashRekeyLeaveLast () noexcept { rehash<RehashRekey|RehashLeaveLast>(); }
 
-  inline VVA_CHECKRESULT bool needCompact () const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool needCompact () const noexcept {
     if (mBSize == 0) return false;
     if (mBSize <= InitSize) return (mBucketsUsed == 0);
     const uint32_t newsz = calcCompactedSize();
@@ -812,7 +820,11 @@ public:
       // this loop will skip all non-holes
       // it is NOT guaranteed that entries before `mFirstEntry` are properly empty
       // so make them properly empty (we need this in the following loop)
-      for (int f = 0; f < mFirstEntry; ++f) mEntries[f].markUnused();
+      // they should be already marked due to how `releaseEntry()` works
+      #ifdef CORE_MAP_TEST
+      for (int f = 0; f < mFirstEntry; ++f) vassert(mEntries[f].isEmpty());
+      //for (int f = 0; f < mFirstEntry; ++f) mEntries[f].markUnused();
+      #endif
       uint32_t holeidx = 0u;
       while (holeidx < end) {
         // is this a hole?
