@@ -58,7 +58,12 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-#include "common.h"
+#ifndef TMap_Class_Name
+# error do not include this directly!
+#endif
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 template<typename TK, typename TV> class TMap_Class_Name {
 private:
   enum {
@@ -115,39 +120,30 @@ private:
   struct TEntry {
     TK key; // copied key
     TV value; // copied value
-    uint32_t hash; // 0 means "empty"
-    TEntry *nextFree; // next free entry in the free entries list
+    uint32_t hash; // 0 means "empty" (has any meaning only inside "used entries range"
+    TEntry *nextFree; // next free entry in the free entries list (and garbage for used entry)
 
     VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT bool isEmpty () const noexcept { return (hash == 0u); }
     VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT bool isUsed () const noexcept { return (hash != 0u); }
+    VVA_ALWAYS_INLINE void markUnused () noexcept { hash = 0u; }
 
+    #if !defined(TMAP_NO_CLEAR)
     // will not clear hash
     VVA_ALWAYS_INLINE void initEntry () noexcept {
-      #if !defined(TMAP_NO_CLEAR)
-      // the entry is guaranteed to be zeroed, so we can use non-clearing placement new
-      new(&key, E_ArrayNew, E_NoInit) TK;
-      new(&value, E_ArrayNew, E_NoInit) TV;
-      #endif
-    }
-
-    // always called after the entry was destroyed (except when we're going to destroy the whole entry array)
-    VVA_ALWAYS_INLINE void zeroEntry () noexcept {
-      memset((void *)this, 0, sizeof(*this));
+      // the entry is NOT guaranteed to be zeroed, so use clearing new
+      new(&key, E_ArrayNew, E_ArrayNew) TK;
+      new(&value, E_ArrayNew, E_ArrayNew) TV;
     }
 
     // will not clear hash
     VVA_ALWAYS_INLINE void destroyEntry () noexcept {
-      #if !defined(TMAP_NO_CLEAR)
       key.~TK();
       value.~TV();
-      #endif
     }
+    #endif
   };
 
 private:
-  #ifdef TMAP_USE_SEED
-  uint32_t mSeed; // current seed
-  #endif
   uint32_t mBSize; // size of `mBuckets` array, in elements
   uint32_t mESize; // size of `mEntries` array, in elements
   TEntry *mEntries; // this array holds entries
@@ -156,6 +152,9 @@ private:
   TEntry *mFreeEntryHead; // head of the list of free entries (allocated with the FIFO strategy)
   int mFirstEntry, mLastEntry; // used range of `mEntries` (`mFirstEntry` can be negative for empty table)
   uint32_t mCurrentMaxLoad; // cached current max table load (max number of used buckets before resize)
+  #ifdef TMAP_USE_SEED
+  uint32_t mSeed; // current seed
+  #endif
   /*
     first and last entry indices are low and high (inclusive) bounds of the used part of `mEntries`.
     it is used to speedup iteration.
@@ -210,11 +209,11 @@ private:
 
 private:
   // when seeding is disabled, this will be optimised to noop
+  #ifdef TMAP_USE_SEED
   VVA_ALWAYS_INLINE void genNewSeed () noexcept {
-    #ifdef TMAP_USE_SEED
     mSeed = hashU32(Z_GetHashTableSeed());
-    #endif
   }
+  #endif
 
   // calculate max table load for the given bucket array size
   VVA_ALWAYS_INLINE VVA_CONST VVA_CHECKRESULT uint32_t calcMaxLoad (const uint32_t aBSize) const noexcept {
@@ -248,16 +247,6 @@ private:
   // update `mCurrentMaxLoad` field
   VVA_ALWAYS_INLINE void calcCurrentMaxLoad (const uint32_t aBSize) noexcept {
     mCurrentMaxLoad = calcMaxLoad(aBSize);
-  }
-
-  // zero entries in the given range, so calling `TEntry::initEntry()` on them will be safe
-  // up to, but not including `last`
-  void zeroEntries (const uint32_t first, const uint32_t last) {
-    if (first < last) memset((void *)&mEntries[first], 0, (last-first)*sizeof(TEntry));
-    #ifdef CORE_MAP_TEST
-    mMaxProbeCount = 0u;
-    mMaxProbeCount = 0u;
-    #endif
   }
 
 public:
@@ -396,8 +385,11 @@ public:
 
 private:
   // called from `reset()` and `clear()`
-  // on `clear()`, there is no need to zero entries, `mEntries` will be freed anyway
-  void freeEntries (const bool doZero=true) noexcept {
+  // the caller is responsive for zeroing buckets
+  #if defined(TMAP_NO_CLEAR)
+  VVA_ALWAYS_INLINE
+  #endif
+  void freeEntries () noexcept {
     #if !defined(TMAP_NO_CLEAR)
     if (mFirstEntry >= 0) {
       const int end = mLastEntry;
@@ -405,12 +397,11 @@ private:
       for (int f = mFirstEntry; f <= end; ++f, ++e) if (e->isUsed()) e->destroyEntry();
     }
     #endif
-    if (doZero && mESize) zeroEntries(0u, mESize);
     mFreeEntryHead = nullptr;
     mFirstEntry = mLastEntry = -1;
   }
 
-  TEntry *allocEntry () noexcept {
+  VVA_ALWAYS_INLINE TEntry *allocEntry () noexcept {
     TEntry *res;
     if (!mFreeEntryHead) {
       // no free entries to reuse
@@ -424,20 +415,24 @@ private:
       res = mFreeEntryHead;
       mFreeEntryHead = res->nextFree;
       // fix mFirstEntry and mLastEntry
-      int idx = (int)(ptrdiff_t)(res-&mEntries[0]);
+      const int idx = (int)(ptrdiff_t)(res-&mEntries[0]);
       if (mFirstEntry < 0 || idx < mFirstEntry) mFirstEntry = idx;
       if (idx > mLastEntry) mLastEntry = idx;
     }
     //res->nextFree = nullptr; // just in case; meh, nobody cares
-    // the entry is guaranteed to be zeroed
-    res->initEntry();
+    // the entry is NOT guaranteed to be zeroed
+    #if !defined(TMAP_NO_CLEAR)
+    res->initEntry(); // this will zero the entry, and construct defaults
+    #endif
     return res;
   }
 
   void releaseEntry (const int idx) noexcept {
     TEntry *e = &mEntries[(const uint32_t)idx];
+    #if !defined(TMAP_NO_CLEAR)
     e->destroyEntry();
-    e->zeroEntry();
+    #endif
+    e->markUnused();
     // put it into the free list
     e->nextFree = mFreeEntryHead;
     mFreeEntryHead = e;
@@ -555,10 +550,24 @@ private:
   }
 
 public:
-  VVA_ALWAYS_INLINE TMap_Class_Name () noexcept : mBSize(0), mESize(0), mEntries(nullptr), mBuckets(nullptr), mBucketsUsed(0), mFreeEntryHead(nullptr), mFirstEntry(-1), mLastEntry(-1), mCurrentMaxLoad(0) {
+  VVA_ALWAYS_INLINE TMap_Class_Name () noexcept
+    : mBSize(0)
+    , mESize(0)
+    , mEntries(nullptr)
+    , mBuckets(nullptr)
+    , mBucketsUsed(0)
+    , mFreeEntryHead(nullptr)
+    , mFirstEntry(-1)
+    , mLastEntry(-1)
+    , mCurrentMaxLoad(0)
     #ifdef TMAP_USE_SEED
-    mSeed = 0u;
+    , mSeed(0u)
     #endif
+    #ifdef CORE_MAP_TEST
+    , mMaxProbeCount(0u)
+    , mMaxCompareCount(0u)
+    #endif
+  {
   }
 
   // no copies
@@ -578,7 +587,7 @@ public:
   void clear () noexcept {
     // no need to call this to zero memory that will be freed anyway
     #if !defined(TMAP_NO_CLEAR)
-    freeEntries(false);
+    freeEntries();
     #endif
     mFreeEntryHead = nullptr;
     if (mBuckets) Z_Free(mBuckets);
@@ -589,15 +598,23 @@ public:
     mEntries = nullptr;
     mFreeEntryHead = nullptr;
     mFirstEntry = mLastEntry = -1;
+    #ifdef CORE_MAP_TEST
+    mMaxProbeCount = 0u;
+    mMaxCompareCount = 0u;
+    #endif
   }
 
   // clear the table, but don't free memory, and don't shrink arrays
   void reset () noexcept {
     freeEntries();
     if (mBucketsUsed) {
-      memset(mBuckets, 0, mBSize*sizeof(TBucket));
+      memset(mBuckets, 0, mBSize*sizeof(TBucket)); // sadly, we have to
       mBucketsUsed = 0u;
     }
+    #ifdef CORE_MAP_TEST
+    mMaxProbeCount = 0u;
+    mMaxCompareCount = 0u;
+    #endif
   }
 
   // "full rehash" is used in VavoomC
@@ -613,12 +630,14 @@ public:
     RehashLeaveLast = 2u,
   };
 
-  void rehash (const uint32_t flags=RehashDefault) noexcept {
+  template<unsigned Flags=RehashDefault> void rehash () noexcept {
     // clear buckets
     if (mBSize) {
       memset(mBuckets, 0, mBSize*sizeof(TBucket));
       // change seed, to minimize pathological cases
+      #ifdef TMAP_USE_SEED
       genNewSeed();
+      #endif
     }
     mBucketsUsed = 0u;
     // reinsert entries
@@ -631,8 +650,10 @@ public:
       const uint32_t stx = (uint32_t)mFirstEntry;
       TEntry *e = &mEntries[0];
       if (stx) {
+        e->markUnused();
         lastfree = mFreeEntryHead = e++;
         for (uint32_t eidt = 1u; eidt < stx; ++eidt, ++e) {
+          e->markUnused();
           lastfree->nextFree = e;
           lastfree = e;
         }
@@ -648,56 +669,60 @@ public:
           continue;
         }
         // `e` is not empty here
-        if ((flags&RehashRekey) == 0) {
+        if ((Flags&RehashRekey) == 0) {
           // no need to recalculate hash, just insert the entry
           putEntryInternal(eidx);
-          continue;
-        }
-        // need to recalculate hash
-        const uint32_t khash = calcKeyHash(e->key);
-        e->hash = khash;
-        TMAP_IMPL_CALC_BUCKET_INDEX(khash)
-        // check if we already have this key
-        uint32_t oldbidx = 0u; // bucketindex+1, or zero if not found
-        if (mBucketsUsed && mBuckets[idx].hash) {
-          for (uint32_t dist = 0u; dist <= bhigh; ++dist) {
-            if (mBuckets[idx].hash == 0u) break;
-            const uint32_t pdist = distToDesiredBucket(idx, bhigh);
-            if (dist > pdist) break;
-            if (mBuckets[idx].hash == khash && mEntries[mBuckets[idx].entryidx].key == e->key) {
-              // i found her!
-              oldbidx = idx+1u;
-              break;
-            }
-            idx = (idx+1u)&bhigh;
-          }
-        }
-        if (!oldbidx) {
-          // no conflicts, just insert the entry
-          putEntryInternal(eidx);
-          continue;
-        }
-        // found conflicting entry
-        fixFirstLast = true; // we'll need to perform the full recalc
-        --oldbidx; // see above
-        if (flags&RehashLeaveLast) {
-          // destroy old entry
-          vassert(mBuckets[oldbidx].entryidx != eidx);
-          TEntry *oe = &mEntries[mBuckets[oldbidx].entryidx];
-          oe->destroyEntry();
-          oe->zeroEntry();
-          // add old entry to the free list
-          if (lastfree) lastfree->nextFree = oe; else mFreeEntryHead = oe;
-          lastfree = oe;
-          // change old entry index to the new entry index
-          mBuckets[oldbidx].entryidx = eidx;
         } else {
-          // destroy new entry
-          e->destroyEntry();
-          e->zeroEntry();
-          // add new entry to the free list
-          if (lastfree) lastfree->nextFree = e; else mFreeEntryHead = e;
-          lastfree = e;
+          // need to recalculate hash
+          const uint32_t khash = calcKeyHash(e->key);
+          e->hash = khash;
+          TMAP_IMPL_CALC_BUCKET_INDEX(khash)
+          // check if we already have this key
+          uint32_t oldbidx = 0u; // bucketindex+1, or zero if not found
+          if (mBucketsUsed && mBuckets[idx].hash) {
+            for (uint32_t dist = 0u; dist <= bhigh; ++dist) {
+              if (mBuckets[idx].hash == 0u) break;
+              const uint32_t pdist = distToDesiredBucket(idx, bhigh);
+              if (dist > pdist) break;
+              if (mBuckets[idx].hash == khash && mEntries[mBuckets[idx].entryidx].key == e->key) {
+                // i found her!
+                oldbidx = idx+1u;
+                break;
+              }
+              idx = (idx+1u)&bhigh;
+            }
+          }
+          if (!oldbidx) {
+            // no conflicts, just insert the entry
+            putEntryInternal(eidx);
+            continue;
+          }
+          // found conflicting entry
+          fixFirstLast = true; // we'll need to perform the full recalc
+          --oldbidx; // see above
+          if (Flags&RehashLeaveLast) {
+            // destroy old entry
+            vassert(mBuckets[oldbidx].entryidx != eidx);
+            TEntry *oe = &mEntries[mBuckets[oldbidx].entryidx];
+            #if !defined(TMAP_NO_CLEAR)
+            oe->destroyEntry();
+            #endif
+            oe->markUnused();
+            // add old entry to the free list
+            if (lastfree) lastfree->nextFree = oe; else mFreeEntryHead = oe;
+            lastfree = oe;
+            // change old entry index to the new entry index
+            mBuckets[oldbidx].entryidx = eidx;
+          } else {
+            // destroy new entry
+            #if !defined(TMAP_NO_CLEAR)
+            e->destroyEntry();
+            #endif
+            e->markUnused();
+            // add new entry to the free list
+            if (lastfree) lastfree->nextFree = e; else mFreeEntryHead = e;
+            lastfree = e;
+          }
         }
       }
       // done inserting, check if we need to recalc first and last indicies
@@ -736,8 +761,8 @@ public:
     }
   }
 
-  VVA_ALWAYS_INLINE void rehashRekeyLeaveFirst () noexcept { rehash(RehashRekey|RehashLeaveFirst); }
-  VVA_ALWAYS_INLINE void rehashRekeyLeaveLast () noexcept { rehash(RehashRekey|RehashLeaveLast); }
+  VVA_ALWAYS_INLINE void rehashRekeyLeaveFirst () noexcept { rehash<RehashRekey|RehashLeaveFirst>(); }
+  VVA_ALWAYS_INLINE void rehashRekeyLeaveLast () noexcept { rehash<RehashRekey|RehashLeaveLast>(); }
 
   inline VVA_CHECKRESULT bool needCompact () const noexcept {
     if (mBSize == 0) return false;
@@ -785,7 +810,9 @@ public:
       uint32_t end = (uint32_t)mLastEntry;
       // now fill the holes
       // this loop will skip all non-holes
-      // it is guaranteed that entries before `mFirstEntry` are properly empty
+      // it is NOT guaranteed that entries before `mFirstEntry` are properly empty
+      // so make them properly empty (we need this in the following loop)
+      for (int f = 0; f < mFirstEntry; ++f) mEntries[f].markUnused();
       uint32_t holeidx = 0u;
       while (holeidx < end) {
         // is this a hole?
@@ -794,14 +821,17 @@ public:
           // sanity checks
           vassert(mEntries[holeidx].isEmpty());
           vassert(mEntries[end].isUsed());
-          // just in case, zero hole entry, and then init it to some sane state
-          mEntries[holeidx].zeroEntry(); // just in case
+          // zero hole entry, and then init it to some sane state
+          #if !defined(TMAP_NO_CLEAR)
           mEntries[holeidx].initEntry();
+          #endif
           // copy last used entry into the hole
           mEntries[holeidx] = mEntries[end];
           // destroy copied entry
+          #if !defined(TMAP_NO_CLEAR)
           mEntries[end].destroyEntry();
-          mEntries[end].zeroEntry();
+          #endif
+          mEntries[end].markUnused();
           // move our finger to the previous non-empty entry
           // it is guaranteed to have a non-empty entry, so no additional checks required
           // first entry is always occupied now, and `end` is never zero here
@@ -831,11 +861,15 @@ public:
     mBuckets = (TBucket *)Z_Realloc(mBuckets, mBSize*sizeof(TBucket));
     // no need to clear new buckets, `rehash()` will do that for us
     // entry array
-    const uint32_t oldESize = mESize;
+    //const uint32_t oldESize = mESize;
     mESize = calcOptimalEntriesCount(mBSize);
     vassert(mESize > 0 && (mLastEntry+1 >= 0 && mESize >= (uint32_t)(mLastEntry+1)));
     mEntries = (TEntry *)Z_Realloc((void *)mEntries, mESize*sizeof(TEntry));
-    if (mESize > oldESize) zeroEntries(oldESize, mESize);
+    //if (mESize > oldESize) zeroEntries(oldESize, mESize);
+    #ifdef CORE_MAP_TEST
+    mMaxProbeCount = 0u;
+    mMaxCompareCount = 0u;
+    #endif
     calcCurrentMaxLoad(mBSize);
     vassert(!mFreeEntryHead); // because we moved our entries to the top
     // reinsert entries
@@ -894,8 +928,8 @@ public:
   }
 
   // returns `true` if old value was found (and possibly replaced)
-  // will replace old value if `replace` is `true`
-  bool put (const TK &akey, const TV &aval, bool replace=true) noexcept {
+  // will replace old value if `DoReplace` is `true`
+  template<bool DoReplace=true> bool put (const TK &akey, const TV &aval) noexcept {
     const uint32_t khash = calcKeyHash(akey);
     TMAP_IMPL_CALC_BUCKET_INDEX(khash)
 
@@ -921,7 +955,7 @@ public:
         #endif
         if (mBuckets[idx].hash == khash && mEntries[mBuckets[idx].entryidx].key == akey) {
           // replace element?
-          if (replace) mEntries[mBuckets[idx].entryidx].value = aval;
+          if (DoReplace) mEntries[mBuckets[idx].entryidx].value = aval;
           return true; // duplicate was found
         }
         idx = (idx+1u)&bhigh;
@@ -948,7 +982,11 @@ public:
       vassert(mESize >= oldESize);
       if (mESize > oldESize) {
         mEntries = (TEntry *)Z_Realloc((void *)mEntries, mESize*sizeof(TEntry));
-        zeroEntries(oldESize, mESize);
+        //zeroEntries(oldESize, mESize);
+        #ifdef CORE_MAP_TEST
+        mMaxProbeCount = 0u;
+        mMaxCompareCount = 0u;
+        #endif
       }
       calcCurrentMaxLoad(mBSize);
       // mFreeEntryHead will be fixed in `rehash()`
@@ -965,8 +1003,8 @@ public:
     return false; // there were no duplicates
   }
 
-  VVA_ALWAYS_INLINE bool putReplace (const TK &akey, const TV &aval) noexcept { return put(akey, aval, true); }
-  VVA_ALWAYS_INLINE bool putNoReplace (const TK &akey, const TV &aval) noexcept { return put(akey, aval, false); }
+  VVA_ALWAYS_INLINE bool putReplace (const TK &akey, const TV &aval) noexcept { return put<true>(akey, aval); }
+  VVA_ALWAYS_INLINE bool putNoReplace (const TK &akey, const TV &aval) noexcept { return put<false>(akey, aval); }
 
   VVA_ALWAYS_INLINE VVA_CHECKRESULT int count () const noexcept { return (int)mBucketsUsed; }
   VVA_ALWAYS_INLINE VVA_CHECKRESULT int length () const noexcept { return (int)mBucketsUsed; }
