@@ -213,16 +213,16 @@ static void trinkle (unsigned char *head, size_t width, smsort_cmpfun cmp, void 
 // insertion sort using integer types
 #define INSSORT(tp_)  do { \
   tp_ *arr = (tp_ *)base; \
-  unsigned i = 1; \
-  while (i < (unsigned)nel) { \
-    unsigned j = i; \
-    while (j && cmp(arr+j-1U, arr+j, arg) > 0) { \
-      const tp_ tmpv = arr[j-1U]; \
-      arr[j-1U] = arr[j]; \
-      arr[j] = tmpv; \
-      --j; \
+  unsigned ii = 1; \
+  while (ii < (unsigned)nel) { \
+    unsigned jj = ii; \
+    while (jj && cmp(arr+jj-1U, arr+jj, arg) > 0) { \
+      const tp_ tmpv = arr[jj-1U]; \
+      arr[jj-1U] = arr[jj]; \
+      arr[jj] = tmpv; \
+      --jj; \
     } \
-    ++i; \
+    ++ii; \
   } \
 } while (0)
 
