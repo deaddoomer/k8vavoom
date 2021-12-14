@@ -71,6 +71,9 @@ private:
     LoadFactorPrc = 80, // 90 it is ok for robin hood hashes, but let's play safe
     // maximum number of buckets (entries) we can have; more than enough
     MaxBuckets = 0x40000000u,
+    // "valid hash" or-mask
+    ValidHashBit = 0x80000000u,
+    HashMask = 0x7fffffffu,
   };
   // if we don't want to use seed, let the compiler optimise `+mSeed` to noop
   #ifndef TMAP_USE_SEED
@@ -117,15 +120,16 @@ private:
   };
   static_assert(sizeof(TBucket) == sizeof(uint32_t)*2, "invalid TBucket struct size");
 
+  // `hashOrFLink` is used as hash (when bit 31 is set), or as index to the next free entry +1
+  // (i.e. 0 means "null", 1 means "entry 0", etc.)
+  // as we aren't using full hash bits anyway, we can sacrifice one bit to remove one pointer
   struct TEntry {
+    uint32_t hashOrFLink; // see above
     TK key; // copied key
     TV value; // copied value
-    uint32_t hash; // 0 means "empty" (has any meaning only inside "used entries range")
-    TEntry *nextFree; // next free entry in the free entries list (and garbage for used entry)
 
-    VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT bool isEmpty () const noexcept { return (hash == 0u); }
-    VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT bool isUsed () const noexcept { return (hash != 0u); }
-    VVA_ALWAYS_INLINE void markUnused () noexcept { hash = 0u; }
+    VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT bool isEmpty () const noexcept { return (hashOrFLink < ValidHashBit); }
+    VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT bool isUsed () const noexcept { return (hashOrFLink >= ValidHashBit); }
 
     #if !defined(TMAP_NO_CLEAR)
     // will not clear hash
@@ -141,7 +145,7 @@ private:
       value.~TV();
     }
     #endif
-  };
+  } /*__attribute__((aligned(4)))*/;
 
 private:
   uint32_t mBSize; // size of `mBuckets` array, in elements
@@ -149,7 +153,7 @@ private:
   TEntry *mEntries; // this array holds entries
   TBucket *mBuckets; // and this array is actual hash table "buckets" (key/entry index pairs)
   uint32_t mBucketsUsed; // total number of used buckets (number of alive entries in the hash table)
-  TEntry *mFreeEntryHead; // head of the list of free entries (allocated with the FIFO strategy)
+  uint32_t mFreeEntryHead; // head of the list of free entries+1 (allocated with the FIFO strategy)
   int mFirstEntry, mLastEntry; // used range of `mEntries` (`mFirstEntry` can be negative for empty table)
   uint32_t mCurrentMaxLoad; // cached current max table load (max number of used buckets before resize)
   #ifdef TMAP_USE_SEED
@@ -185,18 +189,20 @@ private:
     // FUCK YOU, SHITPLUSPLUS! WHY CAN'T WE FUCKIN' DECLARE THIS FUCKIN' TEMPLATE,
     // AND THEN USE IT TO DETECT THINGS THAT WERE DECLARED LATER?!!
     //const uint32_t khash = CalcTypeHash(akey);
-    const uint32_t khash = GetTypeHash(akey);
-    return khash+(!khash); // avoid zero hash value
+    // hash should always have bit 31 set
+    //const uint32_t khash = GetTypeHash(akey);
+    //return khash+(!khash); // avoid zero hash value
+    return GetTypeHash(akey)|ValidHashBit;
   }
 
   // calculate desired bucket index for the given hash
   VVA_ALWAYS_INLINE VVA_CHECKRESULT uint32_t calcBestBucketIdx (const uint32_t hashval, const uint32_t bhigh) const noexcept {
     #if defined(TMAP_BKHASH_FASTRANGE)
-    return (uint32_t)(((uint64_t)(hashval+mSeed)*(uint64_t)bhigh)>>32);
+    return (uint32_t)(((uint64_t)((hashval&HashMask)+mSeed)*(uint64_t)bhigh)>>32);
     #elif defined(TMAP_BKHASH_FOLDING)
     // fold hash values for hash tables with less than 64K items
     // hash folding usually gives better results than simply dropping high bits
-    return ((bhigh <= 0xffffu ? foldHash32to16(hashval) : hashval)+mSeed)&bhigh;
+    return ((bhigh <= 0xffffu ? foldHash32to16(hashval&HashMask) : (hashval&HashMask))+mSeed)&bhigh;
     #else
     return (hashval+mSeed)&bhigh;
     #endif
@@ -323,7 +329,7 @@ public:
     // it is safe to call this several times
     VVA_ALWAYS_INLINE void removeCurrentNoAdvance () noexcept {
       if (index >= 0 && index <= map->mLastEntry && map->mEntries[(unsigned)index].isUsed()) {
-        (void)map->delInternal(map->mEntries[(unsigned)index].key, map->mEntries[(unsigned)index].hash);
+        (void)map->delInternal(map->mEntries[(unsigned)index].key, map->mEntries[(unsigned)index].hashOrFLink);
       }
     }
 
@@ -365,7 +371,7 @@ public:
   VVA_ALWAYS_INLINE VVA_CHECKRESULT int removeCurrAndGetNextIIdx (int index) noexcept {
     if (index >= 0 && index <= mLastEntry) {
       if (mEntries[index].isUsed()) {
-        (void)delInternal(mEntries[index].key, mEntries[index].hash);
+        (void)delInternal(mEntries[index].key, mEntries[index].hashOrFLink);
       }
       return getNextIIdx(index);
     } else {
@@ -397,7 +403,7 @@ private:
       for (int f = mFirstEntry; f <= end; ++f, ++e) if (e->isUsed()) e->destroyEntry();
     }
     #endif
-    mFreeEntryHead = nullptr;
+    mFreeEntryHead = 0;
     mFirstEntry = mLastEntry = -1;
   }
 
@@ -412,8 +418,11 @@ private:
       if (mFirstEntry < 0) mFirstEntry = 0;
       res = &mEntries[mLastEntry];
     } else {
-      res = mFreeEntryHead;
-      mFreeEntryHead = res->nextFree;
+      res = &mEntries[mFreeEntryHead-1U];
+      mFreeEntryHead = res->hashOrFLink;
+      #ifdef CORE_MAP_TEST
+      vassert(mFreeEntryHead < ValidHashBit);
+      #endif
       // fix mFirstEntry and mLastEntry
       const int idx = (int)(ptrdiff_t)(res-&mEntries[0]);
       if (mFirstEntry < 0 || idx < mFirstEntry) mFirstEntry = idx;
@@ -432,14 +441,13 @@ private:
     #if !defined(TMAP_NO_CLEAR)
     e->destroyEntry();
     #endif
-    e->markUnused();
-    // put it into the free list
-    e->nextFree = mFreeEntryHead;
-    mFreeEntryHead = e;
+    // put it into the free list (this also marks it as unused)
+    e->hashOrFLink = mFreeEntryHead;
+    mFreeEntryHead = (const uint32_t)idx+1U;
     // fix mFirstEntry and mLastEntry
     if (mFirstEntry == mLastEntry) {
       // it was the last used entry, the whole array is free now
-      mFreeEntryHead = nullptr;
+      mFreeEntryHead = 0;
       mFirstEntry = mLastEntry = -1;
     } else {
       // we have at least one another non-empty entry
@@ -472,7 +480,10 @@ private:
 
   // `put()` helper (also used in `rehash()`)
   void putEntryInternal (uint32_t swpeidx) noexcept {
-    uint32_t swpehash = mEntries[swpeidx].hash;
+    uint32_t swpehash = mEntries[swpeidx].hashOrFLink;
+    #ifdef CORE_MAP_TEST
+    vassert(swpehash >= ValidHashBit);
+    #endif
     // `swpehash` and `swpeidx` is the "current bucket" to insert
     TMAP_IMPL_CALC_BUCKET_INDEX(swpehash)
     uint32_t pcur = 0u;
@@ -556,7 +567,7 @@ public:
     , mEntries(nullptr)
     , mBuckets(nullptr)
     , mBucketsUsed(0)
-    , mFreeEntryHead(nullptr)
+    , mFreeEntryHead(0)
     , mFirstEntry(-1)
     , mLastEntry(-1)
     , mCurrentMaxLoad(0)
@@ -589,14 +600,13 @@ public:
     #if !defined(TMAP_NO_CLEAR)
     freeEntries();
     #endif
-    mFreeEntryHead = nullptr;
     if (mBuckets) Z_Free(mBuckets);
     if (mEntries) Z_Free((void *)mEntries);
     mBucketsUsed = 0u;
     mBSize = mESize = mCurrentMaxLoad = 0u;
     mBuckets = nullptr;
     mEntries = nullptr;
-    mFreeEntryHead = nullptr;
+    mFreeEntryHead = 0;
     mFirstEntry = mLastEntry = -1;
     #ifdef CORE_MAP_TEST
     mMaxProbeCount = 0u;
@@ -641,11 +651,11 @@ public:
     }
     mBucketsUsed = 0u;
     // reinsert entries
-    mFreeEntryHead = nullptr;
+    mFreeEntryHead = 0;
     if (mFirstEntry >= 0) {
       bool fixFirstLast = false; // if we destroyed some entries, perform full recalc
       vassert(mLastEntry >= mFirstEntry);
-      TEntry *lastfree = nullptr;
+      uint32_t lastfree = 0;
       // small optimisation for empty head case
       const uint32_t stx = (uint32_t)mFirstEntry;
       TEntry *e = &mEntries[0];
@@ -653,17 +663,17 @@ public:
         // they should be already marked due to how `releaseEntry()` works
         #ifdef CORE_MAP_TEST
         vassert(e->isEmpty());
-        //e->markUnused();
         #endif
-        lastfree = mFreeEntryHead = e++;
-        for (uint32_t eidt = 1u; eidt < stx; ++eidt, ++e) {
+        lastfree = mFreeEntryHead = 1U;
+        ++e;
+        // `eidt` is incremented by one here
+        for (uint32_t eidt = 2U; eidt <= stx; ++eidt, ++e) {
           // they should be already marked due to how `releaseEntry()` works
           #ifdef CORE_MAP_TEST
           vassert(e->isEmpty());
-          //e->markUnused();
           #endif
-          lastfree->nextFree = e;
-          lastfree = e;
+          mEntries[lastfree-1U].hashOrFLink = eidt;
+          lastfree = eidt;
         }
       }
       // reinsert all alive entries
@@ -672,8 +682,8 @@ public:
       for (uint32_t eidx = stx; eidx <= end; ++eidx, ++e) {
         if (e->isEmpty()) {
           // add current empty entry to the free list
-          if (lastfree) lastfree->nextFree = e; else mFreeEntryHead = e;
-          lastfree = e;
+          if (lastfree) mEntries[lastfree-1U].hashOrFLink = eidx+1U; else mFreeEntryHead = eidx+1U;
+          lastfree = eidx+1U;
           continue;
         }
         // `e` is not empty here
@@ -683,7 +693,7 @@ public:
         } else {
           // need to recalculate hash
           const uint32_t khash = calcKeyHash(e->key);
-          e->hash = khash;
+          e->hashOrFLink = khash; // this also marks it as non-free
           TMAP_IMPL_CALC_BUCKET_INDEX(khash)
           // check if we already have this key
           uint32_t oldbidx = 0u; // bucketindex+1, or zero if not found
@@ -707,18 +717,17 @@ public:
           }
           // found conflicting entry
           fixFirstLast = true; // we'll need to perform the full recalc
-          --oldbidx; // see above
+          --oldbidx; // because bucket index is incremented by one in the above loop
           if (Flags&RehashLeaveLast) {
             // destroy old entry
-            vassert(mBuckets[oldbidx].entryidx != eidx);
-            TEntry *oe = &mEntries[mBuckets[oldbidx].entryidx];
+            const uint32_t oeidx = mBuckets[oldbidx].entryidx;
+            vassert(oeidx != eidx);
             #if !defined(TMAP_NO_CLEAR)
-            oe->destroyEntry();
+            mEntries[oeidx].destroyEntry();
             #endif
-            oe->markUnused();
             // add old entry to the free list
-            if (lastfree) lastfree->nextFree = oe; else mFreeEntryHead = oe;
-            lastfree = oe;
+            if (lastfree) mEntries[lastfree-1U].hashOrFLink = oeidx+1U; else mFreeEntryHead = oeidx+1U;
+            lastfree = oeidx+1U;
             // change old entry index to the new entry index
             mBuckets[oldbidx].entryidx = eidx;
           } else {
@@ -726,34 +735,40 @@ public:
             #if !defined(TMAP_NO_CLEAR)
             e->destroyEntry();
             #endif
-            e->markUnused();
+            e->hashOrFLink = 0; // mark this entry as free (and the end of the free list)
             // add new entry to the free list
-            if (lastfree) lastfree->nextFree = e; else mFreeEntryHead = e;
-            lastfree = e;
+            if (lastfree) mEntries[lastfree-1U].hashOrFLink = eidx+1U; else mFreeEntryHead = eidx+1U;
+            lastfree = eidx+1U;
           }
         }
       }
       // done inserting, check if we need to recalc first and last indicies
       if (fixFirstLast) {
         // full recalc
-        lastfree = nullptr;
-        mFreeEntryHead = nullptr;
+        lastfree = mFreeEntryHead = 0;
         if (mBucketsUsed) {
           // trim tail
           while (mEntries[mLastEntry].isEmpty()) --mLastEntry;
+          // just in case
+          if (mFirstEntry > 0) {
+            // i want to be double-sure that "pre-head" entries are marked as free
+            // we will fix free list link below
+            for (uint32_t f = 0; f < (uint32_t)mFirstEntry; ++f) mEntries[f].hashOrFLink = 0;
+          }
           // process entries, build free list
           mFirstEntry = 0;
           TEntry *ee = &mEntries[0];
           for (; mFirstEntry <= mLastEntry && ee->isEmpty(); ++mFirstEntry, ++ee) {
-            if (lastfree) lastfree->nextFree = ee; else mFreeEntryHead = ee;
-            lastfree = ee;
+            if (lastfree) mEntries[lastfree-1U].hashOrFLink = (uint32_t)mFirstEntry+1U; else mFreeEntryHead = (uint32_t)mFirstEntry+1U;
+            lastfree = (uint32_t)mFirstEntry+1U;
           }
+          // there should be at least one
           vassert(mFirstEntry < mLastEntry);
           int curre = mFirstEntry;
           for (; curre <= mLastEntry; ++curre, ++ee) {
             if (ee->isEmpty()) {
-              if (lastfree) lastfree->nextFree = ee; else mFreeEntryHead = ee;
-              lastfree = ee;
+              if (lastfree) mEntries[lastfree-1U].hashOrFLink = (uint32_t)curre+1U; else mFreeEntryHead = (uint32_t)curre+1U;
+              lastfree = (uint32_t)curre+1U;
             }
           }
         } else {
@@ -762,7 +777,7 @@ public:
         }
       }
       // put free list sentinel
-      if (lastfree) lastfree->nextFree = nullptr;
+      if (lastfree) mEntries[lastfree-1U].hashOrFLink = 0; else mFreeEntryHead = 0;
     } else {
       vassert(mFirstEntry == -1);
       vassert(mLastEntry == -1);
@@ -823,7 +838,6 @@ public:
       // they should be already marked due to how `releaseEntry()` works
       #ifdef CORE_MAP_TEST
       for (int f = 0; f < mFirstEntry; ++f) vassert(mEntries[f].isEmpty());
-      //for (int f = 0; f < mFirstEntry; ++f) mEntries[f].markUnused();
       #endif
       uint32_t holeidx = 0u;
       while (holeidx < end) {
@@ -843,7 +857,8 @@ public:
           #if !defined(TMAP_NO_CLEAR)
           mEntries[end].destroyEntry();
           #endif
-          mEntries[end].markUnused();
+          // mark last entry as unused (just in case)
+          mEntries[end].hashOrFLink = 0;
           // move our finger to the previous non-empty entry
           // it is guaranteed to have a non-empty entry, so no additional checks required
           // first entry is always occupied now, and `end` is never zero here
@@ -860,7 +875,7 @@ public:
       vassert(mEntries[0].isUsed());
       vassert(mEntries[end].isUsed());
       // just in case
-      mFreeEntryHead = nullptr;
+      mFreeEntryHead = 0;
     }
 
     // shrink arrays
@@ -1009,7 +1024,7 @@ public:
     TEntry *swpe = allocEntry();
     swpe->key = akey;
     swpe->value = aval;
-    swpe->hash = khash;
+    swpe->hashOrFLink = khash;
 
     putEntryInternal((uint32_t)(ptrdiff_t)(swpe-&mEntries[0]));
     return false; // there were no duplicates
@@ -1028,7 +1043,9 @@ public:
   #ifdef CORE_MAP_TEST
   VVA_CHECKRESULT int countItems () const noexcept {
     int res = 0;
-    for (uint32_t f = 0u; f < mESize; ++f) if (mEntries[f].isUsed()) ++res;
+    if (mLastEntry >= 0) {
+      for (uint32_t f = 0u; f <= (uint32_t)mLastEntry; ++f) if (mEntries[f].isUsed()) ++res;
+    }
     return res;
   }
 
