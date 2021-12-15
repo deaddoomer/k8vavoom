@@ -421,7 +421,7 @@ PR_VMBN_SWITCH(ReadU8(ip+1)) {
   // ip+2+4: vcvar ptr (pointer-sized)
   PR_VMBN_CASE(OPC_Builtin_IsCvarExists)
     {
-      VCvar *vp = GetAndCacheCVar(ip, true);
+      GetAndCacheCVarExAllowNull();
       /*
       #ifdef VCC_DEBUG_CVAR_CACHE
       GLog.Logf(NAME_Debug, "IsCvarExists: vp=%p (%s)", vp, (vp ? vp->GetName() : "<none>"));
@@ -434,7 +434,7 @@ PR_VMBN_SWITCH(ReadU8(ip+1)) {
     }
   PR_VMBN_CASE(OPC_Builtin_GetCvarInt)
     {
-      VCvar *vp = GetAndCacheCVar(ip);
+      GetAndCacheCVarEx();
       sp[0].i = vp->asInt();
       ++sp;
       ip += 4+sizeof(void *);
@@ -442,7 +442,7 @@ PR_VMBN_SWITCH(ReadU8(ip+1)) {
     }
   PR_VMBN_CASE(OPC_Builtin_GetCvarFloat)
     {
-      VCvar *vp = GetAndCacheCVar(ip);
+      GetAndCacheCVarEx();
       sp[0].f = vp->asFloat();
       ++sp;
       ip += 4+sizeof(void *);
@@ -450,7 +450,7 @@ PR_VMBN_SWITCH(ReadU8(ip+1)) {
     }
   PR_VMBN_CASE(OPC_Builtin_GetCvarStr)
     {
-      VCvar *vp = GetAndCacheCVar(ip);
+      GetAndCacheCVarEx();
       sp[0].p = nullptr;
       *(VStr *)&sp[0].p = vp->asStr();
       ++sp;
@@ -459,7 +459,7 @@ PR_VMBN_SWITCH(ReadU8(ip+1)) {
     }
   PR_VMBN_CASE(OPC_Builtin_GetCvarBool)
     {
-      VCvar *vp = GetAndCacheCVar(ip);
+      GetAndCacheCVarEx();
       sp[0].i = (vp->asBool() ? 1 : 0);
       ++sp;
       ip += 4+sizeof(void *);
@@ -468,7 +468,7 @@ PR_VMBN_SWITCH(ReadU8(ip+1)) {
 
   PR_VMBN_CASE(OPC_Builtin_SetCvarInt)
     {
-      VCvar *vp = GetAndCacheCVar(ip);
+      GetAndCacheCVarEx();
       if (!vp->IsReadOnly()) vp->SetInt(sp[-1].i);
       --sp;
       ip += 4+sizeof(void *);
@@ -476,7 +476,7 @@ PR_VMBN_SWITCH(ReadU8(ip+1)) {
     }
   PR_VMBN_CASE(OPC_Builtin_SetCvarFloat)
     {
-      VCvar *vp = GetAndCacheCVar(ip);
+      GetAndCacheCVarEx();
       if (!vp->IsReadOnly()) vp->SetFloat(sp[-1].f);
       --sp;
       ip += 4+sizeof(void *);
@@ -484,7 +484,7 @@ PR_VMBN_SWITCH(ReadU8(ip+1)) {
     }
   PR_VMBN_CASE(OPC_Builtin_SetCvarStr)
     {
-      VCvar *vp = GetAndCacheCVar(ip);
+      GetAndCacheCVarEx();
       if (!vp->IsReadOnly()) vp->SetStr(*((VStr *)&sp[-1].p));
       ((VStr *)&sp[-1].p)->clear();
       --sp;
@@ -493,7 +493,7 @@ PR_VMBN_SWITCH(ReadU8(ip+1)) {
     }
   PR_VMBN_CASE(OPC_Builtin_SetCvarBool)
     {
-      VCvar *vp = GetAndCacheCVar(ip);
+      GetAndCacheCVarEx();
       if (!vp->IsReadOnly()) vp->SetBool(!!sp[-1].i);
       --sp;
       ip += 4+sizeof(void *);

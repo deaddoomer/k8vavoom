@@ -363,7 +363,7 @@ public:
 //  GetAndCacheCVar
 //
 //==========================================================================
-static inline VCvar *GetAndCacheCVar (vuint8 *ip, bool allownull=false) noexcept {
+static VCvar *GetAndCacheCVar (vuint8 *ip, bool allownull) noexcept {
   VName varname = VName::CreateWithIndexSafe(*(const vint32 *)(ip+2));
   VCvar *vp = *(VCvar **)(ip+2+4);
   if (!vp) {
@@ -389,6 +389,10 @@ static inline VCvar *GetAndCacheCVar (vuint8 *ip, bool allownull=false) noexcept
   }
   return vp;
 }
+
+
+#define GetAndCacheCVarEx()           VCvar *vp = *(VCvar **)(ip+2+4); if (!vp) vp = GetAndCacheCVar(ip, true)
+#define GetAndCacheCVarExAllowNull()  VCvar *vp = *(VCvar **)(ip+2+4); if (!vp) vp = GetAndCacheCVar(ip, false)
 
 
 //==========================================================================
