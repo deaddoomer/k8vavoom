@@ -59,7 +59,7 @@ VVA_OKUNUSED static inline constexpr int BitStreamCalcUIntBits (vuint32 val) noe
 class VBitStreamWriter : public VStream {
   friend class VBitStreamReader;
 protected:
-  TArray<vuint8> Data;
+  TArrayNC<vuint8> Data;
   vint32 Max;
   vint32 Pos;
   bool bAllowExpand;
@@ -142,7 +142,7 @@ public:
 class VBitStreamReader : public VStream {
   friend class VBitStreamWriter;
 protected:
-  TArray<vuint8> Data;
+  TArrayNC<vuint8> Data;
   vint32 Num;
   vint32 Pos;
 

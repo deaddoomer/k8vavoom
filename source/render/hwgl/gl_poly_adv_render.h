@@ -66,7 +66,7 @@ static VVA_OKUNUSED inline int ClassifySurfaceShader (const surface_t *surf) {
 //
 //==========================================================================
 #if 0
-static void CheckListSortValidity (TArray<surface_t *> &list, const char *listname) {
+static void CheckListSortValidity (TArrayNC<surface_t *> &list, const char *listname) {
   const int len = list.length();
   const surface_t *const *sptr = list.ptr();
   // find first valid surface

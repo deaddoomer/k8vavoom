@@ -596,7 +596,7 @@ class VLevel : public VGameObject {
 public:
   // sorry for those globals
   static TMapNC<VName, bool> baddecals;
-  static TArray<VEntity *> poRoughEntityList; // for polyobjects
+  static TArrayNC<VEntity *> poRoughEntityList; // for polyobjects
 
 public:
   // decal floodfill statics
@@ -627,8 +627,8 @@ public:
 public:
   // decal segfill statics
   // "subsector touched" marks for portal spread
-  static TArray<int> dcLineTouchMark;
-  static TArray<int> dcSegTouchMark;
+  static TArrayNC<int> dcLineTouchMark;
+  static TArrayNC<int> dcSegTouchMark;
   static int dcLineTouchCounter; // and for segs too
   //static TMapNC<polyobj_t *, bool> dcPobjTouched;
   //static bool dcPobjTouchedReset;
@@ -1550,8 +1550,8 @@ private:
 
   void PostProcessForDecals ();
 
-  void processSoundSector (int validcount, TArray<VEntity *> &elist, sector_t *sec, int soundblocks, VEntity *soundtarget, float maxdist, const TVec sndorigin);
-  void doRecursiveSound (TArray<VEntity *> &elist, sector_t *sec, VEntity *soundtarget, float maxdist, const TVec sndorigin);
+  void processSoundSector (int validcount, TArrayNC<VEntity *> &elist, sector_t *sec, int soundblocks, VEntity *soundtarget, float maxdist, const TVec sndorigin);
+  void doRecursiveSound (TArrayNC<VEntity *> &elist, sector_t *sec, VEntity *soundtarget, float maxdist, const TVec sndorigin);
 
   void eventAfterLevelLoaded () {
     static VMethodProxy method("AfterLevelLoaded");

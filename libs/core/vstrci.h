@@ -27,7 +27,6 @@
 // this is special class to be used in hash table as case-insensitive string
 class VStrCI : public VStr {
 public:
-  VVA_ALWAYS_INLINE VStrCI (ENoInit) noexcept {}
   VVA_ALWAYS_INLINE VStrCI () noexcept : VStr() {}
   VVA_ALWAYS_INLINE VStrCI (const char *instr) noexcept : VStr(instr) {}
   VVA_ALWAYS_INLINE VStrCI (const VStr &instr) noexcept : VStr(instr) {}

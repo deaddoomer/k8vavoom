@@ -59,7 +59,7 @@ void VLevel::BuildDecalsVVList () {
   // build hashes and lists
   TMapNC<VectorInfo, unsigned> vmap; // value: index in in tarray
   TArray<VectorInfo> va;
-  va.SetLength(NumLines*2);
+  va.setLength(NumLines*2);
   line_t *ld = Lines;
   for (unsigned i = 0; i < (unsigned)NumLines; ++i, ++ld) {
     ld->v1linesCount = ld->v2linesCount = 0;

@@ -37,7 +37,7 @@ enum {
 };
 
 
-TArray<VEntity *> VLevel::poRoughEntityList; // moved to VLevel as static
+TArrayNC<VEntity *> VLevel::poRoughEntityList; // moved to VLevel as static
 
 
 //==========================================================================
@@ -50,7 +50,7 @@ TArray<VEntity *> VLevel::poRoughEntityList; // moved to VLevel as static
 //  pobj bounding box must be valid
 //
 //==========================================================================
-static VVA_OKUNUSED void CollectTouchingThingsRoughBlockmap (TArray<VEntity *> &entList, VLevel *XLevel, const float bbox2d[4], bool clearList=true) {
+static VVA_OKUNUSED void CollectTouchingThingsRoughBlockmap (TArrayNC<VEntity *> &entList, VLevel *XLevel, const float bbox2d[4], bool clearList=true) {
   if (clearList) {
     entList.reset();
     // do it anyway, because we may rely on the fact that `validcount` is incremented
@@ -96,7 +96,7 @@ static VVA_OKUNUSED void CollectTouchingThingsRoughBlockmap (TArray<VEntity *> &
 //  this also checks pobj bounding box, to skip mobjs that cannot be touched
 //
 //==========================================================================
-static VVA_OKUNUSED void CollectPObjTouchingThingsRoughSectors (TArray<VEntity *> &entList, VLevel *XLevel, polyobj_t *po, bool clearList=true) {
+static VVA_OKUNUSED void CollectPObjTouchingThingsRoughSectors (TArrayNC<VEntity *> &entList, VLevel *XLevel, polyobj_t *po, bool clearList=true) {
   if (clearList) {
     entList.reset();
     // do it anyway, because we may rely on the fact that `validcount` is incremented

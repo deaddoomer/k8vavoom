@@ -226,15 +226,15 @@ public:
     // each surface is marked with `currQueueFrame`
     // note that there is no overflow protection, so don't leave
     // the game running one level for weeks ;-)
-    TArray<surface_t *> DrawSurfListSolid; // solid surfaces
-    TArray<surface_t *> DrawSurfListMasked; // masked surfaces
-    TArray<surface_t *> DrawSkyList;
-    TArray<surface_t *> DrawHorizonList;
+    TArrayNC<surface_t *> DrawSurfListSolid; // solid surfaces
+    TArrayNC<surface_t *> DrawSurfListMasked; // masked surfaces
+    TArrayNC<surface_t *> DrawSkyList;
+    TArrayNC<surface_t *> DrawHorizonList;
 
-    TArray<trans_sprite_t> DrawSurfListAlpha; // alpha-blended surfaces
-    TArray<trans_sprite_t> DrawSpriListAlpha; // alpha-blended sprites
-    TArray<trans_sprite_t> DrawSpriteShadowsList; // sprite shadows
-    TArray<trans_sprite_t> DrawSpriteList; // non-translucent sprites
+    TArrayNC<trans_sprite_t> DrawSurfListAlpha; // alpha-blended surfaces
+    TArrayNC<trans_sprite_t> DrawSpriListAlpha; // alpha-blended sprites
+    TArrayNC<trans_sprite_t> DrawSpriteShadowsList; // sprite shadows
+    TArrayNC<trans_sprite_t> DrawSpriteList; // non-translucent sprites
 
     inline void resetAll () {
       DrawSurfListSolid.reset();
@@ -770,15 +770,15 @@ public:
 
   //virtual void DrawSurfaceShadowMap (const surface_t *surf) = 0;
   // may modify lists (sort)
-  virtual void UploadShadowSurfaces (TArray<surface_t *> &solid, TArray<surface_t *> &masked) = 0;
-  virtual void RenderShadowMaps (TArray<surface_t *> &solid, TArray<surface_t *> &masked) = 0;
+  virtual void UploadShadowSurfaces (TArrayNC<surface_t *> &solid, TArrayNC<surface_t *> &masked) = 0;
+  virtual void RenderShadowMaps (TArrayNC<surface_t *> &solid, TArrayNC<surface_t *> &masked) = 0;
 
   virtual void BeginLightPass (const TVec &LightPos, const float Radius, float LightMin, vuint32 Color, const bool aspotLight, const TVec &aconeDir, const float aconeAngle, bool doShadow) = 0;
   virtual void EndLightPass () = 0;
 
   //virtual void DrawSurfaceLight (surface_t *Surf) = 0;
-  virtual void RenderSolidLightSurfaces (TArray<surface_t *> &slist) = 0;
-  virtual void RenderMaskedLightSurfaces (TArray<surface_t *> &slist) = 0;
+  virtual void RenderSolidLightSurfaces (TArrayNC<surface_t *> &slist) = 0;
+  virtual void RenderMaskedLightSurfaces (TArrayNC<surface_t *> &slist) = 0;
 
   virtual void DrawWorldTexturesPass () = 0;
   virtual void DrawWorldFogPass () = 0;

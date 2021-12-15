@@ -371,7 +371,7 @@ void VLevel::FixSelfRefDeepWater () {
   // but don't exit, because of converted doom->udmf maps, for example
   if (!NeedUDMFFix(this)) { GCon->Logf(NAME_Debug, "FixSelfRefDeepWater: skipped due to UDMF map"); return; }
 
-  TArray<vuint8> self_subs;
+  TArrayNC<vuint8> self_subs;
   self_subs.setLength(NumSubsectors);
   memset(self_subs.ptr(), 0, NumSubsectors);
 

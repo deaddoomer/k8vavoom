@@ -194,7 +194,7 @@ void VMeshModel::Load_MD2 (const vuint8 *Data, int DataSize) {
   //k8: this tried to collapse same vertices, but meh
   TArray<TVertMap> VertMap;
   TArray<VTempEdge> Edges;
-  this->Tris.SetNum(pmodel->get_numtris());
+  this->Tris.setLength(pmodel->get_numtris());
   const MD2Triangle *ptri = (const MD2Triangle *)((const vuint8 *)pmodel+pmodel->get_ofstris());
   for (unsigned i = 0; i < pmodel->get_numtris(); ++i) {
     for (unsigned j = 0; j < 3; ++j) {
@@ -209,7 +209,7 @@ void VMeshModel::Load_MD2 (const vuint8 *Data, int DataSize) {
   }
 
   // calculate remapped ST verts
-  this->STVerts.SetNum(VertMap.length());
+  this->STVerts.setLength(VertMap.length());
   for (int i = 0; i < VertMap.length(); ++i) {
     this->STVerts[i].S = (float)pstverts[VertMap[i].STIndex].get_s()/(float)pmodel->get_skinwidth();
     this->STVerts[i].T = (float)pstverts[VertMap[i].STIndex].get_t()/(float)pmodel->get_skinheight();
@@ -226,10 +226,10 @@ void VMeshModel::Load_MD2 (const vuint8 *Data, int DataSize) {
     if (pmodel->get_numtris()) memset(validTri.ptr(), 0, pmodel->get_numtris());
   }
 
-  this->Frames.SetNum(pmodel->get_numframes());
-  this->AllVerts.SetNum(pmodel->get_numframes()*VertMap.length());
-  this->AllNormals.SetNum(pmodel->get_numframes()*VertMap.length());
-  this->AllPlanes.SetNum(pmodel->get_numframes()*pmodel->get_numtris());
+  this->Frames.setLength(pmodel->get_numframes());
+  this->AllVerts.setLength(pmodel->get_numframes()*VertMap.length());
+  this->AllNormals.setLength(pmodel->get_numframes()*VertMap.length());
+  this->AllPlanes.setLength(pmodel->get_numframes()*pmodel->get_numtris());
   const MD2Frame *pframe = (const MD2Frame *)((const vuint8 *)pmodel+pmodel->get_ofsframes());
 
   int triIgnored = 0;
@@ -320,7 +320,7 @@ void VMeshModel::Load_MD2 (const vuint8 *Data, int DataSize) {
         GCon->Logf(NAME_Warning, "Alias model '%s' has %d degenerate triangles out of %u! model rebuilt.", *this->Name, triIgnored, pmodel->get_numtris());
       }
       // rebuild edges
-      this->Edges.SetNum(0);
+      this->Edges.setLength(0);
       for (unsigned i = 0; i < pmodel->get_numtris(); ++i) {
         for (unsigned j = 0; j < 3; ++j) {
           //AddEdge(Edges, this->Tris[i].VertIndex[j], ptri[i].get_vertindex(j), this->Tris[i].VertIndex[(j+1)%3], ptri[i].get_vertindex((j+1)%3), i);

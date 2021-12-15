@@ -131,7 +131,7 @@ enum {
 class VSavedMap {
 public:
   vuint8 Compressed;
-  TArray<vuint8> Data;
+  TArrayNC<vuint8> Data;
   VName Name;
   vint32 DecompressedSize;
 };
@@ -372,7 +372,7 @@ public:
 
   VSaveWriterStream (VStream *InStream) : Stream(InStream) {
     bLoading = false;
-    NamesMap.SetNum(VName::GetNumNames());
+    NamesMap.setLength(VName::GetNumNames());
     for (int i = 0; i < VName::GetNumNames(); ++i) NamesMap[i] = -1;
   }
 
@@ -1056,7 +1056,7 @@ bool VSaveSlot::LoadSlot (int Slot) {
     vint32 DataLen;
     *Strm << TmpName << Map->Compressed << STRM_INDEX(Map->DecompressedSize) << STRM_INDEX(DataLen);
     Map->Name = *TmpName;
-    Map->Data.SetNum(DataLen);
+    Map->Data.setLength(DataLen);
     Strm->Serialise(Map->Data.Ptr(), Map->Data.length());
   }
 
@@ -1416,7 +1416,7 @@ static void UnarchiveNames (VSaveLoaderStream *Loader) {
   Loader->Seek(NamesOffset);
   vint32 Count;
   *Loader << STRM_INDEX(Count);
-  Loader->NameRemap.SetNum(Count);
+  Loader->NameRemap.setLength(Count);
   for (int i = 0; i < Count; ++i) {
     /*
     VNameEntry E;
@@ -1751,7 +1751,7 @@ static void SV_SaveMap (bool savePlayers) {
   // close the output file
   Saver->Close();
 
-  TArray<vuint8> &Buf = InStrm->GetArray();
+  TArrayNC<vuint8> &Buf = InStrm->GetArray();
 
   VSavedMap *Map = BaseSlot.FindMap(GLevel->MapName);
   if (!Map) {
@@ -1992,14 +1992,14 @@ static bool SV_LoadMap (VName MapName, bool allowCheckpoints, bool hubTeleport) 
   vassert(Map);
 
   // decompress map data
-  TArray<vuint8> DecompressedData;
+  TArrayNC<vuint8> DecompressedData;
   if (!Map->Compressed) {
     DecompressedData.setLength(Map->Data.length());
     if (Map->Data.length()) memcpy(DecompressedData.ptr(), Map->Data.ptr(), Map->Data.length());
   } else {
     VArrayStream *ArrStrm = new VArrayStream("<savemap:mapdata>", Map->Data);
     /*VZLibStreamReader*/VStream *ZipStrm = new VZLibStreamReader(ArrStrm, VZLibStreamReader::UNKNOWN_SIZE, Map->DecompressedSize);
-    DecompressedData.SetNum(Map->DecompressedSize);
+    DecompressedData.setLength(Map->DecompressedSize);
     ZipStrm->Serialise(DecompressedData.Ptr(), DecompressedData.length());
     const bool wasErr = ZipStrm->IsError();
     VStream::Destroy(ZipStrm);

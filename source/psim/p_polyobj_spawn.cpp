@@ -120,7 +120,7 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
   po->startSpot.z = 0;
 
   // find either "explicit" or "line start" special for this polyobject
-  TArray<line_t *> explines; // the first item is "explicit line" if `lstart` is `nullptr`
+  TArrayNC<line_t *> explines; // the first item is "explicit line" if `lstart` is `nullptr`
   line_t *lstart = nullptr; // if this is set, this is "line start"
 
   for (auto &&itline : allLines()) {

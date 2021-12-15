@@ -685,7 +685,7 @@ void VLevel::BuildNodesAJ () {
 
       RejectMatrixSize = xms->TotalSize();
       if (RejectMatrixSize) {
-        TArray<vuint8> &arr = xms->GetArray();
+        TArrayNC<vuint8> &arr = xms->GetArray();
         RejectMatrix = new vuint8[RejectMatrixSize];
         if (RejectMatrixSize) memcpy(RejectMatrix, arr.ptr(), RejectMatrixSize);
         // check if it's an all-zeroes lump, in which case it's useless and can be discarded

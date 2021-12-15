@@ -602,7 +602,7 @@ VStr VCommand::GetAutoComplete (VStr prefix) {
         TArray<VStr> newlist;
         newlist.setLength(AutoCompleteTable.length());
         for (int f = 0; f < AutoCompleteTable.length(); ++f) newlist[f] = AutoCompleteTable[f];
-        AutoCompleteTable.setLength(otbllen, false); // don't resize
+        AutoCompleteTable.setLength<false>(otbllen); // don't resize
         smsort_r(newlist.ptr(), newlist.length(), sizeof(VStr), &sortCmpVStrCI, nullptr);
         return AutoCompleteFromList(prefix, newlist);
       }

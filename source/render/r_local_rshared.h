@@ -79,7 +79,7 @@ public:
     float coneAngle;
     // all subsectors touched by this static light
     // this is used to trigger static lightmap updates
-    TArray<subsector_t *> touchedSubs;
+    TArrayNC<subsector_t *> touchedSubs;
     TMapNC<surface_t *, bool> litSurfaces; // used in lightmapped renderer only
     unsigned litSurfacesValidFrame; // use `updateWorldFrame` here
     unsigned invalidateFrame; // to avoid double-processing lights; using `currDLightFrame`
@@ -154,9 +154,9 @@ protected:
 
   // world render variables
   VViewClipper ViewClip;
-  TArray<world_surf_t> WorldSurfs;
-  TArray<VPortal *> Portals;
-  TArray<VSky *> SideSkies;
+  TArrayNC<world_surf_t> WorldSurfs;
+  TArrayNC<VPortal *> Portals;
+  TArrayNC<VSky *> SideSkies;
 
   sec_plane_t sky_plane;
   float skyheight;
@@ -210,10 +210,10 @@ protected:
   //vuint32 litSurfacesValidFrame; // used in lightmapper renderer, to check if collected lit surfaces are valid
 
   // those arrays are filled in `BuildVisibleObjectsList()`
-  TArray<VEntity *> visibleObjects;
-  TArray<VEntity *> visibleAliasModels;
-  TArray<VEntity *> visibleSprites;
-  TArray<VEntity *> allShadowModelObjects; // used in advrender
+  TArrayNC<VEntity *> visibleObjects;
+  TArrayNC<VEntity *> visibleAliasModels;
+  TArrayNC<VEntity *> visibleSprites;
+  TArrayNC<VEntity *> allShadowModelObjects; // used in advrender
   bool useInCurrLightAsLight; // use `mobjsInCurrLightModels()` list to render models in light?
 
   TArray<int> renderedSectors; // sector numbers
@@ -260,7 +260,7 @@ protected:
   TVec prevChaseCamPos;
 
   // automap
-  TArray<sec_surface_t *> amSurfList;
+  TArrayNC<sec_surface_t *> amSurfList;
   TArray<TVec> amTmpVerts;
   bool amDoFloors;
   VTexture *amSkyTex;
@@ -268,8 +268,8 @@ protected:
   float amX, amY, amX2, amY2;
 
   // temp array for `FixSegSurfaceTJunctions()`
-  TArray<seg_t *> adjSegs;
-  TArray<subsector_t *> adjSubs;
+  TArrayNC<seg_t *> adjSegs;
+  TArrayNC<subsector_t *> adjSubs;
 
 public:
   inline bool AM_isBBox3DVisible (const float bbox3d[6]) const noexcept {
@@ -684,7 +684,7 @@ public:
 
 protected:
   // used in `RenderSubRegions()`
-  TArray<subregion_t *> sortedRegs;
+  TArrayNC<subregion_t *> sortedRegs;
 
 public:
   void DrawSurfaces (subsector_t *sub, sec_region_t *secregion, seg_t *seg, surface_t *InSurfs,

@@ -209,8 +209,8 @@ bool W_IsUserWadLump (int lump);
 
 void W_ReadFromLump (int lump, void *dest, int pos, int size);
 VStr W_LoadTextLump (VName name);
-void W_LoadLumpIntoArray (VName Lump, TArray<vuint8>& Array);
-void W_LoadLumpIntoArrayIdx (int Lump, TArray<vuint8>& Array);
+void W_LoadLumpIntoArray (VName Lump, TArrayNC<vuint8>& Array);
+void W_LoadLumpIntoArrayIdx (int Lump, TArrayNC<vuint8>& Array);
 VStream *W_CreateLumpReaderNum (int lump);
 VStream *W_CreateLumpReaderName (VName Name, EWadNamespace NS = WADNS_Global);
 

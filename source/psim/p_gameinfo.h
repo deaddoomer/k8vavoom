@@ -158,7 +158,7 @@ struct tmtrace_t {
 
   // keep track of special lines as they are hit,
   // but don't process them until the move is proven valid
-  TArray<line_t *> SpecHit;
+  TArrayNC<line_t *> SpecHit;
 
   VEntity *BlockingMobj;
   // any blocking line (including passable two-sided!); only has any sense if trace returned `false`

@@ -32,7 +32,6 @@ public:
   float roll; // around screen center
 
   VVA_ALWAYS_INLINE TAVec () noexcept {}
-  VVA_ALWAYS_INLINE TAVec (ENoInit) noexcept {}
   //nope;TAVec () noexcept : pitch(0.0f), yaw(0.0f), roll(0.0f) {}
   VVA_ALWAYS_INLINE TAVec (float APitch, float AYaw, float ARoll=0.0f) noexcept : pitch(APitch), yaw(AYaw), roll(ARoll) {}
   //VVA_ALWAYS_INLINE TAVec (const TAVec &other) noexcept { memcpy((void *)this, (const void *)&other, sizeof(TAVec)); }

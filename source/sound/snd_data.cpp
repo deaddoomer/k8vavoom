@@ -134,7 +134,7 @@ void VSampleLoader::LoadFromAudioCodec (sfxinfo_t &Sfx, VAudioCodec *Codec) {
     int SamplesDecoded = Codec->Decode(buf, MAX_FRAMES);
     if (SamplesDecoded > 0) {
       int oldlen = Data.length();
-      Data.SetNumWithReserve(oldlen+SamplesDecoded);
+      Data.setLengthReserve(oldlen+SamplesDecoded);
       // downmix stereo to mono
       const vint16 *src = buf;
       vint16 *dst = ((vint16 *)Data.Ptr())+oldlen;
@@ -1446,7 +1446,7 @@ bool VSoundManager::LoadSoundInternal (int sound_id) {
   const int strmsize = Strm->TotalSize();
   if (strmsize < 1024*1024*32) {
     VMemoryStream *ms = new VMemoryStream(Strm->GetName());
-    TArray<vuint8> &arr = ms->GetArray();
+    TArrayNC<vuint8> &arr = ms->GetArray();
     arr.setLength(strmsize);
     Strm->Serialise(arr.ptr(), strmsize);
     const bool err = Strm->IsError();

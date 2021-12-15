@@ -51,8 +51,8 @@ VCvarI r_limit_blood_spots_leave("r_limit_blood_spots", "64", "Leave no more tha
 
 //FIXME: sorry for this static
 // this is used to add 3d pobj sectors to list without scanning it second time
-static TArray<sector_t *> linkAdditionalSectors;
-static TArray<VEntity *> bspotList;
+static TArrayNC<sector_t *> linkAdditionalSectors;
+static TArrayNC<VEntity *> bspotList;
 
 
 //==========================================================================

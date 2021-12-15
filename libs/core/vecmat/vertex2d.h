@@ -32,7 +32,6 @@ private:
 
 public:
   inline Vertex2DInfo () noexcept { memset(xy, 0, sizeof(xy)); index = 0; }
-  inline Vertex2DInfo (ENoInit) noexcept {}
   inline Vertex2DInfo (const TVec &v, const int aindex) noexcept {
     xy[0] = v.x;
     xy[1] = v.y;

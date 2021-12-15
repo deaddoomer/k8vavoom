@@ -300,7 +300,7 @@ IMPLEMENT_FREE_FUNCTION(VObject, R_GetGamePalette) {
   TArray<VColorRGBA> *pal256;
   vobjGetParam(pal256);
   if (pal256) {
-    if (pal256->length() != 256) pal256->SetLength(256);
+    if (pal256->length() != 256) pal256->setLength(256);
     R_GetGamePalette(pal256->ptr());
   }
 }
@@ -312,7 +312,7 @@ IMPLEMENT_FREE_FUNCTION(VObject, R_GetTranslatedPalette) {
   TArray<VColorRGBA> *pal256;
   vobjGetParam(transnum, pal256);
   if (pal256) {
-    if (pal256->length() != 256) pal256->SetLength(256);
+    if (pal256->length() != 256) pal256->setLength(256);
     R_GetTranslatedPalette(transnum, pal256->ptr());
   }
 }
@@ -442,7 +442,7 @@ IMPLEMENT_FREE_FUNCTION(VObject, IsAutoloadingMapFromCLI) {
 }
 
 IMPLEMENT_FREE_FUNCTION(VObject, LoadBinaryLump) {
-  P_GET_PTR(TArray<vuint8>, Array);
+  P_GET_PTR(TArrayNC<vuint8>, Array);
   P_GET_NAME(LumpName);
   W_LoadLumpIntoArray(LumpName, *Array);
 }

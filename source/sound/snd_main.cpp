@@ -1561,7 +1561,7 @@ VAudioCodec *VAudio::LoadSongInternal (const char *Song, bool wasPlaying, bool f
   const int strmsize = Strm->TotalSize();
   if (strmsize < 1024*1024*32) {
     VMemoryStream *ms = new VMemoryStream(Strm->GetName());
-    TArray<vuint8> &arr = ms->GetArray();
+    TArrayNC<vuint8> &arr = ms->GetArray();
     arr.setLength(strmsize);
     Strm->Serialise(arr.ptr(), strmsize);
     const bool err = Strm->IsError();

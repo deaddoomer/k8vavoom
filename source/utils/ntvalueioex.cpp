@@ -298,7 +298,7 @@ void VNTValueIOEx::io (VName vname, VTextureID &v) {
     VMemoryStream mst;
     mst.BeginWrite();
     v.Serialise(mst);
-    TArray<vuint8> &arr = mst.GetArray();
+    TArrayNC<vuint8> &arr = mst.GetArray();
     //GCon->Logf(NAME_Debug, "WRBLOB: size=%d", arr.length());
     writeBlob(VName(va("%s.blobv0", *transformName(vname))), arr.ptr(), arr.length());
     //VStr s = "   "; for (int f = 0; f < arr.length(); ++f) s += va(" %02x", arr[f]); GCon->Logf(NAME_Debug, "%s", *s);

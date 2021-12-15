@@ -377,7 +377,7 @@ private:
   float texturedPolyLastAlpha;
   TVec texturedPolyLastLight;
   // list of surfaces with masked textures, for z-prefill
-  TArray<surface_t *> zfillMasked;
+  TArrayNC<surface_t *> zfillMasked;
 
   bool canIntoBloomFX;
 
@@ -616,15 +616,15 @@ public:
 
   //void DrawSurfaceShadowMap (const surface_t *surf);
   // may modify lists (sort)
-  virtual void UploadShadowSurfaces (TArray<surface_t *> &solid, TArray<surface_t *> &masked) override;
-  virtual void RenderShadowMaps (TArray<surface_t *> &solid, TArray<surface_t *> &masked) override;
+  virtual void UploadShadowSurfaces (TArrayNC<surface_t *> &solid, TArrayNC<surface_t *> &masked) override;
+  virtual void RenderShadowMaps (TArrayNC<surface_t *> &solid, TArrayNC<surface_t *> &masked) override;
 
   virtual void BeginLightPass (const TVec &LightPos, float Radius, float LightMin, vuint32 Color, const bool aspotLight, const TVec &aconeDir, const float aconeAngle, bool doShadow) override;
   virtual void EndLightPass () override;
 
   void DrawSurfaceLight (const surface_t *surf);
-  virtual void RenderSolidLightSurfaces (TArray<surface_t *> &slist) override;
-  virtual void RenderMaskedLightSurfaces (TArray<surface_t *> &slist) override;
+  virtual void RenderSolidLightSurfaces (TArrayNC<surface_t *> &slist) override;
+  virtual void RenderMaskedLightSurfaces (TArrayNC<surface_t *> &slist) override;
 
   virtual void DrawWorldTexturesPass () override;
   virtual void DrawWorldFogPass () override;
@@ -1165,7 +1165,7 @@ protected:
       if (count > oldlen) {
         count += (extraReserve >= 0 ? extraReserve : 42);
         maxElems = count;
-        data.setLength(count, false); // don't resize
+        data.setLengthNoResize(count); // don't resize
         if (vboId && vboSize < count) { mOwner->p_glDeleteBuffersARB(1, &vboId); vboId = 0; vboSize = 0; }
       }
       usedElems = 0;

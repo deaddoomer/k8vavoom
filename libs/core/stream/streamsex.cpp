@@ -489,7 +489,7 @@ VMemoryStream::VMemoryStream (VStr strmName, const void *InData, int InLen, bool
   if (InLen < 0) InLen = 0;
   bLoading = true;
   if (!takeOwnership) {
-    Array.SetNum(InLen);
+    Array.setLength(InLen);
     if (InLen) memcpy(Array.Ptr(), InData, InLen);
   } else {
     Array.SetPointerData((void *)InData, InLen);
@@ -503,7 +503,7 @@ VMemoryStream::VMemoryStream (VStr strmName, const void *InData, int InLen, bool
 //  VMemoryStream::VMemoryStream
 //
 //==========================================================================
-VMemoryStream::VMemoryStream (VStr strmName, const TArray<vuint8> &InArray)
+VMemoryStream::VMemoryStream (VStr strmName, const TArrayNC<vuint8> &InArray)
   : Pos(0)
   , StreamName(strmName)
 {
@@ -586,7 +586,7 @@ void VMemoryStream::Serialise (void *Data, int Len) {
       Pos += Len;
     }
   } else {
-    if (Pos+Len > alen) Array.SetNumWithReserve(Pos+Len);
+    if (Pos+Len > alen) Array.setLengthReserve(Pos+Len);
     memcpy(&Array[Pos], Data, Len);
     Pos += Len;
   }
@@ -647,7 +647,7 @@ VStr VMemoryStream::GetName () const {
 //  VArrayStream::VArrayStream
 //
 //==========================================================================
-VArrayStream::VArrayStream (VStr strmName, TArray<vuint8>& InArray)
+VArrayStream::VArrayStream (VStr strmName, TArrayNC<vuint8>& InArray)
   : Array(InArray)
   , Pos(0)
   , StreamName(strmName.cloneUniqueMT())
@@ -690,7 +690,7 @@ void VArrayStream::Serialise (void *Data, int Len) {
       Pos += Len;
     }
   } else {
-    if (Pos+Len > alen) Array.SetNumWithReserve(Pos+Len);
+    if (Pos+Len > alen) Array.setLengthReserve(Pos+Len);
     memcpy(&Array[Pos], Data, Len);
     Pos += Len;
   }
@@ -1607,7 +1607,7 @@ void VCheckedStream::openStreamAndCopy (VStream *st, bool doCopy) {
   } else {
     // load to memory stream
     VMemoryStream *ms = new VMemoryStream(st->GetName());
-    TArray<vuint8> &arr = ms->GetArray();
+    TArrayNC<vuint8> &arr = ms->GetArray();
     arr.setLength(ssize);
     st->Serialise(arr.ptr(), ssize);
     const bool err = st->IsError();

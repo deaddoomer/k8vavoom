@@ -1071,7 +1071,7 @@ bool VEntity::HasSpecialStates (VName StateName) {
 //  VEntity::GetStateEffects
 //
 //==========================================================================
-void VEntity::GetStateEffects (TArray<VLightEffectDef *> &Lights, TArray<VParticleEffectDef *> &Part) const {
+void VEntity::GetStateEffects (TArrayNC<VLightEffectDef *> &Lights, TArrayNC<VParticleEffectDef *> &Part) const {
   // clear arrays
   Lights.resetNoDtor();
   Part.resetNoDtor();
@@ -1511,8 +1511,8 @@ IMPLEMENT_FUNCTION(VEntity, HasSpecialStates) {
 }
 
 IMPLEMENT_FUNCTION(VEntity, GetStateEffects) {
-  P_GET_PTR(TArray<VParticleEffectDef *>, Part);
-  P_GET_PTR(TArray<VLightEffectDef *>, Lights);
+  P_GET_PTR(TArrayNC<VParticleEffectDef *>, Part);
+  P_GET_PTR(TArrayNC<VLightEffectDef *>, Lights);
   P_GET_SELF;
   Self->GetStateEffects(*Lights, *Part);
 }

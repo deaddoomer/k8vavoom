@@ -519,7 +519,7 @@ void VOpenGLDrawer::vboSMapAppendSurfaceTex (surface_t *surf, bool flip) {
 //  VOpenGLDrawer::UploadShadowSurfaces
 //
 //==========================================================================
-void VOpenGLDrawer::UploadShadowSurfaces (TArray<surface_t *> &solid, TArray<surface_t *> &masked) {
+void VOpenGLDrawer::UploadShadowSurfaces (TArrayNC<surface_t *> &solid, TArrayNC<surface_t *> &masked) {
   int totalSurfs = solid.length()+masked.length();
   if (totalSurfs == 0) return;
 
@@ -589,7 +589,7 @@ void VOpenGLDrawer::UploadShadowSurfaces (TArray<surface_t *> &solid, TArray<sur
 //  VOpenGLDrawer::RenderShadowMaps
 //
 //==========================================================================
-void VOpenGLDrawer::RenderShadowMaps (TArray<surface_t *> &solid, TArray<surface_t *> &masked) {
+void VOpenGLDrawer::RenderShadowMaps (TArrayNC<surface_t *> &solid, TArrayNC<surface_t *> &masked) {
   if (solid.length() == 0 && masked.length() == 0) return;
   //for (auto &&surf : slist) DrawSurfaceShadowMap(surf);
 

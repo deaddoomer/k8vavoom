@@ -473,7 +473,7 @@ bool PcfFont::load (VStream &fl) {
       readInt(vuint32, count);
       if (count == 0) return false;
       if (count > 0x00ffffff) return false;
-      gboffsets.SetNum((int)count);
+      gboffsets.setLength((int)count);
       for (int oidx = 0; oidx < (int)count; ++oidx) {
         vuint32 v;
         readInt(vuint32, v);
@@ -505,7 +505,7 @@ bool PcfFont::load (VStream &fl) {
   if (!bitmaps) return false;
 
   // load encoding table, fill glyph table
-  glyphs.SetNum(gboffsets.length());
+  glyphs.setLength(gboffsets.length());
   //immutable int bytesPerItem = 1<<(bmpfmt&3);
   for (int idx = 0; idx < glyphs.length(); ++idx) {
     Glyph &gl = glyphs[idx];

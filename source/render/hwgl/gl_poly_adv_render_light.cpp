@@ -271,7 +271,7 @@ void VOpenGLDrawer::DrawSurfaceLight (const surface_t *surf) {
 //  VOpenGLDrawer::RenderSolidLightSurfaces
 //
 //==========================================================================
-void VOpenGLDrawer::RenderSolidLightSurfaces (TArray<surface_t *> &slist) {
+void VOpenGLDrawer::RenderSolidLightSurfaces (TArrayNC<surface_t *> &slist) {
   for (auto &&surf : slist) DrawSurfaceLight(surf);
 }
 
@@ -281,7 +281,7 @@ void VOpenGLDrawer::RenderSolidLightSurfaces (TArray<surface_t *> &slist) {
 //  VOpenGLDrawer::RenderMaskedLightSurfaces
 //
 //==========================================================================
-void VOpenGLDrawer::RenderMaskedLightSurfaces (TArray<surface_t *> &slist) {
+void VOpenGLDrawer::RenderMaskedLightSurfaces (TArrayNC<surface_t *> &slist) {
   xxsort_r(slist.ptr(), slist.length(), sizeof(surface_t *), &glAdvCompareTextureIdOnly, nullptr);
   for (auto &&surf : slist) DrawSurfaceLight(surf);
 }

@@ -561,10 +561,10 @@ void WriteJPG (VStr FileName, const void *Data, int Width, int Height, int Bpp, 
     jpeg_start_compress(&cinfo, TRUE);
     TArray<JSAMPROW> RowPointers;
     TArray<vuint8> TmpData;
-    RowPointers.SetNum(Height);
+    RowPointers.setLength(Height);
     if (Bpp == 8) {
       // convert image to 24 bit
-      TmpData.SetNum(Width*Height*3);
+      TmpData.setLength(Width*Height*3);
       for (int i = 0; i < Width*Height; ++i) {
         int Col = ((vuint8 *)Data)[i];
         TmpData[i*3] = r_palette[Col].r;

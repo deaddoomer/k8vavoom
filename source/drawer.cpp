@@ -561,7 +561,7 @@ void VRenderLevelDrawer::PushDrawLists () {
 void VRenderLevelDrawer::PopDrawLists () {
   vensure(DrawListStack.length() != 0);
   GetCurrentDLS().resetAll();
-  DrawListStack.setLength(DrawListStack.length()-1, false); // don't resize
+  DrawListStack.setLength<false>(DrawListStack.length()-1); // don't resize
   vassert(DrawListStack.length() > 0);
 }
 

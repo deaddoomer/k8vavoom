@@ -184,7 +184,6 @@ struct VCustomKeyInfo_NamedValue {
   VVA_ALWAYS_INLINE VCustomKeyInfo_NamedValue () noexcept : name(NAME_None), id(0) {}
   VVA_ALWAYS_INLINE VCustomKeyInfo_NamedValue (const VCustomKeyInfo_NamedValue &other) noexcept : name(other.name), id(other.id) {}
   VVA_ALWAYS_INLINE VCustomKeyInfo_NamedValue (VName aname, int32_t aid) noexcept : name(aname), id(aid) {}
-  VVA_ALWAYS_INLINE VCustomKeyInfo_NamedValue (ENoInit) noexcept {}
 
   VVA_ALWAYS_INLINE void operator = (const VCustomKeyInfo_NamedValue &other) noexcept { name = other.name; id = other.id; }
 

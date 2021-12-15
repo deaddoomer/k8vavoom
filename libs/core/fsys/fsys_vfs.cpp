@@ -1207,11 +1207,11 @@ VStr W_LoadTextLump (VName name) {
 //  W_LoadLumpIntoArrayIdx
 //
 //==========================================================================
-void W_LoadLumpIntoArrayIdx (int Lump, TArray<vuint8> &Array) {
+void W_LoadLumpIntoArrayIdx (int Lump, TArrayNC<vuint8> &Array) {
   VStream *Strm = W_CreateLumpReaderNum(Lump);
   if (!Strm) Sys_Error("error reading lump with index %d", Lump);
   vassert(Strm);
-  Array.SetNum(Strm->TotalSize());
+  Array.setLength(Strm->TotalSize());
   Strm->Serialise(Array.Ptr(), Strm->TotalSize());
   if (Strm->IsError()) { VStream::Destroy(Strm); Sys_Error("error reading lump '%s'", *W_FullLumpName(Lump)); }
   VStream::Destroy(Strm);
@@ -1223,12 +1223,12 @@ void W_LoadLumpIntoArrayIdx (int Lump, TArray<vuint8> &Array) {
 //  W_LoadLumpIntoArray
 //
 //==========================================================================
-void W_LoadLumpIntoArray (VName LumpName, TArray<vuint8> &Array) {
+void W_LoadLumpIntoArray (VName LumpName, TArrayNC<vuint8> &Array) {
   int Lump = W_CheckNumForFileName(*LumpName);
   if (Lump < 0) Lump = W_GetNumForName(LumpName);
   VStream *Strm = W_CreateLumpReaderNum(Lump);
   vassert(Strm);
-  Array.SetNum(Strm->TotalSize());
+  Array.setLength(Strm->TotalSize());
   Strm->Serialise(Array.Ptr(), Strm->TotalSize());
   if (Strm->IsError()) { VStream::Destroy(Strm); Sys_Error("error reading lump '%s'", *W_FullLumpName(Lump)); }
   VStream::Destroy(Strm);

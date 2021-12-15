@@ -1119,7 +1119,7 @@ void Host_SaveConfiguration () {
   VStream *oldcst = CreateDiskStreamRead(cff);
   if (oldcst) {
     if (oldcst->TotalSize() == cst.TotalSize()) {
-      TArray<vuint8> olddata;
+      TArrayNC<vuint8> olddata;
       olddata.setLength(cst.TotalSize());
       oldcst->Serialise(olddata.ptr(), olddata.length());
       if (memcmp(olddata.ptr(), cst.GetArray().ptr(), olddata.length()) == 0) {

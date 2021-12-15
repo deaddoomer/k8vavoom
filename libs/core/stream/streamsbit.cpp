@@ -44,7 +44,7 @@ VBitStreamWriter::VBitStreamWriter (vint32 AMax, bool allowExpand)
 {
   bLoading = false;
   int sz = (AMax+7)/8+(allowExpand ? 256 : 0);
-  Data.SetNum(sz);
+  Data.setLength(sz);
   if (sz > 0) memset(Data.Ptr(), 0, sz);
 }
 
@@ -70,7 +70,7 @@ void VBitStreamWriter::Reinit (vint32 AMax, bool allowExpand) {
   bAllowExpand = allowExpand;
   bLoading = false;
   int sz = (AMax+7)/8+(allowExpand ? 256 : 0);
-  Data.SetNum(sz);
+  Data.setLength(sz);
   if (sz > 0) memset(Data.Ptr(), 0, sz);
   bError = false;
 }
@@ -117,7 +117,7 @@ void VBitStreamWriter::CopyFromWS (const VBitStreamWriter &strm) noexcept {
 bool VBitStreamWriter::Expand () noexcept {
   if (!bAllowExpand) return false;
   auto oldSize = Data.length();
-  Data.SetNum(oldSize+1024);
+  Data.setLength(oldSize+1024);
   memset(((vuint8 *)(Data.Ptr()))+oldSize, 0, Data.length()-oldSize);
   return true;
 }
@@ -286,7 +286,7 @@ VBitStreamReader::VBitStreamReader (vuint8 *Src, vint32 Length)
   , Pos(0)
 {
   bLoading = true;
-  Data.SetNum((Length+7)>>3);
+  Data.setLength((Length+7)>>3);
   if (Src) memcpy(Data.Ptr(), Src, (Length+7)>>3);
 }
 
@@ -325,7 +325,7 @@ void VBitStreamReader::SetData (VBitStreamReader &Src, int Length) noexcept {
   if (Src.IsError() || Src.GetNumBits()-Src.Pos < Length) { bError = true; return; }
   bError = false;
   Pos = 0;
-  Data.SetNum((Length+7)>>3);
+  Data.setLength((Length+7)>>3);
   if (Data.length()) memset(Data.ptr(), 0, Data.length());
   Num = Length;
   if (Length) Src.SerialiseBits(Data.ptr(), Length);

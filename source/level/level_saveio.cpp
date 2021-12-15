@@ -844,7 +844,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
   {
     int NumCamTex = CameraTextures.length();
     Strm << STRM_INDEX(NumCamTex);
-    if (Strm.IsLoading()) CameraTextures.SetNum(NumCamTex);
+    if (Strm.IsLoading()) CameraTextures.setLength(NumCamTex);
     for (i = 0; i < NumCamTex; ++i) {
       VNTValueIOEx vio(&Strm);
       vio.io(VName("Camera"), CameraTextures[i].Camera);
@@ -857,7 +857,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
   {
     int NumTrans = Translations.length();
     Strm << STRM_INDEX(NumTrans);
-    if (Strm.IsLoading()) Translations.SetNum(NumTrans);
+    if (Strm.IsLoading()) Translations.setLength(NumTrans);
     for (i = 0; i < NumTrans; ++i) {
       vuint8 Present = !!Translations[i];
       {
@@ -879,7 +879,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
   {
     int NumTrans = BodyQueueTrans.length();
     Strm << STRM_INDEX(NumTrans);
-    if (Strm.IsLoading()) BodyQueueTrans.SetNum(NumTrans);
+    if (Strm.IsLoading()) BodyQueueTrans.setLength(NumTrans);
     for (i = 0; i < NumTrans; ++i) {
       vuint8 Present = !!BodyQueueTrans[i];
       {

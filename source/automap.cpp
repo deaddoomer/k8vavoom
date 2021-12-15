@@ -1497,7 +1497,7 @@ static void AM_UpdateSeen () {
 //==========================================================================
 static void AM_drawWalls () {
   const bool debugPObj = (am_pobj_debug.asInt()&0x01);
-  TArray<polyobj_t *> pobjs;
+  TArrayNC<polyobj_t *> pobjs;
 
   for (auto &&line : GClLevel->allLines()) {
     if (!line.firstseg) continue; // just in case

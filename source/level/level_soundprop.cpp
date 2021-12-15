@@ -57,7 +57,7 @@ static TMapNC<VEntity *, bool> recSoundSectorSeenEnts;
 //  VLevel::processSoundSector
 //
 //==========================================================================
-void VLevel::processSoundSector (int validcount, TArray<VEntity *> &elist, sector_t *sec, int soundblocks, VEntity *soundtarget, float maxdistSq, const TVec sndorigin) {
+void VLevel::processSoundSector (int validcount, TArrayNC<VEntity *> &elist, sector_t *sec, int soundblocks, VEntity *soundtarget, float maxdistSq, const TVec sndorigin) {
   if (!sec || sec->isOriginalPObj()) return;
 
   // `validcount` and other things were already checked in caller
@@ -185,7 +185,7 @@ void VLevel::processSoundSector (int validcount, TArray<VEntity *> &elist, secto
 //  blocking lines cut off traversal.
 //
 //==========================================================================
-void VLevel::doRecursiveSound (TArray<VEntity *> &elist, sector_t *sec, VEntity *soundtarget, float maxdist, const TVec sndorigin) {
+void VLevel::doRecursiveSound (TArrayNC<VEntity *> &elist, sector_t *sec, VEntity *soundtarget, float maxdist, const TVec sndorigin) {
   if (!sec || sec->isOriginalPObj()) return;
   IncrementValidCount();
 
@@ -224,7 +224,7 @@ void VLevel::doRecursiveSound (TArray<VEntity *> &elist, sector_t *sec, VEntity 
 
 //native final void doRecursiveSound (ref array!Entity elist, sector_t *sec, Entity soundtarget, float maxdist, const TVec sndorigin);
 IMPLEMENT_FUNCTION(VLevel, doRecursiveSound) {
-  TArray<VEntity *> *elist;
+  TArrayNC<VEntity *> *elist;
   sector_t *sec;
   VEntity *soundtarget;
   float maxdist;

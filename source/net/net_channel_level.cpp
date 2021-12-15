@@ -1327,7 +1327,7 @@ int VLevelChannel::UpdateTranslation (VMessageOut &/*Msg*/, VBitStreamWriter &st
   strm << STRM_INDEX_U(idx);
 
   strm.WriteUInt((vuint32)Tr->Commands.length());
-  Rep.SetNum(Tr->Commands.length());
+  Rep.setLength(Tr->Commands.length());
   for (int j = 0; j < Tr->Commands.length(); ++j) {
     VTextureTranslation::VTransCmd &C = Tr->Commands[j];
     strm.WriteUInt(C.Type);

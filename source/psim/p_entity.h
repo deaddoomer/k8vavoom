@@ -717,7 +717,7 @@ public:
   VState *FindState (VName StateName, VName SubLabel=NAME_None, bool Exact=false);
   VState *FindStateEx (VStr StateName, bool Exact);
   bool HasSpecialStates (VName);
-  void GetStateEffects (TArray<VLightEffectDef *> &, TArray<VParticleEffectDef *> &) const;
+  void GetStateEffects (TArrayNC<VLightEffectDef *> &, TArrayNC<VParticleEffectDef *> &) const;
   bool HasAnyLightEffects () const;
   bool CallStateChain (VEntity *, VState *);
 

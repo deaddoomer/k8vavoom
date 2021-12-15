@@ -227,7 +227,7 @@ bool VNetObjectsMap::SerialiseName (VStream &Strm, VName &Name) {
       vuint32 Len = 0;
       Strm << STRM_INDEX_U(Len);
       if (Len == 0 || Len > NAME_SIZE) Sys_Error("invalid name length: %u", Len);
-      buf.setLength(Len+1, false);
+      buf.setLength<false>(Len+1);
       Strm.Serialise(buf.ptr(), Len);
       buf[Len] = 0;
       VName NewName(buf.ptr());

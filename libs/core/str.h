@@ -160,7 +160,6 @@ public:
   static int double2str (char *buf, double v) noexcept; // 0-terminated
 
 public:
-  VVA_ALWAYS_INLINE VStr (ENoInit) noexcept {}
   VVA_ALWAYS_INLINE VStr () noexcept : dataptr(nullptr) {}
   VVA_ALWAYS_INLINE VStr (const VStr &instr) noexcept : dataptr(instr.dataptr) { incref(); }
   VVA_ALWAYS_INLINE VStr (const char *instr, int len=-1) noexcept : dataptr(nullptr) { setContent(instr, len); }

@@ -72,7 +72,7 @@ private:
   VLMapCache lmcache;
   // list of all surfaces with lightmaps; used only in `ProcessCachedSurfaces()`
   // surfaces from this list will be put either to lightmap chains, or to normal lists
-  TArray<surface_t *> LMSurfList;
+  TArrayNC<surface_t *> LMSurfList;
   bool nukeLightmapsOnNextFrame;
 
   bool invalidateRelight;

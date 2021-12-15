@@ -33,18 +33,18 @@ private:
   vuint32 CurrLightColor;
   // built in `BuildMobjsInCurrLight()`
   // used in rendering of shadow and light things (only)
-  TArray<VEntity *> mobjsInCurrLightModels;
-  TArray<VEntity *> mobjsInCurrLightSprites;
+  TArrayNC<VEntity *> mobjsInCurrLightModels;
+  TArrayNC<VEntity *> mobjsInCurrLightSprites;
   int LightsRendered;
   int DynLightsRendered;
   // set this to true before calling `RenderLightShadows()` to indicate dynamic light
   bool DynamicLights;
 
   // keep 'em here, so we don't have to traverse BSP several times
-  TArray<surface_t *> shadowSurfacesSolid;
-  TArray<surface_t *> shadowSurfacesMasked;
-  TArray<surface_t *> lightSurfacesSolid;
-  TArray<surface_t *> lightSurfacesMasked;
+  TArrayNC<surface_t *> shadowSurfacesSolid;
+  TArrayNC<surface_t *> shadowSurfacesMasked;
+  TArrayNC<surface_t *> lightSurfacesSolid;
+  TArrayNC<surface_t *> lightSurfacesMasked;
 
   // used to avoid double-checking; sized by NumSectors
   struct FlatSectorShadowInfo {

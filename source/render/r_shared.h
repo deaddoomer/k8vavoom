@@ -762,7 +762,7 @@ class VRenderLevelShared;
 class VPortal {
 public:
   VRenderLevelShared *RLev;
-  TArray<surface_t *> Surfs;
+  TArrayNC<surface_t *> Surfs;
   int Level;
   float bbox3d[6];
   bool needBBox; // default is `true`

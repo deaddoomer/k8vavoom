@@ -31,7 +31,6 @@ public:
 
 public:
   //TClipPlane () : TPlane(E_NoInit) { clipflag = 0; }
-  //TClipPlane (ENoInit) : TPlane(E_NoInit) {}
 
   inline bool isValid () const noexcept { return !!clipflag; }
   inline void invalidate () noexcept { clipflag = 0; }
@@ -52,7 +51,6 @@ public:
   float pixelAspect;
 
 public:
-  //TClipParam (ENoInit) {}
   inline TClipParam () noexcept : width(0), height(0), fov(0.0f), pixelAspect(1.0f) {}
   inline TClipParam (int awidth, int aheight, float afov, float apixelAspect=1.0f) noexcept : width(awidth), height(aheight), fov(afov), pixelAspect(apixelAspect) {}
 
@@ -73,7 +71,6 @@ public:
   TVec vforward, vright, vup;
 
 public:
-  //TFrustumParam (ENoInit) {}
   inline TFrustumParam () noexcept : origin(0.0f, 0.0f, 0.0f), angles(0.0f, 0.0f, 0.0f), vforward(0.0f, 0.0f, 0.0f), vright(0.0f, 0.0f, 0.0f), vup(0.0f, 0.0f, 0.0f) {}
   inline TFrustumParam (const TVec &aorigin, const TAVec &aangles, const TVec &vf, const TVec &vr, const TVec &vu) noexcept : origin(aorigin), angles(aangles), vforward(vf), vright(vr), vup(vu) {}
   inline TFrustumParam (const TVec &aorigin, const TAVec &aangles) noexcept : origin(aorigin), angles(aangles) {
@@ -136,7 +133,6 @@ public:
   float fovx, fovy;
 
 public:
-  //TClipBase (ENoInit) {}
   inline TClipBase () noexcept : fovx(0.0f), fovy(0.0f) {}
   inline TClipBase (int awidth, int aheight, float afov, float apixelAspect=1.0f) noexcept { setupViewport(awidth, aheight, afov, apixelAspect); }
   inline TClipBase (const float afovx, const float afovy) noexcept { setupFromCookedFOVs(afovx, afovy); }
@@ -201,7 +197,6 @@ public:
   unsigned planeCount; // total number of valid planes
 
 public:
-  //TFrustum (ENoInit) {}
   inline TFrustum () noexcept : planeCount(0) { clear(); }
   inline TFrustum (const TClipBase &clipbase, const TFrustumParam &fp, bool createbackplane=true, const float farplanez=0.0f) noexcept : planeCount(0) {
     setup(clipbase, fp, createbackplane, farplanez);

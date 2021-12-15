@@ -117,7 +117,6 @@ public:
 
 public:
   VVA_ALWAYS_INLINE TVec () noexcept {}
-  VVA_ALWAYS_INLINE TVec (ENoInit) noexcept {}
   //nope;TVec () : x(0.0f), y(0.0f), z(0.0f) {}
   VVA_ALWAYS_INLINE TVec (float Ax, float Ay, float Az=0.0f) noexcept : x(Ax), y(Ay), z(Az) {}
   VVA_ALWAYS_INLINE TVec (const float f[3]) noexcept { x = f[0]; y = f[1]; z = f[2]; }

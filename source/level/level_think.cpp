@@ -54,7 +54,7 @@ static VCvarI gm_corpse_limit("gm_corpse_limit", "-1", "Limit number of corpses 
 double worldThinkTimeVM = -1.0;
 double worldThinkTimeDecal = -1.0;
 
-static TArray<VEntity *> corpseQueue;
+static TArrayNC<VEntity *> corpseQueue;
 
 int dbgEntityTickTotal = 0;
 int dbgEntityTickSimple = 0;
@@ -161,7 +161,7 @@ void VLevel::RemoveScriptThinker (VLevelScriptThinker *sth) {
     if (scriptThinkers[scidx] == sth) {
       // remove it
       for (int c = scidx+1; c < sclenOrig; ++c) scriptThinkers[c-1] = scriptThinkers[c];
-      scriptThinkers.setLength(scidx, false); // don't resize
+      scriptThinkers.setLength<false>(scidx); // don't resize
       return;
     }
   }
@@ -398,7 +398,7 @@ void VLevel::RunScriptThinkers (float DeltaTime) {
       ++currIdx;
     }
     //GCon->Logf("  SHRINKING ACS from %d to %d", sclen, firstEmpty);
-    scriptThinkers.setLength(firstEmpty, false); // don't resize
+    scriptThinkers.setLength<false>(firstEmpty); // don't resize
   }
 }
 

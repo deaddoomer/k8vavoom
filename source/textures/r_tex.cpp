@@ -387,7 +387,7 @@ void VTextureManager::ResetMapTextures () {
     MapTextures[f] = nullptr;
   }
   GCon->Logf("TextureManager: %d map textures removed", MapTextures.length());
-  MapTextures.setLength(0, false); // don't resize
+  MapTextures.setLength<false>(0); // don't resize
   rehashTextures();
   R_UpdateSkyFlatNum(); // just in case
 }

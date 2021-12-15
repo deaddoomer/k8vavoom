@@ -96,7 +96,6 @@ public:
 
   // constructors
   inline VName () noexcept : Index(0) {}
-  inline VName (ENoInit) noexcept {}
   inline VName (EName N) noexcept : Index(N) {}
   VName (const char *, ENameFindType=Add) noexcept;
 

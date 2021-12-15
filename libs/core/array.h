@@ -29,7 +29,10 @@
 //**************************************************************************
 //#define VAVOOM_CORELIB_ARRAY_MINIMAL_RESIZE
 
-template<class T> class TArray {
+template<class T, bool usectordtor> class TArrayBase {
+public:
+  typedef TArrayBase<T, usectordtor> MyType;
+
 private:
   // 2d info is from `VScriptArray`
   int ArrNum; // if bit 31 is set, this is 1st dim of 2d array
@@ -37,57 +40,63 @@ private:
   T *ArrData;
 
 public:
-  inline TArray () noexcept : ArrNum(0), ArrSize(0), ArrData(nullptr) {}
-  inline TArray (ENoInit) noexcept {}
-  inline TArray (const TArray<T> &other) noexcept : ArrNum(0), ArrSize(0), ArrData(nullptr) { *this = other; }
+  VVA_ALWAYS_INLINE TArrayBase () noexcept : ArrNum(0), ArrSize(0), ArrData(nullptr) {}
+  // This is a dummy constructor that does nothing. The purpose of this
+  // is so you can create a global TArray in the data segment that gets
+  // used by code before startup without worrying about the constructor
+  // resetting it after it's already been used. You MUST NOT use it for
+  // heap- or stack-allocated TArrays.
+  //VVA_ALWAYS_INLINE TArrayBase (ENoInit) noexcept {}
+  // alas, i cannot remove this
+  VVA_ALWAYS_INLINE TArrayBase (const MyType &other) noexcept : ArrNum(0), ArrSize(0), ArrData(nullptr) { operator=(other); }
 
-  inline ~TArray () noexcept { clear(); }
+  VVA_ALWAYS_INLINE ~TArrayBase () noexcept { clear(); }
 
-  inline int length1D () const noexcept { return (ArrNum >= 0 ? ArrNum : (ArrNum&0x7fffffff)*(ArrSize&0x7fffffff)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE int length1D () const noexcept { return (ArrNum >= 0 ? ArrNum : (ArrNum&0x7fffffff)*(ArrSize&0x7fffffff)); }
 
   // this is from `VScriptArray`
-  inline bool Is2D () const noexcept { return (ArrNum < 0); }
-  inline void Flatten () noexcept { if (Is2D()) { int oldlen = length1D(); ArrSize = ArrNum = oldlen; } }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE bool Is2D () const noexcept { return (ArrNum < 0); }
+  VVA_ALWAYS_INLINE void Flatten () noexcept { if (Is2D()) { int oldlen = length1D(); ArrSize = ArrNum = oldlen; } }
 
-  inline void Clear () noexcept { clear(); }
-
-  inline void clear () noexcept {
+  template<bool AllowDtor=true> inline void clear () noexcept {
     if (ArrData) {
-      Flatten(); // just in case
-      for (int i = 0; i < ArrNum; ++i) ArrData[i].~T();
+      if (AllowDtor && usectordtor) {
+        Flatten(); // just in case
+        for (int i = 0; i < ArrNum; ++i) ArrData[i].~T();
+      }
       Z_Free(ArrData);
     }
     ArrData = nullptr;
     ArrNum = ArrSize = 0;
   }
+  template<bool AllowDtor=true> VVA_ALWAYS_INLINE void Clear () noexcept { return clear<AllowDtor>(); }
 
-  // don't free array itself
-  inline void reset () noexcept {
-    Flatten(); // just in case
-    for (int f = 0; f < ArrNum; ++f) ArrData[f].~T();
+  // doesn't free the array itself
+  template<bool AllowDtor=true> inline void reset () noexcept {
+    if (AllowDtor && usectordtor) {
+      Flatten(); // just in case
+      for (int f = 0; f < ArrNum; ++f) ArrData[f].~T();
+    }
     ArrNum = 0;
   }
 
-  // don't free array itself
-  inline void resetNoDtor () noexcept {
-    Flatten(); // just in case
-    ArrNum = 0;
-  }
+  // doesn't free the array itself
+  inline void resetNoDtor () noexcept { return reset<false>(); }
 
-  inline int Num () const noexcept { return ArrNum; }
-  inline int Length () const noexcept { return ArrNum; }
-  inline int length () const noexcept { return ArrNum; }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE int Num () const noexcept { return ArrNum; }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE int Length () const noexcept { return ArrNum; }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE int length () const noexcept { return ArrNum; }
 
-  inline int NumAllocated () const noexcept { return ArrSize; }
-  inline int numAllocated () const noexcept { return ArrSize; }
-  inline int capacity () const noexcept { return ArrSize; }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE int NumAllocated () const noexcept { return ArrSize; }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE int numAllocated () const noexcept { return ArrSize; }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE int capacity () const noexcept { return ArrSize; }
 
   // don't do any sanity checks here, `ptr()` can be used even on empty arrays
-  inline T *Ptr () noexcept { return ArrData; }
-  inline const T *Ptr () const noexcept { return ArrData; }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE T *Ptr () noexcept { return ArrData; }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE const T *Ptr () const noexcept { return ArrData; }
 
-  inline T *ptr () noexcept { return ArrData; }
-  inline const T *ptr () const noexcept { return ArrData; }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE T *ptr () noexcept { return ArrData; }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE const T *ptr () const noexcept { return ArrData; }
 
   inline void SetPointerData (void *adata, int datalen) noexcept {
     vassert(datalen >= 0);
@@ -113,7 +122,7 @@ public:
 
   // this changes only capacity, length will not be increased (but can be decreased)
   // new memory will not be cleared and inited (there's no need to do that here)
-  void Resize (int NewSize) noexcept {
+  void resize (int NewSize) noexcept {
     vassert(NewSize >= 0);
 
     if (NewSize <= 0) { clear(); return; }
@@ -122,7 +131,7 @@ public:
     if (NewSize == ArrSize) return;
 
     // free unused elements
-    for (int i = NewSize; i < ArrNum; ++i) ArrData[i].~T();
+    if (usectordtor) for (int i = NewSize; i < ArrNum; ++i) ArrData[i].~T();
 
     // realloc buffer
     ArrData = (T *)Z_Realloc(ArrData, NewSize*sizeof(T));
@@ -131,136 +140,153 @@ public:
     ArrSize = NewSize;
     if (ArrNum > NewSize) ArrNum = NewSize;
   }
-  inline void resize (int NewSize) noexcept { Resize(NewSize); }
+  VVA_ALWAYS_INLINE void Resize (int NewSize) noexcept { return resize(NewSize); }
 
   // reserve memory for at least the given number of items
   // will not shrink the array
-  inline void reserve (int maxsize) noexcept { if (maxsize > ArrSize) resize(maxsize); }
+  VVA_ALWAYS_INLINE void reserve (int maxsize) noexcept { if (maxsize > ArrSize) return resize(maxsize); }
 
-  void SetNum (int NewNum, bool bResize=true) noexcept {
+  template<bool DoResize=true, bool DoReserve=false> void setLength (int NewNum) noexcept {
     vassert(NewNum >= 0);
     Flatten(); // just in case
-    if (bResize || NewNum > ArrSize) Resize(NewNum);
+    if (DoResize || NewNum > ArrSize) {
+      #ifdef VAVOOM_CORELIB_ARRAY_MINIMAL_RESIZE
+      resize(NewNum+(DoReserve ? 64 : 0));
+      #else
+      resize(NewNum+(DoReserve ? NewNum*3/8+(NewNum < 64 ? 64 : 0) : 0));
+      #endif
+    }
     vassert(ArrSize >= NewNum);
     if (ArrNum > NewNum) {
       // destroy freed elements
-      for (int i = NewNum; i < ArrNum; ++i) ArrData[i].~T();
+      if (usectordtor) for (int i = NewNum; i < ArrNum; ++i) ArrData[i].~T();
     } else if (ArrNum < NewNum) {
       // initialize new elements
       // it is faster to clear the whole block first
-      memset((void *)(ArrData+ArrNum), 0, (NewNum-ArrNum)*sizeof(T));
-      for (int i = ArrNum; i < NewNum; ++i) new(&ArrData[i], E_ArrayNew, E_NoInit) T;
+      if (usectordtor) {
+        memset((void *)(ArrData+ArrNum), 0, (NewNum-ArrNum)*sizeof(T));
+        for (int i = ArrNum; i < NewNum; ++i) new(&ArrData[i], E_ArrayNew, E_NoInit) T;
+      }
     }
     ArrNum = NewNum;
   }
-  inline void setNum (int NewNum, bool bResize=true) noexcept { SetNum(NewNum, bResize); }
-  inline void setLength (int NewNum, bool bResize=true) noexcept { SetNum(NewNum, bResize); }
-  inline void SetLength (int NewNum, bool bResize=true) noexcept { SetNum(NewNum, bResize); }
+  //template<bool DoResize=true, bool DoReserve=false> VVA_ALWAYS_INLINE void SetNum (int NewNum) noexcept { return setLength<DoResize, DoReserve>(NewNum); }
+  //template<bool DoResize=true, bool DoReserve=false> VVA_ALWAYS_INLINE void setNum (int NewNum) noexcept { return setLength<DoResize, DoReserve>(NewNum); }
+  //template<bool DoResize=true, bool DoReserve=false> VVA_ALWAYS_INLINE void SetLength (int NewNum) noexcept { return setLength<DoResize, DoReserve>(NewNum); }
 
-  inline void SetNumWithReserve (int NewNum) noexcept {
-    vassert(NewNum >= 0);
-    if (NewNum > ArrSize) {
-      #ifdef VAVOOM_CORELIB_ARRAY_MINIMAL_RESIZE
-      Resize(NewNum+64);
-      #else
-      Resize(NewNum+NewNum*3/8+(NewNum < 64 ? 64 : 0));
-      #endif
-    }
-    SetNum(NewNum, false); // don't resize, if it is not necessary
-  }
-  inline void setLengthReserve (int NewNum) noexcept { SetNumWithReserve(NewNum); }
+  // don't resize, if it is not necessary
+  //template<bool DoResize=false> VVA_ALWAYS_INLINE void SetNumWithReserve (int NewNum) noexcept { return setLength<DoResize, true>(NewNum); }
+  template<bool DoResize=false> VVA_ALWAYS_INLINE void setLengthReserve (int NewNum) noexcept { return setLength<DoResize, true>(NewNum); }
 
-  inline void Condense () noexcept { Resize(ArrNum); }
-  inline void condense () noexcept { Resize(ArrNum); }
+  VVA_ALWAYS_INLINE void setLengthNoResize (int NewNum) noexcept { return setLength<false, false>(NewNum); }
+
+  inline void Condense () noexcept { return resize(ArrNum); }
+  inline void condense () noexcept { return resize(ArrNum); }
 
   // this won't copy capacity (there is no reason to do it)
-  void operator = (const TArray<T> &other) noexcept {
+  // alas, i cannot remove this
+  void operator = (const MyType &other) noexcept {
     if (&other == this) return; // oops
     vassert(!other.Is2D());
     clear();
-    int newsz = other.ArrNum;
+    const int newsz = other.ArrNum;
     if (newsz) {
       ArrNum = ArrSize = newsz;
       ArrData = (T *)Z_MallocNoClear(newsz*sizeof(T));
-      // it is faster to clear the whole block first
-      memset((void *)ArrData, 0, newsz*sizeof(T));
-      for (int i = 0; i < newsz; ++i) {
-        new(&ArrData[i], E_ArrayNew, E_NoInit) T;
-        ArrData[i] = other.ArrData[i];
+      if (usectordtor) {
+        // it is faster to clear the whole block first
+        memset((void *)ArrData, 0, (size_t)newsz*sizeof(T));
+        for (int i = 0; i < newsz; ++i) {
+          new(&ArrData[i], E_ArrayNew, E_NoInit) T;
+          ArrData[i] = other.ArrData[i];
+        }
+      } else {
+        memcpy((void *)ArrData, (void *)other.ArrData, (size_t)newsz*sizeof(T));
       }
     }
   }
 
-  inline T &operator [] (int index) noexcept {
-    vassert(index >= 0);
-    vassert(index < ArrNum);
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE T &operator [] (int index) noexcept {
+    vassert(index >= 0 && index < ArrNum);
     return ArrData[index];
   }
 
-  inline const T &operator [] (int index) const noexcept {
-    vassert(index >= 0);
-    vassert(index < ArrNum);
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE const T &operator [] (int index) const noexcept {
+    vassert(index >= 0 && index < ArrNum);
     return ArrData[index];
   }
 
-  inline T &last () noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE T &last () noexcept {
     vassert(!Is2D());
     vassert(ArrNum > 0);
     return ArrData[ArrNum-1];
   }
 
-  inline const T &last () const noexcept {
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE const T &last () const noexcept {
     vassert(!Is2D());
     vassert(ArrNum > 0);
     return ArrData[ArrNum-1];
+  }
+
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT T pop () noexcept {
+    vassert(ArrNum > 0);
+    T res = ArrData[ArrNum-1];
+    drop();
+    return res;
   }
 
   inline void drop () noexcept {
     vassert(!Is2D());
     if (ArrNum > 0) {
       --ArrNum;
-      ArrData[ArrNum].~T();
+      if (usectordtor) ArrData[ArrNum].~T();
     }
   }
 
-  inline void Insert (int index, const T &item) noexcept {
+  // slow!
+  inline void chopFirst () noexcept {
     vassert(!Is2D());
-    int oldlen = ArrNum;
+    if (ArrNum > 0) removeAt(0);
+  }
+
+  inline void insert (int index, const T &item) noexcept {
+    vassert(!Is2D());
+    const int oldlen = ArrNum;
     setLengthReserve(oldlen+1);
     for (int i = oldlen; i > index; --i) ArrData[i] = ArrData[i-1];
     ArrData[index] = item;
   }
-  inline void insert (int index, const T &item) noexcept { Insert(index, item); }
+  VVA_ALWAYS_INLINE void Insert (int index, const T &item) noexcept { return insert(index, item); }
 
-  inline int Append (const T &item) noexcept {
+  inline int append (const T &item) noexcept {
     vassert(!Is2D());
-    int oldlen = ArrNum;
+    const int oldlen = ArrNum;
     setLengthReserve(oldlen+1);
     ArrData[oldlen] = item;
     return oldlen;
   }
-  inline int append (const T &item) noexcept { return Append(item); }
+  VVA_ALWAYS_INLINE int Append (const T &item) noexcept { return append(item); }
 
-  inline T &Alloc () noexcept {
+  template<bool DoClear=true>inline T &alloc () noexcept {
     vassert(!Is2D());
-    int oldlen = ArrNum;
+    const int oldlen = ArrNum;
     setLengthReserve(oldlen+1);
+    if (!usectordtor && DoClear) memset((void *)(ArrData+oldlen), 0, sizeof(T));
     return ArrData[oldlen];
   }
-  inline T &alloc () noexcept { return Alloc(); }
+  VVA_ALWAYS_INLINE T &Alloc () noexcept { return alloc(); }
 
-  inline void RemoveIndex (int index) noexcept {
+  inline void removeAt (int index) noexcept {
     vassert(ArrData != nullptr);
-    vassert(index >= 0);
-    vassert(index < ArrNum);
+    vassert(index >= 0 && index < ArrNum);
     Flatten(); // just in case
     --ArrNum;
     for (int i = index; i < ArrNum; ++i) ArrData[i] = ArrData[i+1];
-    ArrData[ArrNum].~T();
+    if (usectordtor) ArrData[ArrNum].~T();
   }
-  inline void removeAt (int index) noexcept { return RemoveIndex(index); }
+  VVA_ALWAYS_INLINE void RemoveIndex (int index) noexcept { return removeAt(index); }
 
-  inline int Remove (const T &item) noexcept {
+  inline int remove (const T &item) noexcept {
     Flatten(); // just in case
     int count = 0;
     for (int i = 0; i < ArrNum; ++i) {
@@ -268,13 +294,13 @@ public:
     }
     return count;
   }
-  inline int remove (const T &item) noexcept { return Remove(item); }
+  VVA_ALWAYS_INLINE int Remove (const T &item) noexcept { return remove(item); }
 
-  friend VStream &operator << (VStream &Strm, TArray<T> &Array) /*noexcept*/ {
+  friend VStream &operator << (VStream &Strm, MyType &Array) /*noexcept*/ {
     vassert(!Array.Is2D());
     int NumElem = Array.length();
     Strm << STRM_INDEX(NumElem);
-    if (Strm.IsLoading()) Array.SetNum(NumElem);
+    if (Strm.IsLoading()) Array.setLength(NumElem);
     for (int i = 0; i < Array.length(); ++i) Strm << Array[i];
     return Strm;
   }
@@ -283,10 +309,10 @@ public:
   // range iteration
   // WARNING! don't add/remove array elements in iterator loop!
 
-  inline T *begin () noexcept { return (length1D() > 0 ? ArrData : nullptr); }
-  inline const T *begin () const noexcept { return (length1D() > 0 ? ArrData : nullptr); }
-  inline T *end () noexcept { return (length1D() > 0 ? ArrData+length1D() : nullptr); }
-  inline const T *end () const noexcept { return (length1D() > 0 ? ArrData+length1D() : nullptr); }
+  VVA_ALWAYS_INLINE VVA_PURE T *begin () noexcept { return (length1D() > 0 ? ArrData : nullptr); }
+  VVA_ALWAYS_INLINE VVA_PURE const T *begin () const noexcept { return (length1D() > 0 ? ArrData : nullptr); }
+  VVA_ALWAYS_INLINE VVA_PURE T *end () noexcept { return (length1D() > 0 ? ArrData+length1D() : nullptr); }
+  VVA_ALWAYS_INLINE VVA_PURE const T *end () const noexcept { return (length1D() > 0 ? ArrData+length1D() : nullptr); }
 
   #define VARR_DEFINE_ITEMS_ITERATOR(xconst_)  \
     class xconst_##RevIterator { \
@@ -294,7 +320,7 @@ public:
       xconst_ T *stvalue; \
       xconst_ T *currvalue; \
     public: \
-      inline xconst_##RevIterator (xconst_ TArray<T> *arr) noexcept { \
+      VVA_ALWAYS_INLINE xconst_##RevIterator (xconst_ MyType *arr) noexcept { \
         if (arr->length1D() > 0) { \
           stvalue = arr->ArrData; \
           currvalue = arr->ArrData+arr->length1D()-1; \
@@ -302,16 +328,16 @@ public:
           stvalue = currvalue = nullptr; \
         } \
       } \
-      inline xconst_##RevIterator (const xconst_##RevIterator &it) noexcept : stvalue(it.stvalue), currvalue(it.currvalue) {} \
-      inline xconst_##RevIterator (const xconst_##RevIterator &/*it*/, bool /*asEnd*/) noexcept : stvalue(nullptr), currvalue(nullptr) {} \
-      inline xconst_##RevIterator begin () noexcept { return xconst_##RevIterator(*this); } \
-      inline xconst_##RevIterator end () noexcept { return xconst_##RevIterator(*this, true); } \
-      inline bool operator == (const xconst_##RevIterator &b) const noexcept { return (currvalue == b.currvalue); } \
-      inline bool operator != (const xconst_##RevIterator &b) const noexcept { return (currvalue != b.currvalue); } \
-      inline xconst_ T &operator * () const noexcept { return *currvalue; } /* required for iterator */ \
-      inline void operator ++ () noexcept { if (currvalue && currvalue != stvalue) --currvalue; else currvalue = stvalue = nullptr; } /* this is enough for iterator */ \
+      VVA_ALWAYS_INLINE xconst_##RevIterator (const xconst_##RevIterator &it) noexcept : stvalue(it.stvalue), currvalue(it.currvalue) {} \
+      VVA_ALWAYS_INLINE xconst_##RevIterator (const xconst_##RevIterator &/*it*/, bool /*asEnd*/) noexcept : stvalue(nullptr), currvalue(nullptr) {} \
+      VVA_ALWAYS_INLINE xconst_##RevIterator begin () noexcept { return xconst_##RevIterator(*this); } \
+      VVA_ALWAYS_INLINE xconst_##RevIterator end () noexcept { return xconst_##RevIterator(*this, true); } \
+      VVA_ALWAYS_INLINE VVA_PURE bool operator == (const xconst_##RevIterator &b) const noexcept { return (currvalue == b.currvalue); } \
+      VVA_ALWAYS_INLINE VVA_PURE bool operator != (const xconst_##RevIterator &b) const noexcept { return (currvalue != b.currvalue); } \
+      VVA_ALWAYS_INLINE VVA_PURE xconst_ T &operator * () const noexcept { return *currvalue; } /* required for iterator */ \
+      VVA_ALWAYS_INLINE void operator ++ () noexcept { if (currvalue && currvalue != stvalue) --currvalue; else currvalue = stvalue = nullptr; } /* this is enough for iterator */ \
     }; \
-    inline xconst_##RevIterator reverse () xconst_ noexcept { return xconst_##RevIterator(this); }
+    VVA_ALWAYS_INLINE xconst_##RevIterator reverse () xconst_ noexcept { return xconst_##RevIterator(this); }
 
   VARR_DEFINE_ITEMS_ITERATOR()
   VARR_DEFINE_ITEMS_ITERATOR(const)
@@ -324,7 +350,7 @@ public:
       xconst_ T *endvalue; \
       int currindex; \
     public: \
-      inline xconst_##IndexIterator (xconst_ TArray<T> *arr) noexcept { \
+      VVA_ALWAYS_INLINE xconst_##IndexIterator (xconst_ MyType *arr) noexcept { \
         if (arr->length1D() > 0) { \
           currvalue = arr->ArrData; \
           endvalue = currvalue+arr->length1D(); \
@@ -333,19 +359,19 @@ public:
         } \
         currindex = 0; \
       } \
-      inline xconst_##IndexIterator (const xconst_##IndexIterator &it) noexcept : currvalue(it.currvalue), endvalue(it.endvalue), currindex(it.currindex) {} \
-      inline xconst_##IndexIterator (const xconst_##IndexIterator &it, bool /*asEnd*/) noexcept : currvalue(it.endvalue), endvalue(it.endvalue), currindex(it.currindex) {} \
-      inline xconst_##IndexIterator begin () noexcept { return xconst_##IndexIterator(*this); } \
-      inline xconst_##IndexIterator end () noexcept { return xconst_##IndexIterator(*this, true); } \
-      inline bool operator == (const xconst_##IndexIterator &b) const noexcept { return (currvalue == b.currvalue); } \
-      inline bool operator != (const xconst_##IndexIterator &b) const noexcept { return (currvalue != b.currvalue); } \
-      inline xconst_##IndexIterator operator * () const noexcept { return xconst_##IndexIterator(*this); } /* required for iterator */ \
-      inline void operator ++ () noexcept { ++currvalue; ++currindex; } /* this is enough for iterator */ \
-      inline xconst_ T &value () noexcept { return *currvalue; } \
-      /*inline const T &value () const noexcept { return *currvalue; }*/ \
-      inline int index () const noexcept { return currindex; } \
+      VVA_ALWAYS_INLINE xconst_##IndexIterator (const xconst_##IndexIterator &it) noexcept : currvalue(it.currvalue), endvalue(it.endvalue), currindex(it.currindex) {} \
+      VVA_ALWAYS_INLINE xconst_##IndexIterator (const xconst_##IndexIterator &it, bool /*asEnd*/) noexcept : currvalue(it.endvalue), endvalue(it.endvalue), currindex(it.currindex) {} \
+      VVA_ALWAYS_INLINE xconst_##IndexIterator begin () noexcept { return xconst_##IndexIterator(*this); } \
+      VVA_ALWAYS_INLINE xconst_##IndexIterator end () noexcept { return xconst_##IndexIterator(*this, true); } \
+      VVA_ALWAYS_INLINE VVA_PURE bool operator == (const xconst_##IndexIterator &b) const noexcept { return (currvalue == b.currvalue); } \
+      VVA_ALWAYS_INLINE VVA_PURE bool operator != (const xconst_##IndexIterator &b) const noexcept { return (currvalue != b.currvalue); } \
+      VVA_ALWAYS_INLINE VVA_PURE xconst_##IndexIterator operator * () const noexcept { return xconst_##IndexIterator(*this); } /* required for iterator */ \
+      VVA_ALWAYS_INLINE void operator ++ () noexcept { ++currvalue; ++currindex; } /* this is enough for iterator */ \
+      VVA_ALWAYS_INLINE VVA_PURE xconst_ T &value () noexcept { return *currvalue; } \
+      /*VVA_ALWAYS_INLINE VVA_PURE const T &value () const noexcept { return *currvalue; }*/ \
+      VVA_ALWAYS_INLINE VVA_PURE int index () const noexcept { return currindex; } \
     }; \
-    inline xconst_##IndexIterator itemsIdx () xconst_ noexcept { return xconst_##IndexIterator(this); }
+    VVA_ALWAYS_INLINE xconst_##IndexIterator itemsIdx () xconst_ noexcept { return xconst_##IndexIterator(this); }
 
   VARR_DEFINE_ITEMS_ITERATOR()
   VARR_DEFINE_ITEMS_ITERATOR(const)
@@ -354,23 +380,23 @@ public:
   #define VARR_DEFINE_ITEMS_ITERATOR(xconst_)  \
     class xconst_##IndexIteratorRev { \
     public: \
-      xconst_ TArray<T> *arr; \
+      xconst_ MyType *arr; \
       int currindex; \
     public: \
-      inline xconst_##IndexIteratorRev (xconst_ TArray<T> *aarr) noexcept : arr(aarr) { currindex = (arr->length1D() > 0 ? arr->length1D()-1 : -1); } \
-      inline xconst_##IndexIteratorRev (const xconst_##IndexIteratorRev &it) noexcept : arr(it.arr), currindex(it.currindex) {} \
-      inline xconst_##IndexIteratorRev (const xconst_##IndexIteratorRev &it, bool /*asEnd*/) noexcept : arr(it.arr), currindex(-1) {} \
-      inline xconst_##IndexIteratorRev begin () noexcept { return xconst_##IndexIteratorRev(*this); } \
-      inline xconst_##IndexIteratorRev end () noexcept { return xconst_##IndexIteratorRev(*this, true); } \
-      inline bool operator == (const xconst_##IndexIteratorRev &b) const noexcept { return (arr == b.arr && currindex == b.currindex); } \
-      inline bool operator != (const xconst_##IndexIteratorRev &b) const noexcept { return (arr != b.arr || currindex != b.currindex); } \
-      inline xconst_##IndexIteratorRev operator * () const noexcept { return xconst_##IndexIteratorRev(*this); } /* required for iterator */ \
-      inline void operator ++ () noexcept { --currindex; } /* this is enough for iterator */ \
-      inline xconst_ T &value () noexcept { return arr->ArrData[currindex]; } \
-      /*inline const T &value () const noexcept { return arr->ArrData[currindex]; }*/ \
-      inline int index () const noexcept { return currindex; } \
+      VVA_ALWAYS_INLINE xconst_##IndexIteratorRev (xconst_ MyType *aarr) noexcept : arr(aarr) { currindex = (arr->length1D() > 0 ? arr->length1D()-1 : -1); } \
+      VVA_ALWAYS_INLINE xconst_##IndexIteratorRev (const xconst_##IndexIteratorRev &it) noexcept : arr(it.arr), currindex(it.currindex) {} \
+      VVA_ALWAYS_INLINE xconst_##IndexIteratorRev (const xconst_##IndexIteratorRev &it, bool /*asEnd*/) noexcept : arr(it.arr), currindex(-1) {} \
+      VVA_ALWAYS_INLINE xconst_##IndexIteratorRev begin () noexcept { return xconst_##IndexIteratorRev(*this); } \
+      VVA_ALWAYS_INLINE xconst_##IndexIteratorRev end () noexcept { return xconst_##IndexIteratorRev(*this, true); } \
+      VVA_ALWAYS_INLINE VVA_PURE bool operator == (const xconst_##IndexIteratorRev &b) const noexcept { return (arr == b.arr && currindex == b.currindex); } \
+      VVA_ALWAYS_INLINE VVA_PURE bool operator != (const xconst_##IndexIteratorRev &b) const noexcept { return (arr != b.arr || currindex != b.currindex); } \
+      VVA_ALWAYS_INLINE VVA_PURE xconst_##IndexIteratorRev operator * () const noexcept { return xconst_##IndexIteratorRev(*this); } /* required for iterator */ \
+      VVA_ALWAYS_INLINE void operator ++ () noexcept { --currindex; } /* this is enough for iterator */ \
+      VVA_ALWAYS_INLINE VVA_PURE xconst_ T &value () noexcept { return arr->ArrData[currindex]; } \
+      /*VVA_ALWAYS_INLINE VVA_PURE const T &value () const noexcept { return arr->ArrData[currindex]; }*/ \
+      VVA_ALWAYS_INLINE VVA_PURE int index () const noexcept { return currindex; } \
     }; \
-    inline xconst_##IndexIteratorRev itemsIdxRev () xconst_ noexcept { return xconst_##IndexIteratorRev(this); }
+    VVA_ALWAYS_INLINE xconst_##IndexIteratorRev itemsIdxRev () xconst_ noexcept { return xconst_##IndexIteratorRev(this); }
 
   VARR_DEFINE_ITEMS_ITERATOR()
   VARR_DEFINE_ITEMS_ITERATOR(const)
@@ -516,3 +542,6 @@ public:
   // get pointer to last element (or `nullptr`)
   inline T *getLast () noexcept { return (used ? currblock+freeInCurrBlock()-1 : nullptr); }
 };
+
+template<typename T> using TArray = TArrayBase<T, true>;
+template<typename T> using TArrayNC = TArrayBase<T, false>;

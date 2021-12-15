@@ -63,7 +63,7 @@ public:
 // stream for reading and writing using `TArray`
 class VMemoryStream : public VStream {
 protected:
-  TArray<vuint8> Array;
+  TArrayNC<vuint8> Array;
   int Pos;
   VStr StreamName;
 
@@ -75,7 +75,7 @@ public:
   VMemoryStream (VStr strmName);
   // initialise reading streams
   VMemoryStream (VStr strmName, const void *, int, bool takeOwnership=false);
-  VMemoryStream (VStr strmName, const TArray<vuint8> &);
+  VMemoryStream (VStr strmName, const TArrayNC<vuint8> &);
   VMemoryStream (VStr strmName, VStream *strm); // from current position to stream end
 
   virtual ~VMemoryStream () override;
@@ -88,7 +88,7 @@ public:
 
   inline void BeginRead () { bLoading = true; }
   inline void BeginWrite () { bLoading = false; }
-  inline TArray<vuint8> &GetArray () { return Array; }
+  inline TArrayNC<vuint8> &GetArray () { return Array; }
 
   virtual VStr GetName () const override;
 };
@@ -98,14 +98,14 @@ public:
 // similar to VMemoryStream, but uses reference to an external array
 class VArrayStream : public VStream {
 protected:
-  TArray<vuint8> &Array;
+  TArrayNC<vuint8> &Array;
   int Pos;
   VStr StreamName;
 
 public:
   VV_DISABLE_COPY(VArrayStream)
 
-  VArrayStream (VStr strmName, TArray<vuint8> &);
+  VArrayStream (VStr strmName, TArrayNC<vuint8> &);
   virtual ~VArrayStream () override;
 
   virtual void Serialise (void *Data, int Length) override;
@@ -115,7 +115,7 @@ public:
 
   inline void BeginRead () { bLoading = true; }
   inline void BeginWrite () { bLoading = false; }
-  inline TArray<vuint8> &GetArray () { return Array; }
+  inline TArrayNC<vuint8> &GetArray () { return Array; }
 
   virtual VStr GetName () const override;
 };

@@ -51,14 +51,14 @@ VCvarI gl_flatdecal_limit("gl_flatdecal_limit", "16", "Limit for overlapping dec
 
 
 TMapNC<VName, bool> VLevel::baddecals;
-TArray<int> VLevel::dcLineTouchMark;
-TArray<int> VLevel::dcSegTouchMark;
+TArrayNC<int> VLevel::dcLineTouchMark;
+TArrayNC<int> VLevel::dcSegTouchMark;
 int VLevel::dcLineTouchCounter = 0;
 
 
 // sorry for this static
 // it is used in decal cleanup code
-static TArray<decal_t *> dc2kill;
+static TArrayNC<decal_t *> dc2kill;
 
 
 //==========================================================================

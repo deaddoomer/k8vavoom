@@ -776,10 +776,10 @@ private:
   VViewClipper Clipper;
   // this is used in `VNetConnection::UpdateLevel()`
   // temporary buffers, only valid in that method.
-  TArray<VThinker *> PendingThinkers;
-  TArray<VEntity *> PendingGoreEnts;
-  TArray<vint32> AliveGoreChans;
-  TArray<VThinker *> AliveThinkerChans;
+  TArrayNC<VThinker *> PendingThinkers;
+  TArrayNC<VEntity *> PendingGoreEnts;
+  TArrayNC<vint32> AliveGoreChans;
+  TArrayNC<VThinker *> AliveThinkerChans;
 
   void CollectAndSortAliveThinkerChans (ThinkerSortInfo *snfo);
 

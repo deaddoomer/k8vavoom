@@ -92,7 +92,7 @@ double dbgCheckVisTime = 0.0;
 
 
 // sorry for this global!
-static TArray<sec_region_t *> uwregs;
+static TArrayNC<sec_region_t *> uwregs;
 
 
 //==========================================================================
@@ -429,7 +429,7 @@ void VRenderLevelShared::QueueHorizonPortal (surface_t *surf) {
 //==========================================================================
 void VRenderLevelShared::CommonQueueSurface (surface_t *surf, SFCType type) {
   if (PortalLevel == 0) {
-    world_surf_t &s = WorldSurfs.alloc();
+    world_surf_t &s = WorldSurfs.alloc<false>(); // do not clear!
     s.Surf = surf;
     s.Type = type;
   } else {

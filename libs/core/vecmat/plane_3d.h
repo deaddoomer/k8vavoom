@@ -61,7 +61,6 @@ public:
 public:
   // fuck you, shitpp! i have to define all ctors when i want only one or two
   VVA_ALWAYS_INLINE TPlane () noexcept {}
-  VVA_ALWAYS_INLINE TPlane (ENoInit) noexcept {}
   VVA_ALWAYS_INLINE TPlane (const TVec &anormal, const float adist) noexcept : normal(anormal), dist(adist) {}
   VVA_ALWAYS_INLINE TPlane (const TPlane &src) noexcept : normal(src.normal), dist(src.dist) {}
 

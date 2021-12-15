@@ -170,7 +170,7 @@ struct VFileDirectory {
 public:
   VPakFileBase *owner;
   TArray<VPakFileInfo> files;
-  TMap<VName, int> lumpmap; // maps lump names to file entries; names are lowercased
+  TMapNC<VName, int> lumpmap; // maps lump names to file entries; names are lowercased
   TMap<VStr, int> filemap; // maps names (with pathes) to file entries; names are lowercased
   bool aszip;
 

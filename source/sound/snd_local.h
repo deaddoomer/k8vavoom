@@ -411,7 +411,7 @@ private:
     vint32 DeltaTime;
     vuint8 LastEvent;
     vint8 Vel;
-    TArray<vuint8> Data; // primary data
+    TArrayNC<vuint8> Data; // primary data
   };
 
   VTrack Tracks[32];

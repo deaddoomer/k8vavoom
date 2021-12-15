@@ -759,7 +759,7 @@ void VLevel::PutDecalAtLine (const TVec &aorg, float lineofs, VDecalDef *dec, in
     }
   }
 
-  connectedLines.setLength(clnum, false); // don't realloc
+  connectedLines.setLength<false>(clnum); // don't resize
 }
 
 
