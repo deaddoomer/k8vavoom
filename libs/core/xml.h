@@ -102,7 +102,9 @@ public:
     inline NodeIterator end () noexcept { return NodeIterator(nullptr); }
     inline bool operator == (const NodeIterator &b) const noexcept { return (Node == b.Node); }
     inline bool operator != (const NodeIterator &b) const noexcept { return (Node != b.Node); }
-    inline VXmlNode *operator * () const noexcept { return Node; } // required for iterator
+    // yeah, the same
+    inline VXmlNode* operator * () const noexcept { return Node; } // required for iterator
+    //inline VXmlNode* operator -> () const noexcept { return Node; } // required for iterator
     inline void operator ++ () noexcept { if (Node) Node = Node->NextSibling; } // this is enough for iterator
   };
   inline NodeIterator allChildren () noexcept { return NodeIterator(FirstChild); }
@@ -117,7 +119,10 @@ public:
     inline NamedNodeIterator end () noexcept { return NamedNodeIterator(nullptr); }
     inline bool operator == (const NamedNodeIterator &b) const noexcept { return (Node == b.Node); }
     inline bool operator != (const NamedNodeIterator &b) const noexcept { return (Node != b.Node); }
-    inline VXmlNode *operator * () const noexcept { return Node; } // required for iterator
+    // yeah, the same
+    inline VXmlNode* operator * () const noexcept { return Node; } // required for iterator
+    //inline VXmlNode* operator -> () const noexcept { return Node; } // required for iterator
+    // this is the only difference (sighs)
     inline void operator ++ () noexcept { if (Node) Node = Node->FindNext(); } // this is enough for iterator
   };
   inline NamedNodeIterator childrenWithName (const char *aname) noexcept { return NamedNodeIterator(FindChild(aname)); }

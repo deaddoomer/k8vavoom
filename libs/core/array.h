@@ -334,7 +334,8 @@ public:
       VVA_ALWAYS_INLINE xconst_##RevIterator end () noexcept { return xconst_##RevIterator(*this, true); } \
       VVA_ALWAYS_INLINE VVA_PURE bool operator == (const xconst_##RevIterator &b) const noexcept { return (currvalue == b.currvalue); } \
       VVA_ALWAYS_INLINE VVA_PURE bool operator != (const xconst_##RevIterator &b) const noexcept { return (currvalue != b.currvalue); } \
-      VVA_ALWAYS_INLINE VVA_PURE xconst_ T &operator * () const noexcept { return *currvalue; } /* required for iterator */ \
+      VVA_ALWAYS_INLINE VVA_PURE xconst_ T& operator * () const noexcept { return *currvalue; } /* required for iterator */ \
+      /*VVA_ALWAYS_INLINE VVA_PURE xconst_ T* operator -> () const noexcept { return currvalue; }*/ /* required for iterator */ \
       VVA_ALWAYS_INLINE void operator ++ () noexcept { if (currvalue && currvalue != stvalue) --currvalue; else currvalue = stvalue = nullptr; } /* this is enough for iterator */ \
     }; \
     VVA_ALWAYS_INLINE xconst_##RevIterator reverse () xconst_ noexcept { return xconst_##RevIterator(this); }

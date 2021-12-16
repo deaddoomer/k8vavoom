@@ -230,7 +230,9 @@ public: // iterators
     inline WidgetIterator end () noexcept { return WidgetIterator(nullptr, fwd); }
     inline bool operator == (const WidgetIterator &b) const noexcept { return (curr == b.curr && fwd == b.fwd); }
     inline bool operator != (const WidgetIterator &b) const noexcept { return (curr != b.curr || fwd != b.fwd); }
-    inline VWidget *operator * () const noexcept { return curr; } /* required for iterator */
+    // yeah, the same
+    inline VWidget* operator * () const noexcept { return curr; } /* required for iterator */
+    //inline VWidget* operator -> () const noexcept { return curr; } /* required for iterator */
     inline void operator ++ () noexcept { curr = next; next = (curr ? (fwd ? curr->NextWidget : curr->PrevWidget) : nullptr); } /* this is enough for iterator */
   };
 
@@ -300,7 +302,7 @@ public:
     if (IsGoingToDie()) return false;
     if (IsWantMouse()) return true;
     if (bRecurse) {
-      for (auto &&w : fromLastChild()) {
+      for (VWidget *w : fromLastChild()) {
         if (w->IsWantMouseInput(true)) return true;
       }
     }

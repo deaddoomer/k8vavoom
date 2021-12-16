@@ -1215,12 +1215,12 @@ void VRenderLevelShared::DrawTranslucentPolys () {
         }
       }
       // render in reverse order
-      for (auto &&spr : dls.DrawSurfListAlpha.reverse()) DrawTransSpr(spr);
+      for (trans_sprite_t &spr : dls.DrawSurfListAlpha.reverse()) DrawTransSpr(spr);
     }
   } else if (dls.DrawSurfListAlpha.length()) {
     vassert(dls.DrawSpriListAlpha.length() == 0);
     // render them in reverse order
-    for (auto &&spr : dls.DrawSurfListAlpha.reverse()) DrawTransSpr(spr);
+    for (trans_sprite_t &spr : dls.DrawSurfListAlpha.reverse()) DrawTransSpr(spr);
   }
 
   if (transSprState.pofsEnabled) Drawer->GLDisableOffset();

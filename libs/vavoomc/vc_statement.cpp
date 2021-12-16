@@ -1625,12 +1625,12 @@ void VLoopStatementWithTempLocals::EmitCtor (VEmitContext &ec) {
 //
 //==========================================================================
 void VLoopStatementWithTempLocals::EmitDtor (VEmitContext &ec, bool properLeave) {
-  for (auto &&lv : tempLocals.reverse()) {
+  for (int lv : tempLocals.reverse()) {
     ec.EmitLocalDtor(lv, Loc);
   }
   // if leaving properly, release locals
   if (properLeave) {
-    for (auto &&lv : tempLocals) ec.ReleaseLocalSlot(lv);
+    for (int lv : tempLocals) ec.ReleaseLocalSlot(lv);
   }
 }
 

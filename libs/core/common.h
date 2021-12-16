@@ -49,10 +49,16 @@
 #ifndef VVA_ALWAYS_INLINE
 # define VVA_ALWAYS_INLINE  inline __attribute__((always_inline))
 #endif
+#ifndef VVA_NO_INLINE
+# define VVA_NO_INLINE      __attribute__((noinline))
+#endif
+
 
 #ifdef __cplusplus
-# define VVA_NOEXCEPT noexcept
+# define VVA_NOEXCEPT   noexcept
+# define VVA_CONSTEXPR  constexpr
 #else
+# define VVA_CONSTEXPR
 # define VVA_NOEXCEPT
 #endif
 

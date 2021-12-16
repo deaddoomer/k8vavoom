@@ -901,6 +901,9 @@ public:
 
 /*----------------------------------------------------------------------------
   Object iterators.
+  use like this:
+    for (FObjectIterator obj(); obj; ++obj) { ... }
+    for (TObjectIterator<VEntity> obj(); obj; ++obj) { ... }
 ----------------------------------------------------------------------------*/
 
 // class for iterating through all objects
@@ -913,6 +916,7 @@ public:
   FObjectIterator (VClass *InClass=VObject::StaticClass()) : Class(InClass), Index(-1) { ++*this; }
 
   void operator ++ () { while (++Index < VObject::GObjObjects.length() && (!VObject::GObjObjects[Index] || !VObject::GObjObjects[Index]->IsA(Class))) {} }
+  // yes, they are the same
   VObject *operator * () { return VObject::GObjObjects[Index]; }
   VObject *operator -> () { return VObject::GObjObjects[Index]; }
   operator bool () { return (Index < VObject::GObjObjects.length()); }
@@ -924,6 +928,7 @@ template<class T> class TObjectIterator : public FObjectIterator {
 public:
   TObjectIterator () : FObjectIterator(T::StaticClass()) {}
 
+  // yes, they are the same
   T *operator * () { return (T*)FObjectIterator::operator*(); }
   T *operator -> () { return (T*)FObjectIterator::operator->(); }
 };

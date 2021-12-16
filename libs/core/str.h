@@ -809,7 +809,7 @@ public:
   static VVA_CHECKRESULT bool isSafeDiskFileName (const VStr &fname) noexcept { return fname.isSafeDiskFileName(); }
 
 public:
-
+  // the iterator can survive string reallocation (because it copies the string)
   VStr_ByCharIterator begin () noexcept;
   const VStr_ByCharIterator begin () const noexcept;
   VStr_ByCharIterator end () noexcept;
@@ -843,9 +843,9 @@ public:
   VVA_ALWAYS_INLINE VStr_ByCharIterator (VStr st) noexcept : s(st), index(0) {}
   VVA_ALWAYS_INLINE VStr_ByCharIterator (VStr st, bool) noexcept : s(st), index(-1) {}
 
-  VVA_ALWAYS_INLINE bool operator == (const VStr_ByCharIterator &other) const noexcept { return ((index < 0 && other.index < 0) || (s.getData() == other.s.getData() && index == other.index)); }
-  VVA_ALWAYS_INLINE bool operator != (const VStr_ByCharIterator &other) const noexcept { return !operator==(other); }
-  VVA_ALWAYS_INLINE char operator * () const noexcept { return (index >= 0 && index < s.length() ? s.getData()[(unsigned)index] : 0); } /* required for iterator */
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE bool operator == (const VStr_ByCharIterator &other) const noexcept { return ((index < 0 && other.index < 0) || (s.getData() == other.s.getData() && index == other.index)); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE bool operator != (const VStr_ByCharIterator &other) const noexcept { return !operator==(other); }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE char operator * () const noexcept { return (index >= 0 && index < s.length() ? s.getData()[(unsigned)index] : 0); } /* required for iterator */
   VVA_ALWAYS_INLINE void operator ++ () noexcept { if (index >= 0) { if (++index >= s.length()) index = -1; } } /* this is enough for iterator */
 };
 

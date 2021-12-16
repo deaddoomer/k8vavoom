@@ -193,8 +193,9 @@ public:
       GetNext();
     }
   }
-  inline T *operator -> () noexcept { return (T *)Th; }
-  inline T *operator * () noexcept { return (T *)Th; }
+  // yes, they are the same!
+  inline T* operator * () noexcept { return (T *)Th; }
+  inline T* operator -> () noexcept { return (T *)Th; }
 };
 
 
