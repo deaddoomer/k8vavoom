@@ -107,7 +107,7 @@ public:
   int ResolveEntitySound (VName ClassName, VName GenderName, VName SoundName);
   bool IsSoundPresent (VName ClassName, VName GenderName, VName SoundName);
   int LoadSound (int sound_id); // returns LS_XXX
-  void DoneWithLump (int);
+  void DoneWithLump (int sound_id); // this is called when sound driver doesn't need sound data anymore
   float GetMusicVolume (const char *SongName);
   FAmbientSound *GetAmbientSound (int);
 

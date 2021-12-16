@@ -574,7 +574,7 @@ int VOpenALDevice::LoadSound (int sound_id, ALuint *src) {
   }
 
   // check that sound lump is loaded
-  int res = GSoundManager->LoadSound(sound_id);
+  const int res = GSoundManager->LoadSound(sound_id);
   if (res == VSoundManager::LS_Error) {
     if (src) *src = (ALuint)-1;
     return VSoundManager::LS_Error; // missing sound
@@ -588,6 +588,7 @@ int VOpenALDevice::LoadSound (int sound_id, ALuint *src) {
 
   if (res == VSoundManager::LS_Pending) {
     // pending sound, generate new source, and add it to pending list
+    // sorry for the pasta
     vassert(!sourcesPending.get(sound_id));
     vassert(!srcPendingSet.get(*src));
     PendingSrc *psrc = new PendingSrc;
@@ -624,7 +625,7 @@ int VOpenALDevice::LoadSound (int sound_id, ALuint *src) {
     return VSoundManager::LS_Error;
   }
 
-  // we don't need to keep lump static
+  // we don't need to keep the lump data anymore
   GSoundManager->DoneWithLump(sound_id);
   return VSoundManager::LS_Ready;
 }
@@ -774,9 +775,9 @@ void VOpenALDevice::StopChannel (int Handle) {
         } else {
           // only one
           sourcesPending.del(*sidp);
+          // signal manager that we don't want it anymore
+          GSoundManager->DoneWithLump(cur->sound_id);
         }
-        // signal manager that we don't want it anymore
-        GSoundManager->DoneWithLump(cur->sound_id);
         delete cur;
       }
     }
@@ -891,11 +892,11 @@ void VOpenALDevice::NotifySoundLoaded (int sound_id, bool success) {
       // mark as invalid
       srcErrorSet.put(cur->src, true);
     }
-    GSoundManager->DoneWithLump(sound_id);
     delete cur;
     cur = next;
   }
   sourcesPending.del(sound_id);
+  GSoundManager->DoneWithLump(sound_id);
 }
 
 

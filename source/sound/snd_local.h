@@ -86,8 +86,6 @@ struct sfxinfo_t {
   enum { ST_Invalid = -1, ST_NotLoaded = 0, ST_Loading = 1, ST_Loaded = 2 };
 
   atomic_int loadedStateVar; // ST_XXX
-  atomic_int UseCountVar;
-  double lastUseTime; // for bg loader
 
   VName TagName; // name, by whitch sound is recognised in script
   int LumpNum; // lump number of sfx
@@ -98,7 +96,6 @@ struct sfxinfo_t {
   float VolumeAmp; // from sndinfo, cannot exceed 1.0
   FRolloffInfo Rolloff;
   float Attenuation; // multiplies the attenuation passed to S_Sound
-  //atomic_int UseCountVar;
   // for "$alias", link is index of "real" sound
   int Link; // usually `-1`
   int *Sounds; // for random sounds, Link is count (and bRandomHeader is set)
@@ -114,13 +111,8 @@ struct sfxinfo_t {
   vuint32 DataSize;
   void *Data;
 
-  inline int GetUseCount () noexcept { return atomic_get(&UseCountVar); }
-  inline void IncUseCount () noexcept { (void)atomic_increment(&UseCountVar); }
-  inline void DecUseCount () noexcept { (void)atomic_decrement(&UseCountVar); }
-  inline void ResetUseCount () noexcept { atomic_set(&UseCountVar, 0); }
-
-  inline int GetLoadedState () noexcept { return atomic_get(&loadedStateVar); }
-  inline void SetLoadedState (int value) noexcept { atomic_set(&loadedStateVar, value); }
+  VVA_ALWAYS_INLINE int GetLoadedState () noexcept { return atomic_get(&loadedStateVar); }
+  VVA_ALWAYS_INLINE void SetLoadedState (int value) noexcept { atomic_set(&loadedStateVar, value); }
 };
 
 struct seq_info_t {
