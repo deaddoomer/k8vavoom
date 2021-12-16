@@ -367,11 +367,7 @@ bool VOpenALDevice::Init () {
     ClearError();
   }
 
-  // allocate array for buffers
-  /*
-  Buffers = new ALuint[GSoundManager->S_sfx.length()];
-  memset(Buffers, 0, sizeof(ALuint) * GSoundManager->S_sfx.length());
-  */
+  // we will allocate array for buffers later, because we may don't know the proper size yet
 
   GCon->Log(NAME_Init, "OpenAL initialized.");
   return true;
@@ -467,10 +463,10 @@ void VOpenALDevice::Shutdown () {
     for (int bidx = 0; bidx < BufferCount; ++bidx) {
       if (Buffers[bidx]) {
         alDeleteBuffers(1, Buffers+bidx);
-        Buffers[bidx] = 0;
+        Buffers[bidx] = 0; // just in case
       }
     }
-    delete[] Buffers;
+    Z_Free(Buffers);
     Buffers = nullptr;
   }
   BufferCount = 0;
@@ -505,11 +501,40 @@ bool VOpenALDevice::AllocSource (ALuint *src) {
   ClearError();
   alGenSources(1, src);
   if (IsError("cannot generate source")) {
-    if (src) *src = (ALuint)-1;
+    *src = (ALuint)-1;
     return false;
   }
   activeSourceSet.put(*src, true);
   return true;
+}
+
+
+//==========================================================================
+//
+//  VOpenALDevice::RecordPendingSound
+//
+//  records one new pending sound
+//  allocates sound source, records,
+//  returns `true` on success, `false` on error
+//  `src` must not be NULL! returns source id on success
+//  returns `VSoundManager::LS_Error` or `VSoundManager::LS_Pending`
+//
+//==========================================================================
+int VOpenALDevice::RecordPendingSound (int sound_id, ALuint *src) {
+  // just in case
+  if (src) *src = (ALuint)-1;
+  if (sound_id < 0 || sound_id >= GSoundManager->S_sfx.length()) return VSoundManager::LS_Error;
+  // allocate sound source
+  if (!AllocSource(src)) return VSoundManager::LS_Error;
+  // record new pending sound
+  auto pss = sourcesPending.get(sound_id); // previous list head
+  PendingSrc *psrc = new PendingSrc;
+  psrc->src = *src;
+  psrc->sound_id = sound_id;
+  psrc->next = (pss ? *pss : nullptr);
+  sourcesPending.put(sound_id, psrc);
+  srcPendingSet.put(*src, sound_id);
+  return VSoundManager::LS_Pending;
 }
 
 
@@ -522,82 +547,47 @@ bool VOpenALDevice::AllocSource (ALuint *src) {
 //
 //==========================================================================
 int VOpenALDevice::LoadSound (int sound_id, ALuint *src) {
+  if (src) *src = (ALuint)-1;
+
   if (sound_id < 0 || sound_id >= GSoundManager->S_sfx.length()) {
-    if (src) *src = (ALuint)-1;
+    GSoundManager->DoneWithLump(sound_id);
     return VSoundManager::LS_Error;
   }
 
   if (BufferCount < GSoundManager->S_sfx.length()) {
-    int newsz = ((GSoundManager->S_sfx.length()+1)|0xff)+1;
-    ALuint *newbuf = new ALuint[newsz];
-    if (BufferCount > 0) {
-      for (int f = 0; f < BufferCount; ++f) newbuf[f] = Buffers[f];
-    }
-    for (int f = BufferCount; f < newsz; ++f) newbuf[f] = 0;
-    delete[] Buffers;
-    Buffers = newbuf;
+    const int newsz = ((GSoundManager->S_sfx.length()+1)|0xff)+1; // yes, overallocate a little, who cares
+    Buffers = (ALuint *)Z_Realloc(Buffers, (size_t)newsz*sizeof(ALuint));
+    memset(Buffers+BufferCount, 0, (size_t)(newsz-BufferCount)*sizeof(ALuint));
     BufferCount = newsz;
   }
-
-  /*
-  if (BufferCount < sound_id+1) {
-    int newsz = ((sound_id+4)|0xfff)+1;
-    ALuint *newbuf = new ALuint[newsz];
-    for (int f = BufferCount; f < newsz; ++f) newbuf[f] = 0;
-    delete[] Buffers;
-    Buffers = newbuf;
-    BufferCount = newsz;
-  }
-  */
 
   if (Buffers[sound_id]) {
+    GSoundManager->DoneWithLump(sound_id);
     if (AllocSource(src)) return VSoundManager::LS_Ready;
     if (src) *src = (ALuint)-1;
     return VSoundManager::LS_Error;
   }
 
-  // check that sound lump is queued
+  // check that sound lump is already queued
   auto pss = sourcesPending.get(sound_id);
-  if (pss) {
-    // pending sound, generate new source, and add it to pending list
-    if (!AllocSource(src)) {
-      if (src) *src = (ALuint)-1;
-      return VSoundManager::LS_Error;
-    }
-    PendingSrc *psrc = new PendingSrc;
-    psrc->src = *src;
-    psrc->sound_id = sound_id;
-    psrc->next = *pss;
-    sourcesPending.put(sound_id, psrc);
-    srcPendingSet.put(*src, sound_id);
-    return VSoundManager::LS_Pending;
-  }
+  // do not call `GSoundManager->DoneWithLump()`, we aren't done yet
+  if (pss) return RecordPendingSound(sound_id, src);
 
   // check that sound lump is loaded
-  const int res = GSoundManager->LoadSound(sound_id);
-  if (res == VSoundManager::LS_Error) {
-    if (src) *src = (ALuint)-1;
-    return VSoundManager::LS_Error; // missing sound
+  int res = GSoundManager->LoadSound(sound_id);
+  // do not call `GSoundManager->DoneWithLump()`, main loaders knows that it failed
+  if (res == VSoundManager::LS_Error) return VSoundManager::LS_Error; // missing sound
+
+  if (res == VSoundManager::LS_Pending) {
+    res = RecordPendingSound(sound_id, src);
+    if (res == VSoundManager::LS_Error) GSoundManager->DoneWithLump(sound_id);
+    return res;
   }
 
   // generate new source
   if (!AllocSource(src)) {
     GSoundManager->DoneWithLump(sound_id);
     return VSoundManager::LS_Error;
-  }
-
-  if (res == VSoundManager::LS_Pending) {
-    // pending sound, generate new source, and add it to pending list
-    // sorry for the pasta
-    vassert(!sourcesPending.get(sound_id));
-    vassert(!srcPendingSet.get(*src));
-    PendingSrc *psrc = new PendingSrc;
-    psrc->src = *src;
-    psrc->sound_id = sound_id;
-    psrc->next = nullptr;
-    sourcesPending.put(sound_id, psrc);
-    srcPendingSet.put(*src, sound_id);
-    return VSoundManager::LS_Pending;
   }
 
   ClearError();
@@ -752,11 +742,14 @@ bool VOpenALDevice::IsChannelPlaying (int Handle) {
 void VOpenALDevice::StopChannel (int Handle) {
   if (Handle == -1) return;
   ALuint hh = (ALuint)Handle;
-  // remove pending sounds
+  // remove pending sounds for this channel
   auto sidp = srcPendingSet.get(hh);
   if (sidp) {
+    bool releaseLump = true;
+    const int sndid = *sidp;
     // remove from pending list
     srcPendingSet.del(hh);
+    // get list head (list of all sources with this sound id)
     PendingSrc **pss = sourcesPending.get(*sidp);
     if (pss) {
       PendingSrc *prev = nullptr, *cur = *pss;
@@ -769,17 +762,21 @@ void VOpenALDevice::StopChannel (int Handle) {
         if (prev) {
           // not first
           prev->next = cur->next;
+          releaseLump = false;
         } else if (cur->next) {
           // first, not last
           sourcesPending.put(*sidp, cur->next);
+          releaseLump = false;
         } else {
           // only one
           sourcesPending.del(*sidp);
-          // signal manager that we don't want it anymore
-          GSoundManager->DoneWithLump(cur->sound_id);
         }
         delete cur;
       }
+    }
+    if (releaseLump) {
+      // signal manager that we don't want it anymore (it was pending)
+      GSoundManager->DoneWithLump(sndid);
     }
   } else {
     // stop buffer
@@ -843,11 +840,12 @@ void VOpenALDevice::UpdateListener (const TVec &org, const TVec &vel,
 //
 //  VOpenALDevice::NotifySoundLoaded
 //
-// WARNING! this must be called from the main thread, i.e.
-//          from the thread that calls `PlaySound*()` API!
+//  WARNING! this must be called from the main thread, i.e.
+//           from the thread that calls `PlaySound*()` API!
 //
 //==========================================================================
 void VOpenALDevice::NotifySoundLoaded (int sound_id, bool success) {
+  // get list head (list of all sources with this sound id)
   PendingSrc **pss = sourcesPending.get(sound_id);
   if (!pss) return; // nothing to do
   PendingSrc *cur = *pss;
@@ -867,11 +865,9 @@ void VOpenALDevice::NotifySoundLoaded (int sound_id, bool success) {
           Buffers[sound_id] = 0;
         } else {
           // load buffer data
-          alBufferData(Buffers[sound_id],
-            (GSoundManager->S_sfx[sound_id].SampleBits == 8 ? AL_FORMAT_MONO8 : AL_FORMAT_MONO16),
-            GSoundManager->S_sfx[sound_id].Data,
-            GSoundManager->S_sfx[sound_id].DataSize,
-            GSoundManager->S_sfx[sound_id].SampleRate);
+          sfxinfo_t *sfx = &GSoundManager->S_sfx[sound_id];
+          vassert(sfx->Data && sfx->DataSize);
+          alBufferData(Buffers[sound_id], (sfx->SampleBits == 8 ? AL_FORMAT_MONO8 : AL_FORMAT_MONO16), sfx->Data, sfx->DataSize, sfx->SampleRate);
           if (IsError("cannot load buffer data")) {
             srcErrorSet.put(cur->src, true);
             Buffers[sound_id] = 0;

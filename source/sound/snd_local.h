@@ -250,6 +250,13 @@ private:
 
   bool AllocSource (ALuint *src);
 
+  // records one new pending sound
+  // allocates sound source, records,
+  // returns `true` on success, `false` on error
+  // `src` must not be NULL! returns source id on success
+  // returns `VSoundManager::LS_Error` or `VSoundManager::LS_Pending`
+  int RecordPendingSound (int sound_id, ALuint *src);
+
   // returns VSoundManager::LS_XXX
   // if not errored, sets `src` to new sound source
   int LoadSound (int sound_id, ALuint *src);
