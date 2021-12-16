@@ -93,7 +93,7 @@ public:
   virtual void Seek (int pos) override;
   virtual int Tell () override;
   virtual int TotalSize () override;
-  virtual bool Close () override; // returns `false` on error
+  virtual bool Close () override;
   virtual void Serialise (void *buf, int len) override;
 };
 
@@ -134,7 +134,6 @@ VAndroidFileStreamRO::~VAndroidFileStreamRO () {
 void VAndroidFileStreamRO::SetError () {
   Close();
   bError = true;
-  VStream::SetError();
 }
 
 
@@ -555,7 +554,7 @@ VMemoryStream::~VMemoryStream () {
 //==========================================================================
 bool VMemoryStream::Close () {
   if (bLoading) {
-    Array.setLength(0);
+    Array.clear();
     Pos = 0;
   }
   return !bError;
@@ -977,7 +976,7 @@ VStdFileStreamBase::~VStdFileStreamBase () {
 bool VStdFileStreamBase::Close () {
   if (mFl) {
     //if (!bLoading) fflush(mFl);
-    fclose(mFl);
+    if (fclose(mFl) != 0) bError = true;
     mFl = nullptr;
   }
   //fflush(stderr);
@@ -1210,7 +1209,7 @@ VStr VPartialStreamRO::GetName () const {
 //  VPartialStreamRO::IsError
 //
 //==========================================================================
-bool VPartialStreamRO::IsError () const {
+bool VPartialStreamRO::IsError () const noexcept {
   if (lockptr) {
     MyThreadLocker locker(lockptr);
     return bError;
@@ -1647,7 +1646,8 @@ void VCheckedStream::checkError () const {
 bool VCheckedStream::Close () {
   if (srcStream) {
     checkError();
-    VStream::Destroy(srcStream);
+    //k8: we DO care about errors here, because zip reading stream can signal CRC error, for example
+    if (!VStream::Destroy(srcStream)) { bError = true; checkError(); }
   }
   return true;
 }
@@ -1668,7 +1668,7 @@ VStr VCheckedStream::GetName () const {
 //  VCheckedStream::IsError
 //
 //==========================================================================
-bool VCheckedStream::IsError () const {
+bool VCheckedStream::IsError () const noexcept {
   checkError();
   return false;
 }

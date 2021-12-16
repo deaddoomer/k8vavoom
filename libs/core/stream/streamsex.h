@@ -84,7 +84,7 @@ public:
   virtual void Seek (int) override;
   virtual int Tell () override;
   virtual int TotalSize () override;
-  virtual bool Close () override; // returns `false` on error
+  virtual bool Close () override;
 
   inline void BeginRead () { bLoading = true; }
   inline void BeginWrite () { bLoading = false; }
@@ -149,7 +149,7 @@ public:
   virtual void Seek (int) override;
   virtual int Tell () override;
   virtual int TotalSize () override;
-  virtual bool Close () override; // returns `false` on error
+  virtual bool Close () override;
 
   inline void BeginRead () { bLoading = true; pos = 0; curr = first; }
   inline void BeginWrite () { bLoading = true; pos = 0; curr = first; }
@@ -185,7 +185,7 @@ public:
   virtual int Tell () override;
   virtual int TotalSize () override;
   virtual bool AtEnd () override;
-  virtual bool Close () override; // returns `false` on error
+  virtual bool Close () override;
   virtual void Serialise (void *buf, int len) override;
 };
 
@@ -242,7 +242,7 @@ public:
 
   // stream interface
   virtual VStr GetName () const override;
-  virtual bool IsError () const override;
+  virtual bool IsError () const noexcept override;
   virtual void Serialise (void *Data, int Length) override;
   virtual void SerialiseBits (void *Data, int Length) override;
   virtual void SerialiseInt (vuint32 &Value/*, vuint32 Max*/) override;
@@ -253,7 +253,7 @@ public:
   virtual bool AtEnd () override;
   virtual void Flush () override;
   // won't free stream
-  virtual bool Close () override; // returns `false` on error
+  virtual bool Close () override;
 
   // interface functions for objects and classes streams
   virtual void io (VName &) override;
@@ -302,7 +302,7 @@ public:
 
   // stream interface
   virtual VStr GetName () const override;
-  virtual bool IsError () const override; // this will call `Host_Error()`
+  virtual bool IsError () const noexcept override; // this will call `Host_Error()`
   virtual void Serialise (void *Data, int Length) override;
   virtual void SerialiseBits (void *Data, int Length) override;
   virtual void SerialiseInt (vuint32 &Value/*, vuint32 Max*/) override;
@@ -312,7 +312,7 @@ public:
   virtual int TotalSize () override;
   virtual bool AtEnd () override;
   virtual void Flush () override;
-  virtual bool Close () override; // will free stream
+  virtual bool Close () override;
 
   // interface functions for objects and classes streams
   virtual void io (VName &) override;

@@ -116,16 +116,15 @@ public:
 public:
   VV_DISABLE_COPY(VStream)
 
-  inline VStream () : bLoading(true), bError(false), Mapper(nullptr), version(0) {}
+  VVA_ALWAYS_INLINE VStream () : bLoading(true), bError(false), Mapper(nullptr), version(0) {}
   virtual ~VStream ();
 
   // status requests
-  inline bool IsLoading () const { return bLoading; }
-  inline bool IsSaving () const { return !bLoading; }
-  //inline bool IsError () const { return bError; }
-  virtual bool IsError () const;
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE bool IsLoading () const noexcept { return bLoading; }
+  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE bool IsSaving () const noexcept { return !bLoading; }
+  virtual bool IsError () const noexcept;
 
-  // call this to mark the stream invalid
+  // call this to mark the stream as invalid
   virtual void SetError ();
 
   inline void Serialize (void *buf, int len) { Serialise(buf, len); }
@@ -133,16 +132,23 @@ public:
   void Serialise (const void *buf, int len); // only write
 
   // stream interface
+  // note that `Tell()` and `TotalSize()` must be fast, so cache the values if necessary
   virtual VStr GetName () const;
   virtual void Serialise (void *Data, int Length);
   virtual void SerialiseBits (void *Data, int Length);
   virtual void SerialiseInt (vuint32 &Value/*, vuint32 Max*/);
-  virtual void Seek (int);
-  virtual int Tell ();
-  virtual int TotalSize ();
+  virtual void Seek (int offset); // sets error
+  virtual int Tell (); // sets error
+  virtual int TotalSize (); // sets error
   virtual bool AtEnd ();
   virtual void Flush ();
-  virtual bool Close (); // returns `false` on error
+
+  // returns `false` on error
+  // the rules are:
+  //   * if you're calling this on a closed stream, it should return `bError`
+  //   * if you're calling this on an errored stream, it can close it, but should retain `bError`
+  //   * otherwise it should close the stream, may set `bError`, and will return `!bError`
+  virtual bool Close (); // does nothing here
 
   // interface functions for objects and classes streams
   virtual void io (VName &);
@@ -161,7 +167,16 @@ public:
   void writef (const char *text, ...) __attribute__((format(printf, 2, 3)));
   void vawritef (const char *text, va_list ap);
 
-  static inline void Destroy (VStream *&s) { if (s) { s->Close(); delete s; s = nullptr; } }
+  static VVA_ALWAYS_INLINE bool Destroy (VStream *&s) {
+    if (s) {
+      const bool res = s->Close();
+      delete s;
+      s = nullptr;
+      return res;
+    } else {
+      return true;
+    }
+  }
 };
 
 // stream serialisation operators

@@ -180,7 +180,6 @@ VStreamIOMapper::~VStreamIOMapper () {
 //
 //==========================================================================
 VStream::~VStream () {
-  Close();
 }
 
 
@@ -209,7 +208,7 @@ void VStream::SetError () {
 //  VStream::IsError
 //
 //==========================================================================
-bool VStream::IsError () const {
+bool VStream::IsError () const noexcept {
   return bError;
 }
 
@@ -263,16 +262,19 @@ void VStream::SerialiseInt (vuint32 &Value/*, vuint32*/) {
 //  VStream::Seek
 //
 //==========================================================================
-void VStream::Seek (int) {
+void VStream::Seek (int offset) {
+  if (bError) return;
+  if (offset < 0 || offset != Tell()) { SetError(); return; }
 }
 
 
 //==========================================================================
 //
-//  VStream::Tell
+//  VStream::Seek
 //
 //==========================================================================
 int VStream::Tell () {
+  SetError();
   return -1;
 }
 
@@ -283,18 +285,8 @@ int VStream::Tell () {
 //
 //==========================================================================
 int VStream::TotalSize () {
+  SetError();
   return -1;
-}
-
-
-//==========================================================================
-//
-//  VStream::AtEnd
-//
-//==========================================================================
-bool VStream::AtEnd () {
-  int Pos = Tell();
-  return (Pos != -1 && Pos >= TotalSize());
 }
 
 
@@ -314,6 +306,18 @@ void VStream::Flush () {
 //==========================================================================
 bool VStream::Close () {
   return !bError;
+}
+
+
+//==========================================================================
+//
+//  VStream::AtEnd
+//
+//==========================================================================
+bool VStream::AtEnd () {
+  if (IsError()) return true;
+  int Pos = Tell();
+  return (!IsError() && Pos != -1 && Pos >= TotalSize());
 }
 
 
@@ -469,7 +473,7 @@ VStream &operator << (VStream &Strm, VStreamCompactIndexU &I) {
 //==========================================================================
 void VStream::vawritef (const char *text, va_list ap) {
   /*static*/ const char *errorText = "ERROR CREATING STRING!";
-  if (bError) return;
+  if (IsError()) return;
 
   char buf[512];
   va_list apcopy;
@@ -506,7 +510,7 @@ void VStream::vawritef (const char *text, va_list ap) {
 //
 //==========================================================================
 __attribute__((format(printf, 2, 3))) void VStream::writef (const char *text, ...) {
-  if (bError) return;
+  if (IsError()) return;
 
   va_list ap;
   va_start(ap, text);
