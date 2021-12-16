@@ -391,8 +391,8 @@ static VCvar *GetAndCacheCVar (vuint8 *ip, bool allownull) noexcept {
 }
 
 
-#define GetAndCacheCVarEx()           VCvar *vp = *(VCvar **)(ip+2+4); if (!vp) vp = GetAndCacheCVar(ip, true)
-#define GetAndCacheCVarExAllowNull()  VCvar *vp = *(VCvar **)(ip+2+4); if (!vp) vp = GetAndCacheCVar(ip, false)
+#define GetAndCacheCVarEx()           VCvar *vp = *(VCvar **)(ip+2+4); if (!vp) vp = GetAndCacheCVar(ip, false)
+#define GetAndCacheCVarExAllowNull()  VCvar *vp = *(VCvar **)(ip+2+4); if (!vp) vp = GetAndCacheCVar(ip, true)
 
 
 //==========================================================================
