@@ -92,18 +92,22 @@ VVA_ALWAYS_INLINE float fastInvSqrtfLP (const float n) noexcept {
 #define max2(x, y)   ((x) >= (y) ? (x) : (y))
 #define midval(min, val, max)  max2(min, min2(val, max))
 */
-template <class T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T min2 (const T a, const T b) noexcept { return (a <= b ? a : b); }
-template <class T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T max2 (const T a, const T b) noexcept { return (a >= b ? a : b); }
-template <class T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T midval (const T min, const T val, const T max) noexcept { return max2(min, min2(val, max)); }
-template <class T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T clampval (const T val, const T min, const T max) noexcept { return max2(min, min2(val, max)); }
+template <typename T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T min2 (const T a, const T b) noexcept { return (a <= b ? a : b); }
+template <typename T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T max2 (const T a, const T b) noexcept { return (a >= b ? a : b); }
+//template <typename T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T midval (const T min, const T val, const T max) noexcept { return max2(min, min2(val, max)); }
+//template <typename T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T clampval (const T val, const T min, const T max) noexcept { return max2(min, min2(val, max)); }
+template <typename T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T midval (const T min, const T val, const T max) noexcept { return (val < min ? min : val > max ? max : val); }
+template <typename T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T clampval (const T val, const T min, const T max) noexcept { return (val < min ? min : val > max ? max : val); }
+// `bound` must be positive!
+template <typename T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T clampWithBound (const T val, const T bound) noexcept { return (val < -bound ? -bound : val > bound ? bound : val); }
 
-template <class T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T min3 (const T a, const T b, const T c) noexcept { return min2(min2(a, b), c); }
-template <class T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T max3 (const T a, const T b, const T c) noexcept { return max2(max2(a, b), c); }
+template <typename T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T min3 (const T a, const T b, const T c) noexcept { return min2(min2(a, b), c); }
+template <typename T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T max3 (const T a, const T b, const T c) noexcept { return max2(max2(a, b), c); }
 
-template <class T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T signval (const T a) noexcept { return (a < (T)0 ? (T)-1 : a > (T)0 ? (T)+1 : (T)0); }
+template <typename T> constexpr VVA_CONST VVA_CHECKRESULT VVA_ALWAYS_INLINE T signval (const T a) noexcept { return (a < (T)0 ? (T)-1 : a > (T)0 ? (T)+1 : (T)0); }
 
-template <class T> VVA_ALWAYS_INLINE void swap2 (T &a, T &b) noexcept { const T tmp = a; a = b; b = tmp; }
-template <class T> VVA_ALWAYS_INLINE void minswap2 (T &vmin, T &vmax) noexcept { if (vmin > vmax) { const T tmp = vmin; vmin = vmax; vmax = tmp; } }
+template <typename T> VVA_ALWAYS_INLINE void swap2 (T &a, T &b) noexcept { const T tmp = a; a = b; b = tmp; }
+template <typename T> VVA_ALWAYS_INLINE void minswap2 (T &vmin, T &vmax) noexcept { if (vmin > vmax) { const T tmp = vmin; vmin = vmax; vmax = tmp; } }
 
 
 //==========================================================================
