@@ -737,11 +737,8 @@ static void SV_RunPlayerTick (VBasePlayer *Player, bool skipFrame) {
   // don't move faster than maxmove (halved, if running is disabled)
   //FIXME: this should not assume anything, but take walking speed from cvars!
   const float maxmove = max2(0.0f, sv_maxmove.asFloat()*(sv_disable_run ? 0.5f : 1.0f));
-       if (Player->ForwardMove > maxmove) Player->ForwardMove = maxmove;
-  else if (Player->ForwardMove < -maxmove) Player->ForwardMove = -maxmove;
-  //
-       if (Player->SideMove > maxmove) Player->SideMove = maxmove;
-  else if (Player->SideMove < -maxmove) Player->SideMove = -maxmove;
+  Player->ForwardMove = clampWithBound(Player->ForwardMove, maxmove);
+  Player->SideMove = clampWithBound(Player->SideMove, maxmove);
   // check for disabled freelook (this is required for server)
        if (sv_disable_mlook) Player->ViewAngles.pitch = 0;
   else if (!svs.deathmatch && !sv_ignore_nomlook && (GLevelInfo->LevelInfoFlags&VLevelInfo::LIF_NoFreelook)) Player->ViewAngles.pitch = 0;
