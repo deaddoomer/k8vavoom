@@ -309,7 +309,8 @@ public:
 
   // WARNING! this must be called from the main thread, i.e.
   //          from the thread that calls `PlaySound*()` API!
-  void NotifySoundLoaded (int sound_id, bool success);
+  // returns `true` if that sound was pending
+  bool NotifySoundLoaded (int sound_id, bool success);
 };
 #else
 class VOpenALDevice {};

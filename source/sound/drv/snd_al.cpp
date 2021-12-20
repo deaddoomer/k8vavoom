@@ -562,7 +562,8 @@ int VOpenALDevice::LoadSound (int sound_id, ALuint *src) {
   }
 
   if (Buffers[sound_id]) {
-    GSoundManager->DoneWithLump(sound_id);
+    // no reason to call this here, lump loading can be initiated only by `GSoundManager->LoadSound()`
+    //GSoundManager->DoneWithLump(sound_id);
     if (AllocSource(src)) return VSoundManager::LS_Ready;
     if (src) *src = (ALuint)-1;
     return VSoundManager::LS_Error;
@@ -575,12 +576,13 @@ int VOpenALDevice::LoadSound (int sound_id, ALuint *src) {
 
   // check that sound lump is loaded
   int res = GSoundManager->LoadSound(sound_id);
-  // do not call `GSoundManager->DoneWithLump()`, main loaders knows that it failed
+  // do not call `GSoundManager->DoneWithLump()`, main loader knows that it was failed
   if (res == VSoundManager::LS_Error) return VSoundManager::LS_Error; // missing sound
 
   if (res == VSoundManager::LS_Pending) {
     res = RecordPendingSound(sound_id, src);
-    if (res == VSoundManager::LS_Error) GSoundManager->DoneWithLump(sound_id);
+    // no need to call it here, it does nothing useful anyway
+    //if (res == VSoundManager::LS_Error) GSoundManager->DoneWithLump(sound_id);
     return res;
   }
 
@@ -844,12 +846,18 @@ void VOpenALDevice::UpdateListener (const TVec &org, const TVec &vel,
 //           from the thread that calls `PlaySound*()` API!
 //
 //==========================================================================
-void VOpenALDevice::NotifySoundLoaded (int sound_id, bool success) {
+bool VOpenALDevice::NotifySoundLoaded (int sound_id, bool success) {
   // get list head (list of all sources with this sound id)
   PendingSrc **pss = sourcesPending.get(sound_id);
-  if (!pss) return; // nothing to do
+  if (!pss) {
+    // we don't need it anymore
+    GSoundManager->DoneWithLump(sound_id);
+    return false; // nothing to do
+  }
+  bool res = false;
   PendingSrc *cur = *pss;
   while (cur) {
+    res = true;
     PendingSrc *next = cur->next;
     vassert(cur->sound_id == sound_id);
     srcPendingSet.del(cur->src);
@@ -892,7 +900,9 @@ void VOpenALDevice::NotifySoundLoaded (int sound_id, bool success) {
     cur = next;
   }
   sourcesPending.del(sound_id);
+  // we don't need it anymore
   GSoundManager->DoneWithLump(sound_id);
+  return res;
 }
 
 

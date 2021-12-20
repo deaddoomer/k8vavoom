@@ -76,12 +76,12 @@ public: // fuck you, shitplusplus!
   mythread_mutex loaderLock;
   mythread_cond loaderCond;
   /*volatile*/ TArray<int> queuedSounds;
-  /*volatile*/ TMapNC<int, bool> queuedSoundsMap;
   /*volatile*/ TArray<int> readySounds;
   volatile int loaderDoQuit;
   volatile bool loaderIsIdle;
   volatile bool loaderThreadStarted;
 
+  // lock should be aquired before calling, will NOT be released on exit
   bool LoadSoundInternal (int sound_id);
 
 public:
@@ -233,7 +233,8 @@ public:
 
   // WARNING! this must be called from the main thread, i.e.
   //          from the thread that calls `PlaySound*()` API!
-  virtual void NotifySoundLoaded (int sound_id, bool success) = 0;
+  // returns `true` if that sound was pending
+  virtual bool NotifySoundLoaded (int sound_id, bool success) = 0;
 
   // returns `false` if music device is unavailable
   virtual bool IsMusicAvailable () = 0;

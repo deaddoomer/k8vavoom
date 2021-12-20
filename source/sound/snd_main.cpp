@@ -219,7 +219,8 @@ private:
 
   // WARNING! this must be called from the main thread, i.e.
   //          from the thread that calls `PlaySound*()` API!
-  virtual void NotifySoundLoaded (int sound_id, bool success) override;
+  // returns `true` if that sound was pending
+  virtual bool NotifySoundLoaded (int sound_id, bool success) override;
 
   float CalcSoundPriority (int sound_id, float dist) noexcept;
 };
@@ -1676,8 +1677,8 @@ void VAudio::PlaySong (const char *Song, bool Loop, bool allowRandom) {
 //  VAudio::NotifySoundLoaded
 //
 //==========================================================================
-void VAudio::NotifySoundLoaded (int sound_id, bool success) {
-  if (SoundDevice) SoundDevice->NotifySoundLoaded(sound_id, success);
+bool VAudio::NotifySoundLoaded (int sound_id, bool success) {
+  return (SoundDevice ? SoundDevice->NotifySoundLoaded(sound_id, success) : false);
 }
 
 

@@ -277,27 +277,34 @@ static MYTHREAD_RET_TYPE soundLoaderThread (void *adevobj) {
         case sfxinfo_t::ST_Invalid: ok = false; break; // already errored
         case sfxinfo_t::ST_NotLoaded:
         case sfxinfo_t::ST_Loading: // this should not happen
-          // unlock, and call the loader
-          mythread_mutex_unlock(&sman->loaderLock);
+          // the loader expects lock to be held
           ok = sman->LoadSoundInternal(sndid);
-          // lock again
-          mythread_mutex_lock(&sman->loaderLock);
+          // it should be still locked here
           break;
         case sfxinfo_t::ST_Loaded: ok = true; break;
         default: Sys_Error("WTF?! (soundLoaderThread)");
       }
-      sman->queuedSoundsMap.del(sndid);
       // use `sndqidx` here, because something could be added to the array
       sman->queuedSounds.removeAt(sndqidx);
       if (ok) {
         if (sndThreadDebug) fprintf(stderr, "STRD: loaded sound #%d (%s : %s)\n", sndid, *sman->S_sfx[sndid].TagName, *W_FullLumpName(sman->S_sfx[sndid].LumpNum));
-        sman->S_sfx[sndid].SetLoadedState(sfxinfo_t::ST_Loaded);
+        //sman->S_sfx[sndid].SetLoadedState(sfxinfo_t::ST_Loaded);
       } else {
         if (sndThreadDebug) fprintf(stderr, "STRD: failed to load sound #%d (%s : %s)\n", sndid, *sman->S_sfx[sndid].TagName, *W_FullLumpName(sman->S_sfx[sndid].LumpNum));
-        sman->S_sfx[sndid].SetLoadedState(sfxinfo_t::ST_Invalid);
+        //sman->S_sfx[sndid].SetLoadedState(sfxinfo_t::ST_Invalid);
       }
       // put into ready list, so main thead will notify the driver
-      sman->readySounds.append(sndid);
+      // don't bother with hashtable, we shouldn't have a lot of them here
+      bool found = false;
+      for (int sid : sman->readySounds) {
+        if (sid == sndid) {
+          // this should not happen, but...
+          GLog.Logf(NAME_Warning, "STRD: duplicated readysound #%d (%s : %s)\n", sndid, *sman->S_sfx[sndid].TagName, *W_FullLumpName(sman->S_sfx[sndid].LumpNum));
+          found = true;
+          break;
+        }
+      }
+      if (!found) sman->readySounds.append(sndid);
     }
     if (sman->loaderDoQuit) break;
   }
@@ -368,7 +375,6 @@ void VSoundManager::Init () {
   mythread_mutex_init(&loaderLock);
   mythread_cond_init(&loaderCond);
   queuedSounds.clear();
-  queuedSoundsMap.clear();
   readySounds.clear();
 
   SoundHasBadApple = false;
@@ -478,7 +484,6 @@ void VSoundManager::StopSoundLoaderThread (bool loadQueuedSounds) {
   // mark all queued sounds as "need to load"
   while (queuedSounds.length() > 0) {
     int sndid = queuedSounds[0];
-    queuedSoundsMap.del(sndid);
     queuedSounds.removeAt(0);
     sfxinfo_t *sfx = &S_sfx[sndid];
     const int lst = sfx->GetLoadedState();
@@ -496,9 +501,11 @@ void VSoundManager::StopSoundLoaderThread (bool loadQueuedSounds) {
     if (lst != sfxinfo_t::ST_Loading) continue;
     GCon->Logf("force-loading sound #%d (%s)", f, *sfx->TagName);
     sfx->SetLoadedState(sfxinfo_t::ST_NotLoaded);
-    mythread_mutex_unlock(&loaderLock);
+    // the loader expects lock to be held
     const bool ok = LoadSoundInternal(f);
-    if (ok) sfx->SetLoadedState(sfxinfo_t::ST_Loaded);
+    // it should be still locked here
+    mythread_mutex_unlock(&loaderLock);
+    //if (ok) sfx->SetLoadedState(sfxinfo_t::ST_Loaded);
     #ifdef CLIENT
     if (GAudio) {
       // this will call `DoneWithLump()`
@@ -1284,12 +1291,13 @@ void VSoundManager::ProcessLoadedSounds () {
     readySounds.removeAt(0);
     if (sndThreadDebug) fprintf(stderr, "STRD: notifying about sound #%d (lst=%d) (%s : %s)\n", sound_id, lst, *sfx.TagName, *W_FullLumpName(sfx.LumpNum));
     const bool hasData = (sfx.DataSize && sfx.Data != nullptr);
+    bool wasPending = false;
     // UNLOCKED
     mythread_mutex_unlock(&loaderLock);
 #ifdef CLIENT
     if (GAudio) {
       // this will call `DoneWithLump()`
-      GAudio->NotifySoundLoaded(sound_id, hasData);
+      wasPending = GAudio->NotifySoundLoaded(sound_id, hasData);
     } else
 #endif
     {
@@ -1301,10 +1309,15 @@ void VSoundManager::ProcessLoadedSounds () {
     if (!hasData) {
       // it must be failed one
       if (sfx.GetLoadedState() != sfxinfo_t::ST_Invalid) {
-        GCon->Logf(NAME_Error, "*** INVALID STATE (%d) FOR SOUND '%s' (%s)", sfx.GetLoadedState(), *sfx.TagName, *W_FullLumpName(sfx.LumpNum));
-        sfx.SetLoadedState(sfxinfo_t::ST_Invalid);
+        if (wasPending) {
+          GCon->Logf(NAME_Error, "*** INVALID STATE (%d) FOR SOUND '%s' (%s) (why?!)", sfx.GetLoadedState(), *sfx.TagName, *W_FullLumpName(sfx.LumpNum));
+          sfx.SetLoadedState(sfxinfo_t::ST_Invalid);
+        } else {
+          // why?!
+          sfx.SetLoadedState(sfx.LumpNum >= 0 ? sfxinfo_t::ST_NotLoaded : sfxinfo_t::ST_Invalid);
+        }
       }
-      if (sfx.LumpNum >= 0) {
+      if (wasPending && sfx.LumpNum >= 0) {
         GCon->Logf(NAME_Warning, "Failed to load sound '%s' (%s)", *sfx.TagName, *W_FullLumpName(sfx.LumpNum));
       } else {
         GCon->Logf(NAME_Warning, "Cannot find sound '%s'", *sfx.TagName);
@@ -1319,7 +1332,7 @@ void VSoundManager::ProcessLoadedSounds () {
 //
 //  VSoundManager::LoadSoundInternal
 //
-//  lock should not be held
+//  lock should be aquired before calling, will NOT be released on exit
 //
 //  this cannot (and should not) be called from two or more different
 //  threads simultaneously!
@@ -1331,14 +1344,12 @@ bool VSoundManager::LoadSoundInternal (int sound_id) {
 
   sfxinfo_t *sfx = &S_sfx[sound_id];
   {
-    // lock here, so `LoadSound()` won't interfere
-    MyThreadLocker lock(&loaderLock);
     const int lst = sfx->GetLoadedState();
     //GCon->Logf(NAME_Debug, "*** LoadSoundInternal: sound_id=%d; lst=%d", sound_id, lst);
     if (lst == sfxinfo_t::ST_Invalid) return false;
-    if (lst == sfxinfo_t::ST_Loading) Sys_Error("internal error is sound loader (0)");
+    if (lst == sfxinfo_t::ST_Loading) Sys_Error("internal error in sound loader (0)");
     if (lst == sfxinfo_t::ST_Loaded) return true;
-    if (lst != sfxinfo_t::ST_NotLoaded) Sys_Error("internal error is sound loader (1)");
+    if (lst != sfxinfo_t::ST_NotLoaded) Sys_Error("internal error in sound loader (1)");
     sfx->SetLoadedState(sfxinfo_t::ST_Loading);
   }
 
@@ -1351,17 +1362,21 @@ bool VSoundManager::LoadSoundInternal (int sound_id) {
     return false;
   }
 
+  // release the lock, we'll do some real work here
+  mythread_mutex_unlock(&loaderLock);
   int FileLump = W_FindLumpByFileNameWithExts(va("sound/%s", *W_LumpName(Lump)), Exts);
   if (Lump < FileLump) Lump = FileLump;
 
   VStream *Strm = W_CreateLumpReaderNum(Lump);
   if (!Strm) {
-    MyThreadLocker lock(&loaderLock);
+    // oops, something is wrong
+    mythread_mutex_lock(&loaderLock);
     sfx->LumpNum = Lump;
     sfx->SetLoadedState(sfxinfo_t::ST_Invalid);
     return false;
   }
 
+  // still unlocked here
   // if the sound is quite small, load it in memory
   const int strmsize = Strm->TotalSize();
   if (strmsize < 1024*1024*32) {
@@ -1375,7 +1390,8 @@ bool VSoundManager::LoadSoundInternal (int sound_id) {
       ms->Close();
       delete ms;
       GCon->Logf(NAME_Warning, "Sound lump '%s' cannot be read", *W_FullLumpName(Lump));
-      MyThreadLocker lock(&loaderLock);
+      // oops, something is wrong
+      mythread_mutex_lock(&loaderLock);
       sfx->LumpNum = Lump;
       sfx->SetLoadedState(sfxinfo_t::ST_Invalid);
       return false;
@@ -1385,6 +1401,7 @@ bool VSoundManager::LoadSoundInternal (int sound_id) {
     //GCon->Logf(NAME_Debug, "Sound lump '%s' loaded into memory (%d bytes)", *W_FullLumpName(Lump), strmsize);
   }
 
+  // still unlocked here
   for (VSampleLoader *Ldr = VSampleLoader::List; Ldr && !S_sfx[sound_id].Data; Ldr = Ldr->Next) {
     Strm->Seek(0);
     Ldr->Load(*sfx, *Strm);
@@ -1397,12 +1414,12 @@ bool VSoundManager::LoadSoundInternal (int sound_id) {
   }
 
   VStream::Destroy(Strm);
+  // we are done with the real work, get back the lock
+  mythread_mutex_lock(&loaderLock);
 
   if (!sfx->Data || sfx->DataSize == 0) {
     //soundsWarned.put(*S_sfx[sound_id].TagName);
     if (cli_DebugSound) GCon->Logf(NAME_Debug, "Failed to load sound '%s' (%s)", *S_sfx[sound_id].TagName, *W_FullLumpName(Lump));
-    // lock here, so `LoadSound()` won't interfere
-    MyThreadLocker lock(&loaderLock);
     Z_Free(sfx->Data);
     sfx->Data = nullptr;
     sfx->DataSize = 0;
@@ -1410,10 +1427,8 @@ bool VSoundManager::LoadSoundInternal (int sound_id) {
     sfx->SetLoadedState(sfxinfo_t::ST_Invalid);
     return false;
   } else {
-    // don't set "loaded" here, caller will do it
-    MyThreadLocker lock(&loaderLock);
     sfx->LumpNum = Lump;
-    //sfx->SetLoadedState(sfxinfo_t::ST_Loaded);
+    sfx->SetLoadedState(sfxinfo_t::ST_Loaded);
     return true;
   }
 }
@@ -1426,6 +1441,7 @@ bool VSoundManager::LoadSoundInternal (int sound_id) {
 //==========================================================================
 int VSoundManager::LoadSound (int sound_id) {
   if (sound_id < 1 || sound_id >= S_sfx.length()) return LS_Error;
+  MyThreadLocker lock(&loaderLock);
 
   //GCon->Logf(NAME_Debug, "*** LoadSound: threaded=%d; sound_id=%d; lst=%d", (int)loaderThreadStarted, sound_id, S_sfx[sound_id].GetLoadedState());
   if (!loaderThreadStarted) {
@@ -1437,13 +1453,14 @@ int VSoundManager::LoadSound (int sound_id) {
       } else {
         GCon->Logf(NAME_Warning, "Cannot find sound '%s'", *S_sfx[sound_id].TagName);
       }
+      //S_sfx[sound_id].SetLoadedState(sfxinfo_t::ST_Invalid);
       return LS_Error;
     }
-    S_sfx[sound_id].SetLoadedState(sfxinfo_t::ST_Loaded);
+    //S_sfx[sound_id].SetLoadedState(sfxinfo_t::ST_Loaded);
+    // no need to add this to ready list, because this method is called only from the sound driver
     return LS_Ready;
   } else {
     // background sound loader is active
-    MyThreadLocker lock(&loaderLock);
     const int lst = S_sfx[sound_id].GetLoadedState();
     // loaded?
     if (lst == sfxinfo_t::ST_Loaded) return LS_Ready;
@@ -1453,8 +1470,10 @@ int VSoundManager::LoadSound (int sound_id) {
     if (lst == sfxinfo_t::ST_Loading) return LS_Pending; // in progress right now
     // process loaded sounds (why not?)
     ProcessLoadedSounds();
-    if (!queuedSoundsMap.has(sound_id)) {
-      queuedSoundsMap.put(sound_id, true);
+    // we shouldn't have a lot of them, don't bother with hashtable
+    bool found = false;
+    for (int sid : queuedSounds) if (sid == sound_id) { found = true; break; }
+    if (!found) {
       queuedSounds.append(sound_id);
       // the signal will be delivered when the mutex is released
       mythread_cond_signal(&loaderCond);
@@ -1482,6 +1501,13 @@ void VSoundManager::DoneWithLump (int sound_id) {
   Z_Free(sfx.Data);
   sfx.Data = nullptr;
   sfx.DataSize = 0;
+  // just in case (this should not happen, but...)
+  for (int f = 0; f < readySounds.length(); ++f) {
+    if (readySounds[f] == sound_id) {
+      readySounds.removeAt(f);
+      --f;
+    }
+  }
 }
 
 
