@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -20,11 +20,10 @@
  * THE SOFTWARE.
  */
 
-#include "common.h"
+#include "../common.h"
 #include "loader.h"
 
 #ifndef LIBXMP_CORE_PLAYER
-
 /*
  * From the Audio File Formats (version 2.5)
  * Submitted-by: Guido van Rossum <guido@cwi.nl>
@@ -54,7 +53,6 @@ static const int8 vdic_table[128] = {
 	/* 112 */	 62,  65,  68,  72,  77,  80,  84,  91,
 	/* 120 */	 95,  98, 103, 109, 114, 120, 126, 127
 };
-
 
 /* Convert 7 bit samples to 8 bit */
 static void convert_7bit_to_8bit(uint8 *p, int l)
@@ -95,24 +93,23 @@ static void adpcm4_decoder(uint8 *inp, uint8 *outp, char *tab, int len)
 		*outp++ = delta;
 	}
 }
-
 #endif
 
 /* Convert differential to absolute sample data */
 static void convert_delta(uint8 *p, int l, int r)
 {
 	uint16 *w = (uint16 *)p;
-	uint16 abs = 0;
+	uint16 absval = 0;
 
 	if (r) {
 		for (; l--;) {
-			abs = *w + abs;
-			*w++ = abs;
+			absval = *w + absval;
+			*w++ = absval;
 		}
 	} else {
 		for (; l--;) {
-			abs = *p + abs;
-			*p++ = (uint8) abs;
+			absval = *p + absval;
+			*p++ = (uint8) absval;
 		}
 	}
 }
@@ -184,12 +181,12 @@ static void unroll_loop(struct xmp_sample *xxs)
 	if (xxs->flg & XMP_SAMPLE_16BIT) {
 		s16 += start;
 		for (i = 0; i < loop_size; i++) {
-			*(s16 + i) = *(s16 - i - 1);	
+			*(s16 + i) = *(s16 - i - 1);
 		}
 	} else {
 		s8 += start;
 		for (i = 0; i < loop_size; i++) {
-			*(s8 + i) = *(s8 - i - 1);	
+			*(s8 + i) = *(s8 - i - 1);
 		}
 	}
 }
@@ -223,6 +220,27 @@ int libxmp_load_sample(struct module_data *m, HIO_HANDLE *f, int flags, struct x
 			hio_seek(f, xxs->len, SEEK_CUR);
 		}
 		return 0;
+	}
+
+	/* If this sample starts at or after EOF, skip it entirely.
+	 */
+	if (~flags & SAMPLE_FLAG_NOLOAD) {
+		long file_pos, file_len;
+		if (!f) {
+			return 0;
+		}
+		file_pos = hio_tell(f);
+		file_len = hio_size(f);
+		if (file_pos >= file_len) {
+			D_(D_WARN "ignoring sample at EOF");
+			return 0;
+		}
+		/* If this sample goes past EOF, truncate it. */
+		if (file_pos + xxs->len > file_len && (~flags & SAMPLE_FLAG_ADPCM)) {
+			D_(D_WARN "sample would extend %ld bytes past EOF; truncating to %ld",
+				file_pos + xxs->len - file_len, file_len - file_pos);
+			xxs->len = file_len - file_pos;
+		}
 	}
 
 	/* Loop parameters sanity check
@@ -269,7 +287,7 @@ int libxmp_load_sample(struct module_data *m, HIO_HANDLE *f, int flags, struct x
 	}
 
 	/* add guard bytes before the buffer for higher order interpolation */
-	xxs->data = malloc(bytelen + extralen + unroll_extralen + 4);
+	xxs->data = (unsigned char *) malloc(bytelen + extralen + unroll_extralen + 4);
 	if (xxs->data == NULL) {
 		goto err;
 	}
@@ -363,7 +381,7 @@ int libxmp_load_sample(struct module_data *m, HIO_HANDLE *f, int flags, struct x
 		unroll_loop(xxs);
 		bytelen += unroll_extralen;
 	}
-	
+
 	/* Add extra samples at end */
 	if (xxs->flg & XMP_SAMPLE_16BIT) {
 		for (i = 0; i < 8; i++) {
@@ -409,9 +427,16 @@ int libxmp_load_sample(struct module_data *m, HIO_HANDLE *f, int flags, struct x
 
 #ifndef LIBXMP_CORE_PLAYER
     err2:
-	free(xxs->data - 4);
-	xxs->data = NULL;	/* prevent double free in PCM load error */
+	libxmp_free_sample(xxs);
 #endif
     err:
 	return -1;
+}
+
+void libxmp_free_sample(struct xmp_sample *s)
+{
+    if (s->data) {
+	free(s->data - 4);
+	s->data = NULL;		/* prevent double free in PCM load error */
+    }
 }

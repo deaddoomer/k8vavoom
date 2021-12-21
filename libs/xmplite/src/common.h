@@ -1,19 +1,56 @@
 #ifndef LIBXMP_COMMON_H
 #define LIBXMP_COMMON_H
 
-#ifdef __AROS__
-#define __AMIGA__
-#endif
-
 #include <stdarg.h>
+#include <limits.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "xmp.h"
 
-#if (defined(__GNUC__) || defined(__clang__)) && defined(XMP_SYM_VISIBILITY)
-#if !defined(WIN32) && !defined(__ANDROID__) && !defined(__APPLE__) && !defined(__AMIGA__) && !defined(__MSDOS__) && !defined(B_BEOS_VERSION) && !defined(__ATHEOS__) && !defined(EMSCRIPTEN) && !defined(__MINT__) && !defined(__CYGWIN__)
-#define USE_VERSIONED_SYMBOLS
+#undef  LIBXMP_EXPORT_VAR
+#if defined(EMSCRIPTEN)
+#include <emscripten.h>
+#define LIBXMP_EXPORT_VAR EMSCRIPTEN_KEEPALIVE
+#else
+#define LIBXMP_EXPORT_VAR
 #endif
+
+#ifndef __cplusplus
+#define LIBXMP_BEGIN_DECLS
+#define LIBXMP_END_DECLS
+#else
+#define LIBXMP_BEGIN_DECLS	extern "C" {
+#define LIBXMP_END_DECLS	}
+#endif
+
+#if defined(_MSC_VER) && !defined(__cplusplus)
+#define inline __inline
+#endif
+
+#if defined(_MSC_VER) ||  defined(__WATCOMC__) || defined(__EMX__)
+#define XMP_MAXPATH _MAX_PATH
+#elif defined(PATH_MAX)
+#define XMP_MAXPATH  PATH_MAX
+#else
+#define XMP_MAXPATH  1024
+#endif
+
+#if defined(__MORPHOS__) || defined(__AROS__) || defined(AMIGAOS) || \
+    defined(__amigaos__) || defined(__amigaos4__) ||defined(__amigados__) || \
+    defined(AMIGA) || defined(_AMIGA) || defined(__AMIGA__)
+#define LIBXMP_AMIGA	1	/* to identify amiga platforms. */
+#endif
+
+#ifdef HAVE_EXTERNAL_VISIBILITY
+#define LIBXMP_EXPORT_VERSIONED __attribute__((visibility("default"),externally_visible))
+#else
+#define LIBXMP_EXPORT_VERSIONED __attribute__((visibility("default")))
+#endif
+#ifdef HAVE_ATTRIBUTE_SYMVER
+#define LIBXMP_ATTRIB_SYMVER(_sym) __attribute__((__symver__(_sym)))
+#else
+#define LIBXMP_ATTRIB_SYMVER(_sym)
 #endif
 
 /* AmigaOS fixes by Chris Young <cdyoung@ntlworld.com>, Nov 25, 2007
@@ -34,7 +71,7 @@ typedef unsigned int uint32;
 #ifdef _MSC_VER				/* MSVC++6.0 has no long long */
 typedef signed __int64 int64;
 typedef unsigned __int64 uint64;
-#elif !defined B_BEOS_VERSION		/* BeOS has its own int64 definition */
+#elif !(defined(B_BEOS_VERSION) || defined(__amigaos4__))
 typedef unsigned long long uint64;
 typedef signed long long int64;
 #endif
@@ -61,12 +98,18 @@ typedef signed long long int64;
 #define RESET_FLAG(a,b)	((a)&=~(b))
 #define TEST_FLAG(a,b)	!!((a)&(b))
 
+/* libxmp_get_filetype() return values */
+#define XMP_FILETYPE_NONE		0
+#define XMP_FILETYPE_DIR	(1 << 0)
+#define XMP_FILETYPE_FILE	(1 << 1)
+
 #define CLAMP(x,a,b) do { \
     if ((x) < (a)) (x) = (a); \
     else if ((x) > (b)) (x) = (b); \
 } while (0)
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
 #define TRACK_NUM(a,c)	m->mod.xxp[a]->index[c]
 #define EVENT(a,c,r)	m->mod.xxt[TRACK_NUM((a),(c))]->event[r]
@@ -84,11 +127,12 @@ typedef signed long long int64;
 #endif
 void CLIB_DECL D_(const char *text, ...) ATTR_PRINTF(1,2);
 #else
-// VS prior to VC7.1 does not support variadic macros. VC8.0 does not optimize unused parameters passing
+/* VS prior to VC7.1 does not support variadic macros.
+ * VC8.0 does not optimize unused parameters passing. */
 #if _MSC_VER < 1400
 void __inline CLIB_DECL D_(const char *text, ...) { do {} while (0); }
 #else
-#define D_(args, ...) do {} while (0)
+#define D_(...) do {} while (0)
 #endif
 #endif
 
@@ -99,21 +143,8 @@ void __inline CLIB_DECL D_(const char *text, ...) { do {} while (0); }
 #define D_CRIT "  Error: "
 #define D_WARN "Warning: "
 #define D_INFO "   Info: "
-#define D_(args...) do { \
-	__android_log_print(ANDROID_LOG_DEBUG, "libxmp", args); \
-	} while (0)
-#else
-#define D_(args...) do {} while (0)
-#endif
-
-#elif defined(__WATCOMC__)
-#ifdef DEBUG
-#define D_INFO "\x1b[33m"
-#define D_CRIT "\x1b[31m"
-#define D_WARN "\x1b[36m"
 #define D_(...) do { \
-	printf("\x1b[33m%s \x1b[37m[%s:%d] " D_INFO, __FUNCTION__, \
-		__FILE__, __LINE__); printf (__VA_ARGS__); printf ("\x1b[0m\n"); \
+	__android_log_print(ANDROID_LOG_DEBUG, "libxmp", __VA_ARGS__); \
 	} while (0)
 #else
 #define D_(...) do {} while (0)
@@ -125,12 +156,12 @@ void __inline CLIB_DECL D_(const char *text, ...) { do {} while (0); }
 #define D_INFO "\x1b[33m"
 #define D_CRIT "\x1b[31m"
 #define D_WARN "\x1b[36m"
-#define D_(args...) do { \
+#define D_(...) do { \
 	printf("\x1b[33m%s \x1b[37m[%s:%d] " D_INFO, __FUNCTION__, \
-		__FILE__, __LINE__); printf (args); printf ("\x1b[0m\n"); \
+		__FILE__, __LINE__); printf (__VA_ARGS__); printf ("\x1b[0m\n"); \
 	} while (0)
 #else
-#define D_(args...) do {} while (0)
+#define D_(...) do {} while (0)
 #endif
 
 #endif	/* !_MSC_VER */
@@ -144,12 +175,26 @@ void __inline CLIB_DECL D_(const char *text, ...) { do {} while (0); }
 #define open _open
 #define close _close
 #define unlink _unlink
+#define S_ISDIR(x) (((x)&_S_IFDIR) != 0)
 #endif
 #if defined(_WIN32) || defined(__WATCOMC__) /* in win32.c */
+#define USE_LIBXMP_SNPRINTF
+/* MSVC 2015+ has C99 compliant snprintf and vsnprintf implementations.
+ * If __USE_MINGW_ANSI_STDIO is defined for MinGW (which it is by default),
+ * compliant implementations will be used instead of the broken MSVCRT
+ * functions. Additionally, GCC may optimize some calls to those functions. */
+#if defined(_MSC_VER) && _MSC_VER >= 1900
+#undef USE_LIBXMP_SNPRINTF
+#endif
+#if defined(__MINGW32__) && defined(__USE_MINGW_ANSI_STDIO) && (__USE_MINGW_ANSI_STDIO != 0)
+#undef USE_LIBXMP_SNPRINTF
+#endif
+#ifdef USE_LIBXMP_SNPRINTF
 int libxmp_vsnprintf(char *, size_t, const char *, va_list);
 int libxmp_snprintf (char *, size_t, const char *, ...);
 #define snprintf  libxmp_snprintf
 #define vsnprintf libxmp_vsnprintf
+#endif
 #endif
 
 /* Quirks */
@@ -206,10 +251,13 @@ int libxmp_snprintf (char *, size_t, const char *, ...);
 /* Time factor */
 #define DEFAULT_TIME_FACTOR	10.0
 #define MED_TIME_FACTOR		2.64
+#define FAR_TIME_FACTOR		4.01373	/* See far_extras.c */
 
-#define MAX_SEQUENCES		16
+#define MAX_SEQUENCES		255
 #define MAX_SAMPLE_SIZE		0x10000000
 #define MAX_SAMPLES		1024
+#define MAX_INSTRUMENTS		255
+#define MAX_PATTERNS		256
 
 #define IS_PLAYER_MODE_MOD()	(m->read_event_type == READ_EVENT_MOD)
 #define IS_PLAYER_MODE_FT2()	(m->read_event_type == READ_EVENT_FT2)
@@ -234,7 +282,6 @@ struct ord_data {
 };
 
 
-
 /* Context */
 
 struct smix_data {
@@ -255,7 +302,7 @@ struct module_data {
 
 	char *dirname;			/* file dirname */
 	char *basename;			/* file basename */
-	char *filename;			/* Module file name */
+	const char *filename;		/* Module file name */
 	char *comment;			/* Comments, if any */
 	uint8 md5[16];			/* MD5 message digest */
 	int size;			/* File size */
@@ -265,7 +312,7 @@ struct module_data {
 	int volbase;			/* Volume base */
 	int gvolbase;			/* Global volume base */
 	int gvol;			/* Global volume */
-	int *vol_table;			/* Volume translation table */
+	const int *vol_table;		/* Volume translation table */
 	int quirk;			/* player quirks */
 #define READ_EVENT_MOD	0
 #define READ_EVENT_FT2	1
@@ -285,13 +332,47 @@ struct module_data {
 	struct xmp_sequence seq_data[MAX_SEQUENCES];
 	char *instrument_path;
 	void *extra;			/* format-specific extra fields */
-	char **scan_cnt;		/* scan counters */
+	uint8 **scan_cnt;		/* scan counters */
 	struct extra_sample_data *xtra;
 #ifndef LIBXMP_CORE_DISABLE_IT
 	struct xmp_sample *xsmp;	/* sustain loop samples */
 #endif
 };
 
+
+struct pattern_loop {
+	int start;
+	int count;
+};
+
+struct flow_control {
+	int pbreak;
+	int jump;
+	int delay;
+	int jumpline;
+	int loop_chn;
+
+	struct pattern_loop *loop;
+
+	int num_rows;
+	int end_point;
+#define ROWDELAY_ON		(1 << 0)
+#define ROWDELAY_FIRST_FRAME	(1 << 1)
+	int rowdelay;		/* For IT pattern row delay */
+	int rowdelay_set;
+};
+
+struct virt_channel {
+	int count;
+	int map;
+};
+
+struct scan_data {
+	int time;			/* replay time in ms */
+	int row;
+	int ord;
+	int num;
+};
 
 struct player_data {
 	int ord;
@@ -315,30 +396,9 @@ struct player_data {
 	int master_vol;			/* Music volume */
 	int gvol;
 
-	struct flow_control {
-		int pbreak;
-		int jump;
-		int delay;
-		int jumpline;
-		int loop_chn;
-	
-		struct pattern_loop {
-			int start;
-			int count;
-		} *loop;
-	
-		int num_rows;
-		int end_point;
-		int rowdelay;		/* For IT pattern row delay */
-		int rowdelay_set;
-	} flow;
+	struct flow_control flow;
 
-	struct {
-		int time;		/* replay time in ms */
-		int ord;
-		int row;
-		int num;
-	} scan[MAX_SEQUENCES];
+	struct scan_data *scan;
 
 	struct channel_data *xc_data;
 
@@ -350,18 +410,15 @@ struct player_data {
 		int virt_channels;	/* Number of virtual channels */
 		int virt_used;		/* Number of voices currently in use */
 		int maxvoc;		/* Number of sound card voices */
-	
-		struct virt_channel {
-			int count;
-			int map;
-		} *virt_channel;
-	
+
+		struct virt_channel *virt_channel;
+
 		struct mixer_voice *voice_array;
 	} virt;
 
 	struct xmp_event inject_event[XMP_MAX_CHANNELS];
 
-	struct {		
+	struct {
 		int consumed;
 		int in_size;
 		char *in_buffer;
@@ -401,8 +458,8 @@ struct context_data {
 /* Prototypes */
 
 char	*libxmp_adjust_string	(char *);
-int	libxmp_exclude_match	(const char *);
 int	libxmp_prepare_scan	(struct context_data *);
+void	libxmp_free_scan	(struct context_data *);
 int	libxmp_scan_sequences	(struct context_data *);
 int	libxmp_get_sequence	(struct context_data *, int);
 int	libxmp_set_player_mode	(struct context_data *);
@@ -433,5 +490,7 @@ uint32	readmem32b		(const uint8 *);
 
 struct xmp_instrument *libxmp_get_instrument(struct context_data *, int);
 struct xmp_sample *libxmp_get_sample(struct context_data *, int);
+
+int libxmp_get_filetype (const char *path);
 
 #endif /* LIBXMP_COMMON_H */

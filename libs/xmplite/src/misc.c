@@ -20,36 +20,11 @@
  * THE SOFTWARE.
  */
 
-#include "format.h"
+#include <errno.h>
+#include "xmp.h"
 
-extern const struct format_loader libxmp_loader_xm;
-extern const struct format_loader libxmp_loader_mod;
-extern const struct format_loader libxmp_loader_it;
-extern const struct format_loader libxmp_loader_s3m;
-
-const struct format_loader *const format_loaders[5] = {
-	&libxmp_loader_xm,
-	&libxmp_loader_mod,
-#ifndef LIBXMP_CORE_DISABLE_IT
-	&libxmp_loader_it,
-#endif
-	&libxmp_loader_s3m,
-	NULL
-};
-
-static const char *_farray[5] = { NULL };
-
-const char *const *format_list(void)
+int xmp_syserrno (void)
 {
-	int count, i;
-
-	if (_farray[0] == NULL) {
-		for (count = i = 0; format_loaders[i] != NULL; i++) {
-			_farray[count++] = format_loaders[i]->name;
-		}
-
-		_farray[count] = NULL;
-	}
-
-	return _farray;
+	return errno;
 }
+
