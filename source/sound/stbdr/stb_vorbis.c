@@ -4193,7 +4193,9 @@ static int start_decoder(vorb *f)
 
 
    if (f->alloc.alloc_buffer) {
-      assert(f->temp_offset == f->alloc.alloc_buffer_length_in_bytes);
+      //k8: this assert is wrong (and it is harmless too, because `f->temp_offset` is
+      //k8: always lower than `f->alloc.alloc_buffer_length_in_bytes` here)
+      //assert(f->temp_offset == f->alloc.alloc_buffer_length_in_bytes);
       // check if there's enough temp memory so we don't error later
       if (f->setup_offset + sizeof(*f) + f->temp_memory_required > (unsigned) f->temp_offset)
          return error(f, VORBIS_outofmem);
