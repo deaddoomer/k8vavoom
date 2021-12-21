@@ -292,8 +292,8 @@ bool VVorbisAudioCodec::Init () {
   vassert(!tmpbuf.alloc_buffer);
 
   // overallocate a little, just in case
-  tmpbuf.alloc_buffer_length_in_bytes = 1024*1024+1024; // 1MB should be enough
-  tmpbuf.alloc_buffer = (char *)Z_Malloc(tmpbuf.alloc_buffer_length_in_bytes);
+  tmpbuf.alloc_buffer_length_in_bytes = 1024*1024; // 1MB should be enough
+  tmpbuf.alloc_buffer = (char *)Z_Malloc(tmpbuf.alloc_buffer_length_in_bytes+1024);
 
   eos = false;
   inited = false;
