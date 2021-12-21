@@ -185,6 +185,24 @@ private:
 private:
   // calculate hash for the given key
   // must never return zero, because zero is used as "empty marker"
+
+  //k8: don't even fuckin' ask me. shitplusplus is not a language,
+  //k8: it is a stinking pile of shit.
+  #ifdef VV_SHITPP_FUCKED_TMAP_TRAIT
+  template <typename TKT> static VVA_ALWAYS_INLINE VVA_CHECKRESULT typename fuck_enable_if<HasTypeHash<TKT>::value, uint32_t>::type calcKeyHash (const TKT &akey) noexcept {
+    #ifdef VV_SHITPP_FUCKED_TMAP_TRAIT_DEBUG
+    VV_SHITPP_PRINT_TPN("000");
+    #endif
+    return akey.TypeHash()|ValidHashBit;
+  }
+
+  template <typename TKT> static VVA_ALWAYS_INLINE VVA_CHECKRESULT typename fuck_enable_if<!HasTypeHash<TKT>::value, uint32_t>::type calcKeyHash (const TKT &akey) noexcept {
+    #ifdef VV_SHITPP_FUCKED_TMAP_TRAIT_DEBUG
+    VV_SHITPP_PRINT_TPN("001");
+    #endif
+    return GetTypeHash(akey)|ValidHashBit;
+  }
+  #else
   static VVA_ALWAYS_INLINE VVA_CHECKRESULT uint32_t calcKeyHash (const TK &akey) noexcept {
     // FUCK YOU, SHITPLUSPLUS! WHY CAN'T WE FUCKIN' DECLARE THIS FUCKIN' TEMPLATE,
     // AND THEN USE IT TO DETECT THINGS THAT WERE DECLARED LATER?!!
@@ -194,6 +212,7 @@ private:
     //return khash+(!khash); // avoid zero hash value
     return GetTypeHash(akey)|ValidHashBit;
   }
+  #endif
 
   // calculate desired bucket index for the given hash
   VVA_ALWAYS_INLINE VVA_CHECKRESULT uint32_t calcBestBucketIdx (const uint32_t hashval, const uint32_t bhigh) const noexcept {
