@@ -31,6 +31,13 @@
 static VCvarB snd_midi_messages("snd_midi_messages", false, "Show messages from MIDI files?", CVAR_Archive|CVAR_NoShadow);
 
 
+#ifdef VV_FLUID_DEBUG
+# define VFLOG(...)  GCon->Logf(NAME_Debug, __VA_ARGS__)
+#else
+# define VFLOG(...)  do {} while (0)
+#endif
+
+
 //==========================================================================
 //
 //  MIDIData::MIDIData
@@ -213,19 +220,17 @@ bool MIDIData::parseMem () {
         MidiTrack &track = tracks.alloc();
         memset((void *)&track, 0, sizeof(MidiTrack));
         track.setup(this, indata, (vint32)chunksize);
-#ifdef VV_FLUID_DEBUG_DUMP_TRACKS
+        #ifdef VV_FLUID_DEBUG_DUMP_TRACKS
         GCon->Logf("  track #%d: %u bytes", tracks.length()-1, track.size());
         for (int f = 0; f < track.size(); ++f) GCon->Logf("    %5d: 0x%02x", f, track[f]);
-#endif
+        #endif
       }
       inleft -= chunksize;
       indata += chunksize;
     }
   }
 
-#ifdef VV_FLUID_DEBUG
-  GCon->Logf("Fluid: %d tracks in song", tracks.length());
-#endif
+  VFLOG("Fluid: %d tracks in song", tracks.length());
 
   return true;
 }
@@ -277,9 +282,7 @@ bool MIDIData::runTrack (int tidx, EventCBType cb, void *udata) {
   // we are in "post-track pause" now, and it was just expired
   if (track.isEndOfData()) return false;
 
-#ifdef VV_FLUID_DEBUG_TICKS
-  GCon->Logf("FLUID: TICK for channel #%d (stime=%g; ntt=%g; eot=%d)", tidx, currtime, track.nextEventTime(), (track.isEndOfData() ? 1 : 0));
-#endif
+  VFLOG("FLUID: TICK for channel #%d (stime=%g; ntt=%g; eot=%d)", tidx, currtime, track.nextEventTime(), (track.isEndOfData() ? 1 : 0));
 
   // keep parsing through midi track until
   // the end is reached or until it reaches next delta time
@@ -296,9 +299,7 @@ bool MIDIData::runTrack (int tidx, EventCBType cb, void *udata) {
     // still invalid?
     if ((evcode&0x80) == 0) { track.abort(true); return false; }
 
-#ifdef VV_FLUID_DEBUG_TICKS
-    GCon->Logf("EVENT: tidx=%d; pos=%d; len=%d; left=%d; event=0x%02x; nt=%g; ct=%g", tidx, track.getPos(), track.size(), track.getLeft(), evcode, track.nextEventTime(), currtime);
-#endif
+    VFLOG("EVENT: tidx=%d; pos=%d; len=%d; left=%d; event=0x%02x; nt=%g; ct=%g", tidx, track.getPos(), track.size(), track.getLeft(), evcode, track.nextEventTime(), currtime);
 
     if (evcode == MIDI_SYSEX) {
       // system exclusive
@@ -329,22 +330,16 @@ bool MIDIData::runTrack (int tidx, EventCBType cb, void *udata) {
       vuint32 len = track.readVarLen();
       // check for valid length
       if (len > (vuint32)track.getLeft()) { track.abort(true); return false; }
-#ifdef VV_FLUID_DEBUG
-      GCon->Logf("META: tidx=%d; meta=0x%02x; len=%u", tidx, evcode, len);
-#endif
+      VFLOG("META: tidx=%d; meta=0x%02x; len=%u", tidx, evcode, len);
       switch (evcode) {
         case MIDI_EOT:
-#ifdef VV_FLUID_DEBUG
-          GCon->Log("  END-OF-TRACK");
-#endif
+          VFLOG("  END-OF-TRACK");
           track.abort(false);
           break;
         case MIDI_SET_TEMPO:
           if (len == 3) {
             vint32 t = (((vuint32)track[0])<<16)|(((vuint32)track[1])<<8)|((vuint32)track[2]);
-#ifdef VV_FLUID_DEBUG
-            GCon->Logf("  tempo: %u", t);
-#endif
+            VFLOG("  tempo: %u", (unsigned)t);
             setTempo(t);
           }
           break;
@@ -436,45 +431,31 @@ bool MIDIData::runTrack (int tidx, EventCBType cb, void *udata) {
       switch (mev.type) {
         case NOTE_OFF:
           mev.data2 = track.getNextMidiByte();
-#ifdef VV_FLUID_DEBUG
-          GCon->Logf("  (%u):NOTE_OFF: %u %u", mev.channel, mev.data1, mev.data2);
-#endif
+          VFLOG("  (%u):NOTE_OFF: %u %u", mev.channel, mev.data1, mev.data2);
           break;
         case NOTE_ON:
           mev.data2 = track.getNextMidiByte();
-#ifdef VV_FLUID_DEBUG
-          GCon->Logf("  (%u):NOTE_N: %u %u", mev.channel, mev.data1, mev.data2);
-#endif
+          VFLOG("  (%u):NOTE_N: %u %u", mev.channel, mev.data1, mev.data2);
           break;
         case KEY_PRESSURE:
           mev.data2 = track.getNextMidiByte();
-#ifdef VV_FLUID_DEBUG
-          GCon->Logf("  (%u):KEY_PRESSURE: %u %u", mev.channel, mev.data1, mev.data2);
-#endif
+          VFLOG("  (%u):KEY_PRESSURE: %u %u", mev.channel, mev.data1, mev.data2);
           break;
         case CONTROL_CHANGE:
           mev.data2 = track.getNextMidiByte();
-#ifdef VV_FLUID_DEBUG
-          GCon->Logf("  (%u):CONTROL_CHANGE: %u %u", mev.channel, mev.data1, mev.data2);
-#endif
+          VFLOG("  (%u):CONTROL_CHANGE: %u %u", mev.channel, mev.data1, mev.data2);
           break;
         case PROGRAM_CHANGE:
-#ifdef VV_FLUID_DEBUG
-          GCon->Logf("  (%u):PROGRAM_CHANGE: %u", mev.channel, mev.data1);
-#endif
+          VFLOG("  (%u):PROGRAM_CHANGE: %u", mev.channel, mev.data1);
           break;
         case CHANNEL_PRESSURE:
-#ifdef VV_FLUID_DEBUG
-          GCon->Logf("  (%u):CHANNEL_PRESSURE: %u", mev.channel, mev.data1);
-#endif
+          VFLOG("  (%u):CHANNEL_PRESSURE: %u", mev.channel, mev.data1);
           break;
         case PITCH_BEND: // pitch bend
           mev.data2 = track.getNextMidiByte();
           mev.data1 = (mev.data1&0x7f)|(((vuint32)(mev.data2&0x7f))<<7);
           mev.data2 = 0;
-#ifdef VV_FLUID_DEBUG
-          GCon->Logf("  (%u):PITCH_BEND: %u", channel, mev.data1);
-#endif
+          VFLOG("  (%u):PITCH_BEND: %u", channel, mev.data1);
           break;
         default:
           GCon->Logf(NAME_Warning, "invalid MIDI command encountered, aborting playback");
@@ -487,9 +468,7 @@ bool MIDIData::runTrack (int tidx, EventCBType cb, void *udata) {
     // check for end of the track, otherwise get the next delta time
     if (!track.isEndOfData()) {
       vuint32 dtime = track.getDeltaTic();
-#ifdef VV_FLUID_DEBUG
-      GCon->Logf("  timedelta: %u (%g) (pos=%d)", dtime, tic2ms(dtime), track.getPos());
-#endif
+      VFLOG("  timedelta: %u (%g) (pos=%d)", dtime, tic2ms(dtime), track.getPos());
       track.advanceTics(dtime);
     }
   }
@@ -529,9 +508,7 @@ int MIDIData::decodeStep (EventCBType cb, int SampleRate, void *udata) {
       for (int f = 0; f < tracks.length(); ++f) {
         if (runTrack(f, cb, udata)) {
           double ntt = tracks[f].nextEventTime();
-#ifdef VV_FLUID_DEBUG
-          GCon->Logf("*** TRACK #%d: ntt=%g; mintt=%g (stime=%g)", f, ntt, nextEventTime, currtime);
-#endif
+          VFLOG("*** TRACK #%d: ntt=%g; mintt=%g (stime=%g)", f, ntt, nextEventTime, currtime);
           if (nextEventTime < 0 || nextEventTime > ntt) nextEventTime = ntt;
         }
       }
@@ -547,9 +524,7 @@ int MIDIData::decodeStep (EventCBType cb, int SampleRate, void *udata) {
       }
     }
     if (nextEventTime < 0) {
-#ifdef VV_FLUID_DEBUG
-      GCon->Logf("FluidSynth: no more active tracks");
-#endif
+      VFLOG("FluidSynth: no more active tracks");
       return 0; // done decoding
     }
     if (nextEventTime <= currtime) {
@@ -561,9 +536,7 @@ int MIDIData::decodeStep (EventCBType cb, int SampleRate, void *udata) {
     // calculate number of frames to generate before next event
     vint32 framesUntilEvent = (vint32)((nextEventTime-currtime)*SampleRate/1000.0);
     if (framesUntilEvent < 0) framesUntilEvent = 0; // just in case
-#ifdef VV_FLUID_DEBUG
-    GCon->Logf("FS: currtime=%g; nexttime=%g; delta=%g; frames=%d", currtime, nextEventTime, nextEventTime-currtime, framesUntilEvent);
-#endif
+    VFLOG("FS: currtime=%g; nexttime=%g; delta=%g; frames=%d", currtime, nextEventTime, nextEventTime-currtime, framesUntilEvent);
     // advance virtual time
     currtime = nextEventTime;
     if (framesUntilEvent != 0) return framesUntilEvent;
