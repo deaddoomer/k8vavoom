@@ -23,6 +23,8 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+//k8: for new xmplite
+#define BUILDING_STATIC
 #include <xmp.h>
 
 #include "../../gamedefs.h"
