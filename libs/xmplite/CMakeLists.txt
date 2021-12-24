@@ -1,4 +1,5 @@
 include_directories(src src/loaders)
+add_definitions(-DBUILDING_STATIC)
 add_definitions(-DLIBXMP_CORE_PLAYER)
 add_definitions(-DLIBXMP_NO_PROWIZARD)
 add_definitions(-DLIBXMP_NO_DEPACKERS)
