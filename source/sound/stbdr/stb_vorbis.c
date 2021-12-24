@@ -69,6 +69,17 @@
 #ifndef STB_VORBIS_INCLUDE_STB_VORBIS_H
 #define STB_VORBIS_INCLUDE_STB_VORBIS_H
 
+
+#ifndef STBV_IGNORE_ASSERT
+# define STBV_IGNORE_ASSERT
+#endif
+
+#ifdef STB_VORBIS_NO_STDIO
+# undef STB_VORBIS_NO_STDIO
+#endif
+#define STB_VORBIS_NO_STDIO 1
+
+
 #if defined(STB_VORBIS_NO_CRT) && !defined(STB_VORBIS_NO_STDIO)
 #define STB_VORBIS_NO_STDIO 1
 #endif
@@ -551,6 +562,9 @@ enum STBVorbisError
 
 #ifdef STB_VORBIS_NO_PULLDATA_API
    #define STB_VORBIS_NO_INTEGER_CONVERSION
+#ifdef STB_VORBIS_NO_STDIO
+# undef STB_VORBIS_NO_STDIO
+#endif
    #define STB_VORBIS_NO_STDIO
 #endif
 
@@ -581,7 +595,9 @@ enum STBVorbisError
 #ifndef STB_VORBIS_NO_CRT
    #include <stdlib.h>
    #include <string.h>
-   #include <assert.h>
+   #ifndef STBV_IGNORE_ASSERT
+   # include <assert.h>
+   #endif
    #include <math.h>
 
    // find definition of alloca if it's not in stdlib.h:
@@ -597,6 +613,14 @@ enum STBVorbisError
    #define free(s)     ((void) 0)
    #define realloc(s)  0
 #endif // STB_VORBIS_NO_CRT
+
+#ifdef STBV_IGNORE_ASSERT
+# ifdef assert
+#  undef assert
+# endif
+# define assert(...)  do {} while (0)
+#endif
+
 
 #include <limits.h>
 
@@ -3663,17 +3687,20 @@ static int start_decoder(vorb *f)
    //file vendor
    len = get32_packet(f);
    f->vendor = (char*)setup_malloc(f, sizeof(char) * (len+1));
+   if (f->vendor == NULL) return error(f, VORBIS_outofmem);
    for(i=0; i < len; ++i) {
       f->vendor[i] = get8_packet(f);
    }
    f->vendor[len] = (char)'\0';
    //user comments
    f->comment_list_length = get32_packet(f);
-   f->comment_list = (char**)setup_malloc(f, sizeof(char*) * (f->comment_list_length));
+   f->comment_list = (char**)setup_malloc(f, sizeof(char*) * (f->comment_list_length+1)); //k8: +1 for zero comments
+   if (f->comment_list == NULL) return error(f, VORBIS_outofmem);
 
    for(i=0; i < f->comment_list_length; ++i) {
       len = get32_packet(f);
       f->comment_list[i] = (char*)setup_malloc(f, sizeof(char) * (len+1));
+      if (f->comment_list[i] == NULL) return error(f, VORBIS_outofmem);
 
       for(j=0; j < len; ++j) {
          f->comment_list[i][j] = get8_packet(f);
