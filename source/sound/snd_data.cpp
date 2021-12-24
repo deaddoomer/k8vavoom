@@ -1317,11 +1317,14 @@ void VSoundManager::ProcessLoadedSounds () {
           sfx.SetLoadedState(sfx.LumpNum >= 0 ? sfxinfo_t::ST_NotLoaded : sfxinfo_t::ST_Invalid);
         }
       }
+      // the real loader already printed all required diagnostics
+      #if 1
       if (wasPending && sfx.LumpNum >= 0) {
-        GCon->Logf(NAME_Warning, "Failed to load sound '%s' (%s)", *sfx.TagName, *W_FullLumpName(sfx.LumpNum));
+        GCon->Logf(NAME_Debug, "Failed to load sound '%s' (%s)", *sfx.TagName, *W_FullLumpName(sfx.LumpNum));
       } else {
-        GCon->Logf(NAME_Warning, "Cannot find sound '%s'", *sfx.TagName);
+        GCon->Logf(NAME_Debug, "Cannot find sound '%s'", *sfx.TagName);
       }
+      #endif
     }
     if (sndThreadDebug) fprintf(stderr, "STRD: notified about sound #%d (lst=%d) (%s : %s)\n", sound_id, sfx.GetLoadedState(), *sfx.TagName, *W_FullLumpName(sfx.LumpNum));
   }
@@ -1339,7 +1342,7 @@ void VSoundManager::ProcessLoadedSounds () {
 //
 //==========================================================================
 bool VSoundManager::LoadSoundInternal (int sound_id) {
-  // mp3 is only allowed for music, and music loaders doesn't use this
+  // mp3 is only allowed for music, and music loaders don't use this
   /*static*/ const char *Exts[] = { "flac", "opus", "ogg", "wav", "raw"/*, "mp3"*/, nullptr };
 
   sfxinfo_t *sfx = &S_sfx[sound_id];
@@ -1355,23 +1358,23 @@ bool VSoundManager::LoadSoundInternal (int sound_id) {
 
   int Lump = sfx->LumpNum;
   if (Lump < 0) {
-    // no need to lock, state changes are atomic
-    //soundsWarned.put(*S_sfx[sound_id].TagName);
-    //GCon->Logf(NAME_Warning, "Sound '%s' lump not found", *S_sfx[sound_id].TagName);
     sfx->SetLoadedState(sfxinfo_t::ST_Invalid);
     return false;
   }
 
   // release the lock, we'll do some real work here
   mythread_mutex_unlock(&loaderLock);
+
+  // find best lump
   int FileLump = W_FindLumpByFileNameWithExts(va("sound/%s", *W_LumpName(Lump)), Exts);
   if (Lump < FileLump) Lump = FileLump;
 
   VStream *Strm = W_CreateLumpReaderNum(Lump);
   if (!Strm) {
     // oops, something is wrong
+    GCon->Logf(NAME_Warning, "Cannot load sound '%s' (lump '%s')", *S_sfx[sound_id].TagName, *W_FullLumpName(Lump));
     mythread_mutex_lock(&loaderLock);
-    sfx->LumpNum = Lump;
+    sfx->LumpNum = -1; // don't bother anymore
     sfx->SetLoadedState(sfxinfo_t::ST_Invalid);
     return false;
   }
@@ -1392,7 +1395,7 @@ bool VSoundManager::LoadSoundInternal (int sound_id) {
       GCon->Logf(NAME_Warning, "Sound lump '%s' cannot be read", *W_FullLumpName(Lump));
       // oops, something is wrong
       mythread_mutex_lock(&loaderLock);
-      sfx->LumpNum = Lump;
+      sfx->LumpNum = -1; // don't bother anymore
       sfx->SetLoadedState(sfxinfo_t::ST_Invalid);
       return false;
     }
@@ -1414,16 +1417,16 @@ bool VSoundManager::LoadSoundInternal (int sound_id) {
   }
 
   VStream::Destroy(Strm);
+
   // we are done with the real work, get back the lock
   mythread_mutex_lock(&loaderLock);
 
   if (!sfx->Data || sfx->DataSize == 0) {
-    //soundsWarned.put(*S_sfx[sound_id].TagName);
-    if (cli_DebugSound) GCon->Logf(NAME_Debug, "Failed to load sound '%s' (%s)", *S_sfx[sound_id].TagName, *W_FullLumpName(Lump));
+    GCon->Logf(NAME_Warning, "Failed to load sound '%s' (%s) (codec not found or unsupported)", *S_sfx[sound_id].TagName, *W_FullLumpName(Lump));
     Z_Free(sfx->Data);
     sfx->Data = nullptr;
     sfx->DataSize = 0;
-    sfx->LumpNum = Lump;
+    sfx->LumpNum = -1; // don't bother anymore
     sfx->SetLoadedState(sfxinfo_t::ST_Invalid);
     return false;
   } else {
