@@ -621,7 +621,7 @@ VConstant *VClass::FindSimpleConstant (VName Name, bool recursive) {
 //==========================================================================
 VConstant *VClass::FindConstant (VName Name, VName EnumName) {
   if (Name == NAME_None) return nullptr;
-  Name = ResolveAlias(Name);
+  if (EnumName == NAME_None) Name = ResolveAlias(Name); else EnumName = ResolveAlias(EnumName);
   VMemberBase *m = StaticFindMember(Name, this, MEMBER_Const, EnumName);
   if (m) return (VConstant *)m;
   if (ParentClass) return ParentClass->FindConstant(Name, EnumName);
@@ -644,7 +644,7 @@ VConstant *VClass::FindPackageConstant (VMemberBase *pkg, VName Name, VName Enum
     //GLog.Logf("const `%s` search aborted for `%s`", *Name, *GetFullName());
     return nullptr;
   }
-  Name = ResolveAlias(Name);
+  if (EnumName == NAME_None) Name = ResolveAlias(Name); else EnumName = ResolveAlias(EnumName);
   VMemberBase *m = StaticFindMember(Name, this, MEMBER_Const, EnumName);
   if (m) return (VConstant *)m;
   if (ParentClass) return ParentClass->FindPackageConstant(pkg, Name, EnumName);
