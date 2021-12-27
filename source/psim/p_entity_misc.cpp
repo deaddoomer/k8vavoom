@@ -283,7 +283,7 @@ TVec VEntity::GetDrawOrigin () {
   if (FlagsEx&EFEX_FloatBob) {
     //float FloatBobPhase; // in seconds; <0 means "choose at random"; should be converted to ticks; amp is [0..63]
     //float FloatBobStrength;
-    if (FloatBobPhase < 0) FloatBobPhase = Random()*256.0f/35.0f; // just in case
+    if (FloatBobPhase < 0) FloatBobPhase = FRandom()*256.0f/35.0f; // just in case
     const float amp = FloatBobStrength*8.0f;
     const float phase = fmodf(FloatBobPhase*35.0, 64.0f);
     const float angle = phase*360.0f/64.0f;

@@ -116,8 +116,8 @@ bool VLevel::CheckBootPrints (TVec org, subsector_t *sub, VBootPrintDecalParams 
           params.Shade = (avc.r<<16)|(avc.g<<8)|avc.b;
         }
         params.Animator = bp->Animator;
-        params.Alpha = (bp->AlphaValue >= 0.0f ? min2(bp->AlphaValue, 1.0f) : RandomBetween(0.82f, 0.96f));
-        params.MarkTime = RandomBetween(bp->TimeMin, bp->TimeMax);
+        params.Alpha = (bp->AlphaValue >= 0.0f ? min2(bp->AlphaValue, 1.0f) : FRandomBetween(0.82f, 0.96f));
+        params.MarkTime = FRandomBetween(bp->TimeMin, bp->TimeMax);
         if (params.MarkTime < 0.0f) params.MarkTime = 0.0f;
         return true;
       }

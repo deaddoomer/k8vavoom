@@ -284,7 +284,7 @@ struct VTerrainBootprint {
     if (AlphaMin < 0.0f) {
       AlphaValue = -1.0f;
     } else {
-      AlphaValue = RandomBetween(AlphaMin, AlphaMax);
+      AlphaValue = FRandomBetween(AlphaMin, AlphaMax);
     }
   }
 };

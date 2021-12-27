@@ -751,7 +751,7 @@ void VAudio::PlaySound (int InSoundId, const TVec &origin, const TVec &velocity,
     }
     // apply pitch
     if (sndcp) {
-      pitch += (RandomFull()-RandomFull())*(sndcp*snd_random_pitch_boost.asFloat());
+      pitch += (FRandomFull()-FRandomFull())*(sndcp*snd_random_pitch_boost.asFloat());
       //GCon->Logf(NAME_Debug, "applied random pitch to sound '%s' (ccp=%g; sndcp=%g); pitch=%g", *GSoundManager->S_sfx[sound_id].TagName, GSoundManager->S_sfx[sound_id].ChangePitch, sndcp, pitch);
     }
   }

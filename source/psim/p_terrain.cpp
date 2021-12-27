@@ -724,7 +724,7 @@ static void ParseTerrainBootPrintDef (VScriptParser *sc) {
         bp->AlphaMin = clampval(sc->Float, 0.0f, 1.0f);
         sc->ExpectFloat();
         bp->AlphaMax = clampval(sc->Float, 0.0f, 1.0f);
-        bp->AlphaValue = RandomBetween(bp->AlphaMin, bp->AlphaMax);
+        bp->AlphaValue = FRandomBetween(bp->AlphaMin, bp->AlphaMax);
       } else {
         sc->ExpectFloat();
         bp->AlphaMin = bp->AlphaMax = bp->AlphaValue = clampval(sc->Float, 0.0f, 1.0f);

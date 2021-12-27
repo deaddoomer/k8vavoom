@@ -142,9 +142,13 @@
   DECLARE_FUNCTION(strTrimRight)
 
   // random numbers
-  DECLARE_FUNCTION(Random)
+  DECLARE_FUNCTION(FRandom)
   DECLARE_FUNCTION(FRandomFull)
+  DECLARE_FUNCTION(FRandomFullSlow)
   DECLARE_FUNCTION(FRandomBetween)
+  DECLARE_FUNCTION(FRandomBetweenSlow)
+  DECLARE_FUNCTION(IRandomBetween)
+  DECLARE_FUNCTION(IRandomBetweenSlow)
   DECLARE_FUNCTION(P_Random)
 
   DECLARE_FUNCTION(GenRandomSeedU32)

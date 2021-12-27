@@ -928,19 +928,44 @@ IMPLEMENT_FUNCTION(VObject, strTrimRight) {
 //  Random numbers
 //
 //**************************************************************************
-IMPLEMENT_FUNCTION(VObject, Random) {
-  RET_FLOAT(Random());
+IMPLEMENT_FUNCTION(VObject, FRandom) {
+  RET_FLOAT(FRandom());
 }
 
 IMPLEMENT_FUNCTION(VObject, FRandomFull) {
-  RET_FLOAT(RandomFull());
+  RET_FLOAT(FRandomFull());
+}
+
+IMPLEMENT_FUNCTION(VObject, FRandomFullSlow) {
+  RET_FLOAT(FRandomFullSlow());
+}
+
+// native static final float FRandomBetweenSlow (float minv, float maxv);
+IMPLEMENT_FUNCTION(VObject, FRandomBetweenSlow) {
+  float minv, maxv;
+  vobjGetParam(minv, maxv);
+  RET_FLOAT(FRandomBetweenSlow(minv, maxv));
 }
 
 // native static final float FRandomBetween (float minv, float maxv);
 IMPLEMENT_FUNCTION(VObject, FRandomBetween) {
   float minv, maxv;
   vobjGetParam(minv, maxv);
-  RET_FLOAT(RandomBetween(minv, maxv));
+  RET_FLOAT(FRandomBetween(minv, maxv));
+}
+
+// native static final int IRandomBetweenSlow (int minv, int maxv);
+IMPLEMENT_FUNCTION(VObject, IRandomBetweenSlow) {
+  int minv, maxv;
+  vobjGetParam(minv, maxv);
+  RET_INT(IRandomBetweenSlow(minv, maxv));
+}
+
+// native static final int IRandomBetween (int minv, int maxv);
+IMPLEMENT_FUNCTION(VObject, IRandomBetween) {
+  int minv, maxv;
+  vobjGetParam(minv, maxv);
+  RET_INT(IRandomBetween(minv, maxv));
 }
 
 IMPLEMENT_FUNCTION(VObject, GenRandomSeedU32) {

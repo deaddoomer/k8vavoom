@@ -843,7 +843,7 @@ static void SV_UpdateMaster () {
   if (LastMasterUpdate <= 0.0 || host_systime-LastMasterUpdate >= hbt) {
     GNet->UpdateMaster();
     // randomise update time a little
-    LastMasterUpdate = host_systime+(RandomFull()-RandomFull())*8;
+    LastMasterUpdate = host_systime+(FRandomFull()-FRandomFull())*8.0;
   }
 }
 

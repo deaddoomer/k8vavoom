@@ -233,7 +233,7 @@ DecalFloatVal DecalFloatVal::clone () noexcept {
   res.type = type;
   res.rndMin = rndMin;
   res.rndMax = rndMax;
-  //res.value = (type == T_Random ? RandomBetween(rndMin, rndMax) : value);
+  //res.value = (type == T_Random ? FRandomBetween(rndMin, rndMax) : value);
   res.value = value;
   return res;
 }
@@ -249,7 +249,7 @@ void DecalFloatVal::genValue (float defval) noexcept {
     case T_Fixed:
       break;
     case T_Random:
-      value = RandomBetween(rndMin, rndMax);
+      value = FRandomBetween(rndMin, rndMax);
       break;
     case T_Undefined:
       value = defval;
@@ -511,11 +511,11 @@ void VDecalDef::genValues () noexcept {
 
   alpha.genValue(1.0f);
 
-       if (flipX == FlipRandom) flipXValue = (Random() < 0.5f);
+       if (flipX == FlipRandom) flipXValue = GenRandomBool();
   else if (flipX == FlipAlways) flipXValue = true;
   else flipXValue = false;
   // fuck you, gshitcc
-       if (flipY == FlipRandom) flipYValue = (Random() < 0.5f);
+       if (flipY == FlipRandom) flipYValue = GenRandomBool();
   else if (flipY == FlipAlways) flipYValue = true;
   else flipYValue = false;
 
@@ -610,7 +610,7 @@ void VDecalDef::parseNumOrRandom (VScriptParser *sc, DecalFloatVal *value, bool 
       value->value = value->rndMin;
       value->type = DecalFloatVal::T_Fixed;
     } else {
-      value->value = RandomBetween(value->rndMin, value->rndMax); // just in case
+      value->value = FRandomBetween(value->rndMin, value->rndMax); // just in case
     }
   } else {
     // normal

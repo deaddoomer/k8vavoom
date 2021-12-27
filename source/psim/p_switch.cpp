@@ -376,7 +376,7 @@ bool VThinkButton::AdvanceFrame () {
     }
   } else {
     if (Def->Frames[Frame].RandomRange) {
-      Timer = (Def->Frames[Frame].BaseTime+Random()*Def->Frames[Frame].RandomRange)/35.0f;
+      Timer = (Def->Frames[Frame].BaseTime+FRandom()*Def->Frames[Frame].RandomRange)/35.0f;
     } else {
       Timer = Def->Frames[Frame].BaseTime/35.0f;
     }

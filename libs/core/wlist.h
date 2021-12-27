@@ -56,6 +56,9 @@
 #ifndef VAVOOM_CORE_LIB_WLIST
 #define VAVOOM_CORE_LIB_WLIST
 
+// must be already included!
+/*#include "prngs.h"*/
+
 
 // taken from GZDoom
 template<class T> class TWeightedList {
@@ -66,7 +69,7 @@ public:
     vuint8 RandomVal;  // 0 (never) - 255 (always)
     T Value;
 
-    Choice(vuint16 w, U v) : Next(nullptr), Weight(w), RandomVal(0), Value(v) {}
+    Choice (vuint16 w, U v) : Next(nullptr), Weight(w), RandomVal(0), Value(v) {}
   };
 
 public:
@@ -127,8 +130,9 @@ template<class T> void TWeightedList<T>::AddEntry (T value, vuint16 weight) {
 
 
 template<class T> T TWeightedList<T>::PickEntry () const {
-  //vuint8 randomnum = (vuint8)(Random()*256.0f);
-  vuint8 randomnum = (vuint8)((((float)(rand()&0x7fff)/(float)0x8000))*256.0f);
+  //vuint8 randomnum = (vuint8)(FRandom()*256.0f);
+  //vuint8 randomnum = (vuint8)((((float)(rand()&0x7fff)/(float)0x8000))*256.0f);
+  const vuint8 randomnum = (vuint8)P_Random(); // [0..255]
   Choice<T> *choice = Choices;
   while (choice != nullptr && randomnum > choice->RandomVal) choice = choice->Next;
   return (choice != nullptr ? choice->Value : nullptr);

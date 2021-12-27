@@ -657,7 +657,7 @@ void VBasePlayer::AdjustAngles () {
       const float dramount = min2(180.0f, cl_deathroll_amount.asFloat());
       // use random roll direction
       const float dir =
-        (ViewAngles.roll == 0 ? (RandomFull() < 0.5f ? -1.0f : 1.0f) :
+        (ViewAngles.roll == 0 ? (GenRandomBool() ? -1.0f : 1.0f) :
          ViewAngles.roll < 0 ? -1.0f : 1.0f);
       if (drspeed <= 0) {
         ViewAngles.roll = dramount*dir;

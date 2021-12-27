@@ -26,8 +26,8 @@
 #ifndef VAVOOM_MISC_HEADER
 #define VAVOOM_MISC_HEADER
 
-//#define Random()  ((float)(rand() & 0x7fff) / (float)0x8000)
-//#define RandomFull()  ((float)(rand() & 0x7fff) / (float)0x7fff)
+//#define FRandom()  ((float)(rand() & 0x7fff) / (float)0x8000)
+//#define FRandomFull()  ((float)(rand() & 0x7fff) / (float)0x7fff)
 
 
 // this is used to compare floats like ints which is faster

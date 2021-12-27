@@ -791,7 +791,7 @@ static void ParseFTAnim (int wadfile, VScriptParser *sc, int fttype) {
 
   if (!ignore && FrameDefs.length() > ad.StartFrameDef) {
     ad.NumFrames = FrameDefs.length()-ad.StartFrameDef;
-    ad.CurrentFrame = (ad.Type != ANIM_Random || ad.NumFrames < 2 ? 0/*ad.NumFrames-1*/ : (int)(Random()*ad.NumFrames)%ad.NumFrames);
+    ad.CurrentFrame = (ad.Type != ANIM_Random || ad.NumFrames < 2 ? 0/*ad.NumFrames-1*/ : (int)(GenRandomU31()%ad.NumFrames));
     ad.Time = -666.69f; // force 1st game tic to animate
     AnimDefs.Append(ad);
   } else if (!ignore && !optional) {
@@ -1395,7 +1395,7 @@ void R_AnimateSurfaces () {
               }
               break;
             case ANIM_Random:
-              if (ad.NumFrames > 1) ad.CurrentFrame = (int)(Random()*ad.NumFrames);
+              if (ad.NumFrames > 1) ad.CurrentFrame = (int)(GenRandomU31()%ad.NumFrames);
               break;
             default:
               fprintf(stderr, "unknown animation type for texture %d (%s): %d\n", ad.Index, *GTextureManager[ad.Index]->Name, (int)ad.Type);
@@ -1411,7 +1411,7 @@ void R_AnimateSurfaces () {
         const FrameDef_t &fd = FrameDefs[ad.StartFrameDef+(ad.range ? 0 : ad.CurrentFrame)];
 
         ad.Time += fd.BaseTime/35.0f;
-        if (fd.RandomRange) ad.Time += Random()*(fd.RandomRange/35.0f); // random tics
+        if (fd.RandomRange) ad.Time += FRandom()*(fd.RandomRange/35.0f); // random tics
         doChangeFrame = true;
 
         if (!ad.range) {

@@ -1152,18 +1152,28 @@ static final float CD_SweepLineAABBlpl (const ref CD_LinePlanes linePlanes, TVec
 // ////////////////////////////////////////////////////////////////////////// //
 // random numbers
 
-// floating random number 0.0 ... 0.999999
-native static final float Random ();
-alias FRandom = Random;
-// floating random number 0.0 ... 1.0
+// floating random number in range [0..1)
+native static final float FRandom ();
+alias Random = FRandom;
+// floating random number in range [0..1]
 native static final float FRandomFull ();
+// floating random number in range [0..1], with slightly better distribution
+native static final float FRandomFullSlow ();
 // floating random number [minv..maxv] (inclusive)
 native static final float FRandomBetween (float minv, float maxv);
-// integer random number 0 .. 255
+// floating random number [minv..maxv] (inclusive, better distribution, but slower)
+native static final float FRandomBetweenSlow (float minv, float maxv);
+// int random number [minv..maxv] (inclusive)
+native static final int IRandomBetween (int minv, int maxv);
+// int random number [minv..maxv] (inclusive, better distribution, but slower)
+native static final int IRandomBetweenSlow (int minv, int maxv);
+// integer random number in range [0...255]
 native static final int P_Random ();
 // generates a random seen in range [1..0xffff_ffff]
+// this doesn't use built-in PRNG, but tries to get some entropy from other sources
+// use ONLY to generate some seends for other PRNGs!
 native static final int GenRandomSeedU32 ();
-// this is faster than `GenRandomSeedU32()`
+// this is MUCH faster than `GenRandomSeedU32()`
 // generates a random number in range [0..0x7fff_ffff]
 native static final int GenRandomU31 ();
 

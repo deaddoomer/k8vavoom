@@ -154,8 +154,8 @@ public:
 
   inline void SetRelative (float aangle) { angle = AngleMod(aangle); mode = Relative; }
   inline void SetAbsolute (float aangle) { angle = AngleMod(aangle); mode = Absolute; }
-  inline void SetAbsoluteRandom () { angle = AngleMod(360.0f*Random()); mode = AbsoluteRandom; }
-  inline void SetRelativeRandom () { angle = AngleMod(360.0f*Random()); mode = RelativeRandom; }
+  inline void SetAbsoluteRandom () { angle = AngleMod(360.0f*FRandomFull()); mode = AbsoluteRandom; }
+  inline void SetRelativeRandom () { angle = AngleMod(360.0f*FRandomFull()); mode = RelativeRandom; }
   inline void SetZero () { mode = Zero; }
   inline void SetInverted () { mode = Inverted; }
 

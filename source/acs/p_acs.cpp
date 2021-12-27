@@ -3427,13 +3427,14 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
 
     ACSVM_CASE(PCD_Random)
       ACSVM_CHECK_STACK_UNDER(2);
-      sp[-2] = sp[-2]+(vint32)(Random()*(sp[-1]-sp[-2]+1));
+      sp[-2] = IRandomBetween(sp[-2], sp[-1]);
       --sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_RandomDirect)
       ACSVM_CHECK_STACK_OVER(1);
-      *sp = PEEK_INT32_AT(ip)+(vint32)(Random()*(PEEK_INT32_AT(ip+4)-PEEK_INT32_AT(ip)+1));
+      //*sp = PEEK_INT32_AT(ip)+(vint32)(FRandom()*(PEEK_INT32_AT(ip+4)-PEEK_INT32_AT(ip)+1));
+      *sp = IRandomBetween(PEEK_INT32_AT(ip), PEEK_INT32_AT(ip+4));
       ip += 8;
       ++sp;
       ACSVM_BREAK;
@@ -4300,7 +4301,8 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
 
     ACSVM_CASE(PCD_RandomDirectB)
       ACSVM_CHECK_STACK_OVER(1);
-      *sp = ip[0]+(vint32)(Random()*(ip[1]-ip[0]+1));
+      //*sp = ip[0]+(vint32)(FRandom()*(ip[1]-ip[0]+1));
+      *sp = IRandomBetween((uint8_t)ip[0], (uint8_t)ip[1]);
       ip += 2;
       ++sp;
       ACSVM_BREAK;

@@ -606,7 +606,7 @@ void VNetConnection::ReceivedPacket (VBitStreamReader &Packet) {
 
   // simulate receiving loss
   const float lossPrc = net_dbg_recv_loss.asFloat();
-  if (lossPrc > 0.0f && RandomFull()*100.0f < lossPrc) {
+  if (lossPrc > 0.0f && FRandomFull()*100.0f < lossPrc) {
     //GCon->Logf(NAME_Debug, "%s: simulated packet loss!", *GetAddress());
     return;
   }
@@ -1019,7 +1019,7 @@ void VNetConnection::Flush () {
 
     // send the message
     const float lossPrc = net_dbg_send_loss.asFloat();
-    if (lossPrc <= 0.0f || RandomFull()*100.0f >= lossPrc) {
+    if (lossPrc <= 0.0f || FRandomFull()*100.0f >= lossPrc) {
       // fix crc, encrypt the message
       vuint8 *msgdata = Out.GetData();
       unsigned msgsize = Out.GetNumBytes();
