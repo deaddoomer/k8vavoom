@@ -2368,19 +2368,22 @@ Entity GibEntity (name gibtype) {
 //
 //  SectorChanged
 //
-//  CrushChange == -666: loader fix
 //  CrushChange == -1: ignore stuck mobj
 //
 //  returns `false` if doesn't fit
 //
 //==========================================================================
-override bool SectorChanged (int CrushChange) {
+override bool SectorChanged (int CrushChange, sector_t *sector) {
+  // this is not used anymore
+  assert(CrushChange != -666);
+  /*
   if (CrushChange == -666) {
     // only fix positions for monsters (and don't touch corpses too)
     if (!bMonster && !bIsPlayer) return true;
     if (!bSolid || bCorpse) return true;
     return HeightClip(skipTriggers:true, skipObjects:true);
   }
+  */
 
   //print("SectorChanged for %C", self);
   if (HeightClip()) return true; // it fits

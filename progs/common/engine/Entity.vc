@@ -349,6 +349,10 @@ transient native readonly bool bAllowSimpleTick; // do not fallback to full phys
 bool bSeparateFlatDecal; // use `FlatDecalName` for flat decals
 // this belongs to `EntityEx`, but i need it here for faster checks
 bool bMissileHitscan; // this is hitscan emulation, should be affected by hitscan blocking flags; `bMissile` should still be set
+// no need to save this, physics engine will set it if necessary
+// any height-changing sector will set this flag (it is cheap)
+// physics code can use this flag to check if dead bodies should slide away
+transient bool bSomeSectorMoved;
 
 // 0: none
 // 1: switches object to "k8vavoomInternalNoTickGrav" when it enters idle state (the one with negative duration)
@@ -781,8 +785,12 @@ void ApplyFriction (float DeltaTime) {
 //  `CrushChange` means "crush unfitting actors"
 //  returns `false` if actor cannot fit
 //
+//  CrushChange == -1: ignore stuck mobj
+//
+//  returns `false` if doesn't fit
+//
 //==========================================================================
-bool SectorChanged (int CrushChange) {
+bool SectorChanged (int CrushChange, sector_t *sector) {
   return true;
 }
 

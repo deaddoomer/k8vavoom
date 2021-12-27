@@ -42,7 +42,7 @@
  */
 
 // ////////////////////////////////////////////////////////////////////////// //
-static VCvarB gm_smart_z("gm_smart_z", true, "Fix Z position for some things, so they won't fall thru ledge edges?", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
+//static VCvarB gm_smart_z("gm_smart_z", true, "Fix Z position for some things, so they won't fall thru ledge edges?", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
 
 VCvarB r_limit_blood_spots("r_limit_blood_spots", true, "Limit blood spoit amount in a sector?", CVAR_Archive|CVAR_NoShadow);
 VCvarI r_limit_blood_spots_max("r_limit_blood_spots_max", "96", "Maximum blood spots?", CVAR_Archive|CVAR_NoShadow);
@@ -276,7 +276,7 @@ void VEntity::LinkToWorld (int properFloorCheck) {
       properFloorCheck = true;
     }
 
-    if (!gm_smart_z) properFloorCheck = false;
+    //if (!gm_smart_z) properFloorCheck = false;
   }
 
   if (properFloorCheck) {

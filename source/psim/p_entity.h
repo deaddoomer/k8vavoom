@@ -286,6 +286,10 @@ class VEntity : public VThinker {
     EFEX_SeparateFlatDecal = 1u<<16u, // use `FlatDecalName` for flat decals
     // this belongs to `EntityEx`, but i need it here for faster checks
     EFEX_MissileHitscan    = 1u<<17u, // this is hitscan emulation, should be affected by hitscan blocking flags; `bMissile` should still be set
+    // no need to save this, physics engine will set it if necessary
+    // any height-changing sector will set this flag (it is cheap)
+    // physics code can use this flag to check if dead bodies should slide away
+    EFEX_SomeSectorMoved   = 1u<<18u,
   };
   vuint32 FlagsEx;
 
@@ -524,7 +528,7 @@ public:
   void eventBlastedHitLine () { static VMethodProxy method("BlastedHitLine"); vobjPutParamSelf(); VMT_RET_VOID(method); }
   void eventHandleFloorclip () { static VMethodProxy method("HandleFloorclip"); vobjPutParamSelf(); VMT_RET_VOID(method); }
   void eventCrossSpecialLine (line_t *ld, int side) { static VMethodProxy method("CrossSpecialLine"); vobjPutParamSelf(ld, side); VMT_RET_VOID(method); }
-  bool eventSectorChanged (int CrushChange) { static VMethodProxy method("SectorChanged"); vobjPutParamSelf(CrushChange); VMT_RET_BOOL(method); }
+  bool eventSectorChanged (int CrushChange, sector_t *sector) { static VMethodProxy method("SectorChanged"); vobjPutParamSelf(CrushChange, sector); VMT_RET_BOOL(method); }
   void eventClearInventory () { static VMethodProxy method("ClearInventory"); vobjPutParamSelf(); VMT_RET_VOID(method); }
   void eventGiveInventory (VName ItemName, int Amount, bool allowReplacement) { static VMethodProxy method("GiveInventory"); vobjPutParamSelf(ItemName, Amount, allowReplacement); VMT_RET_VOID(method); }
   void eventTakeInventory (VName ItemName, int Amount, bool allowReplacement) { static VMethodProxy method("TakeInventory"); vobjPutParamSelf(ItemName, Amount, allowReplacement); VMT_RET_VOID(method); }

@@ -128,9 +128,11 @@ bool VLevel::ChangeSectorInternal (sector_t *sector, int crunch) {
           n->Visited = visCount;
           if (n->Thing->IsGoingToDie()) continue;
           // process it
+          // set "some sector was moved" flag for corpse physics
+          n->Thing->FlagsEx |= VEntity::EFEX_SomeSectorMoved;
           //const TVec oldOrg = n->Thing->Origin;
           //GCon->Logf("CHECKING Thing '%s'(%u) hit (zpos:%g) (sector #%d)", *n->Thing->GetClass()->GetFullName(), n->Thing->GetUniqueId(), n->Thing->Origin.z, (int)(ptrdiff_t)(sector-&Sectors[0]));
-          if (!n->Thing->eventSectorChanged(crunch)) {
+          if (!n->Thing->eventSectorChanged(crunch, sector)) {
             // doesn't fit, keep checking (crush other things)
             //GCon->Logf("Thing '%s'(%u) hit (old: %g; new: %g) (sector #%d)", *n->Thing->GetClass()->GetFullName(), n->Thing->GetUniqueId(), oldOrg.z, n->Thing->Origin.z, (int)(ptrdiff_t)(sector-&Sectors[0]));
             if (ret) csTouched[secnum] |= 0x80000000U;
