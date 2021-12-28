@@ -191,12 +191,12 @@ public:
   VTextLocation Location; // of the current token
   VTextLocation CurrChLocation; // of the current char (currCh)
 
-  static VVA_ALWAYS_INLINE bool isAlpha (const char ch) noexcept { return ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')); }
-  static VVA_ALWAYS_INLINE bool isDigit (const char ch) noexcept { return (ch >= '0' && ch <= '9'); }
-  static VVA_ALWAYS_INLINE bool isIdChar (const char ch) noexcept { return (ch == '_' || ch == '$' || isAlpha(ch)); }
-  static VVA_ALWAYS_INLINE bool isIdDigit (const char ch) noexcept { return (isIdChar(ch) || isDigit(ch)); }
+  static VVA_FORCEINLINE bool isAlpha (const char ch) noexcept { return ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')); }
+  static VVA_FORCEINLINE bool isDigit (const char ch) noexcept { return (ch >= '0' && ch <= '9'); }
+  static VVA_FORCEINLINE bool isIdChar (const char ch) noexcept { return (ch == '_' || ch == '$' || isAlpha(ch)); }
+  static VVA_FORCEINLINE bool isIdDigit (const char ch) noexcept { return (isIdChar(ch) || isDigit(ch)); }
 
-  VVA_ALWAYS_INLINE bool isBlankChar (const char ch) const noexcept { return ((vuint8)ch <= ' ' || (ch == '_' && src && src->EDGEMode)); }
+  VVA_FORCEINLINE bool isBlankChar (const char ch) const noexcept { return ((vuint8)ch <= ' ' || (ch == '_' && src && src->EDGEMode)); }
 
 public:
   // virtual file system callback (can be empty, and is empty by default)

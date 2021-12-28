@@ -34,7 +34,7 @@ typedef struct BJPRNGCtx_t {
 } BJPRNGCtx;
 
 #define bjprng_rot(x,k) (((x)<<(k))|((x)>>(32-(k))))
-static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT
+static VVA_FORCEINLINE VVA_OKUNUSED VVA_CHECKRESULT
 uint32_t bjprng_ranval (BJPRNGCtx *x) VVA_NOEXCEPT {
   uint32_t e = x->a-bjprng_rot(x->b, 27);
   x->a = x->b^bjprng_rot(x->c, 17);
@@ -163,21 +163,21 @@ extern PCG32_Ctx g_small_pcg3232_ctx; // long name, to avoid confusions
 void RandomInit () VVA_NOEXCEPT; // call this to seed all global generator states with some random seeds
 
 
-//static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t GenRandomU31 () { return bjprng_ranval(&g_bjprng_ctx)&0x7fffffffu; }
+//static VVA_FORCEINLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t GenRandomU31 () { return bjprng_ranval(&g_bjprng_ctx)&0x7fffffffu; }
 //static inline VVA_OKUNUSED VVA_CHECKRESULT uint8_t P_Random () { return bjprng_ranval(&g_bjprng_ctx)&0xff; }
 
-static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t GenRandomU31 () VVA_NOEXCEPT { return pcg3264_next(&g_pcg3264_ctx)&0x7fffffffu; }
-static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t GenRandomU32 () VVA_NOEXCEPT { return pcg3264_next(&g_pcg3264_ctx)/*&0xffffffffu*/; }
-static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT uint8_t P_Random () VVA_NOEXCEPT { return pcg3264_next(&g_pcg3264_ctx)&0xff; } // [0..255]
+static VVA_FORCEINLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t GenRandomU31 () VVA_NOEXCEPT { return pcg3264_next(&g_pcg3264_ctx)&0x7fffffffu; }
+static VVA_FORCEINLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t GenRandomU32 () VVA_NOEXCEPT { return pcg3264_next(&g_pcg3264_ctx)/*&0xffffffffu*/; }
+static VVA_FORCEINLINE VVA_OKUNUSED VVA_CHECKRESULT uint8_t P_Random () VVA_NOEXCEPT { return pcg3264_next(&g_pcg3264_ctx)&0xff; } // [0..255]
 #ifdef __cplusplus
-static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT bool GenRandomBool () VVA_NOEXCEPT { return (pcg3264_next(&g_pcg3264_ctx)/*&0xffffffffu*/ < 0x80000000U); }
+static VVA_FORCEINLINE VVA_OKUNUSED VVA_CHECKRESULT bool GenRandomBool () VVA_NOEXCEPT { return (pcg3264_next(&g_pcg3264_ctx)/*&0xffffffffu*/ < 0x80000000U); }
 #else
-static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT int GenRandomBool () VVA_NOEXCEPT { return (pcg3264_next(&g_pcg3264_ctx)/*&0xffffffffu*/ < 0x80000000U); }
+static VVA_FORCEINLINE VVA_OKUNUSED VVA_CHECKRESULT int GenRandomBool () VVA_NOEXCEPT { return (pcg3264_next(&g_pcg3264_ctx)/*&0xffffffffu*/ < 0x80000000U); }
 #endif
 
 
 // [0..1)
-static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT float FRandom () VVA_NOEXCEPT {
+static VVA_FORCEINLINE VVA_OKUNUSED VVA_CHECKRESULT float FRandom () VVA_NOEXCEPT {
   // 0x3f800000U is 1.0f
   // 0x3fffffffU is slightly less than 2.0f
   vuint32 u32 = 0x3f800000U|(GenRandomU32()&0x7fffffu);
@@ -187,7 +187,7 @@ static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT float FRandom () VVA_NOEXC
 
 
 // [0..1], biased
-static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT float FRandomFull () VVA_NOEXCEPT {
+static VVA_FORCEINLINE VVA_OKUNUSED VVA_CHECKRESULT float FRandomFull () VVA_NOEXCEPT {
   // 0x3f800000U is 1.0f
   // 0x3fffffffU is slightly less than 2.0f
   // sadly, we have a modulo here, but without it, the chances to get 2.0 are quite low

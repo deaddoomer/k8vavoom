@@ -31,17 +31,17 @@ public:
   float yaw; // left/right
   float roll; // around screen center
 
-  VVA_ALWAYS_INLINE TAVec () noexcept {}
+  VVA_FORCEINLINE TAVec () noexcept {}
   //nope;TAVec () noexcept : pitch(0.0f), yaw(0.0f), roll(0.0f) {}
-  VVA_ALWAYS_INLINE TAVec (float APitch, float AYaw, float ARoll=0.0f) noexcept : pitch(APitch), yaw(AYaw), roll(ARoll) {}
-  //VVA_ALWAYS_INLINE TAVec (const TAVec &other) noexcept { memcpy((void *)this, (const void *)&other, sizeof(TAVec)); }
-  VVA_ALWAYS_INLINE TAVec (const TAVec &other) noexcept : pitch(other.pitch), yaw(other.yaw), roll(other.roll) {}
+  VVA_FORCEINLINE TAVec (float APitch, float AYaw, float ARoll=0.0f) noexcept : pitch(APitch), yaw(AYaw), roll(ARoll) {}
+  //VVA_FORCEINLINE TAVec (const TAVec &other) noexcept { memcpy((void *)this, (const void *)&other, sizeof(TAVec)); }
+  VVA_FORCEINLINE TAVec (const TAVec &other) noexcept : pitch(other.pitch), yaw(other.yaw), roll(other.roll) {}
 
-  VVA_ALWAYS_INLINE TAVec &operator = (const TAVec &src) noexcept = default;
+  VVA_FORCEINLINE TAVec &operator = (const TAVec &src) noexcept = default;
 
-  VVA_ALWAYS_INLINE bool isValid () const noexcept { return (isFiniteF(pitch) && isFiniteF(yaw) && isFiniteF(roll)); }
-  VVA_ALWAYS_INLINE bool isZero () const noexcept { return !(isU32NonZeroF(pitch)|isU32NonZeroF(yaw)|isU32NonZeroF(roll)); }
-  VVA_ALWAYS_INLINE bool isZeroSkipRoll () const noexcept { return !(isU32NonZeroF(pitch)|isU32NonZeroF(yaw)); }
+  VVA_FORCEINLINE bool isValid () const noexcept { return (isFiniteF(pitch) && isFiniteF(yaw) && isFiniteF(roll)); }
+  VVA_FORCEINLINE bool isZero () const noexcept { return !(isU32NonZeroF(pitch)|isU32NonZeroF(yaw)|isU32NonZeroF(roll)); }
+  VVA_FORCEINLINE bool isZeroSkipRoll () const noexcept { return !(isU32NonZeroF(pitch)|isU32NonZeroF(yaw)); }
 
   friend VStream &operator << (VStream &Strm, TAVec &v) {
     return Strm << v.pitch << v.yaw << v.roll;
@@ -52,7 +52,7 @@ static_assert(__builtin_offsetof(TAVec, yaw) == __builtin_offsetof(TAVec, pitch)
 static_assert(__builtin_offsetof(TAVec, roll) == __builtin_offsetof(TAVec, yaw)+sizeof(float), "TAVec layout fail (1)");
 static_assert(sizeof(TAVec) == sizeof(float)*3, "TAVec layout fail (2)");
 
-VVA_ALWAYS_INLINE VVA_PURE uint32_t GetTypeHash (const TAVec &v) noexcept { return joaatHashBuf(&v, 3*sizeof(float)); }
+VVA_FORCEINLINE VVA_PURE uint32_t GetTypeHash (const TAVec &v) noexcept { return joaatHashBuf(&v, 3*sizeof(float)); }
 
-static VVA_OKUNUSED VVA_ALWAYS_INLINE bool operator == (const TAVec &v1, const TAVec &v2) noexcept { return (v1.pitch == v2.pitch && v1.yaw == v2.yaw && v1.roll == v2.roll); }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE bool operator != (const TAVec &v1, const TAVec &v2) noexcept { return (v1.pitch != v2.pitch || v1.yaw != v2.yaw || v1.roll != v2.roll); }
+static VVA_OKUNUSED VVA_FORCEINLINE bool operator == (const TAVec &v1, const TAVec &v2) noexcept { return (v1.pitch == v2.pitch && v1.yaw == v2.yaw && v1.roll == v2.roll); }
+static VVA_OKUNUSED VVA_FORCEINLINE bool operator != (const TAVec &v1, const TAVec &v2) noexcept { return (v1.pitch != v2.pitch || v1.yaw != v2.yaw || v1.roll != v2.roll); }

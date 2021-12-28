@@ -81,7 +81,7 @@ VOpenGLDrawer::FBO::~FBO () {
 }
 
 
-template <class T> constexpr VVA_ALWAYS_INLINE void swapval (T &a, T &b) noexcept { T tmp = a; a = b; b = tmp; }
+template <class T> constexpr VVA_FORCEINLINE void swapval (T &a, T &b) noexcept { T tmp = a; a = b; b = tmp; }
 
 
 //==========================================================================

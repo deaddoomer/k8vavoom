@@ -111,8 +111,8 @@ struct sfxinfo_t {
   vuint32 DataSize;
   void *Data;
 
-  VVA_ALWAYS_INLINE int GetLoadedState () noexcept { return atomic_get(&loadedStateVar); }
-  VVA_ALWAYS_INLINE void SetLoadedState (int value) noexcept { atomic_set(&loadedStateVar, value); }
+  VVA_FORCEINLINE int GetLoadedState () noexcept { return atomic_get(&loadedStateVar); }
+  VVA_FORCEINLINE void SetLoadedState (int value) noexcept { atomic_set(&loadedStateVar, value); }
 };
 
 struct seq_info_t {

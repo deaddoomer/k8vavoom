@@ -1334,7 +1334,7 @@ void VRenderLevelLightmap::InvalidateStaticLightmaps (const TVec &org, float rad
 //  xblight
 //
 //==========================================================================
-static VVA_ALWAYS_INLINE int xblight (const int add) noexcept {
+static VVA_FORCEINLINE int xblight (const int add) noexcept {
   enum {
     minlight = 256,
     maxlight = 0xff00,

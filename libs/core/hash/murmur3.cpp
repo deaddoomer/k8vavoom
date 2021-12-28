@@ -34,7 +34,7 @@ void MurmurHash3_x64_128 ( const void * key, int len, uint32_t seed, void * out 
 
 //-----------------------------------------------------------------------------
 // Platform-specific functions and macros
-static VVA_ALWAYS_INLINE VVA_CONST uint32_t rotl32 (uint32_t x, uint8_t r) noexcept { return (x<<r)|(x>>(32u-r)); }
+static VVA_FORCEINLINE VVA_CONST uint32_t rotl32 (uint32_t x, uint8_t r) noexcept { return (x<<r)|(x>>(32u-r)); }
 
 
 //-----------------------------------------------------------------------------
@@ -45,7 +45,7 @@ static VVA_ALWAYS_INLINE VVA_CONST uint32_t rotl32 (uint32_t x, uint8_t r) noexc
 
 //-----------------------------------------------------------------------------
 // Finalization mix - force all bits of a hash block to avalanche
-static VVA_ALWAYS_INLINE VVA_CONST uint32_t fmix32 (uint32_t h) noexcept {
+static VVA_FORCEINLINE VVA_CONST uint32_t fmix32 (uint32_t h) noexcept {
   h ^= h>>16;
   h *= 0x85ebca6b;
   h ^= h>>13;

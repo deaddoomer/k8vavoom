@@ -46,11 +46,11 @@
 #ifndef VVA_MAYALIAS
 # define VVA_MAYALIAS     __attribute__((__may_alias__))
 #endif
-#ifndef VVA_ALWAYS_INLINE
-# define VVA_ALWAYS_INLINE  inline __attribute__((always_inline))
+#ifndef VVA_FORCEINLINE
+# define VVA_FORCEINLINE  inline __attribute__((always_inline))
 #endif
-#ifndef VVA_NO_INLINE
-# define VVA_NO_INLINE      __attribute__((noinline))
+#ifndef VVA_NOINLINE
+# define VVA_NOINLINE     __attribute__((noinline))
 #endif
 
 
@@ -133,13 +133,13 @@ enum ENoInit { E_NoInit };
 //   T myobj;
 //   new(&myobj, E_ArrayNew, E_ArrayNew) T();
 enum EArrayNew { E_ArrayNew };
-VVA_ALWAYS_INLINE VVA_OKUNUSED void *operator new (size_t sz, void *ptr, EArrayNew, EArrayNew) noexcept { if (sz) memset(ptr, 0, sz); return ptr; }
+VVA_FORCEINLINE VVA_OKUNUSED void *operator new (size_t sz, void *ptr, EArrayNew, EArrayNew) noexcept { if (sz) memset(ptr, 0, sz); return ptr; }
 
 // "non-clearing placement new"
 // use it like this:
 //   T myobj;
 //   new(&myobj, E_ArrayNew, E_NoInit) T();
-VVA_ALWAYS_INLINE VVA_OKUNUSED void *operator new (size_t sz, void *ptr, EArrayNew, ENoInit) noexcept { return ptr; }
+VVA_FORCEINLINE VVA_OKUNUSED void *operator new (size_t sz, void *ptr, EArrayNew, ENoInit) noexcept { return ptr; }
 #endif
 
 
@@ -185,10 +185,10 @@ template<class T, class=void> struct VEnableIfHasHashMethod {};
 template<class T> struct VEnableIfHasHashMethod<T, decltype(T::CalculateHash, void())> { typedef void type; };
 
 template<class T, class=void> struct VUniversalHasher {
-  template<typename VTT> static VVA_ALWAYS_INLINE VVA_CHECKRESULT uint32_t CalcHash (const VTT &akey) noexcept { return GetTypeHash(akey); }
+  template<typename VTT> static VVA_FORCEINLINE VVA_CHECKRESULT uint32_t CalcHash (const VTT &akey) noexcept { return GetTypeHash(akey); }
 };
 template<class T> struct VUniversalHasher<T, typename VEnableIfHasHashMethod<T>::type> {
-  template<typename VTT> static VVA_ALWAYS_INLINE VVA_CHECKRESULT uint32_t CalcHash (const VTT &akey) noexcept { return akey.GetTypeHash(); }
+  template<typename VTT> static VVA_FORCEINLINE VVA_CHECKRESULT uint32_t CalcHash (const VTT &akey) noexcept { return akey.GetTypeHash(); }
 };
 
 template<typename VT> static VVA_OKUNUSED VVA_CHECKRESULT uint32_t CalcTypeHash (const VT &v) noexcept {

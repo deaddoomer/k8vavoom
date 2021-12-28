@@ -38,7 +38,7 @@ static atomic_int queueSpinLock = 0;
 //  lockQueue
 //
 //==========================================================================
-static VVA_ALWAYS_INLINE void lockQueue () noexcept {
+static VVA_FORCEINLINE void lockQueue () noexcept {
   while (atomic_cmp_xchg(&queueSpinLock, 0, 1) != 0) {}
 }
 
@@ -48,14 +48,14 @@ static VVA_ALWAYS_INLINE void lockQueue () noexcept {
 //  unlockQueue
 //
 //==========================================================================
-static VVA_ALWAYS_INLINE void unlockQueue () noexcept {
+static VVA_FORCEINLINE void unlockQueue () noexcept {
   atomic_store(&queueSpinLock, 0);
 }
 
 
 struct QueueLocker {
-  VVA_ALWAYS_INLINE QueueLocker () noexcept { lockQueue(); }
-  VVA_ALWAYS_INLINE ~QueueLocker () noexcept { unlockQueue(); }
+  VVA_FORCEINLINE QueueLocker () noexcept { lockQueue(); }
+  VVA_FORCEINLINE ~QueueLocker () noexcept { unlockQueue(); }
   QueueLocker (const QueueLocker &) = delete;
   QueueLocker &operator = (const QueueLocker &) = delete;
 };

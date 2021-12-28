@@ -48,7 +48,7 @@ static atomic_int bucketsInited = 0;
 struct BucketLock {
   VV_DISABLE_COPY(BucketLock)
 
-  VVA_ALWAYS_INLINE BucketLock () noexcept {
+  VVA_FORCEINLINE BucketLock () noexcept {
     atomic_int v = atomic_cmp_xchg(&bucketsInited, 0, 666);
     if (!v) {
       // init
@@ -60,7 +60,7 @@ struct BucketLock {
     while (v != 1) v = atomic_cmp_xchg(&bucketsInited, 2, 1);
   }
 
-  VVA_ALWAYS_INLINE ~BucketLock () noexcept {
+  VVA_FORCEINLINE ~BucketLock () noexcept {
     atomic_store(&bucketsInited, 2);
   }
 };

@@ -147,13 +147,13 @@ static void vmEmitBytes (VMPoolInfo* nfo, const void *buf, const unsigned len) {
 }
 
 
-static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmEmitUByte (VMPoolInfo* nfo, const vuint8 v) { vmEmitBytes(nfo, &v, 1); }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmEmitUShort (VMPoolInfo* nfo, const vuint16 v) { vmEmitBytes(nfo, &v, 2); }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmEmitUInt (VMPoolInfo* nfo, const vuint32 v) { vmEmitBytes(nfo, &v, 4); }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmEmitPtr (VMPoolInfo* nfo, const void *ptr) { vmEmitBytes(nfo, &ptr, sizeof(void*)); }
+static VVA_OKUNUSED VVA_FORCEINLINE void vmEmitUByte (VMPoolInfo* nfo, const vuint8 v) { vmEmitBytes(nfo, &v, 1); }
+static VVA_OKUNUSED VVA_FORCEINLINE void vmEmitUShort (VMPoolInfo* nfo, const vuint16 v) { vmEmitBytes(nfo, &v, 2); }
+static VVA_OKUNUSED VVA_FORCEINLINE void vmEmitUInt (VMPoolInfo* nfo, const vuint32 v) { vmEmitBytes(nfo, &v, 4); }
+static VVA_OKUNUSED VVA_FORCEINLINE void vmEmitPtr (VMPoolInfo* nfo, const void *ptr) { vmEmitBytes(nfo, &ptr, sizeof(void*)); }
 
-static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmEmitSShort (VMPoolInfo* nfo, const vint16 v) { vmEmitBytes(nfo, &v, 2); }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmEmitSInt (VMPoolInfo* nfo, const vint32 v) { vmEmitBytes(nfo, &v, 4); }
+static VVA_OKUNUSED VVA_FORCEINLINE void vmEmitSShort (VMPoolInfo* nfo, const vint16 v) { vmEmitBytes(nfo, &v, 2); }
+static VVA_OKUNUSED VVA_FORCEINLINE void vmEmitSInt (VMPoolInfo* nfo, const vint32 v) { vmEmitBytes(nfo, &v, 4); }
 
 static void vmPatchBytes (VMPoolInfo* nfo, const int offset, const void *buf, const unsigned len) {
   if (!len) return;
@@ -166,14 +166,14 @@ static void vmPatchBytes (VMPoolInfo* nfo, const int offset, const void *buf, co
   memcpy(pool->code+nfo->stpos+(unsigned)offset, buf, len);
 }
 
-//static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmPutUByte (VMPoolInfo* nfo, const int offset, const vuint8 v) { vmPutBytes(nfo, offset, &v, 1); }
-//static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmPutUShort (VMPoolInfo* nfo, const int offset, const vuint16 v) { vmPutBytes(nfo, offset, &v, 2); }
-//static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmPutUInt (VMPoolInfo* nfo, const int offset, const vuint32 v) { vmPutBytes(nfo, offset, &v, 4); }
-//static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmPutPtr (VMPoolInfo* nfo, const int offset, const void *ptr) { vmPutBytes(nfo, offset, &ptr, sizeof(void*)); }
+//static VVA_OKUNUSED VVA_FORCEINLINE void vmPutUByte (VMPoolInfo* nfo, const int offset, const vuint8 v) { vmPutBytes(nfo, offset, &v, 1); }
+//static VVA_OKUNUSED VVA_FORCEINLINE void vmPutUShort (VMPoolInfo* nfo, const int offset, const vuint16 v) { vmPutBytes(nfo, offset, &v, 2); }
+//static VVA_OKUNUSED VVA_FORCEINLINE void vmPutUInt (VMPoolInfo* nfo, const int offset, const vuint32 v) { vmPutBytes(nfo, offset, &v, 4); }
+//static VVA_OKUNUSED VVA_FORCEINLINE void vmPutPtr (VMPoolInfo* nfo, const int offset, const void *ptr) { vmPutBytes(nfo, offset, &ptr, sizeof(void*)); }
 
-static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmPatchSByte (VMPoolInfo* nfo, const int offset, const vint8 v) { vmPatchBytes(nfo, offset, &v, 1); }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmPatchSShort (VMPoolInfo* nfo, const int offset, const vint16 v) { vmPatchBytes(nfo, offset, &v, 2); }
-static VVA_OKUNUSED VVA_ALWAYS_INLINE void vmPatchSInt (VMPoolInfo* nfo, const int offset, const vint32 v) { vmPatchBytes(nfo, offset, &v, 4); }
+static VVA_OKUNUSED VVA_FORCEINLINE void vmPatchSByte (VMPoolInfo* nfo, const int offset, const vint8 v) { vmPatchBytes(nfo, offset, &v, 1); }
+static VVA_OKUNUSED VVA_FORCEINLINE void vmPatchSShort (VMPoolInfo* nfo, const int offset, const vint16 v) { vmPatchBytes(nfo, offset, &v, 2); }
+static VVA_OKUNUSED VVA_FORCEINLINE void vmPatchSInt (VMPoolInfo* nfo, const int offset, const vint32 v) { vmPatchBytes(nfo, offset, &v, 4); }
 
 
 // ////////////////////////////////////////////////////////////////////////// //

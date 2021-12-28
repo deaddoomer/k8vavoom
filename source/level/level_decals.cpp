@@ -66,7 +66,7 @@ static TArrayNC<decal_t *> dc2kill;
 //  isGoreEnabled
 //
 //==========================================================================
-static VVA_ALWAYS_INLINE bool isGoreEnabled () {
+static VVA_FORCEINLINE bool isGoreEnabled () {
   const int ovd = k8gore_enabled_override_decal.asInt();
   if (ovd < 0) return false;
   if (ovd > 0) return true;

@@ -80,7 +80,7 @@ VName VLevel::goreBloodDecalSmearRadius = NAME_None;
 //  isGoreEnabled
 //
 //==========================================================================
-static VVA_ALWAYS_INLINE bool isGoreEnabled () {
+static VVA_FORCEINLINE bool isGoreEnabled () {
   const int ov = k8gore_enabled_override.asInt();
   if (ov < 0) return false;
   if (ov > 0) return true;

@@ -181,19 +181,19 @@ struct VCustomKeyInfo_NamedValue {
   VName name;
   int32_t id;
 
-  VVA_ALWAYS_INLINE VCustomKeyInfo_NamedValue () noexcept : name(NAME_None), id(0) {}
-  VVA_ALWAYS_INLINE VCustomKeyInfo_NamedValue (const VCustomKeyInfo_NamedValue &other) noexcept : name(other.name), id(other.id) {}
-  VVA_ALWAYS_INLINE VCustomKeyInfo_NamedValue (VName aname, int32_t aid) noexcept : name(aname), id(aid) {}
+  VVA_FORCEINLINE VCustomKeyInfo_NamedValue () noexcept : name(NAME_None), id(0) {}
+  VVA_FORCEINLINE VCustomKeyInfo_NamedValue (const VCustomKeyInfo_NamedValue &other) noexcept : name(other.name), id(other.id) {}
+  VVA_FORCEINLINE VCustomKeyInfo_NamedValue (VName aname, int32_t aid) noexcept : name(aname), id(aid) {}
 
-  VVA_ALWAYS_INLINE void operator = (const VCustomKeyInfo_NamedValue &other) noexcept { name = other.name; id = other.id; }
+  VVA_FORCEINLINE void operator = (const VCustomKeyInfo_NamedValue &other) noexcept { name = other.name; id = other.id; }
 
-  VVA_ALWAYS_INLINE bool operator == (const VCustomKeyInfo_NamedValue &other) noexcept { return (name == other.name && id == other.id); }
+  VVA_FORCEINLINE bool operator == (const VCustomKeyInfo_NamedValue &other) noexcept { return (name == other.name && id == other.id); }
 };
 static_assert(__builtin_offsetof(VCustomKeyInfo_NamedValue, name) == 0, "invalid `VCustomKeyInfo_NamedValue` struct layout");
 static_assert(__builtin_offsetof(VCustomKeyInfo_NamedValue, id) == 4, "invalid `VCustomKeyInfo_NamedValue` struct layout");
 
 
-VVA_OKUNUSED VVA_ALWAYS_INLINE uint32_t GetTypeHash (const VCustomKeyInfo_NamedValue &nv) noexcept {
+VVA_OKUNUSED VVA_FORCEINLINE uint32_t GetTypeHash (const VCustomKeyInfo_NamedValue &nv) noexcept {
   return hashU32((uint32_t)(nv.name.GetIndex()))+hashU32((uint32_t)nv.id);
 }
 

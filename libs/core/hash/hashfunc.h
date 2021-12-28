@@ -259,7 +259,7 @@ void bjHashU3264P (const uint32_t k, uint32_t *pc, uint32_t *pb) noexcept;
 VVA_CHECKRESULT uint64_t bjHashU3264 (const uint32_t k, uint64_t initval=0u) noexcept;
 
 
-static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t bjHashStr (const VVA_MAYALIAS void *str) noexcept { return (str ? bjHashBuf(str, strlen((const char *)str)) : 0u); }
+static VVA_FORCEINLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t bjHashStr (const VVA_MAYALIAS void *str) noexcept { return (str ? bjHashBuf(str, strlen((const char *)str)) : 0u); }
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -267,8 +267,8 @@ static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t bjHashStr (const 
 VVA_CHECKRESULT uint32_t halfsip24HashBuf (const VVA_MAYALIAS void *in, const size_t inlen, const uint32_t seed=0u) noexcept;
 VVA_CHECKRESULT uint32_t halfsip24HashBufCI (const VVA_MAYALIAS void *in, const size_t inlen, const uint32_t seed=0u) noexcept;
 
-static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t halfsip24HashStr (const VVA_MAYALIAS void *str) noexcept { return (str ? halfsip24HashBuf(str, strlen((const char *)str)) : 0u); }
-static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t halfsip24HashStrCI (const VVA_MAYALIAS void *str) noexcept { return (str ? halfsip24HashBufCI(str, strlen((const char *)str)) : 0u); }
+static VVA_FORCEINLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t halfsip24HashStr (const VVA_MAYALIAS void *str) noexcept { return (str ? halfsip24HashBuf(str, strlen((const char *)str)) : 0u); }
+static VVA_FORCEINLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t halfsip24HashStrCI (const VVA_MAYALIAS void *str) noexcept { return (str ? halfsip24HashBufCI(str, strlen((const char *)str)) : 0u); }
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -296,15 +296,15 @@ uint32_t murmurHash3Final (const Murmur3Ctx *ctx) noexcept;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint8_t n) noexcept { return hashU32((const uint32_t)n); }
-VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint16_t n) noexcept { return hashU32((const uint32_t)n); }
-VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint32_t n) noexcept { return hashU32(n); }
-VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint64_t n) noexcept { return hashU32((const uint32_t)n)+hashU32((const uint32_t)(n>>32)); }
-VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const int8_t n) noexcept { return hashU32((const uint32_t)n); }
-VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const int16_t n) noexcept { return hashU32((const uint32_t)n); }
-VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const int32_t n) noexcept { return hashU32((const uint32_t)n); }
-VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const int64_t n) noexcept { return hashU32((const uint32_t)n)+hashU32((const uint32_t)(n>>32)); }
-VVA_ALWAYS_INLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const void *n) noexcept { return GetTypeHash((uintptr_t)n); }
+VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint8_t n) noexcept { return hashU32((const uint32_t)n); }
+VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint16_t n) noexcept { return hashU32((const uint32_t)n); }
+VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint32_t n) noexcept { return hashU32(n); }
+VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint64_t n) noexcept { return hashU32((const uint32_t)n)+hashU32((const uint32_t)(n>>32)); }
+VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const int8_t n) noexcept { return hashU32((const uint32_t)n); }
+VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const int16_t n) noexcept { return hashU32((const uint32_t)n); }
+VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const int32_t n) noexcept { return hashU32((const uint32_t)n); }
+VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const int64_t n) noexcept { return hashU32((const uint32_t)n)+hashU32((const uint32_t)(n>>32)); }
+VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const void *n) noexcept { return GetTypeHash((uintptr_t)n); }
 
 
 // use `halfsip24HashBufCI()` for case-insensitive hashes

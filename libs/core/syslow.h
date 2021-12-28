@@ -56,7 +56,7 @@ double Sys_Time_Offset (); // time starting point
 uint64_t Sys_Time_Micro (); // never returns 0; returns the time in microseconds(msecs*1000)
 double Sys_Time_CPU (); // this tries to return CPU time used by the process; never returns 0
 double Sys_Time_ExU (uint64_t *usecs); // never returns 0; returns the same time in microseconds(msecs*1000) in `usecs` (if not nullptr)
-static VVA_ALWAYS_INLINE VVA_OKUNUSED double Sys_Time () { return Sys_Time_ExU(nullptr); } // never returns 0
+static VVA_FORCEINLINE VVA_OKUNUSED double Sys_Time () { return Sys_Time_ExU(nullptr); } // never returns 0
 //void Sys_Yield ();
 void Sys_YieldMicro (unsigned microsecs); // no more than 1000000 (will be clamped); zero is allowed
 

@@ -110,7 +110,7 @@ static size_t vstrCalcInitialStoreSizeSizeT (size_t newlen) noexcept {
 //  vstrCalcInitialStoreSizeInt
 //
 //==========================================================================
-static VVA_ALWAYS_INLINE int vstrCalcInitialStoreSizeInt (int newlen) noexcept {
+static VVA_FORCEINLINE int vstrCalcInitialStoreSizeInt (int newlen) noexcept {
   return (int)vstrCalcInitialStoreSizeSizeT((size_t)newlen);
 }
 

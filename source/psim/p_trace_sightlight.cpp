@@ -187,7 +187,7 @@ static bool SightPassRegionPlaneTexture (SightTraceInfo &trace, const sec_region
 //  returns `true` if plane need to be checked
 //
 //==========================================================================
-static VVA_ALWAYS_INLINE bool SightPlaneNeedCheck (SightTraceInfo &trace, const TSecPlaneRef &spl) noexcept {
+static VVA_FORCEINLINE bool SightPlaneNeedCheck (SightTraceInfo &trace, const TSecPlaneRef &spl) noexcept {
   if (!trace.lightCheck) return true; // always check 3d floors
   // light checks
   /*if (trace.lightCheck && trace.flatTextureCheck)*/ {
@@ -205,7 +205,7 @@ static VVA_ALWAYS_INLINE bool SightPlaneNeedCheck (SightTraceInfo &trace, const 
 //  returns `true` if plane need to be checked
 //
 //==========================================================================
-static VVA_ALWAYS_INLINE bool CheckPlaneFlags (SightTraceInfo &trace, const TSecPlaneRef &spl, unsigned regflags, unsigned flagmask) noexcept {
+static VVA_FORCEINLINE bool CheckPlaneFlags (SightTraceInfo &trace, const TSecPlaneRef &spl, unsigned regflags, unsigned flagmask) noexcept {
   if (!trace.lightCheck) {
     // 3d floor sight check
     unsigned pflags = spl.splane->flags;

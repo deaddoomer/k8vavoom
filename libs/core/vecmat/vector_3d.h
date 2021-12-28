@@ -116,43 +116,43 @@ public:
   static const TVec InvalidVector;
 
 public:
-  VVA_ALWAYS_INLINE TVec () noexcept {}
+  VVA_FORCEINLINE TVec () noexcept {}
   //nope;TVec () : x(0.0f), y(0.0f), z(0.0f) {}
-  VVA_ALWAYS_INLINE TVec (float Ax, float Ay, float Az=0.0f) noexcept : x(Ax), y(Ay), z(Az) {}
-  VVA_ALWAYS_INLINE TVec (const float f[3]) noexcept { x = f[0]; y = f[1]; z = f[2]; }
-  VVA_ALWAYS_INLINE TVec (const TVec &src) noexcept : x(src.x), y(src.y), z(src.z) {}
+  VVA_FORCEINLINE TVec (float Ax, float Ay, float Az=0.0f) noexcept : x(Ax), y(Ay), z(Az) {}
+  VVA_FORCEINLINE TVec (const float f[3]) noexcept { x = f[0]; y = f[1]; z = f[2]; }
+  VVA_FORCEINLINE TVec (const TVec &src) noexcept : x(src.x), y(src.y), z(src.z) {}
 
-  VVA_ALWAYS_INLINE TVec &operator = (const TVec &src) noexcept = default;
+  VVA_FORCEINLINE TVec &operator = (const TVec &src) noexcept = default;
 
-  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool operator == (const TVec &v2) const noexcept { return (x == v2.x && y == v2.y && z == v2.z); }
-  VVA_CHECKRESULT VVA_ALWAYS_INLINE bool operator != (const TVec &v2) const noexcept { return (x != v2.x || y != v2.y || z != v2.z); }
+  VVA_CHECKRESULT VVA_FORCEINLINE bool operator == (const TVec &v2) const noexcept { return (x == v2.x && y == v2.y && z == v2.z); }
+  VVA_CHECKRESULT VVA_FORCEINLINE bool operator != (const TVec &v2) const noexcept { return (x != v2.x || y != v2.y || z != v2.z); }
 
   // primitive swizzling
-  VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec xy () const noexcept { return TVec(x, y, 0.0f); }
+  VVA_CHECKRESULT VVA_FORCEINLINE TVec xy () const noexcept { return TVec(x, y, 0.0f); }
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT const float &operator [] (const size_t i) const noexcept { vassert(i < 3); return (&x)[i]; }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float &operator [] (const size_t i) noexcept { vassert(i < 3); return (&x)[i]; }
+  VVA_FORCEINLINE VVA_CHECKRESULT const float &operator [] (const size_t i) const noexcept { vassert(i < 3); return (&x)[i]; }
+  VVA_FORCEINLINE VVA_CHECKRESULT float &operator [] (const size_t i) noexcept { vassert(i < 3); return (&x)[i]; }
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isValid () const noexcept { return (isFiniteF(x) && isFiniteF(y) && isFiniteF(z)); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isValid2D () const noexcept { return (isFiniteF(x) && isFiniteF(y)); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isZero () const noexcept { return !(isU32NonZeroF(x)|isU32NonZeroF(y)|isU32NonZeroF(z)); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isZero2D () const noexcept { return !(isU32NonZeroF(x)|isU32NonZeroF(y)); }
+  VVA_FORCEINLINE VVA_CHECKRESULT bool isValid () const noexcept { return (isFiniteF(x) && isFiniteF(y) && isFiniteF(z)); }
+  VVA_FORCEINLINE VVA_CHECKRESULT bool isValid2D () const noexcept { return (isFiniteF(x) && isFiniteF(y)); }
+  VVA_FORCEINLINE VVA_CHECKRESULT bool isZero () const noexcept { return !(isU32NonZeroF(x)|isU32NonZeroF(y)|isU32NonZeroF(z)); }
+  VVA_FORCEINLINE VVA_CHECKRESULT bool isZero2D () const noexcept { return !(isU32NonZeroF(x)|isU32NonZeroF(y)); }
 
   // this is what VavoomC wants: false is either zero, or invalid vector
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool toBool () const noexcept { return (isValid() && !isZero()); }
+  VVA_FORCEINLINE VVA_CHECKRESULT bool toBool () const noexcept { return (isValid() && !isZero()); }
   // this is what VavoomC wants: false is either zero, or invalid vector
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool toBool2D () const noexcept { return (isValid2D() && !isZero2D()); }
+  VVA_FORCEINLINE VVA_CHECKRESULT bool toBool2D () const noexcept { return (isValid2D() && !isZero2D()); }
 
-  VVA_ALWAYS_INLINE void fixDenormalsInPlace () noexcept { zeroDenormalsFInPlace(&x); zeroDenormalsFInPlace(&y); zeroDenormalsFInPlace(&z); }
-  VVA_ALWAYS_INLINE void fixNanInfDenormalsInPlace () noexcept { zeroNanInfDenormalsFInPlace(&x); zeroNanInfDenormalsFInPlace(&y); zeroNanInfDenormalsFInPlace(&z); }
+  VVA_FORCEINLINE void fixDenormalsInPlace () noexcept { zeroDenormalsFInPlace(&x); zeroDenormalsFInPlace(&y); zeroDenormalsFInPlace(&z); }
+  VVA_FORCEINLINE void fixNanInfDenormalsInPlace () noexcept { zeroNanInfDenormalsFInPlace(&x); zeroNanInfDenormalsFInPlace(&y); zeroNanInfDenormalsFInPlace(&z); }
 
-  VVA_ALWAYS_INLINE void fix2DDenormalsInPlace () noexcept { zeroDenormalsFInPlace(&x); zeroDenormalsFInPlace(&y); z = 0.0f; }
-  VVA_ALWAYS_INLINE void fix2DNanInfDenormalsInPlace () noexcept { zeroNanInfDenormalsFInPlace(&x); zeroNanInfDenormalsFInPlace(&y); z = 0.0f; }
+  VVA_FORCEINLINE void fix2DDenormalsInPlace () noexcept { zeroDenormalsFInPlace(&x); zeroDenormalsFInPlace(&y); z = 0.0f; }
+  VVA_FORCEINLINE void fix2DNanInfDenormalsInPlace () noexcept { zeroNanInfDenormalsFInPlace(&x); zeroNanInfDenormalsFInPlace(&y); z = 0.0f; }
 
-  VVA_ALWAYS_INLINE TVec &operator += (const TVec &v) noexcept { x += v.x; y += v.y; z += v.z; return *this; }
-  VVA_ALWAYS_INLINE TVec &operator -= (const TVec &v) noexcept { x -= v.x; y -= v.y; z -= v.z; return *this; }
-  VVA_ALWAYS_INLINE TVec &operator *= (const float scale) noexcept { x *= scale; y *= scale; z *= scale; return *this; }
-  VVA_ALWAYS_INLINE TVec &operator /= (float scale) noexcept {
+  VVA_FORCEINLINE TVec &operator += (const TVec &v) noexcept { x += v.x; y += v.y; z += v.z; return *this; }
+  VVA_FORCEINLINE TVec &operator -= (const TVec &v) noexcept { x -= v.x; y -= v.y; z -= v.z; return *this; }
+  VVA_FORCEINLINE TVec &operator *= (const float scale) noexcept { x *= scale; y *= scale; z *= scale; return *this; }
+  VVA_FORCEINLINE TVec &operator /= (float scale) noexcept {
     scale = 1.0f/scale;
     scale = zeroNanInfDenormalsF(scale); //if (!isFiniteF(scale)) scale = 0.0f;
     x *= scale;
@@ -161,84 +161,84 @@ public:
     return *this;
   }
 
-  VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec operator + (void) const noexcept { return *this; }
-  VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec operator - (void) const noexcept { return TVec(-x, -y, -z); }
+  VVA_CHECKRESULT VVA_FORCEINLINE TVec operator + (void) const noexcept { return *this; }
+  VVA_CHECKRESULT VVA_FORCEINLINE TVec operator - (void) const noexcept { return TVec(-x, -y, -z); }
 
-  VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec operator + (const TVec &v2) const noexcept { return TVec(VSUM2(x, v2.x), VSUM2(y, v2.y), VSUM2(z, v2.z)); }
-  VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec operator - (const TVec &v2) const noexcept { return TVec(VSUM2(x, (-v2.x)), VSUM2(y, (-v2.y)), VSUM2(z, (-v2.z))); }
+  VVA_CHECKRESULT VVA_FORCEINLINE TVec operator + (const TVec &v2) const noexcept { return TVec(VSUM2(x, v2.x), VSUM2(y, v2.y), VSUM2(z, v2.z)); }
+  VVA_CHECKRESULT VVA_FORCEINLINE TVec operator - (const TVec &v2) const noexcept { return TVec(VSUM2(x, (-v2.x)), VSUM2(y, (-v2.y)), VSUM2(z, (-v2.z))); }
 
-  VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec operator * (const float s) const noexcept { return TVec(s*x, s*y, s*z); }
-  VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec operator / (float s) const noexcept { s = 1.0f/s; if (!isFiniteF(s)) s = 0.0f; return TVec(x*s, y*s, z*s); }
+  VVA_CHECKRESULT VVA_FORCEINLINE TVec operator * (const float s) const noexcept { return TVec(s*x, s*y, s*z); }
+  VVA_CHECKRESULT VVA_FORCEINLINE TVec operator / (float s) const noexcept { s = 1.0f/s; if (!isFiniteF(s)) s = 0.0f; return TVec(x*s, y*s, z*s); }
 
-  //VVA_CHECKRESULT VVA_ALWAYS_INLINE float operator * (const TVec &b) const noexcept { return dot(b); }
-  //VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec operator ^ (const TVec &b) const noexcept { return cross(b); }
-  //VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec operator % (const TVec &b) const noexcept { return cross(b); }
+  //VVA_CHECKRESULT VVA_FORCEINLINE float operator * (const TVec &b) const noexcept { return dot(b); }
+  //VVA_CHECKRESULT VVA_FORCEINLINE TVec operator ^ (const TVec &b) const noexcept { return cross(b); }
+  //VVA_CHECKRESULT VVA_FORCEINLINE TVec operator % (const TVec &b) const noexcept { return cross(b); }
 
 #ifdef USE_FAST_INVSQRT
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float invlength () const noexcept { return fastInvSqrtf(VSUM3(x*x, y*y, z*z)); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float invlength2D () const noexcept { return fastInvSqrtf(VSUM2(x*x, y*y)); }
+  VVA_FORCEINLINE VVA_CHECKRESULT float invlength () const noexcept { return fastInvSqrtf(VSUM3(x*x, y*y, z*z)); }
+  VVA_FORCEINLINE VVA_CHECKRESULT float invlength2D () const noexcept { return fastInvSqrtf(VSUM2(x*x, y*y)); }
 #else
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float invlength () const noexcept { return 1.0f/sqrtf(VSUM3(x*x, y*y, z*z)); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float invlength2D () const noexcept { return 1.0f/sqrtf(VSUM2(x*x, y*y)); }
+  VVA_FORCEINLINE VVA_CHECKRESULT float invlength () const noexcept { return 1.0f/sqrtf(VSUM3(x*x, y*y, z*z)); }
+  VVA_FORCEINLINE VVA_CHECKRESULT float invlength2D () const noexcept { return 1.0f/sqrtf(VSUM2(x*x, y*y)); }
 #endif
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec abs () const noexcept { return TVec(fabsf(x), fabsf(y), fabsf(z)); }
+  VVA_FORCEINLINE VVA_CHECKRESULT TVec abs () const noexcept { return TVec(fabsf(x), fabsf(y), fabsf(z)); }
 
-  //VVA_ALWAYS_INLINE VVA_CHECKRESULT float LengthSquared () const noexcept { return VSUM3(x*x, y*y, z*z); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float lengthSquared () const noexcept { return VSUM3(x*x, y*y, z*z); }
+  //VVA_FORCEINLINE VVA_CHECKRESULT float LengthSquared () const noexcept { return VSUM3(x*x, y*y, z*z); }
+  VVA_FORCEINLINE VVA_CHECKRESULT float lengthSquared () const noexcept { return VSUM3(x*x, y*y, z*z); }
 
-  //VVA_ALWAYS_INLINE VVA_CHECKRESULT float Length2DSquared () const noexcept { return VSUM2(x*x, y*y); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float length2DSquared () const noexcept { return VSUM2(x*x, y*y); }
+  //VVA_FORCEINLINE VVA_CHECKRESULT float Length2DSquared () const noexcept { return VSUM2(x*x, y*y); }
+  VVA_FORCEINLINE VVA_CHECKRESULT float length2DSquared () const noexcept { return VSUM2(x*x, y*y); }
 
 
-  VVA_ALWAYS_INLINE TVec noDenormals () const noexcept { return TVec(zeroDenormalsF(x), zeroDenormalsF(y), zeroDenormalsF(z)); }
-  VVA_ALWAYS_INLINE TVec noNanInfDenormal () const noexcept { return TVec(zeroNanInfDenormalsF(x), zeroNanInfDenormalsF(y), zeroNanInfDenormalsF(z)); }
+  VVA_FORCEINLINE TVec noDenormals () const noexcept { return TVec(zeroDenormalsF(x), zeroDenormalsF(y), zeroDenormalsF(z)); }
+  VVA_FORCEINLINE TVec noNanInfDenormal () const noexcept { return TVec(zeroNanInfDenormalsF(x), zeroNanInfDenormalsF(y), zeroNanInfDenormalsF(z)); }
 
-  VVA_ALWAYS_INLINE TVec noDenormals2D () const noexcept { return TVec(zeroDenormalsF(x), zeroDenormalsF(y), 0.0f); }
-  VVA_ALWAYS_INLINE TVec noNanInfDenormal2D () const noexcept { return TVec(zeroNanInfDenormalsF(x), zeroNanInfDenormalsF(y), 0.0f); }
+  VVA_FORCEINLINE TVec noDenormals2D () const noexcept { return TVec(zeroDenormalsF(x), zeroDenormalsF(y), 0.0f); }
+  VVA_FORCEINLINE TVec noNanInfDenormal2D () const noexcept { return TVec(zeroNanInfDenormalsF(x), zeroNanInfDenormalsF(y), 0.0f); }
 
 
   // this is slightly slower, but better for axis-aligned vectors
 
   // it is safe to call this on zero-length vector
-  //VVA_ALWAYS_INLINE VVA_CHECKRESULT float Length2D () const noexcept { return (x && y ? sqrtf(VSUM2(x*x, y*y)) : fabsf(x+y)); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float length2D () const noexcept { return (x && y ? sqrtf(VSUM2(x*x, y*y)) : fabsf(x+y)); }
+  //VVA_FORCEINLINE VVA_CHECKRESULT float Length2D () const noexcept { return (x && y ? sqrtf(VSUM2(x*x, y*y)) : fabsf(x+y)); }
+  VVA_FORCEINLINE VVA_CHECKRESULT float length2D () const noexcept { return (x && y ? sqrtf(VSUM2(x*x, y*y)) : fabsf(x+y)); }
 
   // it is safe to call this on zero-length vector
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float length () const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT float length () const noexcept {
          if (z) { if (x || y) return sqrtf(VSUM3(x*x, y*y, z*z)); else return fabsf(z); }
     else if (x && y) return sqrtf(VSUM2(x*x, y*y));
     else return fabsf(x+y);
   }
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float length2DNoDenormals () const noexcept { return zeroDenormalsF(x && y ? sqrtf(VSUM2(x*x, y*y)) : fabsf(x+y)); }
+  VVA_FORCEINLINE VVA_CHECKRESULT float length2DNoDenormals () const noexcept { return zeroDenormalsF(x && y ? sqrtf(VSUM2(x*x, y*y)) : fabsf(x+y)); }
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float lengthNoDenormals () const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT float lengthNoDenormals () const noexcept {
          if (z) { if (x || y) return zeroDenormalsF(sqrtf(VSUM3(x*x, y*y, z*z))); else return zeroDenormalsF(fabsf(z)); }
     else if (x && y) return zeroDenormalsF(sqrtf(VSUM2(x*x, y*y)));
     else return zeroDenormalsF(fabsf(x+y));
   }
 
-  //VVA_ALWAYS_INLINE VVA_CHECKRESULT float DistanceTo (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, z-v.z).Length(); }
-  //VVA_ALWAYS_INLINE VVA_CHECKRESULT float DistanceTo2D (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, 0.0f).Length2D(); }
+  //VVA_FORCEINLINE VVA_CHECKRESULT float DistanceTo (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, z-v.z).Length(); }
+  //VVA_FORCEINLINE VVA_CHECKRESULT float DistanceTo2D (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, 0.0f).Length2D(); }
 
   // may return zero distance to very close points
   // it is safe to call this on zero-length vector
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float distanceTo (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, z-v.z).lengthNoDenormals(); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float distanceTo2D (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, 0.0f).length2DNoDenormals(); }
+  VVA_FORCEINLINE VVA_CHECKRESULT float distanceTo (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, z-v.z).lengthNoDenormals(); }
+  VVA_FORCEINLINE VVA_CHECKRESULT float distanceTo2D (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, 0.0f).length2DNoDenormals(); }
 
   /*
-  VVA_ALWAYS_INLINE void normaliseInPlace () noexcept { if (z) { const float invlen = invlength(); x *= invlen; y *= invlen; z *= invlen; } else normalise2DInPlace(); }
-  VVA_ALWAYS_INLINE void normalise2DInPlace () noexcept { if (x && y) { const float invlen = invlength2D(); x *= invlen; y *= invlen; } else { x = signval(x); y = signval(y); } }
+  VVA_FORCEINLINE void normaliseInPlace () noexcept { if (z) { const float invlen = invlength(); x *= invlen; y *= invlen; z *= invlen; } else normalise2DInPlace(); }
+  VVA_FORCEINLINE void normalise2DInPlace () noexcept { if (x && y) { const float invlen = invlength2D(); x *= invlen; y *= invlen; } else { x = signval(x); y = signval(y); } }
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec normalise () const noexcept { if (z) { const float invlen = invlength(); return TVec(x*invlen, y*invlen, z*invlen); } else return normalise2D(); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec normalise2D () const noexcept { if (x && y) { const float invlen = invlength2D(); return TVec(x*invlen, y*invlen, 0.0f); } else return TVec(signval(x), signval(y), 0.0f); }
+  VVA_FORCEINLINE VVA_CHECKRESULT TVec normalise () const noexcept { if (z) { const float invlen = invlength(); return TVec(x*invlen, y*invlen, z*invlen); } else return normalise2D(); }
+  VVA_FORCEINLINE VVA_CHECKRESULT TVec normalise2D () const noexcept { if (x && y) { const float invlen = invlength2D(); return TVec(x*invlen, y*invlen, 0.0f); } else return TVec(signval(x), signval(y), 0.0f); }
   */
 
   // this is slightly slower, but better for axis-aligned vectors
 
   // it is safe to call this on zero-length vector
-  VVA_ALWAYS_INLINE void normalise2DInPlace () noexcept {
+  VVA_FORCEINLINE void normalise2DInPlace () noexcept {
     if (x && y) {
       const float invlen = invlength2D();
       x *= invlen; y *= invlen;
@@ -252,7 +252,7 @@ public:
   }
 
   // it is safe to call this on zero-length vector
-  VVA_ALWAYS_INLINE void normaliseInPlace () noexcept {
+  VVA_FORCEINLINE void normaliseInPlace () noexcept {
     if (z) {
       if (x || y) {
         const float invlen = invlength();
@@ -268,13 +268,13 @@ public:
   }
 
   // it is safe to call this on zero-length vector
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec normalise2D () const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT TVec normalise2D () const noexcept {
     if (x && y) { const float invlen = invlength2D(); return TVec(zeroDenormalsF(x*invlen), zeroDenormalsF(y*invlen), 0.0f); }
     else return TVec(floatSign(x), floatSign(y), 0.0f);
   }
 
   // it is safe to call this on zero-length vector
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec normalise () const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT TVec normalise () const noexcept {
     if (z) {
       if (x || y) {
         const float invlen = invlength();
@@ -288,29 +288,29 @@ public:
     }
   }
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float dot (const TVec &v2) const noexcept { return VSUM3(x*v2.x, y*v2.y, z*v2.z); }
+  VVA_FORCEINLINE VVA_CHECKRESULT float dot (const TVec &v2) const noexcept { return VSUM3(x*v2.x, y*v2.y, z*v2.z); }
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float dotv2neg (const TVec &v2) const noexcept { return VSUM3(x*(-v2.x), y*(-v2.y), z*(-v2.z)); }
+  VVA_FORCEINLINE VVA_CHECKRESULT float dotv2neg (const TVec &v2) const noexcept { return VSUM3(x*(-v2.x), y*(-v2.y), z*(-v2.z)); }
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float dot2D (const TVec &v2) const noexcept { return VSUM2(x*v2.x, y*v2.y); }
+  VVA_FORCEINLINE VVA_CHECKRESULT float dot2D (const TVec &v2) const noexcept { return VSUM2(x*v2.x, y*v2.y); }
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec cross (const TVec &v2) const noexcept { return TVec(VSUM2(y*v2.z, -(z*v2.y)), VSUM2(z*v2.x, -(x*v2.z)), VSUM2(x*v2.y, -(y*v2.x))); }
+  VVA_FORCEINLINE VVA_CHECKRESULT TVec cross (const TVec &v2) const noexcept { return TVec(VSUM2(y*v2.z, -(z*v2.y)), VSUM2(z*v2.x, -(x*v2.z)), VSUM2(x*v2.y, -(y*v2.x))); }
 
   // 2d cross product (z, as x and y are effectively zero in 2d)
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float cross2D (const TVec &v2) const noexcept { return VSUM2(x*v2.y, -(y*v2.x)); }
+  VVA_FORCEINLINE VVA_CHECKRESULT float cross2D (const TVec &v2) const noexcept { return VSUM2(x*v2.y, -(y*v2.x)); }
 
   // z is zero
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec mul2 (const float s) const noexcept { return TVec(x*s, y*s, 0.0f); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec mul3 (const float s) const noexcept { return TVec(x*s, y*s, z*s); }
+  VVA_FORCEINLINE VVA_CHECKRESULT TVec mul2 (const float s) const noexcept { return TVec(x*s, y*s, 0.0f); }
+  VVA_FORCEINLINE VVA_CHECKRESULT TVec mul3 (const float s) const noexcept { return TVec(x*s, y*s, z*s); }
 
   // returns projection of this vector onto `v`
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec projectTo (const TVec &v) const noexcept { return v.mul3(dot(v)/v.lengthSquared()).noDenormals(); }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec projectTo2D (const TVec &v) const noexcept { return v.mul2(dot2D(v)/v.length2DSquared()).noDenormals2D(); }
+  VVA_FORCEINLINE VVA_CHECKRESULT TVec projectTo (const TVec &v) const noexcept { return v.mul3(dot(v)/v.lengthSquared()).noDenormals(); }
+  VVA_FORCEINLINE VVA_CHECKRESULT TVec projectTo2D (const TVec &v) const noexcept { return v.mul2(dot2D(v)/v.length2DSquared()).noDenormals2D(); }
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec sub2D (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, 0.0f); }
+  VVA_FORCEINLINE VVA_CHECKRESULT TVec sub2D (const TVec &v) const noexcept { return TVec(x-v.x, y-v.y, 0.0f); }
 
   // dir must be normalised, angle must be valid
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT bool isInSpotlight (const TVec &origin, const TVec &dir, const float angle) const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT bool isInSpotlight (const TVec &origin, const TVec &dir, const float angle) const noexcept {
     TVec surfaceToLight = TVec(-(origin.x-x), -(origin.y-y), -(origin.z-z));
     if (surfaceToLight.lengthSquared() <= 8.0f) return true;
     surfaceToLight.normaliseInPlace();
@@ -320,7 +320,7 @@ public:
 
   // dir must be normalised, angle must be valid
   // returns cone light attenuation multiplier in range [0..1]
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float calcSpotlightAttMult (const TVec &origin, const TVec &dir, const float angle) const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT float calcSpotlightAttMult (const TVec &origin, const TVec &dir, const float angle) const noexcept {
     TVec surfaceToLight = TVec(-(origin.x-x), -(origin.y-y), -(origin.z-z));
     if (surfaceToLight.lengthSquared() <= 8.0f) { return 1.0f; }
     surfaceToLight.normaliseInPlace();
@@ -329,7 +329,7 @@ public:
   }
 
   // range must be valid
-  VVA_ALWAYS_INLINE void clampScaleInPlace (const float fabsmax) noexcept {
+  VVA_FORCEINLINE void clampScaleInPlace (const float fabsmax) noexcept {
     if (isValid()) {
       if (fabsmax > 0.0f && (fabsf(x) > fabsmax || fabsf(y) > fabsmax || fabsf(z) > fabsmax)) {
         // need to rescale
@@ -355,7 +355,7 @@ public:
   }
 
   // return the point on or in AABB b that is closest to p
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec closestPointOnBBox3D (const float bbox3d[6]) const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT TVec closestPointOnBBox3D (const float bbox3d[6]) const noexcept {
     // for each coordinate axis, if the point coordinate value is
     // outside box, clamp it to the box, else keep it as is
     return TVec(
@@ -365,7 +365,7 @@ public:
   }
 
   // return the point on or in AABB b that is closest to p
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec closestPointOnBBox2D (const float bbox2d[4]) const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT TVec closestPointOnBBox2D (const float bbox2d[4]) const noexcept {
     // for each coordinate axis, if the point coordinate value is
     // outside box, clamp it to the box, else keep it as is
     return TVec(
@@ -375,7 +375,7 @@ public:
   }
 
   // computes the square distance between this point and an AABB
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float bbox3DDistanceSquared (const float bbox3d[6]) const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT float bbox3DDistanceSquared (const float bbox3d[6]) const noexcept {
     float sqDist = 0.0f;
     // for each axis count any excess distance outside box extents
     { // x
@@ -397,7 +397,7 @@ public:
   }
 
   // computes the square distance between this point and an AABB
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float bbox2DDistanceSquared (const float bbox2d[4]) const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT float bbox2DDistanceSquared (const float bbox2d[4]) const noexcept {
     float sqDist = 0.0f;
     // for each axis count any excess distance outside box extents
     { // x
@@ -414,7 +414,7 @@ public:
   }
 
   // http://www.randygaul.net/2014/07/23/distance-point-to-line-segment/
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float line2DDistanceSquared (const TVec &a, const TVec &b) const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT float line2DDistanceSquared (const TVec &a, const TVec &b) const noexcept {
     const TVec n = b-a;
     const TVec pa = a-(*this);
     const TVec c = n*(pa.dot2D(n)/n.dot2D(n));
@@ -423,7 +423,7 @@ public:
   }
 
   // http://www.randygaul.net/2014/07/23/distance-point-to-line-segment/
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT float segment2DDistanceSquared (const TVec &a, const TVec &b) const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT float segment2DDistanceSquared (const TVec &a, const TVec &b) const noexcept {
     const TVec n = b-a;
     const TVec pa = a-(*this);
 
@@ -442,14 +442,14 @@ public:
   }
 
   // box point that is furthest in the given direction
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec get3DBBoxSupportPoint (const float bbox[6]) const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT TVec get3DBBoxSupportPoint (const float bbox[6]) const noexcept {
     return TVec(
       bbox[BOX3D_X+(isLessZeroF(x) ? BOX3D_MINIDX : BOX3D_MAXIDX)],
       bbox[BOX3D_Y+(isLessZeroF(y) ? BOX3D_MINIDX : BOX3D_MAXIDX)],
       bbox[BOX3D_Z+(isLessZeroF(z) ? BOX3D_MINIDX : BOX3D_MAXIDX)]);
   }
 
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec get2DBBoxSupportPoint (const float bbox2d[4], const float z=0.0f) const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT TVec get2DBBoxSupportPoint (const float bbox2d[4], const float z=0.0f) const noexcept {
     return TVec(
       bbox2d[isLessZeroF(x) ? BOX2D_LEFT : BOX2D_RIGHT],
       bbox2d[isLessZeroF(y) ? BOX2D_BOTTOM : BOX2D_TOP],
@@ -457,12 +457,12 @@ public:
   }
 
   // gives the index of the vertex for `GetBBox3DCorner()`
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT unsigned get3DBBoxSupportPointIndex () const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT unsigned get3DBBoxSupportPointIndex () const noexcept {
     return (unsigned)isGreatEquZeroF(x)|((unsigned)isGreatEquZeroF(y)<<1)|((unsigned)isGreatEquZeroF(z)<<2);
   }
 
   // gives the index of the vertex for `GetBBox2DCorner()`
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT unsigned get2DBBoxSupportPointIndex () const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT unsigned get2DBBoxSupportPointIndex () const noexcept {
     return (unsigned)isGreatEquZeroF(x)|((unsigned)isGreatEquZeroF(y)<<1);
   }
 };
@@ -471,54 +471,54 @@ static_assert(__builtin_offsetof(TVec, y) == __builtin_offsetof(TVec, x)+sizeof(
 static_assert(__builtin_offsetof(TVec, z) == __builtin_offsetof(TVec, y)+sizeof(float), "TVec layout fail (1)");
 static_assert(sizeof(TVec) == sizeof(float)*3, "TVec layout fail (2)");
 
-VVA_ALWAYS_INLINE VVA_PURE uint32_t GetTypeHash (const TVec &v) noexcept { return joaatHashBuf(&v, 3*sizeof(float)); }
+VVA_FORCEINLINE VVA_PURE uint32_t GetTypeHash (const TVec &v) noexcept { return joaatHashBuf(&v, 3*sizeof(float)); }
 
 
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec operator * (const float s, const TVec &v) noexcept { return TVec(s*v.x, s*v.y, s*v.z); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec operator * (const float s, const TVec &v) noexcept { return TVec(s*v.x, s*v.y, s*v.z); }
 
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec abs (const TVec &v1) noexcept { return v1.abs(); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec abs (const TVec &v1) noexcept { return v1.abs(); }
 
 /*
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float Length (const TVec &v) noexcept { return v.length(); }
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float length (const TVec &v) noexcept { return v.length(); }
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float Length2D (const TVec &v) noexcept { return v.length2D(); }
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float length2D (const TVec &v) noexcept { return v.length2D(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float Length (const TVec &v) noexcept { return v.length(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float length (const TVec &v) noexcept { return v.length(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float Length2D (const TVec &v) noexcept { return v.length2D(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float length2D (const TVec &v) noexcept { return v.length2D(); }
 
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float LengthSquared (const TVec &v) noexcept { return v.lengthSquared(); }
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float lengthSquared (const TVec &v) noexcept { return v.lengthSquared(); }
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float Length2DSquared (const TVec &v) noexcept { return v.length2DSquared(); }
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float length2DSquared (const TVec &v) noexcept { return v.length2DSquared(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float LengthSquared (const TVec &v) noexcept { return v.lengthSquared(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float lengthSquared (const TVec &v) noexcept { return v.lengthSquared(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float Length2DSquared (const TVec &v) noexcept { return v.length2DSquared(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float length2DSquared (const TVec &v) noexcept { return v.length2DSquared(); }
 */
 
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec Normalise (const TVec &v) noexcept { return v.normalise(); }
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec normalise (const TVec &v) noexcept { return v.normalise(); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec Normalise (const TVec &v) noexcept { return v.normalise(); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec normalise (const TVec &v) noexcept { return v.normalise(); }
 
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec normalise2D (const TVec &v) noexcept { return v.normalise2D(); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec normalise2D (const TVec &v) noexcept { return v.normalise2D(); }
 
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float DotProduct (const TVec &v1, const TVec &v2) noexcept { return v1.dot(v2); }
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float dot (const TVec &v1, const TVec &v2) noexcept { return v1.dot(v2); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float DotProduct (const TVec &v1, const TVec &v2) noexcept { return v1.dot(v2); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float dot (const TVec &v1, const TVec &v2) noexcept { return v1.dot(v2); }
 
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float DotProductV2Neg (const TVec &v1, const TVec &v2) noexcept { return v1.dotv2neg(v2); }
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float dotv2neg (const TVec &v1, const TVec &v2) noexcept { return v1.dotv2neg(v2); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float DotProductV2Neg (const TVec &v1, const TVec &v2) noexcept { return v1.dotv2neg(v2); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float dotv2neg (const TVec &v1, const TVec &v2) noexcept { return v1.dotv2neg(v2); }
 
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float DotProduct2D (const TVec &v1, const TVec &v2) noexcept { return v1.dot2D(v2); }
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float dot2D (const TVec &v1, const TVec &v2) noexcept { return v1.dot2D(v2); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float DotProduct2D (const TVec &v1, const TVec &v2) noexcept { return v1.dot2D(v2); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float dot2D (const TVec &v1, const TVec &v2) noexcept { return v1.dot2D(v2); }
 
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec CrossProduct (const TVec &v1, const TVec &v2) noexcept { return v1.cross(v2); }
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec cross (const TVec &v1, const TVec &v2) noexcept { return v1.cross(v2); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec CrossProduct (const TVec &v1, const TVec &v2) noexcept { return v1.cross(v2); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec cross (const TVec &v1, const TVec &v2) noexcept { return v1.cross(v2); }
 
 // returns signed magnitude of cross-product (z, as x and y are effectively zero in 2d)
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float CrossProduct2D (const TVec &v1, const TVec &v2) noexcept { return v1.cross2D(v2); }
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE float cross2D (const TVec &v1, const TVec &v2) noexcept { return v1.cross2D(v2); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float CrossProduct2D (const TVec &v1, const TVec &v2) noexcept { return v1.cross2D(v2); }
+//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float cross2D (const TVec &v1, const TVec &v2) noexcept { return v1.cross2D(v2); }
 
-static VVA_OKUNUSED VVA_ALWAYS_INLINE VStream &operator << (VStream &Strm, TVec &v) { return Strm << v.x << v.y << v.z; }
+static VVA_OKUNUSED VVA_FORCEINLINE VStream &operator << (VStream &Strm, TVec &v) { return Strm << v.x << v.y << v.z; }
 
 
 #define MAX_BBOX3D_CORNERS  (8u)
 #define MAX_BBOX2D_CORNERS  (4u)
 
 // idx: [0..7]
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec GetBBox3DCorner (const unsigned index, const float bbox3d[6]) noexcept {
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec GetBBox3DCorner (const unsigned index, const float bbox3d[6]) noexcept {
   return TVec(
     bbox3d[(index&0x01u ? BOX3D_MAXX : BOX3D_MINX)],
     bbox3d[(index&0x02u ? BOX3D_MAXY : BOX3D_MINY)],
@@ -526,28 +526,28 @@ static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec GetBBox3DCorner (cons
 }
 
 // returns index of the 2d bbox corner with the same y and z coordinates, but with different x coordinate
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE unsigned GetBBox3DOtherXCorner (const unsigned index) noexcept {
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE unsigned GetBBox3DOtherXCorner (const unsigned index) noexcept {
   return (index^0x01u);
 }
 
 // returns index of the 2d bbox corner with the same x and z coordinates, but with different y coordinate
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE unsigned GetBBox3DOtherYCorner (const unsigned index) noexcept {
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE unsigned GetBBox3DOtherYCorner (const unsigned index) noexcept {
   return (index^0x02u);
 }
 
 // returns index of the 2d bbox corner with the same x and y coordinates, but with different z coordinate
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE unsigned GetBBox3DOtherZCorner (const unsigned index) noexcept {
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE unsigned GetBBox3DOtherZCorner (const unsigned index) noexcept {
   return (index^0x04u);
 }
 
 // returns corner opposite to support corner
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE unsigned GetBBox3DAntiSupportCorner (const unsigned index) noexcept {
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE unsigned GetBBox3DAntiSupportCorner (const unsigned index) noexcept {
   return (index^0x07u);
 }
 
 
 // idx: [0..3]
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec GetBBox2DCorner (const unsigned index, const float bbox2d[4]) noexcept {
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec GetBBox2DCorner (const unsigned index, const float bbox2d[4]) noexcept {
   return TVec(
     bbox2d[(index&0x01u ? BOX2D_MINX : BOX2D_MAXX)],
     bbox2d[(index&0x02u ? BOX2D_MINY : BOX2D_MAXY)],
@@ -555,7 +555,7 @@ static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec GetBBox2DCorner (cons
 }
 
 // idx: [0..3]
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec GetBBox2DCornerEx (const unsigned index, const float bbox2d[4], const float z) noexcept {
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec GetBBox2DCornerEx (const unsigned index, const float bbox2d[4], const float z) noexcept {
   return TVec(
     bbox2d[(index&0x01u ? BOX2D_MINX : BOX2D_MAXX)],
     bbox2d[(index&0x02u ? BOX2D_MINY : BOX2D_MAXY)],
@@ -563,17 +563,17 @@ static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE TVec GetBBox2DCornerEx (co
 }
 
 // returns index of the 2d bbox corner with the same y coordinate, but with different x coordinate
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE unsigned GetBBox2DOtherXCorner (const unsigned index) noexcept {
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE unsigned GetBBox2DOtherXCorner (const unsigned index) noexcept {
   return (index^0x01u);
 }
 
 // returns index of the 2d bbox corner with the same x coordinate, but with different y coordinate
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE unsigned GetBBox2DOtherYCorner (const unsigned index) noexcept {
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE unsigned GetBBox2DOtherYCorner (const unsigned index) noexcept {
   return (index^0x02u);
 }
 
 // returns corner opposite to support corner
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_ALWAYS_INLINE unsigned GetBBox2DAntiSupportCorner (const unsigned index) noexcept {
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE unsigned GetBBox2DAntiSupportCorner (const unsigned index) noexcept {
   return (index^0x03u);
 }
 
@@ -596,20 +596,20 @@ void RotateAroundDirection (TVec axis[3], float yaw) noexcept;
 void MakeNormalVectors (const TVec &forward, TVec &right, TVec &up) noexcept;
 
 
-static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT TVec AngleVectorYaw (const float yaw) noexcept {
+static VVA_FORCEINLINE VVA_OKUNUSED VVA_CHECKRESULT TVec AngleVectorYaw (const float yaw) noexcept {
   float sy, cy;
   msincos(yaw, &sy, &cy);
   return TVec(cy, sy, 0.0f);
 }
 
-static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT float VectorAngleYaw (const TVec &vec) noexcept {
+static VVA_FORCEINLINE VVA_OKUNUSED VVA_CHECKRESULT float VectorAngleYaw (const TVec &vec) noexcept {
   const float fx = vec.x;
   const float fy = vec.y;
   const float len2d = VSUM2(fx*fx, fy*fy);
   return (len2d < 0.0001f ? 0.0f : matan(fy, fx));
 }
 
-static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT float VectorAnglePitch (const TVec &vec) noexcept {
+static VVA_FORCEINLINE VVA_OKUNUSED VVA_CHECKRESULT float VectorAnglePitch (const TVec &vec) noexcept {
   const float fx = vec.x;
   const float fy = vec.y;
   const float len2d = VSUM2(fx*fx, fy*fy);
@@ -623,7 +623,7 @@ void PerpendicularVector (TVec &dst, const TVec &src) noexcept; // assumes "src"
 
 
 // origin is center
-static VVA_ALWAYS_INLINE VVA_OKUNUSED void Create2DBBox (float box[4], const TVec &origin, const float radius) noexcept {
+static VVA_FORCEINLINE VVA_OKUNUSED void Create2DBBox (float box[4], const TVec &origin, const float radius) noexcept {
   box[BOX2D_MAXY] = origin.y+radius;
   box[BOX2D_MINY] = origin.y-radius;
   box[BOX2D_MINX] = origin.x-radius;
@@ -631,7 +631,7 @@ static VVA_ALWAYS_INLINE VVA_OKUNUSED void Create2DBBox (float box[4], const TVe
 }
 
 // origin is center, bottom
-static VVA_ALWAYS_INLINE VVA_OKUNUSED void Create3DBBox (float box[6], const TVec &origin, const float radius, const float height) noexcept {
+static VVA_FORCEINLINE VVA_OKUNUSED void Create3DBBox (float box[6], const TVec &origin, const float radius, const float height) noexcept {
   box[BOX3D_MINX] = origin.x-radius;
   box[BOX3D_MINY] = origin.y-radius;
   box[BOX3D_MINZ] = origin.z;
@@ -641,7 +641,7 @@ static VVA_ALWAYS_INLINE VVA_OKUNUSED void Create3DBBox (float box[6], const TVe
 }
 
 
-static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT bool IsPointInsideBBox2D (const float x, const float y, const float bbox2d[4]) noexcept {
+static VVA_FORCEINLINE VVA_OKUNUSED VVA_CHECKRESULT bool IsPointInsideBBox2D (const float x, const float y, const float bbox2d[4]) noexcept {
   return
     x >= bbox2d[BOX2D_MINX] && x <= bbox2d[BOX2D_MAXX] &&
     y >= bbox2d[BOX2D_MINY] && y <= bbox2d[BOX2D_MAXY];
@@ -667,7 +667,7 @@ static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT bool IsPointInsideBBox2D (
   const float destb_[6] = { (org_).x-(rad_), (org_).y-(rad_), (org_).z, (org_).x+(rad_), (org_).y+(rad_), (org_).z+(hgt_) }
 
 
-static VVA_ALWAYS_INLINE VVA_OKUNUSED VVA_CHECKRESULT bool isCircleTouchingLine (const TVec &corg, const float radiusSq, const TVec &v0, const TVec &v1) noexcept {
+static VVA_FORCEINLINE VVA_OKUNUSED VVA_CHECKRESULT bool isCircleTouchingLine (const TVec &corg, const float radiusSq, const TVec &v0, const TVec &v1) noexcept {
   const TVec s0qp = corg-v0;
   if (s0qp.length2DSquared() <= radiusSq) return true;
   if ((corg-v1).length2DSquared() <= radiusSq) return true;

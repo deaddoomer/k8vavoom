@@ -614,7 +614,7 @@ bool Host_IsDangerousTimeout () {
 //  CalcFrameMicro
 //
 //==========================================================================
-static VVA_ALWAYS_INLINE unsigned CalcFrameMicro (const unsigned fps) noexcept {
+static VVA_FORCEINLINE unsigned CalcFrameMicro (const unsigned fps) noexcept {
   return 1000000u/fps;
 }
 #endif

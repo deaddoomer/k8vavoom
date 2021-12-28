@@ -123,14 +123,14 @@ static uint32_t cnumterm[256/32]; // c-like number terminator
 static uint32_t ncidterm[256/32]; // non-c-like identifier terminator
 
 struct CharClassifier {
-  static VVA_ALWAYS_INLINE bool isC2Spec (char ch) noexcept { return (c2spec[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
-  static VVA_ALWAYS_INLINE bool isCIdTerm (char ch) noexcept { return (cidterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
-  static VVA_ALWAYS_INLINE bool isCNumTerm (char ch) noexcept { return (cnumterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
-  static VVA_ALWAYS_INLINE bool isNCIdTerm (char ch) noexcept { return (ncidterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
+  static VVA_FORCEINLINE bool isC2Spec (char ch) noexcept { return (c2spec[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
+  static VVA_FORCEINLINE bool isCIdTerm (char ch) noexcept { return (cidterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
+  static VVA_FORCEINLINE bool isCNumTerm (char ch) noexcept { return (cnumterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
+  static VVA_FORCEINLINE bool isNCIdTerm (char ch) noexcept { return (ncidterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
 
-  static VVA_ALWAYS_INLINE void setCharBit (vuint32 *set, char ch) noexcept { set[(ch>>5)&0x07] |= (1U<<(ch&0x1f)); }
+  static VVA_FORCEINLINE void setCharBit (vuint32 *set, char ch) noexcept { set[(ch>>5)&0x07] |= (1U<<(ch&0x1f)); }
 
-  static VVA_ALWAYS_INLINE bool isDigit (char ch) noexcept { return (ch >= '0' && ch <= '9'); }
+  static VVA_FORCEINLINE bool isDigit (char ch) noexcept { return (ch >= '0' && ch <= '9'); }
 
   static inline bool isNumStart (const char *s, bool allowNumSign) noexcept {
     if (allowNumSign) if (*s == '+' || *s == '-') ++s;

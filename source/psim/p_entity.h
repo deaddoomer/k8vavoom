@@ -801,7 +801,7 @@ private:
   void BlockedByLine (line_t *);
   void PushLine (const tmtrace_t &tmtrace, bool checkOnly);
 
-  static VVA_ALWAYS_INLINE VVA_CHECKRESULT TVec ClipVelocity (const TVec &in, const TVec &normal, float overbounce=1.0f) noexcept {
+  static VVA_FORCEINLINE VVA_CHECKRESULT TVec ClipVelocity (const TVec &in, const TVec &normal, float overbounce=1.0f) noexcept {
     return in-normal*(in.dot(normal)*overbounce);
   }
 
@@ -851,7 +851,7 @@ private:
   }
 
 public:
-  VVA_ALWAYS_INLINE void Create2DBox (float box2d[4]) const noexcept {
+  VVA_FORCEINLINE void Create2DBox (float box2d[4]) const noexcept {
     const float rad = GetMoveRadius();
     box2d[BOX2D_MAXY] = Origin.y+rad;
     box2d[BOX2D_MINY] = Origin.y-rad;
@@ -859,7 +859,7 @@ public:
     box2d[BOX2D_MAXX] = Origin.x+rad;
   }
 
-  VVA_ALWAYS_INLINE bool CollisionWithOther (const VEntity *other) const noexcept {
+  VVA_FORCEINLINE bool CollisionWithOther (const VEntity *other) const noexcept {
     if (!other) return false;
     if ((EntityFlags&(EF_ColideWithThings|EF_Solid)) != (EF_ColideWithThings|EF_Solid)) return false;
     if ((other->EntityFlags&(EF_ColideWithThings|EF_Solid)) != (EF_ColideWithThings|EF_Solid)) return false;
@@ -876,7 +876,7 @@ public:
   }
 
   // doesn't check any line flags
-  VVA_ALWAYS_INLINE bool LineIntersects (const line_t *ld) const noexcept {
+  VVA_FORCEINLINE bool LineIntersects (const line_t *ld) const noexcept {
     if (!ld) return false;
     const float rad = GetMoveRadius();
     if (ld && rad > 0.0f) {

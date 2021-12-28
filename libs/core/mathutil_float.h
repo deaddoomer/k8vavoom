@@ -50,8 +50,8 @@
 #ifndef VVA_MAYALIAS
 # define VVA_MAYALIAS     __attribute__((__may_alias__))
 #endif
-#ifndef VVA_ALWAYS_INLINE
-# define VVA_ALWAYS_INLINE  inline __attribute__((always_inline))
+#ifndef VVA_FORCEINLINE
+# define VVA_FORCEINLINE  inline __attribute__((always_inline))
 #endif
 
 
@@ -100,19 +100,19 @@
 # define isInfF     isinf
 #else
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isFiniteF (const float v) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE VV_FLTUTIL_BOOL isFiniteF (const float v) VV_FLTUTIL_NOEXCEPT {
   const union { float f; uint32_t x; } u = {v};
   return ((u.x&0x7f800000u) != 0x7f800000u);
 }
 
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isNaNF (const float v) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE VV_FLTUTIL_BOOL isNaNF (const float v) VV_FLTUTIL_NOEXCEPT {
   const union { float f; uint32_t x; } u = {v};
   return ((u.x<<1) > 0xff000000u);
 }
 
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isInfF (const float v) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE VV_FLTUTIL_BOOL isInfF (const float v) VV_FLTUTIL_NOEXCEPT {
   const union { float f; uint32_t x; } u = {v};
   return ((u.x<<1) == 0xff000000u);
 }
@@ -120,35 +120,35 @@ VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isInfF (const float v) VV_FLTUTIL_NOEXCEPT {
 
 
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isNaNFU32 (const uint32_t fv) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE VV_FLTUTIL_BOOL isNaNFU32 (const uint32_t fv) VV_FLTUTIL_NOEXCEPT {
   return ((fv<<1) > 0xff000000u);
 }
 
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isInfFU32 (const uint32_t fv) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE VV_FLTUTIL_BOOL isInfFU32 (const uint32_t fv) VV_FLTUTIL_NOEXCEPT {
   return ((fv<<1) == 0xff000000u);
 }
 
 // this is used in VavoomC VM executor
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isFiniteFI32 (const int32_t v) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE VV_FLTUTIL_BOOL isFiniteFI32 (const int32_t v) VV_FLTUTIL_NOEXCEPT {
   return ((v&0x7f800000u) != 0x7f800000u);
 }
 
 // this ignores sign bit; zero float is all zeroes except the sign bit
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE int32_t isNonZeroFI32 (const int32_t v) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE int32_t isNonZeroFI32 (const int32_t v) VV_FLTUTIL_NOEXCEPT {
   return (v&0x7fffffffu);
 }
 
 // this ignores sign bit; zero float is all zeroes except the sign bit
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isZeroFI32 (const int32_t v) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE VV_FLTUTIL_BOOL isZeroFI32 (const int32_t v) VV_FLTUTIL_NOEXCEPT {
   return !(v&0x7fffffffu);
 }
 
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isZeroInfNaNFI32 (const int32_t fi) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE VV_FLTUTIL_BOOL isZeroInfNaNFI32 (const int32_t fi) VV_FLTUTIL_NOEXCEPT {
   const uint8_t exp = (uint8_t)((fi>>23)&0xffu);
   return
     exp == 0xffu ||
@@ -158,20 +158,20 @@ VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isZeroInfNaNFI32 (const int32_t fi) VV_FLTUTIL
 
 // this turns all denormals to positive zero
 // also, turns negative zero to positive zero
-static VVA_OKUNUSED VVA_ALWAYS_INLINE void zeroDenormalsFI32InPlace (VVA_MAYALIAS int32_t *fi) VV_FLTUTIL_NOEXCEPT {
+static VVA_OKUNUSED VVA_FORCEINLINE void zeroDenormalsFI32InPlace (VVA_MAYALIAS int32_t *fi) VV_FLTUTIL_NOEXCEPT {
   if (!((*fi)&0x7f800000u)) *fi = 0u; // kill denormals
 }
 
 
 // this turns all nan/inf values into positive zero
-static VVA_OKUNUSED VVA_ALWAYS_INLINE void killInfNaNFInPlace (float *f) VV_FLTUTIL_NOEXCEPT {
+static VVA_OKUNUSED VVA_FORCEINLINE void killInfNaNFInPlace (float *f) VV_FLTUTIL_NOEXCEPT {
   VVA_MAYALIAS int32_t *fi = (VVA_MAYALIAS int32_t *)f;
   *fi &= ((((*fi)>>23)&0xff)-0xff)>>31;
 }
 
 // this turns all nan/inf values into positive zero
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE float killInfNaNF (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE float killInfNaNF (const float f) VV_FLTUTIL_NOEXCEPT {
   int32_t fi = *(const VVA_MAYALIAS int32_t *)&f;
   fi &= (((fi>>23)&0xff)-0xff)>>31;
   return *((VVA_MAYALIAS float *)&fi);
@@ -179,7 +179,7 @@ VVA_ALWAYS_INLINE float killInfNaNF (const float f) VV_FLTUTIL_NOEXCEPT {
 
 // this turns all nan/inf and denormals to positive zero
 // also, turns negative zero to positive zero
-static VVA_OKUNUSED VVA_ALWAYS_INLINE void zeroNanInfDenormalsFInPlace (float *f) VV_FLTUTIL_NOEXCEPT {
+static VVA_OKUNUSED VVA_FORCEINLINE void zeroNanInfDenormalsFInPlace (float *f) VV_FLTUTIL_NOEXCEPT {
   VVA_MAYALIAS int32_t *fi = (VVA_MAYALIAS int32_t *)f;
   if (!((*fi)&0x7f800000u)) *fi = 0u; // kill denormals
   else *fi &= ((((*fi)>>23)&0xff)-0xff)>>31; // kill nan/inf
@@ -188,7 +188,7 @@ static VVA_OKUNUSED VVA_ALWAYS_INLINE void zeroNanInfDenormalsFInPlace (float *f
 // this turns all nan/inf and denormals to positive zero
 // also, turns negative zero to positive zero
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE float zeroNanInfDenormalsF (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE float zeroNanInfDenormalsF (const float f) VV_FLTUTIL_NOEXCEPT {
   int32_t fi = *(const VVA_MAYALIAS int32_t *)&f;
   if (!(fi&0x7f800000u)) fi = 0u; // kill denormals
   else fi &= (((fi>>23)&0xff)-0xff)>>31; // kill nan/inf
@@ -197,7 +197,7 @@ VVA_ALWAYS_INLINE float zeroNanInfDenormalsF (const float f) VV_FLTUTIL_NOEXCEPT
 
 // this turns all denormals to positive zero
 // also, turns negative zero to positive zero
-static VVA_OKUNUSED VVA_ALWAYS_INLINE void zeroDenormalsFInPlace (float *f) VV_FLTUTIL_NOEXCEPT {
+static VVA_OKUNUSED VVA_FORCEINLINE void zeroDenormalsFInPlace (float *f) VV_FLTUTIL_NOEXCEPT {
   VVA_MAYALIAS int32_t *fi = (VVA_MAYALIAS int32_t *)f;
   if (!((*fi)&0x7f800000u)) *fi = 0u; // kill denormals
 }
@@ -205,7 +205,7 @@ static VVA_OKUNUSED VVA_ALWAYS_INLINE void zeroDenormalsFInPlace (float *f) VV_F
 // this turns all denormals to positive zero
 // also, turns negative zero to positive zero
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE float zeroDenormalsF (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE float zeroDenormalsF (const float f) VV_FLTUTIL_NOEXCEPT {
   int32_t fi = *(const VVA_MAYALIAS int32_t *)&f;
   if (!(fi&0x7f800000u)) fi = 0u; // kill denormals
   return *((VVA_MAYALIAS float *)&fi);
@@ -214,13 +214,13 @@ VVA_ALWAYS_INLINE float zeroDenormalsF (const float f) VV_FLTUTIL_NOEXCEPT {
 
 // is float denormalised? (zero is not considered as denormal here)
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isDenormalF (const float v) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE VV_FLTUTIL_BOOL isDenormalF (const float v) VV_FLTUTIL_NOEXCEPT {
   const union { float f; uint32_t x; } u = {v};
   return ((u.x&0x7f800000u) == 0u && (u.x&0x007fffffu) != 0u);
 }
 
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isZeroInfNaNF (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE VV_FLTUTIL_BOOL isZeroInfNaNF (const float f) VV_FLTUTIL_NOEXCEPT {
   const uint32_t fi = *(const VVA_MAYALIAS uint32_t *)&f;
   const uint8_t exp = (uint8_t)((fi>>23)&0xffu);
   return
@@ -231,25 +231,25 @@ VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isZeroInfNaNF (const float f) VV_FLTUTIL_NOEXC
 // this ignores sign bit; zero float is all zeroes except the sign bit
 // returns 0 or some unspecified non-zero unsigned integer
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE unsigned isU32NonZeroF (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE unsigned isU32NonZeroF (const float f) VV_FLTUTIL_NOEXCEPT {
   return ((*(const VVA_MAYALIAS uint32_t *)&f)&0x7fffffffu);
 }
 
 // this ignores sign bit; zero float is all zeroes except the sign bit
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isZeroF (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE VV_FLTUTIL_BOOL isZeroF (const float f) VV_FLTUTIL_NOEXCEPT {
   return !((*(const VVA_MAYALIAS uint32_t *)&f)&0x7fffffffu);
 }
 
 // doesn't check for nan/inf
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isNegativeF (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE VV_FLTUTIL_BOOL isNegativeF (const float f) VV_FLTUTIL_NOEXCEPT {
   return !!((*(const VVA_MAYALIAS uint32_t *)&f)&0x80000000u);
 }
 
 // doesn't check for nan/inf
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isPositiveF (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE VV_FLTUTIL_BOOL isPositiveF (const float f) VV_FLTUTIL_NOEXCEPT {
   return !((*(const VVA_MAYALIAS uint32_t *)&f)&0x80000000u);
 }
 
@@ -257,7 +257,7 @@ VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isPositiveF (const float f) VV_FLTUTIL_NOEXCEP
 // doesn't check for nan/inf (and can return invalid results for some nans)
 // returns `true` if the float is less than zero
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isLessZeroF (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE VV_FLTUTIL_BOOL isLessZeroF (const float f) VV_FLTUTIL_NOEXCEPT {
   // all negative numbers (including negative zero) has bit 31 set
   return ((*(const VVA_MAYALIAS uint32_t *)&f) > 0x80000000u);
 }
@@ -265,7 +265,7 @@ VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isLessZeroF (const float f) VV_FLTUTIL_NOEXCEP
 // doesn't check for nan/inf (and can return invalid results for some nans)
 // returns `true` if the float is greater than zero
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isGreatZeroF (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE VV_FLTUTIL_BOOL isGreatZeroF (const float f) VV_FLTUTIL_NOEXCEPT {
   // all positive numbers has bit 31 reset, positive zero is `0`
   // subtracting 1 will convert positive zero to negative nan
   // yet negative zero will be converted to positive nan
@@ -275,7 +275,7 @@ VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isGreatZeroF (const float f) VV_FLTUTIL_NOEXCE
 // doesn't check for nan/inf (and can return invalid results for some nans)
 // returns `true` if the float is less or equal to zero
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isLessEquZeroF (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE VV_FLTUTIL_BOOL isLessEquZeroF (const float f) VV_FLTUTIL_NOEXCEPT {
   // all positive numbers has bit 31 reset, positive zero is `0`
   // subtracting 1 will convert positive zero to negative nan
   // yet negative zero will be converted to positive nan
@@ -285,20 +285,20 @@ VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isLessEquZeroF (const float f) VV_FLTUTIL_NOEX
 // doesn't check for nan/inf (and can return invalid results for some nans)
 // returns `true` if the float is greater or equal to zero
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE VV_FLTUTIL_BOOL isGreatEquZeroF (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE VV_FLTUTIL_BOOL isGreatEquZeroF (const float f) VV_FLTUTIL_NOEXCEPT {
   // `0x80000000u` is "negative zero", all positive numbers has bit 31 reset
   return ((*(const VVA_MAYALIAS uint32_t *)&f) <= 0x80000000u);
 }
 
 
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE float fltconv_create_positive_zero () VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE float fltconv_create_positive_zero () VV_FLTUTIL_NOEXCEPT {
   const uint32_t t = 0u;
   return *((const VVA_MAYALIAS float *)&t);
 }
 
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE float fltconv_create_negative_zero () VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE float fltconv_create_negative_zero () VV_FLTUTIL_NOEXCEPT {
   const uint32_t t = 0x80000000u;
   return *((const VVA_MAYALIAS float *)&t);
 }
@@ -307,7 +307,7 @@ VVA_ALWAYS_INLINE float fltconv_create_negative_zero () VV_FLTUTIL_NOEXCEPT {
 // -1 or +1
 // note that zero has a sign too!
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE int fltconv_getsign (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE int fltconv_getsign (const float f) VV_FLTUTIL_NOEXCEPT {
   //return ((*(const uint32_t *)&f)&0x80000000u ? -1 : +1);
   // this extends sign bit, and then sets the least significant bit
   // this way we'll get either -1 (if sign bit is set), or 1 (if sign bit is reset)
@@ -316,13 +316,13 @@ VVA_ALWAYS_INLINE int fltconv_getsign (const float f) VV_FLTUTIL_NOEXCEPT {
 
 // always positive, [0..255]
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE int fltconv_getexponent (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE int fltconv_getexponent (const float f) VV_FLTUTIL_NOEXCEPT {
   return (int)(((*(const VVA_MAYALIAS uint32_t *)&f)>>23)&0xffu);
 }
 
 // signed and clamped exponent: [-126..127]
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE int fltconv_getsignedexponent (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE int fltconv_getsignedexponent (const float f) VV_FLTUTIL_NOEXCEPT {
   const int res = (int)(((*(const VVA_MAYALIAS uint32_t *)&f)>>23)&0xffu)-127;
   return
     res < -126 ? -126 :
@@ -332,7 +332,7 @@ VVA_ALWAYS_INLINE int fltconv_getsignedexponent (const float f) VV_FLTUTIL_NOEXC
 
 // always positive, [0..0x7f_ffff] (or [0..8388607])
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE int fltconv_getmantissa (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE int fltconv_getmantissa (const float f) VV_FLTUTIL_NOEXCEPT {
   return (int)((*(const VVA_MAYALIAS uint32_t *)&f)&0x7fffffu);
 }
 
@@ -346,7 +346,7 @@ VVA_ALWAYS_INLINE int fltconv_getmantissa (const float f) VV_FLTUTIL_NOEXCEPT {
 // invalid values leads to "positive" quiet NaN, payload with all bits set
 // note that exponent is UNSIGNED!
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE float fltconv_constructfloat (const int sign, const int exponent, const int mantissa) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE float fltconv_constructfloat (const int sign, const int exponent, const int mantissa) VV_FLTUTIL_NOEXCEPT {
   if ((sign != 1 && sign != -1) ||
       exponent < 0 || exponent > 255 ||
       mantissa < 0 || mantissa > 0x7fffff)
@@ -364,19 +364,19 @@ VVA_ALWAYS_INLINE float fltconv_constructfloat (const int sign, const int expone
 
 
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE uint32_t fltconv_floatasuint (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE uint32_t fltconv_floatasuint (const float f) VV_FLTUTIL_NOEXCEPT {
   return *(const VVA_MAYALIAS uint32_t *)&f;
 }
 
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE float fltconv_uintasfloat (const uint32_t fi) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE float fltconv_uintasfloat (const uint32_t fi) VV_FLTUTIL_NOEXCEPT {
   return *(const VVA_MAYALIAS float *)&fi;
 }
 
 
 // 0, -1 or +1
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT
-VVA_ALWAYS_INLINE float floatSign (const float f) VV_FLTUTIL_NOEXCEPT {
+VVA_FORCEINLINE float floatSign (const float f) VV_FLTUTIL_NOEXCEPT {
   uint32_t fi = *(const VVA_MAYALIAS int32_t *)&f;
   fi = (fi&0x7fffffff ? (0x3f800000u/*1.0f*/|(fi&0x80000000u)) : 0u);
   return *((VVA_MAYALIAS float *)&fi);

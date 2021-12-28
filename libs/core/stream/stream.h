@@ -116,12 +116,12 @@ public:
 public:
   VV_DISABLE_COPY(VStream)
 
-  VVA_ALWAYS_INLINE VStream () : bLoading(true), bError(false), Mapper(nullptr), version(0) {}
+  VVA_FORCEINLINE VStream () : bLoading(true), bError(false), Mapper(nullptr), version(0) {}
   virtual ~VStream ();
 
   // status requests
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE bool IsLoading () const noexcept { return bLoading; }
-  VVA_ALWAYS_INLINE VVA_CHECKRESULT VVA_PURE bool IsSaving () const noexcept { return !bLoading; }
+  VVA_FORCEINLINE VVA_CHECKRESULT VVA_PURE bool IsLoading () const noexcept { return bLoading; }
+  VVA_FORCEINLINE VVA_CHECKRESULT VVA_PURE bool IsSaving () const noexcept { return !bLoading; }
   virtual bool IsError () const noexcept;
 
   // call this to mark the stream as invalid
@@ -167,7 +167,7 @@ public:
   void writef (const char *text, ...) __attribute__((format(printf, 2, 3)));
   void vawritef (const char *text, va_list ap);
 
-  static VVA_ALWAYS_INLINE bool Destroy (VStream *&s) {
+  static VVA_FORCEINLINE bool Destroy (VStream *&s) {
     if (s) {
       const bool res = s->Close();
       delete s;
