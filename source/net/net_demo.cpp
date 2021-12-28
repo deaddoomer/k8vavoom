@@ -57,6 +57,14 @@ VDemoPlaybackNetConnection::VDemoPlaybackNetConnection (VNetContext *AContext, V
   , td_startframe(0)
   , td_starttime(0)
 {
+  Strm->Serialise(AuthKey, VNetUtils::ChaCha20KeySize);
+  #if 0
+  GCon->Logf(NAME_Debug, "read auth key...");
+  VStr s;
+  for (int f = 0; f < VNetUtils::ChaCha20KeySize; ++f) { char tmp[8]; snprintf(tmp, sizeof(tmp), " %02X", AuthKey[f]&0xff); s += tmp; }
+  GCon->Logf(NAME_Debug, "%s", *s);
+  #endif
+
   AutoAck = true;
   *Strm << NextPacketTime;
 
@@ -169,6 +177,16 @@ void VDemoPlaybackNetConnection::SendMessage (VMessageOut * /*Msg*/) {
 VDemoRecordingNetConnection::VDemoRecordingNetConnection (VSocketPublic *Sock, VNetContext *AContext, VBasePlayer *AOwner)
   : VNetConnection(Sock, AContext, AOwner)
 {
+  vassert(cls.demorecording);
+  vassert(cls.demofile);
+  #if 0
+  GCon->Logf(NAME_Debug, "writing auth key...");
+  VStr s;
+  for (int f = 0; f < VNetUtils::ChaCha20KeySize; ++f) { char tmp[8]; snprintf(tmp, sizeof(tmp), " %02X", Sock->AuthKey[f]&0xff); s += tmp; }
+  GCon->Logf(NAME_Debug, "%s", *s);
+  #endif
+  cls.demofile->Serialise(Sock->AuthKey, VNetUtils::ChaCha20KeySize);
+  AutoAck = true;
 }
 
 
@@ -180,6 +198,8 @@ VDemoRecordingNetConnection::VDemoRecordingNetConnection (VSocketPublic *Sock, V
 //
 //==========================================================================
 int VDemoRecordingNetConnection::GetRawPacket (void *dest, size_t destSize) {
+  // demo writer has no incoming packets
+/*
   int len = VNetConnection::GetRawPacket(dest, destSize);
   if (len > 0 && cls.demorecording) {
     // dumps the current net message, prefixed by the length and view angles
@@ -192,6 +212,8 @@ int VDemoRecordingNetConnection::GetRawPacket (void *dest, size_t destSize) {
     if (demo_flush_each_packet) cls.demofile->Flush();
   }
   return len;
+*/
+  return 0;
 }
 
 

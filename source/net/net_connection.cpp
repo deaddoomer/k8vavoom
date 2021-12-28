@@ -82,7 +82,12 @@ VNetConnection::VNetConnection (VSocketPublic *ANetCon, VNetContext *AContext, V
   OriginField = VEntity::StaticClass()->FindFieldChecked("Origin");
   DataGameTimeField = VEntity::StaticClass()->FindFieldChecked("DataGameTime");
 
-  memcpy(AuthKey, ANetCon->AuthKey, VNetUtils::ChaCha20KeySize);
+  if (ANetCon) {
+    memcpy(AuthKey, ANetCon->AuthKey, VNetUtils::ChaCha20KeySize);
+  } else {
+    // this is for demos
+    memset(AuthKey, 0, VNetUtils::ChaCha20KeySize);
+  }
 
   InRate = OutRate = 0;
   InPackets = OutPackets = 0;
@@ -447,10 +452,18 @@ bool VNetConnection::GetMessage (bool asHearbeat) {
     AckEverythingEverywhere();
     return false;
   }
-  vassert(NetCon);
 
   vuint8 msgdata[MAX_DGRAM_SIZE+4];
+  // we need to indirect via `GetRawPacket()` here to allow demo playback
+
+  #if 0
+  // old code
+  vassert(NetCon);
   const int msgsize = NetCon->GetMessage(msgdata, sizeof(msgdata));
+  #else
+  // new code
+  const int msgsize = GetRawPacket(msgdata, sizeof(msgdata));
+  #endif
   if (msgsize == 0) return false;
   if (msgsize < 0) { Close(); return false; }
 
@@ -506,7 +519,9 @@ bool VNetConnection::GetMessage (bool asHearbeat) {
   if (!asHearbeat) {
     ReceivedPacket(Packet);
   } else {
-    NetCon->LastMessageTime = LastReceiveTime = Driver->GetNetTime();
+    LastReceiveTime = Driver->GetNetTime();
+    // in demo reader, `NetCon` is NULL
+    if (NetCon) NetCon->LastMessageTime = LastReceiveTime;
   }
 
   return true;
@@ -630,7 +645,9 @@ void VNetConnection::ReceivedPacket (VBitStreamReader &Packet) {
   }
 
   // reset timeout timer
-  NetCon->LastMessageTime = LastReceiveTime = Driver->GetNetTime();
+  LastReceiveTime = Driver->GetNetTime();
+  // in demo reader, `NetCon` is NULL
+  if (NetCon) NetCon->LastMessageTime = LastReceiveTime;
   ++Driver->packetsReceived;
 
   if (net_debug_dump_recv_packets) GCon->Logf(NAME_DevNet, "***!!!*** Network Packet (bitcount=%d; pid=%u; inpid=%u)", Packet.GetNum(), PacketId, InPacketId);

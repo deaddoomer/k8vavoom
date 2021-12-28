@@ -745,6 +745,10 @@ VLevel *VClientNetContext::GetLevel () {
 //
 //==========================================================================
 void CL_SetupNetClient (VSocketPublic *Sock) {
+  //k8: i absolutely don't understand why it tries to create a writing demo connection in client
+  //k8: let's just crash here for now
+  if (cls.demorecording) Sys_Error("SOMETHING WICKED THIS WAY COMES...");
+
   // create player structure
   cl = (VBasePlayer *)VObject::StaticSpawnWithReplace(VClass::FindClass("Player"));
   cl->PlayerFlags |= VBasePlayer::PF_IsClient;
@@ -971,7 +975,8 @@ COMMAND_WITH_AC(RecordDemo) {
   if (GGameInfo->NetMode == NM_Standalone || GGameInfo->NetMode == NM_ListenServer) {
     GDemoRecordingContext = new VServerNetContext();
     VSocketPublic *Sock = new VDemoRecordingSocket();
-    VNetConnection *Conn = new VNetConnection(Sock, GDemoRecordingContext, cl);
+    //VNetConnection *Conn = new VNetConnection(Sock, GDemoRecordingContext, cl);
+    VNetConnection *Conn = new VDemoRecordingNetConnection(Sock, GDemoRecordingContext, cl);
     Conn->AutoAck = true;
     GDemoRecordingContext->ClientConnections.Append(Conn);
     Conn->ObjMap->SetupClassLookup();

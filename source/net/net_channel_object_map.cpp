@@ -416,6 +416,11 @@ void VObjectMapChannel::Update () {
   // now it will be waiting for the ack
 
   GCon->Logf(NAME_DevNet, "done writing initial objects (%d) and names (%d)", CurrClass, CurrName);
+
+  // demo?
+  if (Connection->AutoAck) {
+    Connection->ObjMapSent = true;
+  }
 }
 
 
