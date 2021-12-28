@@ -433,10 +433,15 @@ void VEntity::DestroyThinker () {
 //==========================================================================
 void VEntity::AddedToLevel () {
   VThinker::AddedToLevel();
+  // FIXME: this won't work right in network games: server has it's own sound ids, and
+  // those ids are used to send sound events. this may replace some valid entity, and
+  // then the server will send sound id correction; so, old valid id will be orphaned.
+  // this is not fatal, but may produce sound anomalies.
   if (!XLevel->NextSoundOriginID) XLevel->NextSoundOriginID = 1;
   SoundOriginID = XLevel->NextSoundOriginID+(SNDORG_Entity<<24);
   XLevel->NextSoundOriginID = (XLevel->NextSoundOriginID+1)&0x00ffffff;
   XLevel->RegisterEntitySoundID(this, SoundOriginID);
+  //GCon->Logf(NAME_Debug, "VEntity(%s)::AddedToLevel: uid=%u; ptr=%p; sid=%d", GetClass()->GetName(), GetUniqueId(), (void*)this, SoundOriginID);
 }
 
 
@@ -446,6 +451,7 @@ void VEntity::AddedToLevel () {
 //
 //==========================================================================
 void VEntity::RemovedFromLevel () {
+  //GCon->Logf(NAME_Debug, "VEntity(%s)::RemovedFromLevel: uid=%u; ptr=%p; sid=%d", GetClass()->GetName(), GetUniqueId(), (void*)this, SoundOriginID);
   if (XLevel && SoundOriginID) {
     XLevel->RemoveEntitySoundID(SoundOriginID);
     SoundOriginID = 0;

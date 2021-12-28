@@ -594,6 +594,9 @@ void VThinkerChannel::ParseMessage (VMessageIn &Msg) {
   const vuint8 prevRemoteRole = Thinker->RemoteRole;
 
   VEntity *Ent = Cast<VEntity>(Thinker);
+  // need to notify the level about sound id change
+  int oldSoundId = 0;
+  // rotation and other movement interpolation
   TVec oldOrg(0.0f, 0.0f, 0.0f);
   TAVec oldAngles(0.0f, 0.0f, 0.0f);
   #if VV_NET_OLD_INTERPOLATOR
@@ -617,6 +620,7 @@ void VThinkerChannel::ParseMessage (VMessageIn &Msg) {
   float oldLastOrgUpdateTime = 0;
   #endif
   if (Ent) {
+    oldSoundId = Ent->SoundOriginID;
     //Ent->UnlinkFromWorld();
     //TODO: use this to interpolate movements
     //      actually, we need to quantize movements by frame tics (1/35), and
@@ -715,6 +719,12 @@ void VThinkerChannel::ParseMessage (VMessageIn &Msg) {
   }
 
   if (Ent) {
+    // need to notify the level about sound id change
+    if (Ent->SoundOriginID != oldSoundId) {
+      //GCon->Logf(NAME_Debug, "VEntity(%s)::SoundIdChange; uid=%u; ptr=%p; sid=%d -> %d", Ent->GetClass()->GetName(), Ent->GetUniqueId(), (void*)Ent, oldSoundId, Ent->SoundOriginID);
+      if (oldSoundId) Ent->XLevel->RemoveEntitySoundID(oldSoundId);
+      if (Ent->SoundOriginID) Ent->XLevel->RegisterEntitySoundID(Ent, Ent->SoundOriginID);
+    }
     Ent->LinkToWorld(true);
     auto pc = Connection->GetPlayerChannel();
     // do not interpolate player mobj

@@ -1195,6 +1195,7 @@ void VAudio::UpdateSfx () {
               {
                 VEntity *ent = Level->FindEntityBySoundID(Channel[i].origin_id&0x00ffffff);
                 if (ent) {
+                  //GCon->Logf(NAME_Debug, "::FIXSOUND: sid=%d; ptr=%p", Channel[i].origin_id&0x00ffffff, (void*)ent);
                   Channel[i].origin = ent->Origin;
                   #ifdef VV_SND_ALLOW_VELOCITY
                   Channel[i].velocity = ent->Velocity;

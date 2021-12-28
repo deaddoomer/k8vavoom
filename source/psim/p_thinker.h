@@ -50,6 +50,7 @@ enum {
 };
 
 // type of the sound origin, used for origin IDs when playing sounds
+// THE ORDER IS IMPORTANT! `SNDORG_Entity` MUST be zero! (for now)
 enum {
   SNDORG_Entity,
   SNDORG_Sector,
