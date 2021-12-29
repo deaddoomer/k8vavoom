@@ -199,7 +199,7 @@ bool VIniFile::save (const VStr &fname) const {
 
 
 void VIniFile::clear () {
-  items.SetNum(0);
+  items.clear();
 }
 
 

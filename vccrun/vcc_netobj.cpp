@@ -52,8 +52,8 @@ VNetObjectsMap::VNetObjectsMap (VNetConnection *AConnection) : Connection(AConne
 //
 //==========================================================================
 void VNetObjectsMap::SetUpClassLookup () {
-  NameMap.SetNum(VName::GetNumNames());
-  NameLookup.SetNum(VName::GetNumNames());
+  NameMap.setLength(VName::GetNumNames());
+  NameLookup.setLength(VName::GetNumNames());
   for (int i = 0; i < VName::GetNumNames(); ++i) {
     NameMap[i] = i;
     NameLookup[i] = *(VName *)&i;

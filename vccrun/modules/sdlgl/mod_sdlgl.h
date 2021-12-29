@@ -468,10 +468,10 @@ public:
   VOpenGLTexture (VImage *aimg, VStr apath, bool doSmoothing=true);
   ~VOpenGLTexture (); // don't call this manually!
 
-  VVA_ALWAYS_INLINE void addRef () const noexcept { ++rc; }
+  VVA_FORCEINLINE void addRef () const noexcept { ++rc; }
 
   //WARNING: can delete `this`!
-  VVA_ALWAYS_INLINE void release () noexcept { if (--rc == 0) delete this; }
+  VVA_FORCEINLINE void release () noexcept { if (--rc == 0) delete this; }
 
   void convertToTrueColor ();
 

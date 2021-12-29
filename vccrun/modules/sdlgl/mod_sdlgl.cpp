@@ -606,7 +606,7 @@ bool PcfFont::load (VStream &fl) noexcept {
       readInt(vuint32, count);
       if (count == 0) return false;
       if (count > 0x00ffffff) return false;
-      gboffsets.SetNum((int)count);
+      gboffsets.setLength((int)count);
       for (int oidx = 0; oidx < (int)count; ++oidx) {
         vuint32 v;
         readInt(vuint32, v);
@@ -638,7 +638,7 @@ bool PcfFont::load (VStream &fl) noexcept {
   if (!bitmaps) return false;
 
   // load encoding table, fill glyph table
-  glyphs.SetNum(gboffsets.length());
+  glyphs.setLength(gboffsets.length());
   //immutable int bytesPerItem = 1<<(bmpfmt&3);
   for (int idx = 0; idx < glyphs.length(); ++idx) {
     Glyph &gl = glyphs[idx];
@@ -3178,8 +3178,8 @@ void VGLVideo::VCC_WaitEvents () {
   if (!mInited) Sys_Error("VGLVideo::VCC_WaitEvents: wtf?! (inited)");
   if (!inEventLoop) Sys_Error("VGLVideo::VCC_WaitEvents: wtf?! (inloop)");
 
-  uint64_t prevFrameSwapTime = 0;
-  Sys_Time_Ex(&prevFrameSwapTime);
+  //uint64_t prevFrameSwapTime = 0;
+  //prevFrameSwapTime = Sys_Time_Micro();
 
   int mx, my;
   for (;;) {
@@ -3197,7 +3197,7 @@ void VGLVideo::VCC_WaitEvents () {
     //GLog.Logf(NAME_Debug, "VGLVideo::VCC_WaitEvents:000: currFrameTime=%d", currFrameTime);
     if (currFrameTime > 0) {
       uint64_t ctt = 0;
-      const double dctt = Sys_Time_Ex(&ctt);
+      const double dctt = Sys_Time_ExU(&ctt);
       if (nextFrameTime == 0) nextFrameTime = ctt;
       bool wasNewFrame = false;
       //GLog.Logf(NAME_Debug, "VGLVideo::VCC_WaitEvents:001:   ctt=%llu; nextFrameTime=%llu", ctt, nextFrameTime);

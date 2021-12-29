@@ -359,7 +359,7 @@ static int VCC_AddTimer (int mstimeout, bool oneShot) {
   }
   tm->id = n;
   tm->mstimeout = (unsigned)mstimeout;
-  Sys_Time_Ex(&tm->fireTime);
+  tm->fireTime = Sys_Time_Micro();
   tm->fireTime += tm->mstimeout;
   tm->oneShot = oneShot;
   if (mstimeout == 0 && !oneShot) tm->mstimeout = 1u;
@@ -383,7 +383,7 @@ void VCC_CancelInterval (int iid) {
   vccTimers[iid].id = 0;
   int ffree = vccTimers.length();
   while (ffree > 0 && !vccTimers[ffree].id) --ffree;
-  if (ffree != vccTimers.length()) vccTimers.setLength(ffree, false); // do not resize array storage
+  if (ffree != vccTimers.length()) vccTimers.setLength<false>(ffree); // do not resize array storage
   nextTimerTimeout = 0;
   for (auto &&tm : vccTimers) {
     if (!tm.id) continue;
@@ -399,8 +399,7 @@ static int VCC_ProcessTimers () {
     return -1;
   }
 
-  uint64_t ctt = 0;
-  Sys_Time_Ex(&ctt);
+  uint64_t ctt = Sys_Time_Micro();
 
   int firstfree = 0;
   int currtm = 0;
@@ -426,7 +425,7 @@ static int VCC_ProcessTimers () {
     }
   }
 
-  if (firstfree != vccTimers.length()) vccTimers.setLength(firstfree, false); // do not resize array storage
+  if (firstfree != vccTimers.length()) vccTimers.setLength<false>(firstfree); // do not resize array storage
 
   nextTimerTimeout = 0;
   for (auto &&tm : vccTimers) {

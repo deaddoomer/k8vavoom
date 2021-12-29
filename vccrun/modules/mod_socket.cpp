@@ -809,8 +809,8 @@ IMPLEMENT_FREE_FUNCTION(VObject, SocketRecvBuf) {
     if ((size_t)maxlen > so->rbuf.used) maxlen = (int)so->rbuf.used;
     if (maxlen > 16*1024*1024-data.value->length()) maxlen = 16*1024*1024-data.value->length();
     int olen = data.value->length();
-    data.value->SetNumWithReserve(olen+maxlen);
-    if (!so->rbuf.get(data.value->ptr()+olen, (size_t)maxlen)) data.value->setLength(olen, false); // don't resize
+    data.value->setLengthReserve(olen+maxlen);
+    if (!so->rbuf.get(data.value->ptr()+olen, (size_t)maxlen)) data.value->setLength<false>(olen); // don't resize
     RET_INT(data.value->length()-olen);
   }
 }

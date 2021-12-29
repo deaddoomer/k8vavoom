@@ -84,7 +84,7 @@ void VSampleLoader::LoadFromAudioCodec (sfxinfo_t &Sfx, VAudioCodec *Codec) {
     int SamplesDecoded = Codec->Decode(buf, MAX_FRAMES);
     if (SamplesDecoded > 0) {
       int oldlen = Data.length();
-      Data.SetNumWithReserve(oldlen+SamplesDecoded);
+      Data.setLengthReserve(oldlen+SamplesDecoded);
       // downmix stereo to mono
       const short *src = buf;
       short *dst = ((short *)Data.Ptr())+oldlen;
