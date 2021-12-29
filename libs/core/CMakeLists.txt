@@ -67,7 +67,6 @@ add_library(core STATIC
   vecmat/matrixrot.h
   vecmat/matrixvp.h
   vecmat/matrix4.cpp
-  wlist.h
   xml.h
   xml.cpp
   zone.h

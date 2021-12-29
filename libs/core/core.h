@@ -227,8 +227,6 @@ VVA_OKUNUSED VVA_FORCEINLINE uint32_t GetTypeHash (const VCustomKeyInfo_NamedVal
 #include "xml.h" // xml file parsing
 #include "stream/ntvalue.h"
 
-#include "wlist.h"
-
 #include "minipng.h"
 
 #include "syslow.h"
