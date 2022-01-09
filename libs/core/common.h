@@ -131,14 +131,14 @@ enum ENoInit { E_NoInit };
 // "clearing placement new"
 // use it like this:
 //   T myobj;
-//   new(&myobj, E_ArrayNew, E_ArrayNew) T();
+//   new(&myobj, E_ArrayNew, E_ArrayNew) T;
 enum EArrayNew { E_ArrayNew };
 VVA_FORCEINLINE VVA_OKUNUSED void *operator new (size_t sz, void *ptr, EArrayNew, EArrayNew) noexcept { if (sz) memset(ptr, 0, sz); return ptr; }
 
 // "non-clearing placement new"
 // use it like this:
 //   T myobj;
-//   new(&myobj, E_ArrayNew, E_NoInit) T();
+//   new(&myobj, E_ArrayNew, E_NoInit) T;
 VVA_FORCEINLINE VVA_OKUNUSED void *operator new (size_t sz, void *ptr, EArrayNew, ENoInit) noexcept { return ptr; }
 #endif
 
