@@ -164,7 +164,7 @@ static VVA_OKUNUSED VVA_FORCEINLINE void zeroDenormalsFI32InPlace (VVA_MAYALIAS 
 
 
 // this turns all nan/inf values into positive zero
-static VVA_OKUNUSED VVA_FORCEINLINE void killInfNaNFInPlace (float *f) VV_FLTUTIL_NOEXCEPT {
+static VVA_OKUNUSED VVA_FORCEINLINE void killInfNaNFInPlace (VVA_MAYALIAS float *f) VV_FLTUTIL_NOEXCEPT {
   VVA_MAYALIAS int32_t *fi = (VVA_MAYALIAS int32_t *)f;
   *fi &= ((((*fi)>>23)&0xff)-0xff)>>31;
 }
@@ -179,7 +179,7 @@ VVA_FORCEINLINE float killInfNaNF (const float f) VV_FLTUTIL_NOEXCEPT {
 
 // this turns all nan/inf and denormals to positive zero
 // also, turns negative zero to positive zero
-static VVA_OKUNUSED VVA_FORCEINLINE void zeroNanInfDenormalsFInPlace (float *f) VV_FLTUTIL_NOEXCEPT {
+static VVA_OKUNUSED VVA_FORCEINLINE void zeroNanInfDenormalsFInPlace (VVA_MAYALIAS float *f) VV_FLTUTIL_NOEXCEPT {
   VVA_MAYALIAS int32_t *fi = (VVA_MAYALIAS int32_t *)f;
   if (!((*fi)&0x7f800000u)) *fi = 0u; // kill denormals
   else *fi &= ((((*fi)>>23)&0xff)-0xff)>>31; // kill nan/inf
@@ -197,7 +197,7 @@ VVA_FORCEINLINE float zeroNanInfDenormalsF (const float f) VV_FLTUTIL_NOEXCEPT {
 
 // this turns all denormals to positive zero
 // also, turns negative zero to positive zero
-static VVA_OKUNUSED VVA_FORCEINLINE void zeroDenormalsFInPlace (float *f) VV_FLTUTIL_NOEXCEPT {
+static VVA_OKUNUSED VVA_FORCEINLINE void zeroDenormalsFInPlace (VVA_MAYALIAS float *f) VV_FLTUTIL_NOEXCEPT {
   VVA_MAYALIAS int32_t *fi = (VVA_MAYALIAS int32_t *)f;
   if (!((*fi)&0x7f800000u)) *fi = 0u; // kill denormals
 }

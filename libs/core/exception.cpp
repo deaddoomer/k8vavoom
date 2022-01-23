@@ -50,7 +50,7 @@ void (*SysErrorCB) (const char *msg) noexcept = nullptr;
 //  VavoomError::VavoomError
 //
 //==========================================================================
-VavoomError::VavoomError (const char *text) noexcept {
+__attribute__((cold)) VavoomError::VavoomError (const char *text) noexcept {
   VStr::NCpy(message, text, MAX_ERROR_TEXT_SIZE-1);
   message[MAX_ERROR_TEXT_SIZE-1] = 0;
 }
@@ -71,7 +71,7 @@ const char *VavoomError::What () const noexcept {
 //  Host_CoreDump
 //
 //==========================================================================
-void Host_CoreDump (const char *fmt, ...) noexcept {
+__attribute__((cold)) void Host_CoreDump (const char *fmt, ...) noexcept {
   bool first = false;
 
   if (!host_error_string) {
@@ -104,7 +104,7 @@ void Host_CoreDump (const char *fmt, ...) noexcept {
 //  Host_GetCoreDump
 //
 //==========================================================================
-const char *Host_GetCoreDump () noexcept {
+__attribute__((cold)) const char *Host_GetCoreDump () noexcept {
   return (host_error_string ? host_error_string : "");
 }
 
@@ -115,7 +115,7 @@ const char *Host_GetCoreDump () noexcept {
 //
 //==========================================================================
 #ifdef WIN32
-static __attribute__((noreturn)) void Suicide () noexcept {
+static __attribute__((noreturn)) __attribute__((cold)) void Suicide () noexcept {
   #if 0
   HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE/*bInheritHandle*/, GetCurrentProcessId());
   if (hProcess == NULL) {
@@ -142,7 +142,7 @@ static __attribute__((noreturn)) void Suicide () noexcept {
 //  Exits game and displays error message.
 //
 //==========================================================================
-void Sys_Error (const char *error, ...) noexcept {
+__attribute__((cold)) void Sys_Error (const char *error, ...) noexcept {
   va_list argptr;
   static char buf[16384]; //WARNING! not thread-safe!
 

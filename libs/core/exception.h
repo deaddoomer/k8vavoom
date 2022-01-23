@@ -44,14 +44,14 @@ class VavoomError : public VException {
 public:
   char message[MAX_ERROR_TEXT_SIZE];
 
-  explicit VavoomError (const char *text) noexcept;
+  explicit VavoomError (const char *text) noexcept __attribute__((cold));
   virtual const char *What () const noexcept override;
 };
 
 
 class RecoverableError : public VavoomError {
 public:
-  explicit inline RecoverableError (const char *text) noexcept : VavoomError(text) {}
+  explicit  __attribute__((cold)) inline RecoverableError (const char *text) noexcept : VavoomError(text) {}
 };
 
 
@@ -90,14 +90,14 @@ protected:
 #endif
 
 
-void Host_CoreDump (const char *fmt, ...) noexcept __attribute__((format(printf, 1, 2)));
-void Sys_Error (const char *, ...) noexcept __attribute__((noreturn, format(printf, 1, 2)));
+void Host_CoreDump (const char *fmt, ...) noexcept __attribute__((format(printf, 1, 2))) __attribute__((cold));
+void Sys_Error (const char *, ...) noexcept __attribute__((noreturn, format(printf, 1, 2))) __attribute__((cold));
 
 // call `abort()` or `exit()` there to stop standard processing
 extern void (*SysErrorCB) (const char *msg) noexcept;
 
 //const char *SkipPathPartCStr (const char *s);
-VVA_CONSTEXPR inline VVA_PURE const char *SkipPathPartCStr (const char *s) noexcept {
+VVA_CONSTEXPR inline VVA_PURE __attribute__((cold)) const char *SkipPathPartCStr (const char *s) noexcept {
   const char *lastSlash = nullptr;
   for (const char *t = s; *t; ++t) {
     if (*t == '/') lastSlash = t+1;
@@ -116,9 +116,9 @@ VVA_CONSTEXPR inline VVA_PURE const char *SkipPathPartCStr (const char *s) noexc
 //==========================================================================
 
 #if !defined(VAVOOM_DISABLE_ASSERTS)
-# define vassert(cond_)  do { if (!(cond_)) Sys_Error("%s:%d: Assertion failed: %s", SkipPathPartCStr(__FILE__), __LINE__, #cond_); } while (0)
+# define vassert(cond_)  do { if (__builtin_expect((!(cond_)), 0)) Sys_Error("%s:%d: Assertion in `%s` failed: %s", SkipPathPartCStr(__FILE__), __LINE__, __PRETTY_FUNCTION__, #cond_); } while (0)
 #else
 # warning "WARNING! WARNING! WARNING! you'd better NEVER turn off assertion checking in k8vavoom code!"
 # define vassert(cond_)
 #endif
-#define vensure(cond_)  do { if (!(cond_)) Sys_Error("%s:%d: Assertion failed: %s", SkipPathPartCStr(__FILE__), __LINE__, #cond_); } while (0)
+#define vensure(cond_)  do { if (__builtin_expect((!(cond_)), 0)) Sys_Error("%s:%d: Assertion in `%s` failed: %s", SkipPathPartCStr(__FILE__), __LINE__, __PRETTY_FUNCTION__, #cond_); } while (0)
