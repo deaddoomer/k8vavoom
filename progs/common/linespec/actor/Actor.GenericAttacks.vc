@@ -808,10 +808,10 @@ final void do_simple_A_Explode (optional int damage, optional float aradius, opt
 //  A_ZoomFactor
 //
 //==========================================================================
-[decorate] final void A_ZoomFactor (float zoom, optional int flags) {
+[decorate] final void A_ZoomFactor (optional float zoom, optional int flags) {
   Weapon Wpn = PlayerEx(Player).ReadyWeapon;
   if (Wpn && bIsPlayer) {
-    if (!zoom) zoom = 1.0;
+    if (!zoom || !specified_zoom) zoom = 1.0;
     zoom = fclamp(zoom, 0.1, 50);
     zoom = 1.0/zoom;
 
