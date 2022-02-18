@@ -103,6 +103,7 @@ static void CalcMapUnstuckVector (TArray<UnstuckInfo> &uvlist, VEntity *mobj) {
       for (int by = yl; by <= yh; ++by) {
         for (auto &&it : XLevel->allBlockLines(bx, by)) {
           line_t *ld = it.line();
+          if (ld->pobj()) continue; // ignore polyobject lines (why?)
           if (!mobj->IsRealBlockingLine(ld)) continue;
           int side = 0;
           if (ld->backsector && (ld->flags&ML_TWOSIDED)) {
@@ -125,6 +126,9 @@ static void CalcMapUnstuckVector (TArray<UnstuckInfo> &uvlist, VEntity *mobj) {
             }
             if (!doAdd) continue;
             side = ld->PointOnSide(mobj->Origin);
+          }
+          if (dbg_pobj_unstuck_verbose.asBool()) {
+            GCon->Logf(NAME_Debug, "**** mobj %s:%u, MAP LDEF #%d", mobj->GetClass()->GetName(), mobj->GetUniqueId(), (int)(ptrdiff_t)(ld-&mobj->XLevel->Lines[0]));
           }
           UnstuckInfo &nfo = uvlist.alloc();
           nfo.uv = TVec(0.0f, 0.0f); // unused
@@ -497,7 +501,7 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
         if (mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue;
         // if pobj has no top-blocking textures, it can be skipped if we're above it
         if ((po->PolyFlags&polyobj_t::PF_HasTopBlocking) == 0) {
-          if (mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue;
+          if (mobj->Origin.z >= po->poceiling.minz) continue;
         }
 
         const bool canUnstuck = CalcPolyUnstuckVector(uvlist, po, mobj);
@@ -537,6 +541,9 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
     if (!mobj->IsGoingToDie() && mobj->PObjNeedPositionCheck()) {
       CalcMapUnstuckVector(uvlist, mobj);
       if (uvlist.length()) {
+        if (dbg_pobj_unstuck_verbose.asBool()) {
+          GCon->Logf(NAME_Debug, "mobj '%s': map unstuck", edata.mobj->GetClass()->GetName());
+        }
         if (!DoUnstuckByAverage(uvlist, mobj)) return false; // blocked
       }
     }
@@ -551,7 +558,7 @@ static bool UnstuckFromRotatedPObj (VLevel *Level, polyobj_t *pofirst, bool skip
         if (mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue;
         // if pobj has no top-blocking textures, it can be skipped if we're above it
         if ((po->PolyFlags&polyobj_t::PF_HasTopBlocking) == 0) {
-          if (mobj->Origin.z+max2(0.0f, mobj->Height) <= po->pofloor.minz) continue;
+          if (mobj->Origin.z >= po->poceiling.minz) continue;
         }
         const bool canUnstuck = CalcPolyUnstuckVector(uvlist, po, mobj);
         // if we can't find unstuck direction, or found at least one, it means that we're stuck
