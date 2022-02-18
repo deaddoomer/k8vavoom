@@ -95,9 +95,8 @@ TVec GetSpeedVector () {
 //==========================================================================
 static final TVec CalcSpeedVector (polyobj_t *po) {
   while (po) {
-    while (po.SpecialData) {
-      PolyobjThinker curr = PolyobjThinker(po.SpecialData);
-      assert(curr);
+    PolyobjThinker curr = PolyobjThinker(po.SpecialData);
+    while (curr) {
       if (!curr.isDestroyed) {
         TVec res = curr.GetSpeedVector();
         //FIXME: there can be more than one mover, but meh...
