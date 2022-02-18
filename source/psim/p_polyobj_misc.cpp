@@ -452,7 +452,14 @@ void VLevel::ValidateNormalPolyobj (polyobj_t *po) {
   for (auto &&it : po->LineFirst()) {
     line_t *ld = it.line();
     if (ld->frontsector != sfront || ld->backsector != sback) {
-      Host_Error("invalid pobj #%d configuration -- bad line #%d (invalid sectors)", po->tag, (int)(ptrdiff_t)(ld-&Lines[0]));
+      #if 0
+      GCon->Logf(NAME_Debug, "l0: sfront=%d; sback=%d", (sfront ? (int)(ptrdiff_t)(sfront-&Sectors[0]) : -666),
+                                                        (sback ? (int)(ptrdiff_t)(sback-&Sectors[0]) : -666));
+      GCon->Logf(NAME_Debug, "ld: sfront=%d; sback=%d", (ld->frontsector ? (int)(ptrdiff_t)(ld->frontsector-&Sectors[0]) : -666),
+                                                        (ld->backsector ? (int)(ptrdiff_t)(ld->backsector-&Sectors[0]) : -666));
+      #endif
+      GCon->Logf(NAME_Error, "invalid pobj #%d configuration -- bad line #%d (invalid sectors) (first line is #%d)",
+                 po->tag, (int)(ptrdiff_t)(ld-&Lines[0]), (int)(ptrdiff_t)(po->lines[0]-&Lines[0]));
     }
   }
 }
