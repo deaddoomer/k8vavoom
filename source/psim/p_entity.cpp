@@ -1363,6 +1363,7 @@ bool VEntity::Check3DPObjLineBlockedInternal (const polyobj_t *po, const line_t 
     VTexture *ttex = GTextureManager(tside->TopTexture);
     if (!ttex || ttex->Type == TEXTYPE_Null) return false; // wtf?!
     const float texh = ttex->GetScaledHeightF()/tside->Top.ScaleY;
+    if (texh <= 0.0f) return false;
     return (mobjz0 < ptopz+texh); // hit top texture?
   } else {
     return IsBlockingLine(ld);
@@ -1425,11 +1426,13 @@ bool VEntity::CheckPObjLineBlocked (const polyobj_t *po, const line_t *ld) const
 //  this does all the necessary checks for pobjs and 3d pobjs too
 //  does check for blocking 3d midtex, and for 3d floors (i.e. checks openings)
 //
+//  returns `true` if blocking
+//
 //==========================================================================
 bool VEntity::IsRealBlockingLine (const line_t *ld) const noexcept {
   if (!ld) return false;
   if (Height <= 0.0f || GetMoveRadius() <= 0.0f) return false; // just in case
-  if (!ld->backsector || !(ld->flags&ML_TWOSIDED)) return !LineIntersects(ld); // one sided line
+  if (!ld->backsector || !(ld->flags&ML_TWOSIDED)) return LineIntersects(ld); // one sided line
   // polyobject line?
   if (ld->pobj()) return CheckPObjLineBlocked(ld->pobj(), ld);
   if (!LineIntersects(ld)) return false;
