@@ -28,9 +28,9 @@
 #ifdef VC_VM_LABEL_TABLE
 
 #define DECLARE_OPC_DYNARRDISPATCH(name) &&Lbl_OPC_DynArrDispatch_ ## name
-static void *vm_labels_dynarrdisp[] = {
+static const void *vm_labels_dynarrdisp[] = {
 #include "vc_progdefs_dynarrdispatch.h"
-0 };
+};
 #undef DECLARE_OPC_DYNARRDISPATCH
 
 #else

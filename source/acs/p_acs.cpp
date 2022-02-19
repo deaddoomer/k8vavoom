@@ -2815,6 +2815,13 @@ void VAcs::TranslateSpecial (int &spec, int &arg1) {
 //
 //==========================================================================
 int VAcs::RunScript (float DeltaTime, bool immediate) {
+#if USE_COMPUTED_GOTO
+    static const void *vm_labels[] = {
+#define DECLARE_PCD(name) &&Lbl_PCD_ ## name
+#include "p_acs.h"
+    };
+#endif
+
   VAcsObject *WaitObject = nullptr;
 
   //fprintf(stderr, "VAcs::RunScript:000: self name is '%s' (number is %d)\n", *info->Name, info->Number);
@@ -2922,12 +2929,6 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
   do {
     vint32 cmd;
 
-#if USE_COMPUTED_GOTO
-    static void *vm_labels[] = {
-#define DECLARE_PCD(name) &&Lbl_PCD_ ## name
-#include "p_acs.h"
-    0 };
-#endif
 
     // check stack (no need to; each opcode does it now)
     /*

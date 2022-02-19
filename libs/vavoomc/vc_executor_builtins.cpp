@@ -28,9 +28,9 @@
 #ifdef VC_VM_LABEL_TABLE
 
 #define DECLARE_OPC_BUILTIN(name) &&Lbl_OPC_Builtin_ ## name
-static void *vm_labels_builtins[] = {
+static const void *vm_labels_builtins[] = {
 #include "vc_progdefs_builtins.h"
-0 };
+};
 #undef DECLARE_OPC_BUILTIN
 
 #else

@@ -28,9 +28,9 @@
 #ifdef VC_VM_LABEL_TABLE
 
 #define DECLARE_OPC_DICTDISPATCH(name) &&Lbl_OPC_DictDispatch_ ## name
-static void *vm_labels_dictdisp[] = {
+static const void *vm_labels_dictdisp[] = {
 #include "vc_progdefs_dictdispatch.h"
-0 };
+};
 #undef DECLARE_OPC_DICTDISPATCH
 
 #else

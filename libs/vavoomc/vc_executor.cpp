@@ -259,14 +259,14 @@ void VObject::PR_OnAbort () {
 
 #if USE_COMPUTED_GOTO
 # define PR_VM_SWITCH(op)  goto *vm_labels[op];
-# define PR_VM_CASE(x)   Lbl_ ## x:
-# define PR_VM_BREAK     goto *vm_labels[*ip];
+# define PR_VM_CASE(x)     Lbl_ ## x:
+# define PR_VM_BREAK       goto *vm_labels[*ip];
 # define PR_VM_DEFAULT
 #else
-# define PR_VM_SWITCH(op)  switch(op)
-# define PR_VM_CASE(x)   case x:
-# define PR_VM_BREAK     break
-# define PR_VM_DEFAULT   default:
+# define PR_VM_SWITCH(op)  switch (op)
+# define PR_VM_CASE(x)     case x:
+# define PR_VM_BREAK       break
+# define PR_VM_DEFAULT     default:
 #endif
 
 #define VM_CHECK_SIGABORT  do { \
@@ -423,6 +423,20 @@ static inline VCvar *GetRTCVar (const vuint8 *ip, int nameidx, bool allownull=fa
 //
 //==========================================================================
 static void RunFunction (VMethod *func) {
+#if USE_COMPUTED_GOTO
+    static const void *vm_labels[] = {
+# define DECLARE_OPC(name, args) &&Lbl_OPC_ ## name
+# define OPCODE_INFO
+# include "vc_progdefs.h"
+    };
+#endif
+
+  #define VC_VM_LABEL_TABLE
+  #include "vc_executor_builtins_dynarr.cpp"
+  #include "vc_executor_builtins.cpp"
+  #include "vc_executor_builtins_dict.cpp"
+  #undef VC_VM_LABEL_TABLE
+
   vuint8 *ip = nullptr;
   VStack *sp;
   VStack *local_vars;
@@ -503,20 +517,6 @@ static void RunFunction (VMethod *func) {
 #endif
 
   VM_CHECK_SIGABORT;
-
-#if USE_COMPUTED_GOTO
-    static void *vm_labels[] = {
-# define DECLARE_OPC(name, args) &&Lbl_OPC_ ## name
-# define OPCODE_INFO
-# include "vc_progdefs.h"
-    0 };
-#endif
-
-  #define VC_VM_LABEL_TABLE
-  #include "vc_executor_builtins_dynarr.cpp"
-  #include "vc_executor_builtins.cpp"
-  #include "vc_executor_builtins_dict.cpp"
-  #undef VC_VM_LABEL_TABLE
 
   const vuint8 *origip = nullptr;
 
