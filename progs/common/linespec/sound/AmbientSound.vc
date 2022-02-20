@@ -73,8 +73,8 @@ override bool Deactivate (EntityEx Activator) {
   if (bActive) {
     bActive = false;
     FAmbientSound *Amb = GetAmbientSound(Args[0]);
-    if ((Amb->Type&SNDTYPE_PlaybackMask) == SNDTYPE_Continuous) {
-      StopSound(CHAN_AUTO);
+    if (Amb && (Amb->Type&SNDTYPE_PlaybackMask) == SNDTYPE_Continuous) {
+      StopSound(CHAN_BODY);
     }
   }
   return true;
