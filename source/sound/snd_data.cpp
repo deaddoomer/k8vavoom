@@ -697,14 +697,15 @@ void VSoundManager::ParseSndinfo (VScriptParser *sc, int fileid) {
       FAmbientSound *ambient, dummy;
 
       sc->ExpectNumber();
-      if (sc->Number < 0 || sc->Number >= NUM_AMBIENT_SOUNDS) {
-        sc->Message(va("Bad ambient index (%d)", sc->Number));
+      const int ambidx = sc->Number;
+      if (ambidx < 0 || ambidx >= NUM_AMBIENT_SOUNDS) {
+        sc->Message(va("Bad ambient index (%d)", ambidx));
         ambient = &dummy;
-      } else if (AmbientSounds[sc->Number]) {
-        ambient = AmbientSounds[sc->Number];
+      } else if (AmbientSounds[ambidx]) {
+        ambient = AmbientSounds[ambidx];
       } else {
         ambient = new FAmbientSound;
-        AmbientSounds[sc->Number] = ambient;
+        AmbientSounds[ambidx] = ambient;
       }
       memset((void *)ambient, 0, sizeof(FAmbientSound));
 
