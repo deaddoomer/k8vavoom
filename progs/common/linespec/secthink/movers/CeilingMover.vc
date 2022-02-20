@@ -92,6 +92,7 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4,
   Spot = *Sector->lines[0]->v1;
   SeqName = 'CeilingNormal';
   bStopOnCrush = LineSpecialLevelInfo(Level).bDefaultStopOnCrush;
+
   switch (Type) {
     case CEILEV_LowerToFloor:
       DestHeight = Level.FindHighestFloorPoint(Sector, &Spot);
@@ -307,9 +308,11 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4,
   // instamove?
   if (!Crush) {
     if (Direction < 0) {
-      if (Sector->ceiling.dist >= BottomDist) Crush = -667; // instamove
+      // lower, but dist is higher?
+      if (BottomDist >= Sector->ceiling.dist) Crush = -667; // instamove
     } else {
-      if (Sector->ceiling.dist <= BottomDist) Crush = -667; // instamove
+      // raise, but dist is lower?
+      if (TopDist <= Sector->ceiling.dist) Crush = -667; // instamove
     }
   }
 
