@@ -358,6 +358,26 @@ void VArgs::FindResponseFile () {
 
 //==========================================================================
 //
+//  isOneDash
+//
+//==========================================================================
+static inline bool isOneDash (const char *s) noexcept {
+  return (s && s[0] == '-' && s[1] && s[1] != '-');
+}
+
+
+//==========================================================================
+//
+//  isTwoDashes
+//
+//==========================================================================
+static inline bool isTwoDashes (const char *s) noexcept {
+  return (s && s[0] == '-' && s[1] == '-' && s[2]);
+}
+
+
+//==========================================================================
+//
 //  VArgs::CheckParm
 //
 //  Checks for the given parameter in the program's command line arguments.
@@ -365,7 +385,7 @@ void VArgs::FindResponseFile () {
 //
 //==========================================================================
 int VArgs::CheckParm (const char *check, bool takeFirst, bool startsWith) const {
-  if (Argc <= 1) return 0;
+  if (Argc <= 1 || !check || !check[0]) return 0;
 
   int i, end, dir;
   if (takeFirst) {
@@ -381,8 +401,14 @@ int VArgs::CheckParm (const char *check, bool takeFirst, bool startsWith) const 
   while (i != end) {
     if (!startsWith) {
       if (VStr::strEquCI(Argv[i], check)) return i;
+      if (isOneDash(check) && isTwoDashes(Argv[i])) {
+        if (VStr::strEquCI(Argv[i]+1, check)) return i;
+      }
     } else {
       if (VStr::startsWithCI(Argv[i], check)) return i;
+      if (isOneDash(check) && isTwoDashes(Argv[i])) {
+        if (VStr::startsWithCI(Argv[i]+1, check)) return i;
+      }
     }
     i += dir;
   }
@@ -402,8 +428,14 @@ int VArgs::CheckParmFrom (const char *check, int stidx, bool startsWith) const {
   for (++stidx; stidx < Argc; ++stidx) {
     if (!startsWith) {
       if (VStr::strEquCI(Argv[stidx], check)) return stidx;
+      if (isOneDash(check) && isTwoDashes(Argv[stidx])) {
+        if (VStr::strEquCI(Argv[stidx]+1, check)) return stidx;
+      }
     } else {
       if (VStr::startsWithCI(Argv[stidx], check)) return stidx;
+      if (isOneDash(check) && isTwoDashes(Argv[stidx])) {
+        if (VStr::startsWithCI(Argv[stidx]+1, check)) return stidx;
+      }
     }
   }
   return 0;
@@ -669,6 +701,11 @@ bool VParsedArgs::IsArgBreaker (VArgs &args, int idx) {
   // perform some smart checks
   ArgInfo *ai = findNamedArgInfo(aname);
   if (ai) return true;
+  if (isTwoDashes(aname)) {
+    ++aname;
+    ai = findNamedArgInfo(aname);
+    if (ai) return true;
+  }
   // this may be "-arg=value" too
   const char *equ = strchr(aname, '=');
   if (!equ || equ == aname+1) return true;
@@ -761,7 +798,7 @@ void VParsedArgs::parse (VArgs &args) {
     if (aname[0] == '-') {
       // find handler
       ArgInfo *ai = findNamedArgInfo(aname);
-      if (!ai && aname[1] == '-') {
+      if (!ai && isTwoDashes(aname)) {
         ai = findNamedArgInfo(aname+1);
         if (ai) ++aname;
       }
