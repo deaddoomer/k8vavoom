@@ -171,9 +171,12 @@ void VRenderLevelShared::SetupTextureAxesOffsetEx (seg_t *seg, texinfo_t *texinf
 
   if (!yflip) {
     texinfo->toffs = TexZ*TextureTScale(tex)*tparam->ScaleY; // vertical
-  } else {
+  } else if (!ybroken) {
     const float texh = tex->GetScaledHeightF()/tparam->ScaleY;
     texinfo->toffs = (TexZ+texh)*TextureTScale(tex)*tparam->ScaleY; // vertical
+  } else {
+    // gozzo broken y flip
+    texinfo->toffs = TexZ*TextureTScale(tex)*(-tparam->ScaleY); // vertical
   }
 
   /*
