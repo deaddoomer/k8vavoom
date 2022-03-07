@@ -176,7 +176,7 @@ public:
   bool CanSilentlyIgnoreKey () const;
   int CheckInt ();
   float CheckFloat ();
-  float CheckFloatScalePositive (const char *msg=nullptr, vuint32 *flagptr=nullptr, vuint32 flipflag=0u); // > 0.0f
+  float CheckFloatScalePositive (const char *xy, const char *ssd, int idx, vuint32 *flagptr=nullptr, vuint32 flipflag=0u); // > 0.0f
   bool CheckBool ();
   VStr CheckString ();
   void Flag (int &Field, int Mask);
@@ -315,10 +315,15 @@ float VUdmfParser::CheckFloat () {
 //  > 0.0f
 //
 //==========================================================================
-float VUdmfParser::CheckFloatScalePositive (const char *msg, vuint32 *flagptr, vuint32 flipflag) {
-  if (ValType != TK_Int && ValType != TK_Float) sc.HostError(va("Float value expected for key '%s'", *Key));
+float VUdmfParser::CheckFloatScalePositive (const char *xy, const char *ssd, int idx, vuint32 *flagptr, vuint32 flipflag) {
+  if (ValType != TK_Int && ValType != TK_Float) {
+    sc.HostError(va("Float value expected for %s, %s #%d", xy, ssd, idx));
+  }
   float res = (ValType == TK_Int ? ValInt : ValFloat);
-  if (!isFiniteF(res)) sc.HostError(va("Invalid float value for key '%s' (%s)", *Key, *Val));
+  if (!isFiniteF(res)) {
+    sc.HostError(va("Invalid float value for %s, %s #%d (%s)", xy, ssd, idx, *Val));
+  }
+  //sc.MessageErr(va("*** %s for %s %d (%s): %s (%g)", xy, ssd, idx, *Key, *Val, res));
   // let zero scale be 1.0
   if (res == 0.0f) {
     //if (!msg) msg = va("Positive float value expected for key '%s', but got zero", *Key);
@@ -327,9 +332,11 @@ float VUdmfParser::CheckFloatScalePositive (const char *msg, vuint32 *flagptr, v
   }
   if (res <= 0.0f) {
     if (!flagptr) {
-      if (!msg) msg = va("Positive float value expected for key '%s'", *Key);
-      if (NS == NS_K8Vavoom) sc.HostError(va("%s (%g)", msg, res));
-      sc.MessageErr(va("%s (%g)", msg, res));
+      //if (!msg) msg = va("Positive float value expected for key '%s'", *Key);
+      if (NS == NS_K8Vavoom) sc.HostError(va("invalid %s for %s #%d (%g)", xy, ssd, idx, res));
+      sc.MessageErr(va("invalid %s for %s %d (%g)", xy, ssd, idx, res));
+    } else {
+      sc.MessageErr(va("UB: NEGATIVE %s for %s %d (%g)%s", xy, ssd, idx, res, (flipflag ? " (trying to fix)" : "")));
     }
     res = -res;
     if (res == 0.0f) res = 1.0f;
@@ -640,10 +647,10 @@ void VUdmfParser::ParseSector (VLevel *Level) {
       if (Key.strEquCI("ypanningfloor")) { S.S.floor.yoffs = CheckFloat(); continue; }
       if (Key.strEquCI("xpanningceiling")) { S.S.ceiling.xoffs = CheckFloat(); continue; }
       if (Key.strEquCI("ypanningceiling")) { S.S.ceiling.yoffs = CheckFloat(); continue; }
-      if (Key.strEquCI("xscalefloor")) { S.S.floor.XScale = CheckFloatScalePositive(va("invalid floor x scale for sector #%d", ParsedSectors.length()-1), &S.S.floor.flipFlags, SPF_FLIP_X|SPF_FLIP_X); continue; }
-      if (Key.strEquCI("yscalefloor")) { S.S.floor.YScale = CheckFloatScalePositive(va("invalid floor y scale for sector #%d", ParsedSectors.length()-1), &S.S.floor.flipFlags, SPF_FLIP_Y|SPF_FLIP_Y); continue; }
-      if (Key.strEquCI("xscaleceiling")) { S.S.ceiling.XScale = CheckFloatScalePositive(va("invalid ceiling x scale for sector #%d", ParsedSectors.length()-1)); continue; }
-      if (Key.strEquCI("yscaleceiling")) { S.S.ceiling.YScale = CheckFloatScalePositive(va("invalid ceiling y scale for sector #%d", ParsedSectors.length()-1)); continue; }
+      if (Key.strEquCI("xscalefloor")) { S.S.floor.XScale = CheckFloatScalePositive("floor x", "sector", ParsedSectors.length()-1, &S.S.floor.flipFlags, SPF_FLIP_X|SPF_FLIP_X); continue; }
+      if (Key.strEquCI("yscalefloor")) { S.S.floor.YScale = CheckFloatScalePositive("floor y", "sector", ParsedSectors.length()-1, &S.S.floor.flipFlags, SPF_FLIP_Y|SPF_FLIP_Y); continue; }
+      if (Key.strEquCI("xscaleceiling")) { S.S.ceiling.XScale = CheckFloatScalePositive("ceiling x", "sector", ParsedSectors.length()-1); continue; }
+      if (Key.strEquCI("yscaleceiling")) { S.S.ceiling.YScale = CheckFloatScalePositive("ceiling y", "sector", ParsedSectors.length()-1); continue; }
       if (Key.strEquCI("rotationfloor")) { S.S.floor.Angle = AngleMod(CheckFloat()); continue; }
       if (Key.strEquCI("rotationceiling")) { S.S.ceiling.Angle = AngleMod(CheckFloat()); continue; }
       if (Key.strEquCI("gravity")) { S.S.Gravity = CheckFloat(); continue; }
@@ -958,12 +965,12 @@ void VUdmfParser::ParseSideDef () {
       if (Key.strEquCI("offsety_mid")) { S.S.Mid.RowOffset = CheckFloat(); continue; }
       if (Key.strEquCI("offsetx_bottom")) { S.S.Bot.TextureOffset = CheckFloat(); continue; }
       if (Key.strEquCI("offsety_bottom")) { S.S.Bot.RowOffset = CheckFloat(); continue; }
-      if (Key.strEquCI("scalex_top")) { S.S.Top.ScaleX = CheckFloatScalePositive(va("invalid x top scale for side #%d", ParsedSides.length()-1), &S.S.Top.Flags, STP_FLIP_X|STP_BROKEN_FLIP_X); continue; }
-      if (Key.strEquCI("scaley_top")) { S.S.Top.ScaleY = CheckFloatScalePositive(va("invalid y top scale for side #%d", ParsedSides.length()-1), &S.S.Top.Flags, STP_FLIP_Y|STP_BROKEN_FLIP_Y); continue; }
-      if (Key.strEquCI("scalex_mid")) { S.S.Mid.ScaleX = CheckFloatScalePositive(va("invalid x mid scale for side #%d", ParsedSides.length()-1), &S.S.Mid.Flags, STP_FLIP_X|STP_BROKEN_FLIP_X); continue; }
-      if (Key.strEquCI("scaley_mid")) { S.S.Mid.ScaleY = CheckFloatScalePositive(va("invalid y mid scale for side #%d", ParsedSides.length()-1), &S.S.Mid.Flags, STP_FLIP_Y|STP_BROKEN_FLIP_Y); continue; }
-      if (Key.strEquCI("scalex_bottom")) { S.S.Bot.ScaleX = CheckFloatScalePositive(va("invalid x bottom scale for side #%d", ParsedSides.length()-1), &S.S.Bot.Flags, STP_FLIP_X|STP_BROKEN_FLIP_X); continue; }
-      if (Key.strEquCI("scaley_bottom")) { S.S.Bot.ScaleY = CheckFloatScalePositive(va("invalid y bottom scale for side #%d", ParsedSides.length()-1), &S.S.Bot.Flags, STP_FLIP_Y|STP_BROKEN_FLIP_Y); continue; }
+      if (Key.strEquCI("scalex_top")) { S.S.Top.ScaleX = CheckFloatScalePositive("x top", "side", ParsedSides.length()-1, &S.S.Top.Flags, STP_FLIP_X|STP_BROKEN_FLIP_X); continue; }
+      if (Key.strEquCI("scaley_top")) { S.S.Top.ScaleY = CheckFloatScalePositive("y top", "side", ParsedSides.length()-1, &S.S.Top.Flags, STP_FLIP_Y|STP_BROKEN_FLIP_Y); continue; }
+      if (Key.strEquCI("scalex_mid")) { S.S.Mid.ScaleX = CheckFloatScalePositive("x mid", "side", ParsedSides.length()-1, &S.S.Mid.Flags, STP_FLIP_X|STP_BROKEN_FLIP_X); continue; }
+      if (Key.strEquCI("scaley_mid")) { S.S.Mid.ScaleY = CheckFloatScalePositive("y mid", "side", ParsedSides.length()-1, &S.S.Mid.Flags, STP_FLIP_Y|STP_BROKEN_FLIP_Y); continue; }
+      if (Key.strEquCI("scalex_bottom")) { S.S.Bot.ScaleX = CheckFloatScalePositive("x bottom", "side", ParsedSides.length()-1, &S.S.Bot.Flags, STP_FLIP_X|STP_BROKEN_FLIP_X); continue; }
+      if (Key.strEquCI("scaley_bottom")) { S.S.Bot.ScaleY = CheckFloatScalePositive("y bottom", "side", ParsedSides.length()-1, &S.S.Bot.Flags, STP_FLIP_Y|STP_BROKEN_FLIP_Y); continue; }
       if (Key.strEquCI("light")) { S.S.Light = clampval(CheckInt(), 0, 255); continue; }
       if (Key.strEquCI("lightabsolute")) { Flag(S.S.Flags, SDF_ABSLIGHT); continue; }
       if (Key.strEquCI("wrapmidtex")) { Flag(S.S.Flags, SDF_WRAPMIDTEX); continue; }
