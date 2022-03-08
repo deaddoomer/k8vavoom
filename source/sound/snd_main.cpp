@@ -145,11 +145,9 @@ private:
     int origin_id; // <=0: full-volume local sound
     int channel;
     TVec origin;
-    TVec prevOrigin; // do not update source when it isn't moving
-#ifdef VV_SND_ALLOW_VELOCITY
+    #ifdef VV_SND_ALLOW_VELOCITY
     TVec velocity; // unused
-    TVec prevVelocity; // do not update source when it isn't moving
-#endif
+    #endif
     int sound_id;
     float priority; // the higher priority is worser; this is dynamically adjusted using base sound priority and distance from the listener
     float volume;
@@ -769,11 +767,9 @@ void VAudio::PlaySound (int InSoundId, const TVec &origin, const TVec &velocity,
   Channel[chan].origin_id = origin_id;
   Channel[chan].channel = channel;
   Channel[chan].origin = origin;
-  Channel[chan].prevOrigin = origin;
-#ifdef VV_SND_ALLOW_VELOCITY
+  #ifdef VV_SND_ALLOW_VELOCITY
   Channel[chan].velocity = velocity;
-  Channel[chan].prevVelocity = velocity;
-#endif
+  #endif
   Channel[chan].sound_id = sound_id;
   Channel[chan].priority = priority;
   Channel[chan].volume = volume;
@@ -1266,28 +1262,15 @@ void VAudio::UpdateSfx () {
       DeallocChannel(i);
       continue;
     }
+    Channel[i].priority = CalcSoundPriority(Channel[i].sound_id, dist);
 
     //GCon->Logf(NAME_Debug, "channel #%d (%d), origin=(%g,%g,%g); dist=%d", i, Channel[i].origin_id, Channel[i].origin.x, Channel[i].origin.y, Channel[i].origin.z, dist);
 
     // update params
     if (Channel[i].is3D) {
-      if (snd_manual_rolloff.asBool() ||
-          Channel[i].prevOrigin != Channel[i].origin
-          #ifdef VV_SND_ALLOW_VELOCITY
-          || Channel[i].prevVelocity != Channel[i].velocity
-          #endif
-         )
-      {
-        Channel[i].prevOrigin = Channel[i].origin;
-        #ifdef VV_SND_ALLOW_VELOCITY
-        Channel[i].prevVelocity = Channel[i].velocity;
-        #endif
-        SoundDevice->UpdateChannel3D(Channel[i].handle, Channel[i].sound_id,
-                                     cl->ViewOrg, Channel[i].origin, CHVEL, Channel[i].volume,
-                                     Channel[i].Attenuation);
-      }
+      SoundDevice->UpdateChannel3D(Channel[i].handle, Channel[i].sound_id,
+                                   cl->ViewOrg, Channel[i].origin, CHVEL, Channel[i].Attenuation);
     }
-    Channel[i].priority = CalcSoundPriority(Channel[i].sound_id, dist);
   }
 
   if (cl) {

@@ -265,11 +265,8 @@ private:
   int CommonPlaySound (bool is3d, int sound_id, const TVec &clorig, const TVec &origin, const TVec &velocity,
                        float volume, float pitch, bool Loop, float atten);
 
-  void SetupSourceRolloff (ALuint src, int sound_id, const TVec &clorig, const TVec &origin,
-                           const TVec &velocity, float volume, float atten);
-
   void UpdateSourceRolloff (ALuint src, int sound_id, const TVec &clorig, const TVec &origin,
-                            const TVec &velocity, float volume, float atten);
+                            const TVec &velocity, float atten);
 
 public:
   VOpenALDevice ();
@@ -281,14 +278,13 @@ public:
   int PlaySound (int sound_id, float volume, float pitch, bool Loop, float atten);
   int PlaySound3D (int sound_id, const TVec &clorig, const TVec &origin, const TVec &velocity,
                    float volume, float pitch, bool Loop, float atten);
-  void UpdateChannel3D (int Handle, int sound_id, const TVec &clorig, const TVec &Org, const TVec &Vel,
-                        float volume, float atten);
+  void UpdateChannel3D (int Handle, int sound_id, const TVec &clorig, const TVec &Org, const TVec &Vel, float atten);
   bool IsChannelPlaying (int Handle);
   void StopChannel (int Handle);
   void UpdateListener (const TVec &org, const TVec &vel, const TVec &fwd, const TVec &/*right*/, const TVec &up
-#if defined(VAVOOM_REVERB)
-                      , VReverbInfo *Env
-#endif
+                       #if defined(VAVOOM_REVERB)
+                       , VReverbInfo *Env
+                       #endif
                       );
 
   // all stream functions should be thread-safe
