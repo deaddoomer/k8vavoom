@@ -680,9 +680,9 @@ private:
 
   inline VStr GetStr (int Index) { return ActiveObject->Level->GetString(Index); }
   //inline int PutStr (VStr str) { return ActiveObject->Level->PutString(str); }
-  inline VName GetName (int Index) { return *ActiveObject->Level->GetString(Index); }
+  inline VName GetName (int Index) { return VName(*ActiveObject->Level->GetString(Index), VName::Add); }
   inline VName GetNameLowerCase (int Index) { return ActiveObject->Level->GetNameLowerCase(Index); }
-  inline VName GetName8 (int Index) { return VName(*ActiveObject->Level->GetString(Index), VName::AddLower8); }
+  //inline VName GetName8 (int Index) { return VName(*ActiveObject->Level->GetString(Index), VName::AddLower8); }
 
   inline VEntity *EntityFromTID (int TID, VEntity *Default) { return (!TID ? Default : Level->FindMobjFromTID(TID, nullptr)); }
 
@@ -3969,7 +3969,7 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
 
     ACSVM_CASE(PCD_MusicChange)
       ACSVM_CHECK_STACK_UNDER(2);
-      Level->ChangeMusic(GetName8(sp[-2]));
+      Level->ChangeMusic(GetNameLowerCase(sp[-2]));
       sp -= 2;
       ACSVM_BREAK;
 
@@ -4138,12 +4138,12 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
 
     ACSVM_CASE(PCD_SetMusic)
       ACSVM_CHECK_STACK_UNDER(3);
-      Level->ChangeMusic(GetName8(sp[-3]));
+      Level->ChangeMusic(GetNameLowerCase(sp[-3]));
       sp -= 3;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_SetMusicDirect)
-      Level->ChangeMusic(GetName8(PEEK_INT32_AT(ip)|ActiveObject->GetLibraryID()));
+      Level->ChangeMusic(GetNameLowerCase(PEEK_INT32_AT(ip)|ActiveObject->GetLibraryID()));
       ip += 12;
       ACSVM_BREAK;
 
@@ -5286,7 +5286,8 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
     ACSVM_CASE(PCD_SetCameraToTexture)
       ACSVM_CHECK_STACK_UNDER(3);
       //FIXME: camera texture names are still limited to 8 chars
-      XLevel->SetCameraToTexture(EntityFromTID(sp[-3], Activator), GetName8(sp[-2]), sp[-1]);
+      //XLevel->SetCameraToTexture(EntityFromTID(sp[-3], Activator), GetName8(sp[-2]), sp[-1]);
+      XLevel->SetCameraToTexture(EntityFromTID(sp[-3], Activator), GetName(sp[-2]), sp[-1]);
       sp -= 3;
       ACSVM_BREAK;
 
