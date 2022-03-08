@@ -809,8 +809,6 @@ public:
 };
 
 
-extern VCvarB snd_manual_rolloff;
-
 extern VCvarB snd_sf2_autoload;
 extern VCvarS snd_sf2_file;
 

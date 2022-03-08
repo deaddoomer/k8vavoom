@@ -43,7 +43,7 @@ static VCvarI snd_resampler("snd_resampler", "-1", "OpenAL sound resampler (-1 m
 
 static VCvarB openal_show_extensions("openal_show_extensions", false, "Show available OpenAL extensions?", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
 
-VCvarB snd_manual_rolloff("snd_manual_rolloff", "1", "Use manual rollof calculations instead of default OpenAL inverse linear?.", CVAR_NoShadow|CVAR_Archive);
+static VCvarB snd_manual_rolloff("snd_manual_rolloff", true, "Use manual rollof calculations instead of default OpenAL inverse linear?", CVAR_NoShadow|CVAR_Archive);
 
 // don't update if nothing was changed
 #ifdef VV_SND_ALLOW_VELOCITY
