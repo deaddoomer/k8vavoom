@@ -262,8 +262,14 @@ private:
   int LoadSound (int sound_id, ALuint *src);
 
 private:
-  int CommonPlaySound (bool is3d, int sound_id, const TVec &origin, const TVec &velocity,
-                       float volume, float pitch, bool Loop);
+  int CommonPlaySound (bool is3d, int sound_id, const TVec &clorig, const TVec &origin, const TVec &velocity,
+                       float volume, float pitch, bool Loop, float atten);
+
+  void SetupSourceRolloff (ALuint src, int sound_id, const TVec &clorig, const TVec &origin,
+                           const TVec &velocity, float volume, float atten);
+
+  void UpdateSourceRolloff (ALuint src, int sound_id, const TVec &clorig, const TVec &origin,
+                            const TVec &velocity, float volume, float atten);
 
 public:
   VOpenALDevice ();
@@ -272,10 +278,11 @@ public:
   bool Init();
   int SetChannels (int);
   void Shutdown ();
-  int PlaySound (int sound_id, float volume, float pitch, bool Loop);
-  int PlaySound3D (int sound_id, const TVec &origin, const TVec &velocity,
-                   float volume, float pitch, bool Loop);
-  void UpdateChannel3D (int Handle, const TVec &Org, const TVec &Vel);
+  int PlaySound (int sound_id, float volume, float pitch, bool Loop, float atten);
+  int PlaySound3D (int sound_id, const TVec &clorig, const TVec &origin, const TVec &velocity,
+                   float volume, float pitch, bool Loop, float atten);
+  void UpdateChannel3D (int Handle, int sound_id, const TVec &clorig, const TVec &Org, const TVec &Vel,
+                        float volume, float atten);
   bool IsChannelPlaying (int Handle);
   void StopChannel (int Handle);
   void UpdateListener (const TVec &org, const TVec &vel, const TVec &fwd, const TVec &/*right*/, const TVec &up
@@ -806,12 +813,17 @@ public:
 };
 
 
+extern VCvarB snd_manual_rolloff;
+
 extern VCvarB snd_sf2_autoload;
 extern VCvarS snd_sf2_file;
 
 extern bool SoundHasBadApple;
 
 extern TArray<VStr> sf2FileList;
+
+extern vuint8 *S_SoundCurve;
+extern int S_SoundCurveSize;
 
 bool SF2_NeedDiskScan ();
 void SF2_SetDiskScanned (bool v);

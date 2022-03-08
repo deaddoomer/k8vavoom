@@ -1,3 +1,7 @@
+// The released source code used a min distance of 160. Why?
+// Retail Doom and Strife use 200.
+$rolloff * 200 1200
+
 k8gore/lqdrip1  k8glqd1
 k8gore/lqdrip2  k8glqd2
 k8gore/lqdrip3  k8glqd3

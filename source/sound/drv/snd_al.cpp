@@ -43,6 +43,8 @@ static VCvarI snd_resampler("snd_resampler", "-1", "OpenAL sound resampler (-1 m
 
 static VCvarB openal_show_extensions("openal_show_extensions", false, "Show available OpenAL extensions?", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
 
+VCvarB snd_manual_rolloff("snd_manual_rolloff", "1", "Use manual rollof calculations instead of default OpenAL inverse linear?.", CVAR_NoShadow|CVAR_Archive);
+
 // don't update if nothing was changed
 #ifdef VV_SND_ALLOW_VELOCITY
 static float prevDopplerFactor = -INFINITY;
@@ -625,13 +627,180 @@ int VOpenALDevice::LoadSound (int sound_id, ALuint *src) {
 
 //==========================================================================
 //
+//  GetRolloff
+//
+//==========================================================================
+static float GetRolloff (const FRolloffInfo *rolloff, float distance) {
+  if (distance <= rolloff->MinDistance) return 1.0f;
+
+  // Logarithmic rolloff has no max distance where it goes silent.
+  if (rolloff->RolloffType == ROLLOFF_Log) {
+    return rolloff->MinDistance/(rolloff->MinDistance+rolloff->RolloffFactor*(distance-rolloff->MinDistance));
+  }
+
+  if (distance >= rolloff->MaxDistance) return 0.0f;
+
+  const float volume = (rolloff->MaxDistance-distance)/(rolloff->MaxDistance-rolloff->MinDistance);
+  if (rolloff->RolloffType == ROLLOFF_Linear) return volume;
+
+  if (rolloff->RolloffType == ROLLOFF_Custom && S_SoundCurve) {
+    return S_SoundCurve[int(S_SoundCurveSize*(1.0f-volume))]/127.0f;
+  }
+
+  return (powf(10.0f, volume)-1.0f)/9.0f;
+}
+
+
+//==========================================================================
+//
+//  VOpenALDevice::SetupSourceRolloff
+//
+//==========================================================================
+void VOpenALDevice::SetupSourceRolloff (ALuint src, int sound_id, const TVec &clorig, const TVec &origin,
+                                        const TVec &velocity, float volume, float atten)
+{
+  #ifndef VV_SND_ALLOW_VELOCITY
+  (void)velocity;
+  #endif
+  UpdateSourceRolloff(src, sound_id, clorig, origin, velocity, volume, atten);
+  /*
+  alSource3f(src, AL_POSITION, origin.x, origin.y, origin.z); // at the listener origin
+  #ifdef VV_SND_ALLOW_VELOCITY
+  alSource3f(src, AL_VELOCITY, velocity.x, velocity.y, velocity.z);
+  #endif
+  */
+}
+
+
+//==========================================================================
+//
+//  VOpenALDevice::UpdateSourceRolloff
+//
+//==========================================================================
+void VOpenALDevice::UpdateSourceRolloff (ALuint src, int sound_id, const TVec &clorig, const TVec &origin,
+                                         const TVec &velocity, float volume, float atten)
+{
+  #ifdef VV_SND_ALLOW_VELOCITY
+  alSource3f(src, AL_VELOCITY, velocity.x, velocity.y, velocity.z);
+  #else
+  (void)velocity;
+  #endif
+
+  if (snd_manual_rolloff.asBool() && sound_id >= 0 && sound_id < GSoundManager->S_sfx.length()) {
+    // k8: most of this code was taken from GZDoom, thanks!
+    // k8: i absolutely don't understand how it works, so don't ask me to fix it
+
+    const FRolloffInfo *rolloff = &GSoundManager->S_sfx[sound_id].Rolloff;
+
+    bool manualRolloff = true;
+    float distscale = atten;
+    if (distscale <= 0.0f) distscale = 1.0f;
+    TVec dir = origin-clorig;
+    const float dist_sqr = dir.lengthSquared();
+
+    if (rolloff->RolloffType == ROLLOFF_Log) {
+      alSourcei(src, AL_DISTANCE_MODEL, AL_INVERSE_DISTANCE); //if(AL.EXT_source_distance_model)
+      alSourcef(src, AL_REFERENCE_DISTANCE, rolloff->MinDistance/distscale);
+      alSourcef(src, AL_MAX_DISTANCE, (1000.0f+rolloff->MinDistance)/distscale);
+      alSourcef(src, AL_ROLLOFF_FACTOR, rolloff->RolloffFactor);
+      manualRolloff = false;
+    } else if (rolloff->RolloffType == ROLLOFF_Linear /*&& AL.EXT_source_distance_model*/) {
+      alSourcei(src, AL_DISTANCE_MODEL, AL_LINEAR_DISTANCE);
+      alSourcef(src, AL_REFERENCE_DISTANCE, rolloff->MinDistance/distscale);
+      alSourcef(src, AL_MAX_DISTANCE, rolloff->MaxDistance/distscale);
+      alSourcef(src, AL_ROLLOFF_FACTOR, 1.0f);
+      manualRolloff = false;
+    }
+
+    if (manualRolloff) {
+      // How manual rolloff works:
+      //
+      // If a sound is using Custom or Doom style rolloff, or Linear style
+      // when AL_EXT_source_distance_model is not supported, we have to play
+      // around a bit to get appropriate distance attenation. What we do is
+      // calculate the attenuation that should be applied, then given an
+      // Inverse Distance rolloff model with OpenAL, reverse the calculation
+      // to get the distance needed for that much attenuation. The Inverse
+      // Distance calculation is:
+      //
+      // Gain = MinDist / (MinDist + RolloffFactor*(Distance - MinDist))
+      //
+      // Thus, the reverse is:
+      //
+      // Distance = (MinDist/Gain - MinDist)/RolloffFactor + MinDist
+      //
+      // This can be simplified by using a MinDist and RolloffFactor of 1,
+      // which makes it:
+      //
+      // Distance = 1.0f/Gain;
+      //
+      // The source position is then set that many units away from the
+      // listener position, and OpenAL takes care of the rest.
+      alSourcei(src, AL_DISTANCE_MODEL, AL_INVERSE_DISTANCE); //if(AL.EXT_source_distance_model)
+      alSourcef(src, AL_REFERENCE_DISTANCE, 1.9f);
+      alSourcef(src, AL_MAX_DISTANCE, 100000.0f);
+      alSourcef(src, AL_ROLLOFF_FACTOR, 1.0f);
+
+      if (dist_sqr > 1.0f) {
+        float gain = GetRolloff(rolloff, sqrtf(dist_sqr)*distscale);
+        //GCon->Logf(NAME_Debug, "manual rolloff: gain=%g; dir=(%g,%g,%g); distscale=%g", gain, dir.x, dir.y, dir.z, distscale);
+        gain = (gain > 0.00001f ? 1.0f/gain : 100000.0f);
+        const float scale = gain/dir.length();
+        dir.x *= scale;
+        dir.y *= scale;
+        dir.z *= scale;
+        //GCon->Logf(NAME_Debug, "manual rolloff: final gain=%g; final dir=(%g,%g,%g)", gain, dir.x, dir.y, dir.z);
+      }
+      /*
+      if(AL.EXT_SOURCE_RADIUS) {
+        // Since the OpenAL distance is decoupled from the sound's distance, get the OpenAL
+        // distance that corresponds to the area radius.
+        alSourcef(src, AL_SOURCE_RADIUS, (chanflags&SNDF_AREA) ?
+          // Clamp in case the max distance is <= the area radius
+          1.f/MAX<float>(GetRolloff(rolloff, AREA_SOUND_RADIUS), 0.00001f) : 0.f
+        );
+      } else if ((chanflags&SNDF_AREA) && dist_sqr < AREA_SOUND_RADIUS*AREA_SOUND_RADIUS) {
+        FVector3 amb(0.f, !(dir.Y>=0.f) ? -1.f : 1.f, 0.f);
+        float a = sqrtf(dist_sqr) / AREA_SOUND_RADIUS;
+        dir = amb + (dir-amb)*a;
+      }
+      */
+      //dir += origin;
+      dir += clorig;
+
+      if (dist_sqr < 0.0004f*0.0004f) {
+        // Head relative
+        alSourcei(src, AL_SOURCE_RELATIVE, AL_TRUE);
+        alSource3f(src, AL_POSITION, 0.0f, 0.0f, 0.0f);
+      } else {
+        alSourcei(src, AL_SOURCE_RELATIVE, AL_FALSE);
+        alSource3f(src, AL_POSITION, dir[0], dir[1], dir[2]);
+      }
+    }
+    return;
+  }
+
+  //GCon->Logf(NAME_Debug, "OPENAL ROLLOFF!");
+  alSource3f(src, AL_POSITION, origin.x, origin.y, origin.z);
+  #ifdef VV_SND_ALLOW_VELOCITY
+  alSource3f(src, AL_VELOCITY, velocity.x, velocity.y, velocity.z);
+  #endif
+  alSourcef(src, AL_ROLLOFF_FACTOR, snd_rolloff_factor);
+  alSourcef(src, AL_REFERENCE_DISTANCE, snd_reference_distance);
+  alSourcef(src, AL_MAX_DISTANCE, snd_max_distance);
+}
+
+
+//==========================================================================
+//
 //  VOpenALDevice::CommonPlaySound
 //
 //  workhorse for `PlaySound()` and `PlaySound3D()`
 //
 //==========================================================================
-int VOpenALDevice::CommonPlaySound (bool is3d, int sound_id, const TVec &origin, const TVec &velocity,
-                                    float volume, float pitch, bool Loop)
+int VOpenALDevice::CommonPlaySound (bool is3d, int sound_id, const TVec &clorig, const TVec &origin,
+                                    const TVec &velocity, float volume, float pitch, bool Loop,
+                                    float atten)
 {
   ALuint src;
   (void)velocity;
@@ -646,6 +815,8 @@ int VOpenALDevice::CommonPlaySound (bool is3d, int sound_id, const TVec &origin,
     ClearError();
   }
 
+  StartBatchUpdate();
+
   // set resampler
   if (ResamplerNames.length() > 2) {
     int smp = snd_resampler.asInt();
@@ -653,14 +824,21 @@ int VOpenALDevice::CommonPlaySound (bool is3d, int sound_id, const TVec &origin,
     alSourcei(src, alSrcResamplerSoftValue, smp);
   }
   alSourcef(src, AL_GAIN, volume);
-  alSourcei(src, AL_SOURCE_RELATIVE, (is3d ? AL_FALSE : AL_TRUE));
-  alSource3f(src, AL_POSITION, origin.x, origin.y, origin.z); // at the listener origin
-  #ifdef VV_SND_ALLOW_VELOCITY
-  alSource3f(src, AL_VELOCITY, velocity.x, velocity.y, velocity.z);
-  #endif
-  alSourcef(src, AL_ROLLOFF_FACTOR, snd_rolloff_factor);
-  alSourcef(src, AL_REFERENCE_DISTANCE, snd_reference_distance);
-  alSourcef(src, AL_MAX_DISTANCE, snd_max_distance);
+  if (is3d) {
+    alSourcei(src, AL_SOURCE_RELATIVE, AL_FALSE);
+    SetupSourceRolloff(src, sound_id, clorig, origin, velocity, volume, atten);
+  } else {
+    alSourcei(src, AL_SOURCE_RELATIVE, AL_TRUE);
+    //alSource3f(src, AL_POSITION, origin.x, origin.y, origin.z); // at the listener origin
+    alSource3f(src, AL_POSITION, 0.0f, 0.0f, 0.0f); // at the listener origin
+    #ifdef VV_SND_ALLOW_VELOCITY
+    //alSource3f(src, AL_VELOCITY, velocity.x, velocity.y, velocity.z);
+    alSource3f(src, AL_VELOCITY, 0.0f, 0.0f, 0.0f);
+    #endif
+    alSourcef(src, AL_ROLLOFF_FACTOR, snd_rolloff_factor);
+    alSourcef(src, AL_REFERENCE_DISTANCE, snd_reference_distance);
+    alSourcef(src, AL_MAX_DISTANCE, snd_max_distance);
+  }
   alSourcef(src, AL_PITCH, pitch);
   alSourcei(src, AL_LOOPING, (Loop ? AL_TRUE : AL_FALSE));
   if (res == VSoundManager::LS_Ready) {
@@ -668,6 +846,8 @@ int VOpenALDevice::CommonPlaySound (bool is3d, int sound_id, const TVec &origin,
     alSourcePlay(src);
   }
   ClearError();
+
+  FinishBatchUpdate();
   return src;
 }
 
@@ -680,10 +860,11 @@ int VOpenALDevice::CommonPlaySound (bool is3d, int sound_id, const TVec &origin,
 //  is maintained as a given number of internal channels.
 //
 //==========================================================================
-int VOpenALDevice::PlaySound (int sound_id, float volume, float pitch, bool Loop) {
+int VOpenALDevice::PlaySound (int sound_id, float volume, float pitch, bool Loop, float atten) {
   //k8: it seems that i was trying to put the sound slightly at the back; but hey, direction vectors!
   //alSource3f(src, AL_POSITION, 0.0f, 0.0f, -16.0f); //k8: really? wtf?!
-  return CommonPlaySound(false, sound_id, TVec::ZeroVector, TVec::ZeroVector, volume, pitch, Loop);
+  return CommonPlaySound(false, sound_id, TVec::ZeroVector, TVec::ZeroVector, TVec::ZeroVector,
+                         volume, pitch, Loop, atten);
 }
 
 
@@ -692,10 +873,10 @@ int VOpenALDevice::PlaySound (int sound_id, float volume, float pitch, bool Loop
 //  VOpenALDevice::PlaySound3D
 //
 //==========================================================================
-int VOpenALDevice::PlaySound3D (int sound_id, const TVec &origin, const TVec &velocity,
-                                float volume, float pitch, bool Loop)
+int VOpenALDevice::PlaySound3D (int sound_id, const TVec &clorig, const TVec &origin, const TVec &velocity,
+                                float volume, float pitch, bool Loop, float atten)
 {
-  return CommonPlaySound(true, sound_id, origin, velocity, volume, pitch, Loop);
+  return CommonPlaySound(true, sound_id, clorig, origin, velocity, volume, pitch, Loop, atten);
 }
 
 
@@ -704,13 +885,17 @@ int VOpenALDevice::PlaySound3D (int sound_id, const TVec &origin, const TVec &ve
 //  VOpenALDevice::UpdateChannel3D
 //
 //==========================================================================
-void VOpenALDevice::UpdateChannel3D (int Handle, const TVec &Org, const TVec &Vel) {
-  (void)Vel;
+void VOpenALDevice::UpdateChannel3D (int Handle, int sound_id, const TVec &clorig, const TVec &Org,
+                                     const TVec &Vel, float volume, float atten)
+{
   if (Handle == -1) return;
+  UpdateSourceRolloff(Handle, sound_id, clorig, Org, Vel, volume, atten);
+  /*
   alSource3f(Handle, AL_POSITION, Org.x, Org.y, Org.z);
   #ifdef VV_SND_ALLOW_VELOCITY
   alSource3f(Handle, AL_VELOCITY, Vel.x, Vel.y, Vel.z);
   #endif
+  */
   ClearError();
 }
 

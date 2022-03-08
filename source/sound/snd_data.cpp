@@ -44,6 +44,8 @@ static VCvarB snd_bgloading_sfx("snd_bgloading_sfx", true, "Load sounds in backg
 
 
 bool SoundHasBadApple = false;
+vuint8 *S_SoundCurve = 0;
+int S_SoundCurveSize = 0;
 
 
 #ifdef CLIENT
@@ -227,6 +229,10 @@ VSoundManager::~VSoundManager () {
   }
   if (developer) GCon->Logf(NAME_Dev, "all sound sequences freed.");
 
+  if (S_SoundCurve) Z_Free(S_SoundCurve);
+  S_SoundCurve = 0;
+  S_SoundCurveSize = 0;
+
 #if defined(VAVOOM_REVERB)
   for (VReverbInfo *R = Environments; R; ) {
     VReverbInfo *Next = R->Next;
@@ -328,6 +334,19 @@ static MYTHREAD_RET_TYPE soundLoaderThread (void *adevobj) {
 void VSoundManager::Init () {
   // sound 0 is empty sound
   AddSoundLump(NAME_None, -1);
+
+  // Heretic and Hexen have sound curve lookup tables. Doom does not.
+  int curvelump = W_CheckNumForName("SNDCURVE", WADNS_Sounds);
+  if (curvelump < 0) curvelump = W_CheckNumForName("SNDCURVE", WADNS_Global);
+  if (curvelump >= 0) {
+    S_SoundCurveSize = W_LumpLength(curvelump);
+    if (S_SoundCurveSize < 0 || S_SoundCurveSize > 1024*1024) S_SoundCurveSize = 0;
+    if (S_SoundCurveSize) {
+      S_SoundCurve = (vuint8 *)Z_Malloc(S_SoundCurveSize);
+      W_ReadFromLump(curvelump, S_SoundCurve, 0, S_SoundCurveSize);
+      GCon->Logf(NAME_Init, "loaded SNDCURVE lump (%d bytes)", S_SoundCurveSize);
+    }
+  }
 
   // add Strife voices
   for (int Lump = W_IterateNS(-1, WADNS_Voices); Lump >= 0; Lump = W_IterateNS(Lump, WADNS_Voices)) {

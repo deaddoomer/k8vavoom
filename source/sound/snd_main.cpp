@@ -760,10 +760,10 @@ void VAudio::PlaySound (int InSoundId, const TVec &origin, const TVec &velocity,
   bool is3D;
   if (LocalPlayerSound) {
     // local sound
-    handle = SoundDevice->PlaySound(sound_id, volume, pitch, Loop);
+    handle = SoundDevice->PlaySound(sound_id, volume, pitch, Loop, Attenuation);
     is3D = false;
   } else {
-    handle = SoundDevice->PlaySound3D(sound_id, origin, velocity, volume, pitch, Loop);
+    handle = SoundDevice->PlaySound3D(sound_id, cl->ViewOrg, origin, velocity, volume, pitch, Loop, Attenuation);
     is3D = true;
   }
   Channel[chan].origin_id = origin_id;
@@ -1133,6 +1133,12 @@ void VAudio::SerialiseSounds (VStream &Strm) {
 }
 
 
+#ifdef VV_SND_ALLOW_VELOCITY
+# define CHVEL  Channel[i].velocity
+#else
+# define CHVEL  TVec::ZeroVector
+#endif
+
 //==========================================================================
 //
 //  VAudio::UpdateSfx
@@ -1183,7 +1189,7 @@ void VAudio::UpdateSfx () {
         //GCon->Logf(NAME_Debug, "channel #%d (%d), origin=(%g,%g,%g); new origin=(%g,%g,%g)", i, Channel[i].origin_id, Channel[i].origin.x, Channel[i].origin.y, Channel[i].origin.z, cl->MO->Origin.x, cl->MO->Origin.y, cl->MO->Origin.z);
         Channel[i].origin = cl->MO->Origin;
         #ifdef VV_SND_ALLOW_VELOCITY
-        Channel[i].velocity = TVec(0.0f, 0.0f, 0.0f);
+        Channel[i].velocity = TVec::ZeroVector;
         #endif
       } else if (!Channel[i].LocalPlayerSound) {
         VLevel *Level = (GClLevel ? GClLevel : GLevel);
@@ -1218,7 +1224,7 @@ void VAudio::UpdateSfx () {
                     Channel[i].origin = sec->ownpobj->startSpot;
                   }
                   #ifdef VV_SND_ALLOW_VELOCITY
-                  Channel[i].velocity = TVec(0.0f, 0.0f, 0.0f);
+                  Channel[i].velocity = TVec::ZeroVector;
                   #endif
                 }
               }
@@ -1265,7 +1271,8 @@ void VAudio::UpdateSfx () {
 
     // update params
     if (Channel[i].is3D) {
-      if (Channel[i].prevOrigin != Channel[i].origin
+      if (snd_manual_rolloff.asBool() ||
+          Channel[i].prevOrigin != Channel[i].origin
           #ifdef VV_SND_ALLOW_VELOCITY
           || Channel[i].prevVelocity != Channel[i].velocity
           #endif
@@ -1275,13 +1282,9 @@ void VAudio::UpdateSfx () {
         #ifdef VV_SND_ALLOW_VELOCITY
         Channel[i].prevVelocity = Channel[i].velocity;
         #endif
-        SoundDevice->UpdateChannel3D(Channel[i].handle, Channel[i].origin
-          #ifdef VV_SND_ALLOW_VELOCITY
-          , Channel[i].velocity
-          #else
-          , TVec(0.0f, 0.0f, 0.0f)
-          #endif
-        );
+        SoundDevice->UpdateChannel3D(Channel[i].handle, Channel[i].sound_id,
+                                     cl->ViewOrg, Channel[i].origin, CHVEL, Channel[i].volume,
+                                     Channel[i].Attenuation);
       }
     }
     Channel[i].priority = CalcSoundPriority(Channel[i].sound_id, dist);
@@ -1290,10 +1293,10 @@ void VAudio::UpdateSfx () {
   if (cl) {
     SoundDevice->UpdateListener(cl->ViewOrg, TVec(0.0f, 0.0f, 0.0f),
       ListenerForward, ListenerRight, ListenerUp
-#if defined(VAVOOM_REVERB)
+      #if defined(VAVOOM_REVERB)
       , GSoundManager->FindEnvironment(cl->SoundEnvironment)
-#endif
-      );
+      #endif
+    );
   }
 
   //SoundDevice->Tick(host_frametime);

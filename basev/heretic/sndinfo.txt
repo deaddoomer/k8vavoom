@@ -3,6 +3,7 @@
 //  Sound definitions for Heretic.
 //
 //**************************************************************************
+$rolloff * custom 0 1600
 
 $pitchshiftrange 2
 
