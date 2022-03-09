@@ -423,7 +423,10 @@ struct AliasModelTrans {
   bool MatValid; // set if matrices are valid and should be used instead of vecs
   VMatrix4 MatTransPreRot; // transformation matrix (pre-rotation)
   VMatrix4 MatTransPostRot; // transformation matrix (post-rotation)
-  VMatrix4 MatTransNormRot; // normals rotation matrix
+
+  // for interpolator, it `MatValid` is `true`
+  VMatrix4Decomposed decPreRot;
+  VMatrix4Decomposed decPostRot;
 
   inline AliasModelTrans () noexcept
     : Shift(0.0f, 0.0f, 0.0f)
@@ -433,7 +436,8 @@ struct AliasModelTrans {
     , MatValid(false)
     , MatTransPreRot(VMatrix4::Identity)
     , MatTransPostRot(VMatrix4::Identity)
-    , MatTransNormRot(VMatrix4::Identity)
+    , decPreRot()
+    , decPostRot()
   {}
 };
 
