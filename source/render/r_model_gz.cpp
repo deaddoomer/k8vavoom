@@ -39,7 +39,7 @@ GZModelDef::GZModelDef ()
   //, scale(1, 1, 1)
   //, offset(0, 0, 0)
   //, zoffset(0)
-  , mat(VMatrix4::Identity)
+  //, mat(VMatrix4::Identity)
   , rotationSpeed(0)
   , usePitch(false)
   , usePitchInverted(false)
@@ -72,7 +72,7 @@ void GZModelDef::clear () {
   //scale = TVec(1, 1, 1);
   //offset = TVec(0, 0, 0);
   //zoffset = 0;
-  mat.SetIdentity();
+  //mat.SetIdentity();
   rotationSpeed = 0;
   usePitch = usePitchInverted = usePitchMomentum = useRoll = false;
   angleOffset = TAVec(0, 0, 0);
@@ -162,6 +162,22 @@ static TVec sanitiseScale (const TVec &scale) {
 
 //==========================================================================
 //
+//  buildMat
+//
+//==========================================================================
+static void buildMat (VMatrix4 &mat, TVec scale, TVec offset, TVec rotCenter) {
+  (void)rotCenter;
+  mat.SetIdentity();
+  offset.x /= scale.x;
+  offset.y /= scale.y;
+  offset.z /= scale.z;
+  mat *= VMatrix4::BuildScale(scale);
+  mat *= VMatrix4::BuildOffset(offset);
+}
+
+
+//==========================================================================
+//
 //  GZModelDef::parse
 //
 //==========================================================================
@@ -174,6 +190,11 @@ void GZModelDef::parse (VScriptParser *sc) {
   sc->Expect("{");
   bool rotating = false;
   //bool wasZOffset = false; // temp hack for QStuffUltra
+  //float zoffset = 0.0f;
+  //VMatrix4 mat = VMatrix4::Identity;
+  TVec scale = TVec(1.0f, 1.0f, 1.0f);
+  TVec offset = TVec::ZeroVector;
+  TVec rotCenter = TVec::ZeroVector;
   while (!sc->Check("}")) {
     // skip flags
     if (sc->Check("IGNORETRANSLATION") ||
@@ -197,8 +218,8 @@ void GZModelDef::parse (VScriptParser *sc) {
       rotationSpeed = sc->Float;
       continue;
     }
-    // "rotation-center"
-    if (sc->Check("rotation-center") || sc->Check("rotation-vector")) {
+    // "rotation-vector"
+    if (sc->Check("rotation-vector")) {
       sc->Message(va("modeldef command '%s' is not supported yet in model '%s'", *sc->String, *className));
       sc->ExpectFloatWithSign();
       sc->ExpectFloatWithSign();
@@ -271,122 +292,6 @@ void GZModelDef::parse (VScriptParser *sc) {
       models[mdidx].modelFile = mname.fixSlashes();
       continue;
     }
-    // "scale"
-    if (sc->Check("scale")) {
-      TVec scale = TVec(1.0f, 1.0f, 1.0f);
-      // x
-      sc->ExpectFloatWithSign();
-      if (sc->Float == 0) sc->Message(va("invalid x scale in model '%s'", *className));
-      scale.x = sc->Float;
-      // y
-      sc->ExpectFloatWithSign();
-      if (sc->Float == 0) sc->Message(va("invalid y scale in model '%s'", *className));
-      scale.y = sc->Float;
-      // z
-      sc->ExpectFloatWithSign();
-      if (sc->Float == 0) sc->Message(va("invalid z scale in model '%s'", *className));
-      scale.z = sc->Float;
-      // normalize
-      scale = sanitiseScale(scale);
-      // seems that scale scales previous offsets
-      VMatrix4 mt = VMatrix4::BuildScale(scale);
-      mat *= mt;
-      /*
-      offset.x /= scale.x;
-      offset.y /= scale.y;
-      offset.z /= scale.z;
-      zoffset /= scale.z;
-      */
-      // qstuffultra hack
-      //if (wasZOffset && zoffset > 8) { offset.z = zoffset+scale.z; zoffset = 0; }
-      continue;
-    }
-    // "frameindex"
-    if (sc->Check("frameindex")) {
-      // FrameIndex sprbase sprframe modelindex frameindex
-      Frame frm;
-      // sprite name
-      sc->ExpectString();
-      frm.sprbase = sc->String.toLowerCase();
-      if (frm.sprbase.length() != 4) sc->Error(va("invalid sprite name '%s' in model '%s'", *frm.sprbase, *className));
-      // sprite frame
-      sc->ExpectString();
-      if (sc->String.length() == 0) sc->Error(va("empty sprite frame in model '%s'", *className));
-      if (sc->String.length() != 1) {
-        // gozzo wiki says that there can be only one frame, so fuck it
-        sc->Message(va("invalid sprite frame '%s' in model '%s'; FIX YOUR BROKEN CODE!", *sc->String, *className));
-      }
-      char fc = sc->String[0];
-      if (fc >= 'a' && fc <= 'z') fc = fc-'a'+'A';
-      frm.sprframe = fc-'A';
-      if (frm.sprframe < 0 || frm.sprframe > 31) sc->Error(va("invalid sprite frame '%s' in model '%s'", *sc->String, *className));
-      // model index
-      sc->ExpectNumber();
-      // model "-1" means "hidden"
-      if (sc->Number < 0 || sc->Number > 1024) sc->Error(va("invalid model index %d in model '%s'", sc->Number, *className));
-      frm.mdindex = frm.origmdindex = sc->Number;
-      // frame index
-      sc->ExpectNumber();
-      if (sc->Number < 0 || sc->Number > 1024) sc->Error(va("invalid model frame %d in model '%s'", sc->Number, *className));
-      frm.frindex = frm.origmdlframe = sc->Number;
-      // check if we already have equal frame, there is no need to keep duplicates
-      bool replaced = false;
-      for (auto &&ofr : frames) {
-        if (frm.sprframe == ofr.sprframe &&
-            frm.mdindex == ofr.mdindex &&
-            frm.sprbase == ofr.sprbase)
-        {
-          // i found her!
-          ofr.frindex = frm.frindex;
-          replaced = true;
-        }
-      }
-      // store it, if it wasn't a replacement
-      if (!replaced) frames.append(frm);
-      continue;
-    }
-    // "frame"
-    if (sc->Check("frame")) {
-      // Frame sprbase sprframe modelindex framename
-      Frame frm;
-      // sprite name
-      sc->ExpectString();
-      frm.sprbase = sc->String.toLowerCase();
-      if (frm.sprbase.length() != 4) sc->Error(va("invalid sprite name '%s' in model '%s'", *frm.sprbase, *className));
-      // sprite frame
-      sc->ExpectString();
-      if (sc->String.length() != 1) sc->Error(va("invalid sprite frame '%s' in model '%s'", *sc->String, *className));
-      char fc = sc->String[0];
-      if (fc >= 'a' && fc <= 'z') fc = fc-'a'+'A';
-      frm.sprframe = fc-'A';
-      if (frm.sprframe < 0 || frm.sprframe > 31) sc->Error(va("invalid sprite frame '%s' in model '%s'", *sc->String, *className));
-      // model index
-      sc->ExpectNumber();
-      // model "-1" means "hidden"
-      if (sc->Number < 0 || sc->Number > 1024) sc->Error(va("invalid model index %d in model '%s'", sc->Number, *className));
-      frm.mdindex = frm.origmdindex = sc->Number;
-      // frame name
-      sc->ExpectString();
-      //if (sc->String.isEmpty()) sc->Error(va("empty model frame name model '%s'", *className));
-      frm.frindex = frm.origmdlframe = -1;
-      frm.frname = sc->String;
-      // check if we already have equal frame, there is no need to keep duplicates
-      bool replaced = false;
-      for (auto &&ofr : frames) {
-        if (frm.sprframe == ofr.sprframe &&
-            frm.mdindex == ofr.mdindex &&
-            frm.sprbase == ofr.sprbase)
-        {
-          // i found her!
-          ofr.frindex = -1;
-          ofr.frname = frm.frname;
-          replaced = true;
-        }
-      }
-      // store it, if it wasn't a replacement
-      if (!replaced) frames.append(frm);
-      continue;
-    }
     // "AngleOffset"
     if (sc->Check("AngleOffset")) {
       sc->ExpectFloatWithSign();
@@ -405,17 +310,58 @@ void GZModelDef::parse (VScriptParser *sc) {
       angleOffset.roll = AngleMod(sc->Float);
       continue;
     }
+    // "rotation-center"
+    if (sc->Check("rotation-center")) {
+      //sc->Message(va("modeldef command '%s' is not supported yet in model '%s'", *sc->String, *className));
+      sc->ExpectFloatWithSign();
+      rotCenter.x = sc->Float;
+      sc->ExpectFloatWithSign();
+      rotCenter.y = sc->Float;
+      sc->ExpectFloatWithSign();
+      rotCenter.z = sc->Float;
+      continue;
+    }
+    // "scale"
+    if (sc->Check("scale")) {
+      //TVec scale = TVec(1.0f, 1.0f, 1.0f);
+      // x
+      sc->ExpectFloatWithSign();
+      if (sc->Float == 0) sc->Message(va("invalid x scale in model '%s'", *className));
+      scale.x = sc->Float;
+      // y
+      sc->ExpectFloatWithSign();
+      if (sc->Float == 0) sc->Message(va("invalid y scale in model '%s'", *className));
+      scale.y = sc->Float;
+      // z
+      sc->ExpectFloatWithSign();
+      if (sc->Float == 0) sc->Message(va("invalid z scale in model '%s'", *className));
+      scale.z = sc->Float;
+      // normalize
+      scale = sanitiseScale(scale);
+      // seems that scale scales previous offsets
+      //VMatrix4 mt = VMatrix4::BuildScale(scale);
+      //mat *= mt;
+      /*
+      offset.x /= scale.x;
+      offset.y /= scale.y;
+      offset.z /= scale.z;
+      zoffset /= scale.z;
+      */
+      // qstuffultra hack
+      //if (wasZOffset && zoffset > 8) { offset.z = zoffset+scale.z; zoffset = 0; }
+      continue;
+    }
     // "Offset"
     if (sc->Check("Offset")) {
-      TVec offset = TVec::ZeroVector;
+      //TVec offset = TVec::ZeroVector;
       sc->ExpectFloatWithSign();
       offset.x = sc->Float;
       sc->ExpectFloatWithSign();
       offset.y = sc->Float;
       sc->ExpectFloatWithSign();
       offset.z = sc->Float;
-      VMatrix4 mt = VMatrix4::BuildOffset(offset);
-      mat *= mt;
+      //VMatrix4 mt = VMatrix4::BuildOffset(offset);
+      //mat *= mt;
       continue;
     }
     // "ZOffset"
@@ -423,9 +369,13 @@ void GZModelDef::parse (VScriptParser *sc) {
       sc->ExpectFloatWithSign();
       //zoffset = sc->Float;
       //wasZOffset = true;
+      /*
       TVec offset = TVec(0.0f, 0.0f, sc->Float);
       VMatrix4 mt = VMatrix4::BuildOffset(offset);
       mat *= mt;
+      */
+      offset.z = sc->Float;
+      //zoffset = sc->Float;
       continue;
     }
     // "InheritActorPitch"
@@ -459,6 +409,114 @@ void GZModelDef::parse (VScriptParser *sc) {
       usePitchMomentum = true;
       continue;
     }
+    // "frameindex"
+    if (sc->Check("frameindex")) {
+      // FrameIndex sprbase sprframe modelindex frameindex
+      Frame frm;
+      //frm.mat = mat;
+      buildMat(frm.mat, scale, offset, rotCenter);
+      /*
+      if (zoffset != 0.0f) {
+        TVec offset = TVec(0.0f, 0.0f, zoffset);
+        frm.mat *= VMatrix4::BuildOffset(offset);
+      }
+      */
+      // sprite name
+      sc->ExpectString();
+      frm.sprbase = sc->String.toLowerCase();
+      if (frm.sprbase.length() != 4) sc->Error(va("invalid sprite name '%s' in model '%s'", *frm.sprbase, *className));
+      // sprite frame
+      sc->ExpectString();
+      if (sc->String.length() == 0) sc->Error(va("empty sprite frame in model '%s'", *className));
+      if (sc->String.length() != 1) {
+        // gozzo wiki says that there can be only one frame, so fuck it
+        sc->Message(va("invalid sprite frame '%s' in model '%s'; FIX YOUR BROKEN CODE!", *sc->String, *className));
+      }
+      char fc = sc->String[0];
+      if (fc >= 'a' && fc <= 'z') fc = fc-'a'+'A';
+      frm.sprframe = fc-'A';
+      if (frm.sprframe < 0 || frm.sprframe > 31) sc->Error(va("invalid sprite frame '%s' in model '%s'", *sc->String, *className));
+      // model index
+      sc->ExpectNumber();
+      // model "-1" means "hidden"
+      if (sc->Number < 0 || sc->Number > 1024) sc->Error(va("invalid model index %d in model '%s'", sc->Number, *className));
+      frm.mdindex = frm.origmdindex = sc->Number;
+      // frame index
+      sc->ExpectNumber();
+      if (sc->Number < 0 || sc->Number > 1024) sc->Error(va("invalid model frame %d in model '%s'", sc->Number, *className));
+      frm.frindex = frm.origmdlframe = sc->Number;
+      // check if we already have equal frame, there is no need to keep duplicates
+      bool replaced = false;
+      /*
+      for (auto &&ofr : frames) {
+        if (frm.sprframe == ofr.sprframe &&
+            frm.mdindex == ofr.mdindex &&
+            frm.sprbase == ofr.sprbase &&
+            frm.mat == ofr.mat)
+        {
+          // i found her!
+          ofr.frindex = frm.frindex;
+          replaced = true;
+        }
+      }
+      */
+      // store it, if it wasn't a replacement
+      if (!replaced) frames.append(frm);
+      continue;
+    }
+    // "frame"
+    if (sc->Check("frame")) {
+      // Frame sprbase sprframe modelindex framename
+      Frame frm;
+      //frm.mat = mat;
+      buildMat(frm.mat, scale, offset, rotCenter);
+      /*
+      if (zoffset != 0.0f) {
+        TVec offset = TVec(0.0f, 0.0f, zoffset);
+        frm.mat *= VMatrix4::BuildOffset(offset);
+      }
+      */
+      // sprite name
+      sc->ExpectString();
+      frm.sprbase = sc->String.toLowerCase();
+      if (frm.sprbase.length() != 4) sc->Error(va("invalid sprite name '%s' in model '%s'", *frm.sprbase, *className));
+      // sprite frame
+      sc->ExpectString();
+      if (sc->String.length() != 1) sc->Error(va("invalid sprite frame '%s' in model '%s'", *sc->String, *className));
+      char fc = sc->String[0];
+      if (fc >= 'a' && fc <= 'z') fc = fc-'a'+'A';
+      frm.sprframe = fc-'A';
+      if (frm.sprframe < 0 || frm.sprframe > 31) sc->Error(va("invalid sprite frame '%s' in model '%s'", *sc->String, *className));
+      // model index
+      sc->ExpectNumber();
+      // model "-1" means "hidden"
+      if (sc->Number < 0 || sc->Number > 1024) sc->Error(va("invalid model index %d in model '%s'", sc->Number, *className));
+      frm.mdindex = frm.origmdindex = sc->Number;
+      // frame name
+      sc->ExpectString();
+      //if (sc->String.isEmpty()) sc->Error(va("empty model frame name model '%s'", *className));
+      frm.frindex = frm.origmdlframe = -1;
+      frm.frname = sc->String;
+      // check if we already have equal frame, there is no need to keep duplicates
+      bool replaced = false;
+      /*
+      for (auto &&ofr : frames) {
+        if (frm.sprframe == ofr.sprframe &&
+            frm.mdindex == ofr.mdindex &&
+            frm.sprbase == ofr.sprbase &&
+            frm.mat == ofr.mat)
+        {
+          // i found her!
+          ofr.frindex = -1;
+          ofr.frname = frm.frname;
+          replaced = true;
+        }
+      }
+      */
+      // store it, if it wasn't a replacement
+      if (!replaced) frames.append(frm);
+      continue;
+    }
     // unknown shit, try to ignore it
     if (!sc->GetString()) sc->Error(va("unexpected EOF in model '%s'", *className));
     sc->Message(va("unknown MODELDEF command '%s' in model '%s'", *sc->String, *className));
@@ -472,7 +530,16 @@ void GZModelDef::parse (VScriptParser *sc) {
   if (rotating && rotationSpeed == 0) rotationSpeed = 8; // arbitrary value
   if (!rotating) rotationSpeed = 0; // reset rotation flag
 
-  checkModelSanity();
+  /*
+  if (zoffset != 0.0f) {
+    TVec offset = TVec(0.0f, 0.0f, zoffset);
+    mat *= VMatrix4::BuildOffset(offset);
+    //mat = VMatrix4::BuildOffset(offset)*mat;
+  }
+  */
+  VMatrix4 mat;
+  buildMat(mat, scale, offset, rotCenter);
+  checkModelSanity(mat);
 }
 
 
@@ -483,7 +550,7 @@ void GZModelDef::parse (VScriptParser *sc) {
 //  -1: not found
 //
 //==========================================================================
-int GZModelDef::findModelFrame (int mdlindex, int mdlframe, bool allowAppend) {
+int GZModelDef::findModelFrame (int mdlindex, int mdlframe, bool allowAppend, const VMatrix4 &mat) {
   if (mdlindex < 0 || mdlindex >= models.length() || models[mdlindex].modelFile.isEmpty()) return -1;
   //k8: dunno if i have to check it here
   VStr mn = models[mdlindex].modelFile.extractFileExtension().toLowerCase();
@@ -495,6 +562,7 @@ int GZModelDef::findModelFrame (int mdlindex, int mdlframe, bool allowAppend) {
   }
   if (!allowAppend) return -1;
   // append it
+  GLog.Logf(NAME_Warning, "alias model '%s' has no frame %d, appending", *models[mdlindex].modelFile, mdlframe);
   MdlFrameInfo &fi = models[mdlindex].frameMap.alloc();
   fi.mdlindex = mdlindex;
   fi.mdlframe = mdlframe;
@@ -513,7 +581,7 @@ int GZModelDef::findModelFrame (int mdlindex, int mdlframe, bool allowAppend) {
 //  GZModelDef::checkModelSanity
 //
 //==========================================================================
-void GZModelDef::checkModelSanity () {
+void GZModelDef::checkModelSanity (const VMatrix4 &mat) {
   // build frame map
   bool hasValidFrames = false;
   bool hasInvalidFrames = false;
@@ -576,10 +644,10 @@ void GZModelDef::checkModelSanity () {
         }
       }
       if (frm.vvindex >= 0) {
-        frm.vvindex = findModelFrame(frm.mdindex, frm.vvindex, true); // allow appending
+        frm.vvindex = findModelFrame(frm.mdindex, frm.vvindex, true, mat); // allow appending
       }
     } else {
-      frm.vvindex = findModelFrame(frm.mdindex, frm.frindex, true); // allow appending
+      frm.vvindex = findModelFrame(frm.mdindex, frm.frindex, true, mat); // allow appending
     }
 
     if (frm.vvindex < 0) {
@@ -649,10 +717,10 @@ void GZModelDef::checkModelSanity () {
           newfrm.mdindex = mnum;
           if (newfrm.frindex == -1) {
             //md2 named
-            newfrm.vvindex = findModelFrame(newfrm.mdindex, newfrm.vvindex, true); // allow appending
+            newfrm.vvindex = findModelFrame(newfrm.mdindex, newfrm.vvindex, true, mat); // allow appending
           } else {
             //indexed
-            newfrm.vvindex = findModelFrame(newfrm.mdindex, newfrm.frindex, true); // allow appending
+            newfrm.vvindex = findModelFrame(newfrm.mdindex, newfrm.frindex, true, mat); // allow appending
           }
           frames.append(newfrm);
         }
@@ -787,7 +855,8 @@ void GZModelDef::merge (GZModelDef &other) {
       Frame &ff = sit.value();
       if (ff.sprframe == ofrm.sprframe &&
           ff.origmdindex == ofrm.origmdindex &&
-          ff.sprbase == ofrm.sprbase)
+          ff.sprbase == ofrm.sprbase &&
+          ff.mat == ofrm.mat)
       {
         GLog.WriteLine(NAME_Warning, "class '%s' (%s%c) attaches alias models several times!", *className, *ff.sprbase.toUpperCase(), 'A'+ff.sprframe);
         spfindex = sit.index();
@@ -817,6 +886,7 @@ void GZModelDef::merge (GZModelDef &other) {
     newfrm.usePitchMomentum = ofrm.usePitchMomentum;
     newfrm.useRoll = ofrm.useRoll;
     newfrm.vvindex = frmapindex;
+    newfrm.mat = ofrm.mat;
   }
 
   // remove unused model frames
@@ -923,6 +993,8 @@ VStr GZModelDef::createXml () {
     if (offset.z != 0) res += va(" offset_z=\"%g\"", offset.z);
     if (zoffset != 0) res += va(" shift_z=\"%g\"", zoffset);
     */
+    res += ">\n";
+    /*
     res += "      <transform>\n";
     res += "        <matrix absolute=\"true\">\n";
     res += va("          %g %g %g %g\n", mat.m[0][0], mat.m[0][1], mat.m[0][2], mat.m[0][3]);
@@ -931,7 +1003,7 @@ VStr GZModelDef::createXml () {
     res += va("          %g %g %g %g\n", mat.m[3][0], mat.m[3][1], mat.m[3][2], mat.m[3][3]);
     res += "        </matrix>\n";
     res += "      </transform>\n";
-    res += ">\n";
+    */
     if (!mdl.skinFile.isEmpty()) res += va("      <skin file=\"%s\" />\n", *mdl.skinFile.xmlEscape());
     if (mdl.subskinFiles.length() != 0) {
       for (int f = 0; f < mdl.subskinFiles.length(); ++f) {
@@ -953,15 +1025,24 @@ VStr GZModelDef::createXml () {
       if (fi.offset.z != offset.z) res += va(" offset_z=\"%g\"", fi.offset.z);
       if (fi.zoffset != zoffset) res += va(" shift_z=\"%g\"", fi.zoffset);
       */
+      res += " />\n";
       res += "        <transform>\n";
       res += "          <matrix absolute=\"true\">\n";
+      for (int y = 0; y < 4; ++y) {
+        res += "           ";
+        for (int x = 0; x < 4; ++x) {
+          res += va(" %g", fi.mat.m[y][x]);
+        }
+        res += "\n";
+      }
+      /*
       res += va("            %g %g %g %g\n", fi.mat.m[0][0], fi.mat.m[0][1], fi.mat.m[0][2], fi.mat.m[0][3]);
       res += va("            %g %g %g %g\n", fi.mat.m[1][0], fi.mat.m[1][1], fi.mat.m[1][2], fi.mat.m[1][3]);
       res += va("            %g %g %g %g\n", fi.mat.m[2][0], fi.mat.m[2][1], fi.mat.m[2][2], fi.mat.m[2][3]);
       res += va("            %g %g %g %g\n", fi.mat.m[3][0], fi.mat.m[3][1], fi.mat.m[3][2], fi.mat.m[3][3]);
+      */
       res += "          </matrix>\n";
       res += "        </transform>\n";
-      res += " />\n";
     }
     res += va("    </%s>\n", mdtag);
     res += "  </model>\n";

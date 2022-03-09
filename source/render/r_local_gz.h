@@ -49,6 +49,7 @@ public:
     bool usePitchInverted;
     bool usePitchMomentum;
     bool useRoll;
+    VMatrix4 mat;
     int vvindex; // vavoom frame index in the given model (-1: invalid frame)
     // used only in sanity check method
     int linkSprBase; // <0: end of list
@@ -96,10 +97,10 @@ public:
   };
 
 protected:
-  void checkModelSanity ();
+  void checkModelSanity (const VMatrix4 &mat);
 
   // -1: not found
-  int findModelFrame (int mdlindex, int mdlframe, bool allowAppend=true);
+  int findModelFrame (int mdlindex, int mdlframe, bool allowAppend, const VMatrix4 &mat);
 
   VStr buildPath (VScriptParser *sc, VStr path);
 
@@ -109,7 +110,7 @@ public:
   //TVec scale;
   //TVec offset;
   //float zoffset;
-  VMatrix4 mat;
+  //VMatrix4 mat;
   float rotationSpeed; // !0: rotating
   bool usePitch;
   bool usePitchInverted;

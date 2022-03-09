@@ -625,6 +625,8 @@ static bool parseTransNode (VXmlNode *SN, VMatrix4 &trans, const VMatrix4 &orig)
           s.chopLeft(pos);
         }
       }
+      s = s.xstrip();
+      if (s.length() != 0) Sys_Error("extra matrix data at %s", *XN->Loc.toStringNoCol());
       if (ParseBool(XN, "absolute", false)) {
         trans = mat;
       } else {
@@ -909,7 +911,6 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       //<frames start_index="0" end_index="2" />
 
       // process frames
-      // TODO: implement range support for frame declaration
       int curframeindex = 0;
       VMatrix4 xbmat = BaseTransform;
       //for (VXmlNode *FrameDefNode : ModelDefNode->childrenWithName("frame"))
