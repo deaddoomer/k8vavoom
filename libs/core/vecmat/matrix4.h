@@ -23,23 +23,34 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+//#define VMAT4_DECOMPOSE_ALLOW_SKEW
 
 struct VMatrix4Decomposed {
   TVec scale;
+  #ifdef VMAT4_DECOMPOSE_ALLOW_SKEW
   TVec skew; //XY, skewXZ, skewYZ;
+  #endif
   TVec translate;
   float quat[4];
+  bool valid;
+
+  inline VMatrix4Decomposed () noexcept : valid(false) {}
 
   inline bool operator == (const VMatrix4Decomposed &other) const noexcept {
     return
+      valid == other.valid &&
       scale == other.scale &&
+      #ifdef VMAT4_DECOMPOSE_ALLOW_SKEW
       skew == other.skew &&
+      #endif
       translate == other.translate &&
       quat[0] == other.quat[0] &&
       quat[1] == other.quat[1] &&
       quat[2] == other.quat[2] &&
       quat[3] == other.quat[3];
   }
+
+  VMatrix4Decomposed interpolate (const VMatrix4Decomposed &dest, float t) const noexcept;
 };
 
 
@@ -397,8 +408,10 @@ public:
 
   void toQuaternion (float quat[4]) const noexcept;
 
+  void fromQuaternion (const float quat[4]) noexcept;
+
   // doesn't process perspective projection
-  bool decompose (VMatrix4Decomposed &dec);
+  bool decompose (VMatrix4Decomposed &dec) const;
   void recompose (const VMatrix4Decomposed &dec);
 };
 

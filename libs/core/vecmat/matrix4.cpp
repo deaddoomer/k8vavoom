@@ -1420,10 +1420,10 @@ VMatrix4 &VMatrix4::invertGeneral () noexcept {
 
 //==========================================================================
 //
-//  VMatrix4::toQuaternion
+//  toQuat
 //
 //==========================================================================
-void VMatrix4::toQuaternion (float quat[4]) const noexcept {
+static inline void toQuat (float quat[4], const float m[4][4]) noexcept {
   const float tr = m[0][0]+m[1][1]+m[2][2];
   // check the diagonal
   if (tr > 0.0f) {
@@ -1453,13 +1453,75 @@ void VMatrix4::toQuaternion (float quat[4]) const noexcept {
 
 //==========================================================================
 //
+//  VMatrix4::toQuaternion
+//
+//==========================================================================
+void VMatrix4::toQuaternion (float quat[4]) const noexcept {
+  return toQuat(quat, m);
+}
+
+
+//==========================================================================
+//
+//  quat2Matrix
+//
+//==========================================================================
+static void quat2Matrix (float mt[4][4], const float quat[4]) noexcept {
+  // calculate coefficients
+  const float x2 = quat[0]+quat[0];
+  const float y2 = quat[1]+quat[1];
+  const float z2 = quat[2]+quat[2];
+  const float xx = quat[0]*x2;
+  const float xy = quat[0]*y2;
+  const float xz = quat[0]*z2;
+  const float yy = quat[1]*y2;
+  const float yz = quat[1]*z2;
+  const float zz = quat[2]*z2;
+  const float wx = quat[3]*x2;
+  const float wy = quat[3]*y2;
+  const float wz = quat[3]*z2;
+
+  mt[0][0] = 1.0f-(yy+zz);
+  mt[0][1] = xy-wz;
+  mt[0][2] = xz+wy;
+  mt[0][3] = 0.0f;
+
+  mt[1][0] = xy+wz;
+  mt[1][1] = 1.0f-(xx+zz);
+  mt[1][2] = yz-wx;
+  mt[1][3] = 0.0f;
+
+  mt[2][0] = xz-wy;
+  mt[2][1] = yz+wx;
+  mt[2][2] = 1.0f-(xx+yy);
+  mt[2][3] = 0.0f;
+
+  mt[3][0] = 0.0f;
+  mt[3][1] = 0.0f;
+  mt[3][2] = 0.0f;
+  mt[3][3] = 1.0f;
+}
+
+
+//==========================================================================
+//
+//  VMatrix4::fromQuaternion
+//
+//==========================================================================
+void VMatrix4::fromQuaternion (const float quat[4]) noexcept {
+  return quat2Matrix(m, quat);
+}
+
+
+//==========================================================================
+//
 //  v3Combine
 //
 //  make a linear combination of two vectors and return the result
 //  result = (a * ascl) + (b * bscl)
 //
 //==========================================================================
-static inline void v3Combine (const TVec a, const TVec b, TVec &result, double ascl, double bscl) {
+static inline __attribute__((used)) void v3Combine (const TVec a, const TVec b, TVec &result, double ascl, double bscl) {
   result[0] = (ascl*a[0])+(bscl*b[0]);
   result[1] = (ascl*a[1])+(bscl*b[1]);
   result[2] = (ascl*a[2])+(bscl*b[2]);
@@ -1468,7 +1530,7 @@ static inline void v3Combine (const TVec a, const TVec b, TVec &result, double a
 
 //==========================================================================
 //
-//  VMatrix4::decompose
+//  v3Cross
 //
 //  return the cross product result = a cross b
 //
@@ -1539,10 +1601,14 @@ static void qslerp (float qa[4], const float qb[4], float t) {
 //  VMatrix4::decompose
 //
 //==========================================================================
-bool VMatrix4::decompose (VMatrix4Decomposed &dec) {
-  if (m[3][3] == 0.0f) return false; // oops
+bool VMatrix4::decompose (VMatrix4Decomposed &dec) const {
+  if (m[3][3] == 0.0f) {
+    dec.valid = false;
+    return false; // oops
+  }
 
   float lm[4][4];
+  static_assert(sizeof(lm) == sizeof(m), "oops");
   memcpy(lm, m, sizeof(lm));
 
   // normalize the matrix
@@ -1559,7 +1625,6 @@ bool VMatrix4::decompose (VMatrix4Decomposed &dec) {
   dec.translate.y = lm[1][3]; lm[1][3] = 0.0f;
   dec.translate.z = lm[2][3]; lm[2][3] = 0.0f;
 
-  // Vector4 type and functions need to be added to the common set.
   TVec row[3];
   TVec pdum3;
 
@@ -1574,26 +1639,34 @@ bool VMatrix4::decompose (VMatrix4Decomposed &dec) {
   dec.scale.x = row[0].length();
   row[0] /= dec.scale.x;
 
+  #ifdef VMAT4_DECOMPOSE_ALLOW_SKEW
   // compute XY shear factor and make 2nd row orthogonal to 1st
   dec.skew[0] = row[0].dot(row[1]);
   v3Combine(row[1], row[0], row[1], 1.0, -dec.skew[0]);
+  #endif
 
   // compute Y scale and normalize 2nd row
   dec.scale.y = row[1].length();
   row[1] /= dec.scale.y;
+  #ifdef VMAT4_DECOMPOSE_ALLOW_SKEW
   dec.skew[0] /= dec.scale.y;
+  #endif
 
+  #ifdef VMAT4_DECOMPOSE_ALLOW_SKEW
   // compute XZ and YZ shears, orthogonalize 3rd row
   dec.skew[1] = row[0].dot(row[2]);
   v3Combine(row[2], row[0], row[2], 1.0, -dec.skew[1]);
   dec.skew[2] = row[1].dot(row[2]);
   v3Combine(row[2], row[1], row[2], 1.0, -dec.skew[2]);
+  #endif
 
   // get Z scale and normalize 3rd row
   dec.scale.z = row[2].length();
   row[2] /= dec.scale.z;
+  #ifdef VMAT4_DECOMPOSE_ALLOW_SKEW
   dec.skew[1] /= dec.scale.z;
   dec.skew[2] /= dec.scale.z;
+  #endif
 
   // at this point, the matrix (in rows[]) is orthonormal
   // check for a coordinate system flip
@@ -1610,6 +1683,16 @@ bool VMatrix4::decompose (VMatrix4Decomposed &dec) {
     }
   }
 
+  #if 1
+  *(TVec *)(lm[0]) = row[0];
+  *(TVec *)(lm[1]) = row[1];
+  *(TVec *)(lm[2]) = row[2];
+  lm[3][0] = 0.0f;
+  lm[3][1] = 0.0f;
+  lm[3][2] = 0.0f;
+  lm[3][3] = 1.0f;
+  toQuat(dec.quat, lm);
+  #else
   // convert to quaternion
   const float t = row[0][0]+row[1][1]+row[2][2]+1.0f;
   float s, x, y, z, w;
@@ -1644,7 +1727,9 @@ bool VMatrix4::decompose (VMatrix4Decomposed &dec) {
   dec.quat[1] = y;
   dec.quat[2] = z;
   dec.quat[3] = w;
+  #endif
 
+  dec.valid = true;
   return true;
 }
 
@@ -1657,6 +1742,9 @@ bool VMatrix4::decompose (VMatrix4Decomposed &dec) {
 void VMatrix4::recompose (const VMatrix4Decomposed &dec) {
   memcpy(m, Identity.m, sizeof(m));
 
+  if (!dec.valid) return;
+
+#if 0
   // translate.
   //translate3d(decomp.translateX, decomp.translateY, decomp.translateZ);
   m[3][0] = dec.translate.x;
@@ -1705,7 +1793,16 @@ void VMatrix4::recompose (const VMatrix4Decomposed &dec) {
   m[3][3] = 1.0f;
 
   operator *= (rotationMatrix);
+#else
+  fromQuaternion(dec.quat);
 
+  m[0][3] = dec.translate.x;
+  m[1][3] = dec.translate.y;
+  m[2][3] = dec.translate.z;
+#endif
+
+
+  #ifdef VMAT4_DECOMPOSE_ALLOW_SKEW
   VMatrix4 tmp;
 
   // apply skew
@@ -1726,6 +1823,7 @@ void VMatrix4::recompose (const VMatrix4Decomposed &dec) {
     tmp.m[1][2] = dec.skew[0];
     operator *= (tmp);
   }
+  #endif
 
   // apply scale
   //scale3d(dec.scaleX, dec.scaleY, dec.scaleZ);
@@ -1743,4 +1841,50 @@ void VMatrix4::recompose (const VMatrix4Decomposed &dec) {
   m[1][2] *= dec.scale.z;
   m[2][2] *= dec.scale.z;
   m[3][2] *= dec.scale.z;
+}
+
+
+//==========================================================================
+//
+//  lerp
+//
+//==========================================================================
+static inline float lerp (float a, float b, float t) noexcept {
+  return a+(b-a)*t;
+}
+
+
+//==========================================================================
+//
+//  VMatrix4Decomposed::interpolate
+//
+//==========================================================================
+VMatrix4Decomposed VMatrix4Decomposed::interpolate (const VMatrix4Decomposed &dest, float t) const noexcept {
+  if (!valid) {
+    if (!dest.valid) return VMatrix4Decomposed();
+    return VMatrix4Decomposed(dest);
+  } else if (!dest.valid) {
+    if (!valid) return VMatrix4Decomposed();
+    return VMatrix4Decomposed(*this);
+  }
+
+  if (t <= 0.0f) return VMatrix4Decomposed(*this);
+  if (t >= 1.0f) return VMatrix4Decomposed(dest);
+
+  VMatrix4Decomposed res;
+  res.valid = true;
+  res.scale.x = lerp(scale.x, dest.scale.x, t);
+  res.scale.y = lerp(scale.y, dest.scale.y, t);
+  res.scale.z = lerp(scale.z, dest.scale.z, t);
+  #ifdef VMAT4_DECOMPOSE_ALLOW_SKEW
+  res.skew.x = lerp(skew.x, dest.skew.x, t);
+  res.skew.y = lerp(skew.y, dest.skew.y, t);
+  res.skew.z = lerp(skew.z, dest.skew.z, t);
+  #endif
+  res.translate.x = lerp(translate.x, dest.translate.x, t);
+  res.translate.y = lerp(translate.y, dest.translate.y, t);
+  res.translate.z = lerp(translate.z, dest.translate.z, t);
+  memcpy(res.quat, quat, sizeof(quat));
+  qslerp(res.quat, dest.quat, t);
+  return res;
 }
