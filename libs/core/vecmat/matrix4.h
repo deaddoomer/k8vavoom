@@ -425,6 +425,56 @@ public:
   // doesn't process perspective projection
   bool decompose (VMatrix4Decomposed &dec) const;
   void recompose (const VMatrix4Decomposed &dec);
+
+  // used in alias model parser
+  static VMatrix4 BuildScale (const TVec vv) noexcept {
+    VMatrix4 mat = VMatrix4::Identity;
+    mat[0][0] = fabsf(vv.x);
+    mat[1][1] = fabsf(vv.y);
+    mat[2][2] = fabsf(vv.z);
+    return mat;
+  }
+
+  static VMatrix4 BuildOffset (const TVec vv) noexcept {
+    VMatrix4 mat = VMatrix4::Identity;
+    mat[0][3] = vv.x;
+    mat[1][3] = vv.y;
+    mat[2][3] = vv.z;
+    return mat;
+  }
+
+  static VMatrix4 BuildRotate (const TAVec aa) noexcept {
+    VMatrix4 mat = VMatrix4::Identity;
+    TVec alias_forward, alias_right, alias_up;
+    AngleVectors(aa, alias_forward, alias_right, alias_up);
+    for (unsigned i = 0; i < 3; ++i) {
+      mat[i][0] = alias_forward[i];
+      mat[i][1] = -alias_right[i];
+      mat[i][2] = alias_up[i];
+    }
+    return mat;
+  }
+
+  inline void scaleXY (const float ScaleX, const float ScaleY) noexcept {
+    if (ScaleX != 1.0f) {
+      m[0][0] *= ScaleX;
+      m[1][0] *= ScaleX;
+      m[2][0] *= ScaleX;
+      m[3][0] *= ScaleX;
+
+      m[0][1] *= ScaleX;
+      m[1][1] *= ScaleX;
+      m[2][1] *= ScaleX;
+      m[3][1] *= ScaleX;
+    }
+
+    if (ScaleY != 1.0f) {
+      m[0][2] *= ScaleY;
+      m[1][2] *= ScaleY;
+      m[2][2] *= ScaleY;
+      m[3][2] *= ScaleY;
+    }
+  }
 };
 
 
