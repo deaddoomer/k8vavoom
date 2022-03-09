@@ -420,11 +420,20 @@ struct AliasModelTrans {
   TVec Scale;
   TAVec PreRot;
 
+  bool MatValid; // set if matrices are valid and should be used instead of vecs
+  VMatrix4 MatTransPreRot; // transformation matrix (pre-rotation)
+  VMatrix4 MatTransPostRot; // transformation matrix (post-rotation)
+  VMatrix4 MatTransNormRot; // normals rotation matrix
+
   inline AliasModelTrans () noexcept
     : Shift(0.0f, 0.0f, 0.0f)
     , Offset(0.0f, 0.0f, 0.0f)
     , Scale(1.0f, 1.0f, 1.0f)
     , PreRot(0.0f, 0.0f, 0.0f)
+    , MatValid(false)
+    , MatTransPreRot(VMatrix4::Identity)
+    , MatTransPostRot(VMatrix4::Identity)
+    , MatTransNormRot(VMatrix4::Identity)
   {}
 };
 

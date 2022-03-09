@@ -512,9 +512,54 @@ static void ParseVector (VXmlNode *SN, TVec &vec, const char *basename, bool pro
 //
 //==========================================================================
 static void ParseTransform (VXmlNode *SN, AliasModelTrans &trans) {
+  #if 1
   ParseVector(SN, trans.Shift, "shift", false);
   ParseVector(SN, trans.Offset, "offset", false);
   ParseVector(SN, trans.Scale, "scale", true);
+  #else
+  TVec shift = TVec::ZeroVector;
+  TVec offset = TVec::ZeroVector;
+  TVec scale = TVec(1.0f, 1.0f, 1.0f);
+
+  ParseVector(SN, shift, "shift", false);
+  ParseVector(SN, offset, "offset", false);
+  ParseVector(SN, scale, "scale", true);
+
+  trans.Shift = shift;
+  trans.Offset = offset;
+  trans.Scale = scale;
+
+  // shift it
+  VMatrix4 shiftmat = VMatrix4::Identity;
+  shiftmat[0][3] = shift.x;
+  shiftmat[1][3] = shift.y;
+  shiftmat[2][3] = shift.z;
+
+  VMatrix4 scalemat = VMatrix4::Identity;
+  scalemat[0][0] = fabsf(scale.x);
+  scalemat[1][1] = fabsf(scale.y);
+  scalemat[2][2] = fabsf(scale.z);
+
+  VMatrix4 ofsmat = VMatrix4::Identity;
+  ofsmat[0][3] = offset.x;
+  ofsmat[1][3] = offset.y;
+  ofsmat[2][3] = offset.z;
+
+  // shift, then scale
+  VMatrix4 ssmt = scalemat*shiftmat;
+  // then offset
+  VMatrix4 emt = ssmt*ofsmat;
+
+  if (!trans.MatValid) {
+    trans.MatValid = true;
+    trans.MatTransPreRot = VMatrix4::Identity;
+    trans.MatTransPostRot = VMatrix4::Identity;
+    trans.MatTransNormRot = VMatrix4::Identity;
+  }
+
+  ssmt = trans.MatTransPreRot*emt;
+  trans.MatTransPreRot = ssmt;
+  #endif
 }
 
 

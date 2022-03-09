@@ -24,6 +24,25 @@
 //**
 //**************************************************************************
 
+struct VMatrix4Decomposed {
+  TVec scale;
+  TVec skew; //XY, skewXZ, skewYZ;
+  TVec translate;
+  float quat[4];
+
+  inline bool operator == (const VMatrix4Decomposed &other) const noexcept {
+    return
+      scale == other.scale &&
+      skew == other.skew &&
+      translate == other.translate &&
+      quat[0] == other.quat[0] &&
+      quat[1] == other.quat[1] &&
+      quat[2] == other.quat[2] &&
+      quat[3] == other.quat[3];
+  }
+};
+
+
 class VMatrix4 {
 public:
   float m[4][4];
@@ -377,6 +396,10 @@ public:
   VVA_CHECKRESULT VMatrix4 blended (const VMatrix4 &m2, float blend) const noexcept;
 
   void toQuaternion (float quat[4]) const noexcept;
+
+  // doesn't process perspective projection
+  bool decompose (VMatrix4Decomposed &dec);
+  void recompose (const VMatrix4Decomposed &dec);
 };
 
 

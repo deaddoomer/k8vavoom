@@ -89,6 +89,20 @@ static void AliasSetupTransform (const TVec &modelorg, const TAVec &angles,
     rotmat[i][2] = alias_up[i];
   }
 
+  if (Transform.MatValid) {
+    // prerot, then rotate
+    VMatrix4 rm2 = Transform.MatTransPreRot*rotmat;
+    // then postrot
+    rotmat = rm2*Transform.MatTransPostRot;
+    // then shift
+    VMatrix4 shiftmat = VMatrix4::Identity;
+    shiftmat[0][3] = modelorg.x;
+    shiftmat[1][3] = modelorg.y;
+    shiftmat[2][3] = modelorg.z;
+    RotationMatrix = rotmat*shiftmat;
+    return;
+  }
+
   if (Transform.PreRot.pitch || Transform.PreRot.roll || Transform.PreRot.yaw) {
     AngleVectors(Transform.PreRot, alias_forward, alias_right, alias_up);
     VMatrix4 rm2 = VMatrix4::Identity;
@@ -138,8 +152,12 @@ static void AliasSetupTransform (const TVec &modelorg, const TAVec &angles,
 //  AliasSetupNormalTransform
 //
 //==========================================================================
-static void AliasSetupNormalTransform (const TAVec &angles, const TVec &/*Scale*/, VMatrix4 &RotationMatrix) {
-  TVec alias_forward(0, 0, 0), alias_right(0, 0, 0), alias_up(0, 0, 0);
+static void AliasSetupNormalTransform (const TVec &modelorg, const TAVec &angles,
+                                       const AliasModelTrans &Transform,
+                                       VMatrix4 &RotationMatrix)
+{
+//const TAVec &angles, const TVec &/*Scale*/, VMatrix4 &RotationMatrix) {
+  TVec alias_forward, alias_right, alias_up;
   AngleVectors(angles, alias_forward, alias_right, alias_up);
 
   #if 0
@@ -166,12 +184,24 @@ static void AliasSetupNormalTransform (const TAVec &angles, const TVec &/*Scale*
     RotationMatrix = RotationMatrix.Inverse().Transpose();
   }
   #else
-  // create rotation matrix
-  RotationMatrix = VMatrix4::Identity;
-  for (unsigned i = 0; i < 3; ++i) {
-    RotationMatrix[i][0] = alias_forward[i];
-    RotationMatrix[i][1] = -alias_right[i];
-    RotationMatrix[i][2] = alias_up[i];
+  (void)modelorg;
+  (void)Transform;
+  if (Transform.MatValid) {
+    VMatrix4 rotmat = VMatrix4::Identity;
+    for (unsigned i = 0; i < 3; ++i) {
+      rotmat[i][0] = alias_forward[i];
+      rotmat[i][1] = -alias_right[i];
+      rotmat[i][2] = alias_up[i];
+    }
+    RotationMatrix = rotmat*Transform.MatTransNormRot;
+  } else {
+    // create rotation matrix
+    RotationMatrix = VMatrix4::Identity;
+    for (unsigned i = 0; i < 3; ++i) {
+      RotationMatrix[i][0] = alias_forward[i];
+      RotationMatrix[i][1] = -alias_right[i];
+      RotationMatrix[i][2] = alias_up[i];
+    }
   }
   #endif
 }
@@ -744,7 +774,8 @@ void VOpenGLDrawer::DrawAliasModelLight (const TVec &origin, const TAVec &angles
   VMatrix4 RotationMatrix;
   AliasSetupTransform(origin, angles, Transform, RotationMatrix);
   VMatrix4 normalmatrix;
-  AliasSetupNormalTransform(angles, Transform.Scale, normalmatrix);
+  //AliasSetupNormalTransform(angles, Transform.Scale, normalmatrix);
+  AliasSetupNormalTransform(origin, angles, Transform, normalmatrix);
 
   float NormalMat[3][3];
   NormalMat[0][0] = normalmatrix[0][0];
@@ -1172,7 +1203,7 @@ void VOpenGLDrawer::DrawAliasModelTextures (const TVec &origin, const TAVec &ang
 #ifdef VV_MODEL_TEXTURES_DEBUG_NORMALS
   if (!ri.isStenciled()) {
     VMatrix4 normalmatrix;
-    AliasSetupNormalTransform(angles, Transform.Scale, normalmatrix);
+    AliasSetupNormalTransform(origin, angles, Transform, normalmatrix);
 
     float NormalMat[3][3];
     NormalMat[0][0] = normalmatrix[0][0];

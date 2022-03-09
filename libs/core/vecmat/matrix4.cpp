@@ -1449,3 +1449,298 @@ void VMatrix4::toQuaternion (float quat[4]) const noexcept {
     quat[k] = VSUM2(m[k][i], m[i][k])*s;
   }
 }
+
+
+//==========================================================================
+//
+//  v3Combine
+//
+//  make a linear combination of two vectors and return the result
+//  result = (a * ascl) + (b * bscl)
+//
+//==========================================================================
+static inline void v3Combine (const TVec a, const TVec b, TVec &result, double ascl, double bscl) {
+  result[0] = (ascl*a[0])+(bscl*b[0]);
+  result[1] = (ascl*a[1])+(bscl*b[1]);
+  result[2] = (ascl*a[2])+(bscl*b[2]);
+}
+
+
+//==========================================================================
+//
+//  VMatrix4::decompose
+//
+//  return the cross product result = a cross b
+//
+//==========================================================================
+static inline void v3Cross (const TVec a, const TVec b, TVec &result) {
+  result[0] = (a[1]*b[2])-(a[2]*b[1]);
+  result[1] = (a[2]*b[0])-(a[0]*b[2]);
+  result[2] = (a[0]*b[1])-(a[1]*b[0]);
+}
+
+
+//==========================================================================
+//
+//  qslerp
+//
+//  perform a spherical linear interpolation between the two
+//  passed quaternions with 0 <= t <= 1
+//
+//==========================================================================
+static void qslerp (float qa[4], const float qb[4], float t) {
+  float ax, ay, az, aw;
+  float bx, by, bz, bw;
+  float cx, cy, cz, cw;
+  float angle;
+  float th, invth, scale, invscale;
+
+  ax = qa[0]; ay = qa[1]; az = qa[2]; aw = qa[3];
+  bx = qb[0]; by = qb[1]; bz = qb[2]; bw = qb[3];
+
+  angle = ax*bx+ay*by+az*bz+aw*bw;
+
+  if (angle < 0.0f) {
+    ax = -ax; ay = -ay;
+    az = -az; aw = -aw;
+    angle = -angle;
+  }
+
+  if (angle+1.0f > 0.05f) {
+    if (1.0f-angle >= 0.05f) {
+      th = acosf(angle);
+      invth = 1.0/sinf(th);
+      scale = sinf(th*(1.0f-t))*invth;
+      invscale = sinf(th*t)*invth;
+    } else {
+      scale = 1.0f-t;
+      invscale = t;
+    }
+  } else {
+    bx = -ay;
+    by = ax;
+    bz = -aw;
+    bw = az;
+    scale = sinf((float)M_PI*(0.5f-t));
+    invscale = sinf((float)M_PI*t);
+  }
+
+  cx = ax*scale+bx*invscale;
+  cy = ay*scale+by*invscale;
+  cz = az*scale+bz*invscale;
+  cw = aw*scale+bw*invscale;
+
+  qa[0] = cx; qa[1] = cy; qa[2] = cz; qa[3] = cw;
+}
+
+
+//==========================================================================
+//
+//  VMatrix4::decompose
+//
+//==========================================================================
+bool VMatrix4::decompose (VMatrix4Decomposed &dec) {
+  if (m[3][3] == 0.0f) return false; // oops
+
+  float lm[4][4];
+  memcpy(lm, m, sizeof(lm));
+
+  // normalize the matrix
+  if (lm[3][3] != 1.0f) {
+    for (unsigned i = 0; i < 4; ++i) {
+      for (unsigned j = 0; j < 4; ++j) {
+        lm[j][i] /= lm[3][3];
+      }
+    }
+  }
+
+  // translation
+  dec.translate.x = lm[0][3]; lm[0][3] = 0.0f;
+  dec.translate.y = lm[1][3]; lm[1][3] = 0.0f;
+  dec.translate.z = lm[2][3]; lm[2][3] = 0.0f;
+
+  // Vector4 type and functions need to be added to the common set.
+  TVec row[3];
+  TVec pdum3;
+
+  // get scale and shear
+  for (unsigned i = 0; i < 3; ++i) {
+    row[i].x = lm[0][i];
+    row[i].y = lm[1][i];
+    row[i].z = lm[2][i];
+  }
+
+  // compute X scale factor and normalize first row
+  dec.scale.x = row[0].length();
+  row[0] /= dec.scale.x;
+
+  // compute XY shear factor and make 2nd row orthogonal to 1st
+  dec.skew[0] = row[0].dot(row[1]);
+  v3Combine(row[1], row[0], row[1], 1.0, -dec.skew[0]);
+
+  // compute Y scale and normalize 2nd row
+  dec.scale.y = row[1].length();
+  row[1] /= dec.scale.y;
+  dec.skew[0] /= dec.scale.y;
+
+  // compute XZ and YZ shears, orthogonalize 3rd row
+  dec.skew[1] = row[0].dot(row[2]);
+  v3Combine(row[2], row[0], row[2], 1.0, -dec.skew[1]);
+  dec.skew[2] = row[1].dot(row[2]);
+  v3Combine(row[2], row[1], row[2], 1.0, -dec.skew[2]);
+
+  // get Z scale and normalize 3rd row
+  dec.scale.z = row[2].length();
+  row[2] /= dec.scale.z;
+  dec.skew[1] /= dec.scale.z;
+  dec.skew[2] /= dec.scale.z;
+
+  // at this point, the matrix (in rows[]) is orthonormal
+  // check for a coordinate system flip
+  // if the determinant is -1, then negate the matrix and the scaling factors.
+  v3Cross(row[1], row[2], pdum3);
+  if (row[0].dot(pdum3) < 0) {
+    dec.scale.x *= -1;
+    dec.scale.y *= -1;
+    dec.scale.z *= -1;
+    for (unsigned i = 0; i < 3; ++i) {
+      row[i].x *= -1;
+      row[i].y *= -1;
+      row[i].z *= -1;
+    }
+  }
+
+  // convert to quaternion
+  const float t = row[0][0]+row[1][1]+row[2][2]+1.0f;
+  float s, x, y, z, w;
+
+  if (t > 0.000001f) {
+    s = 0.5f/sqrtf(t);
+    w = 0.25f/s;
+    x = (row[2][1]-row[1][2])*s;
+    y = (row[0][2]-row[2][0])*s;
+    z = (row[1][0]-row[0][1])*s;
+  } else if (row[0][0] > row[1][1] && row[0][0] > row[2][2]) {
+    s = sqrtf(1.0f+row[0][0]-row[1][1]-row[2][2])*2.0f; // S = 4 * qx.
+    x = 0.25f*s;
+    y = (row[0][1]+row[1][0])/s;
+    z = (row[0][2]+row[2][0])/s;
+    w = (row[2][1]-row[1][2])/s;
+  } else if (row[1][1] > row[2][2]) {
+    s = sqrtf(1.0f+row[1][1]-row[0][0]-row[2][2])*2.0f; // S = 4 * qy.
+    x = (row[0][1]+row[1][0])/s;
+    y = 0.25f*s;
+    z = (row[1][2]+row[2][1])/s;
+    w = (row[0][2]-row[2][0])/s;
+  } else {
+    s = sqrtf(1.0f+row[2][2]-row[0][0]-row[1][1])*2.0f; // S = 4 * qz.
+    x = (row[0][2]+row[2][0])/s;
+    y = (row[1][2]+row[2][1])/s;
+    z = 0.25f*s;
+    w = (row[1][0]-row[0][1])/s;
+  }
+
+  dec.quat[0] = x;
+  dec.quat[1] = y;
+  dec.quat[2] = z;
+  dec.quat[3] = w;
+
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VMatrix4::recompose
+//
+//==========================================================================
+void VMatrix4::recompose (const VMatrix4Decomposed &dec) {
+  memcpy(m, Identity.m, sizeof(m));
+
+  // translate.
+  //translate3d(decomp.translateX, decomp.translateY, decomp.translateZ);
+  m[3][0] = dec.translate.x;
+  m[3][1] = dec.translate.y;
+  m[3][2] = dec.translate.z;
+
+  // apply rotation
+  const float xx = dec.quat[0]*dec.quat[0];
+  const float xy = dec.quat[0]*dec.quat[1];
+  const float xz = dec.quat[0]*dec.quat[2];
+  const float xw = dec.quat[0]*dec.quat[3];
+  const float yy = dec.quat[1]*dec.quat[1];
+  const float yz = dec.quat[1]*dec.quat[2];
+  const float yw = dec.quat[1]*dec.quat[3];
+  const float zz = dec.quat[2]*dec.quat[2];
+  const float zw = dec.quat[2]*dec.quat[3];
+
+  // construct a composite rotation matrix from the quaternion values.
+/*
+  VMatrix4 rotationMatrix(
+    1 - 2 * (yy + zz), 2 * (xy - zw), 2 * (xz + yw), 0,
+    2 * (xy + zw), 1 - 2 * (xx + zz), 2 * (yz - xw), 0,
+    2 * (xz - yw), 2 * (yz + xw), 1 - 2 * (xx + yy), 0,
+    0, 0, 0, 1);
+*/
+
+  VMatrix4 rotationMatrix;
+  m[0][0] = 1.0f-2.0f*(yy+zz);
+  m[1][0] = 2.0f*(xy-zw);
+  m[2][0] = 2.0f*(xz+yw);
+  m[3][0] = 0.0f;
+
+  m[0][1] = 2.0f*(xy+zw);
+  m[1][1] = 1.0f-2.0f*(xx+zz);
+  m[2][1] = 2.0f*(yz-xw);
+  m[3][1] = 0.0f;
+
+  m[0][2] = 2.0f*(xz-yw);
+  m[1][2] = 2.0f*(yz+xw);
+  m[2][2] = 1.0f-2.0f*(xx+yy);
+  m[3][2] = 0.0f;
+
+  m[0][3] = 0.0f;
+  m[1][3] = 0.0f;
+  m[2][3] = 0.0f;
+  m[3][3] = 1.0f;
+
+  operator *= (rotationMatrix);
+
+  VMatrix4 tmp;
+
+  // apply skew
+  if (dec.skew[2]) {
+    tmp.SetIdentity();
+    tmp.m[2][3] = dec.skew[2];
+    operator *= (tmp);
+  }
+
+  if (dec.skew[1]) {
+    tmp.SetIdentity();
+    tmp.m[1][3] = dec.skew[1];
+    operator *= (tmp);
+  }
+
+  if (dec.skew[0]) {
+    tmp.SetIdentity();
+    tmp.m[1][2] = dec.skew[0];
+    operator *= (tmp);
+  }
+
+  // apply scale
+  //scale3d(dec.scaleX, dec.scaleY, dec.scaleZ);
+  m[0][0] *= dec.scale.x;
+  m[1][0] *= dec.scale.x;
+  m[2][0] *= dec.scale.x;
+  m[3][0] *= dec.scale.x;
+
+  m[0][1] *= dec.scale.y;
+  m[1][1] *= dec.scale.y;
+  m[2][1] *= dec.scale.y;
+  m[3][1] *= dec.scale.y;
+
+  m[0][2] *= dec.scale.z;
+  m[1][2] *= dec.scale.z;
+  m[2][2] *= dec.scale.z;
+  m[3][2] *= dec.scale.z;
+}
