@@ -449,6 +449,21 @@ static VMeshModel *Mod_FindMeshModel (VStr filename, VStr name, int meshIndex) {
 
 //==========================================================================
 //
+//  xatof
+//
+//==========================================================================
+static float xatof (VXmlNode *N, VStr str) {
+  str = str.xstrip();
+  float res = 0.0f;
+  if (str.convertFloat(&res)) {
+    if (isfinite(res)) return res;
+  }
+  Sys_Error("invalid float value '%s' at %s", *str, *N->Loc.toStringNoCol());
+}
+
+
+//==========================================================================
+//
 //  ParseAngle
 //
 //==========================================================================
@@ -457,12 +472,12 @@ static void ParseAngle (VXmlNode *N, const char *name, ModelAngle &angle) {
   VStr aname = VStr("angle_")+name;
   if (N->HasAttribute(aname)) {
     VStr val = N->GetAttribute(aname);
-    if (val.ICmp("random") == 0) angle.SetAbsoluteRandom(); else angle.SetAbsolute(VStr::atof(*val));
+    if (val.ICmp("random") == 0) angle.SetAbsoluteRandom(); else angle.SetAbsolute(xatof(N, val));
   } else {
     aname = VStr("rotate_")+name;
     if (N->HasAttribute(aname)) {
       VStr val = N->GetAttribute(aname);
-      if (val.ICmp("random") == 0) angle.SetRelativeRandom(); else angle.SetRelative(VStr::atof(*val));
+      if (val.ICmp("random") == 0) angle.SetRelativeRandom(); else angle.SetRelative(xatof(N, val));
     }
   }
 }
@@ -492,15 +507,119 @@ static void ParseVector (VXmlNode *SN, TVec &vec, const char *basename, bool pro
   vassert(SN);
   vassert(basename);
   if (SN->HasAttribute(basename)) {
-    vec.x = VStr::atof(*SN->GetAttribute(basename), vec.x);
+    vec.x = xatof(SN, SN->GetAttribute(basename));
     vec.y = (propagate ? vec.x : 0.0f);
     vec.z = (propagate ? vec.x : 0.0f);
   } else {
     VStr xname;
-    xname = VStr(basename)+"_x"; if (SN->HasAttribute(xname)) vec.x = VStr::atof(*SN->GetAttribute(xname), vec.x);
-    xname = VStr(basename)+"_y"; if (SN->HasAttribute(xname)) vec.y = VStr::atof(*SN->GetAttribute(xname), vec.y);
-    xname = VStr(basename)+"_z"; if (SN->HasAttribute(xname)) vec.z = VStr::atof(*SN->GetAttribute(xname), vec.z);
+    xname = VStr(basename)+"_x"; if (SN->HasAttribute(xname)) vec.x = xatof(SN, SN->GetAttribute(xname));
+    xname = VStr(basename)+"_y"; if (SN->HasAttribute(xname)) vec.y = xatof(SN, SN->GetAttribute(xname));
+    xname = VStr(basename)+"_z"; if (SN->HasAttribute(xname)) vec.z = xatof(SN, SN->GetAttribute(xname));
   }
+}
+
+
+//==========================================================================
+//
+//  ParseVectorNode
+//
+//==========================================================================
+static void ParseVectorNode (VXmlNode *SN, TVec &vec) {
+  bool wasNN[3] = {false, false, false};
+  for (VXmlNode *n = SN->FirstChild; n; n = n->NextSibling) {
+    if (n->FirstChild) {
+      Sys_Error("node '%s' cannot have children at %s", *n->Name, *n->Loc.toStringNoCol());
+    }
+    if (n->Name == "value") {
+      if (wasNN[0] || wasNN[1] || wasNN[2]) {
+        Sys_Error("node '%s' conflicts with previous nodes at %s", *n->Name, *n->Loc.toStringNoCol());
+      }
+      vec.x = vec.y = vec.z = xatof(n, n->Value);
+      wasNN[0] = wasNN[1] = wasNN[2] = true;
+      continue;
+    }
+    int idx = -1;
+         if (n->Name == "x") idx = 0;
+    else if (n->Name == "y") idx = 1;
+    else if (n->Name == "z") idx = 2;
+    if (idx < 0) Sys_Error("unknown node '%s' at %s", *n->Name, *n->Loc.toStringNoCol());
+    if (wasNN[idx]) Sys_Error("node '%s' conflicts with previous nodes at %s", *n->Name, *n->Loc.toStringNoCol());
+    wasNN[idx] = true;
+    vec[idx] = xatof(n, n->Value);
+  }
+}
+
+
+//==========================================================================
+//
+//  parseTransNodeChild
+//
+//==========================================================================
+static bool parseTransNodeChild (VXmlNode *SN, AliasModelTrans &trans) {
+  if (!SN) return false;
+
+  VMatrix4 mat = VMatrix4::Identity;
+
+  if (SN->Name == "scale") {
+    TVec vv = TVec(1.0f, 1.0f, 1.0f);
+    ParseVectorNode(SN, vv);
+    mat[0][0] = fabsf(vv.x);
+    mat[1][1] = fabsf(vv.y);
+    mat[2][2] = fabsf(vv.z);
+  } else if (SN->Name == "offset") {
+    TVec vv = TVec(0.0f, 0.0f, 0.0f);
+    ParseVectorNode(SN, vv);
+    mat[0][3] = vv.x;
+    mat[1][3] = vv.y;
+    mat[2][3] = vv.z;
+  } else if (SN->Name == "rotate") {
+    TVec vv = TVec(0.0f, 0.0f, 0.0f);
+    ParseVectorNode(SN, vv);
+    TAVec aa;
+    aa.yaw = vv.x;
+    aa.pitch = vv.y;
+    aa.roll = vv.z;
+    TVec alias_forward, alias_right, alias_up;
+    AngleVectors(aa, alias_forward, alias_right, alias_up);
+    for (unsigned i = 0; i < 3; ++i) {
+      mat[i][0] = alias_forward[i];
+      mat[i][1] = -alias_right[i];
+      mat[i][2] = alias_up[i];
+    }
+  } else {
+    return false;
+  }
+
+  VMatrix4 finmt = trans.MatTransPreRot*mat;
+  finmt.decompose(trans.decPreRot);
+  trans.MatTransPreRot = finmt;
+  return true;
+}
+
+
+//==========================================================================
+//
+//  parseTransNode
+//
+//==========================================================================
+static bool parseTransNode (VXmlNode *SN, AliasModelTrans &trans, const AliasModelTrans &orig) {
+  if (!SN) return false;
+  if (SN->Name != "transform") return false;
+
+  for (VXmlNode *XN = SN->FirstChild; XN; XN = XN->NextSibling) {
+    if (XN->Name == "reset") {
+      if (XN->FirstChild) {
+        Sys_Error("node '%s' cannot have children at %s", *XN->Name, *XN->Loc.toStringNoCol());
+      }
+      trans = orig;
+      continue;
+    }
+
+    if (parseTransNodeChild(XN, trans)) continue;
+    Sys_Error("unknown transform node '%s' at %s", *XN->Name, *XN->Loc.toStringNoCol());
+  }
+
+  return true;
 }
 
 
@@ -769,7 +888,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
 
       // check nodes
       {
-        auto bad = ModelDefNode->FindBadChild("frame", "skin", "subskin", nullptr);
+        auto bad = ModelDefNode->FindBadChild("frame", "skin", "subskin", "transform", nullptr);
         if (bad) Sys_Error("%s: model '%s' definition has invalid node '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
       }
 
@@ -808,6 +927,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       AliasModelTrans BaseTransform;
       BaseTransform.MatValid = false;
       ParseTransform(mfile, Md2->MeshIndex, ModelDefNode, BaseTransform);
+      vassert(BaseTransform.MatValid);
 
       // fullbright flag
       Md2->FullBright = ParseBool(ModelDefNode, "fullbright", false);
@@ -825,8 +945,15 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       // process frames
       // TODO: implement range support for frame declaration
       int curframeindex = 0;
-      for (VXmlNode *FrameDefNode : ModelDefNode->childrenWithName("frame")) {
-        if (FrameDefNode->HasChildren()) Sys_Error("%s: model '%s' frame definition should have no children", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name);
+      //for (VXmlNode *FrameDefNode : ModelDefNode->childrenWithName("frame"))
+      for (VXmlNode *FrameDefNode = ModelDefNode->FirstChild; FrameDefNode; FrameDefNode = FrameDefNode->NextSibling) {
+        if (parseTransNode(FrameDefNode, BaseTransform, BaseTransform)) continue;
+
+        if (FrameDefNode->Name != "frame") continue;
+        //if (FrameDefNode->HasChildren()) Sys_Error("%s: model '%s' frame definition should have no children", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name);
+
+        AliasModelTrans XFTransform = BaseTransform;
+        vassert(XFTransform.MatValid);
 
         {
           auto bad = FrameDefNode->FindBadAttribute("index", "end_index", "count",
@@ -835,6 +962,12 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
                                                     "offset", "offset_x", "offset_y", "offset_z",
                                                     "scale", "scale_x", "scale_y", "scale_z", nullptr);
           if (bad) Sys_Error("%s: model '%s' frame definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
+        }
+
+        // check nodes
+        {
+          auto bad = FrameDefNode->FindBadChild("transform", nullptr);
+          if (bad) Sys_Error("%s: model '%s' frame definition has invalid node '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
         }
 
         int sidx = curframeindex, eidx = curframeindex;
@@ -859,6 +992,14 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         }
         //GCon->Logf(NAME_Debug, "%s: MDL '%s': sidx=%d; eidx=%d", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name, sidx, eidx);
 
+        // frame transformations
+        ParseTransform(mfile, Md2->MeshIndex, FrameDefNode, XFTransform);
+
+        for (VXmlNode *xt = FrameDefNode->FirstChild; xt; xt = xt->NextSibling) {
+          if (parseTransNode(FrameDefNode, XFTransform, BaseTransform)) continue;
+          Sys_Error("unknown frame node '%s' at %s", *xt->Name, *xt->Loc.toStringNoCol());
+        }
+
         for (int fnum = sidx; fnum <= eidx; ++fnum) {
           VScriptSubModel::VFrame &F = Md2->Frames.Alloc();
 
@@ -869,8 +1010,8 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
           F.PositionIndex = ParseIntWithDefault(FrameDefNode, "position_index", 0);
 
           // frame transformation
-          F.Transform = BaseTransform;
-          ParseTransform(mfile, Md2->MeshIndex, FrameDefNode, F.Transform);
+          F.Transform = XFTransform;
+          //ParseTransform(mfile, Md2->MeshIndex, FrameDefNode, F.Transform);
 
           // alpha
           F.AlphaStart = ParseFloatWithDefault(FrameDefNode, "alpha_start", 1.0f);
@@ -881,6 +1022,8 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         }
 
         curframeindex = eidx+1;
+
+        XFTransform = BaseTransform;
       }
 
       // process skins
