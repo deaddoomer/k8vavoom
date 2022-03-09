@@ -1663,12 +1663,15 @@ int VScriptParser::FindIncludeLump (int srclump, VStr fname) noexcept {
   Lump = FindRelativeIncludeLump(srclump, fname);
   if (Lump >= 0) return Lump;
 
+  //GLog.Logf(NAME_Debug, "   XXX: fname='%s'", *fname);
   // check WAD lump only if it's no longer than 8 characters and has no path separator
-  if ((srclump == -1 || W_IsWADLump(srclump)) && fname.indexOf('/') < 0) {
+  if (/*(srclump == -1 || W_IsWADLump(srclump)) &&*/ fname.indexOf('/') < 0) {
     VStr noext = fname.stripExtension();
+    //GLog.Logf(NAME_Debug, "  NOEXT: %s", *noext);
     if (!noext.isEmpty() && noext.length() <= 8) {
       VName nn(*fname, VName::FindLower8);
       if (nn != NAME_None) {
+        //GLog.Logf(NAME_Debug, "    NN: %s", *nn);
         Lump = (srclump < 0 ? W_CheckNumForName(nn) : W_CheckNumForNameInFile(nn, W_LumpFile(srclump)));
         if (Lump >= 0) return Lump;
       }
