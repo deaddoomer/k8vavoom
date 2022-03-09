@@ -56,9 +56,9 @@ public:
     VStr toString () const {
       VStr res = sprbase.toUpperCase();
       res += (char)(sprframe+'A');
-      res += va(" mdi(%d) origmdi(%d) fri(%d) vvi(%d) ao(%g,%g,%g) rs(%g)",
+      res += va(" mdi(%d) origmdi(%d) fri(%d) vvi(%d) rs(%g)",
         mdindex, origmdindex, frindex, vvindex,
-        angleOffset.yaw, angleOffset.pitch, angleOffset.roll,
+        //angleOffset.yaw, angleOffset.pitch, angleOffset.roll,
         rotationSpeed);
       return res;
     }
@@ -69,14 +69,16 @@ public:
     int mdlframe; // model frame number
     int vvframe; // k8vavoom frame number
     // as we can merge models, different frames can have different scale
-    TVec scale;
-    TVec offset;
-    float zoffset;
+    //TVec scale;
+    //TVec offset;
+    //float zoffset;
+    VMatrix4 mat;
     // temporary working data
     bool used;
 
     VStr toString () const {
-      return VStr(va("mdl(%d); frm(%d); vvfrm(%d); scale=(%g,%g,%g); ofs=(%g,%g,%g); zofs=%g", mdlindex, mdlframe, vvframe, scale.x, scale.y, scale.z, offset.x, offset.y, offset.z, zoffset));
+      //return VStr(va("mdl(%d); frm(%d); vvfrm(%d); scale=(%g,%g,%g); ofs=(%g,%g,%g); zofs=%g", mdlindex, mdlframe, vvframe, scale.x, scale.y, scale.z, offset.x, offset.y, offset.z, zoffset));
+      return VStr(va("mdl(%d); frm(%d); vvfrm(%d)", mdlindex, mdlframe, vvframe));
     }
   };
 
@@ -104,9 +106,10 @@ protected:
 public:
   VStr className;
   TArray<MSDef> models;
-  TVec scale;
-  TVec offset;
-  float zoffset;
+  //TVec scale;
+  //TVec offset;
+  //float zoffset;
+  VMatrix4 mat;
   float rotationSpeed; // !0: rotating
   bool usePitch;
   bool usePitchInverted;

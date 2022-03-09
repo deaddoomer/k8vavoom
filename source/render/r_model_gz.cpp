@@ -36,9 +36,10 @@
 GZModelDef::GZModelDef ()
   : className()
   , models()
-  , scale(1, 1, 1)
-  , offset(0, 0, 0)
-  , zoffset(0)
+  //, scale(1, 1, 1)
+  //, offset(0, 0, 0)
+  //, zoffset(0)
+  , mat(VMatrix4::Identity)
   , rotationSpeed(0)
   , usePitch(false)
   , usePitchInverted(false)
@@ -68,9 +69,10 @@ GZModelDef::~GZModelDef () {
 void GZModelDef::clear () {
   className.clear();
   models.clear();
-  scale = TVec(1, 1, 1);
-  offset = TVec(0, 0, 0);
-  zoffset = 0;
+  //scale = TVec(1, 1, 1);
+  //offset = TVec(0, 0, 0);
+  //zoffset = 0;
+  mat.SetIdentity();
   rotationSpeed = 0;
   usePitch = usePitchInverted = usePitchMomentum = useRoll = false;
   angleOffset = TAVec(0, 0, 0);
@@ -149,23 +151,11 @@ static TVec sanitiseScale (const TVec &scale) {
   if (!isFiniteF(res.x) || !res.x) res.x = 1.0f;
   if (!isFiniteF(res.y) || !res.y) res.y = 1.0f;
   if (!isFiniteF(res.z) || !res.z) res.z = 1.0f;
-  // fix negative scales (i don't know what gozzo does with them, but we'll convert them to 1/scale)
-  // usually, scale "-1" is for HUD weapons. wtf?!
-  /*
-  if (res.x < 0 && res.x != -1.0f) GCon->Logf("!!! scalex=%g", res.x);
-  if (res.y < 0 && res.y != -1.0f) GCon->Logf("!!! scaley=%g", res.y);
-  if (res.z < 0 && res.z != -1.0f) GCon->Logf("!!! scalez=%g", res.z);
-  */
-  // idiotic gozzo somehow tolerate (or even require?) negative scales for HUD weapons. fuck it!
-  #if 0
-  if (res.x < 0) res.x = 1.0f/(-res.x);
-  if (res.y < 0) res.y = 1.0f/(-res.y);
-  if (res.z < 0) res.z = 1.0f/(-res.z);
-  #else
+  // usually, scale "-1" is for GZDoom HUD weapons. wtf?!
+  // it seems, that this is *required* in GZDoom for some reason
   res.x = fabsf(res.x);
   res.y = fabsf(res.y);
   res.z = fabsf(res.z);
-  #endif
   return res;
 }
 
@@ -183,7 +173,7 @@ void GZModelDef::parse (VScriptParser *sc) {
   className = sc->String;
   sc->Expect("{");
   bool rotating = false;
-  bool wasZOffset = false; // temp hack for QStuffUltra
+  //bool wasZOffset = false; // temp hack for QStuffUltra
   while (!sc->Check("}")) {
     // skip flags
     if (sc->Check("IGNORETRANSLATION") ||
@@ -283,6 +273,7 @@ void GZModelDef::parse (VScriptParser *sc) {
     }
     // "scale"
     if (sc->Check("scale")) {
+      TVec scale = TVec(1.0f, 1.0f, 1.0f);
       // x
       sc->ExpectFloatWithSign();
       if (sc->Float == 0) sc->Message(va("invalid x scale in model '%s'", *className));
@@ -298,12 +289,16 @@ void GZModelDef::parse (VScriptParser *sc) {
       // normalize
       scale = sanitiseScale(scale);
       // seems that scale scales previous offsets
+      VMatrix4 mt = VMatrix4::BuildScale(scale);
+      mat *= mt;
+      /*
       offset.x /= scale.x;
       offset.y /= scale.y;
       offset.z /= scale.z;
       zoffset /= scale.z;
+      */
       // qstuffultra hack
-      if (wasZOffset && zoffset > 8) { offset.z = zoffset+scale.z; zoffset = 0; }
+      //if (wasZOffset && zoffset > 8) { offset.z = zoffset+scale.z; zoffset = 0; }
       continue;
     }
     // "frameindex"
@@ -412,19 +407,25 @@ void GZModelDef::parse (VScriptParser *sc) {
     }
     // "Offset"
     if (sc->Check("Offset")) {
+      TVec offset = TVec::ZeroVector;
       sc->ExpectFloatWithSign();
       offset.x = sc->Float;
       sc->ExpectFloatWithSign();
       offset.y = sc->Float;
       sc->ExpectFloatWithSign();
       offset.z = sc->Float;
+      VMatrix4 mt = VMatrix4::BuildOffset(offset);
+      mat *= mt;
       continue;
     }
     // "ZOffset"
     if (sc->Check("ZOffset")) {
       sc->ExpectFloatWithSign();
-      zoffset = sc->Float;
-      wasZOffset = true;
+      //zoffset = sc->Float;
+      //wasZOffset = true;
+      TVec offset = TVec(0.0f, 0.0f, sc->Float);
+      VMatrix4 mt = VMatrix4::BuildOffset(offset);
+      mat *= mt;
       continue;
     }
     // "InheritActorPitch"
@@ -498,9 +499,10 @@ int GZModelDef::findModelFrame (int mdlindex, int mdlframe, bool allowAppend) {
   fi.mdlindex = mdlindex;
   fi.mdlframe = mdlframe;
   fi.vvframe = models[mdlindex].frameMap.length()-1;
-  fi.scale = scale;
-  fi.offset = offset;
-  fi.zoffset = zoffset;
+  //fi.scale = scale;
+  //fi.offset = offset;
+  //fi.zoffset = zoffset;
+  fi.mat = mat;
   fi.used = true; // why not?
   return fi.vvframe;
 }
@@ -752,9 +754,7 @@ void GZModelDef::merge (GZModelDef &other) {
       for (auto &&mfrm : rmdl.frameMap) {
         if (mfrm.mdlindex == mdlindex &&
             mfrm.mdlframe == omfrm.mdlframe &&
-            mfrm.scale == omfrm.scale &&
-            mfrm.offset == omfrm.offset &&
-            mfrm.zoffset == omfrm.zoffset)
+            mfrm.mat == omfrm.mat)
         {
           // yay, i found her!
           // reuse this frame
@@ -777,9 +777,7 @@ void GZModelDef::merge (GZModelDef &other) {
       nfi.mdlindex = mdlindex;
       nfi.mdlframe = ofrm.frindex;
       nfi.vvframe = rmdl.frameMap.length()-1;
-      nfi.scale = omfrm.scale;
-      nfi.offset = omfrm.offset;
-      nfi.zoffset = omfrm.zoffset;
+      nfi.mat = omfrm.mat;
     }
 
     // find sprite frame to replace
@@ -875,6 +873,7 @@ void GZModelDef::merge (GZModelDef &other) {
 //  appendScale
 //
 //==========================================================================
+/*
 static void appendScale (VStr &res, TVec scale, const TVec *baseScale) {
   scale = sanitiseScale(scale);
   if (baseScale) {
@@ -894,6 +893,7 @@ static void appendScale (VStr &res, TVec scale, const TVec *baseScale) {
     if (scale.z != 1) res += va(" scale_z=\"%g\"", scale.z);
   }
 }
+*/
 
 
 //==========================================================================
@@ -916,11 +916,21 @@ VStr GZModelDef::createXml () {
     const char *mdtag = (mdl.modelFile.extractFileExtension().strEquCI(".md2") ? "md2" : "md3");
     res += va("  <model name=\"%s_%d\">\n", *className.toLowerCase().xmlEscape(), it.index());
     res += va("    <%s file=\"%s\" noshadow=\"false\"", mdtag, *mdl.modelFile.xmlEscape());
+    /*
     appendScale(res, scale, nullptr);
     if (offset.x != 0) res += va(" offset_x=\"%g\"", offset.x);
     if (offset.y != 0) res += va(" offset_y=\"%g\"", offset.y);
     if (offset.z != 0) res += va(" offset_z=\"%g\"", offset.z);
     if (zoffset != 0) res += va(" shift_z=\"%g\"", zoffset);
+    */
+    res += "      <transform>\n";
+    res += "        <matrix absolute=\"true\">\n";
+    res += va("          %g %g %g %g\n", mat.m[0][0], mat.m[0][1], mat.m[0][2], mat.m[0][3]);
+    res += va("          %g %g %g %g\n", mat.m[1][0], mat.m[1][1], mat.m[1][2], mat.m[1][3]);
+    res += va("          %g %g %g %g\n", mat.m[2][0], mat.m[2][1], mat.m[2][2], mat.m[2][3]);
+    res += va("          %g %g %g %g\n", mat.m[3][0], mat.m[3][1], mat.m[3][2], mat.m[3][3]);
+    res += "        </matrix>\n";
+    res += "      </transform>\n";
     res += ">\n";
     if (!mdl.skinFile.isEmpty()) res += va("      <skin file=\"%s\" />\n", *mdl.skinFile.xmlEscape());
     if (mdl.subskinFiles.length() != 0) {
@@ -936,11 +946,21 @@ VStr GZModelDef::createXml () {
       vassert(it.index() == fi.mdlindex);
       vassert(fit.index() == fi.vvframe);
       res += va("      <frame index=\"%d\"", fi.mdlframe);
+      /*
       appendScale(res, fi.scale, &scale);
       if (fi.offset.x != offset.x) res += va(" offset_x=\"%g\"", fi.offset.x);
       if (fi.offset.y != offset.y) res += va(" offset_y=\"%g\"", fi.offset.y);
       if (fi.offset.z != offset.z) res += va(" offset_z=\"%g\"", fi.offset.z);
       if (fi.zoffset != zoffset) res += va(" shift_z=\"%g\"", fi.zoffset);
+      */
+      res += "        <transform>\n";
+      res += "          <matrix absolute=\"true\">\n";
+      res += va("            %g %g %g %g\n", fi.mat.m[0][0], fi.mat.m[0][1], fi.mat.m[0][2], fi.mat.m[0][3]);
+      res += va("            %g %g %g %g\n", fi.mat.m[1][0], fi.mat.m[1][1], fi.mat.m[1][2], fi.mat.m[1][3]);
+      res += va("            %g %g %g %g\n", fi.mat.m[2][0], fi.mat.m[2][1], fi.mat.m[2][2], fi.mat.m[2][3]);
+      res += va("            %g %g %g %g\n", fi.mat.m[3][0], fi.mat.m[3][1], fi.mat.m[3][2], fi.mat.m[3][3]);
+      res += "          </matrix>\n";
+      res += "        </transform>\n";
       res += " />\n";
     }
     res += va("    </%s>\n", mdtag);

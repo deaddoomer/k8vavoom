@@ -415,30 +415,37 @@ public:
 struct texinfo_t;
 
 struct AliasModelTrans {
+  /*
   TVec Shift; // unscaled, done before scaling and offseting
   TVec Offset;
   TVec Scale;
   TAVec PreRot;
-
   bool MatValid; // set if matrices are valid and should be used instead of vecs
-  VMatrix4 MatTransPreRot; // transformation matrix (pre-rotation)
-  VMatrix4 MatTransPostRot; // transformation matrix (post-rotation)
+  */
 
-  // for interpolator, it `MatValid` is `true`
-  VMatrix4Decomposed decPreRot;
-  VMatrix4Decomposed decPostRot;
+  // transformation matrix
+  VMatrix4 MatTrans;
+  TAVec TransRot; // extracted from `MatTrans`, for normals
+  // for frame interpolator; we can precalc this
+  VMatrix4Decomposed DecTrans;
 
   inline AliasModelTrans () noexcept
+    /*
     : Shift(0.0f, 0.0f, 0.0f)
     , Offset(0.0f, 0.0f, 0.0f)
     , Scale(1.0f, 1.0f, 1.0f)
     , PreRot(0.0f, 0.0f, 0.0f)
     , MatValid(false)
-    , MatTransPreRot(VMatrix4::Identity)
-    , MatTransPostRot(VMatrix4::Identity)
-    , decPreRot()
-    , decPostRot()
+    */
+    : MatTrans(VMatrix4::Identity)
+    , TransRot(0.0f, 0.0f, 0.0f)
+    , DecTrans()
   {}
+
+  inline void decompose () noexcept {
+    MatTrans.decompose(DecTrans);
+    TransRot = MatTrans.getAngles();
+  }
 };
 
 

@@ -555,23 +555,19 @@ static void ParseVectorNode (VXmlNode *SN, TVec &vec) {
 //  parseTransNodeChild
 //
 //==========================================================================
-static bool parseTransNodeChild (VXmlNode *SN, AliasModelTrans &trans) {
+static bool parseTransNodeChild (VXmlNode *SN, VMatrix4 &trans) {
   if (!SN) return false;
 
-  VMatrix4 mat = VMatrix4::Identity;
+  VMatrix4 mat;
 
   if (SN->Name == "scale") {
     TVec vv = TVec(1.0f, 1.0f, 1.0f);
     ParseVectorNode(SN, vv);
-    mat[0][0] = fabsf(vv.x);
-    mat[1][1] = fabsf(vv.y);
-    mat[2][2] = fabsf(vv.z);
+    mat = VMatrix4::BuildScale(vv);
   } else if (SN->Name == "offset") {
     TVec vv = TVec(0.0f, 0.0f, 0.0f);
     ParseVectorNode(SN, vv);
-    mat[0][3] = vv.x;
-    mat[1][3] = vv.y;
-    mat[2][3] = vv.z;
+    mat = VMatrix4::BuildOffset(vv);
   } else if (SN->Name == "rotate") {
     TVec vv = TVec(0.0f, 0.0f, 0.0f);
     ParseVectorNode(SN, vv);
@@ -579,20 +575,12 @@ static bool parseTransNodeChild (VXmlNode *SN, AliasModelTrans &trans) {
     aa.yaw = vv.x;
     aa.pitch = vv.y;
     aa.roll = vv.z;
-    TVec alias_forward, alias_right, alias_up;
-    AngleVectors(aa, alias_forward, alias_right, alias_up);
-    for (unsigned i = 0; i < 3; ++i) {
-      mat[i][0] = alias_forward[i];
-      mat[i][1] = -alias_right[i];
-      mat[i][2] = alias_up[i];
-    }
+    mat = VMatrix4::BuildRotate(aa);
   } else {
     return false;
   }
 
-  VMatrix4 finmt = trans.MatTransPreRot*mat;
-  finmt.decompose(trans.decPreRot);
-  trans.MatTransPreRot = finmt;
+  trans *= mat;
   return true;
 }
 
@@ -602,7 +590,7 @@ static bool parseTransNodeChild (VXmlNode *SN, AliasModelTrans &trans) {
 //  parseTransNode
 //
 //==========================================================================
-static bool parseTransNode (VXmlNode *SN, AliasModelTrans &trans, const AliasModelTrans &orig) {
+static bool parseTransNode (VXmlNode *SN, VMatrix4 &trans, const VMatrix4 &orig) {
   if (!SN) return false;
   if (SN->Name != "transform") return false;
 
@@ -611,7 +599,37 @@ static bool parseTransNode (VXmlNode *SN, AliasModelTrans &trans, const AliasMod
       if (XN->FirstChild) {
         Sys_Error("node '%s' cannot have children at %s", *XN->Name, *XN->Loc.toStringNoCol());
       }
+      if (XN->Attributes.length()) {
+        Sys_Error("node '%s' cannot have attributes at %s", *XN->Name, *XN->Loc.toStringNoCol());
+      }
       trans = orig;
+      continue;
+    }
+
+    if (XN->Name == "matrix") {
+      auto bad = XN->FindBadAttribute("absolute", nullptr);
+      if (bad) Sys_Error("%s: matrix definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *bad->Name);
+      VMatrix4 mat = VMatrix4::Identity;
+      VStr s = XN->Value;
+      for (int y = 0; y < 4; ++y) {
+        for (int x = 0; x < 4; ++x) {
+          s = s.xstripleft();
+          int pos = 0;
+          while (pos < s.length() && (uint8_t)s[pos] > 32) ++pos;
+          if (pos == 0) Sys_Error("out of matrix values at %s", *XN->Loc.toStringNoCol());
+          float res = 0.0f;
+          if (!s.left(pos).convertFloat(&res) || !isfinite(res)) {
+            Sys_Error("invalid matrix float at %s", *XN->Loc.toStringNoCol());
+          }
+          mat.m[y][x] = res;
+          s.chopLeft(pos);
+        }
+      }
+      if (ParseBool(XN, "absolute", false)) {
+        trans = mat;
+      } else {
+        trans = trans*mat;
+      }
       continue;
     }
 
@@ -619,7 +637,21 @@ static bool parseTransNode (VXmlNode *SN, AliasModelTrans &trans, const AliasMod
     Sys_Error("unknown transform node '%s' at %s", *XN->Name, *XN->Loc.toStringNoCol());
   }
 
+  //trans.MatTrans.decompose(trans.DecTrans);
   return true;
+}
+
+
+//==========================================================================
+//
+//  dumpMatrix
+//
+//==========================================================================
+static void __attribute__((used)) dumpMatrix (const char *pfx, const VMatrix4 &mt) {
+  GCon->Logf("%s(%g, %g, %g, %g)", pfx, mt.m[0][0], mt.m[0][1], mt.m[0][2], mt.m[0][3]);
+  GCon->Logf("%s(%g, %g, %g, %g)", pfx, mt.m[1][0], mt.m[1][1], mt.m[1][2], mt.m[1][3]);
+  GCon->Logf("%s(%g, %g, %g, %g)", pfx, mt.m[2][0], mt.m[2][1], mt.m[2][2], mt.m[2][3]);
+  GCon->Logf("%s(%g, %g, %g, %g)", pfx, mt.m[3][0], mt.m[3][1], mt.m[3][2], mt.m[3][3]);
 }
 
 
@@ -630,12 +662,7 @@ static bool parseTransNode (VXmlNode *SN, AliasModelTrans &trans, const AliasMod
 //  `trans` must be initialised
 //
 //==========================================================================
-static void ParseTransform (VStr mfile, int mindex, VXmlNode *SN, AliasModelTrans &trans) {
-  #if 0
-  ParseVector(SN, trans.Shift, "shift", false);
-  ParseVector(SN, trans.Offset, "offset", false);
-  ParseVector(SN, trans.Scale, "scale", true);
-  #else
+static void ParseTransform (VStr mfile, int mindex, VXmlNode *SN, VMatrix4 &trans) {
   TVec shift = TVec::ZeroVector;
   TVec offset = TVec::ZeroVector;
   TVec scale = TVec(1.0f, 1.0f, 1.0f);
@@ -644,107 +671,47 @@ static void ParseTransform (VStr mfile, int mindex, VXmlNode *SN, AliasModelTran
   ParseVector(SN, offset, "offset", false);
   ParseVector(SN, scale, "scale", true);
 
-  if (!trans.MatValid) {
-    trans.Shift = shift;
-    trans.Offset = offset;
-    trans.Scale = scale;
-  } else {
-    trans.Shift += shift;
-    trans.Offset += offset;
-    trans.Scale.x = scale.x;
-    trans.Scale.y = scale.y;
-    trans.Scale.z = scale.z;
-  }
+  VMatrix4 shiftmat = VMatrix4::BuildOffset(shift);
+  VMatrix4 scalemat = VMatrix4::BuildScale(scale);
+  VMatrix4 ofsmat = VMatrix4::BuildOffset(offset);
 
-  VMatrix4 shiftmat = VMatrix4::Identity;
-  shiftmat[0][3] = shift.x;
-  shiftmat[1][3] = shift.y;
-  shiftmat[2][3] = shift.z;
+  VMatrix4 finmt = trans;
+  finmt *= shiftmat;
+  finmt *= scalemat;
+  finmt *= ofsmat;
 
-  VMatrix4 scalemat = VMatrix4::Identity;
-  scalemat[0][0] = fabsf(scale.x);
-  scalemat[1][1] = fabsf(scale.y);
-  scalemat[2][2] = fabsf(scale.z);
-
-  VMatrix4 ofsmat = VMatrix4::Identity;
-  ofsmat[0][3] = offset.x;
-  ofsmat[1][3] = offset.y;
-  ofsmat[2][3] = offset.z;
-
-  // shift, then scale
-  VMatrix4 ssmt = scalemat*shiftmat;
-  // then offset
-  VMatrix4 emt = ssmt*ofsmat;
-
-  if (!trans.MatValid) {
-    trans.MatValid = true;
-    trans.MatTransPreRot = VMatrix4::Identity;
-    trans.MatTransPostRot = VMatrix4::Identity;
-    trans.decPreRot.valid = false;
-    trans.decPostRot.valid = false;
-    //GCon->Logf("***PREROT -- init");
-  }
-
-  VMatrix4 finmt = trans.MatTransPreRot*emt;
-  finmt.decompose(trans.decPreRot);
   #if 0
   GCon->Logf("=== PREROT (%s : %d) ===", *mfile, mindex);
   GCon->Logf("  shift : (%g,%g,%g)", shift.x, shift.y, shift.z);
   GCon->Logf("  offset: (%g,%g,%g)", offset.x, offset.y, offset.z);
   GCon->Logf("  scale : (%g,%g,%g)", scale.x, scale.y, scale.z);
   GCon->Logf("  shift matrix:");
-  GCon->Logf("   (%g, %g, %g, %g)", shiftmat.m[0][0], shiftmat.m[0][1], shiftmat.m[0][2], shiftmat.m[0][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", shiftmat.m[1][0], shiftmat.m[1][1], shiftmat.m[1][2], shiftmat.m[1][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", shiftmat.m[2][0], shiftmat.m[2][1], shiftmat.m[2][2], shiftmat.m[2][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", shiftmat.m[3][0], shiftmat.m[3][1], shiftmat.m[3][2], shiftmat.m[3][3]);
+  dumpMatrix("   ", shiftmat);
   GCon->Logf("  offset matrix:");
-  GCon->Logf("   (%g, %g, %g, %g)", ofsmat.m[0][0], ofsmat.m[0][1], ofsmat.m[0][2], ofsmat.m[0][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", ofsmat.m[1][0], ofsmat.m[1][1], ofsmat.m[1][2], ofsmat.m[1][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", ofsmat.m[2][0], ofsmat.m[2][1], ofsmat.m[2][2], ofsmat.m[2][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", ofsmat.m[3][0], ofsmat.m[3][1], ofsmat.m[3][2], ofsmat.m[3][3]);
+  dumpMatrix("   ", ofsmat);
   GCon->Logf("  scale matrix:");
-  GCon->Logf("   (%g, %g, %g, %g)", scalemat.m[0][0], scalemat.m[0][1], scalemat.m[0][2], scalemat.m[0][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", scalemat.m[1][0], scalemat.m[1][1], scalemat.m[1][2], scalemat.m[1][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", scalemat.m[2][0], scalemat.m[2][1], scalemat.m[2][2], scalemat.m[2][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", scalemat.m[3][0], scalemat.m[3][1], scalemat.m[3][2], scalemat.m[3][3]);
-  GCon->Logf("  ssmt matrix:");
-  GCon->Logf("   (%g, %g, %g, %g)", ssmt.m[0][0], ssmt.m[0][1], ssmt.m[0][2], ssmt.m[0][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", ssmt.m[1][0], ssmt.m[1][1], ssmt.m[1][2], ssmt.m[1][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", ssmt.m[2][0], ssmt.m[2][1], ssmt.m[2][2], ssmt.m[2][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", ssmt.m[3][0], ssmt.m[3][1], ssmt.m[3][2], ssmt.m[3][3]);
-  GCon->Logf("  emt matrix:");
-  GCon->Logf("   (%g, %g, %g, %g)", emt.m[0][0], emt.m[0][1], emt.m[0][2], emt.m[0][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", emt.m[1][0], emt.m[1][1], emt.m[1][2], emt.m[1][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", emt.m[2][0], emt.m[2][1], emt.m[2][2], emt.m[2][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", emt.m[3][0], emt.m[3][1], emt.m[3][2], emt.m[3][3]);
+  dumpMatrix("   ", scalemat);
   GCon->Logf("  old prerot matrix:");
-  GCon->Logf("   (%g, %g, %g, %g)", trans.MatTransPreRot.m[0][0], trans.MatTransPreRot.m[0][1], trans.MatTransPreRot.m[0][2], trans.MatTransPreRot.m[0][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", trans.MatTransPreRot.m[1][0], trans.MatTransPreRot.m[1][1], trans.MatTransPreRot.m[1][2], trans.MatTransPreRot.m[1][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", trans.MatTransPreRot.m[2][0], trans.MatTransPreRot.m[2][1], trans.MatTransPreRot.m[2][2], trans.MatTransPreRot.m[2][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", trans.MatTransPreRot.m[3][0], trans.MatTransPreRot.m[3][1], trans.MatTransPreRot.m[3][2], trans.MatTransPreRot.m[3][3]);
+  dumpMatrix("   ", trans);
   GCon->Logf("  final matrix:");
-  GCon->Logf("   (%g, %g, %g, %g)", finmt.m[0][0], finmt.m[0][1], finmt.m[0][2], finmt.m[0][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", finmt.m[1][0], finmt.m[1][1], finmt.m[1][2], finmt.m[1][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", finmt.m[2][0], finmt.m[2][1], finmt.m[2][2], finmt.m[2][3]);
-  GCon->Logf("   (%g, %g, %g, %g)", finmt.m[3][0], finmt.m[3][1], finmt.m[3][2], finmt.m[3][3]);
-  if (trans.decPreRot.valid) {
+  dumpMatrix("   ", finmt);
+  VMatrix4Decomposed DecTrans;
+  finmt.decompose(DecTrans);
+  if (DecTrans.valid) {
     GCon->Logf(" ---DEC----------");
-    GCon->Logf("    scale: (%g,%g,%g)", trans.decPreRot.scale.x, trans.decPreRot.scale.y, trans.decPreRot.scale.z);
-    GCon->Logf("    trans: (%g,%g,%g)", trans.decPreRot.translate.x, trans.decPreRot.translate.y, trans.decPreRot.translate.z);
+    GCon->Logf("    scale: (%g,%g,%g)", DecTrans.scale.x, DecTrans.scale.y, DecTrans.scale.z);
+    GCon->Logf("    trans: (%g,%g,%g)", DecTrans.translate.x, DecTrans.translate.y, DecTrans.translate.z);
     #ifdef VMAT4_DECOMPOSE_ALLOW_SKEW
-    GCon->Logf("    skew : (%g,%g,%g)", trans.decPreRot.skew.x, trans.decPreRot.skew.y, trans.decPreRot.skew.z);
+    GCon->Logf("    skew : (%g,%g,%g)", DecTrans.skew.x, DecTrans.skew.y, DecTrans.skew.z);
     #endif
-    GCon->Logf("    quat : (%g,%g,%g,%g)", trans.decPreRot.quat[0], trans.decPreRot.quat[1], trans.decPreRot.quat[2], trans.decPreRot.quat[3]);
-    emt.recompose(trans.decPreRot);
+    GCon->Logf("    quat : (%g,%g,%g,%g)", DecTrans.quat[0], DecTrans.quat[1], DecTrans.quat[2], DecTrans.quat[3]);
+    VMatrix4 emt;
+    emt.recompose(DecTrans);
     GCon->Logf("  recomposed matrix:");
-    GCon->Logf("   (%g, %g, %g, %g)", emt.m[0][0], emt.m[0][1], emt.m[0][2], emt.m[0][3]);
-    GCon->Logf("   (%g, %g, %g, %g)", emt.m[1][0], emt.m[1][1], emt.m[1][2], emt.m[1][3]);
-    GCon->Logf("   (%g, %g, %g, %g)", emt.m[2][0], emt.m[2][1], emt.m[2][2], emt.m[2][3]);
-    GCon->Logf("   (%g, %g, %g, %g)", emt.m[3][0], emt.m[3][1], emt.m[3][2], emt.m[3][3]);
+    dumpMatrix("   ", emt);
   }
   #endif
-  trans.MatTransPreRot = finmt;
-  #endif
+  trans = finmt;
 }
 
 
@@ -924,10 +891,9 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         Md2->SkinAnimRange = ParseIntWithDefault(ModelDefNode, "skin_anim_range", 1);
       }
 
-      AliasModelTrans BaseTransform;
-      BaseTransform.MatValid = false;
+      VMatrix4 BaseTransform = VMatrix4::Identity;
       ParseTransform(mfile, Md2->MeshIndex, ModelDefNode, BaseTransform);
-      vassert(BaseTransform.MatValid);
+      //BaseTransform.decompose();
 
       // fullbright flag
       Md2->FullBright = ParseBool(ModelDefNode, "fullbright", false);
@@ -945,15 +911,16 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       // process frames
       // TODO: implement range support for frame declaration
       int curframeindex = 0;
+      VMatrix4 xbmat = BaseTransform;
       //for (VXmlNode *FrameDefNode : ModelDefNode->childrenWithName("frame"))
       for (VXmlNode *FrameDefNode = ModelDefNode->FirstChild; FrameDefNode; FrameDefNode = FrameDefNode->NextSibling) {
-        if (parseTransNode(FrameDefNode, BaseTransform, BaseTransform)) continue;
+        if (parseTransNode(FrameDefNode, BaseTransform, xbmat)) {
+          xbmat = BaseTransform;
+          continue;
+        }
 
         if (FrameDefNode->Name != "frame") continue;
         //if (FrameDefNode->HasChildren()) Sys_Error("%s: model '%s' frame definition should have no children", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name);
-
-        AliasModelTrans XFTransform = BaseTransform;
-        vassert(XFTransform.MatValid);
 
         {
           auto bad = FrameDefNode->FindBadAttribute("index", "end_index", "count",
@@ -993,12 +960,17 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         //GCon->Logf(NAME_Debug, "%s: MDL '%s': sidx=%d; eidx=%d", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name, sidx, eidx);
 
         // frame transformations
+        VMatrix4 XFTransform = BaseTransform;
         ParseTransform(mfile, Md2->MeshIndex, FrameDefNode, XFTransform);
 
         for (VXmlNode *xt = FrameDefNode->FirstChild; xt; xt = xt->NextSibling) {
           if (parseTransNode(FrameDefNode, XFTransform, BaseTransform)) continue;
           Sys_Error("unknown frame node '%s' at %s", *xt->Name, *xt->Loc.toStringNoCol());
         }
+
+        AliasModelTrans frmtrans;
+        frmtrans.MatTrans = XFTransform;
+        frmtrans.decompose();
 
         for (int fnum = sidx; fnum <= eidx; ++fnum) {
           VScriptSubModel::VFrame &F = Md2->Frames.Alloc();
@@ -1010,8 +982,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
           F.PositionIndex = ParseIntWithDefault(FrameDefNode, "position_index", 0);
 
           // frame transformation
-          F.Transform = XFTransform;
-          //ParseTransform(mfile, Md2->MeshIndex, FrameDefNode, F.Transform);
+          F.Transform = frmtrans;
 
           // alpha
           F.AlphaStart = ParseFloatWithDefault(FrameDefNode, "alpha_start", 1.0f);
@@ -1859,31 +1830,6 @@ void R_LoadAllModelsSkins () {
 
 //==========================================================================
 //
-//  matScale
-//
-//==========================================================================
-static inline void matScale (VMatrix4 &mt, const float ScaleX, const float ScaleY) {
-  if (ScaleX != 1.0f || ScaleY != 1.0f) {
-    mt.m[0][0] *= ScaleX;
-    mt.m[1][0] *= ScaleX;
-    mt.m[2][0] *= ScaleX;
-    mt.m[3][0] *= ScaleX;
-
-    mt.m[0][1] *= ScaleX;
-    mt.m[1][1] *= ScaleX;
-    mt.m[2][1] *= ScaleX;
-    mt.m[3][1] *= ScaleX;
-
-    mt.m[0][2] *= ScaleY;
-    mt.m[1][2] *= ScaleY;
-    mt.m[2][2] *= ScaleY;
-    mt.m[3][2] *= ScaleY;
-  }
-}
-
-
-//==========================================================================
-//
 //  DrawModel
 //
 //  FIXME: make this faster -- stop looping, cache data!
@@ -2147,45 +2093,24 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
     float smooth_inter = (Interpolate ? SMOOTHSTEP(Inter) : 0.0f);
 
     AliasModelTrans Transform = F.Transform;
-    if (&F != &NF) {
-      if (Interpolate && smooth_inter) {
-        if (Transform.MatValid && NF.Transform.MatValid) {
-          if (Transform.MatTransPreRot != NF.Transform.MatTransPreRot) {
-            Transform.decPreRot = Transform.decPreRot.interpolate(NF.Transform.decPreRot, smooth_inter);
-            Transform.MatTransPreRot.recompose(Transform.decPreRot);
-          }
-          matScale(Transform.MatTransPreRot, ScaleX, ScaleY);
-        } else {
-          // shift
-          Transform.Shift.x = ((1-smooth_inter)*F.Transform.Shift.x+smooth_inter*NF.Transform.Shift.x);
-          Transform.Shift.y = ((1-smooth_inter)*F.Transform.Shift.y+smooth_inter*NF.Transform.Shift.y);
-          Transform.Shift.z = ((1-smooth_inter)*F.Transform.Shift.z+smooth_inter*NF.Transform.Shift.z);
-          // scale
-          Transform.Scale.x = (F.Transform.Scale.x+smooth_inter*(NF.Transform.Scale.x-F.Transform.Scale.x))*ScaleX;
-          Transform.Scale.y = (F.Transform.Scale.y+smooth_inter*(NF.Transform.Scale.y-F.Transform.Scale.y))*ScaleX;
-          Transform.Scale.z = (F.Transform.Scale.z+smooth_inter*(NF.Transform.Scale.z-F.Transform.Scale.z))*ScaleY;
-          // offset
-          Transform.Offset.x = ((1-smooth_inter)*F.Transform.Offset.x+smooth_inter*NF.Transform.Offset.x);
-          Transform.Offset.y = ((1-smooth_inter)*F.Transform.Offset.y+smooth_inter*NF.Transform.Offset.y);
-          Transform.Offset.z = ((1-smooth_inter)*F.Transform.Offset.z+smooth_inter*NF.Transform.Offset.z);
-        }
-      } else {
-        if (Transform.MatValid && NF.Transform.MatValid) {
-          matScale(Transform.MatTransPreRot, ScaleX, ScaleY);
-        } else {
-          // special code for scale
-          Transform.Scale.x = F.Transform.Scale.x*ScaleX;
-          Transform.Scale.y = F.Transform.Scale.y*ScaleX;
-          Transform.Scale.z = F.Transform.Scale.z*ScaleY;
-        }
+    if (Interpolate && smooth_inter > 0.0f && &F != &NF) {
+      if (smooth_inter >= 1.0f) {
+        Transform = NF.Transform;
+      } else if (Transform.MatTrans != NF.Transform.MatTrans) {
+        Transform.DecTrans = Transform.DecTrans.interpolate(NF.Transform.DecTrans, smooth_inter);
+        Transform.MatTrans.recompose(Transform.DecTrans);
+        Transform.TransRot = Transform.MatTrans.getAngles();
       }
     }
+    Transform.MatTrans.scaleXY(ScaleX, ScaleY);
 
+    /*
     if (FDef.gzdoom) {
       Transform.PreRot.yaw = FDef.angleYaw.angle;
       Transform.PreRot.pitch = FDef.anglePitch.angle;
       Transform.PreRot.roll = FDef.angleRoll.angle;
     }
+    */
 
     // light
     vuint32 Md2Light = ri.light;
