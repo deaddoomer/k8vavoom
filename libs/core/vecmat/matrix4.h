@@ -91,6 +91,18 @@ public:
 
   VVA_FORCEINLINE void operator = (const VMatrix4 &m2) noexcept { if (&m2 != this) memcpy(m, m2.m, sizeof(m)); }
 
+  VVA_FORCEINLINE bool operator == (const VMatrix4 &m2) const noexcept {
+    if (&m2 == this) return true;
+    //return (memcmp(m, m2.m, sizeof(m)) == 0);
+    return
+      m[0][0] == m2.m[0][0] && m[0][1] == m2.m[0][1] && m[0][2] == m2.m[0][2] && m[0][3] == m2.m[0][3] &&
+      m[1][0] == m2.m[1][0] && m[1][1] == m2.m[1][1] && m[1][2] == m2.m[1][2] && m[1][3] == m2.m[1][3] &&
+      m[2][0] == m2.m[2][0] && m[2][1] == m2.m[2][1] && m[2][2] == m2.m[2][2] && m[2][3] == m2.m[2][3] &&
+      m[3][0] == m2.m[3][0] && m[3][1] == m2.m[3][1] && m[3][2] == m2.m[3][2] && m[3][3] == m2.m[3][3];
+  }
+
+  VVA_FORCEINLINE bool operator != (const VMatrix4 &m2) const noexcept { return !operator==(m2); }
+
   VVA_FORCEINLINE float *operator [] (const int i) noexcept { return m[i]; }
   VVA_FORCEINLINE const float *operator [] (const int i) const noexcept { return m[i]; }
 
