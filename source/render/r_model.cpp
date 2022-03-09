@@ -1859,6 +1859,31 @@ void R_LoadAllModelsSkins () {
 
 //==========================================================================
 //
+//  matScale
+//
+//==========================================================================
+static inline void matScale (VMatrix4 &mt, const float ScaleX, const float ScaleY) {
+  if (ScaleX != 1.0f || ScaleY != 1.0f) {
+    mt.m[0][0] *= ScaleX;
+    mt.m[1][0] *= ScaleX;
+    mt.m[2][0] *= ScaleX;
+    mt.m[3][0] *= ScaleX;
+
+    mt.m[0][1] *= ScaleX;
+    mt.m[1][1] *= ScaleX;
+    mt.m[2][1] *= ScaleX;
+    mt.m[3][1] *= ScaleX;
+
+    mt.m[0][2] *= ScaleY;
+    mt.m[1][2] *= ScaleY;
+    mt.m[2][2] *= ScaleY;
+    mt.m[3][2] *= ScaleY;
+  }
+}
+
+
+//==========================================================================
+//
 //  DrawModel
 //
 //  FIXME: make this faster -- stop looping, cache data!
@@ -2122,48 +2147,37 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
     float smooth_inter = (Interpolate ? SMOOTHSTEP(Inter) : 0.0f);
 
     AliasModelTrans Transform = F.Transform;
-    if (Interpolate && smooth_inter && false) {
-      if (&F != &NF) {
-        // shift
-        Transform.Shift.x = ((1-smooth_inter)*F.Transform.Shift.x+smooth_inter*NF.Transform.Shift.x);
-        Transform.Shift.y = ((1-smooth_inter)*F.Transform.Shift.y+smooth_inter*NF.Transform.Shift.y);
-        Transform.Shift.z = ((1-smooth_inter)*F.Transform.Shift.z+smooth_inter*NF.Transform.Shift.z);
-        // scale
-        Transform.Scale.x = (F.Transform.Scale.x+smooth_inter*(NF.Transform.Scale.x-F.Transform.Scale.x))*ScaleX;
-        Transform.Scale.y = (F.Transform.Scale.y+smooth_inter*(NF.Transform.Scale.y-F.Transform.Scale.y))*ScaleX;
-        Transform.Scale.z = (F.Transform.Scale.z+smooth_inter*(NF.Transform.Scale.z-F.Transform.Scale.z))*ScaleY;
-        // offset
-        Transform.Offset.x = ((1-smooth_inter)*F.Transform.Offset.x+smooth_inter*NF.Transform.Offset.x);
-        Transform.Offset.y = ((1-smooth_inter)*F.Transform.Offset.y+smooth_inter*NF.Transform.Offset.y);
-        Transform.Offset.z = ((1-smooth_inter)*F.Transform.Offset.z+smooth_inter*NF.Transform.Offset.z);
-
+    if (&F != &NF) {
+      if (Interpolate && smooth_inter) {
         if (Transform.MatValid && NF.Transform.MatValid) {
-          Transform.decPreRot = Transform.decPreRot.interpolate(NF.Transform.decPreRot, smooth_inter);
-          Transform.MatTransPreRot.recompose(Transform.decPreRot);
+          if (Transform.MatTransPreRot != NF.Transform.MatTransPreRot) {
+            Transform.decPreRot = Transform.decPreRot.interpolate(NF.Transform.decPreRot, smooth_inter);
+            Transform.MatTransPreRot.recompose(Transform.decPreRot);
+          }
+          matScale(Transform.MatTransPreRot, ScaleX, ScaleY);
+        } else {
+          // shift
+          Transform.Shift.x = ((1-smooth_inter)*F.Transform.Shift.x+smooth_inter*NF.Transform.Shift.x);
+          Transform.Shift.y = ((1-smooth_inter)*F.Transform.Shift.y+smooth_inter*NF.Transform.Shift.y);
+          Transform.Shift.z = ((1-smooth_inter)*F.Transform.Shift.z+smooth_inter*NF.Transform.Shift.z);
+          // scale
+          Transform.Scale.x = (F.Transform.Scale.x+smooth_inter*(NF.Transform.Scale.x-F.Transform.Scale.x))*ScaleX;
+          Transform.Scale.y = (F.Transform.Scale.y+smooth_inter*(NF.Transform.Scale.y-F.Transform.Scale.y))*ScaleX;
+          Transform.Scale.z = (F.Transform.Scale.z+smooth_inter*(NF.Transform.Scale.z-F.Transform.Scale.z))*ScaleY;
+          // offset
+          Transform.Offset.x = ((1-smooth_inter)*F.Transform.Offset.x+smooth_inter*NF.Transform.Offset.x);
+          Transform.Offset.y = ((1-smooth_inter)*F.Transform.Offset.y+smooth_inter*NF.Transform.Offset.y);
+          Transform.Offset.z = ((1-smooth_inter)*F.Transform.Offset.z+smooth_inter*NF.Transform.Offset.z);
         }
-      }
-    } else {
-      //Transform = F.Transform;
-      // special code for scale
-      Transform.Scale.x = F.Transform.Scale.x*ScaleX;
-      Transform.Scale.y = F.Transform.Scale.y*ScaleX;
-      Transform.Scale.z = F.Transform.Scale.z*ScaleY;
-
-      if (&F != &NF && Transform.MatValid && NF.Transform.MatValid && false) {
-        Transform.MatTransPreRot.m[0][0] *= ScaleX;
-        Transform.MatTransPreRot.m[1][0] *= ScaleX;
-        Transform.MatTransPreRot.m[2][0] *= ScaleX;
-        Transform.MatTransPreRot.m[3][0] *= ScaleX;
-
-        Transform.MatTransPreRot.m[0][1] *= ScaleX;
-        Transform.MatTransPreRot.m[1][1] *= ScaleX;
-        Transform.MatTransPreRot.m[2][1] *= ScaleX;
-        Transform.MatTransPreRot.m[3][1] *= ScaleX;
-
-        Transform.MatTransPreRot.m[0][2] *= ScaleY;
-        Transform.MatTransPreRot.m[1][2] *= ScaleY;
-        Transform.MatTransPreRot.m[2][2] *= ScaleY;
-        Transform.MatTransPreRot.m[3][2] *= ScaleY;
+      } else {
+        if (Transform.MatValid && NF.Transform.MatValid) {
+          matScale(Transform.MatTransPreRot, ScaleX, ScaleY);
+        } else {
+          // special code for scale
+          Transform.Scale.x = F.Transform.Scale.x*ScaleX;
+          Transform.Scale.y = F.Transform.Scale.y*ScaleX;
+          Transform.Scale.z = F.Transform.Scale.z*ScaleY;
+        }
       }
     }
 
