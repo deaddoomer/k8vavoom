@@ -940,34 +940,6 @@ void GZModelDef::merge (GZModelDef &other) {
 
 //==========================================================================
 //
-//  appendScale
-//
-//==========================================================================
-/*
-static void appendScale (VStr &res, TVec scale, const TVec *baseScale) {
-  scale = sanitiseScale(scale);
-  if (baseScale) {
-    if (*baseScale == scale) return; // base scale is set
-    if (baseScale->x != scale.x && baseScale->y != scale.y && baseScale->z != scale.z) {
-      if (scale.x != 1) res += va(" scale_x=\"%g\"", scale.x);
-      if (scale.y != 1) res += va(" scale_y=\"%g\"", scale.y);
-      if (scale.z != 1) res += va(" scale_z=\"%g\"", scale.z);
-    } else {
-      if (baseScale->x != scale.x) res += va(" scale_x=\"%g\"", scale.x);
-      if (baseScale->y != scale.y) res += va(" scale_y=\"%g\"", scale.y);
-      if (baseScale->z != scale.z) res += va(" scale_z=\"%g\"", scale.z);
-    }
-  } else {
-    if (scale.x != 1) res += va(" scale_x=\"%g\"", scale.x);
-    if (scale.y != 1) res += va(" scale_y=\"%g\"", scale.y);
-    if (scale.z != 1) res += va(" scale_z=\"%g\"", scale.z);
-  }
-}
-*/
-
-
-//==========================================================================
-//
 //  GZModelDef::createXml
 //
 //==========================================================================
@@ -985,25 +957,29 @@ VStr GZModelDef::createXml () {
     vassert(!mdl.modelFile.isEmpty());
     const char *mdtag = (mdl.modelFile.extractFileExtension().strEquCI(".md2") ? "md2" : "md3");
     res += va("  <model name=\"%s_%d\">\n", *className.toLowerCase().xmlEscape(), it.index());
-    res += va("    <%s file=\"%s\" noshadow=\"false\"", mdtag, *mdl.modelFile.xmlEscape());
-    /*
-    appendScale(res, scale, nullptr);
-    if (offset.x != 0) res += va(" offset_x=\"%g\"", offset.x);
-    if (offset.y != 0) res += va(" offset_y=\"%g\"", offset.y);
-    if (offset.z != 0) res += va(" offset_z=\"%g\"", offset.z);
-    if (zoffset != 0) res += va(" shift_z=\"%g\"", zoffset);
-    */
-    res += ">\n";
-    /*
-    res += "      <transform>\n";
-    res += "        <matrix absolute=\"true\">\n";
-    res += va("          %g %g %g %g\n", mat.m[0][0], mat.m[0][1], mat.m[0][2], mat.m[0][3]);
-    res += va("          %g %g %g %g\n", mat.m[1][0], mat.m[1][1], mat.m[1][2], mat.m[1][3]);
-    res += va("          %g %g %g %g\n", mat.m[2][0], mat.m[2][1], mat.m[2][2], mat.m[2][3]);
-    res += va("          %g %g %g %g\n", mat.m[3][0], mat.m[3][1], mat.m[3][2], mat.m[3][3]);
-    res += "        </matrix>\n";
-    res += "      </transform>\n";
-    */
+    res += va("    <%s file=\"%s\" noshadow=\"false\">\n", mdtag, *mdl.modelFile.xmlEscape());
+    bool thesame = true;
+    for (int f = 1; f < mdl.frameMap.length(); ++f) {
+      if (mdl.frameMap[f-1].mat != mdl.frameMap[f].mat) {
+        thesame = false;
+        break;
+      }
+    }
+    //thesame = false;
+    if (thesame && mdl.frameMap.length()) {
+      VMatrix4 mat = mdl.frameMap[0].mat;
+      res += "      <transform>\n";
+      res += "        <matrix absolute=\"true\">\n";
+      for (int y = 0; y < 4; ++y) {
+        res += "         ";
+        for (int x = 0; x < 4; ++x) {
+          res += va(" %g", mat.m[y][x]);
+        }
+        res += "\n";
+      }
+      res += "        </matrix>\n";
+      res += "      </transform>\n";
+    }
     if (!mdl.skinFile.isEmpty()) res += va("      <skin file=\"%s\" />\n", *mdl.skinFile.xmlEscape());
     if (mdl.subskinFiles.length() != 0) {
       for (int f = 0; f < mdl.subskinFiles.length(); ++f) {
@@ -1013,36 +989,47 @@ VStr GZModelDef::createXml () {
       }
     }
     // write frame list
-    for (auto &&fit : mdl.frameMap.itemsIdx()) {
-      const MdlFrameInfo &fi = fit.value();
-      vassert(it.index() == fi.mdlindex);
-      vassert(fit.index() == fi.vvframe);
-      res += va("      <frame index=\"%d\"", fi.mdlframe);
-      /*
-      appendScale(res, fi.scale, &scale);
-      if (fi.offset.x != offset.x) res += va(" offset_x=\"%g\"", fi.offset.x);
-      if (fi.offset.y != offset.y) res += va(" offset_y=\"%g\"", fi.offset.y);
-      if (fi.offset.z != offset.z) res += va(" offset_z=\"%g\"", fi.offset.z);
-      if (fi.zoffset != zoffset) res += va(" shift_z=\"%g\"", fi.zoffset);
-      */
-      res += " />\n";
-      res += "        <transform>\n";
-      res += "          <matrix absolute=\"true\">\n";
-      for (int y = 0; y < 4; ++y) {
-        res += "           ";
-        for (int x = 0; x < 4; ++x) {
-          res += va(" %g", fi.mat.m[y][x]);
+    int fidx = 0;
+    while (fidx < mdl.frameMap.length()) {
+      const MdlFrameInfo &fi = mdl.frameMap[fidx];
+      int fend = fidx+1;
+      while (fend < mdl.frameMap.length()) {
+        const MdlFrameInfo &xf = mdl.frameMap[fend];
+        if (xf.mdlframe != mdl.frameMap[fend-1].mdlframe+1 || xf.mat != fi.mat) {
+          break;
         }
-        res += "\n";
+        ++fend;
       }
-      /*
-      res += va("            %g %g %g %g\n", fi.mat.m[0][0], fi.mat.m[0][1], fi.mat.m[0][2], fi.mat.m[0][3]);
-      res += va("            %g %g %g %g\n", fi.mat.m[1][0], fi.mat.m[1][1], fi.mat.m[1][2], fi.mat.m[1][3]);
-      res += va("            %g %g %g %g\n", fi.mat.m[2][0], fi.mat.m[2][1], fi.mat.m[2][2], fi.mat.m[2][3]);
-      res += va("            %g %g %g %g\n", fi.mat.m[3][0], fi.mat.m[3][1], fi.mat.m[3][2], fi.mat.m[3][3]);
-      */
-      res += "          </matrix>\n";
-      res += "        </transform>\n";
+      //vassert(it.index() == fi.mdlindex);
+      //vassert(fit.index() == fi.vvframe);
+
+      res += va("      <frame index=\"%d\"", fi.mdlframe);
+      if (fend != fidx+1) {
+        res += va(" end_index=\"%d\"", mdl.frameMap[fend-1].mdlframe);
+      }
+      if (thesame || fi.mat == VMatrix4::Identity) {
+        res += " />  <!-- ";
+        if (fend == fidx+1) res += va("%d", fidx); else res += va("%d-%d", fidx, fend-1);
+        res += " -->\n";
+      } else {
+        res += ">  <!-- ";
+        if (fend == fidx+1) res += va("%d", fidx); else res += va("%d-%d", fidx, fend-1);
+        res += " -->\n";
+        res += "        <transform>\n";
+        res += "          <matrix absolute=\"true\">\n";
+        for (int y = 0; y < 4; ++y) {
+          res += "           ";
+          for (int x = 0; x < 4; ++x) {
+            res += va(" %g", fi.mat.m[y][x]);
+          }
+          res += "\n";
+        }
+        res += "          </matrix>\n";
+        res += "        </transform>\n";
+        res += "      </frame>\n";
+      }
+
+      fidx = fend;
     }
     res += va("    </%s>\n", mdtag);
     res += "  </model>\n";

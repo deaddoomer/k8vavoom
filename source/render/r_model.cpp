@@ -965,7 +965,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         ParseTransform(mfile, Md2->MeshIndex, FrameDefNode, XFTransform);
 
         for (VXmlNode *xt = FrameDefNode->FirstChild; xt; xt = xt->NextSibling) {
-          if (parseTransNode(FrameDefNode, XFTransform, BaseTransform)) continue;
+          if (parseTransNode(xt, XFTransform, BaseTransform)) continue;
           Sys_Error("unknown frame node '%s' at %s", *xt->Name, *xt->Loc.toStringNoCol());
         }
 
