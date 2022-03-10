@@ -45,10 +45,9 @@ public:
     // set in `checkModelSanity()`
     TAVec angleOffset;
     float rotationSpeed; // !0: rotating
-    bool usePitch;
+    int usePitch; // 0: no; -1: inherit; 1: from momentum
     bool usePitchInverted;
-    bool usePitchMomentum;
-    bool useRoll;
+    int useRoll; // 0: no; -1: inherit; 1: from momentum
     VMatrix4 mat;
     int vvindex; // vavoom frame index in the given model (-1: invalid frame)
     // used only in sanity check method

@@ -41,10 +41,9 @@ GZModelDef::GZModelDef ()
   //, zoffset(0)
   //, mat(VMatrix4::Identity)
   , rotationSpeed(0)
-  , usePitch(false)
+  , usePitch(0)
   , usePitchInverted(false)
-  , usePitchMomentum(false)
-  , useRoll(false)
+  , useRoll(0)
   , angleOffset(0, 0, 0)
   , frames()
 {
@@ -74,8 +73,10 @@ void GZModelDef::clear () {
   //zoffset = 0;
   //mat.SetIdentity();
   rotationSpeed = 0;
-  usePitch = usePitchInverted = usePitchMomentum = useRoll = false;
-  angleOffset = TAVec(0, 0, 0);
+  usePitch = 0;
+  usePitchInverted = false;
+  useRoll = false;
+  angleOffset = TAVec(0.0f, 0.0f, 0.0f);
   frames.clear();
 }
 
@@ -380,33 +381,30 @@ void GZModelDef::parse (VScriptParser *sc) {
     }
     // "InheritActorPitch"
     if (sc->Check("InheritActorPitch")) {
-      usePitch = false;
+      usePitch = -1;
       usePitchInverted = true;
-      usePitchMomentum = false;
       continue;
     }
     // "InheritActorRoll"
     if (sc->Check("InheritActorRoll")) {
-      useRoll = true;
+      useRoll = -1;
       continue;
     }
     // "UseActorPitch"
     if (sc->Check("UseActorPitch")) {
-      usePitch = true;
+      usePitch = -1;
       usePitchInverted = false;
-      usePitchMomentum = false;
       continue;
     }
     // "UseActorRoll"
     if (sc->Check("UseActorRoll")) {
-      useRoll = true;
+      useRoll = -1;
       continue;
     }
     // "PitchFromMomentum"
     if (sc->Check("PitchFromMomentum")) {
-      usePitch = false;
+      usePitch = 1;
       usePitchInverted = false;
-      usePitchMomentum = true;
       continue;
     }
     // "frameindex"
@@ -665,7 +663,6 @@ void GZModelDef::checkModelSanity (const VMatrix4 &mat) {
     frm.rotationSpeed = rotationSpeed;
     frm.usePitch = usePitch;
     frm.usePitchInverted = usePitchInverted;
-    frm.usePitchMomentum = usePitchMomentum;
     frm.useRoll = useRoll;
 
     // add to frame map; order doesn't matter
@@ -883,7 +880,6 @@ void GZModelDef::merge (GZModelDef &other) {
     newfrm.rotationSpeed = ofrm.rotationSpeed;
     newfrm.usePitch = ofrm.usePitch;
     newfrm.usePitchInverted = ofrm.usePitchInverted;
-    newfrm.usePitchMomentum = ofrm.usePitchMomentum;
     newfrm.useRoll = ofrm.useRoll;
     newfrm.vvindex = frmapindex;
     newfrm.mat = ofrm.mat;
@@ -1048,10 +1044,15 @@ VStr GZModelDef::createXml () {
     if (frm.angleOffset.yaw) res += va(" rotate_yaw=\"%g\"", frm.angleOffset.yaw);
     if (frm.angleOffset.pitch) res += va(" rotate_pitch=\"%g\"", frm.angleOffset.pitch);
     if (frm.angleOffset.roll) res += va(" rotate_roll=\"%g\"", frm.angleOffset.roll);
-    if (frm.usePitch) res += va(" usepitch=\"true\"");
-    if (frm.usePitchInverted) res += va(" usepitch=\"inverted\"");
-    if (frm.usePitchMomentum) res += va(" usepitch=\"momentum\"");
-    if (frm.useRoll) res += va(" useroll=\"true\"");
+    if (frm.usePitch < 0) {
+      if (frm.usePitchInverted) res += va(" usepitch=\"actor-inverted\"");
+      else res += va(" usepitch=\"actor\"");
+    } else if (frm.usePitch > 0) {
+      if (frm.usePitchInverted) res += va(" usepitch=\"momentum-inverted\"");
+      else res += va(" usepitch=\"momentum\"");
+    }
+         if (frm.useRoll < 0) res += va(" useroll=\"actor\"");
+    else if (frm.useRoll > 0) res += va(" useroll=\"momentum\"");
     res += " />\n";
   }
   res += "  </class>\n";

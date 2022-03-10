@@ -11,51 +11,74 @@ file: "models/models.xml"
 </vavoom_models_list>
 
 
+"transform" tag contains set of transformations, like this:
+<transform>
+  <offset>
+    <z>-10</z>
+  </offset>
+</transform>
+
+allowed simple transformations: "offset", "scale", "rotate". those
+transformations can have either "value" subtag, or "x", "y", "z".
+the transformations are stacked.
+
+you can also specify transformation matrix with:
+  <matrix>
+    1 0 0 0
+    0 1 0 0
+    0 0 1 0
+    0 0 0 1
+  </matrix>
+
+it's just a raw 4x4 matrix values. you can use `absolute="true"` attribute to
+replace the current matrix, otherwise matrix multiplication will be used.
+
+WARNING! the matrix must describe a valid affine transformation, but cannot include
+shearing. this is because frame interpolator doesn't know what to do with shearing yet.
+
+each frame can have a local transform tag too.
+
+
+
 <?xml version="1.0" encoding="UTF-8" ?>
 <vavoom_model_definition>
   <!-- this defines one 3d model. you can have several of them, and refer to models by their names. -->
   <model name="base">
-    <!--
-      this defines source model file. you can use 'md2' or 'md3' tag here.
-      you can use additional attributes:
-        int mesh_index -- mesh for this model (mostly used for md3 models)
-        int version -- model version. this is used to assign different player models to different weapons, using `Weapon.PlayerModelVersion`
-        string position_file -- sets "position model"
-        int skin_anim_speed -- sets skin animation speed, in seconds; requires `skin_anim_range`
-        int skin_anim_range -- number of skins in animation loop
-        bool fullbright -- this model is fullbright (default is `false`)
-        bool noshadow -- this model doesn't cast shadow (default is `false`)
-        bool usedepth -- force depth flag (for things like monsters with alpha transaparency) (TODOCUMENT)
-        bool allowtransparency -- allow transparency in skin files, for skins that are transparent in solid models (TODOCUMENT)
-        float shift
-        float shift_x
-        float shift_y
-        float shift_z
-        float offset
-        float offset_x
-        float offset_y
-        float offset_z
-        float scale
-        float scale_x
-        float scale_y
-        float scale_z
-    -->
     <md2 file="models/ammo/ammo.md2">
       <!--
-        this defines model frames. each used frame in model file should be listed here, and assigned an index.
-        indexes:
-          int index -- frame index
-          int end_index -- frame end index (inclusive), default: index+1
-        or:
-          int count -- number of frames to create
-        if no index/count specified, create one frame with index of the last frame plus 1
+        this defines source model file. you can use 'md2' or 'md3' tag here.
         you can use additional attributes:
-          int position_index
-          float alpha_start
-          float alpha_end
-          int skin_index
+          int mesh_index -- mesh for this model (mostly used for md3 models)
+          int version -- model version. this is used to assign different player models to different weapons, using `Weapon.PlayerModelVersion`
+          string position_file -- sets "position model"
+          int skin_anim_speed -- sets skin animation speed, in seconds; requires `skin_anim_range`
+          int skin_anim_range -- number of skins in animation loop
+          bool fullbright -- this model is fullbright (default is `false`)
+          bool noshadow -- this model doesn't cast shadow (default is `false`)
+          bool usedepth -- force depth flag (for things like monsters with alpha transaparency) (TODOCUMENT)
+          bool allowtransparency -- allow transparency in skin files, for skins that are transparent in solid models (TODOCUMENT)
       -->
-      <frame index="0" />
+      <!--
+        you can use "transform" tag here, see above
+      -->
+      <frame index="0">
+        <!--
+          this defines model frames. each used frame in model file should be listed here, and assigned an index.
+          note that "index" is model frame index
+          indexes:
+            int index -- model frame index
+            int end_index -- model frame end index (inclusive), default: index
+          or:
+            int count -- number of frames to create, default: 1
+          if no index/count specified, create one frame with index of the last frame plus 1
+          you can use additional attributes:
+            int position_index
+            float alpha_start
+            float alpha_end
+            int skin_index
+          frame-local "transform" tags are allowed here
+        -->
+      </frame>
       <!--
         you can define model skins with `skin` tag
         required attributes:
@@ -107,20 +130,10 @@ file: "models/models.xml"
         float rotate_yaw
         float rotate_pitch
         float rotate_roll
-        float shift
-        float shift_x
-        float shift_y
-        float shift_z
-        float offset
-        float offset_x
-        float offset_y
-        float offset_z
-        float scale
-        float scale_x
-        float scale_y
-        float scale_z
         bool rotation
         bool bobbing
+        string usepitch ("actor", "momentum", "default", "false"; default is "actor")
+        string useroll ("actor", "momentum", "default", "false"; default is "false")
         float angle_start
         float angle_end
         float alpha_start

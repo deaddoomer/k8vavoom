@@ -174,6 +174,12 @@ public:
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+enum {
+  DontUse = 0,
+  FromActor = -1,
+  FromMomentum = 1,
+};
+
 struct VScriptedModelFrame {
   int Number;
   float Inter;
@@ -189,8 +195,11 @@ struct VScriptedModelFrame {
   ModelAngle anglePitch;
   float rotateSpeed; // yaw rotation speed
   float bobSpeed; // bobbing speed
-  int gzNoActorPitch; // <0: inverted; 0: use; 1: don't use (sorry); 2: from momentum (sorry)
-  bool gzNoActorRoll; // true: don't use actor roll;
+  //int gzNoActorPitch; // <0: inverted; 0: use; 1: don't use (sorry); 2: from momentum (sorry)
+  int gzActorPitch; // 0: don't use; <0: actor; >0: momentum
+  bool gzActorPitchInverted;
+  //bool gzNoActorRoll; // true: don't use actor roll;
+  int gzActorRoll; // 0: don't use; <0: actor; >0: momentum
   bool gzdoom;
   //
   VName sprite;
@@ -216,8 +225,9 @@ struct VScriptedModelFrame {
     anglePitch = src.anglePitch;
     rotateSpeed = src.rotateSpeed;
     bobSpeed = src.bobSpeed;
-    gzNoActorPitch = src.gzNoActorPitch;
-    gzNoActorRoll = src.gzNoActorRoll;
+    gzActorPitch = src.gzActorPitch;
+    gzActorPitchInverted = src.gzActorPitchInverted;
+    gzActorRoll = src.gzActorRoll;
     gzdoom = src.gzdoom;
     sprite = src.sprite;
     frame = src.frame;
@@ -485,14 +495,41 @@ static void ParseAngle (VXmlNode *N, const char *name, ModelAngle &angle) {
 
 //==========================================================================
 //
+//  isTrueValue
+//
+//==========================================================================
+static inline bool isTrueValue (VStr val) {
+  return
+    val == "yes" ||
+    val == "tan" ||
+    val == "true" ;
+}
+
+
+//==========================================================================
+//
+//  isFalseValue
+//
+//==========================================================================
+static inline bool isFalseValue (VStr val) {
+  return
+    val == "no" ||
+    val == "ona" ||
+    val == "false" ;
+}
+
+
+//==========================================================================
+//
 //  ParseBool
 //
 //==========================================================================
 static bool ParseBool (VXmlNode *N, const char *name, bool defval) {
   if (!N->HasAttribute(name)) return defval;
   VStr val = N->GetAttribute(name);
-  if (val.ICmp("yes") == 0 || val.ICmp("tan") == 0 || val.ICmp("true") == 0) return true;
-  return false;
+  if (isTrueValue(val)) return true;
+  if (isFalseValue(val)) return false;
+  Sys_Error("invalid boolean value '%s' for attribute '%s' at %s", *val, name, *N->Loc.toStringNoCol());
 }
 
 
@@ -627,11 +664,7 @@ static bool parseTransNode (VXmlNode *SN, VMatrix4 &trans, const VMatrix4 &orig)
       }
       s = s.xstrip();
       if (s.length() != 0) Sys_Error("extra matrix data at %s", *XN->Loc.toStringNoCol());
-      if (ParseBool(XN, "absolute", false)) {
-        trans = mat;
-      } else {
-        trans = trans*mat;
-      }
+      if (ParseBool(XN, "absolute", false)) trans = mat; else trans = trans*mat;
       continue;
     }
 
@@ -908,8 +941,6 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       // for skins that are transparent in solid models (Alpha = 1.0f)
       Md2->AllowTransparency = ParseBool(ModelDefNode, "allowtransparency", false);
 
-      //<frames start_index="0" end_index="2" />
-
       // process frames
       int curframeindex = 0;
       VMatrix4 xbmat = BaseTransform;
@@ -924,7 +955,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         //if (FrameDefNode->HasChildren()) Sys_Error("%s: model '%s' frame definition should have no children", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name);
 
         {
-          auto bad = FrameDefNode->FindBadAttribute("index", "end_index", "count",
+          auto bad = FrameDefNode->FindBadAttribute("alias", "index", "end_index", "count",
                                                     "position_index", "alpha_start", "alpha_end", "skin_index",
                                                     "shift", "shift_x", "shift_y", "shift_z",
                                                     "offset", "offset_x", "offset_y", "offset_z",
@@ -932,7 +963,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
           if (bad) Sys_Error("%s: model '%s' frame definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
         }
 
-        // check nodes
+        // check children
         {
           auto bad = FrameDefNode->FindBadChild("transform", nullptr);
           if (bad) Sys_Error("%s: model '%s' frame definition has invalid node '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
@@ -973,24 +1004,24 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         frmtrans.MatTrans = XFTransform;
         frmtrans.decompose();
 
+        const int posidx = ParseIntWithDefault(FrameDefNode, "position_index", 0);;
+        const float alphaStart = ParseFloatWithDefault(FrameDefNode, "alpha_start", 1.0f);
+        const float alphaEnd = ParseFloatWithDefault(FrameDefNode, "alpha_end", 1.0f);
+        const int fsknidx = ParseIntWithDefault(FrameDefNode, "skin_index", -1);
+
         for (int fnum = sidx; fnum <= eidx; ++fnum) {
           VScriptSubModel::VFrame &F = Md2->Frames.Alloc();
-
           // frame index
-          F.Index = fnum; //ParseIntWithDefault(FrameDefNode, "index", curframeindex);
-
+          F.Index = fnum;
           // position model frame index
-          F.PositionIndex = ParseIntWithDefault(FrameDefNode, "position_index", 0);
-
+          F.PositionIndex = posidx;
           // frame transformation
           F.Transform = frmtrans;
-
           // alpha
-          F.AlphaStart = ParseFloatWithDefault(FrameDefNode, "alpha_start", 1.0f);
-          F.AlphaEnd = ParseFloatWithDefault(FrameDefNode, "alpha_end", 1.0f);
-
+          F.AlphaStart = alphaStart;
+          F.AlphaEnd = alphaEnd;
           // skin index
-          F.SkinIndex = ParseIntWithDefault(FrameDefNode, "skin_index", -1);
+          F.SkinIndex = fsknidx;
         }
 
         curframeindex = eidx+1;
@@ -1183,23 +1214,33 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       // some special things
       if (ParseBool(StateDefNode, "gzdoom", false)) {
         F.gzdoom = true;
-        F.gzNoActorPitch = 1; // don't use actor pitch
-        F.gzNoActorRoll = true; // don't use actor roll
-        if (StateDefNode->HasAttribute("usepitch")) {
-               if (StateDefNode->GetAttribute("usepitch").strEqu("inverted")) F.gzNoActorPitch = -1; // inverted
-          else if (StateDefNode->GetAttribute("usepitch").strEqu("momentum")) F.gzNoActorPitch = 2; // from momentum
-          else if (ParseBool(StateDefNode, "usepitch", false)) F.gzNoActorPitch = 0; // use
-        }
-        if (ParseBool(StateDefNode, "useroll", false)) F.gzNoActorRoll = false; // use
+        F.gzActorPitchInverted = false;
+        F.gzActorPitch = DontUse; // don't use actor pitch
+        F.gzActorRoll = DontUse; // don't use actor roll
       } else {
-        if (StateDefNode->HasAttribute("usepitch") && StateDefNode->GetAttribute("usepitch").strEqu("momentum")) {
-          F.gzNoActorPitch = 2; // from momentum
-        } else {
-          auto bad = StateDefNode->FindFirstAttributeOf("usepitch", "useroll", nullptr);
-          if (bad) Sys_Error("%s: model '%s' class state definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
-          F.gzNoActorPitch = 0; // default
-          F.gzdoom = false;
-        }
+        F.gzdoom = false;
+        F.gzActorPitchInverted = false;
+        //F.gzActorPitch = FromActor; // default
+        F.gzActorPitch = DontUse; // default
+        F.gzActorRoll = DontUse; // don't use actor roll
+      }
+      if (StateDefNode->HasAttribute("usepitch")) {
+        VStr pv = StateDefNode->GetAttribute("usepitch");
+             if (pv == "actor") F.gzActorPitch = FromActor;
+        else if (pv == "momentum") F.gzActorPitch = FromMomentum;
+        else if (pv == "actor-inverted") { F.gzActorPitch = FromActor; F.gzActorPitchInverted = true; }
+        else if (pv == "momentum-inverted") { F.gzActorPitch = FromMomentum; F.gzActorPitchInverted = true; }
+        else if (isFalseValue(pv)) F.gzActorPitch = DontUse;
+        else if (pv == "default") {}
+        else Sys_Error("%s: invalid \"usepitch\" attribute value '%s'", *StateDefNode->Loc.toStringNoCol(), *pv);
+      }
+      if (StateDefNode->HasAttribute("useroll")) {
+        VStr pv = StateDefNode->GetAttribute("useroll");
+             if (pv == "actor") F.gzActorRoll = FromActor;
+        else if (pv == "momentum") F.gzActorRoll = FromMomentum;
+        else if (isFalseValue(pv)) F.gzActorRoll = DontUse;
+        else if (pv == "default") {}
+        else Sys_Error("%s: invalid \"useroll\" attribute value '%s'", *StateDefNode->Loc.toStringNoCol(), *pv);
       }
 
       int lastIndex = -666;
@@ -1979,33 +2020,33 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
 
     if (!IsViewModel) {
       const vuint8 rndVal = (mobj ? (hashU32(mobj->ServerUId)>>4)&0xffu : 0);
-
-      // world model, fix angles
-      if (FDef.gzdoom) {
-        if (FDef.gzNoActorRoll) Md2Angle.roll = 0;
-        // 0: use as is
-        if (FDef.gzNoActorPitch) {
-          if (FDef.gzNoActorPitch == 2) {
-            // from momentum
-            Md2Angle.pitch = (mobj ? VectorAnglePitch(mobj->Velocity) : 0.0f);
-          } else {
-            Md2Angle.pitch = (FDef.gzNoActorPitch < 0 ? AngleMod(FDef.gzNoActorPitch+180.0f) : 0);
-          }
-        }
-      } else {
+      /* old code
         if (FDef.AngleStart || FDef.AngleEnd != 1.0f) {
           Md2Angle.yaw = AngleMod(Md2Angle.yaw+FDef.AngleStart+(FDef.AngleEnd-FDef.AngleStart)*Inter);
         }
-
+      */
+      if (FDef.AngleStart || FDef.AngleEnd != FDef.AngleStart) {
+        Md2Angle.yaw = AngleMod(Md2Angle.yaw+FDef.AngleStart+(FDef.AngleEnd-FDef.AngleStart)*Inter);
+      } else {
         Md2Angle.yaw = FDef.angleYaw.GetAngle(Md2Angle.yaw, rndVal);
-        Md2Angle.pitch = FDef.anglePitch.GetAngle(Md2Angle.pitch, rndVal);
-        Md2Angle.roll = FDef.angleRoll.GetAngle(Md2Angle.roll, rndVal);
+      }
 
-        if (FDef.gzNoActorPitch == 2) {
-          // from momentum
-          Md2Angle.pitch = (mobj ? VectorAnglePitch(mobj->Velocity) : 0.0f);
-          Md2Angle.roll = 0.0f;
-        }
+      if (!mobj || FDef.gzActorRoll == DontUse) {
+        Md2Angle.roll = 0.0f;
+      } else {
+        Md2Angle.roll = FDef.angleRoll.GetAngle(Md2Angle.roll, rndVal);
+      }
+
+      if (!mobj || FDef.gzActorPitch == DontUse) {
+        Md2Angle.pitch = 0.0f;
+      } else {
+        Md2Angle.pitch = (FDef.gzActorPitch == FromMomentum ? VectorAnglePitch(mobj->Velocity) : mobj->Angles.pitch);
+        if (FDef.gzActorPitchInverted) Md2Angle.pitch += 180.0f;
+      }
+
+      // world model, fix angles
+      if (FDef.gzdoom) {
+        // later
       }
 
       if (Level && mobj) {
@@ -2016,7 +2057,7 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
         if (r_model_autobobbing && FDef.bobSpeed) {
           //GCon->Logf("UID: %3u (%s)", (hashU32(mobj->GetUniqueId())&0xff), *mobj->GetClass()->GetFullName());
           const float bobHeight = 4.0f;
-          float zdelta = msin(AngleMod(Level->Time*FDef.bobSpeed+rndVal*44.5f))*bobHeight;
+          const float zdelta = msin(AngleMod(Level->Time*FDef.bobSpeed+rndVal*44.5f))*bobHeight;
           Md2Org.z += zdelta+bobHeight;
         }
       }
