@@ -79,7 +79,17 @@ static inline void AliasSetupTransform (const TVec &modelorg, const TAVec &angle
                                         VMatrix4 &RotationMatrix)
 {
   RotationMatrix = Transform.MatTrans;
-  RotationMatrix *= VMatrix4::BuildRotate(angles);
+  // VMatrix4::RotateY: roll
+  // VMatrix4::RotateZ: yaw
+  // VMatrix4::RotateX: pitch
+  if (angles.yaw || angles.pitch || angles.roll) {
+    RotationMatrix *= VMatrix4::BuildRotate(angles);
+  }
+  /*
+  if (angles.roll) RotationMatrix *= VMatrix4::RotateY(angles.roll);
+  if (angles.yaw) RotationMatrix *= VMatrix4::RotateZ(angles.yaw);
+  if (angles.pitch) RotationMatrix *= VMatrix4::RotateX(angles.pitch);
+  */
   RotationMatrix *= VMatrix4::BuildOffset(modelorg);
 }
 
@@ -97,7 +107,13 @@ static inline void AliasSetupNormalTransform (const TAVec &angles,
   aa.pitch += Transform.TransRot.pitch;
   aa.roll += Transform.TransRot.roll;
   aa.yaw += Transform.TransRot.yaw;
-  RotationMatrix = VMatrix4::BuildRotate(angles);
+  RotationMatrix = VMatrix4::BuildRotate(aa);
+  /*
+  RotationMatrix = VMatrix4::Identity;
+  if (aa.roll) RotationMatrix *= VMatrix4::RotateY(aa.roll);
+  if (aa.yaw) RotationMatrix *= VMatrix4::RotateZ(aa.yaw);
+  if (aa.pitch) RotationMatrix *= VMatrix4::RotateX(aa.pitch);
+  */
 }
 
 

@@ -145,30 +145,26 @@ struct VScriptModel {
 // ////////////////////////////////////////////////////////////////////////// //
 struct ModelAngle {
 public:
-  enum Mode { Relative, Absolute, RelativeRandom, AbsoluteRandom, Zero, Inverted };
+  enum Mode { Relative, RelativeRandom, Absolute, AbsoluteRandom };
 public:
   float angle;
   Mode mode;
 
-  ModelAngle () : angle(0.0f), mode(Relative) {}
+  inline ModelAngle () noexcept : angle(0.0f), mode(Relative) {}
 
-  inline void SetRelative (float aangle) { angle = AngleMod(aangle); mode = Relative; }
-  inline void SetAbsolute (float aangle) { angle = AngleMod(aangle); mode = Absolute; }
-  inline void SetAbsoluteRandom () { angle = AngleMod(360.0f*FRandomFull()); mode = AbsoluteRandom; }
-  inline void SetRelativeRandom () { angle = AngleMod(360.0f*FRandomFull()); mode = RelativeRandom; }
-  inline void SetZero () { mode = Zero; }
-  inline void SetInverted () { mode = Inverted; }
+  inline void SetRelative (float aangle) noexcept { angle = AngleMod(aangle); mode = Relative; }
+  inline void SetAbsolute (float aangle) noexcept { angle = AngleMod(aangle); mode = Absolute; }
+  inline void SetAbsoluteRandom () noexcept { angle = AngleMod(360.0f*FRandomFull()); mode = AbsoluteRandom; }
+  inline void SetRelativeRandom () noexcept { angle = AngleMod(360.0f*FRandomFull()); mode = RelativeRandom; }
 
-  inline float GetAngle (float baseangle, vuint8 rndVal) const {
-    switch (mode) {
-      case Relative: return AngleMod(baseangle+angle);
-      case Absolute: return angle;
-      case RelativeRandom: return AngleMod(baseangle+angle+(float)rndVal*360.0f/255.0f);
-      case AbsoluteRandom: return AngleMod(angle+(float)rndVal*360.0f/255.0f);
-      case Zero: return 0.0f;
-      case Inverted: return AngleMod(baseangle+angle+180.0f);
-    }
-    return angle;
+  inline bool IsRelative () const noexcept { return (mode <= RelativeRandom); }
+  inline bool IsRandom () const noexcept { return (mode == RelativeRandom || mode == AbsoluteRandom); }
+
+  inline bool IsEmpty () const noexcept { return (mode == Relative && angle == 0.0f); }
+
+  inline float GetAngle (float baseangle, vuint8 rndVal) const noexcept {
+    const float ang = (!IsRandom() ? angle : AngleMod((float)rndVal*360.0f/255.0f));
+    return (IsRelative() ? AngleMod(baseangle+ang) : ang);
   }
 };
 
@@ -1220,8 +1216,8 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       } else {
         F.gzdoom = false;
         F.gzActorPitchInverted = false;
-        //F.gzActorPitch = FromActor; // default
-        F.gzActorPitch = DontUse; // default
+        F.gzActorPitch = FromActor; // default
+        //F.gzActorPitch = DontUse; // default
         F.gzActorRoll = DontUse; // don't use actor roll
       }
       if (StateDefNode->HasAttribute("usepitch")) {
@@ -2015,57 +2011,6 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
     // position
     TVec Md2Org = Org;
 
-    // angle
-    TAVec Md2Angle = Angles;
-
-    if (!IsViewModel) {
-      const vuint8 rndVal = (mobj ? (hashU32(mobj->ServerUId)>>4)&0xffu : 0);
-      /* old code
-        if (FDef.AngleStart || FDef.AngleEnd != 1.0f) {
-          Md2Angle.yaw = AngleMod(Md2Angle.yaw+FDef.AngleStart+(FDef.AngleEnd-FDef.AngleStart)*Inter);
-        }
-      */
-      if (FDef.AngleStart || FDef.AngleEnd != FDef.AngleStart) {
-        Md2Angle.yaw = AngleMod(Md2Angle.yaw+FDef.AngleStart+(FDef.AngleEnd-FDef.AngleStart)*Inter);
-      } else {
-        Md2Angle.yaw = FDef.angleYaw.GetAngle(Md2Angle.yaw, rndVal);
-      }
-
-      if (!mobj || FDef.gzActorRoll == DontUse) {
-        Md2Angle.roll = 0.0f;
-      } else {
-        Md2Angle.roll = FDef.angleRoll.GetAngle(Md2Angle.roll, rndVal);
-      }
-
-      if (!mobj || FDef.gzActorPitch == DontUse) {
-        Md2Angle.pitch = 0.0f;
-      } else {
-        Md2Angle.pitch = (FDef.gzActorPitch == FromMomentum ? VectorAnglePitch(mobj->Velocity) : mobj->Angles.pitch);
-        if (FDef.gzActorPitchInverted) Md2Angle.pitch += 180.0f;
-      }
-
-      // world model, fix angles
-      if (FDef.gzdoom) {
-        // later
-      }
-
-      if (Level && mobj) {
-        if (r_model_autorotating && FDef.rotateSpeed) {
-          Md2Angle.yaw = AngleMod(Md2Angle.yaw+Level->Time*FDef.rotateSpeed+rndVal*38.6f);
-        }
-
-        if (r_model_autobobbing && FDef.bobSpeed) {
-          //GCon->Logf("UID: %3u (%s)", (hashU32(mobj->GetUniqueId())&0xff), *mobj->GetClass()->GetFullName());
-          const float bobHeight = 4.0f;
-          const float zdelta = msin(AngleMod(Level->Time*FDef.bobSpeed+rndVal*44.5f))*bobHeight;
-          Md2Org.z += zdelta+bobHeight;
-        }
-      }
-    }
-
-    // position model
-    if (SubMdl.PositionModel) PositionModel(Md2Org, Md2Angle, SubMdl.PositionModel, F.PositionIndex);
-
     // alpha
     float Md2Alpha = ri.alpha;
     if (FDef.AlphaStart != 1.0f || FDef.AlphaEnd != 1.0f) Md2Alpha *= FDef.AlphaStart+(FDef.AlphaEnd-FDef.AlphaStart)*Inter;
@@ -2132,19 +2077,132 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
 
     if (gl_dbg_log_model_rendering) GCon->Logf("     MODEL(%s): class='%s'; alpha=%f; noshadow=%d", passname, *Cls.Name, Md2Alpha, (int)SubMdl.NoShadow);
 
-    float smooth_inter = (Interpolate ? SMOOTHSTEP(Inter) : 0.0f);
+    // angle
+    TAVec Md2Angle = Angles;
+    // position model
+    if (SubMdl.PositionModel) PositionModel(Md2Org, Md2Angle, SubMdl.PositionModel, F.PositionIndex);
+
+    const float smooth_inter = (Interpolate ? SMOOTHSTEP(Inter) : 0.0f);
 
     AliasModelTrans Transform = F.Transform;
+    bool updateRot = false;
     if (Interpolate && smooth_inter > 0.0f && &F != &NF) {
       if (smooth_inter >= 1.0f) {
         Transform = NF.Transform;
       } else if (Transform.MatTrans != NF.Transform.MatTrans) {
         Transform.DecTrans = Transform.DecTrans.interpolate(NF.Transform.DecTrans, smooth_inter);
         Transform.MatTrans.recompose(Transform.DecTrans);
-        Transform.TransRot = Transform.MatTrans.getAngles();
+        //Transform.TransRot = Transform.MatTrans.getAngles();
+        updateRot = true;
       }
     }
+    /*
+    if (rotmat != VMatrix4::Identity) {
+      Transform.MatTrans *= rotmat;
+      Transform.TransRot = Transform.MatTrans.getAngles();
+    }
+    */
     Transform.MatTrans.scaleXY(ScaleX, ScaleY);
+
+    //VMatrix4 rotmat = VMatrix4::Identity;
+
+    if (!IsViewModel) {
+      const vuint8 rndVal = (mobj ? (hashU32(mobj->ServerUId)>>4)&0xffu : 0);
+      /* old code
+        if (FDef.AngleStart || FDef.AngleEnd != 1.0f) {
+          Md2Angle.yaw = AngleMod(Md2Angle.yaw+FDef.AngleStart+(FDef.AngleEnd-FDef.AngleStart)*Inter);
+        }
+      */
+
+      if (FDef.gzdoom) {
+        if (!mobj || FDef.gzActorRoll == DontUse) {
+          Md2Angle.roll = 0.0f;
+        } else if (!FDef.angleRoll.IsEmpty()) {
+          if (!FDef.angleRoll.IsRelative()) Md2Angle.roll = 0.0f;
+          const float ang = FDef.angleRoll.GetAngle(0.0f, rndVal);
+          if (ang != 0.0f) {
+            updateRot = true;
+            Transform.MatTrans = VMatrix4::RotateY(ang)*Transform.MatTrans;
+          }
+        }
+
+        if (mobj && !FDef.angleYaw.IsEmpty()) {
+          if (!FDef.angleYaw.IsRelative()) Md2Angle.yaw = 0.0f;
+          const float ang = FDef.angleYaw.GetAngle(0.0f, rndVal);
+          if (ang != 0.0f) {
+            updateRot = true;
+            Transform.MatTrans = VMatrix4::RotateZ(ang)*Transform.MatTrans;
+          }
+        }
+
+        if (!mobj || FDef.gzActorPitch == DontUse) {
+          Md2Angle.pitch = 0.0f;
+        } else {
+          bool useIt = true;
+          if (!FDef.anglePitch.IsEmpty()) {
+            useIt = FDef.anglePitch.IsRelative();
+            float ang = FDef.anglePitch.GetAngle(0.0f, rndVal);
+            if (ang != 0.0f) {
+              updateRot = true;
+              if (FDef.gzActorPitchInverted) ang += 180.0f;
+              Transform.MatTrans = VMatrix4::RotateX(ang)*Transform.MatTrans;
+            }
+          }
+          if (useIt) {
+            if (FDef.gzActorPitch == FromMomentum) {
+              Md2Angle.pitch = VectorAnglePitch(mobj->Velocity);
+            }
+          } else {
+            Md2Angle.pitch = 0.0f;
+          }
+        }
+      } else {
+        Md2Angle.yaw = FDef.angleYaw.GetAngle(Md2Angle.yaw, rndVal);
+
+        if (FDef.AngleStart || FDef.AngleEnd != FDef.AngleStart) {
+          Md2Angle.yaw = AngleMod(Md2Angle.yaw+FDef.AngleStart+(FDef.AngleEnd-FDef.AngleStart)*Inter);
+        }
+
+        if (!mobj || FDef.gzActorRoll == DontUse) {
+          Md2Angle.roll = 0.0f;
+        } else {
+          Md2Angle.roll = FDef.angleRoll.GetAngle(Md2Angle.roll, rndVal);
+        }
+
+        if (!mobj || FDef.gzActorPitch == DontUse) {
+          Md2Angle.pitch = 0.0f;
+        } else {
+          Md2Angle.pitch = (FDef.gzActorPitch == FromMomentum ? VectorAnglePitch(mobj->Velocity) : mobj->Angles.pitch);
+          if (FDef.gzActorPitchInverted) Md2Angle.pitch += 180.0f;
+          Md2Angle.pitch = FDef.anglePitch.GetAngle(Md2Angle.pitch, rndVal);
+        }
+      }
+
+      if (Level && mobj) {
+        if (r_model_autorotating && FDef.rotateSpeed) {
+          Md2Angle.yaw = AngleMod(Md2Angle.yaw+Level->Time*FDef.rotateSpeed+rndVal*38.6f);
+        }
+
+        if (r_model_autobobbing && FDef.bobSpeed) {
+          //GCon->Logf("UID: %3u (%s)", (hashU32(mobj->GetUniqueId())&0xff), *mobj->GetClass()->GetFullName());
+          const float bobHeight = 4.0f;
+          const float zdelta = msin(AngleMod(Level->Time*FDef.bobSpeed+rndVal*44.5f))*bobHeight;
+          Md2Org.z += zdelta+bobHeight;
+        }
+      }
+
+      // VMatrix4::RotateY: roll
+      // VMatrix4::RotateZ: yaw
+      // VMatrix4::RotateX: pitch
+
+      /*
+      if (Md2Angle.roll) rotmat *= VMatrix4::RotateY(Md2Angle.roll);
+      if (Md2Angle.yaw) rotmat *= VMatrix4::RotateZ(Md2Angle.yaw);
+      if (Md2Angle.pitch) rotmat *= VMatrix4::RotateX(Md2Angle.pitch);
+
+      Md2Angle = TAVec(0.0f, 0.0f, 0.0f);
+      */
+    }
 
     /*
     if (FDef.gzdoom) {
@@ -2153,6 +2211,8 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
       Transform.PreRot.roll = FDef.angleRoll.angle;
     }
     */
+
+    if (updateRot) Transform.TransRot = Transform.MatTrans.getAngles();
 
     // light
     vuint32 Md2Light = ri.light;

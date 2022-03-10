@@ -166,9 +166,13 @@ static TVec sanitiseScale (const TVec &scale) {
 //  buildMat
 //
 //==========================================================================
-static void buildMat (VMatrix4 &mat, TVec scale, TVec offset, TVec rotCenter) {
+static void buildMat (VMatrix4 &mat, TVec scale, TVec offset, TVec rotCenter, bool hud) {
   (void)rotCenter;
   mat.SetIdentity();
+  // hack for QStuffUltra
+  if (!hud) {
+    if (scale.z > 1.0f && offset.z >= 24.0f) offset.z += 4.0f*scale.z;
+  }
   offset.x /= scale.x;
   offset.y /= scale.y;
   offset.z /= scale.z;
@@ -190,9 +194,7 @@ void GZModelDef::parse (VScriptParser *sc) {
   className = sc->String;
   sc->Expect("{");
   bool rotating = false;
-  //bool wasZOffset = false; // temp hack for QStuffUltra
-  //float zoffset = 0.0f;
-  //VMatrix4 mat = VMatrix4::Identity;
+  bool hudscale = false;
   TVec scale = TVec(1.0f, 1.0f, 1.0f);
   TVec offset = TVec::ZeroVector;
   TVec rotCenter = TVec::ZeroVector;
@@ -324,11 +326,11 @@ void GZModelDef::parse (VScriptParser *sc) {
     }
     // "scale"
     if (sc->Check("scale")) {
-      //TVec scale = TVec(1.0f, 1.0f, 1.0f);
       // x
       sc->ExpectFloatWithSign();
       if (sc->Float == 0) sc->Message(va("invalid x scale in model '%s'", *className));
       scale.x = sc->Float;
+      hudscale = (scale.x < 0);
       // y
       sc->ExpectFloatWithSign();
       if (sc->Float == 0) sc->Message(va("invalid y scale in model '%s'", *className));
@@ -339,44 +341,22 @@ void GZModelDef::parse (VScriptParser *sc) {
       scale.z = sc->Float;
       // normalize
       scale = sanitiseScale(scale);
-      // seems that scale scales previous offsets
-      //VMatrix4 mt = VMatrix4::BuildScale(scale);
-      //mat *= mt;
-      /*
-      offset.x /= scale.x;
-      offset.y /= scale.y;
-      offset.z /= scale.z;
-      zoffset /= scale.z;
-      */
-      // qstuffultra hack
-      //if (wasZOffset && zoffset > 8) { offset.z = zoffset+scale.z; zoffset = 0; }
       continue;
     }
     // "Offset"
     if (sc->Check("Offset")) {
-      //TVec offset = TVec::ZeroVector;
       sc->ExpectFloatWithSign();
       offset.x = sc->Float;
       sc->ExpectFloatWithSign();
       offset.y = sc->Float;
       sc->ExpectFloatWithSign();
       offset.z = sc->Float;
-      //VMatrix4 mt = VMatrix4::BuildOffset(offset);
-      //mat *= mt;
       continue;
     }
     // "ZOffset"
     if (sc->Check("ZOffset")) {
       sc->ExpectFloatWithSign();
-      //zoffset = sc->Float;
-      //wasZOffset = true;
-      /*
-      TVec offset = TVec(0.0f, 0.0f, sc->Float);
-      VMatrix4 mt = VMatrix4::BuildOffset(offset);
-      mat *= mt;
-      */
       offset.z = sc->Float;
-      //zoffset = sc->Float;
       continue;
     }
     // "InheritActorPitch"
@@ -411,14 +391,7 @@ void GZModelDef::parse (VScriptParser *sc) {
     if (sc->Check("frameindex")) {
       // FrameIndex sprbase sprframe modelindex frameindex
       Frame frm;
-      //frm.mat = mat;
-      buildMat(frm.mat, scale, offset, rotCenter);
-      /*
-      if (zoffset != 0.0f) {
-        TVec offset = TVec(0.0f, 0.0f, zoffset);
-        frm.mat *= VMatrix4::BuildOffset(offset);
-      }
-      */
+      buildMat(frm.mat, scale, offset, rotCenter, hudscale);
       // sprite name
       sc->ExpectString();
       frm.sprbase = sc->String.toLowerCase();
@@ -445,7 +418,6 @@ void GZModelDef::parse (VScriptParser *sc) {
       frm.frindex = frm.origmdlframe = sc->Number;
       // check if we already have equal frame, there is no need to keep duplicates
       bool replaced = false;
-      /*
       for (auto &&ofr : frames) {
         if (frm.sprframe == ofr.sprframe &&
             frm.mdindex == ofr.mdindex &&
@@ -457,7 +429,6 @@ void GZModelDef::parse (VScriptParser *sc) {
           replaced = true;
         }
       }
-      */
       // store it, if it wasn't a replacement
       if (!replaced) frames.append(frm);
       continue;
@@ -466,14 +437,7 @@ void GZModelDef::parse (VScriptParser *sc) {
     if (sc->Check("frame")) {
       // Frame sprbase sprframe modelindex framename
       Frame frm;
-      //frm.mat = mat;
-      buildMat(frm.mat, scale, offset, rotCenter);
-      /*
-      if (zoffset != 0.0f) {
-        TVec offset = TVec(0.0f, 0.0f, zoffset);
-        frm.mat *= VMatrix4::BuildOffset(offset);
-      }
-      */
+      buildMat(frm.mat, scale, offset, rotCenter, hudscale);
       // sprite name
       sc->ExpectString();
       frm.sprbase = sc->String.toLowerCase();
@@ -497,7 +461,6 @@ void GZModelDef::parse (VScriptParser *sc) {
       frm.frname = sc->String;
       // check if we already have equal frame, there is no need to keep duplicates
       bool replaced = false;
-      /*
       for (auto &&ofr : frames) {
         if (frm.sprframe == ofr.sprframe &&
             frm.mdindex == ofr.mdindex &&
@@ -510,7 +473,6 @@ void GZModelDef::parse (VScriptParser *sc) {
           replaced = true;
         }
       }
-      */
       // store it, if it wasn't a replacement
       if (!replaced) frames.append(frm);
       continue;
@@ -536,7 +498,7 @@ void GZModelDef::parse (VScriptParser *sc) {
   }
   */
   VMatrix4 mat;
-  buildMat(mat, scale, offset, rotCenter);
+  buildMat(mat, scale, offset, rotCenter, hudscale);
   checkModelSanity(mat);
 }
 
@@ -560,7 +522,7 @@ int GZModelDef::findModelFrame (int mdlindex, int mdlframe, bool allowAppend, co
   }
   if (!allowAppend) return -1;
   // append it
-  GLog.Logf(NAME_Warning, "alias model '%s' has no frame %d, appending", *models[mdlindex].modelFile, mdlframe);
+  //!!!GLog.Logf(NAME_Warning, "alias model '%s' has no frame %d, appending", *models[mdlindex].modelFile, mdlframe);
   MdlFrameInfo &fi = models[mdlindex].frameMap.alloc();
   fi.mdlindex = mdlindex;
   fi.mdlframe = mdlframe;
@@ -1045,11 +1007,9 @@ VStr GZModelDef::createXml () {
     if (frm.angleOffset.pitch) res += va(" rotate_pitch=\"%g\"", frm.angleOffset.pitch);
     if (frm.angleOffset.roll) res += va(" rotate_roll=\"%g\"", frm.angleOffset.roll);
     if (frm.usePitch < 0) {
-      if (frm.usePitchInverted) res += va(" usepitch=\"actor-inverted\"");
-      else res += va(" usepitch=\"actor\"");
+      res += va(" usepitch=\"actor%s\"", (frm.usePitchInverted ? "-inverted" : ""));
     } else if (frm.usePitch > 0) {
-      if (frm.usePitchInverted) res += va(" usepitch=\"momentum-inverted\"");
-      else res += va(" usepitch=\"momentum\"");
+      res += va(" usepitch=\"momentum%s\"", (frm.usePitchInverted ? "-inverted" : ""));
     }
          if (frm.useRoll < 0) res += va(" useroll=\"actor\"");
     else if (frm.useRoll > 0) res += va(" useroll=\"momentum\"");
