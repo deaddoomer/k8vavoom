@@ -554,7 +554,7 @@ vuint8 *VVoxTexture::GetPixels () {
   transFlags = TransValueSolid; // anyway
   mFormat = mOrigFormat = TEXFMT_RGBA;
 
-  GCon->Logf(NAME_Init, "getting pixels for voxel texture #%d (shade=%d); %dx%d", VoxTexIndex, ShadeVal, Width, Height);
+  //GCon->Logf(NAME_Init, "getting pixels for voxel texture #%d (shade=%d); %dx%d", VoxTexIndex, ShadeVal, Width, Height);
 
   Pixels = new vuint8[Width*Height*4];
   memcpy(Pixels, voxTextures[VoxTexIndex].data, Width*Height*4);
@@ -597,7 +597,7 @@ static VTexture *voxTextureLoader (VStr fname, vint32 shade) {
   if (ss.length() == 0) return nullptr;
   int idx = VStr::atoi(*ss);
   if (idx < 0 || idx >= voxTextures.length()) return nullptr;
-  GCon->Logf(NAME_Debug, "***VOXEL TEXTURE #%d", idx);
+  //GCon->Logf(NAME_Debug, "***VOXEL TEXTURE #%d", idx);
   for (int f = 0; f < voxTextures[idx].tex.length(); ++f) {
     if (voxTextures[idx].tex[f]->ShadeVal == shade) return voxTextures[idx].tex[f];
   }

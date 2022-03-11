@@ -253,6 +253,7 @@ struct VClassModelScript {
 // ////////////////////////////////////////////////////////////////////////// //
 struct VModel {
   VStr Name;
+  bool NoSelfShadow;
   TArray<VScriptModel> Models;
   VClassModelScript *DefaultClass;
 };
@@ -854,6 +855,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
   if (Doc->Root.Name != "vavoom_model_definition") Sys_Error("%s: %s is not a valid model definition file", *Doc->Root.Loc.toStringNoCol(), *Mdl->Name);
 
   Mdl->DefaultClass = nullptr;
+  Mdl->NoSelfShadow = ParseBool(&Doc->Root, "noselfshadow", false);
 
   // check top-level nodes
   {
@@ -861,13 +863,18 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
     if (bad) Sys_Error("%s: model file has invalid node '%s'", *bad->Loc.toStringNoCol(), *bad->Name);
   }
 
-  if (Doc->Root.HasAttributes()) Sys_Error("%s: model file node should not have attributes", *Doc->Root.Loc.toStringNoCol());
+  //if (Doc->Root.HasAttributes()) Sys_Error("%s: model file node should not have attributes", *Doc->Root.Loc.toStringNoCol());
+  // check attrs
+  {
+    auto bad = Doc->Root.FindBadAttribute("noselfshadow", nullptr);
+    if (bad) Sys_Error("%s: model file has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *bad->Name);
+  }
 
   // process model definitions
   for (VXmlNode *ModelNode : Doc->Root.childrenWithName("model")) {
     // check attrs
     {
-      auto bad = ModelNode->FindBadAttribute("name", nullptr);
+      auto bad = ModelNode->FindBadAttribute("name", "noselfshadow", nullptr);
       if (bad) Sys_Error("%s: model declaration has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *bad->Name);
     }
 
@@ -1175,7 +1182,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
     VClassModelScript *Cls = new VClassModelScript();
     Cls->Model = Mdl;
     Cls->Name = (xcls ? xcls->GetName() : *vcClassName);
-    Cls->NoSelfShadow = ParseBool(ClassDefNode, "noselfshadow", false);
+    Cls->NoSelfShadow = (Mdl->NoSelfShadow || ParseBool(ClassDefNode, "noselfshadow", false));
     Cls->OneForAll = false;
     Cls->CacheBuilt = false;
     Cls->isGZDoom = isGZDoom;
