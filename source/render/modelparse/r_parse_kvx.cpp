@@ -25,11 +25,8 @@
 //**************************************************************************
 #include "../../gamedefs.h"
 #include "../r_local.h"
+#include "../../filesys/files.h"
 
-
-// texture with colors, dimensions
-//#define CTW  (512)
-//#define CTH  (512)
 
 struct ColorUV {
   float u, v;
@@ -676,6 +673,33 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
   this->VertsBuffer = 0;
   this->IndexBuffer = 0;
 
+  VStr ccname = GenKVXCacheName(Data, DataSize);
+  VStr cacheFileName = VStr("voxmdl_")+ccname+".cache";
+  cacheFileName = FL_GetVoxelCacheDir()+"/"+cacheFileName;
+
+  VStream *strm = FL_OpenSysFileRead(cacheFileName);
+  if (strm) {
+    if (Load_KVXCache(strm)) {
+      const bool ok = !strm->IsError();
+      VStream::Destroy(strm);
+      if (ok) {
+        this->loaded = true;
+        return;
+      }
+    } else {
+      VStream::Destroy(strm);
+    }
+    Sys_FileDelete(cacheFileName);
+    Skins.clear();
+    Frames.clear();
+    AllVerts.clear();
+    AllNormals.clear();
+    AllPlanes.clear();
+    STVerts.clear();
+    Tris.clear();
+    Edges.clear();
+  }
+
   VMemoryStreamRO memst(this->Name, Data, DataSize);
   vuint32 sign;
   memst << sign;
@@ -782,13 +806,267 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
     Frame.Verts = &AllVerts[0];
     Frame.Normals = &AllNormals[0];
     Frame.Planes = &AllPlanes[0];
+    Frame.TriCount = Tris.length();
     Frame.VertsOffset = 0;
     Frame.NormalsOffset = 0;
-    Frame.TriCount = Tris.length();
   }
 
   // store edges
   CopyEdgesTo(Edges, bldEdges);
 
+  strm = FL_OpenSysFileWrite(cacheFileName);
+  if (strm) {
+    Save_KVXCache(strm);
+    bool ok = !strm->IsError();
+    if (!strm->Close()) ok = false;
+    delete strm;
+    if (!ok) Sys_FileDelete(cacheFileName);
+  }
+
   this->loaded = true;
+}
+
+
+//==========================================================================
+//
+//  VMeshModel::Load_KVXCache
+//
+//==========================================================================
+bool VMeshModel::Load_KVXCache (VStream *st) {
+  char sign[8];
+  memset(sign, 0, sizeof(sign));
+  st->Serialise(sign, 8);
+  if (memcmp(sign, "K8VOXMDL", 8) != 0) return false;
+
+  // skins
+  {
+    vuint16 skins;
+    *st << skins;
+    for (int f = 0; f < (int)skins; ++f) {
+      vuint16 w, h;
+      *st << w << h;
+      vuint8 *data = (vuint8 *)Z_Calloc((vuint32)w*(vuint32)h*4);
+      st->Serialise(data, (vuint32)w*(vuint32)h*4);
+      if (voxTextures.length() == 0) GTextureManager.RegisterTextureLoader(&voxTextureLoader);
+      VStr fname = va("\x01:voxtexure:%d", voxTextures.length());
+      VoxelTexture &vxt = voxTextures.alloc();
+      vxt.fname = fname;
+      vxt.width = w;
+      vxt.height = h;
+      vxt.data = data;
+      VMeshModel::SkinInfo &si = Skins.alloc();
+      si.fileName = VName(*fname);
+      si.textureId = -1;
+      si.shade = -1;
+    }
+  }
+
+  // vertices
+  {
+    vuint32 count;
+    *st << count;
+    AllVerts.setLength((int)count);
+    for (int f = 0; f < AllVerts.length(); ++f) {
+      *st << AllVerts[f].x << AllVerts[f].y << AllVerts[f].z;
+    }
+  }
+
+  // stverts
+  {
+    vuint32 count;
+    *st << count;
+    STVerts.setLength((int)count);
+    for (int f = 0; f < STVerts.length(); ++f) {
+      *st << STVerts[f].S << STVerts[f].T;
+    }
+  }
+
+  // normals
+  {
+    vuint32 count;
+    *st << count;
+    AllNormals.setLength((int)count);
+    for (int f = 0; f < AllNormals.length(); ++f) {
+      *st << AllNormals[f].x << AllNormals[f].y << AllNormals[f].z;
+    }
+  }
+
+  // planes
+  {
+    vuint32 count;
+    *st << count;
+    AllPlanes.setLength((int)count);
+    for (int f = 0; f < AllPlanes.length(); ++f) {
+      *st << AllPlanes[f].normal.x << AllPlanes[f].normal.y << AllPlanes[f].normal.z;
+      *st << AllPlanes[f].dist;
+    }
+  }
+
+  // triangles
+  {
+    vuint32 count;
+    *st << count;
+    Tris.setLength((int)count);
+    for (int f = 0; f < Tris.length(); ++f) {
+      *st << Tris[f].VertIndex[0] << Tris[f].VertIndex[1] << Tris[f].VertIndex[2];
+    }
+  }
+
+  // edges
+  {
+    vuint32 count;
+    *st << count;
+    Edges.setLength((int)count);
+    for (int f = 0; f < Edges.length(); ++f) {
+      *st << Edges[f].Vert1 << Edges[f].Vert2;
+      *st << Edges[f].Tri1 << Edges[f].Tri2;
+    }
+  }
+
+  // frames
+  {
+    vuint32 count;
+    *st << count;
+    Frames.setLength((int)count);
+    for (int f = 0; f < Frames.length(); ++f) {
+      *st << Frames[f].Name;
+      *st << Frames[f].Scale.x << Frames[f].Scale.y << Frames[f].Scale.z;
+      *st << Frames[f].Origin.x << Frames[f].Origin.y << Frames[f].Origin.z;
+      *st << Frames[f].TriCount;
+      vuint32 vidx;
+      *st << vidx;
+      Frames[f].Verts = &AllVerts[(int)vidx];
+      *st << vidx;
+      Frames[f].Normals = &AllNormals[(int)vidx];
+      *st << vidx;
+      Frames[f].Planes = &AllPlanes[(int)vidx];
+    }
+  }
+
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VMeshModel::Save_KVXCache
+//
+//==========================================================================
+void VMeshModel::Save_KVXCache (VStream *st) {
+  const char *sign = "K8VOXMDL";
+  st->Serialise(sign, 8);
+
+  // skins
+  {
+    vuint16 skins = Skins.length();
+    *st << skins;
+    for (int f = 0; f < Skins.length(); ++f) {
+      VStr fname = VStr(*Skins[f].fileName);
+      vassert(fname.startsWith("\x01:voxtexure:"));
+      VStr ss = fname;
+      ss.chopLeft(12);
+      vassert(ss.length());
+      int idx = VStr::atoi(*ss);
+      vassert(idx >= 0 && idx < voxTextures.length());
+      vuint16 w = voxTextures[idx].width;
+      vuint16 h = voxTextures[idx].height;
+      *st << w << h;
+      st->Serialise(voxTextures[idx].data, voxTextures[idx].width*voxTextures[idx].height*4);
+    }
+  }
+
+  // vertices
+  {
+    vuint32 count = (vuint32)AllVerts.length();
+    *st << count;
+    for (int f = 0; f < AllVerts.length(); ++f) {
+      *st << AllVerts[f].x << AllVerts[f].y << AllVerts[f].z;
+    }
+  }
+
+  // stverts
+  {
+    vuint32 count = (vuint32)STVerts.length();
+    *st << count;
+    for (int f = 0; f < STVerts.length(); ++f) {
+      *st << STVerts[f].S << STVerts[f].T;
+    }
+  }
+
+  // normals
+  {
+    vuint32 count = (vuint32)AllNormals.length();
+    *st << count;
+    for (int f = 0; f < AllNormals.length(); ++f) {
+      *st << AllNormals[f].x << AllNormals[f].y << AllNormals[f].z;
+    }
+  }
+
+  // planes
+  {
+    vuint32 count = (vuint32)AllPlanes.length();
+    *st << count;
+    for (int f = 0; f < AllPlanes.length(); ++f) {
+      *st << AllPlanes[f].normal.x << AllPlanes[f].normal.y << AllPlanes[f].normal.z;
+      *st << AllPlanes[f].dist;
+    }
+  }
+
+  // triangles
+  {
+    vuint32 count = (vuint32)Tris.length();
+    *st << count;
+    for (int f = 0; f < Tris.length(); ++f) {
+      *st << Tris[f].VertIndex[0] << Tris[f].VertIndex[1] << Tris[f].VertIndex[2];
+    }
+  }
+
+  // edges
+  {
+    vuint32 count = (vuint32)Edges.length();
+    *st << count;
+    for (int f = 0; f < Edges.length(); ++f) {
+      *st << Edges[f].Vert1 << Edges[f].Vert2;
+      *st << Edges[f].Tri1 << Edges[f].Tri2;
+    }
+  }
+
+  // frames
+  {
+    vuint32 count = (vuint32)Frames.length();
+    *st << count;
+    for (int f = 0; f < Frames.length(); ++f) {
+      *st << Frames[f].Name;
+      *st << Frames[f].Scale.x << Frames[f].Scale.y << Frames[f].Scale.z;
+      *st << Frames[f].Origin.x << Frames[f].Origin.y << Frames[f].Origin.z;
+      *st << Frames[f].TriCount;
+      vuint32 vidx = (vuint32)(ptrdiff_t)(Frames[f].Verts-&AllVerts[0]);
+      *st << vidx;
+      vidx = (vuint32)(ptrdiff_t)(Frames[f].Normals-&AllNormals[0]);
+      *st << vidx;
+      vidx = (vuint32)(ptrdiff_t)(Frames[f].Planes-&AllPlanes[0]);
+      *st << vidx;
+    }
+  }
+}
+
+
+//==========================================================================
+//
+//  VMeshModel::GenKVXCacheName
+//
+//==========================================================================
+VStr VMeshModel::GenKVXCacheName (const vuint8 *Data, int DataSize) {
+  RIPEMD160_Ctx ctx;
+  ripemd160_init(&ctx);
+  ripemd160_put(&ctx, Data, DataSize);
+  vuint8 hash[RIPEMD160_BYTES];
+  ripemd160_finish(&ctx, hash);
+
+  VStr res;
+  for (int f = 0; f < RIPEMD160_BYTES; ++f) {
+    res += va("%02x", hash[f]);
+  }
+
+  return res;
 }

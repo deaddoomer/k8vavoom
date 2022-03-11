@@ -49,7 +49,7 @@ extern VCvarB loader_cache_data;
 //==========================================================================
 VStr VLevel::getCacheDir () {
   if (!loader_cache_data) return VStr();
-  return FL_GetCacheDir();
+  return FL_GetMapCacheDir();
 }
 
 

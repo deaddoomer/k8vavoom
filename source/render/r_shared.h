@@ -872,6 +872,11 @@ private:
   void Load_MD3 (const vuint8 *Data, int DataSize);
   void Load_KVX (const vuint8 *Data, int DataSize);
 
+  bool Load_KVXCache (VStream *st);
+  void Save_KVXCache (VStream *st);
+
+  VStr GenKVXCacheName (const vuint8 *Data, int DataSize);
+
 private:
   struct VTempEdge {
     vuint16 Vert1;

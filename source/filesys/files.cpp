@@ -2994,13 +2994,27 @@ VStr FL_GetConfigDir () {
 
 //==========================================================================
 //
-//  FL_GetCacheDir
+//  FL_GetMapCacheDir
 //
 //==========================================================================
-VStr FL_GetCacheDir () {
+VStr FL_GetMapCacheDir () {
   VStr res = FL_GetConfigDir();
   if (res.isEmpty()) return res;
   res += "/.mapcache";
+  Sys_CreateDirectory(res);
+  return res;
+}
+
+
+//==========================================================================
+//
+//  FL_GetVoxelCacheDir
+//
+//==========================================================================
+VStr FL_GetVoxelCacheDir () {
+  VStr res = FL_GetConfigDir();
+  if (res.isEmpty()) return res;
+  res += "/.voxcache";
   Sys_CreateDirectory(res);
   return res;
 }
