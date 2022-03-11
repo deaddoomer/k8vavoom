@@ -27,6 +27,7 @@
 #include "../r_local.h"
 #include "../../filesys/files.h"
 
+static VCvarI vox_cache_compression_level("vox_cache_compression_level", "6", "Voxel cache file compression level [0..9]", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 
 struct ColorUV {
   float u, v;
@@ -679,15 +680,17 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
 
   VStream *strm = FL_OpenSysFileRead(cacheFileName);
   if (strm) {
-    if (Load_KVXCache(strm)) {
-      const bool ok = !strm->IsError();
-      VStream::Destroy(strm);
-      if (ok) {
-        this->loaded = true;
-        return;
-      }
-    } else {
-      VStream::Destroy(strm);
+    VZLibStreamReader *zstrm = new VZLibStreamReader(true, strm);
+    bool ok = Load_KVXCache(zstrm);
+    if (ok) ok = !zstrm->IsError();
+    zstrm->Close();
+    delete zstrm;
+    if (ok) ok = !strm->IsError();
+    VStream::Destroy(strm);
+    if (ok) {
+      this->loaded = true;
+      GCon->Logf(NAME_Init, "voxel model '%s' loaded from cache file '%s'", *this->Name, *ccname);
+      return;
     }
     Sys_FileDelete(cacheFileName);
     Skins.clear();
@@ -816,8 +819,14 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
 
   strm = FL_OpenSysFileWrite(cacheFileName);
   if (strm) {
-    Save_KVXCache(strm);
-    bool ok = !strm->IsError();
+    GCon->Logf(NAME_Debug, "...writing cache to '%s'...", *ccname);
+    VZLibStreamWriter *zstrm = new VZLibStreamWriter(strm, vox_cache_compression_level.asInt());
+    Save_KVXCache(zstrm);
+    bool ok = !zstrm->IsError();
+    if (!zstrm->Close()) ok = false;
+    delete zstrm;
+    strm->Flush();
+    if (ok) ok = !strm->IsError();
     if (!strm->Close()) ok = false;
     delete strm;
     if (!ok) Sys_FileDelete(cacheFileName);
@@ -1059,6 +1068,8 @@ void VMeshModel::Save_KVXCache (VStream *st) {
 VStr VMeshModel::GenKVXCacheName (const vuint8 *Data, int DataSize) {
   RIPEMD160_Ctx ctx;
   ripemd160_init(&ctx);
+  vuint8 b = (useVoxelPivotZ ? 1 : 0);
+  ripemd160_put(&ctx, &b, 1);
   ripemd160_put(&ctx, Data, DataSize);
   vuint8 hash[RIPEMD160_BYTES];
   ripemd160_finish(&ctx, hash);
