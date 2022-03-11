@@ -64,3 +64,28 @@ public:
 static_assert(sizeof(Vertex2DInfo) == sizeof(float)*2+sizeof(int), "oops");
 
 VVA_FORCEINLINE VVA_PURE uint32_t GetTypeHash (const Vertex2DInfo &vi) noexcept { return joaatHashBuf(vi.getHashData(), vi.getHashDataSize()); }
+
+
+struct VVoxVertex {
+  float x, y, z;
+  float uu, vv; // will be calculated after texture creation
+  //vuint16 tu, tv;
+  vuint32 rgb;
+
+  inline VVoxVertex () noexcept : x(0.0f), y(0.0f), z(0.0f), uu(0.0f), vv(0.0f), rgb(0) {}
+
+  inline bool operator == (const VVoxVertex &b) const noexcept {
+    return (x == b.x && y == b.y && z == b.z && rgb == b.rgb);
+  }
+
+  TVec asTVec () const noexcept { return TVec(x, y, z); }
+};
+
+VVA_FORCEINLINE VVA_PURE uint32_t GetTypeHash (const VVoxVertex &vi) noexcept {
+  uint32_t hash = 0U;
+  hash = joaatHashPart(hash, &vi.x, sizeof(vi.x));
+  hash = joaatHashPart(hash, &vi.y, sizeof(vi.y));
+  hash = joaatHashPart(hash, &vi.z, sizeof(vi.z));
+  hash = joaatHashPart(hash, &vi.rgb, sizeof(vi.rgb));
+  return joaatHashFinalize(hash);
+}

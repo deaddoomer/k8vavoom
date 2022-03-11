@@ -856,6 +856,8 @@ struct VMeshModel {
   bool HadErrors;
   vuint32 VertsBuffer;
   vuint32 IndexBuffer;
+  bool isVoxel;
+  bool useVoxelPivotZ;
 
   // does nothing if `loaded` is `true`
   // bombs out on invalid model data
@@ -868,6 +870,7 @@ struct VMeshModel {
 private:
   void Load_MD2 (const vuint8 *Data, int DataSize);
   void Load_MD3 (const vuint8 *Data, int DataSize);
+  void Load_KVX (const vuint8 *Data, int DataSize);
 
 private:
   struct VTempEdge {

@@ -580,6 +580,20 @@ protected:
 // ////////////////////////////////////////////////////////////////////////// //
 class VTextureManager {
 public:
+  // custom texture loaders
+  typedef VTexture *(*TextureLoaderCB) (VStr fname, vint32 shade);
+
+  void RegisterTextureLoader (TextureLoaderCB cb);
+
+private:
+  struct TexLoaderInfo {
+    TextureLoaderCB cb;
+    TexLoaderInfo *next;
+  };
+
+  TexLoaderInfo *customLoaders;
+
+public:
   struct WallPatchInfo {
     int index;
     VName name;

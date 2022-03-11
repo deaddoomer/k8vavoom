@@ -104,6 +104,8 @@ void VMeshModel::LoadFromData (const vuint8 *Data, int DataSize) {
     // MD3
     if (r_models_verbose_loading) GCon->Logf(NAME_Debug, "loading MD3 model '%s'", *Name);
     Load_MD3(Data, DataSize);
+  } else if (isVoxel) {
+    Load_KVX(Data, DataSize);
   } else {
     Sys_Error("model '%s' is in unknown format", *Name);
   }

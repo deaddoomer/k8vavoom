@@ -184,6 +184,7 @@ set(RENDERBASE_SOURCES
   render/modelparse/r_parsecommon.cpp
   render/modelparse/r_parse_md2.cpp
   render/modelparse/r_parse_md3.cpp
+  render/modelparse/r_parse_kvx.cpp
   render/r_particle.cpp
   render/r_portal.cpp
   render/r_sky.cpp

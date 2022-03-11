@@ -136,12 +136,15 @@ void VOpenGLDrawer::UploadModel (VMeshModel *Mdl) {
   p_glBufferDataARB(GL_ARRAY_BUFFER_ARB, Size, nullptr, GL_STATIC_DRAW_ARB);
 
   // upload data
+  GLintptr nnofs = 0;
   // texture coords array
-  p_glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(VMeshSTVert)*Mdl->STVerts.length(), &Mdl->STVerts[0]);
+  p_glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, nnofs, sizeof(VMeshSTVert)*Mdl->STVerts.length(), &Mdl->STVerts[0]);
+  nnofs += sizeof(VMeshSTVert)*Mdl->STVerts.length();
   // vertices array
-  p_glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, sizeof(VMeshSTVert)*Mdl->STVerts.length(), sizeof(TVec)*Mdl->AllVerts.length(), &Mdl->AllVerts[0]);
+  p_glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, nnofs, sizeof(TVec)*Mdl->AllVerts.length(), &Mdl->AllVerts[0]);
+  nnofs += sizeof(TVec)*Mdl->AllVerts.length();
   // normals array
-  p_glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, sizeof(VMeshSTVert)*Mdl->STVerts.length()+sizeof(TVec)*Mdl->AllVerts.length(), sizeof(TVec)*Mdl->AllNormals.length(), &Mdl->AllNormals[0]);
+  p_glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, nnofs, sizeof(TVec)*Mdl->AllNormals.length(), &Mdl->AllNormals[0]);
 
   // pre-calculate offsets
   for (int i = 0; i < Mdl->Frames.length(); ++i) {

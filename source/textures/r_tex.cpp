@@ -207,6 +207,24 @@ static bool isSeenMissingTexture (VName Name) {
 
 //==========================================================================
 //
+//  RegisterTextureLoader
+//
+//==========================================================================
+void VTextureManager::RegisterTextureLoader (TextureLoaderCB cb) {
+  if (!cb) return;
+  TexLoaderInfo *last = nullptr;
+  for (TexLoaderInfo *curr = customLoaders; curr; last = curr, curr = curr->next) {
+    if (curr->cb == cb) return; // no duplicates
+  }
+  TexLoaderInfo *n = new TexLoaderInfo;
+  n->cb = cb;
+  n->next = nullptr;
+  if (last) last->next = n; else customLoaders = n;
+}
+
+
+//==========================================================================
+//
 //  VTextureManager::VTextureManager
 //
 //==========================================================================
@@ -217,6 +235,7 @@ VTextureManager::VTextureManager ()
 {
   for (unsigned i = 0; i < HASH_SIZE; ++i) TextureHash[i] = -1;
   SkyFlatName = NAME_None;
+  customLoaders = nullptr;
 }
 
 
@@ -1195,6 +1214,14 @@ int VTextureManager::AddFileTextureChecked (VName Name, int Type, VName forceNam
 
   VStr fname = VStr(Name);
 
+  for (TexLoaderInfo *ldi = customLoaders; ldi; ldi = ldi->next) {
+    VTexture *tx = ldi->cb(fname, -1);
+    if (tx) {
+      tx->Name = Name;
+      return AddTexture(tx);
+    }
+  }
+
   for (int trynum = 0; trynum <= 4; ++trynum) {
     if (Type == TEXTYPE_SkyMap) {
       switch (trynum) {
@@ -1251,6 +1278,17 @@ int VTextureManager::AddFileTextureShaded (VName Name, int Type, int shade) {
   if (shade == -1) return AddFileTexture(Name, Type);
 
   if (IsDummyTextureName(Name)) return 0;
+
+  VStr fname = VStr(Name);
+  for (TexLoaderInfo *ldi = customLoaders; ldi; ldi = ldi->next) {
+    VTexture *tx = ldi->cb(fname, shade);
+    if (tx) {
+      VName shName = VName(va("%s %08x", *Name, (vuint32)shade));
+      tx->Name = shName;
+      tx->Shade(shade);
+      return AddTexture(tx);
+    }
+  }
 
   VName shName = VName(va("%s %08x", *Name, (vuint32)shade));
 

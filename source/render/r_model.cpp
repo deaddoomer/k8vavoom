@@ -430,7 +430,9 @@ void R_FreeModels () {
 //  Mod_FindMeshModel
 //
 //==========================================================================
-static VMeshModel *Mod_FindMeshModel (VStr filename, VStr name, int meshIndex) {
+static VMeshModel *Mod_FindMeshModel (VStr filename, VStr name, int meshIndex,
+                                      bool isVoxel, bool useVoxelPivotZ)
+{
   if (name.IsEmpty()) Sys_Error("Mod_ForName: nullptr name");
 
   if (name.indexOf('/') < 0) {
@@ -447,6 +449,8 @@ static VMeshModel *Mod_FindMeshModel (VStr filename, VStr name, int meshIndex) {
   mod->Name = name;
   mod->MeshIndex = meshIndex;
   mod->loaded = false;
+  mod->isVoxel = isVoxel;
+  mod->useVoxelPivotZ = useVoxelPivotZ;
   GMeshModels.Append(mod);
 
   return mod;
@@ -557,7 +561,7 @@ static void ParseVector (VXmlNode *SN, TVec &vec, const char *basename, bool pro
 //  ParseVectorNode
 //
 //==========================================================================
-static void ParseVectorNode (VXmlNode *SN, TVec &vec) {
+static void ParseVectorNode (VXmlNode *SN, TVec &vec, bool angles) {
   bool wasNN[3] = {false, false, false};
   for (VXmlNode *n = SN->FirstChild; n; n = n->NextSibling) {
     if (n->FirstChild) {
@@ -572,9 +576,9 @@ static void ParseVectorNode (VXmlNode *SN, TVec &vec) {
       continue;
     }
     int idx = -1;
-         if (n->Name == "x") idx = 0;
-    else if (n->Name == "y") idx = 1;
-    else if (n->Name == "z") idx = 2;
+         if (n->Name == "x" || (angles && n->Name == "pitch")) idx = 0; // RotateX is pitch
+    else if (n->Name == "y" || (angles && n->Name == "roll")) idx = 1; // RotateY is roll
+    else if (n->Name == "z" || (angles && n->Name == "yaw")) idx = 2; // RotateZ is yaw
     if (idx < 0) Sys_Error("unknown node '%s' at %s", *n->Name, *n->Loc.toStringNoCol());
     if (wasNN[idx]) Sys_Error("node '%s' conflicts with previous nodes at %s", *n->Name, *n->Loc.toStringNoCol());
     wasNN[idx] = true;
@@ -595,20 +599,29 @@ static bool parseTransNodeChild (VXmlNode *SN, VMatrix4 &trans) {
 
   if (SN->Name == "scale") {
     TVec vv = TVec(1.0f, 1.0f, 1.0f);
-    ParseVectorNode(SN, vv);
+    ParseVectorNode(SN, vv, false);
+    if (vv == TVec(1.0f, 1.0f, 1.0f)) return true;
     mat = VMatrix4::BuildScale(vv);
   } else if (SN->Name == "offset") {
     TVec vv = TVec(0.0f, 0.0f, 0.0f);
-    ParseVectorNode(SN, vv);
+    ParseVectorNode(SN, vv, false);
+    if (vv == TVec(0.0f, 0.0f, 0.0f)) return true;
     mat = VMatrix4::BuildOffset(vv);
   } else if (SN->Name == "rotate") {
     TVec vv = TVec(0.0f, 0.0f, 0.0f);
-    ParseVectorNode(SN, vv);
+    ParseVectorNode(SN, vv, true);
+    if (vv == TVec(0.0f, 0.0f, 0.0f)) return true;
+    /*
     TAVec aa;
-    aa.yaw = vv.x;
-    aa.pitch = vv.y;
-    aa.roll = vv.z;
+    aa.yaw = vv.z;
+    aa.pitch = vv.x;
+    aa.roll = vv.t;
     mat = VMatrix4::BuildRotate(aa);
+    */
+    mat = VMatrix4::Identity;
+    if (vv.y != 0.0f) mat *= VMatrix4::RotateY(vv.y); // roll
+    if (vv.z != 0.0f) mat *= VMatrix4::RotateZ(vv.z); // yaw
+    if (vv.x != 0.0f) mat *= VMatrix4::RotateX(vv.x); // pitch
   } else {
     return false;
   }
@@ -864,14 +877,24 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
 
     // check nodes
     {
-      auto bad = ModelNode->FindBadChild("md2", "md3", nullptr);
+      auto bad = ModelNode->FindBadChild("md2", "md3", "kvx", nullptr);
       if (bad) Sys_Error("%s: model '%s' definition has invalid node '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
     }
 
     // process model parts
     for (VXmlNode *ModelDefNode : ModelNode->allChildren()) {
-      if (!ModelDefNode->Name.strEqu("md2") && !ModelDefNode->Name.strEqu("md3")) continue; //Sys_Error("%s: invalid model '%s' definition node '%s'", *ModelDefNode->Loc.toStringNoCol(), *Mdl->Name, mdx);
+      if (!ModelDefNode->Name.strEqu("md2") &&
+          !ModelDefNode->Name.strEqu("md3") &&
+          !ModelDefNode->Name.strEqu("kvx"))
+      {
+        continue; //Sys_Error("%s: invalid model '%s' definition node '%s'", *ModelDefNode->Loc.toStringNoCol(), *Mdl->Name, mdx);
+      }
       const bool isMD3 = ModelDefNode->Name.strEqu("md3");
+      const bool isVoxel = ModelDefNode->Name.strEqu("kvx");
+      bool useVoxelPivotZ = false;
+      if (isVoxel && ModelDefNode->HasAttribute("pivotz")) {
+        useVoxelPivotZ = ParseBool(ModelDefNode, "pivotz", false);
+      }
 
       // check attrs
       {
@@ -880,6 +903,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
                                                   "shift", "shift_x", "shift_y", "shift_z",
                                                   "offset", "offset_x", "offset_y", "offset_z",
                                                   "scale", "scale_x", "scale_y", "scale_z",
+                                                  "pivotz",
                                                   nullptr);
         if (bad) Sys_Error("%s: model '%s' definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
       }
@@ -896,13 +920,14 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       bool hasMeshIndex = false;
       Md2->MeshIndex = 0;
       if (ModelDefNode->HasAttribute("mesh_index")) {
+        if (isVoxel) Sys_Error("%s: voxel model '%s' definition cannot have \"mesh_index\"", *ModelDefNode->Loc.toStringNoCol(), *Mdl->Name);
         hasMeshIndex = true;
         Md2->MeshIndex = VStr::atoi(*ModelDefNode->GetAttribute("mesh_index"));
       }
 
       if (!ModelDefNode->HasAttribute("file")) Sys_Error("%s: model '%s' has no file", *ModelDefNode->Loc.toStringNoCol(), *Mdl->Name);
       VStr mfile = ModelDefNode->GetAttribute("file").ToLower().FixFileSlashes();
-      Md2->Model = Mod_FindMeshModel(Mdl->Name, mfile, Md2->MeshIndex);
+      Md2->Model = Mod_FindMeshModel(Mdl->Name, mfile, Md2->MeshIndex, isVoxel, useVoxelPivotZ);
 
       // version
       Md2->Version = ParseIntWithDefault(ModelDefNode, "version", -1);
@@ -910,13 +935,15 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       // position model
       Md2->PositionModel = nullptr;
       if (ModelDefNode->HasAttribute("position_file")) {
-        Md2->PositionModel = Mod_FindMeshModel(Mdl->Name, ModelDefNode->GetAttribute("position_file").ToLower().FixFileSlashes(), Md2->MeshIndex);
+        if (isVoxel) Sys_Error("%s: voxel model '%s' definition cannot have \"position_file\"", *ModelDefNode->Loc.toStringNoCol(), *Mdl->Name);
+        Md2->PositionModel = Mod_FindMeshModel(Mdl->Name, ModelDefNode->GetAttribute("position_file").ToLower().FixFileSlashes(), Md2->MeshIndex, isVoxel, useVoxelPivotZ);
       }
 
       // skin animation
       Md2->SkinAnimSpeed = 0;
       Md2->SkinAnimRange = 0;
       if (ModelDefNode->HasAttribute("skin_anim_speed")) {
+        if (isVoxel) Sys_Error("%s: voxel model '%s' definition cannot have \"skin_anim_speed\"", *ModelDefNode->Loc.toStringNoCol(), *Mdl->Name);
         if (!ModelDefNode->HasAttribute("skin_anim_range")) Sys_Error("'skin_anim_speed' requires 'skin_anim_range'");
         Md2->SkinAnimSpeed = ParseIntWithDefault(ModelDefNode, "skin_anim_speed", 1);
         Md2->SkinAnimRange = ParseIntWithDefault(ModelDefNode, "skin_anim_range", 1);
@@ -951,7 +978,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         //if (FrameDefNode->HasChildren()) Sys_Error("%s: model '%s' frame definition should have no children", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name);
 
         {
-          auto bad = FrameDefNode->FindBadAttribute("alias", "index", "end_index", "count",
+          auto bad = FrameDefNode->FindBadAttribute("index", "end_index", "count",
                                                     "position_index", "alpha_start", "alpha_end", "skin_index",
                                                     "shift", "shift_x", "shift_y", "shift_z",
                                                     "offset", "offset_x", "offset_y", "offset_z",
@@ -1000,7 +1027,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         frmtrans.MatTrans = XFTransform;
         frmtrans.decompose();
 
-        const int posidx = ParseIntWithDefault(FrameDefNode, "position_index", 0);;
+        const int posidx = ParseIntWithDefault(FrameDefNode, "position_index", 0);
         const float alphaStart = ParseFloatWithDefault(FrameDefNode, "alpha_start", 1.0f);
         const float alphaEnd = ParseFloatWithDefault(FrameDefNode, "alpha_end", 1.0f);
         const int fsknidx = ParseIntWithDefault(FrameDefNode, "skin_index", -1);
@@ -1027,6 +1054,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
 
       // process skins
       for (VXmlNode *SkN : ModelDefNode->childrenWithName("skin")) {
+        if (isVoxel) Sys_Error("%s: voxel model '%s' definition cannot have skins", *SkN->Loc.toStringNoCol(), *Mdl->Name);
         if (SkN->HasChildren()) Sys_Error("%s: model '%s' skin definition should have no children", *SkN->Loc.toStringNoCol(), *Mdl->Name);
         {
           auto bad = SkN->FindBadAttribute("file", "shade", nullptr);
@@ -1069,9 +1097,9 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
                 Md2 = &SMdl.SubModels[Md2Index]; // this pointer may change, so refresh it
                 newmdl.copyFrom(*Md2);
                 newmdl.MeshIndex = f;
-                newmdl.Model = Mod_FindMeshModel(Mdl->Name, newmdl.Model->Name, newmdl.MeshIndex);
+                newmdl.Model = Mod_FindMeshModel(Mdl->Name, newmdl.Model->Name, newmdl.MeshIndex, isVoxel, useVoxelPivotZ);
                 if (newmdl.PositionModel) {
-                  newmdl.PositionModel = Mod_FindMeshModel(Mdl->Name, newmdl.PositionModel->Name, newmdl.MeshIndex);
+                  newmdl.PositionModel = Mod_FindMeshModel(Mdl->Name, newmdl.PositionModel->Name, newmdl.MeshIndex, isVoxel, useVoxelPivotZ);
                 }
               }
             } else {

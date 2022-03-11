@@ -222,6 +222,24 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t joaatHashBufCI (con
 }
 
 
+static VVA_FORCEINLINE VVA_PURE uint32_t joaatHashPart (uint32_t hash, const VVA_MAYALIAS void *buf, size_t len) {
+  const VVA_MAYALIAS uint8_t *s = (const uint8_t *)buf;
+  while (len--) {
+    hash += *s++;
+    hash += hash<<10;
+    hash ^= hash>>6;
+  }
+  return hash;
+}
+
+static VVA_FORCEINLINE VVA_PURE uint32_t joaatHashFinalize (uint32_t hash) {
+  hash += hash<<3;
+  hash ^= hash>>11;
+  hash += hash<<15;
+  return hash;
+}
+
+
 // ////////////////////////////////////////////////////////////////////////// //
 // Bob Jenkins' LOOKUP3
 // it won't return the same results for big-endian machines, but i don't care
