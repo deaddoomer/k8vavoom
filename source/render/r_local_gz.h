@@ -48,7 +48,7 @@ public:
     int usePitch; // 0: no; -1: inherit; 1: from momentum
     bool usePitchInverted;
     int useRoll; // 0: no; -1: inherit; 1: from momentum
-    VMatrix4 mat;
+    VMatrix4 matTrans; // local frame translation matrix
     int vvindex; // vavoom frame index in the given model (-1: invalid frame)
     // used only in sanity check method
     int linkSprBase; // <0: end of list
@@ -68,11 +68,8 @@ public:
     int mdlindex; // model index in `models`
     int mdlframe; // model frame number
     int vvframe; // k8vavoom frame number
-    // as we can merge models, different frames can have different scale
-    //TVec scale;
-    //TVec offset;
-    //float zoffset;
-    VMatrix4 mat;
+    // as we can merge models, different frames can have different translation matrices
+    VMatrix4 matTrans; // local frame translation matrix
     // temporary working data
     bool used;
 
