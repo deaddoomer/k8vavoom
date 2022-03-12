@@ -221,4 +221,3 @@ void VMeshModel::EnsureEdgesPlanes () {
     pidx += frm.TriCount;
   }
 }
-
