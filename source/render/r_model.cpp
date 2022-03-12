@@ -559,72 +559,97 @@ static void ParseVector (VXmlNode *SN, TVec &vec, const char *basename, bool pro
 
 //==========================================================================
 //
-//  ParseVectorNode
+//  performTransOperation
 //
 //==========================================================================
-static void ParseVectorNode (VXmlNode *SN, TVec &vec, bool angles) {
-  bool wasNN[3] = {false, false, false};
-  for (VXmlNode *n = SN->FirstChild; n; n = n->NextSibling) {
-    if (n->FirstChild) {
-      Sys_Error("node '%s' cannot have children at %s", *n->Name, *n->Loc.toStringNoCol());
-    }
-    if (n->Name == "value") {
-      if (wasNN[0] || wasNN[1] || wasNN[2]) {
-        Sys_Error("node '%s' conflicts with previous nodes at %s", *n->Name, *n->Loc.toStringNoCol());
-      }
-      vec.x = vec.y = vec.z = xatof(n, n->Value);
-      wasNN[0] = wasNN[1] = wasNN[2] = true;
-      continue;
-    }
-    int idx = -1;
-         if (n->Name == "x" || (angles && n->Name == "pitch")) idx = 0; // RotateX is pitch
-    else if (n->Name == "y" || (angles && n->Name == "roll")) idx = 1; // RotateY is roll
-    else if (n->Name == "z" || (angles && n->Name == "yaw")) idx = 2; // RotateZ is yaw
-    if (idx < 0) Sys_Error("unknown node '%s' at %s", *n->Name, *n->Loc.toStringNoCol());
-    if (wasNN[idx]) Sys_Error("node '%s' conflicts with previous nodes at %s", *n->Name, *n->Loc.toStringNoCol());
-    wasNN[idx] = true;
-    vec[idx] = xatof(n, n->Value);
+static bool performTransOperation (VXmlNode *SN, VMatrix4 &trans) {
+  enum {
+    OpScale,
+    OpOffset,
+    OpRotate,
+  };
+
+  int op;
+       if (SN->Name == "scale") op = OpScale;
+  else if (SN->Name == "offset" || SN->Name == "shift" || SN->Name == "move") op = OpOffset;
+  else if (SN->Name == "rotate") op = OpRotate;
+  else return false;
+
+  if (SN->FirstChild && SN->Attributes.length()) {
+    Sys_Error("%s: transform node '%s' can have either children, or attributes",
+              *SN->Loc.toStringNoCol(), *SN->Name);
   }
-}
 
+  if (!SN->FirstChild && !SN->Attributes.length()) {
+    Sys_Error("%s: transform node '%s' must have either children, or attributes",
+              *SN->Loc.toStringNoCol(), *SN->Name);
+  }
 
-//==========================================================================
-//
-//  parseTransNodeChild
-//
-//==========================================================================
-static bool parseTransNodeChild (VXmlNode *SN, VMatrix4 &trans) {
-  if (!SN) return false;
+  bool wasNN[3] = {false, false, false};
+  TVec vec = (op == OpScale ? TVec(1.0f, 1.0f, 1.0f) : TVec::ZeroVector);
+
+  VXmlNode *n = SN->FirstChild;
+  int aidx = 0;
+
+  for (;;) {
+    VStr type, value;
+    VTextLocation loc;
+    if (SN->FirstChild) {
+      if (!n) break;
+      if (n->FirstChild) Sys_Error("%s: node '%s' cannot have children", *n->Loc.toStringNoCol(), *n->Name);
+      if (n->Attributes.length()) Sys_Error("%s: node '%s' cannot have attributes", *n->Loc.toStringNoCol(), *n->Name);
+      type = n->Name;
+      value = n->Value.xstrip();
+      loc = n->Loc;
+      n = n->NextSibling;
+    } else {
+      if (aidx >= SN->Attributes.length()) break;
+      type = SN->Attributes[aidx].Name;
+      value = SN->Attributes[aidx].Value.xstrip();
+      loc = SN->Attributes[aidx].Loc;
+      ++aidx;
+    }
+
+    int idx = -1;
+    if (type == "value") {
+      if (wasNN[0] || wasNN[1] || wasNN[2]) {
+        Sys_Error("%s: arg '%s' conflicts with previous args", *loc.toStringNoCol(), *type);
+      }
+      wasNN[0] = wasNN[1] = wasNN[2] = true;
+    } else {
+           if (type == "x" || (op == OpRotate && type == "pitch")) idx = 0; // RotateX is pitch
+      else if (type == "y" || (op == OpRotate && type == "roll")) idx = 1; // RotateY is roll
+      else if (type == "z" || (op == OpRotate && type == "yaw")) idx = 2; // RotateZ is yaw
+      else Sys_Error("%s: unknown arg '%s'", *loc.toStringNoCol(), *type);
+      if (wasNN[idx]) Sys_Error("%s: duplicate arg '%s'", *loc.toStringNoCol(), *type);
+      wasNN[idx] = true;
+    }
+
+    float flt = 0.0f;
+    if (!value.convertFloat(&flt) || !isfinite(flt)) {
+      Sys_Error("%s: arg '%s' is not a valid float (%s)", *loc.toStringNoCol(), *type, *value);
+    }
+    if (idx < 0) vec.x = vec.y = vec.z = flt; else vec[idx] = flt;
+  }
 
   VMatrix4 mat;
-
-  if (SN->Name == "scale") {
-    TVec vv = TVec(1.0f, 1.0f, 1.0f);
-    ParseVectorNode(SN, vv, false);
-    if (vv == TVec(1.0f, 1.0f, 1.0f)) return true;
-    mat = VMatrix4::BuildScale(vv);
-  } else if (SN->Name == "offset") {
-    TVec vv = TVec(0.0f, 0.0f, 0.0f);
-    ParseVectorNode(SN, vv, false);
-    if (vv == TVec(0.0f, 0.0f, 0.0f)) return true;
-    mat = VMatrix4::BuildOffset(vv);
-  } else if (SN->Name == "rotate") {
-    TVec vv = TVec(0.0f, 0.0f, 0.0f);
-    ParseVectorNode(SN, vv, true);
-    if (vv == TVec(0.0f, 0.0f, 0.0f)) return true;
-    /*
-    TAVec aa;
-    aa.yaw = vv.z;
-    aa.pitch = vv.x;
-    aa.roll = vv.t;
-    mat = VMatrix4::BuildRotate(aa);
-    */
-    mat = VMatrix4::Identity;
-    if (vv.y != 0.0f) mat *= VMatrix4::RotateY(vv.y); // roll
-    if (vv.z != 0.0f) mat *= VMatrix4::RotateZ(vv.z); // yaw
-    if (vv.x != 0.0f) mat *= VMatrix4::RotateX(vv.x); // pitch
-  } else {
-    return false;
+  switch (op) {
+    case OpScale:
+      if (vec == TVec(1.0f, 1.0f, 1.0f)) return true;
+      mat = VMatrix4::BuildScale(vec);
+      break;
+    case OpOffset:
+      if (vec == TVec(0.0f, 0.0f, 0.0f)) return true;
+      mat = VMatrix4::BuildOffset(vec);
+      break;
+    case OpRotate:
+      if (vec == TVec(0.0f, 0.0f, 0.0f)) return true;
+      mat = VMatrix4::Identity;
+      if (vec.y != 0.0f) mat *= VMatrix4::RotateY(vec.y); // roll
+      if (vec.z != 0.0f) mat *= VMatrix4::RotateZ(vec.z); // yaw
+      if (vec.x != 0.0f) mat *= VMatrix4::RotateX(vec.x); // pitch
+      break;
+    default: __builtin_trap(); // the thing that should not be
   }
 
   trans *= mat;
@@ -657,28 +682,31 @@ static bool parseTransNode (VXmlNode *SN, VMatrix4 &trans, const VMatrix4 &orig)
       auto bad = XN->FindBadAttribute("absolute", nullptr);
       if (bad) Sys_Error("%s: matrix definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *bad->Name);
       VMatrix4 mat = VMatrix4::Identity;
-      VStr s = XN->Value;
-      for (int y = 0; y < 4; ++y) {
-        for (int x = 0; x < 4; ++x) {
-          s = s.xstripleft();
-          int pos = 0;
-          while (pos < s.length() && (uint8_t)s[pos] > 32) ++pos;
-          if (pos == 0) Sys_Error("out of matrix values at %s", *XN->Loc.toStringNoCol());
-          float res = 0.0f;
-          if (!s.left(pos).convertFloat(&res) || !isfinite(res)) {
-            Sys_Error("invalid matrix float at %s", *XN->Loc.toStringNoCol());
+      VStr s = XN->Value.xstrip();
+      if (s != "identity") {
+        for (int y = 0; y < 4; ++y) {
+          for (int x = 0; x < 4; ++x) {
+            s = s.xstripleft();
+            int pos = 0;
+            while (pos < s.length() && (uint8_t)s[pos] > 32) ++pos;
+            if (pos == 0) Sys_Error("out of matrix values at %s", *XN->Loc.toStringNoCol());
+            float res = 0.0f;
+            if (!s.left(pos).convertFloat(&res) || !isfinite(res)) {
+              Sys_Error("invalid matrix float at %s", *XN->Loc.toStringNoCol());
+            }
+            mat.m[y][x] = res;
+            s.chopLeft(pos);
           }
-          mat.m[y][x] = res;
-          s.chopLeft(pos);
         }
+        s = s.xstrip();
+        if (s.length() != 0) Sys_Error("extra matrix data at %s", *XN->Loc.toStringNoCol());
       }
-      s = s.xstrip();
-      if (s.length() != 0) Sys_Error("extra matrix data at %s", *XN->Loc.toStringNoCol());
       if (ParseBool(XN, "absolute", false)) trans = mat; else trans = trans*mat;
       continue;
     }
 
-    if (parseTransNodeChild(XN, trans)) continue;
+    //if (parseTransNodeChild(XN, trans)) continue;
+    if (performTransOperation(XN, trans)) continue;
     Sys_Error("unknown transform node '%s' at %s", *XN->Name, *XN->Loc.toStringNoCol());
   }
 
