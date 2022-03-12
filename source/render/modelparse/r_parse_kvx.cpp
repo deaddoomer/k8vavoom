@@ -165,11 +165,12 @@ Voxel::~Voxel () {
 void Voxel::createColorTexture (VStr fname) {
   ctxWidth = ctxHeight = 1;
   while (ctxWidth*ctxHeight < colors.length()) {
-    ctxWidth *= 2;
-    if (ctxWidth*ctxHeight >= colors.length()) break;
-    ctxHeight *= 2;
-    if (ctxWidth > 1024 || ctxHeight > 1024) {
-      Sys_Error("too many voxel colors in '%s'", *fname);
+    if (ctxWidth > ctxHeight) {
+      ctxHeight *= 2;
+      if (ctxHeight > 1024) Sys_Error("too many voxel colors in '%s'", *fname);
+    } else {
+      ctxWidth *= 2;
+      if (ctxWidth > 1024) Sys_Error("too many voxel colors in '%s'", *fname);
     }
   }
 
