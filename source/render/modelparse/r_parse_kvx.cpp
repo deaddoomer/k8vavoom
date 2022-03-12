@@ -81,7 +81,6 @@ struct Voxel {
 
   bool loadKV6 (VStream &st);
   bool loadKVX (VStream &st);
-  bool loadDDM (VStream &st);
 };
 
 
@@ -484,106 +483,7 @@ bool Voxel::loadKVX (VStream &st) {
 }
 
 
-//==========================================================================
-//
-//  Voxel::loadDDM
-//
-//==========================================================================
-bool Voxel::loadDDM (VStream &st) {
-  st.Seek(0);
-  vuint32 sign;
-  st << sign;
-  vuint32 ver;
-  st << ver;
-  if (ver != 1) {
-    GCon->Logf(NAME_Error, "invalid DDMesh version (%u)", ver);
-    return false;
-  }
-  vuint32 vxsize;
-  st << vxsize;
-  vuint32 qcount;
-  st << qcount; // quads
-  // load quads
-  cx = cy = cz = 0.0f;
-  VVoxVertex vxa[4];
-  for (vuint32 vidx = 0; vidx < qcount; ++vidx) {
-    vuint32 color;
-    st << color;
-    vuint32 rgb =
-      ((color&0xff)<<16)|
-      (((color>>8)&0xff)<<8)|
-      ((color>>16)&0xff);
-    for (int f = 0; f < 4; ++f) {
-      vint32 ix, iy, iz;
-      st << ix << iy << iz;
-      #if 1
-      vxa[f].x = (float)ix-(float)vxsize/2;
-      vxa[f].z = (float)vxsize-(float)iy;
-      vxa[f].y = (float)iz-(float)vxsize/2;
-      #else
-      vxa[f].x = (float)ix;
-      vxa[f].y = (float)iy;
-      vxa[f].z = (float)iz;
-      #endif
-      vxa[f].rgb = rgb;
-      vxa[f].uu = vxa[f].vv = 0.0f;
-    }
-    #if 0
-    int xidx, yidx;
-    if (vxa[0].x == vxa[1].x && vxa[1].x == vxa[2].x &&
-        vxa[2].x == vxa[3].x && vxa[3].x == vxa[0].x)
-    {
-      xidx = 2;
-      yidx = 0;
-    } else if (vxa[0].y == vxa[1].y && vxa[1].y == vxa[2].y &&
-               vxa[2].y == vxa[3].y && vxa[3].y == vxa[0].y)
-    {
-      xidx = 0;
-      yidx = 2;
-    } else if (vxa[0].z == vxa[1].z && vxa[1].z == vxa[2].z &&
-               vxa[2].z == vxa[3].z && vxa[3].z == vxa[0].z)
-    {
-      xidx = 0;
-      yidx = 1;
-    } else {
-      Sys_Error("cannot determine quad axis");
-    }
-    // check area
-    float area = 0.0f;
-    for (int f = 0; f < 4; ++f) {
-      TVec v0 = vxa[f].asTVec();
-      TVec v1 = vxa[(f+1)%4].asTVec();
-      float n = (v1[xidx]-v0[xidx])*(v1[yidx]+v0[yidx]);
-      area += n;
-    }
-    if (area > 0.0f) {
-      indicies.append(appendVertex(vxa[0]));
-      indicies.append(appendVertex(vxa[1]));
-      indicies.append(appendVertex(vxa[2]));
-      indicies.append(appendVertex(vxa[3]));
-    } else {
-      indicies.append(appendVertex(vxa[3]));
-      indicies.append(appendVertex(vxa[2]));
-      indicies.append(appendVertex(vxa[1]));
-      indicies.append(appendVertex(vxa[0]));
-    }
-    #else
-    indicies.append(appendVertex(vxa[3]));
-    indicies.append(appendVertex(vxa[2]));
-    indicies.append(appendVertex(vxa[1]));
-    indicies.append(appendVertex(vxa[0]));
-    /*
-    indicies.append(appendVertex(vxa[0]));
-    indicies.append(appendVertex(vxa[1]));
-    indicies.append(appendVertex(vxa[2]));
-    indicies.append(appendVertex(vxa[3]));
-    */
-    #endif
-  }
-  return true;
-}
-
-
+// ////////////////////////////////////////////////////////////////////////// //
 class VVoxTexture : public VTexture {
 public:
   int VoxTexIndex;
@@ -813,9 +713,7 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
   vox.useVoxelPivotZ = useVoxelPivotZ;
   bool ok = false;
 
-       if (sign == 0x6c78764bU) ok = vox.loadKV6(memst);
-  else if (sign == 0x534d4444U) ok = vox.loadDDM(memst);
-  else ok = vox.loadKVX(memst);
+  if (sign == 0x6c78764bU) ok = vox.loadKV6(memst); else ok = vox.loadKVX(memst);
 
   if (!ok) Sys_Error("cannot load voxel model '%s'", *this->Name);
   if (vox.indicies.length() == 0) Sys_Error("cannot load empty voxel model '%s'", *this->Name);
