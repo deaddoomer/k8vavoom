@@ -719,12 +719,12 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
 
   Voxel vox;
   vox.useVoxelPivotZ = useVoxelPivotZ;
-  bool ok = false;
   {
     VMemoryStreamRO memst(this->Name, Data, DataSize);
     vuint32 sign;
     memst << sign;
     memst.Seek(0);
+    bool ok = false;
     if (sign == 0x6c78764bU) ok = vox.loadKV6(memst); else ok = vox.loadKVX(memst);
     if (!ok || memst.IsError()) Sys_Error("cannot load voxel model '%s'", *this->Name);
   }
