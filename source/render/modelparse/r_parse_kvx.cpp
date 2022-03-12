@@ -277,33 +277,32 @@ struct KVox {
 //
 //==========================================================================
 bool Voxel::loadKV6 (VStream &st) {
-  vint32 xsiz, ysiz, zsiz;
-  float xpivot, ypivot, zpivot;
-
   st.Seek(0);
+
+  vint32 xsiz, ysiz, zsiz;
   st << xsiz << ysiz << zsiz;
   if (xsiz < 1 || ysiz < 1 || zsiz < 1 || xsiz > 1024 || ysiz > 1024 || zsiz > 1024) {
     GCon->Logf(NAME_Error, "invalid voxel size (kv6)");
     return false;
   }
 
+  float xpivot, ypivot, zpivot;
   st << xpivot << ypivot << zpivot;
-  vuint32 voxcount;
+
+  vint32 voxcount;
   st << voxcount;
-  if (voxcount == 0 || voxcount > 0x00ffffffU) {
+  if (voxcount <= 0 || voxcount > 0x00ffffff) {
     GCon->Logf(NAME_Error, "invalid number of voxels (kv6)");
     return false;
   }
 
   TArray<KVox> kvox;// = new KVox[](voxcount);
-  for (vuint32 vidx = 0; vidx < voxcount; ++vidx) {
-    KVox &kv = kvox.alloc();
+  kvox.setLength(voxcount);
+  for (vint32 vidx = 0; vidx < voxcount; ++vidx) {
+    KVox &kv = kvox[vidx];
     vuint8 r8, g8, b8;
     st << r8 << g8 << b8;
-    kv.rgb = 0;
-    kv.rgb |= b8;
-    kv.rgb |= g8;
-    kv.rgb |= r8;
+    kv.rgb = b8|(g8<<8)|(r8<<16);
     vuint8 dummy;
     st << dummy; // always 128; ignore
     vuint8 zlo, zhi, cull, normidx;
@@ -431,18 +430,18 @@ bool Voxel::loadKVX (VStream &st) {
   vuint8 pal[768];
   if (st.TotalSize()-st.Tell() == 768) {
     st.Serialise(pal, 768);
-    //foreach (vuint8 c; pal[]) if (c > 63) throw new Exception("invalid palette value");
+    for (int cidx = 0; cidx < 768; ++cidx) pal[cidx] = clampToByte(255*pal[cidx]/64);
   } else {
     for (int cidx = 0; cidx < 256; ++cidx) {
-      pal[cidx*3+0] = (cidx<<2)&0xff;
-      pal[cidx*3+1] = (cidx<<2)&0xff;
-      pal[cidx*3+2] = (cidx<<2)&0xff;
+      pal[cidx*3+0] = r_palette[cidx].r;
+      pal[cidx*3+1] = r_palette[cidx].g;
+      pal[cidx*3+2] = r_palette[cidx].b;
     }
   }
 
-  float px = 1.0f*xpivot/256.0f;
-  float py = 1.0f*ypivot/256.0f;
-  float pz = 1.0f*zpivot/256.0f;
+  const float px = (float)xpivot/256.0f;
+  const float py = (float)ypivot/256.0f;
+  const float pz = (float)zpivot/256.0f;
 
   // now build cubes
   for (int y = 0; y < ysiz; ++y) {
@@ -462,9 +461,9 @@ bool Voxel::loadKVX (VStream &st) {
           vuint8 cl = cull;
           if (cidx != 0) cl &= ~0x10;
           if (cidx != zlen-1) cl &= ~0x20;
-          vuint8 r = (vuint8)(255*pal[palcol*3+0]/64);
-          vuint8 g = (vuint8)(255*pal[palcol*3+1]/64);
-          vuint8 b = (vuint8)(255*pal[palcol*3+2]/64);
+          const vuint8 r = pal[palcol*3+0];
+          const vuint8 g = pal[palcol*3+1];
+          const vuint8 b = pal[palcol*3+2];
           //addCube(cl, (xsiz-x-1)-px, y-py, (zsiz-ztop-1)-pz, b|(g<<8)|(r<<16));
           addCube(cl, (xsiz-x-1)-px, y-py, (zsiz-ztop-1)-(useVoxelPivotZ ? pz : 0.0f), b|(g<<8)|(r<<16));
           ++ztop;
@@ -701,18 +700,17 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
     Tris.clear();
   }
 
-  VMemoryStreamRO memst(this->Name, Data, DataSize);
-  vuint32 sign;
-  memst << sign;
-  memst.Seek(0);
-
   Voxel vox;
   vox.useVoxelPivotZ = useVoxelPivotZ;
   bool ok = false;
-
-  if (sign == 0x6c78764bU) ok = vox.loadKV6(memst); else ok = vox.loadKVX(memst);
-
-  if (!ok) Sys_Error("cannot load voxel model '%s'", *this->Name);
+  {
+    VMemoryStreamRO memst(this->Name, Data, DataSize);
+    vuint32 sign;
+    memst << sign;
+    memst.Seek(0);
+    if (sign == 0x6c78764bU) ok = vox.loadKV6(memst); else ok = vox.loadKVX(memst);
+    if (!ok || memst.IsError()) Sys_Error("cannot load voxel model '%s'", *this->Name);
+  }
   if (vox.indicies.length() == 0) Sys_Error("cannot load empty voxel model '%s'", *this->Name);
   if (vox.indicies.length()%4 != 0) Sys_Error("internal error converting voxel model '%s'", *this->Name);
 
