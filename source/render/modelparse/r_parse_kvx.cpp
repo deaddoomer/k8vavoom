@@ -29,6 +29,10 @@
 
 static VCvarI vox_cache_compression_level("vox_cache_compression_level", "6", "Voxel cache file compression level [0..9]", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 
+
+#define VOX_CACHE_SIGNATURE  "k8vavoom voxel model cache file, version 0\n"
+
+
 struct ColorUV {
   float u, v;
 };
@@ -680,11 +684,23 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
 
   VStream *strm = FL_OpenSysFileRead(cacheFileName);
   if (strm) {
-    VZLibStreamReader *zstrm = new VZLibStreamReader(true, strm);
-    bool ok = Load_KVXCache(zstrm);
-    if (ok) ok = !zstrm->IsError();
-    zstrm->Close();
-    delete zstrm;
+    char tbuf[128];
+    const int slen = strlen(VOX_CACHE_SIGNATURE);
+    vassert(slen < (int)sizeof(tbuf));
+    strm->Serialise(tbuf, slen);
+    bool ok = (!strm->IsError() && memcmp(tbuf, VOX_CACHE_SIGNATURE, (size_t)slen) == 0);
+    if (ok) {
+      VStr tmpstr;
+      *strm << tmpstr;
+      ok = !strm->IsError();
+    }
+    if (ok) {
+      VZLibStreamReader *zstrm = new VZLibStreamReader(true, strm);
+      ok = Load_KVXCache(zstrm);
+      if (ok) ok = !zstrm->IsError();
+      zstrm->Close();
+      delete zstrm;
+    }
     if (ok) ok = !strm->IsError();
     VStream::Destroy(strm);
     if (ok) {
@@ -803,7 +819,9 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
 
   strm = FL_OpenSysFileWrite(cacheFileName);
   if (strm) {
-    GCon->Logf(NAME_Debug, "...writing cache to '%s'...", *ccname);
+    GCon->Logf(NAME_Init, "...writing cache to '%s'...", *ccname);
+    strm->Serialise(VOX_CACHE_SIGNATURE, (int)strlen(VOX_CACHE_SIGNATURE));
+    *strm << this->Name;
     VZLibStreamWriter *zstrm = new VZLibStreamWriter(strm, vox_cache_compression_level.asInt());
     Save_KVXCache(zstrm);
     bool ok = !zstrm->IsError();
