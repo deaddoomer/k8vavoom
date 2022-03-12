@@ -841,23 +841,31 @@ struct VMeshModel {
     int shade; // -1: none
   };
 
+  // note that the number of normals must be the same
+  // as the number of vertices, because normals are per-vertex
+  // this is also true for `STVerts`
+  // `Edges` are used only in stencil shadows mode
   VStr Name;
   int MeshIndex;
   TArray<SkinInfo> Skins;
   TArray<VMeshFrame> Frames;
   TArray<TVec> AllVerts;
-  TArray<TVec> AllNormals;
-  TArray<TPlane> AllPlanes;
+  TArray<TVec> AllNormals; // normals are per-vertex!
   TArray<VMeshSTVert> STVerts;
   TArray<VMeshTri> Tris; // vetex indicies
+  // the following two arrays are used only in stencil shadows
+  // they are lazily created
+  TArray<TPlane> AllPlanes; // for `Tris`
   TArray<VMeshEdge> Edges; // for `Tris`
-  bool loaded;
-  bool Uploaded;
-  bool HadErrors;
+
+  bool loaded; // is this model loaded?
+  bool Uploaded; // is this model uploaded to GPU?
+  bool HadErrors; // set if this model had some errors (exclude from stencil shadowing)
+  bool isVoxel; // should this model be loaded as a voxel?
+  bool useVoxelPivotZ; // should the voxel be z-centered using the pivot point?
+  // OpenGL handles
   vuint32 VertsBuffer;
   vuint32 IndexBuffer;
-  bool isVoxel;
-  bool useVoxelPivotZ;
 
   // does nothing if `loaded` is `true`
   // bombs out on invalid model data
@@ -897,6 +905,10 @@ private:
 public:
   static bool IsKnownModelFormat (VStream *strm); // this also does simple check for known model format
   static bool LoadMD2Frames (VStr mdpath, TArray<VStr> &names);
+
+public:
+  // create `AllPlanes` and `Edges`, if necessary
+  void EnsureEdgesPlanes ();
 };
 
 

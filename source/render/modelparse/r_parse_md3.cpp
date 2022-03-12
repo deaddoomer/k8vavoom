@@ -216,16 +216,12 @@ void VMeshModel::Load_MD3 (const vuint8 *Data, int DataSize) {
 
   // copy triangles, create edges
   const MD3Tri *ptri = (const MD3Tri *)((const vuint8 *)pmesh+pmesh->get_triOfs());
-  TArray<VTempEdge> Edges;
   this->Tris.setLength(pmesh->get_triNum());
   for (unsigned i = 0; i < pmesh->get_triNum(); ++i) {
     if (ptri[i].get_v0() >= pmesh->get_vertNum() || ptri[i].get_v1() >= pmesh->get_vertNum() || ptri[i].get_v2() >= pmesh->get_vertNum()) Sys_Error("model '%s' has invalid vertex index in triangle #%u", *this->Name, i);
     this->Tris[i].VertIndex[0] = ptri[i].get_v0();
     this->Tris[i].VertIndex[1] = ptri[i].get_v1();
     this->Tris[i].VertIndex[2] = ptri[i].get_v2();
-    for (unsigned j = 0; j < 3; ++j) {
-      AddEdge(Edges, this->Tris[i].VertIndex[j], this->Tris[i].VertIndex[(j+1)%3], i);
-    }
   }
 
   // copy vertices
@@ -258,14 +254,6 @@ void VMeshModel::Load_MD3 (const vuint8 *Data, int DataSize) {
   }
 
   this->Frames.setLength(pmodel->get_frameNum());
-  this->AllPlanes.setLength(pmodel->get_frameNum()*pmesh->get_triNum());
-
-  if (AllPlanes.length() == 0) {
-    TPlane pl;
-    pl.normal = TVec(0.0f, 0.0f, 1.0f);
-    pl.dist = 0;
-    AllPlanes.append(pl);
-  }
 
   int triIgnored = 0;
   for (unsigned i = 0; i < pmodel->get_frameNum(); ++i, ++pframe) {
@@ -275,7 +263,7 @@ void VMeshModel::Load_MD3 (const vuint8 *Data, int DataSize) {
     Frame.Origin = TVec(pframe->get_origin(0), pframe->get_origin(1), pframe->get_origin(2));
     Frame.Verts = &this->AllVerts[i*pmesh->get_vertNum()];
     Frame.Normals = &this->AllNormals[i*pmesh->get_vertNum()];
-    Frame.Planes = &this->AllPlanes[i*pmesh->get_triNum()];
+    Frame.Planes = nullptr;
     Frame.VertsOffset = 0;
     Frame.NormalsOffset = 0;
     Frame.TriCount = pmesh->get_triNum();
@@ -310,9 +298,6 @@ void VMeshModel::Load_MD3 (const vuint8 *Data, int DataSize) {
         if (hacked) GCon->Log("  hacked around"); else { GCon->Log("  CANNOT FIX"); PlaneNormal = TVec(0, 0, 1); }
       }
       hadError = hadError || reported;
-      PlaneNormal = PlaneNormal.normalise();
-      const float PlaneDist = PlaneNormal.dot(v3);
-      Frame.Planes[j].Set(PlaneNormal, PlaneDist);
       if (reported) {
         ++triIgnored;
         if (mdl_report_errors) GCon->Logf("  triangle #%u is ignored", j);
@@ -344,14 +329,6 @@ void VMeshModel::Load_MD3 (const vuint8 *Data, int DataSize) {
       if (showError) {
         GCon->Logf(NAME_Warning, "Alias model '%s' has %d degenerate triangles out of %u! model rebuilt.", *this->Name, triIgnored, pmesh->get_triNum());
       }
-      // rebuild edges
-      this->Edges.setLength(0);
-      for (unsigned i = 0; i < pmesh->get_triNum(); ++i) {
-        for (unsigned j = 0; j < 3; ++j) {
-          //AddEdge(Edges, this->Tris[i].VertIndex[j], ptri[i].vertindex[j], this->Tris[i].VertIndex[(j+1)%3], ptri[i].vertindex[(j+1)%3], i);
-          AddEdge(Edges, this->Tris[i].VertIndex[j], this->Tris[i].VertIndex[(j+1)%3], i);
-        }
-      }
     }
     #endif
   } else {
@@ -362,9 +339,6 @@ void VMeshModel::Load_MD3 (const vuint8 *Data, int DataSize) {
 
   // if there were some errors, disable shadows for this model, it is probably broken anyway
   this->HadErrors = hadError;
-
-  // store edges
-  CopyEdgesTo(this->Edges, Edges);
 
   this->loaded = true;
 }

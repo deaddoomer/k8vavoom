@@ -193,7 +193,6 @@ void VMeshModel::Load_MD2 (const vuint8 *Data, int DataSize) {
   // triangles
   //k8: this tried to collapse same vertices, but meh
   TArray<TVertMap> VertMap;
-  TArray<VTempEdge> Edges;
   this->Tris.setLength(pmodel->get_numtris());
   const MD2Triangle *ptri = (const MD2Triangle *)((const vuint8 *)pmodel+pmodel->get_ofstris());
   for (unsigned i = 0; i < pmodel->get_numtris(); ++i) {
@@ -202,9 +201,6 @@ void VMeshModel::Load_MD2 (const vuint8 *Data, int DataSize) {
       TVertMap &v = VertMap.alloc();
       v.VertIndex = ptri[i].get_vertindex(j);
       v.STIndex = ptri[i].get_stvertindex(j);
-    }
-    for (unsigned j = 0; j < 3; ++j) {
-      AddEdge(Edges, this->Tris[i].VertIndex[j], this->Tris[i].VertIndex[(j+1)%3], i);
     }
   }
 
@@ -229,7 +225,6 @@ void VMeshModel::Load_MD2 (const vuint8 *Data, int DataSize) {
   this->Frames.setLength(pmodel->get_numframes());
   this->AllVerts.setLength(pmodel->get_numframes()*VertMap.length());
   this->AllNormals.setLength(pmodel->get_numframes()*VertMap.length());
-  this->AllPlanes.setLength(pmodel->get_numframes()*pmodel->get_numtris());
   const MD2Frame *pframe = (const MD2Frame *)((const vuint8 *)pmodel+pmodel->get_ofsframes());
 
   int triIgnored = 0;
@@ -240,11 +235,10 @@ void VMeshModel::Load_MD2 (const vuint8 *Data, int DataSize) {
     Frame.Origin = TVec(pframe->get_scale_origin(0), pframe->get_scale_origin(1), pframe->get_scale_origin(2));
     Frame.Verts = &this->AllVerts[i*VertMap.length()];
     Frame.Normals = &this->AllNormals[i*VertMap.length()];
-    Frame.Planes = &this->AllPlanes[i*pmodel->get_numtris()];
+    Frame.Planes = nullptr;
     Frame.VertsOffset = 0;
     Frame.NormalsOffset = 0;
     Frame.TriCount = pmodel->get_numtris();
-    //Frame.ValidTris.setLength((int)pmodel->get_numtris());
 
     const MD2Vertex *Verts = (const MD2Vertex *)(pframe+1);
     for (int j = 0; j < VertMap.length(); ++j) {
@@ -284,9 +278,6 @@ void VMeshModel::Load_MD2 (const vuint8 *Data, int DataSize) {
         if (hacked) GCon->Log("  hacked around"); else { GCon->Log("  CANNOT FIX"); PlaneNormal = TVec(0, 0, 1); }
       }
       hadError = hadError || reported;
-      PlaneNormal = PlaneNormal.normalise();
-      const float PlaneDist = PlaneNormal.dot(v3);
-      Frame.Planes[j].Set(PlaneNormal, PlaneDist);
       if (reported) {
         ++triIgnored;
         if (mdl_report_errors) GCon->Logf("  triangle #%u is ignored", j);
@@ -319,14 +310,6 @@ void VMeshModel::Load_MD2 (const vuint8 *Data, int DataSize) {
       if (showError) {
         GCon->Logf(NAME_Warning, "Alias model '%s' has %d degenerate triangles out of %u! model rebuilt.", *this->Name, triIgnored, pmodel->get_numtris());
       }
-      // rebuild edges
-      this->Edges.setLength(0);
-      for (unsigned i = 0; i < pmodel->get_numtris(); ++i) {
-        for (unsigned j = 0; j < 3; ++j) {
-          //AddEdge(Edges, this->Tris[i].VertIndex[j], ptri[i].get_vertindex(j), this->Tris[i].VertIndex[(j+1)%3], ptri[i].get_vertindex((j+1)%3), i);
-          AddEdge(Edges, this->Tris[i].VertIndex[j], this->Tris[i].VertIndex[(j+1)%3], i);
-        }
-      }
     }
     #endif
   } else {
@@ -337,9 +320,6 @@ void VMeshModel::Load_MD2 (const vuint8 *Data, int DataSize) {
 
   // if there were some errors, disable shadows for this model, it is probably broken anyway
   this->HadErrors = hadError;
-
-  // store edges
-  CopyEdgesTo(this->Edges, Edges);
 
   // skins
   const MD2Skin *pskindesc = (const MD2Skin *)((const vuint8 *)pmodel+pmodel->get_ofsskins());

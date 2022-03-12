@@ -109,6 +109,17 @@ void VMeshModel::LoadFromData (const vuint8 *Data, int DataSize) {
   } else {
     Sys_Error("model '%s' is in unknown format", *Name);
   }
+
+  /*k8: nope, don't do this, because `Frames` keeps pointers to arrays
+  Skins.condense();
+  Frames.condense();
+  AllVerts.condense();
+  AllNormals.condense();
+  STVerts.condense();
+  Tris.condense();
+  AllPlanes.condense();
+  Edges.condense();
+  */
 }
 
 
@@ -158,3 +169,56 @@ void VMeshModel::LoadFromWad () {
 
   Z_Free(Data);
 }
+
+
+//==========================================================================
+//
+//  VMeshModel::EnsureEdgesPlanes
+//
+//==========================================================================
+void VMeshModel::EnsureEdgesPlanes () {
+  if (AllPlanes.length() || Edges.length()) return;
+  if (Frames.length() == 0 || Tris.length() == 0) return;
+
+  // build planes
+  AllPlanes.setLength(Tris.length());
+  for (int tidx = 0; tidx < Tris.length(); ++tidx) {
+    // plane (for each triangle)
+    const VMeshTri &tri = Tris[tidx];
+    const TVec v1 = AllVerts[tri.VertIndex[0]];
+    const TVec v2 = AllVerts[tri.VertIndex[1]];
+    const TVec v3 = AllVerts[tri.VertIndex[2]];
+    const TVec d1 = v2-v3;
+    const TVec d2 = v1-v3;
+    TVec PlaneNormal = d1.cross(d2);
+    if (PlaneNormal.lengthSquared() == 0.0f) {
+      PlaneNormal = TVec(0.0f, 0.0f, 1.0f);
+    } else {
+      PlaneNormal = PlaneNormal.normalise();
+    }
+    const float PlaneDist = PlaneNormal.dot(v3);
+    AllPlanes[tidx].Set(PlaneNormal, PlaneDist);
+  }
+
+  // build edges
+  TArray<VTempEdge> bldEdges;
+  for (int tidx = 0; tidx < Tris.length(); ++tidx) {
+    // plane (for each triangle)
+    const VMeshTri &tri = Tris[tidx];
+    for (unsigned j = 0; j < 3; ++j) {
+      AddEdge(bldEdges, tri.VertIndex[j], tri.VertIndex[(j+1)%3], tidx);
+    }
+  }
+
+  // store edges
+  CopyEdgesTo(Edges, bldEdges);
+
+  // assign planes to frames
+  int pidx = 0;
+  for (int fidx = 0; fidx < Frames.length(); ++fidx) {
+    VMeshFrame &frm = Frames[fidx];
+    frm.Planes = &AllPlanes[pidx];
+    pidx += frm.TriCount;
+  }
+}
+

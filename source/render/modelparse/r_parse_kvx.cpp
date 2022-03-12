@@ -296,7 +296,6 @@ bool Voxel::loadKV6 (VStream &st) {
   }
 
   TArray<KVox> kvox;// = new KVox[](voxcount);
-  kvox.reserve(voxcount);
   for (vuint32 vidx = 0; vidx < voxcount; ++vidx) {
     KVox &kv = kvox.alloc();
     vuint8 r8, g8, b8;
@@ -698,10 +697,8 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
     Frames.clear();
     AllVerts.clear();
     AllNormals.clear();
-    AllPlanes.clear();
     STVerts.clear();
     Tris.clear();
-    Edges.clear();
   }
 
   VMemoryStreamRO memst(this->Name, Data, DataSize);
@@ -741,7 +738,8 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
     vxt.data = vox.coltex;
     //vxt.tex = nullptr;
     vox.coltex = nullptr;
-    VMeshModel::SkinInfo &si = Skins.alloc();
+    Skins.setLength(1);
+    VMeshModel::SkinInfo &si = Skins[0];
     si.fileName = VName(*fname);
     si.textureId = -1;
     si.shade = -1;
@@ -751,69 +749,58 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
   XVtxInfo nfo;
   nfo.mdl = this;
   nfo.vox = &vox;
-  TArray<VTempEdge> bldEdges;
-  Tris.reserve(vox.indicies.length()/4*2);
-  AllPlanes.reserve(Tris.length());
-  for (int qidx = 0; qidx < vox.indicies.length(); qidx += 4) {
-    // plane (for each triangle)
+  Tris.setLength(vox.indicies.length()/4*2);
+  int triidx = 0;
+  for (int qidx = 0; qidx < vox.indicies.length(); qidx += 4, triidx += 2) {
     const TVec v1 = vox.vertices[vox.indicies[qidx+0]].asTVec();
     const TVec v2 = vox.vertices[vox.indicies[qidx+1]].asTVec();
     const TVec v3 = vox.vertices[vox.indicies[qidx+2]].asTVec();
     const TVec d1 = v2-v3;
     const TVec d2 = v1-v3;
     TVec PlaneNormal = d1.cross(d2);
-    if (PlaneNormal.lengthSquared() == 0.0f) PlaneNormal = TVec(0.0f, 0.0f, 1.0f);
-    PlaneNormal = PlaneNormal.normalise();
-    const float PlaneDist = PlaneNormal.dot(v3);
-    TPlane pl;
-    pl.Set(PlaneNormal, PlaneDist);
-    // two planes for two triangles
-    AllPlanes.append(pl);
-    AllPlanes.append(pl);
+    if (PlaneNormal.lengthSquared() == 0.0f) {
+      PlaneNormal = TVec(0.0f, 0.0f, 1.0f);
+    } else {
+      PlaneNormal = PlaneNormal.normalise();
+    }
 
-    int vx0 = insVertex(vox.indicies[qidx+0], PlaneNormal, nfo);
-    int vx1 = insVertex(vox.indicies[qidx+1], PlaneNormal, nfo);
-    int vx2 = insVertex(vox.indicies[qidx+2], PlaneNormal, nfo);
-    int vx3 = insVertex(vox.indicies[qidx+3], PlaneNormal, nfo);
+    const int vx0 = insVertex(vox.indicies[qidx+0], PlaneNormal, nfo);
+    const int vx1 = insVertex(vox.indicies[qidx+1], PlaneNormal, nfo);
+    const int vx2 = insVertex(vox.indicies[qidx+2], PlaneNormal, nfo);
+    const int vx3 = insVertex(vox.indicies[qidx+3], PlaneNormal, nfo);
 
-    VMeshTri &tri0 = Tris.alloc();
+    VMeshTri &tri0 = Tris[triidx+0];
     tri0.VertIndex[0] = vx0;
     tri0.VertIndex[1] = vx1;
     tri0.VertIndex[2] = vx2;
-    for (unsigned j = 0; j < 3; ++j) {
-      AddEdge(bldEdges, tri0.VertIndex[j], tri0.VertIndex[(j+1)%3], Tris.length()-1);
-    }
 
-    VMeshTri &tri1 = Tris.alloc();
+    VMeshTri &tri1 = Tris[triidx+1];
     tri1.VertIndex[0] = vx2;
     tri1.VertIndex[1] = vx3;
     tri1.VertIndex[2] = vx0;
-    for (unsigned j = 0; j < 3; ++j) {
-      AddEdge(bldEdges, tri1.VertIndex[j], tri1.VertIndex[(j+1)%3], Tris.length()-1);
-    }
   }
 
-  vassert(AllPlanes.length() == Tris.length());
+  AllNormals.condense();
+  AllVerts.condense();
+  STVerts.condense();
   vassert(AllNormals.length() == AllVerts.length());
 
   GCon->Logf(NAME_Init, "created 3d model for voxel '%s'; %d total vertices, %d unique vertices",
              *this->Name, nfo.total, AllVerts.length());
 
+  Frames.setLength(1);
   {
-    VMeshFrame &Frame = Frames.alloc();
+    VMeshFrame &Frame = Frames[0];
     Frame.Name = "frame_0";
     Frame.Scale = TVec(1.0f, 1.0f, 1.0f);
     Frame.Origin = TVec(0.0f, 0.0f, 0.0f); //TVec(vox.cx, vox.cy, vox.cz);
     Frame.Verts = &AllVerts[0];
     Frame.Normals = &AllNormals[0];
-    Frame.Planes = &AllPlanes[0];
+    Frame.Planes = nullptr;
     Frame.TriCount = Tris.length();
     Frame.VertsOffset = 0;
     Frame.NormalsOffset = 0;
   }
-
-  // store edges
-  CopyEdgesTo(Edges, bldEdges);
 
   strm = FL_OpenSysFileWrite(cacheFileName);
   if (strm) {
@@ -845,29 +832,6 @@ bool VMeshModel::Load_KVXCache (VStream *st) {
   st->Serialise(sign, 8);
   if (memcmp(sign, "K8VOXMDL", 8) != 0) return false;
 
-  // skins
-  {
-    vuint16 skins;
-    *st << skins;
-    for (int f = 0; f < (int)skins; ++f) {
-      vuint16 w, h;
-      *st << w << h;
-      vuint8 *data = (vuint8 *)Z_Calloc((vuint32)w*(vuint32)h*4);
-      st->Serialise(data, (vuint32)w*(vuint32)h*4);
-      if (voxTextures.length() == 0) GTextureManager.RegisterTextureLoader(&voxTextureLoader);
-      VStr fname = va("\x01:voxtexure:%d", voxTextures.length());
-      VoxelTexture &vxt = voxTextures.alloc();
-      vxt.fname = fname;
-      vxt.width = w;
-      vxt.height = h;
-      vxt.data = data;
-      VMeshModel::SkinInfo &si = Skins.alloc();
-      si.fileName = VName(*fname);
-      si.textureId = -1;
-      si.shade = -1;
-    }
-  }
-
   // vertices
   {
     vuint32 count;
@@ -898,17 +862,6 @@ bool VMeshModel::Load_KVXCache (VStream *st) {
     }
   }
 
-  // planes
-  {
-    vuint32 count;
-    *st << count;
-    AllPlanes.setLength((int)count);
-    for (int f = 0; f < AllPlanes.length(); ++f) {
-      *st << AllPlanes[f].normal.x << AllPlanes[f].normal.y << AllPlanes[f].normal.z;
-      *st << AllPlanes[f].dist;
-    }
-  }
-
   // triangles
   {
     vuint32 count;
@@ -916,17 +869,6 @@ bool VMeshModel::Load_KVXCache (VStream *st) {
     Tris.setLength((int)count);
     for (int f = 0; f < Tris.length(); ++f) {
       *st << Tris[f].VertIndex[0] << Tris[f].VertIndex[1] << Tris[f].VertIndex[2];
-    }
-  }
-
-  // edges
-  {
-    vuint32 count;
-    *st << count;
-    Edges.setLength((int)count);
-    for (int f = 0; f < Edges.length(); ++f) {
-      *st << Edges[f].Vert1 << Edges[f].Vert2;
-      *st << Edges[f].Tri1 << Edges[f].Tri2;
     }
   }
 
@@ -945,8 +887,29 @@ bool VMeshModel::Load_KVXCache (VStream *st) {
       Frames[f].Verts = &AllVerts[(int)vidx];
       *st << vidx;
       Frames[f].Normals = &AllNormals[(int)vidx];
-      *st << vidx;
-      Frames[f].Planes = &AllPlanes[(int)vidx];
+    }
+  }
+
+  // skins
+  {
+    vuint16 skins;
+    *st << skins;
+    for (int f = 0; f < (int)skins; ++f) {
+      vuint16 w, h;
+      *st << w << h;
+      vuint8 *data = (vuint8 *)Z_Calloc((vuint32)w*(vuint32)h*4);
+      st->Serialise(data, (vuint32)w*(vuint32)h*4);
+      if (voxTextures.length() == 0) GTextureManager.RegisterTextureLoader(&voxTextureLoader);
+      VStr fname = va("\x01:voxtexure:%d", voxTextures.length());
+      VoxelTexture &vxt = voxTextures.alloc();
+      vxt.fname = fname;
+      vxt.width = w;
+      vxt.height = h;
+      vxt.data = data;
+      VMeshModel::SkinInfo &si = Skins.alloc();
+      si.fileName = VName(*fname);
+      si.textureId = -1;
+      si.shade = -1;
     }
   }
 
@@ -962,25 +925,6 @@ bool VMeshModel::Load_KVXCache (VStream *st) {
 void VMeshModel::Save_KVXCache (VStream *st) {
   const char *sign = "K8VOXMDL";
   st->Serialise(sign, 8);
-
-  // skins
-  {
-    vuint16 skins = Skins.length();
-    *st << skins;
-    for (int f = 0; f < Skins.length(); ++f) {
-      VStr fname = VStr(*Skins[f].fileName);
-      vassert(fname.startsWith("\x01:voxtexure:"));
-      VStr ss = fname;
-      ss.chopLeft(12);
-      vassert(ss.length());
-      int idx = VStr::atoi(*ss);
-      vassert(idx >= 0 && idx < voxTextures.length());
-      vuint16 w = voxTextures[idx].width;
-      vuint16 h = voxTextures[idx].height;
-      *st << w << h;
-      st->Serialise(voxTextures[idx].data, voxTextures[idx].width*voxTextures[idx].height*4);
-    }
-  }
 
   // vertices
   {
@@ -1009,32 +953,12 @@ void VMeshModel::Save_KVXCache (VStream *st) {
     }
   }
 
-  // planes
-  {
-    vuint32 count = (vuint32)AllPlanes.length();
-    *st << count;
-    for (int f = 0; f < AllPlanes.length(); ++f) {
-      *st << AllPlanes[f].normal.x << AllPlanes[f].normal.y << AllPlanes[f].normal.z;
-      *st << AllPlanes[f].dist;
-    }
-  }
-
   // triangles
   {
     vuint32 count = (vuint32)Tris.length();
     *st << count;
     for (int f = 0; f < Tris.length(); ++f) {
       *st << Tris[f].VertIndex[0] << Tris[f].VertIndex[1] << Tris[f].VertIndex[2];
-    }
-  }
-
-  // edges
-  {
-    vuint32 count = (vuint32)Edges.length();
-    *st << count;
-    for (int f = 0; f < Edges.length(); ++f) {
-      *st << Edges[f].Vert1 << Edges[f].Vert2;
-      *st << Edges[f].Tri1 << Edges[f].Tri2;
     }
   }
 
@@ -1051,8 +975,25 @@ void VMeshModel::Save_KVXCache (VStream *st) {
       *st << vidx;
       vidx = (vuint32)(ptrdiff_t)(Frames[f].Normals-&AllNormals[0]);
       *st << vidx;
-      vidx = (vuint32)(ptrdiff_t)(Frames[f].Planes-&AllPlanes[0]);
-      *st << vidx;
+    }
+  }
+
+  // skins
+  {
+    vuint16 skins = Skins.length();
+    *st << skins;
+    for (int f = 0; f < Skins.length(); ++f) {
+      VStr fname = VStr(*Skins[f].fileName);
+      vassert(fname.startsWith("\x01:voxtexure:"));
+      VStr ss = fname;
+      ss.chopLeft(12);
+      vassert(ss.length());
+      int idx = VStr::atoi(*ss);
+      vassert(idx >= 0 && idx < voxTextures.length());
+      vuint16 w = voxTextures[idx].width;
+      vuint16 h = voxTextures[idx].height;
+      *st << w << h;
+      st->Serialise(voxTextures[idx].data, voxTextures[idx].width*voxTextures[idx].height*4);
     }
   }
 }

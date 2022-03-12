@@ -906,6 +906,8 @@ void VOpenGLDrawer::DrawAliasModelShadow (const TVec &origin, const TAVec &angle
   VMeshFrame *FrameDesc = &Mdl->Frames[frame];
   VMeshFrame *NextFrameDesc = &Mdl->Frames[nextframe];
 
+  Mdl->EnsureEdgesPlanes();
+
   UploadModel(Mdl);
 
   VMatrix4 RotationMatrix;
