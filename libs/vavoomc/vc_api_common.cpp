@@ -250,6 +250,8 @@ VStr VObject::PF_FormatString () {
   P_GET_STR(str);
   //fprintf(stderr, "<%s>\n", *str);
 
+  const int startpi = pi;
+
   PFFmtBuf pbuf((size_t)str.length());
   int spos = 0;
   while (spos < str.length()) {
@@ -322,7 +324,7 @@ VStr VObject::PF_FormatString () {
               break;
             case TYPE_String:
               pbuf.putStr(*(VStr *)&params[pi].p, width, toRight, zeroFill);
-              ((VStr *)&params[pi].p)->Clean();
+              //((VStr *)&params[pi].p)->Clean(); // done at the end
               break;
             default: VObject::VMDumpCallStack(); VPackage::InternalFatalError(va("Invalid argument to format specifier '%c'", fspec));
           }
@@ -370,6 +372,39 @@ VStr VObject::PF_FormatString () {
           }
           ++pi;
           break;
+        case 'c': // char
+          if (pi >= MAX_PRINTF_PARAMS) { VObject::VMDumpCallStack(); VPackage::InternalFatalError("Out of arguments to string formatting function"); }
+          switch (ptypes[pi].Type) {
+            case TYPE_Int: case TYPE_Byte: case TYPE_Bool: pbuf.putStr(VStr((char)params[pi].i), width, toRight, zeroFill); break;
+            case TYPE_Float: pbuf.putStr(VStr((char)params[pi].f), width, toRight, zeroFill); break;
+            case TYPE_Name:
+              {
+                VName n = *(VName *)&params[pi].i;
+                const char *ns = *n;
+                if (ns && ns[0]) {
+                  char buf[2];
+                  buf[0] = ns[0];
+                  buf[1] = 0;
+                  pbuf.putStr(VStr(buf), width, toRight, zeroFill);
+                }
+              }
+              break;
+            case TYPE_String:
+              {
+                VStr s = *((VStr *)&params[pi].p);
+                //((VStr *)&params[pi].p)->Clean(); // done at the end
+                if (s.length()) {
+                  char buf[2];
+                  buf[0] = s[0];
+                  buf[1] = 0;
+                  pbuf.putStr(VStr(buf), width, toRight, zeroFill);
+                }
+              }
+              break;
+            default: VObject::VMDumpCallStack(); VPackage::InternalFatalError(va("Invalid argument to format specifier '%c'", fspec));
+          }
+          ++pi;
+          break;
         case 's': // this can convert most of the types to string
         case 'q': // this can convert most of the types to string
           if (pi >= MAX_PRINTF_PARAMS) { VObject::VMDumpCallStack(); VPackage::InternalFatalError("Out of arguments to string formatting function"); }
@@ -385,7 +420,7 @@ VStr VObject::PF_FormatString () {
               break;
             case TYPE_String:
               pbuf.putStr(*(VStr *)&params[pi].p, width, toRight, zeroFill, (fspec == 'q'));
-              ((VStr *)&params[pi].p)->Clean();
+              //((VStr *)&params[pi].p)->Clean(); // done at the end
               break;
             case TYPE_Pointer: pbuf.putPtr(params[pi].p); break;
             case TYPE_Reference:
@@ -497,6 +532,14 @@ VStr VObject::PF_FormatString () {
   }
 
   if (pi < MAX_PRINTF_PARAMS) GLog.Log(NAME_Dev, "PF_FormatString: Not all params were used");
+
+  // clean strings
+  pi = startpi;
+  while (pi < MAX_PRINTF_PARAMS) {
+         if (ptypes[pi].Type == TYPE_String) ((VStr *)&params[pi].p)->Clean();
+    else if (ptypes[pi].Type == TYPE_Delegate) ++pi;
+    ++pi;
+  }
   //if (pi > count) GLog.Log(NAME_Dev, "PF_FormatString: Param count overflow");
 
   //fprintf(stderr, "  DONE: <%s>\n", pbuf.getCStr());
