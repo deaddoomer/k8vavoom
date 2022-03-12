@@ -795,6 +795,10 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
     tri1.VertIndex[2] = vx0;
   }
 
+  if (AllVerts.length() > 65535) {
+    GCon->Logf(NAME_Init, "3d model for voxel '%s' has too many vertices", *this->Name);
+  }
+
   AllNormals.condense();
   AllVerts.condense();
   STVerts.condense();
