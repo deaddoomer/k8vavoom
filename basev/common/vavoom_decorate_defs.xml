@@ -9,7 +9,7 @@
     <prop_string_unsupported name="PainType" />
     <!-- Behaviour -->
     <prop_int name="Health" property="Health" />
-    <prop_int name="GibHealth" property="GibsHealth" />
+    <prop_int name="GibHealth" property="GibsHealth" forcenegative="true" />
     <prop_int name="WoundHealth" property="WoundHealth" />
     <prop_int name="ReactionTime" property="ReactionCount" />
     <prop_pain_chance name="PainChance" />

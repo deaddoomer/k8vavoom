@@ -521,6 +521,7 @@ struct VPropDef {
   VStr CPrefix;
 
   bool ShowWarning;
+  bool ForceNegative;
 
   inline void SetField (VClass *Class, const char *FieldName) {
     Field = Class->FindFieldChecked(FieldName);
@@ -599,9 +600,15 @@ struct VFlagList {
     P.Type = Type;
     //P.Name = VName(*PN->GetAttribute("name"), VName::AddLower);
     P.Name = PN->GetAttribute("name");
+    P.ShowWarning = false;
+    P.ForceNegative = false;
     if (checkUnsupported && PN->HasAttribute("warning")) {
       VStr bs = PN->GetAttribute("warning");
       if (bs.strEquCI("true") || bs.strEquCI("tan")) P.ShowWarning = true;
+    }
+    if (PN->HasAttribute("forcenegative")) {
+      VStr bs = PN->GetAttribute("forcenegative");
+      if (bs.strEquCI("true") || bs.strEquCI("tan")) P.ForceNegative = true;
     }
     PropsHash.put(VStr(P.Name), Props.length()-1);
     return P;
@@ -2660,10 +2667,14 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
       switch (pdef->Type) {
         case PROP_Int:
           sc->ExpectNumberWithSign();
+          if (pdef->ForceNegative && sc->Number > 0) sc->Number = -sc->Number;
           pdef->Field->SetInt(DefObj, sc->Number);
           break;
         case PROP_IntTrunced:
           sc->ExpectFloatWithSign();
+          if (pdef->ForceNegative && sc->Float > 0) sc->Float = -sc->Float;
+               if (sc->Float <= -0x1000000) sc->Float = -0x0ffffff;
+          else if (sc->Float >= +0x1000000) sc->Float = +0x0ffffff;
           pdef->Field->SetInt(DefObj, (int)sc->Float);
           break;
         case PROP_IntConst:
@@ -2701,6 +2712,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
           break;
         case PROP_Float:
           sc->ExpectFloatWithSign();
+          if (pdef->ForceNegative && sc->Float > 0) sc->Float = -sc->Float;
           pdef->Field->SetFloat(DefObj, sc->Float);
           break;
         case PROP_FloatUnsupported:
