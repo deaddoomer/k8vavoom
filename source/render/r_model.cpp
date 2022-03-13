@@ -254,7 +254,6 @@ struct VClassModelScript {
 // ////////////////////////////////////////////////////////////////////////// //
 struct VModel {
   VStr Name;
-  bool NoSelfShadow;
   TArray<VScriptModel> Models;
   VClassModelScript *DefaultClass;
 };
@@ -914,9 +913,6 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
   // verify that it's a model definition file
   if (Doc->Root.Name != "vavoom_model_definition") Sys_Error("%s: %s is not a valid model definition file", *Doc->Root.Loc.toStringNoCol(), *Mdl->Name);
 
-  Mdl->DefaultClass = nullptr;
-  Mdl->NoSelfShadow = ParseBool(&Doc->Root, "noselfshadow", false);
-
   // check top-level nodes
   {
     auto bad = Doc->Root.FindBadChild("model", "class", nullptr);
@@ -926,9 +922,23 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
   //if (Doc->Root.HasAttributes()) Sys_Error("%s: model file node should not have attributes", *Doc->Root.Loc.toStringNoCol());
   // check attrs
   {
-    auto bad = Doc->Root.FindBadAttribute("noselfshadow", nullptr);
+    auto bad = Doc->Root.FindBadAttribute("noselfshadow", "noshadow",
+                                          "fullbright", "usedepth",
+                                          "iwadonly", "thiswadonly",
+                                          "rotation", "bobbing",
+                                          nullptr);
     if (bad) Sys_Error("%s: model file has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *bad->Name);
   }
+
+  Mdl->DefaultClass = nullptr;
+  const bool globNoSelfShadow = ParseBool(&Doc->Root, "noselfshadow", true);
+  const bool globNoShadow = ParseBool(&Doc->Root, "noshadow", false);
+  const bool globFullBright = ParseBool(&Doc->Root, "fullbright", false);
+  const bool globUseDepth = ParseBool(&Doc->Root, "usedepth", false);
+  const bool globIWadOnly = ParseBool(&Doc->Root, "iwadonly", false);
+  const bool globThisWadOnly = ParseBool(&Doc->Root, "thiswadonly", false);
+  const bool globRotation = ParseBool(&Doc->Root, "rotation", false);
+  const bool globBobbing = ParseBool(&Doc->Root, "bobbing", false);
 
   // process model definitions
   for (VXmlNode *ModelNode : Doc->Root.childrenWithName("model")) {
@@ -966,7 +976,8 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
 
       // check attrs
       {
-        auto bad = ModelDefNode->FindBadAttribute("file", "mesh_index", "version", "position_file", "skin_anim_speed", "skin_anim_range",
+        auto bad = ModelDefNode->FindBadAttribute("file", "mesh_index", "version", "position_file",
+                                                  "skin_anim_speed", "skin_anim_range",
                                                   "fullbright", "noshadow", "usedepth", "allowtransparency",
                                                   "shift", "shift_x", "shift_y", "shift_z",
                                                   "offset", "offset_x", "offset_y", "offset_z",
@@ -1021,11 +1032,11 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       ParseTransform(mfile, Md2->MeshIndex, ModelDefNode, BaseTrans.MatTrans);
 
       // fullbright flag
-      Md2->FullBright = ParseBool(ModelDefNode, "fullbright", false);
+      Md2->FullBright = ParseBool(ModelDefNode, "fullbright", globFullBright);
       // no shadow flag
-      Md2->NoShadow = ParseBool(ModelDefNode, "noshadow", false);
+      Md2->NoShadow = ParseBool(ModelDefNode, "noshadow", globNoShadow);
       // force depth test flag (for things like monsters with alpha transaparency)
-      Md2->UseDepth = ParseBool(ModelDefNode, "usedepth", false);
+      Md2->UseDepth = ParseBool(ModelDefNode, "usedepth", globUseDepth);
 
       // allow transparency in skin files
       // for skins that are transparent in solid models (Alpha = 1.0f)
@@ -1144,6 +1155,22 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         curframeindex = eidx+1;
       }
 
+      // no frames? add one
+      if (Md2->Frames.length() == 0) {
+        VScriptSubModel::VFrame &F = Md2->Frames.Alloc();
+        // frame index
+        F.Index = 0;
+        // position model frame index
+        F.PositionIndex = 0;
+        // frame transformation
+        F.Transform = BaseTrans;
+        // alpha
+        F.AlphaStart = 1.0f;
+        F.AlphaEnd = 1.0f;
+        // skin index
+        F.SkinIndex = -1;
+      }
+
       // process skins
       for (VXmlNode *SkN : ModelDefNode->childrenWithName("skin")) {
         if (isVoxel) Sys_Error("%s: voxel model '%s' definition cannot have skins", *SkN->Loc.toStringNoCol(), *Mdl->Name);
@@ -1245,7 +1272,10 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
   for (VXmlNode *ClassDefNode : Doc->Root.childrenWithName("class")) {
     // check attrs
     {
-      auto bad = ClassDefNode->FindBadAttribute("name", "noselfshadow", "iwadonly", "thiswadonly", "rotation", "bobbing", nullptr);
+      auto bad = ClassDefNode->FindBadAttribute("name", "noselfshadow",
+                                                "iwadonly", "thiswadonly",
+                                                "rotation", "bobbing",
+                                                nullptr);
       if (bad) Sys_Error("%s: model '%s' class definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
     }
 
@@ -1267,12 +1297,12 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
     VClassModelScript *Cls = new VClassModelScript();
     Cls->Model = Mdl;
     Cls->Name = (xcls ? xcls->GetName() : *vcClassName);
-    Cls->NoSelfShadow = (Mdl->NoSelfShadow || ParseBool(ClassDefNode, "noselfshadow", false));
+    Cls->NoSelfShadow = ParseBool(ClassDefNode, "noselfshadow", globNoSelfShadow);
     Cls->OneForAll = false;
     Cls->CacheBuilt = false;
     Cls->isGZDoom = isGZDoom;
-    Cls->iwadonly = ParseBool(ClassDefNode, "iwadonly", false);
-    Cls->thiswadonly = ParseBool(ClassDefNode, "thiswadonly", false);
+    Cls->iwadonly = ParseBool(ClassDefNode, "iwadonly", globIWadOnly);
+    Cls->thiswadonly = ParseBool(ClassDefNode, "thiswadonly", globThisWadOnly);
 
     bool deleteIt = false;
     if (cli_IgnoreModelClass.has(*Cls->Name)) {
@@ -1293,11 +1323,8 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
     bool hasDisabled = false;
     int frmFirstIdx = Cls->Frames.length();
 
-    int defrot = -1;
-    if (ClassDefNode->HasAttribute("rotation")) defrot = (ParseBool(ClassDefNode, "rotation", false) ? 1 : 0);
-
-    int defbob = -1;
-    if (ClassDefNode->HasAttribute("bobbing")) defbob = (ParseBool(ClassDefNode, "bobbing", false) ? 1 : 0);
+    const bool defrot = ParseBool(ClassDefNode, "rotation", globRotation);
+    const bool defbob = ParseBool(ClassDefNode, "bobbing", globBobbing);
 
     // process frames
     for (VXmlNode *StateDefNode : ClassDefNode->childrenWithName("state")) {
@@ -1307,6 +1334,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         auto bad = StateDefNode->FindBadAttribute("angle_yaw", "angle_pitch", "angle_roll",
                                                   "rotate_yaw", "rotate_pitch", "rotate_roll",
                                                   "rotation", "bobbing",
+                                                  "rotation_speed", "bobbing_speed",
                                                   "gzdoom", "usepitch", "useroll",
                                                   "index", "last_index", "sprite", "sprite_frame",
                                                   "model", "frame_index", "submodel_index", "hidden",
@@ -1321,11 +1349,13 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       ParseAngle(StateDefNode, "pitch", F.anglePitch);
       ParseAngle(StateDefNode, "roll", F.angleRoll);
 
-      if (defrot >= 0) F.rotateSpeed = (defrot > 0 ? 100.0f : 0.0f);
-      if (defbob >= 0) F.bobSpeed = (defbob > 0 ? 180.0f : 0.0f);
+      F.rotateSpeed = ParseFloatWithDefault(StateDefNode, "rotation_speed", -1.0f);
+      F.bobSpeed = ParseFloatWithDefault(StateDefNode, "rotation_speed", -1.0f);
 
-      if (ParseBool(StateDefNode, "rotation", false)) F.rotateSpeed = 100.0f;
-      if (ParseBool(StateDefNode, "bobbing", false)) F.bobSpeed = 180.0f;
+      if (!ParseBool(StateDefNode, "rotation", defrot)) F.rotateSpeed = 0.0f;
+      if (!ParseBool(StateDefNode, "bobbing", defbob)) F.bobSpeed = 0.0f;
+      if (F.rotateSpeed < 0.0f) F.rotateSpeed = 100.0f;
+      if (F.bobSpeed < 0.0f) F.bobSpeed = 180.0f;
 
       // some special things
       F.gzdoom = ParseBool(StateDefNode, "gzdoom", false);
@@ -1435,23 +1465,51 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
           prevValid = true;
         }
       } else {
-        Sys_Error("Model '%s' has invalid state", *Mdl->Name);
+        Sys_Error("%s: Model '%s' has invalid state", *StateDefNode->Loc.toStringNoCol(), *Mdl->Name);
       }
 
-      F.FrameIndex = ParseIntWithDefault(StateDefNode, "frame_index", 0);
       F.SubModelIndex = ParseIntWithDefault(StateDefNode, "submodel_index", -1);
       if (F.SubModelIndex < 0) F.SubModelIndex = -1;
+
+      if (!StateDefNode->HasAttribute("frame_index")) {
+        int okfrm = true;
+        for (int sid = 0; sid < Mdl->Models.length(); ++sid) {
+          if (Mdl->Models[sid].SubModels.length()) {
+            if (Mdl->Models[sid].SubModels[0].Frames.length() > 1) {
+              okfrm = false;
+              break;
+            }
+          }
+        }
+        if (!okfrm) {
+          Sys_Error("%s: model '%s' has state without frame index", *StateDefNode->Loc.toStringNoCol(), *Mdl->Name);
+        }
+        F.FrameIndex = 0;
+      } else {
+        F.FrameIndex = ParseIntWithDefault(StateDefNode, "frame_index", 0);
+      }
       if (ParseBool(StateDefNode, "hidden", false)) F.SubModelIndex = -2; // hidden
 
-      F.ModelIndex = -1;
-      VStr MdlName = StateDefNode->GetAttribute("model");
-      for (int i = 0; i < Mdl->Models.length(); ++i) {
-        if (Mdl->Models[i].Name == *MdlName) {
-          F.ModelIndex = i;
-          break;
+      if (!StateDefNode->HasAttribute("model")) {
+        if (Mdl->Models.length() != 1) {
+          Sys_Error("%s: model '%s' has no submodel name", *StateDefNode->Loc.toStringNoCol(),
+                    *Mdl->Name);
+        }
+        F.ModelIndex = 0;
+      } else {
+        F.ModelIndex = -1;
+        VStr MdlName = StateDefNode->GetAttribute("model");
+        for (int i = 0; i < Mdl->Models.length(); ++i) {
+          if (Mdl->Models[i].Name == *MdlName) {
+            F.ModelIndex = i;
+            break;
+          }
+        }
+        if (F.ModelIndex == -1) {
+          Sys_Error("%s: model '%s' has no submodel '%s'", *StateDefNode->Loc.toStringNoCol(),
+                    *Mdl->Name, *MdlName);
         }
       }
-      if (F.ModelIndex == -1) Sys_Error("%s has no model %s", *Mdl->Name, *MdlName);
 
       F.Inter = ParseFloatWithDefault(StateDefNode, "inter", 0.0f);
 
