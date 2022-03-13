@@ -1191,7 +1191,7 @@ override bool Touch (Entity InOther, bool disableEffects) {
 
     if (bMThruSpecies && Target && IsSameSpecies(Target, self)) return ProcessHitFlags(Other, true, disableEffects);
 
-    if ((BounceType == BOUNCE_Doom || BounceType == BOUNCE_Hexen) && MissileDamage == 0) {
+    if ((BounceType == BOUNCE_Doom || BounceType == BOUNCE_Hexen) && /*MissileDamage*/GetMissileDamage(0, 1) == 0) {
       // yet ripper rips, not bounces, even if it doesn't do any damage!
       if (Target != Other && Other.bSolid && !Other.bCorpse) {
         //ProcessHitFlags(Other, false, disableEffects);
@@ -3170,7 +3170,7 @@ override int GetActorProperty (int Prop) {
   switch (Prop) {
     case APROP_Health: return Health;
     case APROP_Speed: return int(Speed/35.0*65536.0);
-    case APROP_Damage: return MissileDamage;
+    case APROP_Damage: return GetMissileDamage(0, 1);
     case APROP_Alpha: return int(Alpha*65536.0);
     case APROP_RenderStyle: return ACSRenderStyleFromVavoom(RenderStyle);
     case APROP_Ambush: return bAmbush;
