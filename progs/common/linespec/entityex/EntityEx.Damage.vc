@@ -553,12 +553,28 @@ void Died (EntityEx source, EntityEx inflictor) {
   if (!GHealth) {
     GHealth = int(float(-InitialHealth)*LineSpecialGameInfo(Level.Game).GibsHealthFactor);
   }
+  // just in case; it should always be negative, but...
+  if (GHealth > 0) GHealth = -GHealth;
+
+  if (inflictor) {
+    //printdebug("INFLICTOR: %C: bNoExtremeDeath=%B; bExtremeDeath=%B; health=%s; GHealth=%s", inflictor, inflictor.bNoExtremeDeath, inflictor.bExtremeDeath, Health, GHealth);
+    if (inflictor.bNoExtremeDeath) {
+      // prevent gibing animation
+      Health = -1;
+      GHealth = -1000;
+    } else if (inflictor.bExtremeDeath) {
+      // always extreme death
+      Health = -5000;
+      GHealth = -1000;
+    }
+  }
 
   // handle possible unmorph on death
   bool WasGibbed = (Health < GHealth);
   EntityEx RealSelf = none;
   int RealStyle = 0;
   int RealHealth = 0;
+
   if (MorphedDeath(RealSelf, RealStyle, RealHealth)) {
     if (!(RealStyle&MORPH_UNDOBYDEATHSAVES)) {
       if (WasGibbed) {
@@ -587,17 +603,6 @@ void Died (EntityEx source, EntityEx inflictor) {
     // set Target to the thing that killed it
     // it's needed for Strife's special dropped items
     Target = source;
-  }
-
-  if (inflictor) {
-    //printdebug("INFLICTOR: %C: bNoExtremeDeath=%B; bExtremeDeath=%B; health=%s", inflictor, inflictor.bNoExtremeDeath, inflictor.bExtremeDeath, Health);
-    if (inflictor.bNoExtremeDeath) {
-      // prevent gibing animation
-      Health = -1;
-    } else if (inflictor.bExtremeDeath) {
-      // always extreme death
-      Health = -5000;
-    }
   }
 
   if (source && source.bIsPlayer && PlayerEx(source.Player).IsWeaponAlwaysExtremeDeath()) {
