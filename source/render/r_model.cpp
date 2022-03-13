@@ -110,6 +110,7 @@ struct VScriptSubModel {
   bool NoShadow;
   bool UseDepth;
   bool AllowTransparency;
+  float AlphaMul;
 
   void copyFrom (VScriptSubModel &src) {
     Model = src.Model;
@@ -122,6 +123,7 @@ struct VScriptSubModel {
     NoShadow = src.NoShadow;
     UseDepth = src.UseDepth;
     AllowTransparency = src.AllowTransparency;
+    AlphaMul = src.AlphaMul;
     // copy skin names
     Skins.setLength(src.Skins.length());
     for (int f = 0; f < src.Skins.length(); ++f) Skins[f] = src.Skins[f];
@@ -138,6 +140,7 @@ struct VScriptSubModel {
 // ////////////////////////////////////////////////////////////////////////// //
 struct VScriptModel {
   VName Name;
+  bool HasAlphaMul;
   TArray<VScriptSubModel> SubModels;
 };
 
@@ -937,6 +940,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
 
     VScriptModel &SMdl = Mdl->Models.Alloc();
     SMdl.Name = *ModelNode->GetAttribute("name");
+    SMdl.HasAlphaMul = false;
     if (SMdl.Name == NAME_None) Sys_Error("%s: model declaration has empty name", *ModelNode->Loc.toStringNoCol());
 
     // check nodes
@@ -967,7 +971,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
                                                   "shift", "shift_x", "shift_y", "shift_z",
                                                   "offset", "offset_x", "offset_y", "offset_z",
                                                   "scale", "scale_x", "scale_y", "scale_z",
-                                                  "pivotz",
+                                                  "pivotz", "alpha_mul",
                                                   nullptr);
         if (bad) Sys_Error("%s: model '%s' definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
       }
@@ -1026,6 +1030,11 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       // allow transparency in skin files
       // for skins that are transparent in solid models (Alpha = 1.0f)
       Md2->AllowTransparency = ParseBool(ModelDefNode, "allowtransparency", false);
+
+      Md2->AlphaMul = ParseFloatWithDefault(ModelDefNode, "alpha_mul", 1.0f);
+           if (Md2->AlphaMul <= 0.0f) Md2->AlphaMul = 0.0f;
+      else if (Md2->AlphaMul >= 1.0f) Md2->AlphaMul = 1.0f;
+      else SMdl.HasAlphaMul = true;
 
       // process frames
       int curframeindex = 0;
@@ -2006,7 +2015,7 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
 {
   // some early rejects
   switch (Pass) {
-    case RPASS_Normal:
+    case RPASS_Normal: // lightmapped renderer is using this
       break;
     case RPASS_Ambient:
       if (ri.isAdditive()) return;
@@ -2028,8 +2037,9 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
       if (ri.isAdditive() || ri.isShaded()) return;
       //if (ri.stencilColor) return;
       break;
-    case RPASS_NonShadow:
-      if (!ri.isAdditive() && !ri.isShaded()) return;
+    case RPASS_NonShadow: // non-lightmapped renderers are using this for translucent models
+      // nope
+      //if (!ri.isAdditive() && !ri.isShaded()) return;
       break;
   }
 
@@ -2038,11 +2048,19 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
   VScriptModel &ScMdl = Cls.Model->Models[FDef.ModelIndex];
   const int allowedsubmod = FDef.SubModelIndex;
   if (allowedsubmod == -2) return; // this frame is hidden
+
   int submodindex = -1;
   for (auto &&SubMdl : ScMdl.SubModels) {
     ++submodindex;
     if (allowedsubmod >= 0 && submodindex != allowedsubmod) continue; // only one submodel allowed
     if (SubMdl.Version != -1 && SubMdl.Version != Version) continue;
+
+    if (ScMdl.HasAlphaMul) {
+      if (SubMdl.AlphaMul <= 0.0f) continue;
+      if (SubMdl.AlphaMul < 1.0f) {
+        if (Pass != RPASS_NonShadow && Pass != RPASS_Normal) continue;
+      }
+    }
 
     if (FDef.FrameIndex >= SubMdl.Frames.length()) {
       GCon->Logf("Bad sub-model frame index %d for model '%s' (class '%s')", FDef.FrameIndex, *ScMdl.Name, *Cls.Name);
@@ -2061,6 +2079,24 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
 
     VScriptSubModel::VFrame &F = SubMdl.Frames[FDef.FrameIndex];
     VScriptSubModel::VFrame &NF = SubMdl.Frames[Interpolate ? NFDef.FrameIndex : FDef.FrameIndex];
+
+    // alpha
+    float Md2Alpha = ri.alpha*SubMdl.AlphaMul;
+    if (ScMdl.HasAlphaMul) {
+      if (Pass == RPASS_NonShadow || Pass == RPASS_Normal) Md2Alpha *= SubMdl.AlphaMul;
+    }
+    if (FDef.AlphaStart != 1.0f || FDef.AlphaEnd != 1.0f) Md2Alpha *= FDef.AlphaStart+(FDef.AlphaEnd-FDef.AlphaStart)*Inter;
+    if (F.AlphaStart != 1.0f || F.AlphaEnd != 1.0f) Md2Alpha *= F.AlphaStart+(F.AlphaEnd-F.AlphaStart)*Inter;
+    if (Md2Alpha <= 0.01f) continue;
+    if (Md2Alpha > 1.0f) Md2Alpha = 1.0f;
+    //Md2Alpha = 0.8f;
+
+    // alpha-blended things should be rendered with "non-shadow" pass
+    // `RPASS_Normal` means "lightmapped renderer", it always does it right
+    if (Pass != RPASS_Normal) {
+      // translucent?
+      if (Pass != RPASS_NonShadow && Md2Alpha < 1.0f) continue;
+    }
 
     // locate the proper data
     SubMdl.Model->LoadFromWad();
@@ -2134,11 +2170,6 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
 
     // position
     TVec Md2Org = Org;
-
-    // alpha
-    float Md2Alpha = ri.alpha;
-    if (FDef.AlphaStart != 1.0f || FDef.AlphaEnd != 1.0f) Md2Alpha *= FDef.AlphaStart+(FDef.AlphaEnd-FDef.AlphaStart)*Inter;
-    if (F.AlphaStart != 1.0f || F.AlphaEnd != 1.0f) Md2Alpha *= F.AlphaStart+(F.AlphaEnd-F.AlphaStart)*Inter;
 
     const char *passname = nullptr;
     if (gl_dbg_log_model_rendering) {
