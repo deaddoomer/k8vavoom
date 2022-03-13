@@ -557,6 +557,34 @@ static void ParseVector (VXmlNode *SN, TVec &vec, const char *basename, bool pro
 
 //==========================================================================
 //
+//  parseGZScaleOfs
+//
+//==========================================================================
+static TVec parseGZScaleOfs (VXmlNode *SN, TVec vec) {
+  if (SN->FirstChild) {
+    Sys_Error("%s: gztransform node '%s' can't have children", *SN->Loc.toStringNoCol(), *SN->Name);
+  }
+  for (int f = 0; f < SN->Attributes.length(); ++f) {
+    int idx;
+         if (SN->Attributes[f].Name == "x") idx = 0;
+    else if (SN->Attributes[f].Name == "y") idx = 1;
+    else if (SN->Attributes[f].Name == "z") idx = 2;
+    else Sys_Error("%s: gztransform node '%s' has invalid attribute '%s'",
+                   *SN->Attributes[f].Loc.toStringNoCol(), *SN->Name, *SN->Attributes[f].Name);
+    VStr s = SN->Attributes[f].Value.xstrip();
+    float res = 0.0f;
+    if (!s.convertFloat(&res) || !isfinite(res)) {
+      Sys_Error("%s: invalid node '%s' attribute '%s' value '%s'",
+                *SN->Attributes[f].Loc.toStringNoCol(), *SN->Name, *SN->Attributes[f].Name, *s);
+    }
+    vec[idx] = res;
+  }
+  return vec;
+}
+
+
+//==========================================================================
+//
 //  performTransOperation
 //
 //==========================================================================
@@ -785,37 +813,6 @@ static void ParseTransform (VStr mfile, int mindex, VXmlNode *SN, VMatrix4 &tran
   finmt *= scalemat;
   finmt *= ofsmat;
 
-  #if 0
-  GCon->Logf("=== PREROT (%s : %d) ===", *mfile, mindex);
-  GCon->Logf("  shift : (%g,%g,%g)", shift.x, shift.y, shift.z);
-  GCon->Logf("  offset: (%g,%g,%g)", offset.x, offset.y, offset.z);
-  GCon->Logf("  scale : (%g,%g,%g)", scale.x, scale.y, scale.z);
-  GCon->Logf("  shift matrix:");
-  dumpMatrix("   ", shiftmat);
-  GCon->Logf("  offset matrix:");
-  dumpMatrix("   ", ofsmat);
-  GCon->Logf("  scale matrix:");
-  dumpMatrix("   ", scalemat);
-  GCon->Logf("  old prerot matrix:");
-  dumpMatrix("   ", trans);
-  GCon->Logf("  final matrix:");
-  dumpMatrix("   ", finmt);
-  VMatrix4Decomposed DecTrans;
-  finmt.decompose(DecTrans);
-  if (DecTrans.valid) {
-    GCon->Logf(" ---DEC----------");
-    GCon->Logf("    scale: (%g,%g,%g)", DecTrans.scale.x, DecTrans.scale.y, DecTrans.scale.z);
-    GCon->Logf("    trans: (%g,%g,%g)", DecTrans.translate.x, DecTrans.translate.y, DecTrans.translate.z);
-    #ifdef VMAT4_DECOMPOSE_ALLOW_SKEW
-    GCon->Logf("    skew : (%g,%g,%g)", DecTrans.skew.x, DecTrans.skew.y, DecTrans.skew.z);
-    #endif
-    GCon->Logf("    quat : (%g,%g,%g,%g)", DecTrans.quat[0], DecTrans.quat[1], DecTrans.quat[2], DecTrans.quat[3]);
-    VMatrix4 emt;
-    emt.recompose(DecTrans);
-    GCon->Logf("  recomposed matrix:");
-    dumpMatrix("   ", emt);
-  }
-  #endif
   trans = finmt;
 }
 
@@ -1016,9 +1013,8 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         Md2->SkinAnimRange = ParseIntWithDefault(ModelDefNode, "skin_anim_range", 1);
       }
 
-      VMatrix4 BaseTransform = VMatrix4::Identity;
-      TVec RotCenter = TVec::ZeroVector;
-      ParseTransform(mfile, Md2->MeshIndex, ModelDefNode, BaseTransform);
+      AliasModelTrans BaseTrans;
+      ParseTransform(mfile, Md2->MeshIndex, ModelDefNode, BaseTrans.MatTrans);
 
       // fullbright flag
       Md2->FullBright = ParseBool(ModelDefNode, "fullbright", false);
@@ -1033,17 +1029,26 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
 
       // process frames
       int curframeindex = 0;
-      VMatrix4 xbmat = BaseTransform;
-      TVec xbrotcenter = RotCenter;
+      AliasModelTrans savedTrans = BaseTrans;
       for (VXmlNode *FrameDefNode = ModelDefNode->FirstChild; FrameDefNode; FrameDefNode = FrameDefNode->NextSibling) {
         // global matrix
-        if (parseTransNode(FrameDefNode, BaseTransform, xbmat)) {
-          xbmat = BaseTransform;
+        if (parseTransNode(FrameDefNode, BaseTrans.MatTrans, savedTrans.MatTrans)) {
+          savedTrans = BaseTrans;
           continue;
         }
         // global rotcenter
-        if (parseRotCenterNode(FrameDefNode, RotCenter)) {
-          xbrotcenter = RotCenter;
+        if (parseRotCenterNode(FrameDefNode, BaseTrans.RotCenter)) {
+          savedTrans = BaseTrans;
+          continue;
+        }
+        if (FrameDefNode->Name == "gzscale") {
+          BaseTrans.gzScale = parseGZScaleOfs(FrameDefNode, TVec(1.0f, 1.0f, 1.0f));
+          savedTrans = BaseTrans;
+          continue;
+        }
+        if (FrameDefNode->Name == "gzoffset") {
+          BaseTrans.gzPreScaleOfs = parseGZScaleOfs(FrameDefNode, TVec::ZeroVector);
+          savedTrans = BaseTrans;
           continue;
         }
 
@@ -1061,7 +1066,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
 
         // check children
         {
-          auto bad = FrameDefNode->FindBadChild("transform", nullptr);
+          auto bad = FrameDefNode->FindBadChild("transform", "gzscale", "gzoffset", nullptr);
           if (bad) Sys_Error("%s: model '%s' frame definition has invalid node '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
         }
 
@@ -1088,20 +1093,24 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         //GCon->Logf(NAME_Debug, "%s: MDL '%s': sidx=%d; eidx=%d", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name, sidx, eidx);
 
         // frame transformations
-        VMatrix4 XFTransform = BaseTransform;
-        TVec XFRotCenter = RotCenter;
-        ParseTransform(mfile, Md2->MeshIndex, FrameDefNode, XFTransform);
+        AliasModelTrans XFTrans = BaseTrans;
+        ParseTransform(mfile, Md2->MeshIndex, FrameDefNode, XFTrans.MatTrans);
 
         for (VXmlNode *xt = FrameDefNode->FirstChild; xt; xt = xt->NextSibling) {
-          if (parseTransNode(xt, XFTransform, BaseTransform)) continue;
-          if (parseRotCenterNode(xt, XFRotCenter)) continue;
+          if (parseTransNode(xt, XFTrans.MatTrans, BaseTrans.MatTrans)) continue;
+          if (parseRotCenterNode(xt, XFTrans.RotCenter)) continue;
+          if (xt->Name == "gzscale") {
+            XFTrans.gzScale = parseGZScaleOfs(xt, TVec(1.0f, 1.0f, 1.0f));
+            continue;
+          }
+          if (xt->Name == "gzoffset") {
+            XFTrans.gzPreScaleOfs = parseGZScaleOfs(xt, TVec::ZeroVector);
+            continue;
+          }
           Sys_Error("unknown frame node '%s' at %s", *xt->Name, *xt->Loc.toStringNoCol());
         }
 
-        AliasModelTrans frmtrans;
-        frmtrans.MatTrans = XFTransform;
-        frmtrans.RotCenter = XFRotCenter;
-        frmtrans.decompose();
+        XFTrans.decompose();
 
         const int posidx = ParseIntWithDefault(FrameDefNode, "position_index", 0);
         const float alphaStart = ParseFloatWithDefault(FrameDefNode, "alpha_start", 1.0f);
@@ -1115,7 +1124,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
           // position model frame index
           F.PositionIndex = posidx;
           // frame transformation
-          F.Transform = frmtrans;
+          F.Transform = XFTrans;
           // alpha
           F.AlphaStart = alphaStart;
           F.AlphaEnd = alphaEnd;
@@ -1124,8 +1133,6 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         }
 
         curframeindex = eidx+1;
-
-        XFTransform = BaseTransform;
       }
 
       // process skins
@@ -1973,6 +1980,18 @@ void R_LoadAllModelsSkins () {
 
 //==========================================================================
 //
+//  lerpvec
+//
+//==========================================================================
+static inline void lerpvec (TVec &a, const TVec b, const float t) noexcept {
+  a.x += (b.x-a.x)*t;
+  a.y += (b.y-a.y)*t;
+  a.z += (b.z-a.z)*t;
+}
+
+
+//==========================================================================
+//
 //  DrawModel
 //
 //  FIXME: make this faster -- stop looping, cache data!
@@ -2191,17 +2210,33 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
 
     AliasModelTrans Transform = F.Transform;
     bool updateRot = false;
+
     if (Interpolate && smooth_inter > 0.0f && &F != &NF) {
       if (smooth_inter >= 1.0f) {
         Transform = NF.Transform;
       } else if (Transform.MatTrans != NF.Transform.MatTrans) {
         Transform.DecTrans = Transform.DecTrans.interpolate(NF.Transform.DecTrans, smooth_inter);
         Transform.MatTrans.recompose(Transform.DecTrans);
+        //FIXME: what to do with RotCenter here?
+        // gzdoom-style scale/offset?
+        if (Transform.gzdoom || NF.Transform.gzdoom) {
+          lerpvec(Transform.gzPreScaleOfs, NF.Transform.gzPreScaleOfs, smooth_inter);
+          lerpvec(Transform.gzScale, NF.Transform.gzScale, smooth_inter);
+          Transform.gzdoom = true;
+        }
         //Transform.TransRot = Transform.MatTrans.getAngles();
         updateRot = true;
       }
     }
-    Transform.MatTrans.scaleXY(ScaleX, ScaleY);
+
+    if (!Transform.gzdoom) {
+      Transform.MatTrans.scaleXY(ScaleX, ScaleY);
+    } else {
+      // done in renderer
+      Transform.gzScale.x *= ScaleX;
+      Transform.gzScale.y *= ScaleX;
+      Transform.gzScale.z *= ScaleY;
+    }
 
     if (!IsViewModel) {
       const vuint8 rndVal = (mobj ? (hashU32(mobj->ServerUId)>>4)&0xffu : 0);

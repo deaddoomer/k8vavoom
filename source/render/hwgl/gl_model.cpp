@@ -82,12 +82,23 @@ static inline void AliasSetupTransform (const TVec &modelorg, const TAVec &angle
   // VMatrix4::RotateY: roll
   // VMatrix4::RotateZ: yaw
   // VMatrix4::RotateX: pitch
-  const bool rotofs = !Transform.RotCenter.isZero();
-  if (rotofs) RotationMatrix *= VMatrix4::BuildOffset(Transform.RotCenter);
+
+  // gzdoom scaling/offsets?
+  // it is done here, because this is how gzdoom does it (sigh)
+  if (Transform.gzdoom) {
+    // apply offsets
+    RotationMatrix *= VMatrix4::BuildOffset(Transform.gzPreScaleOfs);
+    // apply scaling
+    RotationMatrix *= VMatrix4::BuildScale(Transform.gzScale);
+  }
+
+  // rotate model
+  if (Transform.userotcenter) RotationMatrix *= VMatrix4::BuildOffset(Transform.RotCenter);
   if (angles.yaw || angles.pitch || angles.roll) {
     RotationMatrix *= VMatrix4::BuildRotate(angles);
   }
-  if (rotofs) RotationMatrix *= VMatrix4::BuildOffset(-Transform.RotCenter);
+  if (Transform.userotcenter) RotationMatrix *= VMatrix4::BuildOffset(-Transform.RotCenter);
+
   RotationMatrix *= VMatrix4::BuildOffset(modelorg);
 }
 

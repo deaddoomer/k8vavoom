@@ -48,9 +48,24 @@ public:
     bool usePitchInverted;
     int useRoll; // 0: no; -1: inherit; 1: from momentum
     VMatrix4 matTrans; // local frame translation matrix
+    TVec gzScale;
+    TVec gzPreScaleOfs; // pre-scale offset
     int vvindex; // vavoom frame index in the given model (-1: invalid frame)
     // used only in sanity check method
     int linkSprBase; // <0: end of list
+
+    inline bool operator == (const Frame &other) const noexcept {
+      return
+        sprframe == other.sprframe &&
+        mdindex == other.mdindex &&
+        usePitch == other.usePitch &&
+        usePitchInverted == other.usePitchInverted &&
+        useRoll == other.useRoll &&
+        gzScale == other.gzScale &&
+        gzPreScaleOfs == other.gzPreScaleOfs &&
+        sprbase == other.sprbase &&
+        matTrans == other.matTrans;
+    }
 
     VStr toString () const {
       VStr res = sprbase.toUpperCase();
@@ -69,8 +84,28 @@ public:
     int vvframe; // k8vavoom frame number
     // as we can merge models, different frames can have different translation matrices
     VMatrix4 matTrans; // local frame translation matrix
+    TVec gzScale;
+    TVec gzPreScaleOfs; // pre-scale offset
     // temporary working data
     bool used;
+
+    inline bool operator == (const MdlFrameInfo &other) const noexcept {
+      return
+        mdlindex == other.mdlindex &&
+        mdlframe == other.mdlframe &&
+        gzScale == other.gzScale &&
+        gzPreScaleOfs == other.gzPreScaleOfs &&
+        matTrans == other.matTrans;
+    }
+
+    inline bool equ (const int amdlindex, const MdlFrameInfo &other) const noexcept {
+      return
+        mdlindex == amdlindex &&
+        mdlframe == other.mdlframe &&
+        gzScale == other.gzScale &&
+        gzPreScaleOfs == other.gzPreScaleOfs &&
+        matTrans == other.matTrans;
+    }
 
     VStr toString () const {
       return VStr(va("mdl(%d); frm(%d); vvfrm(%d)", mdlindex, mdlframe, vvframe));
@@ -91,10 +126,11 @@ public:
   };
 
 protected:
-  void checkModelSanity (const VMatrix4 &mat);
+  void checkModelSanity (const VMatrix4 &mat, TVec scale, TVec offset);
 
   // -1: not found
-  int findModelFrame (int mdlindex, int mdlframe, bool allowAppend, const VMatrix4 &mat);
+  int findModelFrame (int mdlindex, int mdlframe, bool allowAppend,
+                      const VMatrix4 &mat, TVec scale, TVec offset);
 
   VStr buildPath (VScriptParser *sc, VStr path);
 

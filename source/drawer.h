@@ -415,24 +415,35 @@ public:
 struct texinfo_t;
 
 struct AliasModelTrans {
-  // model rotation center (shift by this, rotate, shift back)
-  TVec RotCenter;
   // transformation matrix
   VMatrix4 MatTrans;
   TAVec TransRot; // extracted from `MatTrans`, for normals
   // for frame interpolator; we can precalc this
   VMatrix4Decomposed DecTrans;
+  // gzdoom specifics
+  bool gzdoom;
+  TVec gzScale; // gzdoom model scale
+  TVec gzPreScaleOfs; // gzdoom pre-scale offset
+  // model rotation center (shift by this, rotate, shift back)
+  bool userotcenter;
+  TVec RotCenter;
 
   inline AliasModelTrans () noexcept
-    : RotCenter(0.0f, 0.0f, 0.0f)
-    , MatTrans(VMatrix4::Identity)
+    : MatTrans(VMatrix4::Identity)
     , TransRot(0.0f, 0.0f, 0.0f)
     , DecTrans()
+    , gzdoom(false)
+    , gzScale(1.0f, 1.0f, 1.0f)
+    , gzPreScaleOfs(0.0f, 0.0f, 0.0f)
+    , userotcenter(false)
+    , RotCenter(0.0f, 0.0f, 0.0f)
   {}
 
   inline void decompose () noexcept {
     MatTrans.decompose(DecTrans);
     TransRot = MatTrans.getAngles();
+    gzdoom = (gzScale != TVec(1.0f, 1.0f, 1.0f) || gzPreScaleOfs != TVec::ZeroVector);
+    userotcenter = (RotCenter != TVec::ZeroVector);
   }
 };
 

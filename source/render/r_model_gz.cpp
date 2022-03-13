@@ -158,36 +158,39 @@ static TVec sanitiseScale (const TVec &scale) {
 //  buildMat
 //
 //==========================================================================
-static void buildMat (VMatrix4 &mat, TVec scale, TVec offset, TAVec angleOffset, bool hud) {
+static void buildMat (VMatrix4 &mat, TAVec angleOffset) {
   // GZDoom does it like this:
   //   0. Y pixel stretching (used for voxels; but k8vavoom does this in projection)
   //      default stretch is 1.2, so we prolly need to y-scale the model by 1/1.2?
+  //      yes, because without this z offset is wrong
   //   1. apply angle offsets
   //   2. offset model (scale-independent, hence the division)
   //   3. scale model.
   //   4. pickup rotations
   //   5. apply final angles
+  // to properly emulate this, we have to perform offset and scaling in the renderer (alas)
   mat.SetIdentity();
-  // hack for QStuffUltra
-  /*
-  if (!hud) {
-    if (scale.z > 1.0f && offset.z >= 24.0f) offset.z += 4.0f*scale.z;
-  }
-  */
   // 0: y stretch (GZDoom does this separately for models; so this should undo our aspect fix)
   mat *= VMatrix4::Scale(TVec(1.0f, 1.0f, 1.0f/1.2f));
   // 1. angle offsets: roll, pitch, yaw
   if (angleOffset.roll != 0.0f) mat *= VMatrix4::RotateY(angleOffset.roll);
   if (angleOffset.pitch != 0.0f) mat *= VMatrix4::RotateX(angleOffset.pitch);
   if (angleOffset.yaw != 0.0f) mat *= VMatrix4::RotateZ(angleOffset.yaw);
-  // i don't understand why (because i'm dumb), but it should be in this order
-  // 3. scale model
-  mat *= VMatrix4::BuildScale(scale);
-  // 2: offset model
-  offset.x /= scale.x;
-  offset.y /= scale.y;
-  offset.z /= scale.z;
-  mat *= VMatrix4::BuildOffset(offset);
+}
+
+
+//==========================================================================
+//
+//  calcOffset
+//
+//==========================================================================
+static inline TVec calcOffset (TVec offset, const TVec &scale) {
+  if (scale != TVec(1.0f, 1.0f, 1.0f)) {
+    offset.x /= scale.x;
+    offset.y /= scale.y;
+    offset.z /= scale.z;
+  }
+  return offset;
 }
 
 
@@ -204,7 +207,6 @@ void GZModelDef::parse (VScriptParser *sc) {
   className = sc->String;
   sc->Expect("{");
   bool rotating = false;
-  bool hudscale = false;
   TVec scale = TVec(1.0f, 1.0f, 1.0f);
   TVec offset = TVec::ZeroVector;
   TAVec angleOffset = TAVec(0.0f, 0.0f, 0.0f);
@@ -341,7 +343,6 @@ void GZModelDef::parse (VScriptParser *sc) {
       sc->ExpectFloatWithSign();
       if (sc->Float == 0) sc->Message(va("invalid x scale in model '%s'", *className));
       scale.x = sc->Float;
-      hudscale = (scale.x < 0);
       // y
       sc->ExpectFloatWithSign();
       if (sc->Float == 0) sc->Message(va("invalid y scale in model '%s'", *className));
@@ -402,7 +403,9 @@ void GZModelDef::parse (VScriptParser *sc) {
     if (sc->Check("frameindex")) {
       // FrameIndex sprbase sprframe modelindex frameindex
       Frame frm;
-      buildMat(frm.matTrans, scale, offset, angleOffset, hudscale);
+      buildMat(frm.matTrans, angleOffset);
+      frm.gzScale = scale;
+      frm.gzPreScaleOfs = calcOffset(offset, scale);
       // sprite name
       sc->ExpectString();
       frm.sprbase = sc->String.toLowerCase();
@@ -430,11 +433,7 @@ void GZModelDef::parse (VScriptParser *sc) {
       // check if we already have equal frame, there is no need to keep duplicates
       bool replaced = false;
       for (auto &&ofr : frames) {
-        if (frm.sprframe == ofr.sprframe &&
-            frm.mdindex == ofr.mdindex &&
-            frm.sprbase == ofr.sprbase &&
-            frm.matTrans == ofr.matTrans)
-        {
+        if (frm == ofr) {
           // i found her!
           ofr.frindex = frm.frindex;
           replaced = true;
@@ -448,7 +447,9 @@ void GZModelDef::parse (VScriptParser *sc) {
     if (sc->Check("frame")) {
       // Frame sprbase sprframe modelindex framename
       Frame frm;
-      buildMat(frm.matTrans, scale, offset, angleOffset, hudscale);
+      buildMat(frm.matTrans, angleOffset);
+      frm.gzScale = scale;
+      frm.gzPreScaleOfs = calcOffset(offset, scale);
       // sprite name
       sc->ExpectString();
       frm.sprbase = sc->String.toLowerCase();
@@ -473,11 +474,7 @@ void GZModelDef::parse (VScriptParser *sc) {
       // check if we already have equal frame, there is no need to keep duplicates
       bool replaced = false;
       for (auto &&ofr : frames) {
-        if (frm.sprframe == ofr.sprframe &&
-            frm.mdindex == ofr.mdindex &&
-            frm.sprbase == ofr.sprbase &&
-            frm.matTrans == ofr.matTrans)
-        {
+        if (frm == ofr) {
           // i found her!
           ofr.frindex = -1;
           ofr.frname = frm.frname;
@@ -509,8 +506,9 @@ void GZModelDef::parse (VScriptParser *sc) {
   }
   */
   VMatrix4 mat;
-  buildMat(mat, scale, offset, angleOffset, hudscale);
-  checkModelSanity(mat);
+  buildMat(mat, angleOffset);
+  offset = calcOffset(offset, scale);
+  checkModelSanity(mat, scale, offset);
 }
 
 
@@ -521,7 +519,9 @@ void GZModelDef::parse (VScriptParser *sc) {
 //  -1: not found
 //
 //==========================================================================
-int GZModelDef::findModelFrame (int mdlindex, int mdlframe, bool allowAppend, const VMatrix4 &mat) {
+int GZModelDef::findModelFrame (int mdlindex, int mdlframe, bool allowAppend,
+                                const VMatrix4 &mat, TVec scale, TVec offset)
+{
   if (mdlindex < 0 || mdlindex >= models.length() || models[mdlindex].modelFile.isEmpty()) return -1;
   //k8: dunno if i have to check it here
   VStr mn = models[mdlindex].modelFile.extractFileExtension().toLowerCase();
@@ -538,9 +538,8 @@ int GZModelDef::findModelFrame (int mdlindex, int mdlframe, bool allowAppend, co
   fi.mdlindex = mdlindex;
   fi.mdlframe = mdlframe;
   fi.vvframe = models[mdlindex].frameMap.length()-1;
-  //fi.scale = scale;
-  //fi.offset = offset;
-  //fi.zoffset = zoffset;
+  fi.gzScale = scale;
+  fi.gzPreScaleOfs = offset;
   fi.matTrans = mat;
   fi.used = true; // why not?
   return fi.vvframe;
@@ -552,7 +551,7 @@ int GZModelDef::findModelFrame (int mdlindex, int mdlframe, bool allowAppend, co
 //  GZModelDef::checkModelSanity
 //
 //==========================================================================
-void GZModelDef::checkModelSanity (const VMatrix4 &mat) {
+void GZModelDef::checkModelSanity (const VMatrix4 &mat, TVec scale, TVec offset) {
   // build frame map
   bool hasValidFrames = false;
   bool hasInvalidFrames = false;
@@ -615,10 +614,10 @@ void GZModelDef::checkModelSanity (const VMatrix4 &mat) {
         }
       }
       if (frm.vvindex >= 0) {
-        frm.vvindex = findModelFrame(frm.mdindex, frm.vvindex, true, mat); // allow appending
+        frm.vvindex = findModelFrame(frm.mdindex, frm.vvindex, true, mat, scale, offset); // allow appending
       }
     } else {
-      frm.vvindex = findModelFrame(frm.mdindex, frm.frindex, true, mat); // allow appending
+      frm.vvindex = findModelFrame(frm.mdindex, frm.frindex, true, mat, scale, offset); // allow appending
     }
 
     if (frm.vvindex < 0) {
@@ -687,10 +686,10 @@ void GZModelDef::checkModelSanity (const VMatrix4 &mat) {
           newfrm.mdindex = mnum;
           if (newfrm.frindex == -1) {
             //md2 named
-            newfrm.vvindex = findModelFrame(newfrm.mdindex, newfrm.vvindex, true, mat); // allow appending
+            newfrm.vvindex = findModelFrame(newfrm.mdindex, newfrm.vvindex, true, mat, scale, offset); // allow appending
           } else {
             //indexed
-            newfrm.vvindex = findModelFrame(newfrm.mdindex, newfrm.frindex, true, mat); // allow appending
+            newfrm.vvindex = findModelFrame(newfrm.mdindex, newfrm.frindex, true, mat, scale, offset); // allow appending
           }
           frames.append(newfrm);
         }
@@ -787,13 +786,11 @@ void GZModelDef::merge (GZModelDef &other) {
     // try to find a model frame to reuse
     MSDef &rmdl = models[mdlindex];
     const MdlFrameInfo &omfrm = other.models[ofrm.mdindex].frameMap[ofrm.vvindex];
+    //vassert(omfrm.mdlindex == mdlindex);
     int frmapindex = -1;
     if (!newModel) {
       for (auto &&mfrm : rmdl.frameMap) {
-        if (mfrm.mdlindex == mdlindex &&
-            mfrm.mdlframe == omfrm.mdlframe &&
-            mfrm.matTrans == omfrm.matTrans)
-        {
+        if (mfrm.equ(mdlindex, omfrm)) {
           // yay, i found her!
           // reuse this frame
           frmapindex = mfrm.vvframe;
@@ -815,6 +812,8 @@ void GZModelDef::merge (GZModelDef &other) {
       nfi.mdlindex = mdlindex;
       nfi.mdlframe = ofrm.frindex;
       nfi.vvframe = rmdl.frameMap.length()-1;
+      nfi.gzScale = omfrm.gzScale;
+      nfi.gzPreScaleOfs = omfrm.gzPreScaleOfs;
       nfi.matTrans = omfrm.matTrans;
     }
 
@@ -823,11 +822,7 @@ void GZModelDef::merge (GZModelDef &other) {
     int spfindex = -1;
     for (auto &&sit : frames.itemsIdx()) {
       Frame &ff = sit.value();
-      if (ff.sprframe == ofrm.sprframe &&
-          ff.origmdindex == ofrm.origmdindex &&
-          ff.sprbase == ofrm.sprbase &&
-          ff.matTrans == ofrm.matTrans)
-      {
+      if (ff == ofrm) {
         GLog.WriteLine(NAME_Warning, "class '%s' (%s%c) attaches alias models several times!", *className, *ff.sprbase.toUpperCase(), 'A'+ff.sprframe);
         spfindex = sit.index();
         break;
@@ -855,6 +850,8 @@ void GZModelDef::merge (GZModelDef &other) {
     newfrm.usePitchInverted = ofrm.usePitchInverted;
     newfrm.useRoll = ofrm.useRoll;
     newfrm.vvindex = frmapindex;
+    newfrm.gzScale = ofrm.gzScale;
+    newfrm.gzPreScaleOfs = ofrm.gzPreScaleOfs;
     newfrm.matTrans = ofrm.matTrans;
   }
 
@@ -937,17 +934,19 @@ VStr GZModelDef::createXml () {
     //thesame = false;
     if (thesame && mdl.frameMap.length()) {
       const VMatrix4 mat = mdl.frameMap[0].matTrans;
-      res += "      <transform>\n";
-      res += "        <matrix absolute=\"true\">\n";
-      for (int y = 0; y < 4; ++y) {
-        res += "         ";
-        for (int x = 0; x < 4; ++x) {
-          res += va(" %g", mat.m[y][x]);
+      if (mat != VMatrix4::Identity) {
+        res += "      <transform>\n";
+        res += "        <matrix absolute=\"true\">\n";
+        for (int y = 0; y < 4; ++y) {
+          res += "         ";
+          for (int x = 0; x < 4; ++x) {
+            res += va(" %g", mat.m[y][x]);
+          }
+          res += "\n";
         }
-        res += "\n";
+        res += "        </matrix>\n";
+        res += "      </transform>\n";
       }
-      res += "        </matrix>\n";
-      res += "      </transform>\n";
     }
     if (rotationCenter.x != 0.0f || rotationCenter.y != 0.0f || rotationCenter.z != 0.0f) {
       res += "      <rotcenter";
@@ -971,7 +970,10 @@ VStr GZModelDef::createXml () {
       int fend = fidx+1;
       while (fend < mdl.frameMap.length()) {
         const MdlFrameInfo &xf = mdl.frameMap[fend];
-        if (xf.mdlframe != mdl.frameMap[fend-1].mdlframe+1 || xf.matTrans != fi.matTrans) {
+        const MdlFrameInfo &pf = mdl.frameMap[fend-1];
+        if (xf.mdlframe != pf.mdlframe+1 || xf.matTrans != pf.matTrans ||
+            xf.gzScale != pf.gzScale || xf.gzPreScaleOfs != pf.gzPreScaleOfs)
+        {
           break;
         }
         ++fend;
@@ -983,22 +985,57 @@ VStr GZModelDef::createXml () {
       if (fend != fidx+1) {
         res += va(" end_index=\"%d\"", mdl.frameMap[fend-1].mdlframe);
       }
-      if (thesame || fi.matTrans == VMatrix4::Identity) {
-        res += " />  <!-- ";
-        if (fend == fidx+1) res += va("%d", fidx); else res += va("%d-%d", fidx, fend-1);
-        res += " -->\n";
-      } else {
+      bool tagopened = false;
+      if (fi.gzScale != TVec(1.0f, 1.0f, 1.0f)) {
+        tagopened = true;
         res += ">  <!-- ";
         if (fend == fidx+1) res += va("%d", fidx); else res += va("%d-%d", fidx, fend-1);
         res += " -->\n";
+        res += "        <gzscale";
+        if (fi.gzScale.x != 1.0f) res += va(" x=\"%g\"", fi.gzScale.x);
+        if (fi.gzScale.y != 1.0f) res += va(" y=\"%g\"", fi.gzScale.y);
+        if (fi.gzScale.z != 1.0f) res += va(" z=\"%g\"", fi.gzScale.z);
+        res += " />\n";
+      }
+      if (fi.gzPreScaleOfs != TVec::ZeroVector) {
+        if (!tagopened) {
+          tagopened = true;
+          res += ">  <!-- ";
+          if (fend == fidx+1) res += va("%d", fidx); else res += va("%d-%d", fidx, fend-1);
+          res += " -->\n";
+        }
+        res += "        <gzoffset";
+        if (fi.gzPreScaleOfs.x != 0.0f) res += va(" x=\"%g\"", fi.gzPreScaleOfs.x);
+        if (fi.gzPreScaleOfs.y != 0.0f) res += va(" y=\"%g\"", fi.gzPreScaleOfs.y);
+        if (fi.gzPreScaleOfs.z != 0.0f) res += va(" z=\"%g\"", fi.gzPreScaleOfs.z);
+        res += " />\n";
+      }
+      if (thesame || fi.matTrans == VMatrix4::Identity) {
+        if (tagopened) {
+          res += "      </frame>\n";
+        } else {
+          res += " />  <!-- ";
+          if (fend == fidx+1) res += va("%d", fidx); else res += va("%d-%d", fidx, fend-1);
+          res += " -->\n";
+        }
+      } else {
+        if (!tagopened) {
+          res += ">  <!-- ";
+          if (fend == fidx+1) res += va("%d", fidx); else res += va("%d-%d", fidx, fend-1);
+          res += " -->\n";
+        }
         res += "        <transform>\n";
         res += "          <matrix absolute=\"true\">\n";
-        for (int y = 0; y < 4; ++y) {
-          res += "           ";
-          for (int x = 0; x < 4; ++x) {
-            res += va(" %g", fi.matTrans.m[y][x]);
+        if (fi.matTrans == VMatrix4::Identity) {
+          res += "            identity";
+        } else {
+          for (int y = 0; y < 4; ++y) {
+            res += "           ";
+            for (int x = 0; x < 4; ++x) {
+              res += va(" %g", fi.matTrans.m[y][x]);
+            }
+            res += "\n";
           }
-          res += "\n";
         }
         res += "          </matrix>\n";
         res += "        </transform>\n";
