@@ -36,15 +36,11 @@
 GZModelDef::GZModelDef ()
   : className()
   , models()
-  //, scale(1, 1, 1)
-  //, offset(0, 0, 0)
-  //, zoffset(0)
-  //, mat(VMatrix4::Identity)
   , rotationSpeed(0)
   , usePitch(0)
   , usePitchInverted(false)
   , useRoll(0)
-  , angleOffset(0.0f, 0.0f, 0.0f)
+  , rotationCenter(0.0f, 0.0f, 0.0f)
   , frames()
 {
 }
@@ -68,15 +64,11 @@ GZModelDef::~GZModelDef () {
 void GZModelDef::clear () {
   className.clear();
   models.clear();
-  //scale = TVec(1, 1, 1);
-  //offset = TVec(0, 0, 0);
-  //zoffset = 0;
-  //mat.SetIdentity();
   rotationSpeed = 0;
   usePitch = 0;
   usePitchInverted = false;
   useRoll = false;
-  angleOffset = TAVec(0.0f, 0.0f, 0.0f);
+  rotationCenter = TVec::ZeroVector;
   frames.clear();
 }
 
@@ -166,17 +158,35 @@ static TVec sanitiseScale (const TVec &scale) {
 //  buildMat
 //
 //==========================================================================
-static void buildMat (VMatrix4 &mat, TVec scale, TVec offset, TVec rotCenter, bool hud) {
-  (void)rotCenter;
+static void buildMat (VMatrix4 &mat, TVec scale, TVec offset, TAVec angleOffset, bool hud) {
+  // GZDoom does it like this:
+  //   0. Y pixel stretching (used for voxels; but k8vavoom does this in projection)
+  //      default stretch is 1.2, so we prolly need to y-scale the model by 1/1.2?
+  //   1. apply angle offsets
+  //   2. offset model (scale-independent, hence the division)
+  //   3. scale model.
+  //   4. pickup rotations
+  //   5. apply final angles
   mat.SetIdentity();
   // hack for QStuffUltra
+  /*
   if (!hud) {
     if (scale.z > 1.0f && offset.z >= 24.0f) offset.z += 4.0f*scale.z;
   }
+  */
+  // 0: y stretch (GZDoom does this separately for models; so this should undo our aspect fix)
+  mat *= VMatrix4::Scale(TVec(1.0f, 1.0f, 1.0f/1.2f));
+  // 1. angle offsets: roll, pitch, yaw
+  if (angleOffset.roll != 0.0f) mat *= VMatrix4::RotateY(angleOffset.roll);
+  if (angleOffset.pitch != 0.0f) mat *= VMatrix4::RotateX(angleOffset.pitch);
+  if (angleOffset.yaw != 0.0f) mat *= VMatrix4::RotateZ(angleOffset.yaw);
+  // i don't understand why (because i'm dumb), but it should be in this order
+  // 3. scale model
+  mat *= VMatrix4::BuildScale(scale);
+  // 2: offset model
   offset.x /= scale.x;
   offset.y /= scale.y;
   offset.z /= scale.z;
-  mat *= VMatrix4::BuildScale(scale);
   mat *= VMatrix4::BuildOffset(offset);
 }
 
@@ -197,7 +207,8 @@ void GZModelDef::parse (VScriptParser *sc) {
   bool hudscale = false;
   TVec scale = TVec(1.0f, 1.0f, 1.0f);
   TVec offset = TVec::ZeroVector;
-  TVec rotCenter = TVec::ZeroVector;
+  TAVec angleOffset = TAVec(0.0f, 0.0f, 0.0f);
+  rotationCenter = TVec::ZeroVector;
   while (!sc->Check("}")) {
     // skip flags
     if (sc->Check("IGNORETRANSLATION") ||
@@ -317,11 +328,11 @@ void GZModelDef::parse (VScriptParser *sc) {
     if (sc->Check("rotation-center")) {
       //sc->Message(va("modeldef command '%s' is not supported yet in model '%s'", *sc->String, *className));
       sc->ExpectFloatWithSign();
-      rotCenter.x = sc->Float;
+      rotationCenter.x = sc->Float;
       sc->ExpectFloatWithSign();
-      rotCenter.y = sc->Float;
+      rotationCenter.y = sc->Float;
       sc->ExpectFloatWithSign();
-      rotCenter.z = sc->Float;
+      rotationCenter.z = sc->Float;
       continue;
     }
     // "scale"
@@ -391,7 +402,7 @@ void GZModelDef::parse (VScriptParser *sc) {
     if (sc->Check("frameindex")) {
       // FrameIndex sprbase sprframe modelindex frameindex
       Frame frm;
-      buildMat(frm.matTrans, scale, offset, rotCenter, hudscale);
+      buildMat(frm.matTrans, scale, offset, angleOffset, hudscale);
       // sprite name
       sc->ExpectString();
       frm.sprbase = sc->String.toLowerCase();
@@ -437,7 +448,7 @@ void GZModelDef::parse (VScriptParser *sc) {
     if (sc->Check("frame")) {
       // Frame sprbase sprframe modelindex framename
       Frame frm;
-      buildMat(frm.matTrans, scale, offset, rotCenter, hudscale);
+      buildMat(frm.matTrans, scale, offset, angleOffset, hudscale);
       // sprite name
       sc->ExpectString();
       frm.sprbase = sc->String.toLowerCase();
@@ -498,7 +509,7 @@ void GZModelDef::parse (VScriptParser *sc) {
   }
   */
   VMatrix4 mat;
-  buildMat(mat, scale, offset, rotCenter, hudscale);
+  buildMat(mat, scale, offset, angleOffset, hudscale);
   checkModelSanity(mat);
 }
 
@@ -621,7 +632,7 @@ void GZModelDef::checkModelSanity (const VMatrix4 &mat) {
     }
 
     hasValidFrames = true;
-    frm.angleOffset = angleOffset; // copy it here
+    //frm.angleOffset = angleOffset; // copy it here
     frm.rotationSpeed = rotationSpeed;
     frm.usePitch = usePitch;
     frm.usePitchInverted = usePitchInverted;
@@ -838,7 +849,7 @@ void GZModelDef::merge (GZModelDef &other) {
     newfrm.mdindex = mdlindex;
     newfrm.origmdindex = ofrm.origmdindex;
     newfrm.frindex = ofrm.frindex;
-    newfrm.angleOffset = ofrm.angleOffset;
+    //newfrm.angleOffset = ofrm.angleOffset;
     newfrm.rotationSpeed = ofrm.rotationSpeed;
     newfrm.usePitch = ofrm.usePitch;
     newfrm.usePitchInverted = ofrm.usePitchInverted;
@@ -908,43 +919,6 @@ VStr GZModelDef::createXml () {
   res += " -->\n";
   res += "<vavoom_model_definition>\n";
 
-  // if angle offset is the same for all frames, we can put it into each frame matrix instead
-  {
-    bool sameAngleOfs = true;
-    int f = 0;
-    while (f < frames.length() && frames[f].vvindex < 0) ++f;
-    if (f < frames.length()) {
-      const TAVec aofs = frames[f].angleOffset;
-      for (++f; f < frames.length(); ++f) {
-        if (frames[f].vvindex < 0) continue;
-        if (frames[f].angleOffset != aofs) {
-          sameAngleOfs = false;
-          break;
-        }
-      }
-      if (sameAngleOfs) {
-        // clear all offsets
-        for (f = 0; f < frames.length(); ++f) {
-          frames[f].angleOffset = TAVec(0.0f, 0.0f, 0.0f);
-        }
-        if (aofs.roll != 0.0f || aofs.yaw != 0.0f || aofs.pitch != 0.0f) {
-          // build modification matrix
-          VMatrix4 preMat = VMatrix4::Identity;
-          if (aofs.roll != 0.0f) preMat *= VMatrix4::RotateY(aofs.roll);
-          if (aofs.yaw != 0.0f) preMat *= VMatrix4::RotateZ(aofs.yaw);
-          if (aofs.pitch != 0.0f) preMat *= VMatrix4::RotateX(aofs.pitch);
-          // modify all models and frames
-          for (auto &&it : models.itemsIdx()) {
-            MSDef &mdl = it.value();
-            for (int c = 0; c < mdl.frameMap.length(); ++c) {
-              mdl.frameMap[c].matTrans = preMat*mdl.frameMap[c].matTrans;
-            }
-          }
-        }
-      }
-    }
-  }
-
   // write models
   for (auto &&it : models.itemsIdx()) {
     const MSDef &mdl = it.value();
@@ -974,6 +948,13 @@ VStr GZModelDef::createXml () {
       }
       res += "        </matrix>\n";
       res += "      </transform>\n";
+    }
+    if (rotationCenter.x != 0.0f || rotationCenter.y != 0.0f || rotationCenter.z != 0.0f) {
+      res += "      <rotcenter";
+      if (rotationCenter.x != 0.0f) res += va(" x=\"%g\"", rotationCenter.x);
+      if (rotationCenter.y != 0.0f) res += va(" y=\"%g\"", rotationCenter.y);
+      if (rotationCenter.z != 0.0f) res += va(" z=\"%g\"", rotationCenter.z);
+      res += " />\n";
     }
     if (!mdl.skinFile.isEmpty()) res += va("      <skin file=\"%s\" />\n", *mdl.skinFile.xmlEscape());
     if (mdl.subskinFiles.length() != 0) {
@@ -1040,9 +1021,6 @@ VStr GZModelDef::createXml () {
       *className.toLowerCase().xmlEscape(), frm.mdindex,
       frm.vvindex);
     if (frm.rotationSpeed) res += " rotation=\"true\"";
-    if (frm.angleOffset.yaw) res += va(" rotate_yaw=\"%g\"", frm.angleOffset.yaw);
-    if (frm.angleOffset.pitch) res += va(" rotate_pitch=\"%g\"", frm.angleOffset.pitch);
-    if (frm.angleOffset.roll) res += va(" rotate_roll=\"%g\"", frm.angleOffset.roll);
     if (frm.usePitch < 0) {
       res += va(" usepitch=\"actor%s\"", (frm.usePitchInverted ? "-inverted" : ""));
     } else if (frm.usePitch > 0) {

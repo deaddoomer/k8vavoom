@@ -43,7 +43,6 @@ public:
     VStr frname; // for MD2 named frames
     // in k8vavoom, this is set per-frame
     // set in `checkModelSanity()`
-    TAVec angleOffset;
     float rotationSpeed; // !0: rotating
     int usePitch; // 0: no; -1: inherit; 1: from momentum
     bool usePitchInverted;
@@ -74,7 +73,6 @@ public:
     bool used;
 
     VStr toString () const {
-      //return VStr(va("mdl(%d); frm(%d); vvfrm(%d); scale=(%g,%g,%g); ofs=(%g,%g,%g); zofs=%g", mdlindex, mdlframe, vvframe, scale.x, scale.y, scale.z, offset.x, offset.y, offset.z, zoffset));
       return VStr(va("mdl(%d); frm(%d); vvfrm(%d)", mdlindex, mdlframe, vvframe));
     }
   };
@@ -103,16 +101,12 @@ protected:
 public:
   VStr className;
   TArray<MSDef> models;
-  //TVec scale;
-  //TVec offset;
-  //float zoffset;
-  //VMatrix4 mat;
   float rotationSpeed; // !0: rotating
   bool usePitch;
   bool usePitchInverted;
   bool usePitchMomentum;
   bool useRoll;
-  TAVec angleOffset;
+  TVec rotationCenter;
   TArray<Frame> frames;
 
 public:

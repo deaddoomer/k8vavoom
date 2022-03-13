@@ -82,14 +82,12 @@ static inline void AliasSetupTransform (const TVec &modelorg, const TAVec &angle
   // VMatrix4::RotateY: roll
   // VMatrix4::RotateZ: yaw
   // VMatrix4::RotateX: pitch
+  const bool rotofs = !Transform.RotCenter.isZero();
+  if (rotofs) RotationMatrix *= VMatrix4::BuildOffset(Transform.RotCenter);
   if (angles.yaw || angles.pitch || angles.roll) {
     RotationMatrix *= VMatrix4::BuildRotate(angles);
   }
-  /*
-  if (angles.roll) RotationMatrix *= VMatrix4::RotateY(angles.roll);
-  if (angles.yaw) RotationMatrix *= VMatrix4::RotateZ(angles.yaw);
-  if (angles.pitch) RotationMatrix *= VMatrix4::RotateX(angles.pitch);
-  */
+  if (rotofs) RotationMatrix *= VMatrix4::BuildOffset(-Transform.RotCenter);
   RotationMatrix *= VMatrix4::BuildOffset(modelorg);
 }
 

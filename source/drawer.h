@@ -415,14 +415,8 @@ public:
 struct texinfo_t;
 
 struct AliasModelTrans {
-  /*
-  TVec Shift; // unscaled, done before scaling and offseting
-  TVec Offset;
-  TVec Scale;
-  TAVec PreRot;
-  bool MatValid; // set if matrices are valid and should be used instead of vecs
-  */
-
+  // model rotation center (shift by this, rotate, shift back)
+  TVec RotCenter;
   // transformation matrix
   VMatrix4 MatTrans;
   TAVec TransRot; // extracted from `MatTrans`, for normals
@@ -430,14 +424,8 @@ struct AliasModelTrans {
   VMatrix4Decomposed DecTrans;
 
   inline AliasModelTrans () noexcept
-    /*
-    : Shift(0.0f, 0.0f, 0.0f)
-    , Offset(0.0f, 0.0f, 0.0f)
-    , Scale(1.0f, 1.0f, 1.0f)
-    , PreRot(0.0f, 0.0f, 0.0f)
-    , MatValid(false)
-    */
-    : MatTrans(VMatrix4::Identity)
+    : RotCenter(0.0f, 0.0f, 0.0f)
+    , MatTrans(VMatrix4::Identity)
     , TransRot(0.0f, 0.0f, 0.0f)
     , DecTrans()
   {}

@@ -191,10 +191,8 @@ struct VScriptedModelFrame {
   ModelAngle anglePitch;
   float rotateSpeed; // yaw rotation speed
   float bobSpeed; // bobbing speed
-  //int gzNoActorPitch; // <0: inverted; 0: use; 1: don't use (sorry); 2: from momentum (sorry)
   int gzActorPitch; // 0: don't use; <0: actor; >0: momentum
   bool gzActorPitchInverted;
-  //bool gzNoActorRoll; // true: don't use actor roll;
   int gzActorRoll; // 0: don't use; <0: actor; >0: momentum
   bool gzdoom;
   //
@@ -717,6 +715,40 @@ static bool parseTransNode (VXmlNode *SN, VMatrix4 &trans, const VMatrix4 &orig)
 
 //==========================================================================
 //
+//  parseRotCenterNode
+//
+//==========================================================================
+static bool parseRotCenterNode (VXmlNode *SN, TVec &rotCenter) {
+  if (!SN) return false;
+  if (SN->Name != "rotcenter") return false;
+
+  if (SN->FirstChild) {
+    Sys_Error("node '%s' cannot have children at %s", *SN->Name, *SN->Loc.toStringNoCol());
+  }
+
+  rotCenter = TVec::ZeroVector;
+
+  // no attrs means "reset rotation center"
+  for (int f = 0; f < SN->Attributes.length(); ++f) {
+    int idx;
+         if (SN->Attributes[f].Name == "x") idx = 0;
+    else if (SN->Attributes[f].Name == "y") idx = 1;
+    else if (SN->Attributes[f].Name == "z") idx = 2;
+    else Sys_Error("%s: invalid node '%s' attribute '%s'", *SN->Loc.toStringNoCol(), *SN->Name, *SN->Attributes[f].Name);
+    VStr s = SN->Attributes[f].Value.xstrip();
+    float res = 0.0f;
+    if (!s.convertFloat(&res) || !isfinite(res)) {
+      Sys_Error("%s: invalid node '%s' attribute '%s' value '%s'", *SN->Loc.toStringNoCol(), *SN->Name, *SN->Attributes[f].Name, *s);
+    }
+    rotCenter[idx] = res;
+  }
+
+  return true;
+}
+
+
+//==========================================================================
+//
 //  dumpMatrix
 //
 //==========================================================================
@@ -985,8 +1017,8 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       }
 
       VMatrix4 BaseTransform = VMatrix4::Identity;
+      TVec RotCenter = TVec::ZeroVector;
       ParseTransform(mfile, Md2->MeshIndex, ModelDefNode, BaseTransform);
-      //BaseTransform.decompose();
 
       // fullbright flag
       Md2->FullBright = ParseBool(ModelDefNode, "fullbright", false);
@@ -1002,10 +1034,16 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       // process frames
       int curframeindex = 0;
       VMatrix4 xbmat = BaseTransform;
-      //for (VXmlNode *FrameDefNode : ModelDefNode->childrenWithName("frame"))
+      TVec xbrotcenter = RotCenter;
       for (VXmlNode *FrameDefNode = ModelDefNode->FirstChild; FrameDefNode; FrameDefNode = FrameDefNode->NextSibling) {
+        // global matrix
         if (parseTransNode(FrameDefNode, BaseTransform, xbmat)) {
           xbmat = BaseTransform;
+          continue;
+        }
+        // global rotcenter
+        if (parseRotCenterNode(FrameDefNode, RotCenter)) {
+          xbrotcenter = RotCenter;
           continue;
         }
 
@@ -1051,15 +1089,18 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
 
         // frame transformations
         VMatrix4 XFTransform = BaseTransform;
+        TVec XFRotCenter = RotCenter;
         ParseTransform(mfile, Md2->MeshIndex, FrameDefNode, XFTransform);
 
         for (VXmlNode *xt = FrameDefNode->FirstChild; xt; xt = xt->NextSibling) {
           if (parseTransNode(xt, XFTransform, BaseTransform)) continue;
+          if (parseRotCenterNode(xt, XFRotCenter)) continue;
           Sys_Error("unknown frame node '%s' at %s", *xt->Name, *xt->Loc.toStringNoCol());
         }
 
         AliasModelTrans frmtrans;
         frmtrans.MatTrans = XFTransform;
+        frmtrans.RotCenter = XFRotCenter;
         frmtrans.decompose();
 
         const int posidx = ParseIntWithDefault(FrameDefNode, "position_index", 0);
@@ -1271,18 +1312,18 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       if (ParseBool(StateDefNode, "bobbing", false)) F.bobSpeed = 180.0f;
 
       // some special things
-      if (ParseBool(StateDefNode, "gzdoom", false)) {
-        F.gzdoom = true;
+      F.gzdoom = ParseBool(StateDefNode, "gzdoom", false);
+      if (F.gzdoom) {
         F.gzActorPitchInverted = false;
         F.gzActorPitch = DontUse; // don't use actor pitch
         F.gzActorRoll = DontUse; // don't use actor roll
       } else {
-        F.gzdoom = false;
         F.gzActorPitchInverted = false;
         F.gzActorPitch = FromActor; // default
         //F.gzActorPitch = DontUse; // default
         F.gzActorRoll = DontUse; // don't use actor roll
       }
+
       if (StateDefNode->HasAttribute("usepitch")) {
         VStr pv = StateDefNode->GetAttribute("usepitch");
              if (pv == "actor") F.gzActorPitch = FromActor;
@@ -1293,6 +1334,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         else if (pv == "default") {}
         else Sys_Error("%s: invalid \"usepitch\" attribute value '%s'", *StateDefNode->Loc.toStringNoCol(), *pv);
       }
+
       if (StateDefNode->HasAttribute("useroll")) {
         VStr pv = StateDefNode->GetAttribute("useroll");
              if (pv == "actor") F.gzActorRoll = FromActor;
@@ -2159,15 +2201,7 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
         updateRot = true;
       }
     }
-    /*
-    if (rotmat != VMatrix4::Identity) {
-      Transform.MatTrans *= rotmat;
-      Transform.TransRot = Transform.MatTrans.getAngles();
-    }
-    */
     Transform.MatTrans.scaleXY(ScaleX, ScaleY);
-
-    //VMatrix4 rotmat = VMatrix4::Identity;
 
     if (!IsViewModel) {
       const vuint8 rndVal = (mobj ? (hashU32(mobj->ServerUId)>>4)&0xffu : 0);
@@ -2177,68 +2211,24 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
         }
       */
 
-      if (FDef.gzdoom) {
-        if (!mobj || FDef.gzActorRoll == DontUse) {
-          Md2Angle.roll = 0.0f;
-        } else if (!FDef.angleRoll.IsEmpty()) {
-          if (!FDef.angleRoll.IsRelative()) Md2Angle.roll = 0.0f;
-          const float ang = FDef.angleRoll.GetAngle(0.0f, rndVal);
-          if (ang != 0.0f) {
-            updateRot = true;
-            Transform.MatTrans = VMatrix4::RotateY(ang)*Transform.MatTrans;
-          }
-        }
+      Md2Angle.yaw = FDef.angleYaw.GetAngle(Md2Angle.yaw, rndVal);
 
-        if (mobj && !FDef.angleYaw.IsEmpty()) {
-          if (!FDef.angleYaw.IsRelative()) Md2Angle.yaw = 0.0f;
-          const float ang = FDef.angleYaw.GetAngle(0.0f, rndVal);
-          if (ang != 0.0f) {
-            updateRot = true;
-            Transform.MatTrans = VMatrix4::RotateZ(ang)*Transform.MatTrans;
-          }
-        }
+      if (FDef.AngleStart || FDef.AngleEnd != FDef.AngleStart) {
+        Md2Angle.yaw = AngleMod(Md2Angle.yaw+FDef.AngleStart+(FDef.AngleEnd-FDef.AngleStart)*Inter);
+      }
 
-        if (!mobj || FDef.gzActorPitch == DontUse) {
-          Md2Angle.pitch = 0.0f;
-        } else {
-          bool useIt = true;
-          if (!FDef.anglePitch.IsEmpty()) {
-            useIt = FDef.anglePitch.IsRelative();
-            float ang = FDef.anglePitch.GetAngle(0.0f, rndVal);
-            if (ang != 0.0f) {
-              updateRot = true;
-              if (FDef.gzActorPitchInverted) ang += 180.0f;
-              Transform.MatTrans = VMatrix4::RotateX(ang)*Transform.MatTrans;
-            }
-          }
-          if (useIt) {
-            if (FDef.gzActorPitch == FromMomentum) {
-              Md2Angle.pitch = VectorAnglePitch(mobj->Velocity);
-            }
-          } else {
-            Md2Angle.pitch = 0.0f;
-          }
-        }
+      if (FDef.gzActorRoll == DontUse) {
+        Md2Angle.roll = 0.0f;
       } else {
-        Md2Angle.yaw = FDef.angleYaw.GetAngle(Md2Angle.yaw, rndVal);
+        Md2Angle.roll = FDef.angleRoll.GetAngle(Md2Angle.roll, rndVal);
+      }
 
-        if (FDef.AngleStart || FDef.AngleEnd != FDef.AngleStart) {
-          Md2Angle.yaw = AngleMod(Md2Angle.yaw+FDef.AngleStart+(FDef.AngleEnd-FDef.AngleStart)*Inter);
-        }
-
-        if (!mobj || FDef.gzActorRoll == DontUse) {
-          Md2Angle.roll = 0.0f;
-        } else {
-          Md2Angle.roll = FDef.angleRoll.GetAngle(Md2Angle.roll, rndVal);
-        }
-
-        if (!mobj || FDef.gzActorPitch == DontUse) {
-          Md2Angle.pitch = 0.0f;
-        } else {
-          Md2Angle.pitch = (FDef.gzActorPitch == FromMomentum ? VectorAnglePitch(mobj->Velocity) : mobj->Angles.pitch);
-          if (FDef.gzActorPitchInverted) Md2Angle.pitch += 180.0f;
-          Md2Angle.pitch = FDef.anglePitch.GetAngle(Md2Angle.pitch, rndVal);
-        }
+      if (!mobj || FDef.gzActorPitch == DontUse) {
+        Md2Angle.pitch = 0.0f;
+      } else {
+        if (FDef.gzActorPitch == FromMomentum) Md2Angle.pitch = VectorAnglePitch(mobj->Velocity);
+        if (FDef.gzActorPitchInverted) Md2Angle.pitch += 180.0f;
+        Md2Angle.pitch = FDef.anglePitch.GetAngle(Md2Angle.pitch, rndVal);
       }
 
       if (Level && mobj) {
@@ -2257,31 +2247,13 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
       // VMatrix4::RotateY: roll
       // VMatrix4::RotateZ: yaw
       // VMatrix4::RotateX: pitch
-
-      /*
-      if (Md2Angle.roll) rotmat *= VMatrix4::RotateY(Md2Angle.roll);
-      if (Md2Angle.yaw) rotmat *= VMatrix4::RotateZ(Md2Angle.yaw);
-      if (Md2Angle.pitch) rotmat *= VMatrix4::RotateX(Md2Angle.pitch);
-
-      Md2Angle = TAVec(0.0f, 0.0f, 0.0f);
-      */
     }
-
-    /*
-    if (FDef.gzdoom) {
-      Transform.PreRot.yaw = FDef.angleYaw.angle;
-      Transform.PreRot.pitch = FDef.anglePitch.angle;
-      Transform.PreRot.roll = FDef.angleRoll.angle;
-    }
-    */
 
     if (updateRot) Transform.TransRot = Transform.MatTrans.getAngles();
 
     // light
     vuint32 Md2Light = ri.light;
     if (SubMdl.FullBright) Md2Light = 0xffffffff;
-
-    //if (Transform.Scale.isZero()) return; // just in case
 
     //if (Pass != RPASS_NonShadow) return;
     //if (Pass != RPASS_Ambient) return;
