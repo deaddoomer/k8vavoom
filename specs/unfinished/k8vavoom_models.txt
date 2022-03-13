@@ -13,14 +13,14 @@ file: "models/models.xml"
 
 "transform" tag contains set of transformations, like this:
 <transform>
-  <offset>
-    <z>-10</z>
-  </offset>
+  <offset z="-10" />
+  <scale value="2" />
 </transform>
 
 allowed simple transformations: "offset", "scale", "rotate". those
-transformations can have either "value" subtag, or "x", "y", "z".
-the transformations are stacked.
+transformations can have either "value" attr, or "x", "y", "z".
+the transformations are stacked. for "rotate" you can use "yaw",
+"pitch", and "roll" attribute names.
 
 you can also specify transformation matrix with:
   <matrix>
@@ -33,11 +33,17 @@ you can also specify transformation matrix with:
 it's just a raw 4x4 matrix values. you can use `absolute="true"` attribute to
 replace the current matrix, otherwise matrix multiplication will be used.
 
+identity matrix can be written as: <matrix>identity</matrix>
+
 WARNING! the matrix must describe a valid affine transformation, but cannot include
 shearing. this is because frame interpolator doesn't know what to do with shearing yet.
 
 each frame can have a local transform tag too.
 
+
+"vavoom_model_definition" can be used to set global parameters (with attrs).
+currently supported:
+  noselfshadow
 
 
 <?xml version="1.0" encoding="UTF-8" ?>
@@ -46,7 +52,10 @@ each frame can have a local transform tag too.
   <model name="base">
     <md2 file="models/ammo/ammo.md2">
       <!--
-        this defines source model file. you can use 'md2' or 'md3' tag here.
+        this defines source model file. you can use 'md2', 'md3', or 'kvx' tag here.
+        'kvx' is common tag for KVX and KV6 voxel models.
+        voxel models should not have skin animation, mesh index, or position model.
+        also, voxel models always should have exactly one frame.
         you can use additional attributes:
           int mesh_index -- mesh for this model (mostly used for md3 models)
           int version -- model version. this is used to assign different player models to different weapons, using `Weapon.PlayerModelVersion`
@@ -138,6 +147,8 @@ each frame can have a local transform tag too.
         float angle_end
         float alpha_start
         float alpha_end
+      for angle/rotate, you can specify "random". random value will be different for each map entity.
+      this can be useful for things like blood splats, for example.
     -->
     <state index="-1" model="base" frame_index="0" />
   </class>
