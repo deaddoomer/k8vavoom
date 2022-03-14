@@ -67,6 +67,9 @@ static VCvarB gl_dbg_ignore_gpu_blacklist("gl_dbg_ignore_gpu_blacklist", false, 
 static VCvarB gl_dbg_force_gpu_blacklisting("gl_dbg_force_gpu_blacklisting", false, "Force GPU to be blacklisted.", CVAR_PreInit|CVAR_NoShadow);
 static VCvarB gl_dbg_disable_depth_clamp("gl_dbg_disable_depth_clamp", false, "Disable depth clamping.", CVAR_PreInit|CVAR_NoShadow);
 
+static VCvarB gl_disable_primitive_restart("gl_disable_primitive_restart", false, "Disable triangle fan rendering with primitive restart?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
+static VCvarB gl_can_use_primitive_restart("gl_can_use_primitive_restart", false, "who cares.", CVAR_Rom|CVAR_Hidden|CVAR_NoShadow);
+
 VCvarB gl_letterbox("gl_letterbox", true, "Use letterbox for scaled FS mode?", CVAR_Archive|CVAR_NoShadow);
 VCvarI gl_letterbox_filter("gl_letterbox_filter", "0", "Image filtering for letterbox mode (0:nearest; 1:linear).", CVAR_Archive|CVAR_NoShadow);
 VCvarS gl_letterbox_color("gl_letterbox_color", "00 00 00", "Letterbox color", CVAR_Archive|CVAR_NoShadow);
@@ -1375,12 +1378,15 @@ void VOpenGLDrawer::InitResolution () {
   #endif
 
   // this is used in model renderer
+  if (gl_disable_primitive_restart) p_glPrimitiveRestartIndex = nullptr;
   if (p_glPrimitiveRestartIndex) {
     glEnable(GL_PRIMITIVE_RESTART);
     p_glPrimitiveRestartIndex(65535);
     GCon->Log(NAME_Init, "OpenGL: `glPrimitiveRestartIndex()` found.");
+    gl_can_use_primitive_restart = true;
   } else {
     GCon->Log(NAME_Init, "OpenGL: no `glPrimitiveRestartIndex()` found, optimised voxel rendering is disabled.");
+    gl_can_use_primitive_restart = false;
   }
 
   // shaders

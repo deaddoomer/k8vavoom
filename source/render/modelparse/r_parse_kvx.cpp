@@ -716,6 +716,7 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
     AllNormals.clear();
     STVerts.clear();
     Tris.clear();
+    TriVerts.clear();
   }
 
   Voxel vox;
