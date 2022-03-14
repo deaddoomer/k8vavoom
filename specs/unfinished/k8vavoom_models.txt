@@ -44,11 +44,22 @@ each frame can have a local transform tag too.
 "vavoom_model_definition" can be used to set global parameters (with attrs).
 currently supported:
   noselfshadow
+  noshadow
+  fullbright
+  usedepth
+  iwadonly
+  thiswadonly
+  rotation
+  bobbing
 
 
 <?xml version="1.0" encoding="UTF-8" ?>
 <vavoom_model_definition>
-  <!-- this defines one 3d model. you can have several of them, and refer to models by their names. -->
+  <!--
+    this defines one 3d model. you can have several of them, and refer to models by their names.
+    one model can contain several submodels in various formats; they can be used to build a complex
+    compound models from simplier parts.
+  -->
   <model name="base">
     <md2 file="models/ammo/ammo.md2">
       <!--
@@ -56,6 +67,8 @@ currently supported:
         'kvx' is common tag for KVX and KV6 voxel models.
         voxel models should not have skin animation, mesh index, or position model.
         also, voxel models always should have exactly one frame.
+        note that you can omit frame definition if your source model has only one frame
+        (or you want to use only one frame).
         you can use additional attributes:
           int mesh_index -- mesh for this model (mostly used for md3 models)
           int version -- model version. this is used to assign different player models to different weapons, using `Weapon.PlayerModelVersion`
@@ -66,14 +79,14 @@ currently supported:
           bool noshadow -- this model doesn't cast shadow (default is `false`)
           bool usedepth -- force depth flag (for things like monsters with alpha transaparency) (TODOCUMENT)
           bool allowtransparency -- allow transparency in skin files, for skins that are transparent in solid models (TODOCUMENT)
-      -->
-      <!--
-        you can use "transform" tag here, see above
+          float alpha_mul -- multiplier for entity alpha; can be used to make some submodels translucent (like glass on a complex lamp model)
+        you can use "transform" tag here, see above. this sets default transformation for all following frames.
       -->
       <frame index="0">
         <!--
           this defines model frames. each used frame in model file should be listed here, and assigned an index.
-          note that "index" is model frame index
+          you can omit this if you only want to use the first submodel frame.
+          note that "index" is model file frame index (voxels currently has only one)
           indexes:
             int index -- model frame index
             int end_index -- model frame end index (inclusive), default: index
@@ -126,8 +139,8 @@ currently supported:
         string sprite -- base sprite name (4 chars)
         string sprite_frame -- sprite frame (1 char)
       specify model:
-        string model
-        optional int frame_index
+        string model (can be omited if only one model is defined)
+        int frame_index (can be omited if the given model has only one frame)
         optional int submodel_index
         optional bool hidden -- TODOCUMENT
       interpolation
@@ -141,6 +154,8 @@ currently supported:
         float rotate_roll
         bool rotation
         bool bobbing
+        float rotation_speed (default is 100)
+        float bobbing_speed (default is 180)
         string usepitch ("actor", "momentum", "default", "false"; default is "actor")
         string useroll ("actor", "momentum", "default", "false"; default is "false")
         float angle_start

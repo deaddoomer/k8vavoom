@@ -1364,7 +1364,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       ParseAngle(StateDefNode, "roll", F.angleRoll);
 
       F.rotateSpeed = ParseFloatWithDefault(StateDefNode, "rotation_speed", -1.0f);
-      F.bobSpeed = ParseFloatWithDefault(StateDefNode, "rotation_speed", -1.0f);
+      F.bobSpeed = ParseFloatWithDefault(StateDefNode, "bobbing_speed", -1.0f);
 
       if (!ParseBool(StateDefNode, "rotation", defrot)) F.rotateSpeed = 0.0f;
       if (!ParseBool(StateDefNode, "bobbing", defbob)) F.bobSpeed = 0.0f;
