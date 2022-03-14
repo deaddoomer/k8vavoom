@@ -59,6 +59,7 @@ currently supported:
     this defines one 3d model. you can have several of them, and refer to models by their names.
     one model can contain several submodels in various formats; they can be used to build a complex
     compound models from simplier parts.
+    note that names are local for "vavoom_model_definition".
   -->
   <model name="base">
     <md2 file="models/ammo/ammo.md2">
