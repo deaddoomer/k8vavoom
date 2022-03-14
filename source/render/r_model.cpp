@@ -1094,7 +1094,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
 
         if (FrameDefNode->HasAttribute("index")) {
           sidx = ParseIntWithDefault(FrameDefNode, "index", curframeindex);
-          if (sidx < 0 || sidx > 65536) Sys_Error("%s: model '%s' frame definition has invalid index %d", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name, sidx);
+          if (sidx < 0 || sidx > 65535) Sys_Error("%s: model '%s' frame definition has invalid index %d", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name, sidx);
           eidx = sidx;
         }
 
@@ -1102,13 +1102,13 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
           auto bad = FrameDefNode->FindFirstAttributeOf("end_index", nullptr);
           if (bad) Sys_Error("%s: model '%s' frame definition has invalid attribute '%s' (count/endindex conflict)", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
           const int count = ParseIntWithDefault(FrameDefNode, "count", 0);
-          if (count <= 0 || count > 65536) Sys_Error("%s: model '%s' frame definition has invalid count %d", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name, count);
+          if (count <= 0 || count > 65535) Sys_Error("%s: model '%s' frame definition has invalid count %d", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name, count);
           eidx = sidx+count-1;
         } else if (FrameDefNode->HasAttribute("end_index")) {
           auto bad = FrameDefNode->FindFirstAttributeOf("count", nullptr);
           if (bad) Sys_Error("%s: model '%s' frame definition has invalid attribute '%s' (endindex/count conflict)", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
           eidx = ParseIntWithDefault(FrameDefNode, "end_index", sidx);
-          if (eidx < sidx || eidx > 65536) Sys_Error("%s: model '%s' frame definition has invalid end index %d", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name, eidx);
+          if (eidx < sidx || eidx > 65535) Sys_Error("%s: model '%s' frame definition has invalid end index %d", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name, eidx);
         }
         //GCon->Logf(NAME_Debug, "%s: MDL '%s': sidx=%d; eidx=%d", *FrameDefNode->Loc.toStringNoCol(), *Mdl->Name, sidx, eidx);
 

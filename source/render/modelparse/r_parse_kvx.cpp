@@ -30,7 +30,7 @@
 static VCvarI vox_cache_compression_level("vox_cache_compression_level", "6", "Voxel cache file compression level [0..9]", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 
 
-#define VOX_CACHE_SIGNATURE  "k8vavoom voxel model cache file, version 0\n"
+#define VOX_CACHE_SIGNATURE  "k8vavoom voxel model cache file, version 1\n"
 
 
 struct ColorUV {
@@ -677,6 +677,7 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
   this->Uploaded = false;
   this->VertsBuffer = 0;
   this->IndexBuffer = 0;
+  this->GlMode = GlNone;
 
   VStr ccname = GenKVXCacheName(Data, DataSize);
   VStr cacheFileName = VStr("voxmdl_")+ccname+".cache";
@@ -761,11 +762,15 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
   }
 
   // quads -> triangles
+  // also create triangle strips
   XVtxInfo nfo;
   nfo.mdl = this;
   nfo.vox = &vox;
   Tris.setLength(vox.indicies.length()/4*2);
+  GlMode = GlTriangleFan;
+  TriVerts.setLength(vox.indicies.length()/4*5);
   int triidx = 0;
+  int tvxidx = 0;
   for (int qidx = 0; qidx < vox.indicies.length(); qidx += 4, triidx += 2) {
     const TVec v1 = vox.vertices[vox.indicies[qidx+0]].asTVec();
     const TVec v2 = vox.vertices[vox.indicies[qidx+1]].asTVec();
@@ -793,9 +798,15 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
     tri1.VertIndex[0] = vx2;
     tri1.VertIndex[1] = vx3;
     tri1.VertIndex[2] = vx0;
+
+    TriVerts[tvxidx++] = vx0;
+    TriVerts[tvxidx++] = vx1;
+    TriVerts[tvxidx++] = vx2;
+    TriVerts[tvxidx++] = vx3;
+    TriVerts[tvxidx++] = 65535; // primitive break
   }
 
-  if (AllVerts.length() > 65535) {
+  if (AllVerts.length() > 65534) {
     GCon->Logf(NAME_Init, "3d model for voxel '%s' has too many vertices", *this->Name);
   }
 
@@ -893,6 +904,23 @@ bool VMeshModel::Load_KVXCache (VStream *st) {
     }
   }
 
+  // triangle fans
+  {
+    vuint32 glmode;
+    *st << glmode;
+    GlMode = glmode;
+    if (GlMode != GlNone) {
+      vuint32 count;
+      *st << count;
+      TriVerts.setLength((int)count);
+      for (int f = 0; f < TriVerts.length(); ++f) {
+        *st << TriVerts[f];
+      }
+    } else {
+      TriVerts.clear();
+    }
+  }
+
   // frames
   {
     vuint32 count;
@@ -980,6 +1008,19 @@ void VMeshModel::Save_KVXCache (VStream *st) {
     *st << count;
     for (int f = 0; f < Tris.length(); ++f) {
       *st << Tris[f].VertIndex[0] << Tris[f].VertIndex[1] << Tris[f].VertIndex[2];
+    }
+  }
+
+  // triangle fans
+  {
+    vuint32 glmode = GlMode;
+    *st << glmode;
+    if (GlMode != GlNone) {
+      vuint32 count = (vuint32)TriVerts.length();
+      *st << count;
+      for (int f = 0; f < TriVerts.length(); ++f) {
+        *st << TriVerts[f];
+      }
     }
   }
 

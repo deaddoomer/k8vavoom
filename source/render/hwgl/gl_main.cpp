@@ -1375,8 +1375,13 @@ void VOpenGLDrawer::InitResolution () {
   #endif
 
   // this is used in model renderer
-  glEnable(GL_PRIMITIVE_RESTART);
-  p_glPrimitiveRestartIndex(65535);
+  if (p_glPrimitiveRestartIndex) {
+    glEnable(GL_PRIMITIVE_RESTART);
+    p_glPrimitiveRestartIndex(65535);
+    GCon->Log(NAME_Init, "OpenGL: `glPrimitiveRestartIndex()` found.");
+  } else {
+    GCon->Log(NAME_Init, "OpenGL: no `glPrimitiveRestartIndex()` found, optimised voxel rendering is disabled.");
+  }
 
   // shaders
   shaderHead = nullptr; // just in case

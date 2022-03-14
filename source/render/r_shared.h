@@ -813,6 +813,8 @@ struct VMeshFrame {
   vuint32 NormalsOffset;
 };
 
+// note that the following structs are uploaded to GPU
+// so they must be packed, and data sizes must not be changed
 #pragma pack(push,1)
 // texture coordinates
 struct VMeshSTVert {
@@ -824,6 +826,8 @@ struct VMeshSTVert {
 struct VMeshTri {
   vuint16 VertIndex[3];
 };
+#pragma pack(pop)
+
 
 struct VMeshEdge {
   vuint16 Vert1;
@@ -831,10 +835,17 @@ struct VMeshEdge {
   vint16 Tri1;
   vint16 Tri2;
 };
-#pragma pack(pop)
 
 
 struct VMeshModel {
+  //WARNING! HACK! this should be the same as OpenGL constants!
+  enum {
+    GlNone = 0, // so we can't use GL_POINTS; meh.
+    GlTriangles = 0x0004,
+    GlTriangleStrip = 0x0005,
+    GlTriangleFan = 0x0006,
+  };
+
   struct SkinInfo {
     VName fileName;
     int textureId; // -1: not loaded yet
@@ -845,6 +856,8 @@ struct VMeshModel {
   // as the number of vertices, because normals are per-vertex
   // this is also true for `STVerts`
   // `Edges` are used only in stencil shadows mode
+  // if `TriVerts` has any elements, it will be used with `GlMode`
+  // note that `Tris` should still be constructed, because they are used in stencil shadows
   VStr Name;
   int MeshIndex;
   TArray<SkinInfo> Skins;
@@ -853,10 +866,12 @@ struct VMeshModel {
   TArray<TVec> AllNormals; // normals are per-vertex!
   TArray<VMeshSTVert> STVerts;
   TArray<VMeshTri> Tris; // vetex indicies
+  TArray<vuint16> TriVerts; // vetex indicies for triangle strips and such, with 65535 as restart index
   // the following two arrays are used only in stencil shadows
   // they are lazily created
   TArray<TPlane> AllPlanes; // for `Tris`
   TArray<VMeshEdge> Edges; // for `Tris`
+  unsigned GlMode; // GL_TRIANGLES, etc.
 
   bool loaded; // is this model loaded?
   bool Uploaded; // is this model uploaded to GPU?

@@ -175,6 +175,7 @@ void VMeshModel::Load_MD2 (const vuint8 *Data, int DataSize) {
   this->Uploaded = false;
   this->VertsBuffer = 0;
   this->IndexBuffer = 0;
+  this->GlMode = GlNone;
 
   if (pmodel->get_version() != IDMD2_VERSION) Sys_Error("model '%s' has wrong version number (%i should be %i)", *this->Name, pmodel->get_version(), IDMD2_VERSION);
   if (pmodel->get_numverts() <= 0) Sys_Error("model '%s' has no vertices", *this->Name);

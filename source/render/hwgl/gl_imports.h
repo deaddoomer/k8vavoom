@@ -526,7 +526,7 @@ typedef void (APIENTRY *glDrawBuffers_t) (GLsizei n, const GLenum *bufs);
   VGLAPIPTR(glGetVertexAttribfvARB, true);
   VGLAPIPTR(glGetVertexAttribivARB, true);
   VGLAPIPTR(glGetVertexAttribPointervARB, true);
-  VGLAPIPTR(glPrimitiveRestartIndex, true);
+  VGLAPIPTR(glPrimitiveRestartIndex, false);
 
   VGLAPIPTR(glBindBufferARB, true);
   VGLAPIPTR(glDeleteBuffersARB, true);

@@ -162,6 +162,7 @@ void VMeshModel::Load_MD3 (const vuint8 *Data, int DataSize) {
   this->Uploaded = false;
   this->VertsBuffer = 0;
   this->IndexBuffer = 0;
+  this->GlMode = GlNone;
 
   const MD3Header *pmodel = (const MD3Header *)Data;
 
