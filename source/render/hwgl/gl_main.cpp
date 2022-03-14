@@ -1374,6 +1374,10 @@ void VOpenGLDrawer::InitResolution () {
   glDisable(GL_POLYGON_SMOOTH);
   #endif
 
+  // this is used in model renderer
+  glEnable(GL_PRIMITIVE_RESTART);
+  p_glPrimitiveRestartIndex(65535);
+
   // shaders
   shaderHead = nullptr; // just in case
 

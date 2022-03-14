@@ -259,6 +259,7 @@ typedef void (APIENTRY*glGetVertexAttribdvARB_t)(GLuint, GLenum, GLdouble *);
 typedef void (APIENTRY*glGetVertexAttribfvARB_t)(GLuint, GLenum, GLfloat *);
 typedef void (APIENTRY*glGetVertexAttribivARB_t)(GLuint, GLenum, GLint *);
 typedef void (APIENTRY*glGetVertexAttribPointervARB_t)(GLuint, GLenum, GLvoid **);
+typedef void (APIENTRY*glPrimitiveRestartIndex_t)(GLuint index);
 
 #ifndef GL_ARB_fragment_shader
 #define GL_FRAGMENT_SHADER_ARB        0x8B30
@@ -310,6 +311,10 @@ typedef void (APIENTRY*glGetVertexAttribPointervARB_t)(GLuint, GLenum, GLvoid **
 /* GL types for handling large vertex buffer objects */
 typedef ptrdiff_t GLintptrARB;
 typedef ptrdiff_t GLsizeiptrARB;
+#endif
+
+#ifndef GL_PRIMITIVE_RESTART
+#define GL_PRIMITIVE_RESTART              0x8F9D
 #endif
 
 typedef void (APIENTRY*glBindBufferARB_t)(GLenum, GLuint);
@@ -521,6 +526,7 @@ typedef void (APIENTRY *glDrawBuffers_t) (GLsizei n, const GLenum *bufs);
   VGLAPIPTR(glGetVertexAttribfvARB, true);
   VGLAPIPTR(glGetVertexAttribivARB, true);
   VGLAPIPTR(glGetVertexAttribPointervARB, true);
+  VGLAPIPTR(glPrimitiveRestartIndex, true);
 
   VGLAPIPTR(glBindBufferARB, true);
   VGLAPIPTR(glDeleteBuffersARB, true);
