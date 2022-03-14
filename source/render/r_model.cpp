@@ -1182,7 +1182,9 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         VStr sfl = SkN->GetAttribute("file").ToLower().FixFileSlashes();
         if (sfl.length()) {
           if (sfl.indexOf('/') < 0) sfl = Md2->Model->Name.ExtractFilePath()+sfl;
-          if (mdl_verbose_loading > 2) GCon->Logf("model '%s': skin file '%s'", *SMdl.Name, *sfl);
+          if (mdl_verbose_loading > 2) {
+            GCon->Logf("%s: model '%s': skin file '%s'", *SkN->Loc.toStringNoCol(), *SMdl.Name, *sfl);
+          }
           VMeshModel::SkinInfo &si = Md2->Skins.alloc();
           si.fileName = *sfl;
           si.textureId = -1;
@@ -1210,7 +1212,9 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
             md3strm->Serialise(&n, 4);
             n = LittleLong(n);
             if (n > 1 && n < 64) {
-              GCon->Logf(NAME_Init, "model '%s' got automatic submodel%s for %u more mesh%s", *Md2->Model->Name, (n > 2 ? "s" : ""), n-1, (n > 2 ? "es" : ""));
+              GCon->Logf(NAME_Init, "%s: model '%s' got automatic submodel%s for %u more mesh%s",
+                         *ModelDefNode->Loc.toStringNoCol(), *Md2->Model->Name,
+                         (n > 2 ? "s" : ""), n-1, (n > 2 ? "es" : ""));
               for (unsigned f = 1; f < n; ++f) {
                 VScriptSubModel &newmdl = SMdl.SubModels.Alloc();
                 Md2 = &SMdl.SubModels[Md2Index]; // this pointer may change, so refresh it
@@ -1222,7 +1226,10 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
                 }
               }
             } else {
-              if (n != 1) GCon->Logf(NAME_Warning, "model '%s' has invalid number of meshes (%u)", *Md2->Model->Name, n);
+              if (n != 1) {
+                GCon->Logf(NAME_Warning, "%s: model '%s' has invalid number of meshes (%u)",
+                           *ModelDefNode->Loc.toStringNoCol(), *Md2->Model->Name, n);
+              }
             }
           }
           delete md3strm;
@@ -1238,7 +1245,9 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
             VStr sfl = SkN->GetAttribute("file").ToLower().FixFileSlashes();
             if (sfl.length() && subidx >= 0 && subidx < 1024) {
               if (sfl.indexOf('/') < 0) sfl = Md2->Model->Name.ExtractFilePath()+sfl;
-              if (mdl_verbose_loading > 2) GCon->Logf("model '%s': skin file '%s'", *SMdl.Name, *sfl);
+              if (mdl_verbose_loading > 2) {
+                GCon->Logf("%s: model '%s': skin file '%s'", *SkN->Loc.toStringNoCol(), *SMdl.Name, *sfl);
+              }
               while (SubSkins.length() <= subidx) SubSkins.alloc();
               VMeshModel::SkinInfo &si = SubSkins[subidx];
               si.fileName = *sfl;
@@ -1289,9 +1298,13 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
     VClass *xcls = VClass::FindClassNoCase(*vcClassName);
     if (xcls && !xcls->IsChildOf(VEntity::StaticClass())) xcls = nullptr;
     if (xcls) {
-      if (developer) GCon->Logf(NAME_Dev, "found 3d model for class `%s`", xcls->GetName());
+      if (developer) {
+        GCon->Logf(NAME_Dev, "%s: found 3d model for class `%s`", *ClassDefNode->Loc.toStringNoCol(), xcls->GetName());
+      }
+      //GCon->Logf(NAME_Debug, "%s: found 3d model for class `%s`", *ClassDefNode->Loc.toStringNoCol(), xcls->GetName());
     } else {
-      GCon->Logf(NAME_Init, "found 3d model for unknown class `%s`", *vcClassName);
+      GCon->Logf(NAME_Init, "%s: found 3d model for unknown class `%s`",
+                 *ClassDefNode->Loc.toStringNoCol(), *vcClassName);
     }
 
     VClassModelScript *Cls = new VClassModelScript();
@@ -1304,9 +1317,10 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
     Cls->iwadonly = ParseBool(ClassDefNode, "iwadonly", globIWadOnly);
     Cls->thiswadonly = ParseBool(ClassDefNode, "thiswadonly", globThisWadOnly);
 
-    bool deleteIt = false;
-    if (cli_IgnoreModelClass.has(*Cls->Name)) {
-      GCon->Logf(NAME_Init, "model '%s' ignored by user request", *Cls->Name);
+    bool deleteIt = !xcls;
+    if (!deleteIt && cli_IgnoreModelClass.has(*Cls->Name)) {
+      GCon->Logf(NAME_Init, "%s: model '%s' ignored by user request",
+                 *ClassDefNode->Loc.toStringNoCol(), *Cls->Name);
       deleteIt = true;
     }
     if (!deleteIt && xcls) {
@@ -1415,12 +1429,18 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
             prevValid = false;
             F.disabled = true;
             hasDisabled = true;
-            GCon->Logf(NAME_Warning, "skipped model '%s' class '%s' state #%d due to iwadonly restriction", *Mdl->Name, *Cls->Name, F.Number);
+            if (!deleteIt) {
+              GCon->Logf(NAME_Warning, "%s: skipped model '%s' class '%s' state #%d due to iwadonly restriction",
+                         *StateDefNode->Loc.toStringNoCol(), *Mdl->Name, *Cls->Name, F.Number);
+            }
           }
         } else if (!IsValidSpriteState(lump, FindClassStateByIndex(xcls, F.Number), false, false, true)) {
           F.disabled = true;
           hasDisabled = true;
-          GCon->Logf(NAME_Warning, "skipped model '%s' class '%s' state #%d due to replaced sprite", *Mdl->Name, *Cls->Name, F.Number);
+          if (!deleteIt) {
+            GCon->Logf(NAME_Warning, "%s: skipped model '%s' class '%s' state #%d due to replaced sprite",
+                       *StateDefNode->Loc.toStringNoCol(), *Mdl->Name, *Cls->Name, F.Number);
+          }
         } else {
           prevValid = true;
         }
@@ -1429,12 +1449,15 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         if (bad) Sys_Error("%s: model '%s' class state definition has invalid attribute '%s' (sprite/index conflict)", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
 
         VStr sprnamestr = StateDefNode->GetAttribute("sprite");
-        VName sprname = VName(*sprnamestr, VName::FindLower);
+        VName sprname = (deleteIt ? NAME_None : VName(*sprnamestr, VName::FindLower));
         if (sprname == NAME_None) {
           if (sprnamestr.length() != 4) {
             Sys_Error("%s: Model '%s' has invalid state (empty sprite name '%s')", *StateDefNode->Loc.toStringNoCol(), *Mdl->Name, *sprnamestr);
           }
-          GCon->Logf(NAME_Warning, "%s: Model '%s' has unknown sprite '%s', state removed", *StateDefNode->Loc.toStringNoCol(), *Mdl->Name, *sprnamestr);
+          if (!deleteIt) {
+            GCon->Logf(NAME_Warning, "%s: Model '%s' has unknown sprite '%s', state removed",
+                       *StateDefNode->Loc.toStringNoCol(), *Mdl->Name, *sprnamestr);
+          }
           //sprname = VName("....", VName::Add);
         }
         VStr sprframe = StateDefNode->GetAttribute("sprite_frame");
@@ -1455,12 +1478,18 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
             prevValid = false;
             F.disabled = true;
             hasDisabled = true;
-            GCon->Logf(NAME_Warning, "skipped model '%s' class '%s' frame '%s%C' due to iwadonly restriction", *Mdl->Name, *Cls->Name, *sprname, sprframe[0]);
+            if (!deleteIt) {
+              GCon->Logf(NAME_Warning, "%s: skipped model '%s' class '%s' frame '%s%c' due to iwadonly restriction",
+                         *StateDefNode->Loc.toStringNoCol(), *Mdl->Name, *Cls->Name, *sprname, sprframe[0]);
+            }
           }
         } else if (!IsValidSpriteFrame(lump, sprname, F.frame, false, false, true)) {
           F.disabled = true;
           hasDisabled = true;
-          GCon->Logf(NAME_Warning, "skipped model '%s' class '%s' frame '%s%C' due to replaced sprite", *Mdl->Name, *Cls->Name, *sprname, sprframe[0]);
+          if (!deleteIt) {
+            GCon->Logf(NAME_Warning, "%s: skipped model '%s' class '%s' frame '%s%c' due to replaced sprite",
+                       *StateDefNode->Loc.toStringNoCol(), *Mdl->Name, *Cls->Name, *sprname, sprframe[0]);
+          }
         } else {
           prevValid = true;
         }
@@ -1529,7 +1558,8 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
               prevValid = false;
               ffr.disabled = true;
               hasDisabled = true;
-              GCon->Logf(NAME_Warning, "skipped model '%s' class '%s' state #%d due to iwadonly restriction", *Mdl->Name, *Cls->Name, ffr.Number);
+              GCon->Logf(NAME_Warning, "%s: skipped model '%s' class '%s' state #%d due to iwadonly restriction",
+                         *StateDefNode->Loc.toStringNoCol(), *Mdl->Name, *Cls->Name, ffr.Number);
             } else {
               prevValid = true;
             }
@@ -1555,7 +1585,10 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
     }
 
     if (Cls->Frames.length() == 0) {
-      if (!deleteIt) GCon->Logf(NAME_Warning, "model '%s' class '%s' has no states defined", *Mdl->Name, *Cls->Name);
+      if (!deleteIt) {
+        GCon->Logf(NAME_Warning, "%s: model '%s' class '%s' has no states defined",
+        *ClassDefNode->Loc.toStringNoCol(), *Mdl->Name, *Cls->Name);
+      }
       ClassModels.Remove(Cls);
       ClassModelMapRebuild = true;
       deleteIt = true;
@@ -1567,7 +1600,8 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       //GCon->Logf("model '%s' for class '%s' is \"one-for-all\"", *Mdl->Name, *Cls->Name);
     }
   }
-  if (!ClassDefined) Sys_Error("model '%s' defined no classes", *Mdl->Name);
+  if (!ClassDefined) Sys_Error("%s: model '%s' defined no classes",
+                               *Doc->Root.Loc.toStringNoCol(), *Mdl->Name);
 
   // we don't need the xml file anymore
   delete Doc;

@@ -705,7 +705,7 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
     VStream::Destroy(strm);
     if (ok) {
       this->loaded = true;
-      GCon->Logf(NAME_Init, "voxel model '%s' loaded from cache file '%s'", *this->Name, *ccname);
+      //GCon->Logf(NAME_Init, "voxel model '%s' loaded from cache file '%s'", *this->Name, *ccname);
       return;
     }
     Sys_FileDelete(cacheFileName);
