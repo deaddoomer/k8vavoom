@@ -33,6 +33,132 @@ static VCvarI vox_cache_compression_level("vox_cache_compression_level", "6", "V
 #define VOX_CACHE_SIGNATURE  "k8vavoom voxel model cache file, version 1\n"
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+class VVoxTexture : public VTexture {
+public:
+  int VoxTexIndex;
+  vint32 ShadeVal;
+
+public:
+  VVoxTexture (int vidx, int ashade);
+  virtual ~VVoxTexture () override;
+  virtual void ReleasePixels () override;
+  virtual vuint8 *GetPixels () override;
+  virtual rgba_t *GetPalette () override;
+};
+
+
+struct VoxelTexture {
+  int width, height;
+  vuint8 *data;
+  VStr fname;
+  TArray<VVoxTexture *> tex;
+};
+
+static TArray<VoxelTexture> voxTextures;
+
+
+//==========================================================================
+//
+//  VVoxTexture::VVoxTexture
+//
+//==========================================================================
+VVoxTexture::VVoxTexture (int vidx, vint32 ashade)
+  : VTexture()
+  , VoxTexIndex(vidx)
+  , ShadeVal(ashade)
+{
+  vassert(vidx >= 0 && vidx < voxTextures.length());
+  SourceLump = -1;
+  Type = TEXTYPE_Pic;
+  Name = NAME_None; //VName(*voxTextures[vidx].fname);
+  Width = voxTextures[vidx].width;
+  Height = voxTextures[vidx].height;
+  mFormat = mOrigFormat = TEXFMT_RGBA;
+  bForceNoFilter = true;
+}
+
+
+//==========================================================================
+//
+//  VVoxTexture::~VVoxTexture
+//
+//==========================================================================
+VVoxTexture::~VVoxTexture () {
+  if (Pixels) {
+    delete[] Pixels;
+    Pixels = nullptr;
+  }
+}
+
+
+//==========================================================================
+//
+//  VVoxTexture::GetPixels
+//
+//==========================================================================
+vuint8 *VVoxTexture::GetPixels () {
+  // if already got pixels, then just return them
+  if (Pixels) return Pixels;
+
+  bForceNoFilter = true;
+  transFlags = TransValueSolid; // anyway
+  mFormat = mOrigFormat = TEXFMT_RGBA;
+
+  //GCon->Logf(NAME_Init, "getting pixels for voxel texture #%d (shade=%d); %dx%d", VoxTexIndex, ShadeVal, Width, Height);
+
+  Pixels = new vuint8[Width*Height*4];
+  memcpy(Pixels, voxTextures[VoxTexIndex].data, Width*Height*4);
+
+  ConvertPixelsToShaded();
+  PrepareBrightmap();
+  return Pixels;
+}
+
+
+//==========================================================================
+//
+//  VVoxTexture::GetPalette
+//
+//==========================================================================
+rgba_t *VVoxTexture::GetPalette () {
+  return r_palette;
+}
+
+
+//==========================================================================
+//
+//  VVoxTexture::ReleasePixels
+//
+//==========================================================================
+void VVoxTexture::ReleasePixels () {
+  VTexture::ReleasePixels();
+}
+
+
+//==========================================================================
+//
+//  voxTextureLoader
+//
+//==========================================================================
+static VTexture *voxTextureLoader (VStr fname, vint32 shade) {
+  if (!fname.startsWith("\x01:voxtexure:")) return nullptr;
+  VStr ss = fname;
+  ss.chopLeft(12);
+  if (ss.length() == 0) return nullptr;
+  int idx = VStr::atoi(*ss);
+  if (idx < 0 || idx >= voxTextures.length()) return nullptr;
+  //GCon->Logf(NAME_Debug, "***VOXEL TEXTURE #%d", idx);
+  for (int f = 0; f < voxTextures[idx].tex.length(); ++f) {
+    if (voxTextures[idx].tex[f]->ShadeVal == shade) return voxTextures[idx].tex[f];
+  }
+  VVoxTexture *vv = new VVoxTexture(idx, shade);
+  voxTextures[idx].tex.append(vv);
+  return vv;
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 struct ColorUV {
   float u, v;
 };
@@ -483,129 +609,6 @@ bool Voxel::loadKVX (VStream &st) {
   cz = pz;
 
   return true;
-}
-
-
-// ////////////////////////////////////////////////////////////////////////// //
-class VVoxTexture : public VTexture {
-public:
-  int VoxTexIndex;
-  vint32 ShadeVal;
-
-public:
-  VVoxTexture (int vidx, int ashade);
-  virtual ~VVoxTexture () override;
-  virtual void ReleasePixels () override;
-  virtual vuint8 *GetPixels () override;
-  virtual rgba_t *GetPalette () override;
-};
-
-
-struct VoxelTexture {
-  int width, height;
-  vuint8 *data;
-  VStr fname;
-  TArray<VVoxTexture *> tex;
-};
-
-static TArray<VoxelTexture> voxTextures;
-
-
-//==========================================================================
-//
-//  VVoxTexture::VVoxTexture
-//
-//==========================================================================
-VVoxTexture::VVoxTexture (int vidx, vint32 ashade)
-  : VTexture()
-  , VoxTexIndex(vidx)
-  , ShadeVal(ashade)
-{
-  vassert(vidx >= 0 && vidx < voxTextures.length());
-  SourceLump = -1;
-  Type = TEXTYPE_Pic;
-  Name = NAME_None; //VName(*voxTextures[vidx].fname);
-  Width = voxTextures[vidx].width;
-  Height = voxTextures[vidx].height;
-  mFormat = mOrigFormat = TEXFMT_RGBA;
-}
-
-
-//==========================================================================
-//
-//  VVoxTexture::~VVoxTexture
-//
-//==========================================================================
-VVoxTexture::~VVoxTexture () {
-  if (Pixels) {
-    delete[] Pixels;
-    Pixels = nullptr;
-  }
-}
-
-
-//==========================================================================
-//
-//  VVoxTexture::GetPixels
-//
-//==========================================================================
-vuint8 *VVoxTexture::GetPixels () {
-  // if already got pixels, then just return them
-  if (Pixels) return Pixels;
-
-  transFlags = TransValueSolid; // anyway
-  mFormat = mOrigFormat = TEXFMT_RGBA;
-
-  //GCon->Logf(NAME_Init, "getting pixels for voxel texture #%d (shade=%d); %dx%d", VoxTexIndex, ShadeVal, Width, Height);
-
-  Pixels = new vuint8[Width*Height*4];
-  memcpy(Pixels, voxTextures[VoxTexIndex].data, Width*Height*4);
-
-  ConvertPixelsToShaded();
-  PrepareBrightmap();
-  return Pixels;
-}
-
-
-//==========================================================================
-//
-//  VVoxTexture::GetPalette
-//
-//==========================================================================
-rgba_t *VVoxTexture::GetPalette () {
-  return r_palette;
-}
-
-
-//==========================================================================
-//
-//  VVoxTexture::ReleasePixels
-//
-//==========================================================================
-void VVoxTexture::ReleasePixels () {
-  VTexture::ReleasePixels();
-}
-
-
-//==========================================================================
-//
-//  voxTextureLoader
-//
-//==========================================================================
-static VTexture *voxTextureLoader (VStr fname, vint32 shade) {
-  if (!fname.startsWith("\x01:voxtexure:")) return nullptr;
-  VStr ss = fname;
-  ss.chopLeft(12);
-  if (ss.length() == 0) return nullptr;
-  int idx = VStr::atoi(*ss);
-  if (idx < 0 || idx >= voxTextures.length()) return nullptr;
-  //GCon->Logf(NAME_Debug, "***VOXEL TEXTURE #%d", idx);
-  for (int f = 0; f < voxTextures[idx].tex.length(); ++f) {
-    if (voxTextures[idx].tex[f]->ShadeVal == shade) return voxTextures[idx].tex[f];
-  }
-  VVoxTexture *vv = new VVoxTexture(idx, shade);
-  voxTextures[idx].tex.append(vv);
-  return vv;
 }
 
 

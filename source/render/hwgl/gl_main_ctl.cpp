@@ -281,15 +281,20 @@ void VOpenGLDrawer::ForceTextureFiltering (VTexture *Tex, int level, int wrap) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, rep);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, rep);
 
-  // anisotropy
-  if (anisotropyExists) {
-    int aniso = (level != -666 ? gl_texture_filter_anisotropic.asInt() : 1);
-    aniso = clampval(aniso, 1, max_anisotropy); // `max_anisotropy` clamped to 255
-    glTexParameterf(GL_TEXTURE_2D, GLenum(GL_TEXTURE_MAX_ANISOTROPY_EXT), (GLfloat)aniso);
-  }
+  if (Tex->bForceNoFilter) {
+    if (anisotropyExists) glTexParameterf(GL_TEXTURE_2D, GLenum(GL_TEXTURE_MAX_ANISOTROPY_EXT), (GLfloat)1.0f);
+    SetGLFilteringMode(0);
+  } else {
+    // anisotropy
+    if (anisotropyExists) {
+      int aniso = (level != -666 ? gl_texture_filter_anisotropic.asInt() : 1);
+      aniso = clampval(aniso, 1, max_anisotropy); // `max_anisotropy` clamped to 255
+      glTexParameterf(GL_TEXTURE_2D, GLenum(GL_TEXTURE_MAX_ANISOTROPY_EXT), (GLfloat)aniso);
+    }
 
-  // setup filtering
-  SetGLFilteringMode(level);
+    // setup filtering
+    SetGLFilteringMode(level);
+  }
 
   // this is called when "non-main" (i.e. translated, colormapped, or shaded) texture was bound
   // do not record new filtering mode, 'cause it affects only the main texture, not secondaries
@@ -307,16 +312,18 @@ void VOpenGLDrawer::SetupTextureFiltering (VTexture *Tex, int level, int wrap) {
 
   // anisotropy (calculate it here, we need to check and set it later)
   int aniso;
-  if (level == -666) {
+  if (Tex->bForceNoFilter) {
+    level = 0;
+    aniso = 1;
+  } else if (level == -666) {
     aniso = 1;
     level = 0;
   } else {
     aniso = clampval(gl_texture_filter_anisotropic.asInt(), 1, max_anisotropy); // `max_anisotropy` clamped to 255
     //aniso = clampval(aniso, 1, 255);
+    // why not?
+    level = clampval(level, 0, 4);
   }
-
-  // why not?
-  level = clampval(level, 0, 4);
 
   // repeat mode
   const GLint rep = (wrap < 0 ? ClampToEdge : wrap > 0 ? GL_REPEAT : (Tex->isWrapRepeat() ? GL_REPEAT : ClampToEdge));

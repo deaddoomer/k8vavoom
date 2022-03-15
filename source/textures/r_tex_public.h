@@ -219,6 +219,7 @@ public:
   bool bWorldPanning;
   bool bIsCameraTexture;
   bool bForcedSpriteOffset; // do not try to guess sprite offset, if this is set
+  bool bForceNoFilter; // used for voxels, to turn off texture filtering
   int SOffsetFix; // set only if `bForcedSpriteOffset` is true
   int TOffsetFix; // set only if `bForcedSpriteOffset` is true
   vuint8 WarpType;
