@@ -527,6 +527,8 @@ void Host_Init () {
 #ifdef CLIENT
   //FIXME
   //R_InitHiResTextures(); // init only hires replacements
+  // here, so voxel optimisation options could be loaded from config first
+  R_InitAliasModels();
 #endif
 
 #ifndef CLIENT

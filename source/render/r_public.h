@@ -170,6 +170,7 @@ VLightEffectDef *R_FindLightEffect (VStr Name);
 
 // r_main
 void R_Init (); // Called by startup code.
+void R_InitAliasModels (); // Called by startup code.
 void R_Start (VLevel *);
 void R_SetViewSize (int blocks);
 void R_ForceViewSizeUpdate ();

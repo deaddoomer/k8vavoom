@@ -662,8 +662,6 @@ FDrawerDesc::FDrawerDesc (int Type, const char *AName, const char *ADescription,
 //==========================================================================
 void R_Init () {
   R_InitSkyBoxes();
-  R_InitModels();
-  R_LoadAllModelsSkins();
   // create light remapping table
   for (int i = 0; i < 256; ++i) {
     int n = i*i/255;
@@ -676,6 +674,17 @@ void R_Init () {
     if (n > 255) n = 255; else if (n < 0) n = 0;
     light_remap[i] = clampToByte(n);
   }
+}
+
+
+//==========================================================================
+//
+//  R_InitAliasModels
+//
+//==========================================================================
+void R_InitAliasModels () {
+  R_InitModels();
+  R_LoadAllModelsSkins();
 }
 
 

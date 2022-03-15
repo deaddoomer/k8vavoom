@@ -1540,7 +1540,7 @@ COMMAND(exec) {
     return;
   }
 
-  //GCon->Logf("Executing '%s'", *Args[1]);
+  //if (ftype == SpecialUser) GCon->Logf("Executing '%s'", *Args[1]);
 
   int flsize = Strm->TotalSize();
   if (flsize == 0) { VStream::Destroy(Strm); return; }
