@@ -78,7 +78,7 @@ struct VVoxVertex {
     return (x == b.x && y == b.y && z == b.z && rgb == b.rgb);
   }
 
-  TVec asTVec () const noexcept { return TVec(x, y, z); }
+  inline TVec asTVec () const noexcept { return TVec(x, y, z); }
 };
 
 VVA_FORCEINLINE VVA_PURE uint32_t GetTypeHash (const VVoxVertex &vi) noexcept {
@@ -87,5 +87,46 @@ VVA_FORCEINLINE VVA_PURE uint32_t GetTypeHash (const VVoxVertex &vi) noexcept {
   hash = joaatHashPart(hash, &vi.y, sizeof(vi.y));
   hash = joaatHashPart(hash, &vi.z, sizeof(vi.z));
   hash = joaatHashPart(hash, &vi.rgb, sizeof(vi.rgb));
+  return joaatHashFinalize(hash);
+}
+
+
+struct VVoxVertexEx {
+  float x, y, z;
+  float s, t; // will be calculated after texture creation
+  float nx, ny, nz; // normal
+
+  inline VVoxVertexEx () noexcept
+    : x(0.0f)
+    , y(0.0f)
+    , z(0.0f)
+    , s(0.0f)
+    , t(0.0f)
+    , nx(0.0f)
+    , ny(0.0f)
+    , nz(0.0f)
+  {}
+
+  inline bool operator == (const VVoxVertexEx &b) const noexcept {
+    return
+      x == b.x && y == b.y && z == b.z &&
+      s == b.s && t == b.t &&
+      nx == b.nx && ny == b.ny && nz == b.nz;
+  }
+
+  inline TVec asTVec () const noexcept { return TVec(x, y, z); }
+  inline TVec normalAsTVec () const noexcept { return TVec(nx, ny, nz); }
+};
+
+VVA_FORCEINLINE VVA_PURE uint32_t GetTypeHash (const VVoxVertexEx &vi) noexcept {
+  uint32_t hash = 0U;
+  hash = joaatHashPart(hash, &vi.x, sizeof(vi.x));
+  hash = joaatHashPart(hash, &vi.y, sizeof(vi.y));
+  hash = joaatHashPart(hash, &vi.z, sizeof(vi.z));
+  hash = joaatHashPart(hash, &vi.s, sizeof(vi.s));
+  hash = joaatHashPart(hash, &vi.t, sizeof(vi.t));
+  hash = joaatHashPart(hash, &vi.nx, sizeof(vi.nx));
+  hash = joaatHashPart(hash, &vi.ny, sizeof(vi.ny));
+  hash = joaatHashPart(hash, &vi.nz, sizeof(vi.nz));
   return joaatHashFinalize(hash);
 }

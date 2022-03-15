@@ -144,7 +144,7 @@ public:
 
   // reserve memory for at least the given number of items
   // will not shrink the array
-  VVA_FORCEINLINE void reserve (int maxsize) noexcept { if (maxsize > ArrSize) return resize(maxsize); }
+  //VVA_FORCEINLINE void reserve (int maxsize) noexcept { if (maxsize > ArrSize) return resize(maxsize); }
 
   template<bool DoResize=true, bool DoReserve=false> void setLength (int NewNum) noexcept {
     vassert(NewNum >= 0);
