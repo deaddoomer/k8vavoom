@@ -232,7 +232,9 @@ void VRenderLevelShared::QueueSpritePoly (VEntity *thing, const TVec *sv, int lu
 //  VRenderLevelShared::QueueTranslucentAliasModel
 //
 //==========================================================================
-void VRenderLevelShared::QueueTranslucentAliasModel (VEntity *mobj, const RenderStyleInfo &ri/*vuint32 light, vuint32 Fade, float Alpha, bool Additive*/, float TimeFrac) {
+void VRenderLevelShared::QueueTranslucentAliasModel (VEntity *mobj, const RenderStyleInfo &ri,
+                                                     float TimeFrac, bool asGlass)
+{
   if (!mobj) return; // just in case
   if (ri.alpha < 0.004f) return;
   if (ri.flags&RenderStyleInfo::FlagShadow) return;
@@ -247,7 +249,7 @@ void VRenderLevelShared::QueueTranslucentAliasModel (VEntity *mobj, const Render
   spr->rstyle = ri;
   spr->dist = dist;
   spr->origin = mobj->Origin;
-  spr->type = TSP_Model;
+  spr->type = (asGlass ? TSP_ModelGlass : TSP_Model);
   spr->TimeFrac = TimeFrac;
   spr->lump = -1; // has no sense
   spr->objid = mobj->ServerUId;
@@ -981,7 +983,12 @@ void VRenderLevelShared::DrawTransSpr (trans_sprite_t &spr) {
     case TSP_Model:
       // alias model
       TSDisablePOfs(transSprState);
-      DrawEntityModel(spr.ent, spr.rstyle/*spr.light, spr.Fade, spr.Alpha, spr.Additive*/, spr.TimeFrac, RPASS_Normal);
+      DrawEntityModel(spr.ent, spr.rstyle, spr.TimeFrac, RPASS_Normal);
+      break;
+    case TSP_ModelGlass:
+      // alias model
+      TSDisablePOfs(transSprState);
+      DrawEntityModel(spr.ent, spr.rstyle, spr.TimeFrac, RPASS_Glass);
       break;
     default: Sys_Error("VRenderLevelShared::DrawTransSpr: invalid sprite type (%d)", spr.type);
   }

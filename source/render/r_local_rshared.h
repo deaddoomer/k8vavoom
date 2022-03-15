@@ -982,6 +982,10 @@ public:
 
   bool DrawEntityModel (VEntity *Ent, const RenderStyleInfo &ri, float Inter, ERenderPass Pass);
 
+  // returns `true` if this model should be queued as translucent
+  // need to be used to properly render models with translucent submodels
+  bool IsTranslucentEntityModel (VEntity *Ent, const RenderStyleInfo &ri, float Inter);
+
   bool CheckAliasModelFrame (VEntity *Ent, float Inter);
   bool HasEntityAliasModel (VEntity *Ent) const;
   static bool IsAliasModelAllowedFor (VEntity *Ent);
@@ -998,7 +1002,7 @@ public:
                         vuint32 objid);
 
   void QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool onlyShadow=false); // this can modify `ri`!
-  void QueueTranslucentAliasModel (VEntity *mobj, const RenderStyleInfo &ri, float TimeFrac);
+  void QueueTranslucentAliasModel (VEntity *mobj, const RenderStyleInfo &ri, float TimeFrac, bool asGlass);
   bool RenderAliasModel (VEntity *mobj, const RenderStyleInfo &ri, ERenderPass Pass);
   void RenderThing (VEntity *, ERenderPass);
   void RenderMobjs (ERenderPass);

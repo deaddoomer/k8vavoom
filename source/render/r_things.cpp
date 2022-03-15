@@ -251,9 +251,13 @@ bool VRenderLevelShared::RenderAliasModel (VEntity *mobj, const RenderStyleInfo 
   // draw it
   if (ri.isTranslucent()) {
     if (!CheckAliasModelFrame(mobj, TimeFrac)) return false;
-    QueueTranslucentAliasModel(mobj, ri, TimeFrac);
+    QueueTranslucentAliasModel(mobj, ri, TimeFrac, false/*asGlass*/);
     return true;
   } else {
+    if (IsTranslucentEntityModel(mobj, ri, TimeFrac)) {
+      if (!CheckAliasModelFrame(mobj, TimeFrac)) return false;
+      QueueTranslucentAliasModel(mobj, ri, TimeFrac, true/*asGlass*/);
+    }
     return DrawEntityModel(mobj, ri, TimeFrac, Pass);
   }
 }

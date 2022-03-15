@@ -189,6 +189,7 @@ public:
     TSP_Wall,
     TSP_Sprite,
     TSP_Model,
+    TSP_ModelGlass,
   };
 
   struct trans_sprite_t {

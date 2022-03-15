@@ -246,6 +246,7 @@ struct VClassModelScript {
   bool isGZDoom;
   bool iwadonly;
   bool thiswadonly;
+  bool asTranslucent; // always queue this as translucent model?
   TMapNC<vuint32, int> SprFrameMap; // sprite name -> frame index (first)
   TMapNC<int, int> NumFrameMap; // frame number -> frame index (first)
 };
@@ -1314,6 +1315,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
     Cls->OneForAll = false;
     Cls->CacheBuilt = false;
     Cls->isGZDoom = isGZDoom;
+    Cls->asTranslucent = false;
     Cls->iwadonly = ParseBool(ClassDefNode, "iwadonly", globIWadOnly);
     Cls->thiswadonly = ParseBool(ClassDefNode, "thiswadonly", globThisWadOnly);
 
@@ -1539,6 +1541,8 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
                     *Mdl->Name, *MdlName);
         }
       }
+
+      if (!Cls->asTranslucent && Mdl->Models[F.ModelIndex].HasAlphaMul) Cls->asTranslucent = true;
 
       F.Inter = ParseFloatWithDefault(StateDefNode, "inter", 0.0f);
 
@@ -2093,6 +2097,46 @@ static inline void lerpvec (TVec &a, const TVec b, const float t) noexcept {
 
 //==========================================================================
 //
+//  CheckModelEarlyRejects
+//
+//==========================================================================
+static inline bool CheckModelEarlyRejects (const RenderStyleInfo &ri, ERenderPass Pass) {
+  switch (Pass) {
+    case RPASS_Normal: // lightmapped renderer is using this
+      break;
+    case RPASS_Ambient:
+      if (ri.isAdditive()) return false;
+      if (ri.isTranslucent() && ri.stencilColor) return false; // shaded too
+      break;
+    case RPASS_ShadowVolumes:
+    case RPASS_ShadowMaps:
+      if (ri.isTranslucent()) return false;
+      break;
+    case RPASS_Textures:
+      if (ri.isAdditive() || ri.isShaded()) return false;
+      break;
+    case RPASS_Light:
+      if (ri.isAdditive() || ri.isShaded()) return false;
+      //if (ri.isTranslucent() && ri.stencilColor) return; // shaded too
+      break;
+    case RPASS_Fog:
+      //FIXME
+      if (ri.isAdditive() || ri.isShaded()) return false;
+      //if (ri.stencilColor) return;
+      break;
+    case RPASS_NonShadow: // non-lightmapped renderers are using this for translucent models
+      if (!ri.isAdditive() && !ri.isShaded()) return false;
+      break;
+    case RPASS_Glass:
+      if (ri.isTranslucent()) return false;
+      break;
+  }
+  return true;
+}
+
+
+//==========================================================================
+//
 //  DrawModel
 //
 //  FIXME: make this faster -- stop looping, cache data!
@@ -2106,56 +2150,30 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
   bool Interpolate, const TVec &LightPos, float LightRadius, ERenderPass Pass, bool isShadowVol)
 {
   // some early rejects
-  switch (Pass) {
-    case RPASS_Normal: // lightmapped renderer is using this
-      break;
-    case RPASS_Ambient:
-      if (ri.isAdditive()) return;
-      if (ri.isTranslucent() && ri.stencilColor) return; // shaded too
-      break;
-    case RPASS_ShadowVolumes:
-    case RPASS_ShadowMaps:
-      if (ri.isTranslucent()) return;
-      break;
-    case RPASS_Textures:
-      if (ri.isAdditive() || ri.isShaded()) return;
-      break;
-    case RPASS_Light:
-      if (ri.isAdditive() || ri.isShaded()) return;
-      //if (ri.isTranslucent() && ri.stencilColor) return; // shaded too
-      break;
-    case RPASS_Fog:
-      //FIXME
-      if (ri.isAdditive() || ri.isShaded()) return;
-      //if (ri.stencilColor) return;
-      break;
-    case RPASS_NonShadow: // non-lightmapped renderers are using this for translucent models
-      // nope
-      //if (!ri.isAdditive() && !ri.isShaded()) return;
-      break;
-  }
+  if (!CheckModelEarlyRejects(ri, Pass)) return;
 
   VScriptedModelFrame &FDef = Cls.Frames[FIdx];
-  VScriptedModelFrame &NFDef = Cls.Frames[NFIdx];
-  VScriptModel &ScMdl = Cls.Model->Models[FDef.ModelIndex];
   const int allowedsubmod = FDef.SubModelIndex;
   if (allowedsubmod == -2) return; // this frame is hidden
+  VScriptedModelFrame &NFDef = Cls.Frames[NFIdx];
+  VScriptModel &ScMdl = Cls.Model->Models[FDef.ModelIndex];
 
   int submodindex = -1;
   for (auto &&SubMdl : ScMdl.SubModels) {
     ++submodindex;
     if (allowedsubmod >= 0 && submodindex != allowedsubmod) continue; // only one submodel allowed
     if (SubMdl.Version != -1 && SubMdl.Version != Version) continue;
+    if (SubMdl.AlphaMul <= 0.0f) continue;
 
-    if (ScMdl.HasAlphaMul) {
-      if (SubMdl.AlphaMul <= 0.0f) continue;
-      if (SubMdl.AlphaMul < 1.0f) {
-        if (Pass != RPASS_NonShadow && Pass != RPASS_Normal) continue;
-      }
+    if (ScMdl.HasAlphaMul && SubMdl.AlphaMul < 1.0f) {
+      if (Pass != RPASS_Glass && Pass != RPASS_Normal) continue;
     }
 
     if (FDef.FrameIndex >= SubMdl.Frames.length()) {
-      GCon->Logf("Bad sub-model frame index %d for model '%s' (class '%s')", FDef.FrameIndex, *ScMdl.Name, *Cls.Name);
+      if (FDef.FrameIndex != 0x7fffffff) {
+        GCon->Logf("Bad sub-model frame index %d for model '%s' (class '%s')", FDef.FrameIndex, *ScMdl.Name, *Cls.Name);
+        FDef.FrameIndex = 0x7fffffff;
+      }
       continue;
     }
 
@@ -2173,9 +2191,9 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
     VScriptSubModel::VFrame &NF = SubMdl.Frames[Interpolate ? NFDef.FrameIndex : FDef.FrameIndex];
 
     // alpha
-    float Md2Alpha = ri.alpha*SubMdl.AlphaMul;
+    float Md2Alpha = ri.alpha;
     if (ScMdl.HasAlphaMul) {
-      if (Pass == RPASS_NonShadow || Pass == RPASS_Normal) Md2Alpha *= SubMdl.AlphaMul;
+      if (Pass == RPASS_Glass || Pass == RPASS_Normal) Md2Alpha *= SubMdl.AlphaMul;
     }
     if (FDef.AlphaStart != 1.0f || FDef.AlphaEnd != 1.0f) Md2Alpha *= FDef.AlphaStart+(FDef.AlphaEnd-FDef.AlphaStart)*Inter;
     if (F.AlphaStart != 1.0f || F.AlphaEnd != 1.0f) Md2Alpha *= F.AlphaStart+(F.AlphaEnd-F.AlphaStart)*Inter;
@@ -2187,7 +2205,7 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
     // `RPASS_Normal` means "lightmapped renderer", it always does it right
     if (Pass != RPASS_Normal) {
       // translucent?
-      if (Pass != RPASS_NonShadow && Md2Alpha < 1.0f) continue;
+      if (Pass != RPASS_NonShadow && Pass != RPASS_Glass && Md2Alpha < 1.0f) continue;
     }
 
     // locate the proper data
@@ -2274,6 +2292,7 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
         case RPASS_Textures: passname = "texture"; break;
         case RPASS_Fog: passname = "fog"; break;
         case RPASS_NonShadow: passname = "nonshadow"; break;
+        case RPASS_Glass: passname = "glass"; break;
         default: Sys_Error("WTF?!");
       }
       GCon->Logf("000: MODEL(%s): class='%s'; alpha=%f; noshadow=%d; usedepth=%d", passname, *Cls.Name, Md2Alpha, (int)SubMdl.NoShadow, (int)SubMdl.UseDepth);
@@ -2319,6 +2338,8 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
         //if (ri.isTranslucent() && ri.stencilColor) continue;
         //
         //if (!ri.isAdditive()) continue; // already checked
+        break;
+      case RPASS_Glass:
         break;
     }
 
@@ -2413,16 +2434,18 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
     vuint32 Md2Light = ri.light;
     if (SubMdl.FullBright) Md2Light = 0xffffffff;
 
-    //if (Pass != RPASS_NonShadow) return;
-    //if (Pass != RPASS_Ambient) return;
-
     switch (Pass) {
       case RPASS_Normal:
       case RPASS_NonShadow:
+      case RPASS_Glass:
         if (true /*IsViewModel || !isShadowVol*/) {
           RenderStyleInfo newri = ri;
           newri.light = Md2Light;
           newri.alpha = Md2Alpha;
+          if (!newri.translucency && Md2Alpha < 1.0f) newri.translucency = RenderStyleInfo::Translucent;
+          if (Pass == RPASS_Glass && !newri.translucency) {
+            newri.translucency = RenderStyleInfo::Translucent;
+          }
           Drawer->DrawAliasModel(Md2Org, Md2Angle, Transform,
             SubMdl.Model, Md2Frame, Md2NextFrame, SkinTex,
             Trans, ColorMap,
@@ -2564,7 +2587,7 @@ bool VRenderLevelShared::DrawAliasModel (VEntity *mobj, const TVec &Org, const T
   DrawModel(Level, mobj, Org, Angles, ScaleX, ScaleY, *Mdl->DefaultClass, FIdx,
     NFIdx, Trans, ColorMap, Version, ri, /*Light, Fade, Alpha, Additive,*/
     IsViewModel, InterpFrac, Interpolate, CurrLightPos, CurrLightRadius,
-    Pass, IsShadowVolumeRenderer());
+    Pass, IsShadowVolumeRenderer() && !IsShadowMapRenderer());
   return true;
 }
 
@@ -2627,7 +2650,8 @@ bool VRenderLevelShared::DrawAliasModel (VEntity *mobj, VName clsName, const TVe
 
     DrawModel(Level, mobj, Org, Angles, ScaleX, ScaleY, *Cls, FIdx, NFIdx, Trans,
       ColorMap, Version, ri, IsViewModel,
-      InterpFrac, Interpolate, CurrLightPos, CurrLightRadius, Pass, IsShadowVolumeRenderer());
+      InterpFrac, Interpolate, CurrLightPos, CurrLightRadius, Pass,
+      IsShadowVolumeRenderer() && !IsShadowMapRenderer());
 
     // try next one
     const VScriptedModelFrame &cfrm = Cls->Frames[FIdx];
@@ -2685,6 +2709,25 @@ static VModel *FindFixedModelFor (VEntity *Ent, bool verbose) {
     fixedModelMap.put(Ent->FixedModelName, mdl);
     return mdl;
   }
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::IsTranslucentEntityModel
+//
+//  returns `true` if this model should be queued as translucent
+//
+//==========================================================================
+bool VRenderLevelShared::IsTranslucentEntityModel (VEntity *Ent, const RenderStyleInfo &ri,
+                                                   float Inter)
+{
+  if (!Ent || (Ent->EntityFlags&VEntity::EF_FixedModel)) return false;
+
+  VClassModelScript *Cls = FindClassModelByName(VRenderLevelShared::GetClassNameForModel(Ent));
+  if (!Cls) return false;
+
+  return Cls->asTranslucent;
 }
 
 

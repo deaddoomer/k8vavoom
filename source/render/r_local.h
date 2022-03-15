@@ -62,11 +62,12 @@ enum ERenderPass {
   // for advanced renderer
   RPASS_Ambient, // render to ambient light texture
   RPASS_ShadowVolumes, // render shadow volumes
-  RPASS_Light, // render lit model (sadly, uniformly lit yet)
+  RPASS_Light, // render lit model
   RPASS_Textures, // render model textures on top of ambient lighting
   RPASS_Fog, // render model darkening/fog
   RPASS_NonShadow, // render "simple" models that doesn't require complex lighting (additive, for example)
   RPASS_ShadowMaps, // render shadow maps
+  RPASS_Glass, // render translucent submodels only
 };
 
 
