@@ -205,8 +205,7 @@ menudef VideoOptions {
       "'space ants' (occasional white dots) in converted models.",
       "\c[Cyan]Better\c- produces models with even less triangles, but there will be",
       "even more 'space ants'.",
-      "\c[Cyan]Maximum\c- is not implemented yet, and is the same as 'Better'.",
-      "In the future, it will produce even less triangles, and even more space ants.",
+      "\c[Cyan]Maximum\c- is even better than 'Better' (and has more ants).",
       "\cJYou have to restart the engine to activate new optimisation mode.";
   }
 

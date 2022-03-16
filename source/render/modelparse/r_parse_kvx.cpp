@@ -171,6 +171,10 @@ struct __attribute__((packed)) VoxPix {
   inline vuint32 rgb () const noexcept {
     return 0xff000000U|b|((vuint32)g<<8)|((vuint32)r<<16);
   }
+
+  inline vuint32 rgbcull () const noexcept {
+    return b|((vuint32)g<<8)|((vuint32)r<<16)|((vuint32)cull<<24);
+  }
 };
 
 
@@ -238,12 +242,12 @@ public:
   inline vuint32 query (int x, int y, int z) const noexcept {
     const vuint32 dofs = voxofs(x, y, z);
     if (!dofs) return 0;
-    if (!data[dofs].cull) return 0;
-    return
-      data[dofs].b|
-      ((vuint32)data[dofs].g<<8)|
-      ((vuint32)data[dofs].r<<16)|
-      ((vuint32)data[dofs].cull<<24);
+    return (data[dofs].cull ? data[dofs].rgbcull() : 0);
+  }
+
+  inline VoxPix *queryVP (int x, int y, int z) noexcept {
+    const vuint32 dofs = voxofs(x, y, z);
+    return (dofs ? &data[dofs] : nullptr);
   }
 
   inline vuint8 queryCull (int x, int y, int z) const noexcept {
@@ -608,6 +612,12 @@ public:
     X1_Y1_Z1,
   };
 
+  enum {
+    DMV_X = 0b100,
+    DMV_Y = 0b010,
+    DMV_Z = 0b001,
+  };
+
   struct Vertex {
     float x, y, z;
     float dx, dy, dz;
@@ -663,16 +673,22 @@ private:
     vx.x = x;
     vx.y = y;
     vx.z = z;
-    if (type&0x04) { vx.x += xlen; vx.dx = 1.0f; }
-    if (type&0x02) { vx.y += ylen; vx.dy = 1.0f; }
-    if (type&0x01) { vx.z += zlen; vx.dz = 1.0f; }
+    if (type&DMV_X) { vx.x += xlen; vx.dx = 1.0f; }
+    if (type&DMV_Y) { vx.y += ylen; vx.dy = 1.0f; }
+    if (type&DMV_Z) { vx.z += zlen; vx.dz = 1.0f; }
     return vx;
   }
 
+  void addSlabFace (vuint8 cull, vuint8 dmv,
+                    float x, float y, float z,
+                    int len, const vuint32 *colors);
+
   void addCube (vuint8 cull, float x, float y, float z, vuint32 rgb);
-  void addVSlab (vuint8 cull, float x, float y, float z, int hgt, const vuint32 *colors);
-  void addHSlab (vuint8 cull, float dx, float dy, float x, float y, float z,
-                 int len, const vuint32 *colors);
+
+  void buildOpt0 (VoxelData &vox, bool pivotz);
+  void buildOpt1 (VoxelData &vox, bool pivotz);
+  void buildOpt2 (VoxelData &vox, bool pivotz);
+  void buildOpt3 (VoxelData &vox, bool pivotz);
 
 public:
   inline VoxelMesh () noexcept
@@ -790,105 +806,331 @@ vuint32 VoxelMesh::addColors (const vuint32 *clrs, vuint32 clen) {
 
 //==========================================================================
 //
+//  VoxelMesh::addSlabFace
+//
+//  dmv: bit 2 means XLong, bit 1 means YLong, bit 0 means ZLong
+//
+//==========================================================================
+void VoxelMesh::addSlabFace (vuint8 cull, vuint8 dmv,
+                             float x, float y, float z,
+                             int len, const vuint32 *colors)
+{
+  if (len < 1) return;
+  vassert(dmv == DMV_X || dmv == DMV_Y || dmv == DMV_Z);
+  vassert(cull == 0x01 || cull == 0x02 || cull == 0x04 || cull == 0x08 || cull == 0x10 || cull == 0x20);
+
+  vuint32 clen = (vuint32)len;
+
+  bool allsame = true;
+  for (vuint32 cidx = 1; cidx < clen; ++cidx) {
+    if (colors[cidx] != colors[0]) {
+      allsame = false;
+      break;
+    }
+  }
+  if (allsame) clen = 1;
+
+  const int qtype =
+    clen == 1 ? Point :
+    (dmv&DMV_X) ? XLong :
+    (dmv&DMV_Y) ? YLong :
+    ZLong;
+  const float dx = (dmv&DMV_X ? (float)len : 1.0f);
+  const float dy = (dmv&DMV_Y ? (float)len : 1.0f);
+  const float dz = (dmv&DMV_Z ? (float)len : 1.0f);
+  vuint32 qidx;
+  switch (cull) {
+    case 0x01: qidx = 0; break;
+    case 0x02: qidx = 1; break;
+    case 0x04: qidx = 2; break;
+    case 0x08: qidx = 3; break;
+    case 0x10: qidx = 4; break;
+    case 0x20: qidx = 5; break;
+    default: Sys_Error("something is VERY wrong in `addSlabFace()`");
+  }
+  VoxQuad vq;
+  for (vuint32 vidx = 0; vidx < 4; ++vidx) {
+    vq.vx[vidx] = genVertex(quadFaces[qidx][vidx], x, y, z, dx, dy, dz);
+  }
+  vq.cidx = addColors(colors, clen);
+  vq.clen = clen;
+  vq.type = qtype;
+  quads.append(vq);
+}
+
+
+//==========================================================================
+//
 //  VoxelMesh::addCube
 //
 //==========================================================================
 void VoxelMesh::addCube (vuint8 cull, float x, float y, float z, vuint32 rgb) {
-  const vuint32 carr[1] = {rgb|0xff000000U};
-
   // generate quads
   for (vuint32 qidx = 0; qidx < 6; ++qidx) {
-    if (cull&0x01) {
-      VoxQuad vq;
-      for (vuint32 vidx = 0; vidx < 4; ++vidx) {
-        vq.vx[vidx] = genVertex(quadFaces[qidx][vidx], x, y, z, 1.0f, 1.0f, 1.0f);
-      }
-      vq.cidx = addColors(carr, 1);
-      vq.clen = 1;
-      vq.type = Point;
-      quads.append(vq);
+    const vuint8 cmask = VoxelData::cullmask(qidx);
+    if (cull&cmask) {
+      addSlabFace(cmask, DMV_X/*doesn't matter*/, x, y, z, 1, &rgb);
     }
-    cull >>= 1;
   }
 }
 
 
 //==========================================================================
 //
-//  VoxelMesh::addVSlab
+//  VoxelMesh::buildOpt0
 //
 //==========================================================================
-void VoxelMesh::addVSlab (vuint8 cull, float x, float y, float z, int hgt,
-                          const vuint32 *colors)
-{
-  if (hgt < 1) return;
-
-  vuint32 clen = (vuint32)hgt;
-  bool allsame = true;
-  for (int cidx = 1; cidx < hgt; ++cidx) {
-    if (colors[cidx] != colors[0]) {
-      allsame = false;
-      break;
-    }
-  }
-  if (allsame) clen = 1;
-
-  // add sides
-  const int qtype = (clen > 1 ? ZLong : Point);
-  const float zlen = (float)hgt;
-  for (vuint32 qidx = 0; qidx < 4; ++qidx) {
-    if (cull&0x01) {
-      VoxQuad vq;
-      for (vuint32 vidx = 0; vidx < 4; ++vidx) {
-        vq.vx[vidx] = genVertex(quadFaces[qidx][vidx], x, y, z, 1.0f, 1.0f, zlen);
+void VoxelMesh::buildOpt0 (VoxelData &vox, bool pivotz) {
+  const float px = vox.cx;
+  const float py = vox.cy;
+  const float pz = (pivotz ? vox.cz : 0.0f);
+  for (int y = 0; y < (int)vox.ysize; ++y) {
+    for (int x = 0; x < (int)vox.xsize; ++x) {
+      vuint32 dofs = vox.getDOfs(x, y);
+      while (dofs) {
+        addCube(vox.data[dofs].cull, x-px, y-py, vox.data[dofs].z-pz, vox.data[dofs].rgb());
+        dofs = vox.data[dofs].nextz;
       }
-      vq.cidx = addColors(colors, clen);
-      vq.clen = clen;
-      vq.type = qtype;
-      quads.append(vq);
     }
-    cull >>= 1;
   }
 }
 
 
 //==========================================================================
 //
-//  VoxelMesh::addHSlab
+//  VoxelMesh::buildOpt1
 //
 //==========================================================================
-void VoxelMesh::addHSlab (vuint8 cull, float dx, float dy, float x, float y, float z,
-                          int len, const vuint32 *colors)
-{
-  if (len < 1 || !cull) return;
-  vassert(cull == 0x10 || cull == 0x20);
-  vassert(dx || dy);
-  vassert(dx == 0.0f || dy == 0.0f);
-  vassert(dx == 0.0f || dx == 1.0f || dy == 0.0f || dy == 1.0f);
+void VoxelMesh::buildOpt1 (VoxelData &vox, bool pivotz) {
+  const float px = vox.cx;
+  const float py = vox.cy;
+  const float pz = (pivotz ? vox.cz : 0.0f);
+  for (int y = 0; y < (int)vox.ysize; ++y) {
+    for (int x = 0; x < (int)vox.xsize; ++x) {
+      // try slabs in all 6 directions?
+      vuint32 dofs = vox.getDOfs(x, y);
+      if (!dofs) continue;
 
-  vuint32 clen = (vuint32)len;
-  bool allsame = true;
-  for (int cidx = 1; cidx < len; ++cidx) {
-    if (colors[cidx] != colors[0]) {
-      allsame = false;
-      break;
+      vuint32 slab[1024];
+
+      // long top and bottom quads
+      while (dofs) {
+        for (vuint32 cidx = 4; cidx < 6; ++cidx) {
+          const vuint8 cmask = VoxelData::cullmask(cidx);
+          if ((vox.data[dofs].cull&cmask) == 0) continue;
+          const int z = (int)vox.data[dofs].z;
+          slab[0] = vox.data[dofs].rgb();
+          vox.data[dofs].cull ^= cmask;
+          addSlabFace(cmask, DMV_X, x-px, y-py, z-pz, 1, slab);
+        }
+        dofs = vox.data[dofs].nextz;
+      }
+
+      // build long quads for each side
+      for (vuint32 cidx = 0; cidx < 4; ++cidx) {
+        const vuint8 cmask = VoxelData::cullmask(cidx);
+        dofs = vox.getDOfs(x, y);
+        while (dofs) {
+          while (dofs && (vox.data[dofs].cull&cmask) == 0) dofs = vox.data[dofs].nextz;
+          if (!dofs) break;
+          const int z = (int)vox.data[dofs].z;
+          int count = 0;
+          vuint32 eofs = dofs;
+          while (eofs && (vox.data[eofs].cull&cmask)) {
+            if ((int)vox.data[eofs].z != z+count) break;
+            vox.data[eofs].cull ^= cmask;
+            slab[count] = vox.data[eofs].rgb();
+            eofs = vox.data[eofs].nextz;
+            ++count;
+            //if (count == (int)slab.length()) break;
+          }
+          vassert(count);
+          dofs = eofs;
+          addSlabFace(cmask, DMV_Z, x-px, y-py, z-pz, count, slab);
+        }
+      }
     }
   }
-  if (allsame) clen = 1;
+}
 
-  const int qtype = (clen > 1 ? (dx ? XLong : YLong) : Point);
-  dx = (dx ? (float)len : 1.0f);
-  dy = (dy ? (float)len : 1.0f);
-  for (vuint32 qidx = 4; qidx < 6; ++qidx) {
-    if (cull&(1U<<qidx)) {
-      VoxQuad vq;
-      for (vuint32 vidx = 0; vidx < 4; ++vidx) {
-        vq.vx[vidx] = genVertex(quadFaces[qidx][vidx], x, y, z, dx, dy, 1.0f);
+
+//==========================================================================
+//
+//  VoxelMesh::buildOpt2
+//
+//==========================================================================
+void VoxelMesh::buildOpt2 (VoxelData &vox, bool pivotz) {
+  const float px = vox.cx;
+  const float py = vox.cy;
+  const float pz = (pivotz ? vox.cz : 0.0f);
+  for (int y = 0; y < (int)vox.ysize; ++y) {
+    for (int x = 0; x < (int)vox.xsize; ++x) {
+      // try slabs in all 6 directions?
+      vuint32 dofs = vox.getDOfs(x, y);
+      if (!dofs) continue;
+
+      vuint32 slab[1024];
+
+      // long top and bottom quads
+      while (dofs) {
+        for (vuint32 cidx = 4; cidx < 6; ++cidx) {
+          const vuint8 cmask = VoxelData::cullmask(cidx);
+          if ((vox.data[dofs].cull&cmask) == 0) continue;
+          const int z = (int)vox.data[dofs].z;
+          //conwritefln!"  0x%04x 0x%02x"(vox.query(x, y, z0), cmask);
+          vassert(vox.queryCull(x, y, z) == vox.data[dofs].cull);
+          // by x
+          int xcount = 0;
+          while (x+xcount < (int)vox.xsize) {
+            const vuint8 vcull = vox.queryCull(x+xcount, y, z);
+            if ((vcull&cmask) == 0) break;
+            ++xcount;
+            if (kvx_optimized.asInt() < 2) break;
+          }
+          // by y
+          int ycount = 0;
+          while (y+ycount < (int)vox.ysize) {
+            const vuint8 vcull = vox.queryCull(x, y+ycount, z);
+            if ((vcull&cmask) == 0) break;
+            ++ycount;
+            if (kvx_optimized.asInt() < 2) break;
+          }
+          //conwriteln("xcount=", xcount, "; ycount=", ycount);
+          vassert(xcount && ycount);
+          // now use the longest one
+          if (xcount >= ycount) {
+            xcount = 0;
+            while (x+xcount < (int)vox.xsize) {
+              const vuint32 vrgb = vox.query(x+xcount, y, z);
+              if (((vrgb>>24)&cmask) == 0) break;
+              slab[xcount] = vrgb|0xff000000U;
+              vox.setVoxelCull(x+xcount, y, z, (vrgb>>24)^cmask);
+              ++xcount;
+            }
+            vassert(xcount);
+            //conwriteln("adding x strip; x=", x, "; count=", xcount);
+            addSlabFace(cmask, DMV_X, x-px, y-py, z-pz, xcount, slab);
+          } else {
+            ycount = 0;
+            while (y+ycount < (int)vox.ysize) {
+              const vuint32 vrgb = vox.query(x, y+ycount, z);
+              if (((vrgb>>24)&cmask) == 0) break;
+              slab[ycount] = vrgb|0xff000000U;
+              vox.setVoxelCull(x, y+ycount, z, (vrgb>>24)^cmask);
+              ++ycount;
+            }
+            vassert(ycount);
+            //conwriteln("adding y strip; y=", y, "; count=", ycount);
+            addSlabFace(cmask, DMV_Y, x-px, y-py, z-pz, ycount, slab);
+          }
+        }
+        dofs = vox.data[dofs].nextz;
       }
-      vq.cidx = addColors(colors, clen);
-      vq.clen = clen;
-      vq.type = qtype;
-      quads.append(vq);
+
+      // build long quads for each side
+      for (vuint32 cidx = 0; cidx < 4; ++cidx) {
+        const vuint8 cmask = VoxelData::cullmask(cidx);
+        dofs = vox.getDOfs(x, y);
+        while (dofs) {
+          while (dofs && (vox.data[dofs].cull&cmask) == 0) dofs = vox.data[dofs].nextz;
+          if (!dofs) break;
+          const int z = (int)vox.data[dofs].z;
+          int count = 0;
+          vuint32 eofs = dofs;
+          while (eofs && (vox.data[eofs].cull&cmask)) {
+            if ((int)vox.data[eofs].z != z+count) break;
+            vox.data[eofs].cull ^= cmask;
+            slab[count] = vox.data[eofs].rgb();
+            eofs = vox.data[eofs].nextz;
+            ++count;
+            //if (count == (int)slab.length()) break;
+          }
+          vassert(count);
+          dofs = eofs;
+          addSlabFace(cmask, DMV_Z, x-px, y-py, z-pz, count, slab);
+        }
+      }
+    }
+  }
+}
+
+
+static inline int getDX (vuint8 dmv) noexcept { return !!(dmv&VoxelMesh::DMV_X); }
+static inline int getDY (vuint8 dmv) noexcept { return !!(dmv&VoxelMesh::DMV_Y); }
+static inline int getDZ (vuint8 dmv) noexcept { return !!(dmv&VoxelMesh::DMV_Z); }
+
+static inline void incXYZ (vuint8 dmv, int &sx, int &sy, int &sz) noexcept {
+  sx += getDX(dmv);
+  sy += getDY(dmv);
+  sz += getDZ(dmv);
+}
+
+
+//==========================================================================
+//
+//  VoxelMesh::buildOpt3
+//
+//==========================================================================
+void VoxelMesh::buildOpt3 (VoxelData &vox, bool pivotz) {
+  const float px = vox.cx;
+  const float py = vox.cy;
+  const float pz = (pivotz ? vox.cz : 0.0f);
+
+  const vuint8 dmove[3][2] = {
+    {DMV_Y, DMV_Z}, // left, right
+    {DMV_X, DMV_Z}, // near, far
+    {DMV_X, DMV_Y}, // top, bottom
+  };
+
+  // try slabs in all 6 directions?
+  uint slab[1024];
+
+  for (int y = 0; y < (int)vox.ysize; ++y) {
+    for (int x = 0; x < (int)vox.xsize; ++x) {
+      for (vuint32 dofs = vox.getDOfs(x, y); dofs; dofs = vox.data[dofs].nextz) {
+        while (vox.data[dofs].cull) {
+          vuint32 count = 0;
+          vuint8 clrdmv = 0;
+          vuint8 clrmask = 0;
+          const int z = (int)vox.data[dofs].z;
+          // check all faces
+          for (vuint32 cidx = 0; cidx < 6; ++cidx) {
+            const vuint8 cmask = VoxelData::cullmask(cidx);
+            if ((vox.data[dofs].cull&cmask) == 0) continue;
+            // try two dirs
+            for (vuint32 ndir = 0; ndir < 2; ++ndir) {
+              const vuint8 dmv = dmove[cidx>>1][ndir];
+              vuint32 cnt = 1;
+              int sx = x, sy = y, sz = z;
+              incXYZ(dmv, sx, sy, sz);
+              for (;;) {
+                const vuint8 vxc = vox.queryCull(sx, sy, sz);
+                if ((vxc&cmask) == 0) break;
+                ++cnt;
+                incXYZ(dmv, sx, sy, sz);
+              }
+              if (cnt > count) {
+                count = cnt;
+                clrdmv = dmv;
+                clrmask = cmask;
+              }
+            }
+          }
+          if (clrmask) {
+            vassert(count);
+            vassert(clrdmv == DMV_X || clrdmv == DMV_Y || clrdmv == DMV_Z);
+            int sx = x, sy = y, sz = z;
+            for (vuint32 f = 0; f < count; ++f) {
+              VoxPix *vp = vox.queryVP(sx, sy, sz);
+              slab[f] = vp->rgb();
+              vassert(vp->cull&clrmask);
+              vp->cull ^= clrmask;
+              incXYZ(clrdmv, sx, sy, sz);
+            }
+            addSlabFace(clrmask, clrdmv, x-px, y-py, z-pz, count, slab);
+          }
+        }
+      }
     }
   }
 }
@@ -903,107 +1145,10 @@ void VoxelMesh::buildFrom (VoxelData &vox, bool pivotz) {
   vassert(vox.xsize && vox.ysize && vox.zsize);
   // now build cubes
   //conwriteln("building slabs...");
-  const float px = vox.cx;
-  const float py = vox.cy;
-  const float pz = (pivotz ? vox.cz : 0.0f);
-  for (int y = 0; y < (int)vox.ysize; ++y) {
-    for (int x = 0; x < (int)vox.xsize; ++x) {
-      if (kvx_optimized.asInt() > 0) {
-        // try slabs in all 6 directions?
-        vuint32 dofs = vox.getDOfs(x, y);
-        if (!dofs) continue;
-
-        vuint32 slab[1024];
-
-        // long top and bottom quads
-        while (dofs) {
-          for (vuint32 cidx = 4; cidx < 6; ++cidx) {
-            const vuint8 cmask = VoxelData::cullmask(cidx);
-            if ((vox.data[dofs].cull&cmask) == 0) continue;
-            const int z0 = (int)vox.data[dofs].z;
-            //conwritefln!"  0x%04x 0x%02x"(vox.query(x, y, z0), cmask);
-            vassert(vox.queryCull(x, y, z0) == vox.data[dofs].cull);
-            // by x
-            int xcount = 0;
-            while (x+xcount < (int)vox.xsize) {
-              const vuint8 vcull = vox.queryCull(x+xcount, y, z0);
-              if ((vcull&cmask) == 0) break;
-              ++xcount;
-              if (kvx_optimized.asInt() < 2) break;
-            }
-            // by y
-            int ycount = 0;
-            while (y+ycount < (int)vox.ysize) {
-              const vuint8 vcull = vox.queryCull(x, y+ycount, z0);
-              if ((vcull&cmask) == 0) break;
-              ++ycount;
-              if (kvx_optimized.asInt() < 2) break;
-            }
-            //conwriteln("xcount=", xcount, "; ycount=", ycount);
-            vassert(xcount && ycount);
-            // now use the longest one
-            if (xcount >= ycount) {
-              xcount = 0;
-              while (x+xcount < (int)vox.xsize) {
-                const vuint32 vrgb = vox.query(x+xcount, y, z0);
-                if (((vrgb>>24)&cmask) == 0) break;
-                slab[xcount] = vrgb|0xff000000U;
-                vox.setVoxelCull(x+xcount, y, z0, (vrgb>>24)^cmask);
-                ++xcount;
-              }
-              vassert(xcount);
-              //conwriteln("adding x strip; x=", x, "; count=", xcount);
-              addHSlab(cmask, 1.0f, 0.0f, x-px, y-py, z0-pz, xcount, slab);
-            } else {
-              ycount = 0;
-              while (y+ycount < (int)vox.ysize) {
-                const vuint32 vrgb = vox.query(x, y+ycount, z0);
-                if (((vrgb>>24)&cmask) == 0) break;
-                slab[ycount] = vrgb|0xff000000U;
-                vox.setVoxelCull(x, y+ycount, z0, (vrgb>>24)^cmask);
-                ++ycount;
-              }
-              vassert(ycount);
-              //conwriteln("adding y strip; y=", y, "; count=", ycount);
-              addHSlab(cmask, 0.0f, 1.0f, x-px, y-py, z0-pz, ycount, slab);
-            }
-          }
-          dofs = vox.data[dofs].nextz;
-        }
-
-        // build long quads for each side
-        for (vuint32 cidx = 0; cidx < 4; ++cidx) {
-          const vuint8 cmask = VoxelData::cullmask(cidx);
-          dofs = vox.getDOfs(x, y);
-          while (dofs) {
-            while (dofs && (vox.data[dofs].cull&cmask) == 0) dofs = vox.data[dofs].nextz;
-            if (!dofs) break;
-            const int z0 = (int)vox.data[dofs].z;
-            int count = 0;
-            vuint32 eofs = dofs;
-            while (eofs && (vox.data[eofs].cull&cmask)) {
-              if ((int)vox.data[eofs].z != z0+count) break;
-              vox.data[eofs].cull ^= cmask;
-              slab[count] = vox.data[eofs].rgb();
-              eofs = vox.data[eofs].nextz;
-              ++count;
-              //if (count == (int)slab.length()) break;
-            }
-            vassert(count);
-            dofs = eofs;
-            addVSlab(cmask, x-px, y-py, z0-pz, count, slab);
-          }
-        }
-      } else {
-        vuint32 dofs = vox.getDOfs(x, y);
-        while (dofs) {
-          addCube(vox.data[dofs].cull, x-px, y-py, vox.data[dofs].z-pz, vox.data[dofs].rgb());
-          dofs = vox.data[dofs].nextz;
-        }
-      }
-      //addSlab(cull, (xsiz-x-1)-px, y-py, (zsiz-ztop)-pz, zlen, slab[0..zlen]);
-    }
-  }
+       if (kvx_optimized.asInt() <= 0) buildOpt0(vox, pivotz);
+  else if (kvx_optimized.asInt() <= 1) buildOpt1(vox, pivotz);
+  else if (kvx_optimized.asInt() <= 2) buildOpt2(vox, pivotz);
+  else /*if (kvx_optimized.asInt() <= 3)*/ buildOpt3(vox, pivotz);
   //conwriteln(quads.length(), " quads, ", colors.length(), " colors, max run is ", maxColorRun, ".");
   vassert(maxColorRun <= 1024);
   cx = vox.cx;
