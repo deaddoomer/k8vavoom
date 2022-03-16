@@ -194,7 +194,12 @@ struct __attribute__((packed)) VoxXYZ16 {
     , y((vuint16)ay)
     , z((vuint16)az)
   {}
+
+  VVA_FORCEINLINE bool operator == (const VoxXYZ16 &vi) const noexcept {
+    return (x == vi.x && y == vi.y && z == vi.z);
+  }
 };
+
 
 // used for hollow fills
 struct VoxBitmap {
@@ -658,16 +663,19 @@ vuint32 VoxelData::fixFaceVisibility () {
 //==========================================================================
 vuint32 VoxelData::hollowFill () {
   VoxBitmap bmp;
+  VoxBitmap bmpseen;
   VoxXYZ16 xyz;
   VoxXYZ16 *stack;
-  vuint32 stacksize = 1024;
+  vuint32 stacksize = 16384;
   vuint32 stackpos = 1;
 
   bmp.setSize(xsize+2, ysize+2, zsize+2);
+  bmpseen.setSize(xsize+2, ysize+2, zsize+2);
   // this is definitely empty
   xyz.x = xyz.y = xyz.z = 0;
   stack = (VoxXYZ16 *)Z_Malloc(stacksize*sizeof(VoxXYZ16));
   stack[0] = xyz;
+  bmpseen.setPixel(0, 0, 0);
 
   const int deltas[6][3] = {
     {-1, 0, 0},
@@ -687,15 +695,21 @@ vuint32 VoxelData::hollowFill () {
       const int ny = (int)xyz.y+deltas[dd][1];
       const int nz = (int)xyz.z+deltas[dd][2];
       if (bmp.getPixel(nx, ny, nz)) continue;
+      if (bmpseen.getPixel(nx, ny, nz)) continue;
+      bmpseen.setPixel(nx, ny, nz);
       if (queryCull(nx-1, ny-1, nz-1)) continue;
       if (stackpos == stacksize) {
-        stacksize += 16384;
+             if (stacksize < 32768) stacksize += 16384;
+        else if (stacksize < 65536) stacksize += 32768;
+        else stacksize += 65536;
         stack = (VoxXYZ16 *)Z_Realloc(stack, stacksize*sizeof(VoxXYZ16));
       }
       stack[stackpos++] = VoxXYZ16(nx, ny, nz);
     }
   }
   Z_Free(stack);
+  bmpseen.clear();
+  //GCon->Logf(NAME_Debug, "HOLLOWSTACK: %u", stacksize);
 
   // now check it
   vuint32 changed = 0;
