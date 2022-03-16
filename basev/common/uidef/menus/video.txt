@@ -199,6 +199,7 @@ menudef VideoOptions {
       "Normal",
       "Better",
       "Maximum",
+      "Ultra",
     }
     help =
       "Voxel models must be converted to polygonal models for GPU rendering.",
@@ -209,6 +210,7 @@ menudef VideoOptions {
       "\c[Cyan]Better\c- produces models with even less triangles, but there will be",
       "even more 'space ants'.",
       "\c[Cyan]Maximum\c- is even better than 'Better' (and has more ants).",
+      "\c[Cyan]Ultra\c- is the slowest one, bit is able to cull most quads.",
       "\cJYou have to restart the engine to activate new optimisation mode.";
   }
 

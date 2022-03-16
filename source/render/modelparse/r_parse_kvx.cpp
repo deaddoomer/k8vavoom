@@ -27,10 +27,10 @@
 #include "../r_local.h"
 #include "../../filesys/files.h"
 
-static VCvarI vox_cache_compression_level("vox_cache_compression_level", "6", "Voxel cache file compression level [0..9].", CVAR_Archive|CVAR_NoShadow);
-static VCvarB vox_cache_enabled("vox_cache_enabled", false, "Enable caching of converted voxel models?", CVAR_Archive|CVAR_NoShadow);
-static VCvarB vox_verbose_conversion("vox_verbose_conversion", false, "Show info messages from voxel converter?", CVAR_Archive|CVAR_NoShadow);
-static VCvarI kvx_optimized("vox_optimisation", "3", "Voxel loader optimisation (higher is better, but with space ants) [0..2].", CVAR_Archive|CVAR_NoShadow);
+static VCvarI vox_cache_compression_level("vox_cache_compression_level", "6", "Voxel cache file compression level [0..9].", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
+static VCvarB vox_cache_enabled("vox_cache_enabled", false, "Enable caching of converted voxel models?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
+static VCvarB vox_verbose_conversion("vox_verbose_conversion", false, "Show info messages from voxel converter?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
+static VCvarI kvx_optimized("vox_optimisation", "4", "Voxel loader optimisation (higher is better, but with space ants) [0..4].", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 
 // useful for debugging, but not really needed
 #define VOX_ENABLE_INVARIANT_CHECK
@@ -184,6 +184,62 @@ struct __attribute__((packed)) VoxPix {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+struct __attribute__((packed)) VoxXYZ16 {
+  vuint16 x, y, z;
+
+  VVA_FORCEINLINE VoxXYZ16 () {}
+
+  VVA_FORCEINLINE VoxXYZ16 (int ax, int ay, int az)
+    : x((vuint16)ax)
+    , y((vuint16)ay)
+    , z((vuint16)az)
+  {}
+};
+
+// used for hollow fills
+struct VoxBitmap {
+  vuint32 xsize, ysize, zsize;
+  vuint32 xwdt, xywdt;
+  vuint32 *bmp; // bit per voxel
+
+public:
+  inline VoxBitmap () noexcept : xsize(0), ysize(0), zsize(0), xwdt(0), xywdt(0), bmp(nullptr) {}
+  inline ~VoxBitmap () noexcept { clear(); }
+
+  inline void clear () noexcept {
+    if (bmp) Z_Free(bmp);
+    bmp = nullptr;
+    xsize = ysize = zsize = xwdt = xywdt = 0;
+  }
+
+  inline void setSize (vuint32 xs, vuint32 ys, vuint32 zs) {
+    clear();
+    if (!xs || !ys || !zs) return;
+    xsize = xs;
+    ysize = ys;
+    zsize = zs;
+    xwdt = (xs+31)/32;
+    vassert(xwdt<<5 >= xs);
+    xywdt = xwdt*ysize;
+    bmp = (vuint32 *)Z_Malloc(xywdt*zsize*sizeof(vuint32));
+    memset(bmp, 0, xywdt*zsize*sizeof(vuint32));
+  }
+
+  VVA_FORCEINLINE void setPixel (int x, int y, int z) noexcept {
+    if (x < 0 || y < 0 || z < 0) return;
+    if ((unsigned)x >= xsize || (unsigned)y >= ysize || (unsigned)z >= zsize) return;
+    bmp[(unsigned)z*xywdt+(unsigned)y*xwdt+((unsigned)x>>5)] |= 1U<<((unsigned)x&0x1f);
+  }
+
+  VVA_FORCEINLINE vuint32 getPixel (int x, int y, int z) const noexcept {
+    if (x < 0 || y < 0 || z < 0) return 1;
+    if ((unsigned)x >= xsize || (unsigned)y >= ysize || (unsigned)z >= zsize) return 1;
+    return (bmp[(unsigned)z*xywdt+(unsigned)y*xwdt+((unsigned)x>>5)]&(1U<<((unsigned)x&0x1f)));
+  }
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 struct VoxelData {
 public:
   vuint32 xsize, ysize, zsize;
@@ -278,7 +334,8 @@ public:
   // remove inside voxels, leaving only contour
   void removeInside ();
   vuint32 fixFaceVisibility ();
-  void optimise ();
+  vuint32 hollowFill ();
+  void optimise (bool hollowOpt);
 
 public:
   static const int cullofs[6][3];
@@ -592,14 +649,92 @@ vuint32 VoxelData::fixFaceVisibility () {
 
 //==========================================================================
 //
+//  VoxelData::hollowFill
+//
+//  this fills everything outside of the voxel, and
+//  then resets culling bits for all invisible faces
+//  i don't care about memory yet
+//
+//==========================================================================
+vuint32 VoxelData::hollowFill () {
+  VoxBitmap bmp;
+  VoxXYZ16 xyz;
+  VoxXYZ16 *stack;
+  vuint32 stacksize = 1024;
+  vuint32 stackpos = 1;
+
+  bmp.setSize(xsize+2, ysize+2, zsize+2);
+  // this is definitely empty
+  xyz.x = xyz.y = xyz.z = 0;
+  stack = (VoxXYZ16 *)Z_Malloc(stacksize*sizeof(VoxXYZ16));
+  stack[0] = xyz;
+
+  const int deltas[6][3] = {
+    {-1, 0, 0},
+    { 1, 0, 0},
+    {0,-1, 0},
+    {0, 1, 0},
+    {0, 0,-1},
+    {0, 0, 1},
+  };
+
+  while (stackpos) {
+    xyz = stack[--stackpos];
+    if (bmp.getPixel(xyz.x, xyz.y, xyz.z)) continue;
+    bmp.setPixel(xyz.x, xyz.y, xyz.z);
+    for (unsigned dd = 0; dd < 6; ++dd) {
+      const int nx = (int)xyz.x+deltas[dd][0];
+      const int ny = (int)xyz.y+deltas[dd][1];
+      const int nz = (int)xyz.z+deltas[dd][2];
+      if (bmp.getPixel(nx, ny, nz)) continue;
+      if (queryCull(nx-1, ny-1, nz-1)) continue;
+      if (stackpos == stacksize) {
+        stacksize += 16384;
+        stack = (VoxXYZ16 *)Z_Realloc(stack, stacksize*sizeof(VoxXYZ16));
+      }
+      stack[stackpos++] = VoxXYZ16(nx, ny, nz);
+    }
+  }
+  Z_Free(stack);
+
+  // now check it
+  vuint32 changed = 0;
+  for (vint32 y = 0; y < (vint32)ysize; ++y) {
+    for (vint32 x = 0; x < (vint32)xsize; ++x) {
+      for (vuint32 dofs = xyofs[(vuint32)y*xsize+(vuint32)x]; dofs; dofs = data[dofs].nextz) {
+        const vuint8 omask = data[dofs].cull;
+        if (!omask) continue;
+        // check
+        const int z = (int)data[dofs].z;
+        for (vuint32 cidx = 0; cidx < 6; ++cidx) {
+          // go in this dir, removing the corresponding voxel side
+          const vuint8 cmask = cullmask(cidx);
+          if (data[dofs].cull&cmask) {
+            if (!bmp.getPixel(x+cullofs[cidx][0]+1, y+cullofs[cidx][1]+1, z+cullofs[cidx][2]+1)) {
+              // reset this cull bit
+              data[dofs].cull ^= cmask;
+            }
+          }
+        }
+        if (omask != data[dofs].cull) ++changed;
+      }
+    }
+  }
+  return changed;
+}
+
+
+//==========================================================================
+//
 //  VoxelData::optimise
 //
 //==========================================================================
-void VoxelData::optimise () {
+void VoxelData::optimise (bool hollowOpt) {
   #ifdef VOX_ENABLE_INVARIANT_CHECK
   checkInvariants();
   #endif
   const vuint32 oldtt = voxpixtotal;
+
   removeInside();
   const vuint32 newtt = voxpixtotal;
   if (oldtt != newtt) {
@@ -609,22 +744,31 @@ void VoxelData::optimise () {
       GCon->Logf(NAME_Init, "  removed %u interior voxel%s", vdifftt, (vdifftt != 1 ? "s" : ""));
     }
   }
-  const vuint32 count = fixFaceVisibility();
+
+  vuint32 count = fixFaceVisibility();
   if (count) {
     if (vox_verbose_conversion.asBool()) {
       GCon->Logf(NAME_Init, "  culling: fixed %u voxel%s", count, (count != 1 ? "s" : ""));
     }
   }
+
+  if (hollowOpt) {
+    count = hollowFill();
+    if (count && vox_verbose_conversion.asBool()) {
+      GCon->Logf(NAME_Init, "  hollow check fixed %u voxel%s", count, (count != 1 ? "s" : ""));
+    }
+  }
+
   removeEmptyVoxels();
   if (vox_verbose_conversion.asBool()) {
     if (voxpixtotal != oldtt) {
       vassert(oldtt > voxpixtotal);
-      const vuint32 vdifftt = oldtt-voxpixtotal;
-      GCon->Logf(NAME_Init, "  mesh optimised from %u to %u voxel%s", oldtt, vdifftt, (vdifftt != 1 ? "s" : ""));
+      GCon->Logf(NAME_Init, "  mesh optimised from %u to %u voxel%s", oldtt, voxpixtotal, (voxpixtotal != 1 ? "s" : ""));
     } else {
       GCon->Logf(NAME_Init, "  mesh contains %u voxel%s", voxpixtotal, (voxpixtotal != 1 ? "s" : ""));
     }
   }
+
   #ifdef VOX_ENABLE_INVARIANT_CHECK
   checkInvariants();
   #endif
@@ -1031,7 +1175,6 @@ void VoxelMesh::buildOpt2 (VoxelData &vox, bool pivotz) {
             const vuint8 vcull = vox.queryCull(x+xcount, y, z);
             if ((vcull&cmask) == 0) break;
             ++xcount;
-            if (kvx_optimized.asInt() < 2) break;
           }
           // by y
           int ycount = 0;
@@ -1039,7 +1182,6 @@ void VoxelMesh::buildOpt2 (VoxelData &vox, bool pivotz) {
             const vuint8 vcull = vox.queryCull(x, y+ycount, z);
             if ((vcull&cmask) == 0) break;
             ++ycount;
-            if (kvx_optimized.asInt() < 2) break;
           }
           vassert(xcount && ycount);
           // now use the longest one
@@ -1126,7 +1268,7 @@ void VoxelMesh::buildOpt3 (VoxelData &vox, bool pivotz) {
   };
 
   // try slabs in all 6 directions?
-  uint slab[1024];
+  vuint32 slab[1024];
 
   for (int y = 0; y < (int)vox.ysize; ++y) {
     for (int x = 0; x < (int)vox.xsize; ++x) {
@@ -1208,15 +1350,6 @@ struct GLVoxMeshColorItem {
 
 
 struct GLVoxelMesh {
-  /*
-  static align(1) struct VVoxVertexEx {
-  align(1):
-    float x, y, z;
-    float s, t;
-    float nx, ny, nz; // normal
-  }
-  */
-
   TArray<VVoxVertexEx> vertices;
   TArray<vuint32> indicies;
   vuint32 uniqueVerts;
@@ -1389,7 +1522,8 @@ void GLVoxelMesh::clear () {
 //
 //==========================================================================
 void GLVoxelMesh::create (VoxelMesh &vox) {
-  vassert(vox.maxColorRun > 0 && vox.maxColorRun <= 1024);
+  vassert(vox.maxColorRun > 0);
+  vassert(vox.maxColorRun <= 1024);
   clear();
   imgWidth = imgHeight = 1;
   if (vox.maxColorRun <= 256) {
@@ -1771,7 +1905,7 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
       ok = loadKVX(memst, vox);
     }
     if (!ok || memst.IsError()) Sys_Error("cannot load voxel model '%s'", *this->Name);
-    vox.optimise();
+    vox.optimise(kvx_optimized.asInt() > 3);
 
     VoxelMesh vmesh;
     vmesh.buildFrom(vox, useVoxelPivotZ);
