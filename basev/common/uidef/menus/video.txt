@@ -188,6 +188,9 @@ menudef VideoOptions {
       "\cJOr, you can use 'VidRendererRestart' console command.";
   }
 
+
+  header "Voxel Models";
+
   option enum {
     title = "Voxel Optimisation";
     cvar = vox_optimisation;
@@ -207,6 +210,18 @@ menudef VideoOptions {
       "even more 'space ants'.",
       "\c[Cyan]Maximum\c- is even better than 'Better' (and has more ants).",
       "\cJYou have to restart the engine to activate new optimisation mode.";
+  }
+
+  option bool {
+    title = "Voxel Cache";
+    cvar = vox_cache_enabled;
+    help = "Enable caching of converted voxel models?";
+  }
+
+  option bool {
+    title = "Verbose voxel conversion";
+    cvar = vox_verbose_conversion;
+    help = "Show some informational messages from voxel converter?";
   }
 
 

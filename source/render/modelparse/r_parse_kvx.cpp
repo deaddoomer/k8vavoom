@@ -28,6 +28,8 @@
 #include "../../filesys/files.h"
 
 static VCvarI vox_cache_compression_level("vox_cache_compression_level", "6", "Voxel cache file compression level [0..9].", CVAR_Archive|CVAR_NoShadow);
+static VCvarB vox_cache_enabled("vox_cache_enabled", false, "Enable caching of converted voxel models?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB vox_verbose_conversion("vox_verbose_conversion", false, "Show info messages from voxel converter?", CVAR_Archive|CVAR_NoShadow);
 static VCvarI kvx_optimized("vox_optimisation", "3", "Voxel loader optimisation (higher is better, but with space ants) [0..2].", CVAR_Archive|CVAR_NoShadow);
 
 // useful for debugging, but not really needed
@@ -603,17 +605,25 @@ void VoxelData::optimise () {
   if (oldtt != newtt) {
     vassert(oldtt > newtt);
     const vuint32 vdifftt = oldtt-newtt;
-    GCon->Logf(NAME_Init, "  removed %u interior voxel%s", vdifftt, (vdifftt != 1 ? "s" : ""));
+    if (vox_verbose_conversion.asBool()) {
+      GCon->Logf(NAME_Init, "  removed %u interior voxel%s", vdifftt, (vdifftt != 1 ? "s" : ""));
+    }
   }
   const vuint32 count = fixFaceVisibility();
-  if (count) GCon->Logf(NAME_Init, "  culling: fixed %u voxel%s", count, (count != 1 ? "s" : ""));
+  if (count) {
+    if (vox_verbose_conversion.asBool()) {
+      GCon->Logf(NAME_Init, "  culling: fixed %u voxel%s", count, (count != 1 ? "s" : ""));
+    }
+  }
   removeEmptyVoxels();
-  if (voxpixtotal != oldtt) {
-    vassert(oldtt > voxpixtotal);
-    const vuint32 vdifftt = oldtt-voxpixtotal;
-    GCon->Logf(NAME_Init, "  mesh optimised from %u to %u voxel%s", oldtt, vdifftt, (vdifftt != 1 ? "s" : ""));
-  } else {
-    GCon->Logf(NAME_Init, "  mesh contains %u voxel%s", voxpixtotal, (voxpixtotal != 1 ? "s" : ""));
+  if (vox_verbose_conversion.asBool()) {
+    if (voxpixtotal != oldtt) {
+      vassert(oldtt > voxpixtotal);
+      const vuint32 vdifftt = oldtt-voxpixtotal;
+      GCon->Logf(NAME_Init, "  mesh optimised from %u to %u voxel%s", oldtt, vdifftt, (vdifftt != 1 ? "s" : ""));
+    } else {
+      GCon->Logf(NAME_Init, "  mesh contains %u voxel%s", voxpixtotal, (voxpixtotal != 1 ? "s" : ""));
+    }
   }
   #ifdef VOX_ENABLE_INVARIANT_CHECK
   checkInvariants();
@@ -1696,46 +1706,53 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
 
   VStream *strm = FL_OpenSysFileRead(cacheFileName);
   if (strm) {
-    char tbuf[128];
-    const int slen = strlen(VOX_CACHE_SIGNATURE);
-    vassert(slen < (int)sizeof(tbuf));
-    strm->Serialise(tbuf, slen);
-    bool ok = (!strm->IsError() && memcmp(tbuf, VOX_CACHE_SIGNATURE, (size_t)slen) == 0);
-    if (ok) {
-      VStr tmpstr;
-      *strm << tmpstr;
-      ok = !strm->IsError();
+    if (vox_cache_enabled.asBool()) {
+      char tbuf[128];
+      const int slen = strlen(VOX_CACHE_SIGNATURE);
+      vassert(slen < (int)sizeof(tbuf));
+      strm->Serialise(tbuf, slen);
+      bool ok = (!strm->IsError() && memcmp(tbuf, VOX_CACHE_SIGNATURE, (size_t)slen) == 0);
+      if (ok) {
+        VStr tmpstr;
+        *strm << tmpstr;
+        ok = !strm->IsError();
+      }
+      vint32 optlevel = -1;
+      if (ok) {
+        *strm << optlevel;
+        if (ok && optlevel != kvx_optimized.asInt()) ok = false;
+      }
+      if (ok) {
+        VZLibStreamReader *zstrm = new VZLibStreamReader(true, strm);
+        ok = Load_KVXCache(zstrm);
+        if (ok) ok = !zstrm->IsError();
+        zstrm->Close();
+        delete zstrm;
+      }
+      if (ok) ok = !strm->IsError();
+      VStream::Destroy(strm);
+      if (ok) {
+        this->loaded = true;
+        //GCon->Logf(NAME_Init, "voxel model '%s' loaded from cache file '%s'", *this->Name, *ccname);
+        return;
+      }
+      Sys_FileDelete(cacheFileName);
+      Skins.clear();
+      Frames.clear();
+      AllVerts.clear();
+      AllNormals.clear();
+      STVerts.clear();
+      Tris.clear();
+      TriVerts.clear();
+    } else {
+      VStream::Destroy(strm);
+      Sys_FileDelete(cacheFileName);
     }
-    vint32 optlevel = -1;
-    if (ok) {
-      *strm << optlevel;
-      if (ok && optlevel != kvx_optimized.asInt()) ok = false;
-    }
-    if (ok) {
-      VZLibStreamReader *zstrm = new VZLibStreamReader(true, strm);
-      ok = Load_KVXCache(zstrm);
-      if (ok) ok = !zstrm->IsError();
-      zstrm->Close();
-      delete zstrm;
-    }
-    if (ok) ok = !strm->IsError();
-    VStream::Destroy(strm);
-    if (ok) {
-      this->loaded = true;
-      //GCon->Logf(NAME_Init, "voxel model '%s' loaded from cache file '%s'", *this->Name, *ccname);
-      return;
-    }
-    Sys_FileDelete(cacheFileName);
-    Skins.clear();
-    Frames.clear();
-    AllVerts.clear();
-    AllNormals.clear();
-    STVerts.clear();
-    Tris.clear();
-    TriVerts.clear();
   }
 
-  GCon->Logf(NAME_Init, "converting voxel model '%s'...", *this->Name);
+  if (vox_verbose_conversion.asBool()) {
+    GCon->Logf(NAME_Init, "converting voxel model '%s'...", *this->Name);
+  }
 
   GLVoxelMesh glvmesh;
   {
@@ -1747,10 +1764,10 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
     VoxelData vox;
     bool ok = false;
     if (sign == 0x6c78764bU) {
-      GCon->Logf(NAME_Init, "  loading KV6...");
+      if (vox_verbose_conversion.asBool()) GCon->Logf(NAME_Init, "  loading KV6...");
       ok = loadKV6(memst, vox);
     } else {
-      GCon->Logf(NAME_Init, "  loading KVX...");
+      if (vox_verbose_conversion.asBool()) GCon->Logf(NAME_Init, "  loading KVX...");
       ok = loadKVX(memst, vox);
     }
     if (!ok || memst.IsError()) Sys_Error("cannot load voxel model '%s'", *this->Name);
@@ -1763,10 +1780,12 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
     glvmesh.create(vmesh);
     vmesh.clear();
 
-    GCon->Logf(NAME_Init, "voxel model '%s': %d unique vertices, %d triangles, %dx%d color texture; optlevel=%d",
-               *this->Name, glvmesh.vertices.length(), glvmesh.indicies.length()/4*2,
-               (int)glvmesh.imgWidth, (int)glvmesh.imgHeight, kvx_optimized.asInt());
+    if (vox_verbose_conversion.asBool()) {
+      GCon->Logf(NAME_Init, "voxel model '%s': %d unique vertices, %d triangles, %dx%d color texture; optlevel=%d",
+                 *this->Name, glvmesh.vertices.length(), glvmesh.indicies.length()/4*2,
+                 (int)glvmesh.imgWidth, (int)glvmesh.imgHeight, kvx_optimized.asInt());
 
+    }
   }
   if (glvmesh.indicies.length() == 0) Sys_Error("cannot load empty voxel model '%s'", *this->Name);
   if (glvmesh.indicies.length()%4 != 0) Sys_Error("internal error converting voxel model '%s'", *this->Name);
@@ -1863,23 +1882,25 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
     Frame.NormalsOffset = 0;
   }
 
-  strm = FL_OpenSysFileWrite(cacheFileName);
-  if (strm) {
-    GCon->Logf(NAME_Init, "...writing cache to '%s'...", *ccname);
-    strm->Serialise(VOX_CACHE_SIGNATURE, (int)strlen(VOX_CACHE_SIGNATURE));
-    *strm << this->Name;
-    vint32 optlevel = kvx_optimized.asInt();
-    *strm << optlevel;
-    VZLibStreamWriter *zstrm = new VZLibStreamWriter(strm, vox_cache_compression_level.asInt());
-    Save_KVXCache(zstrm);
-    bool ok = !zstrm->IsError();
-    if (!zstrm->Close()) ok = false;
-    delete zstrm;
-    strm->Flush();
-    if (ok) ok = !strm->IsError();
-    if (!strm->Close()) ok = false;
-    delete strm;
-    if (!ok) Sys_FileDelete(cacheFileName);
+  if (vox_cache_enabled.asBool()) {
+    strm = FL_OpenSysFileWrite(cacheFileName);
+    if (strm) {
+          if (vox_verbose_conversion.asBool()) GCon->Logf(NAME_Init, "...writing cache to '%s'...", *ccname);
+      strm->Serialise(VOX_CACHE_SIGNATURE, (int)strlen(VOX_CACHE_SIGNATURE));
+      *strm << this->Name;
+      vint32 optlevel = kvx_optimized.asInt();
+      *strm << optlevel;
+      VZLibStreamWriter *zstrm = new VZLibStreamWriter(strm, vox_cache_compression_level.asInt());
+      Save_KVXCache(zstrm);
+      bool ok = !zstrm->IsError();
+      if (!zstrm->Close()) ok = false;
+      delete zstrm;
+      strm->Flush();
+      if (ok) ok = !strm->IsError();
+      if (!strm->Close()) ok = false;
+      delete strm;
+      if (!ok) Sys_FileDelete(cacheFileName);
+    }
   }
 
   this->loaded = true;
