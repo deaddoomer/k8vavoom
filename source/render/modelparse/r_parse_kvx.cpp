@@ -30,6 +30,9 @@
 static VCvarI vox_cache_compression_level("vox_cache_compression_level", "6", "Voxel cache file compression level [0..9].", CVAR_Archive|CVAR_NoShadow);
 static VCvarI kvx_optimized("vox_optimisation", "3", "Voxel loader optimisation (higher is better, but with space ants) [0..2].", CVAR_Archive|CVAR_NoShadow);
 
+// useful for debugging, but not really needed
+#define VOX_ENABLE_INVARIANT_CHECK
+
 
 #define VOX_CACHE_SIGNATURE  "k8vavoom voxel model cache file, version 2\n"
 
@@ -189,6 +192,7 @@ public:
   // slabs are sorted from bottom to top, and never intersects
   TArray<vuint32> xyofs;
   vuint32 freelist;
+  vuint32 voxpixtotal;
 
 private:
   vuint32 allocVox ();
@@ -204,22 +208,23 @@ public:
     , data()
     , xyofs()
     , freelist(0)
+    , voxpixtotal(0)
   {}
 
   inline ~VoxelData () { clear(); }
 
-  static vuint8 cullmask (vuint32 cidx) noexcept {
+  static VVA_FORCEINLINE vuint8 cullmask (vuint32 cidx) noexcept {
     return (vuint8)(1U<<cidx);
   }
 
   // opposite mask
-  static vuint8 cullopmask (vuint32 cidx) noexcept {
+  static VVA_FORCEINLINE vuint8 cullopmask (vuint32 cidx) noexcept {
     return (vuint8)(1U<<(cidx^1));
   }
 
   // high byte is cull info
   // returns 0 if there is no such voxel
-  inline vuint32 voxofs (int x, int y, int z) const noexcept {
+  VVA_FORCEINLINE vuint32 voxofs (int x, int y, int z) const noexcept {
     if (x < 0 || y < 0 || z < 0) return 0;
     if ((vuint32)x >= xsize || (vuint32)y >= ysize || (vuint32)z >= zsize) return 0;
     vuint32 dofs = xyofs[(vuint32)y*xsize+(vuint32)x];
@@ -231,7 +236,7 @@ public:
     return 0;
   }
 
-  inline vuint32 getDOfs (int x, int y) const noexcept {
+  VVA_FORCEINLINE vuint32 getDOfs (int x, int y) const noexcept {
     if (x < 0 || y < 0) return 0;
     if ((vuint32)x >= xsize || (vuint32)y >= ysize) return 0;
     return xyofs[(vuint32)y*xsize+(vuint32)x];
@@ -239,18 +244,18 @@ public:
 
   // high byte is cull info
   // returns 0 if there is no such voxel
-  inline vuint32 query (int x, int y, int z) const noexcept {
+  VVA_FORCEINLINE vuint32 query (int x, int y, int z) const noexcept {
     const vuint32 dofs = voxofs(x, y, z);
     if (!dofs) return 0;
     return (data[dofs].cull ? data[dofs].rgbcull() : 0);
   }
 
-  inline VoxPix *queryVP (int x, int y, int z) noexcept {
+  VVA_FORCEINLINE VoxPix *queryVP (int x, int y, int z) noexcept {
     const vuint32 dofs = voxofs(x, y, z);
     return (dofs ? &data[dofs] : nullptr);
   }
 
-  inline vuint8 queryCull (int x, int y, int z) const noexcept {
+  VVA_FORCEINLINE vuint8 queryCull (int x, int y, int z) const noexcept {
     const vuint32 dofs = voxofs(x, y, z);
     return (dofs ? data[dofs].cull : 0);
   }
@@ -264,10 +269,13 @@ public:
   // only for existing voxels; won't remove empty voxels
   void setVoxelCull (int x, int y, int z, vuint8 cull);
 
+  #ifdef VOX_ENABLE_INVARIANT_CHECK
   void checkInvariants ();
+  #endif
   void removeEmptyVoxels ();
   // remove inside voxels, leaving only contour
   void removeInside ();
+  vuint32 fixFaceVisibility ();
   void optimise ();
 
 public:
@@ -292,6 +300,7 @@ const int VoxelData::cullofs[6][3] = {
 //==========================================================================
 vuint32 VoxelData::allocVox () {
   vassert(data.length());
+  ++voxpixtotal;
   if (!freelist) {
     if (data.length() >= 0x3fffffff) Sys_Error("too many voxels in voxel data");
     const vuint32 lastel = (vuint32)data.length();
@@ -321,6 +330,7 @@ void VoxelData::clear () {
   xsize = ysize = zsize = 0;
   cx = cy = cz = 0.0f;
   freelist = 0;
+  voxpixtotal = 0;
 }
 
 
@@ -361,6 +371,7 @@ void VoxelData::removeVoxel (int x, int y, int z) {
       }
       data[dofs].nextz = freelist;
       freelist = dofs;
+      --voxpixtotal;
       return;
     }
     if (data[dofs].z > (vuint16)z) return;
@@ -435,27 +446,32 @@ void VoxelData::setVoxelCull (int x, int y, int z, vuint8 cull) {
 }
 
 
+#ifdef VOX_ENABLE_INVARIANT_CHECK
 //==========================================================================
 //
 //  VoxelData::checkInvariants
 //
 //==========================================================================
 void VoxelData::checkInvariants () {
-  //version(voxdata_debug) conwriteln("checking invariants...");
+  vuint32 total = 0;
   for (vuint32 y = 0; y < ysize; ++y) {
     for (vuint32 x = 0; x < xsize; ++x) {
       vuint32 dofs = xyofs[(vuint32)y*xsize+(vuint32)x];
       if (!dofs) continue;
+      ++total;
       vuint16 prevz = data[dofs].z;
       dofs = data[dofs].nextz;
       while (dofs) {
         vassert(prevz < data[dofs].z);
         prevz = data[dofs].z;
         dofs = data[dofs].nextz;
+        ++total;
       }
     }
   }
+  vassert(total == voxpixtotal);
 }
+#endif
 
 
 //==========================================================================
@@ -464,7 +480,6 @@ void VoxelData::checkInvariants () {
 //
 //==========================================================================
 void VoxelData::removeEmptyVoxels () {
-  //version(voxdata_debug) conwriteln("removing empty voxels...");
   vuint32 count = 0;
   for (vuint32 y = 0; y < ysize; ++y) {
     for (vuint32 x = 0; x < xsize; ++x) {
@@ -482,6 +497,7 @@ void VoxelData::removeEmptyVoxels () {
           }
           data[dofs].nextz = freelist;
           freelist = dofs;
+          --voxpixtotal;
           dofs = ndofs;
           ++count;
         } else {
@@ -491,7 +507,6 @@ void VoxelData::removeEmptyVoxels () {
       }
     }
   }
-  //if (count) conwriteln("removed ", count, " empty voxel", (count != 1 ? "s" : ""));
 }
 
 
@@ -503,7 +518,6 @@ void VoxelData::removeEmptyVoxels () {
 //
 //==========================================================================
 void VoxelData::removeInside () {
-  //version(voxdata_debug) conwriteln("removing inside voxels...");
   for (vint32 y = 0; y < (vint32)ysize; ++y) {
     for (vint32 x = 0; x < (vint32)xsize; ++x) {
       vuint32 dofs = xyofs[(vuint32)y*xsize+(vuint32)x];
@@ -543,44 +557,67 @@ void VoxelData::removeInside () {
 
 //==========================================================================
 //
+//  VoxelData::fixFaceVisibility
+//
+//  if we have ANY voxel at the corresponding side, don't render that face
+//
+//  returns number of fixed voxels
+//
+//==========================================================================
+vuint32 VoxelData::fixFaceVisibility () {
+  vuint32 count = 0;
+  for (vint32 y = 0; y < (vint32)ysize; ++y) {
+    for (vint32 x = 0; x < (vint32)xsize; ++x) {
+      for (vuint32 dofs = xyofs[(vuint32)y*xsize+(vuint32)x]; dofs; dofs = data[dofs].nextz) {
+        const vuint8 ocull = data[dofs].cull;
+        if (!ocull) continue;
+        const int z = (int)data[dofs].z;
+        for (vuint32 cidx = 0; cidx < 6; ++cidx) {
+          const vuint8 cmask = cullmask(cidx);
+          if (data[dofs].cull&cmask) {
+            if (query(x+cullofs[cidx][0], y+cullofs[cidx][1], z+cullofs[cidx][2])) {
+              data[dofs].cull ^= cmask; // reset bit
+            }
+          }
+        }
+        count += (data[dofs].cull != ocull);
+      }
+    }
+  }
+  return count;
+}
+
+
+//==========================================================================
+//
 //  VoxelData::optimise
 //
 //==========================================================================
 void VoxelData::optimise () {
+  #ifdef VOX_ENABLE_INVARIANT_CHECK
   checkInvariants();
+  #endif
+  const vuint32 oldtt = voxpixtotal;
   removeInside();
-  //version(voxdata_debug) conwriteln("optimising voxel culling...");
-  vuint32 count = 0;
-  bool done = false;
-  while (!done) {
-    done = true;
-    for (vint32 y = 0; y < (vint32)ysize; ++y) {
-      for (vint32 x = 0; x < (vint32)xsize; ++x) {
-        vuint32 dofs = xyofs[(vuint32)y*xsize+(vuint32)x];
-        while (dofs) {
-          if (data[dofs].cull) {
-            // check
-            const vuint8 ocull = data[dofs].cull;
-            for (vuint32 cidx = 0; cidx < 6; ++cidx) {
-              const vuint8 cmask = cullmask(cidx);
-              if ((data[dofs].cull&cmask) == 0) continue;
-              if (!query(x+cullofs[cidx][0], y+cullofs[cidx][1], (int)data[dofs].z+cullofs[cidx][2])) continue;
-              data[dofs].cull ^= cmask; // reset bit
-            }
-            if (data[dofs].cull != ocull) {
-              done = false;
-              ++count;
-            }
-          }
-          dofs = data[dofs].nextz;
-        }
-      }
-    }
+  const vuint32 newtt = voxpixtotal;
+  if (oldtt != newtt) {
+    vassert(oldtt > newtt);
+    const vuint32 vdifftt = oldtt-newtt;
+    GCon->Logf(NAME_Init, "  removed %u interior voxel%s", vdifftt, (vdifftt != 1 ? "s" : ""));
   }
-
-  //if (count) conwriteln("fixed ", count, " voxel", (count != 1 ? "s" : ""));
+  const vuint32 count = fixFaceVisibility();
+  if (count) GCon->Logf(NAME_Init, "  culling: fixed %u voxel%s", count, (count != 1 ? "s" : ""));
   removeEmptyVoxels();
+  if (voxpixtotal != oldtt) {
+    vassert(oldtt > voxpixtotal);
+    const vuint32 vdifftt = oldtt-voxpixtotal;
+    GCon->Logf(NAME_Init, "  mesh optimised from %u to %u voxel%s", oldtt, vdifftt, (vdifftt != 1 ? "s" : ""));
+  } else {
+    GCon->Logf(NAME_Init, "  mesh contains %u voxel%s", voxpixtotal, (voxpixtotal != 1 ? "s" : ""));
+  }
+  #ifdef VOX_ENABLE_INVARIANT_CHECK
   checkInvariants();
+  #endif
 }
 
 
@@ -977,7 +1014,6 @@ void VoxelMesh::buildOpt2 (VoxelData &vox, bool pivotz) {
           const vuint8 cmask = VoxelData::cullmask(cidx);
           if ((vox.data[dofs].cull&cmask) == 0) continue;
           const int z = (int)vox.data[dofs].z;
-          //conwritefln!"  0x%04x 0x%02x"(vox.query(x, y, z0), cmask);
           vassert(vox.queryCull(x, y, z) == vox.data[dofs].cull);
           // by x
           int xcount = 0;
@@ -995,7 +1031,6 @@ void VoxelMesh::buildOpt2 (VoxelData &vox, bool pivotz) {
             ++ycount;
             if (kvx_optimized.asInt() < 2) break;
           }
-          //conwriteln("xcount=", xcount, "; ycount=", ycount);
           vassert(xcount && ycount);
           // now use the longest one
           if (xcount >= ycount) {
@@ -1008,7 +1043,6 @@ void VoxelMesh::buildOpt2 (VoxelData &vox, bool pivotz) {
               ++xcount;
             }
             vassert(xcount);
-            //conwriteln("adding x strip; x=", x, "; count=", xcount);
             addSlabFace(cmask, DMV_X, x-px, y-py, z-pz, xcount, slab);
           } else {
             ycount = 0;
@@ -1020,7 +1054,6 @@ void VoxelMesh::buildOpt2 (VoxelData &vox, bool pivotz) {
               ++ycount;
             }
             vassert(ycount);
-            //conwriteln("adding y strip; y=", y, "; count=", ycount);
             addSlabFace(cmask, DMV_Y, x-px, y-py, z-pz, ycount, slab);
           }
         }
@@ -1144,12 +1177,10 @@ void VoxelMesh::buildOpt3 (VoxelData &vox, bool pivotz) {
 void VoxelMesh::buildFrom (VoxelData &vox, bool pivotz) {
   vassert(vox.xsize && vox.ysize && vox.zsize);
   // now build cubes
-  //conwriteln("building slabs...");
        if (kvx_optimized.asInt() <= 0) buildOpt0(vox, pivotz);
   else if (kvx_optimized.asInt() <= 1) buildOpt1(vox, pivotz);
   else if (kvx_optimized.asInt() <= 2) buildOpt2(vox, pivotz);
   else /*if (kvx_optimized.asInt() <= 3)*/ buildOpt3(vox, pivotz);
-  //conwriteln(quads.length(), " quads, ", colors.length(), " colors, max run is ", maxColorRun, ".");
   vassert(maxColorRun <= 1024);
   cx = vox.cx;
   cy = vox.cy;
@@ -1367,7 +1398,6 @@ void GLVoxelMesh::create (VoxelMesh &vox) {
     vq.calcNormal();
     vq.imgidx = appendRun(vox.colors.ptr()+vq.cidx, vq.clen);
   }
-  //conwriteln(uniqueRuns, " unique runs; texture size: ", imgWidth, "x", imgHeight);
 
   // create arrays
   for (int f = 0; f < vox.quads.length(); ++f) {
@@ -1422,8 +1452,6 @@ void GLVoxelMesh::create (VoxelMesh &vox) {
     ip[0] = b2;
     ip[2] = b0;
   }
-
-  //conwriteln(uniqueVerts, " unique vertices (of ", vox.quads.length()*4, ")");
 }
 
 
@@ -1511,7 +1539,6 @@ static bool loadKVX (VStream &st, VoxelData &vox) {
         int ztop = data[sofs++];
         vuint32 zlen = data[sofs++];
         vuint8 cull = data[sofs++];
-        //conwritefln("  x=%s; y=%s; z=%s; len=%s; cull=0x%02x", x, y, ztop, zlen, cull);
         // colors
         for (vuint32 cidx = 0; cidx < zlen; ++cidx) {
           vuint8 palcol = data[sofs++];
@@ -1519,11 +1546,6 @@ static bool loadKVX (VStream &st, VoxelData &vox) {
           vuint8 cl = cull;
           if (cidx != 0) cl &= ~0x10;
           if (cidx != zlen-1) cl &= ~0x20;
-          const vuint8 r = pal[palcol*3+0];
-          const vuint8 g = pal[palcol*3+1];
-          const vuint8 b = pal[palcol*3+2];
-          //addCube(cl, (xsiz-x-1)-px, y-py, (zsiz-ztop-1)-pz, b|(g<<8)|(r<<16));
-          addCube(cl, (xsiz-x-1)-px, y-py, (zsiz-ztop-1)-(useVoxelPivotZ ? pz : 0.0f), b|(g<<8)|(r<<16));
           */
           const vuint32 rgb =
             pal[palcol*3+2]|
@@ -1634,10 +1656,8 @@ static bool loadKV6 (VStream &st, VoxelData &vox) {
       //assert(sofs < data.length && eofs <= data.length);
       while (sofs < eofs) {
         const KVox &kv = kvox[sofs++];
-        //debug(kvx_dump) conwritefln("  x=%s; y=%s; zlo=%s; zhi=%s; cull=0x%02x", x, y, kv.zlo, kv.zhi, kv.cull);
         int z = kv.zlo;
         for (int cidx = 0; cidx <= kv.zhi; ++cidx) {
-          //addCube(kv.cull, (xsiz-x-1)-xpivot, y-ypivot, (zsiz-z-1)-zpivot, kv.rgb);
           ++z;
           vox.addVoxel(xsiz-x-1, y, zsiz-z, kv.rgb, kv.cull);
         }
@@ -1715,8 +1735,9 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
     TriVerts.clear();
   }
 
+  GCon->Logf(NAME_Init, "converting voxel model '%s'...", *this->Name);
+
   GLVoxelMesh glvmesh;
-  //vox.useVoxelPivotZ = useVoxelPivotZ;
   {
     VMemoryStreamRO memst(this->Name, Data, DataSize);
     vuint32 sign;
@@ -1725,7 +1746,13 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
 
     VoxelData vox;
     bool ok = false;
-    if (sign == 0x6c78764bU) ok = loadKV6(memst, vox); else ok = loadKVX(memst, vox);
+    if (sign == 0x6c78764bU) {
+      GCon->Logf(NAME_Init, "  loading KV6...");
+      ok = loadKV6(memst, vox);
+    } else {
+      GCon->Logf(NAME_Init, "  loading KVX...");
+      ok = loadKVX(memst, vox);
+    }
     if (!ok || memst.IsError()) Sys_Error("cannot load voxel model '%s'", *this->Name);
     vox.optimise();
 
