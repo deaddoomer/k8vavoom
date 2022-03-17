@@ -1419,9 +1419,7 @@ private:
     float dir; // by the axis, not normalized
     float clo, chi; // low and high coords
     TArray<VoxNewEdge> moreverts; // added vertices
-    int nextg; // next in this grid coord
     vuint8 axis; // AXIS_n
-    vuint8 unitquad; // set if this is "unit quad"
   };
 
   TArray<VoxEdge> edges;
@@ -1431,27 +1429,57 @@ private:
     put each edge into a 3d grid, using v0
     v0 is enough, because previous edge v1 is guaranteed to be the next edge v0
    */
-  TArray<int> grid3d;
+  VoxBitmap gridbmp;
   int gridmin[3];
   int gridmax[3];
-  vuint32 gridxsz;
-  vuint32 gridxysz;
 
-  VVA_FORCEINLINE int gridFirstEdge (float x, float y, float z) const noexcept {
-    const int vx = (int)x;
-    const int vy = (int)y;
-    const int vz = (int)z;
+  void createGrid ();
+
+  VVA_FORCEINLINE void gridCoords (float fx, float fy, float fz,
+                                   int *gx, int *gy, int *gz) const noexcept
+  {
+    int vx = (int)fx;
+    int vy = (int)fy;
+    int vz = (int)fz;
     vassert(vx >= gridmin[0] && vy >= gridmin[1] && vz >= gridmin[2]);
     vassert(vx <= gridmax[0] && vy <= gridmax[1] && vz <= gridmax[2]);
-    const int gofs = (vz-gridmin[2])*gridxysz+(vy-gridmin[1])*gridxsz+(vx-gridmin[0]);
-    return grid3d[gofs];
+    *gx = vx-gridmin[0];
+    *gy = vy-gridmin[1];
+    *gz = vz-gridmin[2];
+  }
+
+  VVA_FORCEINLINE void putVertexToGrid (vuint32 vidx) noexcept {
+    int vx, vy, vz;
+    const VVoxVertexEx &gv = vertices[vidx];
+    gridCoords(gv.x, gv.y, gv.z, &vx, &vy, &vz);
+    gridbmp.setPixel(vx, vy, vz);
+  }
+
+  VVA_FORCEINLINE vuint32 hasVertexAt (float fx, float fy, float fz) const noexcept {
+    int vx, vy, vz;
+    gridCoords(fx, fy, fz, &vx, &vy, &vz);
+    return gridbmp.getPixel(vx, vy, vz);
+  }
+
+  VVA_FORCEINLINE void putEdgeToGrid (int eidx) noexcept {
+    const VoxEdge &e = edges[eidx];
+    putVertexToGrid(e.v0);
+    putVertexToGrid(e.v1);
+  }
+
+  // create 3d grid, put edges into it
+  inline void sortEdges () {
+    createGrid();
+    for (int f = 0; f < edges.length(); ++f) putEdgeToGrid(f);
+  }
+
+  inline void freeSortStructs () {
+    gridbmp.clear();
   }
 
   // returns number of unit quads
   int createEdges ();
-  void sortEdges ();
-  void freeSortStructs ();
-  void fixEdgeWithEdge (vuint32 eidx, vuint32 e2idx);
+  void fixEdgeWithVert (VoxEdge &edge, float fx, float fy, float fz);
   void fixEdgeNew (vuint32 eidx);
   void rebuildEdges ();
   void fixTJunctions ();
@@ -1609,9 +1637,28 @@ void GLVoxelMesh::clear () {
   citems.clear();
   citemhash.clear();
   uniqueRuns = 0;
+  gridbmp.clear();
   // our voxels are 1024x1024x1024 at max
   vmin[0] = vmin[1] = vmin[2] = +8192.0f;
   vmax[0] = vmax[1] = vmax[2] = -8192.0f;
+}
+
+
+//==========================================================================
+//
+//  GLVoxelMesh::createGrid
+//
+//==========================================================================
+void GLVoxelMesh::createGrid () {
+  // create the grid
+  for (unsigned f = 0; f < 3; ++f) {
+    gridmin[f] = (int)vmin[f];
+    gridmax[f] = (int)vmax[f];
+  }
+  unsigned gxs = (unsigned)(gridmax[0]-gridmin[0]+1);
+  unsigned gys = (unsigned)(gridmax[1]-gridmin[1]+1);
+  unsigned gzs = (unsigned)(gridmax[2]-gridmin[2]+1);
+  gridbmp.setSize(gxs, gys, gzs);
 }
 
 
@@ -1636,8 +1683,6 @@ int GLVoxelMesh::createEdges () {
       VoxEdge &e = edges[eidx++];
       e.v0 = indicies[f+vx0];
       e.v1 = indicies[f+vx1];
-      //e.qedge = cast(ubyte)vx0;
-      e.unitquad = 0;
       if (vertices[e.v0].x != vertices[e.v1].x) {
         vassert(vertices[e.v0].y == vertices[e.v1].y);
         vassert(vertices[e.v0].z == vertices[e.v1].z);
@@ -1662,10 +1707,7 @@ int GLVoxelMesh::createEdges () {
     // "unit quads" can be ignored, they aren't interesting
     // also, each quad always have at least one "unit edge"
     // (this will be used to build triangle strips)
-    if (unitquad) {
-      ++uqcount;
-      for (vuint32 vx0 = 0; vx0 < 4; ++vx0) edges[eidx-vx0-1].unitquad = 1;
-    }
+    uqcount += unitquad;
   }
   vassert(eidx == (vuint32)edges.length());
   return uqcount;
@@ -1674,106 +1716,65 @@ int GLVoxelMesh::createEdges () {
 
 //==========================================================================
 //
-//  GLVoxelMesh::sortEdges
-//
-//  create 3d grid, put edges into it
+//  GLVoxelMesh::fixEdgeWithVert
 //
 //==========================================================================
-void GLVoxelMesh::sortEdges () {
-  // create the grid
-  for (vuint32 f = 0; f < 3; ++f) {
-    gridmin[f] = (int)vmin[f];
-    gridmax[f] = (int)vmax[f];
-  }
-  const vuint32 gxs = (vuint32)(gridmax[0]-gridmin[0]+1);
-  const vuint32 gys = (vuint32)(gridmax[1]-gridmin[1]+1);
-  const vuint32 gzs = (vuint32)(gridmax[2]-gridmin[2]+1);
-  gridxsz = gxs;
-  gridxysz = gridxsz*gys;
-  grid3d.setLength(gridxysz*gzs);
-  for (int f = 0; f < grid3d.length(); ++f) grid3d[f] = -1;
-
-  // put edges into the grid
-  for (int f = 0; f < edges.length(); ++f) {
-    const int vx = (int)vertices[edges[f].v0].x;
-    const int vy = (int)vertices[edges[f].v0].y;
-    const int vz = (int)vertices[edges[f].v0].z;
-    vassert(vx >= gridmin[0] && vy >= gridmin[1] && vz >= gridmin[2]);
-    vassert(vx <= gridmax[0] && vy <= gridmax[1] && vz <= gridmax[2]);
-    const vuint32 gofs = (vz-gridmin[2])*gridxysz+(vy-gridmin[1])*gridxsz+(vx-gridmin[0]);
-    edges[f].nextg = grid3d[gofs];
-    grid3d[gofs] = f;
-  }
-}
-
-
-//==========================================================================
-//
-//  GLVoxelMesh::freeSortStructs
-//
-//==========================================================================
-void GLVoxelMesh::freeSortStructs () {
-  grid3d.clear();
-}
-
-
-//==========================================================================
-//
-//  GLVoxelMesh::fixEdgeWithEdge
-//
-//==========================================================================
-void GLVoxelMesh::fixEdgeWithEdge (vuint32 eidx, vuint32 e2idx) {
-  if (e2idx == eidx) return;
-  VoxEdge &edge = edges[eidx];
-  if (edge.unitquad) return; // nothing to do here
-  if (edge.dir == +1.0f || edge.dir == -1.0f) return; // and here
-  VoxEdge &e2 = edges[e2idx];
-  // same axis? (not interesting)
-  if (e2.axis == edge.axis) return;
-  VVoxVertexEx evx0 = vertices[edge.v0];
-  VVoxVertexEx evx1 = vertices[edge.v1];
-  for (vuint32 e2vi = 0; e2vi <= 1; ++e2vi) {
-    VVoxVertexEx e2vx = vertices[e2vi ? e2.v1 : e2.v0];
-    bool needInsert = true;
-    for (int aci = 0; aci < 3; ++aci) {
-      if (aci == edge.axis) {
-        needInsert = (e2vx.get(aci) > edge.clo && e2vx.get(aci) < edge.chi);
-      } else {
-        needInsert = (e2vx.get(aci) == evx0.get(aci));
-      }
-      if (!needInsert) break;
-    }
-    if (!needInsert) continue;
-    for (int eci = 0; eci < edge.moreverts.length(); ++eci) {
-      if (vertices[edge.moreverts[eci].idx].xyzEqu(e2vx)) {
-        needInsert = false;
+void GLVoxelMesh::fixEdgeWithVert (VoxEdge &edge, float fx, float fy, float fz) {
+  // sanity check
+  const float crd = (edge.axis == AXIS_X ? fx : edge.axis == AXIS_Y ? fy : fz);
+  vassert(crd > edge.clo && crd < edge.chi);
+  for (unsigned axi = 0; axi < 3; ++axi) {
+    if (axi == edge.axis) continue;
+    switch (axi) {
+      case AXIS_X:
+        assert(vertices[edge.v0].x == vertices[edge.v1].x);
+        assert(fx == vertices[edge.v0].x);
         break;
-      }
+      case AXIS_Y:
+        assert(vertices[edge.v0].y == vertices[edge.v1].y);
+        assert(fy == vertices[edge.v0].y);
+        break;
+      case AXIS_Z:
+        assert(vertices[edge.v0].z == vertices[edge.v1].z);
+        assert(fz == vertices[edge.v0].z);
+        break;
+      default: __builtin_trap();
     }
-    if (!needInsert) continue;
-    // ok, need to append a new one
-    VVoxVertexEx nvx = e2vx;
-    // copy normal
-    nvx.nx = evx0.nx;
-    nvx.ny = evx0.ny;
-    nvx.nz = evx0.nz;
-    // calc new (s,t)
-    const float tm = (e2vx.get(edge.axis)-evx0.get(edge.axis))/edge.dir;
-    nvx.s = (evx0.s == evx1.s ? evx1.s : evx0.s+(evx1.s-evx0.s)*tm);
-    nvx.t = (evx0.t == evx1.t ? evx1.t : evx0.t+(evx1.t-evx0.t)*tm);
-    const vuint32 nv = appendVertex(nvx);
-    vuint32 insbefore = 0;
-    while (insbefore < (vuint32)edge.moreverts.length()) {
-      if (tm > edge.moreverts[insbefore].time) ++insbefore; else break;
-    }
-    edge.moreverts.setLengthReserve(edge.moreverts.length()+1);
-    for (vuint32 c = (vuint32)edge.moreverts.length()-1U; c > insbefore; --c) {
-      edge.moreverts[c] = edge.moreverts[c-1];
-    }
-    edge.moreverts[insbefore].idx = nv;
-    edge.moreverts[insbefore].time = tm;
-    ++totaltadded;
   }
+  for (int eci = 0; eci < edge.moreverts.length(); ++eci) {
+    const VVoxVertexEx &gv = vertices[edge.moreverts[eci].idx];
+    if (gv.x == fx && gv.y == fy && gv.z == fz) return;
+  }
+  // ok, need to append a new one
+  const VVoxVertexEx &evx0 = vertices[edge.v0];
+  const VVoxVertexEx &evx1 = vertices[edge.v1];
+
+  VVoxVertexEx nvx;
+  // set coords
+  nvx.x = fx;
+  nvx.y = fy;
+  nvx.z = fz;
+  // copy normal
+  nvx.nx = evx0.nx;
+  nvx.ny = evx0.ny;
+  nvx.nz = evx0.nz;
+  // calc new (s,t)
+  const float tm = (nvx.get(edge.axis)-evx0.get(edge.axis))/edge.dir;
+  nvx.s = (evx0.s == evx1.s ? evx1.s : evx0.s+(evx1.s-evx0.s)*tm);
+  nvx.t = (evx0.t == evx1.t ? evx1.t : evx0.t+(evx1.t-evx0.t)*tm);
+
+  const vuint32 nv = appendVertex(nvx);
+  int insbefore = 0;
+  while (insbefore < edge.moreverts.length()) {
+    if (tm > edge.moreverts[insbefore].time) ++insbefore; else break;
+  }
+  edge.moreverts.setLengthReserve(edge.moreverts.length()+1);
+  for (int c = edge.moreverts.length()-1; c > insbefore; --c) {
+    edge.moreverts[c] = edge.moreverts[c-1];
+  }
+  edge.moreverts[insbefore].idx = nv;
+  edge.moreverts[insbefore].time = tm;
+  ++totaltadded;
 }
 
 
@@ -1786,28 +1787,16 @@ void GLVoxelMesh::fixEdgeWithEdge (vuint32 eidx, vuint32 e2idx) {
 //==========================================================================
 void GLVoxelMesh::fixEdgeNew (vuint32 eidx) {
   VoxEdge &edge = edges[eidx];
-  if (edge.unitquad) return; // nothing to do here
   if (edge.dir == +1.0f || edge.dir == -1.0f) return; // and here
   // check grid by the edge axis
   float gxyz[3];
-  for (vuint32 f = 0; f < 3; ++f) gxyz[f] = vertices[edge.v0].get(f);
+  for (unsigned f = 0; f < 3; ++f) gxyz[f] = vertices[edge.v0].get(f);
   const float end = vertices[edge.v1].get(edge.axis);
   float step = (edge.dir < 0.0f ? -1.0f : +1.0f);
   gxyz[edge.axis] += step;
   while (gxyz[edge.axis] != end) {
-    // check edges at this grid point
-    // we have to check both the actual edge, and it's previous one (in the quad)
-    int e2idx = gridFirstEdge(gxyz[0], gxyz[1], gxyz[2]);
-    while (e2idx >= 0) {
-      vuint32 e2 = (vuint32)e2idx;
-      fixEdgeWithEdge(eidx, e2);
-      // quad starting edge
-      const vuint32 qidx = e2&~3U;
-      // convert to relative number of the prev edge
-      e2 = ((e2&3)+1)&3;
-      fixEdgeWithEdge(eidx, qidx+e2);
-      // next edge in the grid node
-      e2idx = edges[(vuint32)e2idx].nextg;
+    if (hasVertexAt(gxyz[0], gxyz[1], gxyz[2])) {
+      fixEdgeWithVert(edge, gxyz[0], gxyz[1], gxyz[2]);
     }
     gxyz[edge.axis] += step;
   }
