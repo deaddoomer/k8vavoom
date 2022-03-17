@@ -1792,7 +1792,7 @@ void GLVoxelMesh::fixEdgeNew (vuint32 eidx) {
   float gxyz[3];
   for (unsigned f = 0; f < 3; ++f) gxyz[f] = vertices[edge.v0].get(f);
   const float end = vertices[edge.v1].get(edge.axis);
-  float step = (edge.dir < 0.0f ? -1.0f : +1.0f);
+  const float step = (edge.dir < 0.0f ? -1.0f : +1.0f);
   gxyz[edge.axis] += step;
   while (gxyz[edge.axis] != end) {
     if (hasVertexAt(gxyz[0], gxyz[1], gxyz[2])) {
