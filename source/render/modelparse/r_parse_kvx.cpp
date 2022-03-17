@@ -30,7 +30,7 @@
 static VCvarI vox_cache_compression_level("vox_cache_compression_level", "6", "Voxel cache file compression level [0..9].", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 static VCvarB vox_cache_enabled("vox_cache_enabled", false, "Enable caching of converted voxel models?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 static VCvarB vox_verbose_conversion("vox_verbose_conversion", false, "Show info messages from voxel converter?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
-static VCvarI vox_optimisation("vox_optimisation", "4", "Voxel loader optimisation (higher is better, but with space ants) [0..4].", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
+static VCvarI vox_optimisation("vox_optimisation", "2", "Voxel loader optimisation (higher is better, but with space ants) [0..2].", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 static VCvarB vox_fix_tjunctions("vox_fix_tjunctions", false, "Show info messages from voxel converter?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 
 // useful for debugging, but not really needed
@@ -1454,8 +1454,8 @@ private:
   void fixEdgeWithEdge (vuint32 eidx, vuint32 e2idx);
   void fixEdgeNew (vuint32 eidx);
   void rebuildEdges ();
+  void fixTJunctions ();
   void recreateTriangles (TArray<VMeshTri> &Tris);
-  void fixTJunctions (TArray<VMeshTri> &Tris);
 
 public:
   inline GLVoxelMesh () noexcept
@@ -1479,7 +1479,7 @@ public:
   inline ~GLVoxelMesh () { clear(); }
 
   void clear ();
-  void create (VoxelMesh &vox, TArray<VMeshTri> &Tris, bool fixtjunk);
+  void create (VoxelMesh &vox, TArray<VMeshTri> &Tris, bool fixtjunk, VStr fname);
 };
 
 
@@ -1891,6 +1891,39 @@ void GLVoxelMesh::rebuildEdges () {
 
 //==========================================================================
 //
+//  GLVoxelMesh::fixTJunctions
+//
+//  t-junction fixer
+//  this will also convert vertex data to triangle strips
+//
+//==========================================================================
+void GLVoxelMesh::fixTJunctions () {
+  const int oldvtotal = vertices.length();
+  const int uqcount = createEdges();
+  if (vox_verbose_conversion) {
+    GCon->Logf(NAME_Init, "  %d edges found (%d unit quad%s) (%d tris, %d verts)...",
+               edges.length(), uqcount, (uqcount != 1 ? "s" : ""),
+               edges.length()/2, vertices.length());
+  }
+  sortEdges();
+  for (vuint32 f = 0; f < (vuint32)edges.length(); ++f) fixEdgeNew(f);
+  freeSortStructs();
+  if (totaltadded) {
+    if (vox_verbose_conversion) {
+      GCon->Logf(NAME_Init, "  %d t-fix vertices added (%d unique).",
+                 totaltadded, vertices.length()-oldvtotal);
+    }
+    rebuildEdges();
+  }
+
+  // cleanup
+  for (int f = 0; f < edges.length(); ++f) edges[f].moreverts.clear();
+  edges.clear();
+}
+
+
+//==========================================================================
+//
 //  GLVoxelMesh::recreateTriangles
 //
 //==========================================================================
@@ -1937,48 +1970,10 @@ void GLVoxelMesh::recreateTriangles (TArray<VMeshTri> &Tris) {
 
 //==========================================================================
 //
-//  GLVoxelMesh::fixTJunctions
-//
-//  t-junction fixer
-//  this will also convert vertex data to triangle strips
-//
-//==========================================================================
-void GLVoxelMesh::fixTJunctions (TArray<VMeshTri> &Tris) {
-  const int oldvtotal = vertices.length();
-  const int uqcount = createEdges();
-  if (vox_verbose_conversion) {
-    GCon->Logf(NAME_Init, "  %d edges found (%d unit quad%s) (%d tris, %d verts)...",
-               edges.length(), uqcount, (uqcount != 1 ? "s" : ""),
-               edges.length()/2, vertices.length());
-  }
-  sortEdges();
-  for (vuint32 f = 0; f < (vuint32)edges.length(); ++f) fixEdgeNew(f);
-  freeSortStructs();
-  if (totaltadded) {
-    if (vox_verbose_conversion) {
-      GCon->Logf(NAME_Init, "  %d t-fix vertices added (%d unique).",
-                 totaltadded, vertices.length()-oldvtotal);
-    }
-    rebuildEdges();
-    recreateTriangles(Tris);
-    if (vox_verbose_conversion) {
-      GCon->Logf(NAME_Init, "  rebuilt model (tjfix): %d tris, %d vertices.",
-        Tris.length(), vertices.length());
-    }
-  }
-
-  // cleanup
-  for (int f = 0; f < edges.length(); ++f) edges[f].moreverts.clear();
-  edges.clear();
-}
-
-
-//==========================================================================
-//
 //  GLVoxelMesh::create
 //
 //==========================================================================
-void GLVoxelMesh::create (VoxelMesh &vox, TArray<VMeshTri> &Tris, bool fixtjunk) {
+void GLVoxelMesh::create (VoxelMesh &vox, TArray<VMeshTri> &Tris, bool fixtjunk, VStr fname) {
   vassert(vox.maxColorRun > 0);
   vassert(vox.maxColorRun <= 1024);
   clear();
@@ -1999,8 +1994,6 @@ void GLVoxelMesh::create (VoxelMesh &vox, TArray<VMeshTri> &Tris, bool fixtjunk)
     vq.calcNormal();
     vq.imgidx = appendRun(vox.colors.ptr()+vq.cidx, vq.clen);
   }
-
-  //Tris.setLength(vox.quads.length()*2);
 
   // create arrays
   int triidx = 0;
@@ -2040,19 +2033,6 @@ void GLVoxelMesh::create (VoxelMesh &vox, TArray<VMeshTri> &Tris, bool fixtjunk)
       vxn[nidx] = appendVertex(gv);
     }
 
-    /*
-    // triangles
-    VMeshTri &tri0 = Tris[triidx+0];
-    tri0.VertIndex[0] = vxn[0];
-    tri0.VertIndex[1] = vxn[1];
-    tri0.VertIndex[2] = vxn[2];
-
-    VMeshTri &tri1 = Tris[triidx+1];
-    tri1.VertIndex[0] = vxn[2];
-    tri1.VertIndex[1] = vxn[3];
-    tri1.VertIndex[2] = vxn[0];
-    */
-
     // triangle fans
     indicies.append(vxn[0]);
     indicies.append(vxn[1]);
@@ -2071,10 +2051,17 @@ void GLVoxelMesh::create (VoxelMesh &vox, TArray<VMeshTri> &Tris, bool fixtjunk)
     ip[2] = b0;
   }
 
-  if (fixtjunk) {
-    fixTJunctions(Tris);
-  } else {
-    recreateTriangles(Tris);
+  if (fixtjunk) fixTJunctions();
+
+  if (vertices.length() >= BreakIndex) {
+    Sys_Error("3d model for voxel '%s' has too many vertices", *fname);
+  }
+
+  recreateTriangles(Tris);
+
+  if (fixtjunk && vox_verbose_conversion) {
+    GCon->Logf(NAME_Init, "  rebuilt model (tjfix): %d tris, %d vertices.",
+      Tris.length(), vertices.length());
   }
 }
 
@@ -2304,7 +2291,7 @@ static bool loadKV6 (VStream &st, VoxelData &vox) {
 //==========================================================================
 bool VMeshModel::VoxNeedReload () {
   return
-    voxOptLevel != clampval(vox_optimisation.asInt(), 0, 4) ||
+    voxOptLevel != clampval(vox_optimisation.asInt(), -2, 2)+2 ||
     voxFixTJunk != vox_fix_tjunctions.asBool();
 }
 
@@ -2326,7 +2313,7 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
   this->IndexBuffer = 0;
   this->GlMode = GlNone;
 
-  this->voxOptLevel = clampval(vox_optimisation.asInt(), 0, 4);
+  this->voxOptLevel = clampval(vox_optimisation.asInt(), -2, 2)+2;
   this->voxFixTJunk = vox_fix_tjunctions.asBool();
 
   VStr ccname = GenKVXCacheName(Data, DataSize);
@@ -2411,7 +2398,7 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
     vmesh.buildFrom(vox, this->voxOptLevel, useVoxelPivotZ);
     vox.clear();
 
-    glvmesh.create(vmesh, Tris, this->voxFixTJunk);
+    glvmesh.create(vmesh, Tris, this->voxFixTJunk, this->Name);
     vmesh.clear();
 
     if (vox_verbose_conversion.asBool()) {
@@ -2423,10 +2410,6 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
   }
 
   if (glvmesh.indicies.length() == 0) Sys_Error("cannot load empty voxel model '%s'", *this->Name);
-
-  if (glvmesh.vertices.length() > 65534) {
-    GCon->Logf(NAME_Error, "3d model for voxel '%s' has too many vertices", *this->Name);
-  }
 
   // skins
   {
