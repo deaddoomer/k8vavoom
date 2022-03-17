@@ -211,17 +211,29 @@ menudef VideoOptions {
       "even more 'space ants'.",
       "\c[Cyan]Maximum\c- is even better than 'Better' (and has more ants).",
       "\c[Cyan]Ultra\c- is the slowest one, bit is able to cull most quads.",
-      "\cJYou have to restart the engine to activate new optimisation mode.";
+      "\c[#ff0000]You have to restart the engine to activate new optimisation mode.";
   }
 
   option bool {
-    title = "Voxel Cache";
+    title = "Fix T-Junctions";
+    cvar = vox_fix_tjunctions;
+    help =
+      "Fix T-Junctions in converted voxel models?",
+      "All methods except 'None' introduces some T-Junctions.",
+      "You may know them as 'Space Ants' too.",
+      "Most of the time they aren't noticeable at all, but you may",
+      "still want to get even better visual quality, by turning this option 'ON'."
+      "\c[#ff0000]WARNING! Activating this option will \c[WHITE]DRAMATICALLY\c[#ff0000] increase triangle count!";
+  }
+
+  option bool {
+    title = "Cache converted voxels";
     cvar = vox_cache_enabled;
     help = "Enable caching of converted voxel models?";
   }
 
   option bool {
-    title = "Verbose voxel conversion";
+    title = "Verbose conversion";
     cvar = vox_verbose_conversion;
     help = "Show some informational messages from voxel converter?";
   }

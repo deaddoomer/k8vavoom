@@ -30,13 +30,16 @@
 static VCvarI vox_cache_compression_level("vox_cache_compression_level", "6", "Voxel cache file compression level [0..9].", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 static VCvarB vox_cache_enabled("vox_cache_enabled", false, "Enable caching of converted voxel models?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 static VCvarB vox_verbose_conversion("vox_verbose_conversion", false, "Show info messages from voxel converter?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
-static VCvarI kvx_optimized("vox_optimisation", "4", "Voxel loader optimisation (higher is better, but with space ants) [0..4].", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
+static VCvarI vox_optimisation("vox_optimisation", "4", "Voxel loader optimisation (higher is better, but with space ants) [0..4].", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
+static VCvarB vox_fix_tjunctions("vox_fix_tjunctions", false, "Show info messages from voxel converter?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 
 // useful for debugging, but not really needed
 #define VOX_ENABLE_INVARIANT_CHECK
 
 
-#define VOX_CACHE_SIGNATURE  "k8vavoom voxel model cache file, version 2\n"
+#define VOX_CACHE_SIGNATURE  "k8vavoom voxel model cache file, version 3\n"
+
+#define BreakIndex  (65535)
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -230,10 +233,21 @@ public:
     memset(bmp, 0, xywdt*zsize*sizeof(vuint32));
   }
 
-  VVA_FORCEINLINE void setPixel (int x, int y, int z) noexcept {
+  // returns old value
+  VVA_FORCEINLINE vuint32 setPixel (int x, int y, int z) noexcept {
+    if (x < 0 || y < 0 || z < 0) return 1;
+    if ((unsigned)x >= xsize || (unsigned)y >= ysize || (unsigned)z >= zsize) return 1;
+    vuint32 *bp = bmp+(unsigned)z*xywdt+(unsigned)y*xwdt+((unsigned)x>>5);
+    const vuint32 bmask = 1U<<((unsigned)x&0x1f);
+    const vuint32 res = (*bp)&bmask;
+    *bp |= bmask;
+    return res;
+  }
+
+  VVA_FORCEINLINE void resetPixel (int x, int y, int z) const noexcept {
     if (x < 0 || y < 0 || z < 0) return;
     if ((unsigned)x >= xsize || (unsigned)y >= ysize || (unsigned)z >= zsize) return;
-    bmp[(unsigned)z*xywdt+(unsigned)y*xwdt+((unsigned)x>>5)] |= 1U<<((unsigned)x&0x1f);
+    bmp[(unsigned)z*xywdt+(unsigned)y*xwdt+((unsigned)x>>5)] &= ~(1U<<((unsigned)x&0x1f));
   }
 
   VVA_FORCEINLINE vuint32 getPixel (int x, int y, int z) const noexcept {
@@ -285,24 +299,20 @@ public:
     return (vuint8)(1U<<(cidx^1));
   }
 
-  // high byte is cull info
-  // returns 0 if there is no such voxel
-  VVA_FORCEINLINE vuint32 voxofs (int x, int y, int z) const noexcept {
-    if (x < 0 || y < 0 || z < 0) return 0;
-    if ((vuint32)x >= xsize || (vuint32)y >= ysize || (vuint32)z >= zsize) return 0;
-    vuint32 dofs = xyofs[(vuint32)y*xsize+(vuint32)x];
-    while (dofs) {
-      if (data[dofs].z == (vuint16)z) return dofs;
-      if (data[dofs].z > (vuint16)z) return 0;
-      dofs = data[dofs].nextz;
-    }
-    return 0;
-  }
-
   VVA_FORCEINLINE vuint32 getDOfs (int x, int y) const noexcept {
     if (x < 0 || y < 0) return 0;
     if ((vuint32)x >= xsize || (vuint32)y >= ysize) return 0;
-    return xyofs[(vuint32)y*xsize+(vuint32)x];
+    return xyofs.ptr()[(vuint32)y*xsize+(vuint32)x];
+  }
+
+  // high byte is cull info
+  // returns 0 if there is no such voxel
+  VVA_FORCEINLINE vuint32 voxofs (int x, int y, int z) const noexcept {
+    for (vuint32 dofs = getDOfs(x, y); dofs; dofs = data[dofs].nextz) {
+      if (data[dofs].z == (vuint16)z) return dofs;
+      if (data[dofs].z > (vuint16)z) return 0;
+    }
+    return 0;
   }
 
   // high byte is cull info
@@ -323,14 +333,18 @@ public:
     return (dofs ? data[dofs].cull : 0);
   }
 
+  // only for existing voxels; won't remove empty voxels
+  VVA_FORCEINLINE void setVoxelCull (int x, int y, int z, vuint8 cull) {
+    const vuint32 dofs = voxofs(x, y, z);
+    if (dofs) data[dofs].cull = (cull&0x3f);
+  }
+
   void clear ();
   void setSize (vuint32 xs, vuint32 ys, vuint32 zs);
 
   void removeVoxel (int x, int y, int z);
   void addVoxel (int x, int y, int z, vuint32 rgb, vuint8 cull);
 
-  // only for existing voxels; won't remove empty voxels
-  void setVoxelCull (int x, int y, int z, vuint8 cull);
 
   #ifdef VOX_ENABLE_INVARIANT_CHECK
   void checkInvariants ();
@@ -421,11 +435,8 @@ void VoxelData::setSize (vuint32 xs, vuint32 ys, vuint32 zs) {
 //
 //==========================================================================
 void VoxelData::removeVoxel (int x, int y, int z) {
-  if (x < 0 || y < 0 || z < 0) return;
-  if ((vuint32)x >= xsize || (vuint32)y >= ysize || (vuint32)z >= zsize) return;
-  vuint32 dofs = xyofs[(vuint32)y*xsize+(vuint32)x];
   vuint32 prevdofs = 0;
-  while (dofs) {
+  for (vuint32 dofs = getDOfs(x, y); dofs; prevdofs = dofs, dofs = data[dofs].nextz) {
     if (data[dofs].z == (vuint16)z) {
       // remove this voxel
       if (prevdofs) {
@@ -439,8 +450,6 @@ void VoxelData::removeVoxel (int x, int y, int z) {
       return;
     }
     if (data[dofs].z > (vuint16)z) return;
-    prevdofs = dofs;
-    dofs = data[dofs].nextz;
   }
 }
 
@@ -455,7 +464,7 @@ void VoxelData::addVoxel (int x, int y, int z, vuint32 rgb, vuint8 cull) {
   if (!cull) { removeVoxel(x, y, z); return; }
   if (x < 0 || y < 0 || z < 0) return;
   if ((vuint32)x >= xsize || (vuint32)y >= ysize || (vuint32)z >= zsize) return;
-  vuint32 dofs = xyofs[(vuint32)y*xsize+(vuint32)x];
+  vuint32 dofs = getDOfs(x, y);
   vuint32 prevdofs = 0;
   while (dofs) {
     if (data[dofs].z == (vuint16)z) {
@@ -471,7 +480,7 @@ void VoxelData::addVoxel (int x, int y, int z, vuint32 rgb, vuint8 cull) {
     dofs = data[dofs].nextz;
   }
   // insert before dofs
-  vuint32 vidx = allocVox();
+  const vuint32 vidx = allocVox();
   data[vidx].b = rgb&0xff;
   data[vidx].g = (rgb>>8)&0xff;
   data[vidx].r = (rgb>>16)&0xff;
@@ -487,29 +496,6 @@ void VoxelData::addVoxel (int x, int y, int z, vuint32 rgb, vuint8 cull) {
 }
 
 
-//==========================================================================
-//
-//  VoxelData::setVoxelCull
-//
-//  only for existing voxels; won't remove empty voxels
-//
-//==========================================================================
-void VoxelData::setVoxelCull (int x, int y, int z, vuint8 cull) {
-  cull &= 0x3f;
-  if (x < 0 || y < 0 || z < 0) return;
-  if ((vuint32)x >= xsize || (vuint32)y >= ysize || (vuint32)z >= zsize) return;
-  vuint32 dofs = xyofs[(vuint32)y*xsize+(vuint32)x];
-  while (dofs) {
-    if (data[dofs].z == (vuint16)z) {
-      // replace this voxel
-      data[dofs].cull = cull;
-      return;
-    }
-    dofs = data[dofs].nextz;
-  }
-}
-
-
 #ifdef VOX_ENABLE_INVARIANT_CHECK
 //==========================================================================
 //
@@ -518,9 +504,9 @@ void VoxelData::setVoxelCull (int x, int y, int z, vuint8 cull) {
 //==========================================================================
 void VoxelData::checkInvariants () {
   vuint32 total = 0;
-  for (vuint32 y = 0; y < ysize; ++y) {
-    for (vuint32 x = 0; x < xsize; ++x) {
-      vuint32 dofs = xyofs[(vuint32)y*xsize+(vuint32)x];
+  for (int y = 0; y < (int)ysize; ++y) {
+    for (int x = 0; x < (int)xsize; ++x) {
+      vuint32 dofs = getDOfs(x, y);
       if (!dofs) continue;
       ++total;
       vuint16 prevz = data[dofs].z;
@@ -545,9 +531,9 @@ void VoxelData::checkInvariants () {
 //==========================================================================
 void VoxelData::removeEmptyVoxels () {
   vuint32 count = 0;
-  for (vuint32 y = 0; y < ysize; ++y) {
-    for (vuint32 x = 0; x < xsize; ++x) {
-      vuint32 dofs = xyofs[(vuint32)y*xsize+(vuint32)x];
+  for (int y = 0; y < (int)ysize; ++y) {
+    for (int x = 0; x < (int)xsize; ++x) {
+      vuint32 dofs = getDOfs(x, y);
       if (!dofs) continue;
       vuint32 prevdofs = 0;
       while (dofs) {
@@ -582,37 +568,34 @@ void VoxelData::removeEmptyVoxels () {
 //
 //==========================================================================
 void VoxelData::removeInside () {
-  for (vint32 y = 0; y < (vint32)ysize; ++y) {
-    for (vint32 x = 0; x < (vint32)xsize; ++x) {
-      vuint32 dofs = xyofs[(vuint32)y*xsize+(vuint32)x];
-      while (dofs) {
-        if (data[dofs].cull) {
-          // check
-          for (vuint32 cidx = 0; cidx < 6; ++cidx) {
-            // go in this dir, removing the corresponding voxel side
-            const vuint8 cmask = cullmask(cidx);
-            const vuint8 opmask = cullopmask(cidx);
-            const vuint8 checkmask = cmask|opmask;
-            int vx = x, vy = y, vz = (int)data[dofs].z;
-            vuint32 myofs = dofs;
-            while (myofs && (data[myofs].cull&cmask)) {
-              const int sx = vx+cullofs[cidx][0];
-              const int sy = vy+cullofs[cidx][1];
-              const int sz = vz+cullofs[cidx][2];
-              const vuint32 sofs = voxofs(sx, sy, sz);
-              if (!sofs) break;
-              if (!(data[sofs].cull&checkmask)) break;
-              // fix culls
-              data[myofs].cull ^= cmask;
-              data[sofs].cull &= (vuint8)(~(vuint32)opmask);
-              vx = sx;
-              vy = sy;
-              vz = sz;
-              myofs = sofs;
-            }
+  for (int y = 0; y < (int)ysize; ++y) {
+    for (int x = 0; x < (int)xsize; ++x) {
+      for (vuint32 dofs = getDOfs(x, y); dofs; dofs = data[dofs].nextz) {
+        if (!data[dofs].cull) continue;
+        // check
+        for (vuint32 cidx = 0; cidx < 6; ++cidx) {
+          // go in this dir, removing the corresponding voxel side
+          const vuint8 cmask = cullmask(cidx);
+          const vuint8 opmask = cullopmask(cidx);
+          const vuint8 checkmask = cmask|opmask;
+          int vx = x, vy = y, vz = (int)data[dofs].z;
+          vuint32 myofs = dofs;
+          while (myofs && (data[myofs].cull&cmask)) {
+            const int sx = vx+cullofs[cidx][0];
+            const int sy = vy+cullofs[cidx][1];
+            const int sz = vz+cullofs[cidx][2];
+            const vuint32 sofs = voxofs(sx, sy, sz);
+            if (!sofs) break;
+            if (!(data[sofs].cull&checkmask)) break;
+            // fix culls
+            data[myofs].cull ^= cmask;
+            data[sofs].cull &= (vuint8)(~(vuint32)opmask);
+            vx = sx;
+            vy = sy;
+            vz = sz;
+            myofs = sofs;
           }
         }
-        dofs = data[dofs].nextz;
       }
     }
   }
@@ -630,16 +613,16 @@ void VoxelData::removeInside () {
 //==========================================================================
 vuint32 VoxelData::fixFaceVisibility () {
   vuint32 count = 0;
-  for (vint32 y = 0; y < (vint32)ysize; ++y) {
-    for (vint32 x = 0; x < (vint32)xsize; ++x) {
-      for (vuint32 dofs = xyofs[(vuint32)y*xsize+(vuint32)x]; dofs; dofs = data[dofs].nextz) {
+  for (int y = 0; y < (int)ysize; ++y) {
+    for (int x = 0; x < (int)xsize; ++x) {
+      for (vuint32 dofs = getDOfs(x, y); dofs; dofs = data[dofs].nextz) {
         const vuint8 ocull = data[dofs].cull;
         if (!ocull) continue;
         const int z = (int)data[dofs].z;
         for (vuint32 cidx = 0; cidx < 6; ++cidx) {
           const vuint8 cmask = cullmask(cidx);
           if (data[dofs].cull&cmask) {
-            if (query(x+cullofs[cidx][0], y+cullofs[cidx][1], z+cullofs[cidx][2])) {
+            if (queryCull(x+cullofs[cidx][0], y+cullofs[cidx][1], z+cullofs[cidx][2])) {
               data[dofs].cull ^= cmask; // reset bit
             }
           }
@@ -663,40 +646,35 @@ vuint32 VoxelData::fixFaceVisibility () {
 //==========================================================================
 vuint32 VoxelData::hollowFill () {
   VoxBitmap bmp;
-  VoxBitmap bmpseen;
   VoxXYZ16 xyz;
   VoxXYZ16 *stack;
   vuint32 stacksize = 16384;
-  vuint32 stackpos = 1;
+  vuint32 stackpos = 0;
 
   bmp.setSize(xsize+2, ysize+2, zsize+2);
-  bmpseen.setSize(xsize+2, ysize+2, zsize+2);
+
   // this is definitely empty
   xyz.x = xyz.y = xyz.z = 0;
   stack = (VoxXYZ16 *)Z_Malloc(stacksize*sizeof(VoxXYZ16));
-  stack[0] = xyz;
-  bmpseen.setPixel(0, 0, 0);
+  stack[stackpos++] = xyz;
+  bmp.setPixel((int)xyz.x, (int)xyz.y, (int)xyz.z);
 
   const int deltas[6][3] = {
     {-1, 0, 0},
     { 1, 0, 0},
-    {0,-1, 0},
-    {0, 1, 0},
-    {0, 0,-1},
-    {0, 0, 1},
+    { 0,-1, 0},
+    { 0, 1, 0},
+    { 0, 0,-1},
+    { 0, 0, 1},
   };
 
   while (stackpos) {
     xyz = stack[--stackpos];
-    if (bmp.getPixel(xyz.x, xyz.y, xyz.z)) continue;
-    bmp.setPixel(xyz.x, xyz.y, xyz.z);
     for (unsigned dd = 0; dd < 6; ++dd) {
       const int nx = (int)xyz.x+deltas[dd][0];
       const int ny = (int)xyz.y+deltas[dd][1];
       const int nz = (int)xyz.z+deltas[dd][2];
-      if (bmp.getPixel(nx, ny, nz)) continue;
-      if (bmpseen.getPixel(nx, ny, nz)) continue;
-      bmpseen.setPixel(nx, ny, nz);
+      if (bmp.setPixel(nx, ny, nz)) continue;
       if (queryCull(nx-1, ny-1, nz-1)) continue;
       if (stackpos == stacksize) {
              if (stacksize < 32768) stacksize += 16384;
@@ -708,29 +686,41 @@ vuint32 VoxelData::hollowFill () {
     }
   }
   Z_Free(stack);
-  bmpseen.clear();
   //GCon->Logf(NAME_Debug, "HOLLOWSTACK: %u", stacksize);
+
+  // unmark contour voxels
+  // this is required for proper face removing
+  for (int y = 0; y < (int)ysize; ++y) {
+    for (int x = 0; x < (int)xsize; ++x) {
+      for (vuint32 dofs = getDOfs(x, y); dofs; dofs = data[dofs].nextz) {
+        if (!data[dofs].cull) continue;
+        const int z = (int)data[dofs].z;
+        bmp.resetPixel(x+1, y+1, z+1);
+      }
+    }
+  }
 
   // now check it
   vuint32 changed = 0;
-  for (vint32 y = 0; y < (vint32)ysize; ++y) {
-    for (vint32 x = 0; x < (vint32)xsize; ++x) {
-      for (vuint32 dofs = xyofs[(vuint32)y*xsize+(vuint32)x]; dofs; dofs = data[dofs].nextz) {
+  for (int y = 0; y < (int)ysize; ++y) {
+    for (int x = 0; x < (int)xsize; ++x) {
+      for (vuint32 dofs = getDOfs(x, y); dofs; dofs = data[dofs].nextz) {
         const vuint8 omask = data[dofs].cull;
         if (!omask) continue;
+        data[dofs].cull = 0x3f;
         // check
         const int z = (int)data[dofs].z;
         for (vuint32 cidx = 0; cidx < 6; ++cidx) {
-          // go in this dir, removing the corresponding voxel side
           const vuint8 cmask = cullmask(cidx);
-          if (data[dofs].cull&cmask) {
-            if (!bmp.getPixel(x+cullofs[cidx][0]+1, y+cullofs[cidx][1]+1, z+cullofs[cidx][2]+1)) {
-              // reset this cull bit
-              data[dofs].cull ^= cmask;
-            }
-          }
+          if (!(data[dofs].cull&cmask)) continue;
+          const int nx = x+cullofs[cidx][0];
+          const int ny = y+cullofs[cidx][1];
+          const int nz = z+cullofs[cidx][2];
+          if (bmp.getPixel(nx+1, ny+1, nz+1)) continue;
+          // reset this cull bit
+          data[dofs].cull ^= cmask;
         }
-        if (omask != data[dofs].cull) ++changed;
+        changed += (omask != data[dofs].cull);
       }
     }
   }
@@ -749,27 +739,27 @@ void VoxelData::optimise (bool hollowOpt) {
   #endif
   const vuint32 oldtt = voxpixtotal;
 
-  removeInside();
-  const vuint32 newtt = voxpixtotal;
-  if (oldtt != newtt) {
-    vassert(oldtt > newtt);
-    const vuint32 vdifftt = oldtt-newtt;
-    if (vox_verbose_conversion.asBool()) {
-      GCon->Logf(NAME_Init, "  removed %u interior voxel%s", vdifftt, (vdifftt != 1 ? "s" : ""));
-    }
-  }
-
-  vuint32 count = fixFaceVisibility();
-  if (count) {
-    if (vox_verbose_conversion.asBool()) {
-      GCon->Logf(NAME_Init, "  culling: fixed %u voxel%s", count, (count != 1 ? "s" : ""));
-    }
-  }
-
   if (hollowOpt) {
-    count = hollowFill();
+    const vuint32 count = hollowFill();
     if (count && vox_verbose_conversion.asBool()) {
       GCon->Logf(NAME_Init, "  hollow check fixed %u voxel%s", count, (count != 1 ? "s" : ""));
+    }
+  } else {
+    removeInside();
+    const vuint32 newtt = voxpixtotal;
+    if (oldtt != newtt) {
+      vassert(oldtt > newtt);
+      const vuint32 vdifftt = oldtt-newtt;
+      if (vox_verbose_conversion.asBool()) {
+        GCon->Logf(NAME_Init, "  removed %u interior voxel%s", vdifftt, (vdifftt != 1 ? "s" : ""));
+      }
+    }
+
+    const vuint32 count = fixFaceVisibility();
+    if (count) {
+      if (vox_verbose_conversion.asBool()) {
+        GCon->Logf(NAME_Init, "  culling: fixed %u voxel%s", count, (count != 1 ? "s" : ""));
+      }
     }
   }
 
@@ -1343,10 +1333,10 @@ void VoxelMesh::buildOpt3 (VoxelData &vox, bool pivotz) {
 void VoxelMesh::buildFrom (VoxelData &vox, bool pivotz) {
   vassert(vox.xsize && vox.ysize && vox.zsize);
   // now build cubes
-       if (kvx_optimized.asInt() <= 0) buildOpt0(vox, pivotz);
-  else if (kvx_optimized.asInt() <= 1) buildOpt1(vox, pivotz);
-  else if (kvx_optimized.asInt() <= 2) buildOpt2(vox, pivotz);
-  else /*if (kvx_optimized.asInt() <= 3)*/ buildOpt3(vox, pivotz);
+       if (vox_optimisation.asInt() <= 0) buildOpt0(vox, pivotz);
+  else if (vox_optimisation.asInt() <= 1) buildOpt1(vox, pivotz);
+  else if (vox_optimisation.asInt() <= 2) buildOpt2(vox, pivotz);
+  else /*if (vox_optimisation.asInt() <= 3)*/ buildOpt3(vox, pivotz);
   vassert(maxColorRun <= 1024);
   cx = vox.cx;
   cy = vox.cy;
@@ -1365,10 +1355,12 @@ struct GLVoxMeshColorItem {
 
 struct GLVoxelMesh {
   TArray<VVoxVertexEx> vertices;
-  TArray<vuint32> indicies;
+  TArray<vuint32> indicies; // triangle fans
   vuint32 uniqueVerts;
 
   TMapNC<VVoxVertexEx, vuint32> vertcache;
+  float vmin[3]; // minimum vertex coords
+  float vmax[3]; // maximum vertex coords
 
   // color texture size
   vuint32 imgWidth, imgHeight;
@@ -1387,6 +1379,61 @@ private:
   vuint32 appendRun (const vuint32 *run, vuint32 clen);
   vuint32 appendVertex (const VVoxVertexEx &gv);
 
+private:
+  enum {
+    AXIS_X = 0,
+    AXIS_Y = 1,
+    AXIS_Z = 2,
+  };
+
+  struct VoxNewEdge {
+    vuint32 idx;
+    float time;
+  };
+
+  struct VoxEdge {
+    vuint32 v0, v1; // start and end vertex
+    float dir; // by the axis, not normalized
+    float clo, chi; // low and high coords
+    TArray<VoxNewEdge> moreverts; // added vertices
+    int nextg; // next in this grid coord
+    vuint8 axis; // AXIS_n
+    vuint8 unitquad; // set if this is "unit quad"
+  };
+
+  TArray<VoxEdge> edges;
+  vuint32 totaltadded;
+
+  /*
+    put each edge into a 3d grid, using v0
+    v0 is enough, because previous edge v1 is guaranteed to be the next edge v0
+   */
+  TArray<int> grid3d;
+  int gridmin[3];
+  int gridmax[3];
+  vuint32 gridxsz;
+  vuint32 gridxysz;
+
+  VVA_FORCEINLINE int gridFirstEdge (float x, float y, float z) const noexcept {
+    const int vx = (int)x;
+    const int vy = (int)y;
+    const int vz = (int)z;
+    vassert(vx >= gridmin[0] && vy >= gridmin[1] && vz >= gridmin[2]);
+    vassert(vx <= gridmax[0] && vy <= gridmax[1] && vz <= gridmax[2]);
+    const int gofs = (vz-gridmin[2])*gridxysz+(vy-gridmin[1])*gridxsz+(vx-gridmin[0]);
+    return grid3d[gofs];
+  }
+
+  // returns number of unit quads
+  int createEdges ();
+  void sortEdges ();
+  void freeSortStructs ();
+  void fixEdgeWithEdge (vuint32 eidx, vuint32 e2idx);
+  void fixEdgeNew (vuint32 eidx);
+  void rebuildEdges ();
+  void recreateTriangles (TArray<VMeshTri> &Tris);
+  void fixTJunctions (TArray<VMeshTri> &Tris);
+
 public:
   inline GLVoxelMesh () noexcept
     : vertices()
@@ -1400,12 +1447,16 @@ public:
     , citems()
     , citemhash()
     , uniqueRuns(0)
-  {}
+  {
+    // our voxels are 1024x1024x1024 at max
+    vmin[0] = vmin[1] = vmin[2] = +8192.0f;
+    vmax[0] = vmax[1] = vmax[2] = -8192.0f;
+  }
 
   inline ~GLVoxelMesh () { clear(); }
 
   void clear ();
-  void create (VoxelMesh &vox);
+  void create (VoxelMesh &vox, TArray<VMeshTri> &Tris);
 };
 
 
@@ -1507,6 +1558,14 @@ vuint32 GLVoxelMesh::appendVertex (const VVoxVertexEx &gv) {
   const vuint32 res = (vuint32)vertices.length();
   vertices.append(gv);
   vertcache.put(gv, res);
+  // fix min coords
+  if (vmin[0] > gv.x) vmin[0] = gv.x;
+  if (vmin[1] > gv.y) vmin[1] = gv.y;
+  if (vmin[2] > gv.z) vmin[2] = gv.z;
+  // fix max coords
+  if (vmax[0] < gv.x) vmax[0] = gv.x;
+  if (vmax[1] < gv.y) vmax[1] = gv.y;
+  if (vmax[2] < gv.z) vmax[2] = gv.z;
   return res;
 }
 
@@ -1527,6 +1586,367 @@ void GLVoxelMesh::clear () {
   citems.clear();
   citemhash.clear();
   uniqueRuns = 0;
+  // our voxels are 1024x1024x1024 at max
+  vmin[0] = vmin[1] = vmin[2] = +8192.0f;
+  vmax[0] = vmax[1] = vmax[2] = -8192.0f;
+}
+
+
+//==========================================================================
+//
+//  GLVoxelMesh::createEdges
+//
+//  create list of edges
+//
+//  returns number of unit quads
+//
+//==========================================================================
+int GLVoxelMesh::createEdges () {
+  totaltadded = 0;
+  edges.setLength(indicies.length()/5*4); // one quad is 4 edges
+  vuint32 eidx = 0;
+  int uqcount = 0;
+  for (vuint32 f = 0; f < (vuint32)indicies.length(); f += 5) {
+    bool unitquad = true;
+    for (vuint32 vx0 = 0; vx0 < 4; ++vx0) {
+      const vuint32 vx1 = (vx0+1)&3;
+      VoxEdge &e = edges[eidx++];
+      e.v0 = indicies[f+vx0];
+      e.v1 = indicies[f+vx1];
+      //e.qedge = cast(ubyte)vx0;
+      e.unitquad = 0;
+      if (vertices[e.v0].x != vertices[e.v1].x) {
+        vassert(vertices[e.v0].y == vertices[e.v1].y);
+        vassert(vertices[e.v0].z == vertices[e.v1].z);
+        e.axis = AXIS_X;
+      } else if (vertices[e.v0].y != vertices[e.v1].y) {
+        vassert(vertices[e.v0].x == vertices[e.v1].x);
+        vassert(vertices[e.v0].z == vertices[e.v1].z);
+        e.axis = AXIS_Y;
+      } else {
+        vassert(vertices[e.v0].x == vertices[e.v1].x);
+        vassert(vertices[e.v0].y == vertices[e.v1].y);
+        vassert(vertices[e.v0].z != vertices[e.v1].z);
+        e.axis = AXIS_Z;
+      }
+      e.clo = vertices[e.v0].get(e.axis);
+      e.chi = vertices[e.v1].get(e.axis);
+      e.dir = e.chi-e.clo;
+      if (e.clo > e.chi) { const float tmp = e.clo; e.clo = e.chi; e.chi = tmp; }
+      vassert(e.clo < e.chi);
+      if (unitquad) unitquad = (e.dir == +1.0f || e.dir == -1.0f);
+    }
+    // "unit quads" can be ignored, they aren't interesting
+    // also, each quad always have at least one "unit edge"
+    // (this will be used to build triangle strips)
+    if (unitquad) {
+      ++uqcount;
+      for (vuint32 vx0 = 0; vx0 < 4; ++vx0) edges[eidx-vx0-1].unitquad = 1;
+    }
+  }
+  vassert(eidx == (vuint32)edges.length());
+  return uqcount;
+}
+
+
+//==========================================================================
+//
+//  GLVoxelMesh::sortEdges
+//
+//  create 3d grid, put edges into it
+//
+//==========================================================================
+void GLVoxelMesh::sortEdges () {
+  // create the grid
+  for (vuint32 f = 0; f < 3; ++f) {
+    gridmin[f] = (int)vmin[f];
+    gridmax[f] = (int)vmax[f];
+  }
+  const vuint32 gxs = (vuint32)(gridmax[0]-gridmin[0]+1);
+  const vuint32 gys = (vuint32)(gridmax[1]-gridmin[1]+1);
+  const vuint32 gzs = (vuint32)(gridmax[2]-gridmin[2]+1);
+  gridxsz = gxs;
+  gridxysz = gridxsz*gys;
+  grid3d.setLength(gridxysz*gzs);
+  for (int f = 0; f < grid3d.length(); ++f) grid3d[f] = -1;
+
+  // put edges into the grid
+  for (int f = 0; f < edges.length(); ++f) {
+    const int vx = (int)vertices[edges[f].v0].x;
+    const int vy = (int)vertices[edges[f].v0].y;
+    const int vz = (int)vertices[edges[f].v0].z;
+    vassert(vx >= gridmin[0] && vy >= gridmin[1] && vz >= gridmin[2]);
+    vassert(vx <= gridmax[0] && vy <= gridmax[1] && vz <= gridmax[2]);
+    const vuint32 gofs = (vz-gridmin[2])*gridxysz+(vy-gridmin[1])*gridxsz+(vx-gridmin[0]);
+    edges[f].nextg = grid3d[gofs];
+    grid3d[gofs] = f;
+  }
+}
+
+
+//==========================================================================
+//
+//  GLVoxelMesh::freeSortStructs
+//
+//==========================================================================
+void GLVoxelMesh::freeSortStructs () {
+  grid3d.clear();
+}
+
+
+//==========================================================================
+//
+//  GLVoxelMesh::fixEdgeWithEdge
+//
+//==========================================================================
+void GLVoxelMesh::fixEdgeWithEdge (vuint32 eidx, vuint32 e2idx) {
+  if (e2idx == eidx) return;
+  VoxEdge &edge = edges[eidx];
+  if (edge.unitquad) return; // nothing to do here
+  if (edge.dir == +1.0f || edge.dir == -1.0f) return; // and here
+  VoxEdge &e2 = edges[e2idx];
+  // same axis? (not interesting)
+  if (e2.axis == edge.axis) return;
+  VVoxVertexEx evx0 = vertices[edge.v0];
+  VVoxVertexEx evx1 = vertices[edge.v1];
+  for (vuint32 e2vi = 0; e2vi <= 1; ++e2vi) {
+    VVoxVertexEx e2vx = vertices[e2vi ? e2.v1 : e2.v0];
+    bool needInsert = true;
+    for (int aci = 0; aci < 3; ++aci) {
+      if (aci == edge.axis) {
+        needInsert = (e2vx.get(aci) > edge.clo && e2vx.get(aci) < edge.chi);
+      } else {
+        needInsert = (e2vx.get(aci) == evx0.get(aci));
+      }
+      if (!needInsert) break;
+    }
+    if (!needInsert) continue;
+    for (int eci = 0; eci < edge.moreverts.length(); ++eci) {
+      if (vertices[edge.moreverts[eci].idx].xyzEqu(e2vx)) {
+        needInsert = false;
+        break;
+      }
+    }
+    if (!needInsert) continue;
+    // ok, need to append a new one
+    VVoxVertexEx nvx = e2vx;
+    // copy normal
+    nvx.nx = evx0.nx;
+    nvx.ny = evx0.ny;
+    nvx.nz = evx0.nz;
+    // calc new (s,t)
+    const float tm = (e2vx.get(edge.axis)-evx0.get(edge.axis))/edge.dir;
+    nvx.s = (evx0.s == evx1.s ? evx1.s : evx0.s+(evx1.s-evx0.s)*tm);
+    nvx.t = (evx0.t == evx1.t ? evx1.t : evx0.t+(evx1.t-evx0.t)*tm);
+    const vuint32 nv = appendVertex(nvx);
+    vuint32 insbefore = 0;
+    while (insbefore < (vuint32)edge.moreverts.length()) {
+      if (tm > edge.moreverts[insbefore].time) ++insbefore; else break;
+    }
+    edge.moreverts.setLengthReserve(edge.moreverts.length()+1);
+    for (vuint32 c = (vuint32)edge.moreverts.length()-1U; c > insbefore; --c) {
+      edge.moreverts[c] = edge.moreverts[c-1];
+    }
+    edge.moreverts[insbefore].idx = nv;
+    edge.moreverts[insbefore].time = tm;
+    ++totaltadded;
+  }
+}
+
+
+//==========================================================================
+//
+//  GLVoxelMesh::fixEdgeNew
+//
+//  fix one edge
+//
+//==========================================================================
+void GLVoxelMesh::fixEdgeNew (vuint32 eidx) {
+  VoxEdge &edge = edges[eidx];
+  if (edge.unitquad) return; // nothing to do here
+  if (edge.dir == +1.0f || edge.dir == -1.0f) return; // and here
+  // check grid by the edge axis
+  float gxyz[3];
+  for (vuint32 f = 0; f < 3; ++f) gxyz[f] = vertices[edge.v0].get(f);
+  const float end = vertices[edge.v1].get(edge.axis);
+  float step = (edge.dir < 0.0f ? -1.0f : +1.0f);
+  gxyz[edge.axis] += step;
+  while (gxyz[edge.axis] != end) {
+    // check edges at this grid point
+    // we have to check both the actual edge, and it's previous one (in the quad)
+    int e2idx = gridFirstEdge(gxyz[0], gxyz[1], gxyz[2]);
+    while (e2idx >= 0) {
+      vuint32 e2 = (vuint32)e2idx;
+      fixEdgeWithEdge(eidx, e2);
+      // quad starting edge
+      const vuint32 qidx = e2&~3U;
+      // convert to relative number of the prev edge
+      e2 = ((e2&3)+1)&3;
+      fixEdgeWithEdge(eidx, qidx+e2);
+      // next edge in the grid node
+      e2idx = edges[(vuint32)e2idx].nextg;
+    }
+    gxyz[edge.axis] += step;
+  }
+}
+
+
+//==========================================================================
+//
+//  GLVoxelMesh::rebuildEdges
+//
+//==========================================================================
+void GLVoxelMesh::rebuildEdges () {
+  // now we have to rebuild quads
+  // each quad will have at least two unmodified edges of unit length
+  vuint32 newindcount = (vuint32)edges.length()*2;
+  for (vuint32 f = 0; f < (vuint32)edges.length(); ++f) {
+    newindcount += (vuint32)edges[f].moreverts.length()+2;
+  }
+  indicies.setLength(newindcount);
+
+  /* the stupid algo is:
+      find modified quad edge
+      get the next one -- it is guaranteed to be unit-length
+      create triangle fan using the non-shared next edge vertex as the starting one
+   */
+  newindcount = 0;
+  for (vuint32 f = 0; f < (vuint32)edges.length(); f += 4) {
+    // check if this quad is modified at all
+    if (edges[f+0].moreverts.length() ||
+        edges[f+1].moreverts.length() ||
+        edges[f+2].moreverts.length() ||
+        edges[f+3].moreverts.length())
+    {
+      for (vuint32 eic = 0; eic < 4; ++eic) {
+        if (!edges[f+eic].moreverts.length()) continue;
+        const vuint32 oic = (eic+3)&3; // previous edge
+        // sanity checks
+        vassert(edges[f+oic].moreverts.length() == 0);
+        for (vuint32 tmpf = 1; tmpf < (vuint32)edges[f+eic].moreverts.length(); ++tmpf) {
+          vassert(edges[f+eic].moreverts[tmpf-1].time < edges[f+eic].moreverts[tmpf].time);
+        }
+        vassert(edges[f+oic].v1 == edges[f+eic].v0);
+        // create triangle fan
+        indicies[newindcount++] = edges[f+oic].v0;
+        indicies[newindcount++] = edges[f+eic].v0;
+        // append additional vertices (they are already properly sorted)
+        for (vuint32 tmpf = 0; tmpf < (vuint32)edges[f+eic].moreverts.length(); ++tmpf) {
+          indicies[newindcount++] = edges[f+eic].moreverts[tmpf].idx;
+        }
+        // and the last vertex
+        indicies[newindcount++] = edges[f+eic].v1;
+        // if the opposite side is not modified, we can finish the fan right now
+        const vuint32 loic = (eic+2)&3;
+        if (edges[f+loic].moreverts.length() == 0) {
+          const vuint32 noic = (eic+1)&3;
+          // oic: prev
+          // eic: current
+          // noic: next
+          // loic: last
+          indicies[newindcount++] = edges[f+noic].v1;
+          indicies[newindcount++] = BreakIndex;
+          // we're done here
+          break;
+        }
+        indicies[newindcount++] = BreakIndex;
+      }
+    } else {
+      // easy deal, just copy it
+      indicies[newindcount++] = edges[f+0].v0;
+      indicies[newindcount++] = edges[f+1].v0;
+      indicies[newindcount++] = edges[f+2].v0;
+      indicies[newindcount++] = edges[f+3].v0;
+      indicies[newindcount++] = BreakIndex;
+    }
+  }
+
+  indicies.setLength(newindcount);
+  indicies.condense();
+}
+
+
+//==========================================================================
+//
+//  GLVoxelMesh::recreateTriangles
+//
+//==========================================================================
+void GLVoxelMesh::recreateTriangles (TArray<VMeshTri> &Tris) {
+  Tris.clear();
+  int ind = 0;
+  while (ind < indicies.length()) {
+    vassert(indicies[ind] != BreakIndex);
+    int end = ind+1;
+    while (end < indicies.length() && indicies[end] != BreakIndex) ++end;
+    vassert(end < indicies.length());
+    vassert(end-ind >= 3);
+    if (end-ind == 3) {
+      // simple triangle
+      VMeshTri &tri = Tris.alloc();
+      tri.VertIndex[0] = indicies[ind+0];
+      tri.VertIndex[1] = indicies[ind+1];
+      tri.VertIndex[2] = indicies[ind+2];
+    } else if (end-ind == 4) {
+      // quad
+      VMeshTri &tri0 = Tris.alloc();
+      tri0.VertIndex[0] = indicies[ind+0];
+      tri0.VertIndex[1] = indicies[ind+1];
+      tri0.VertIndex[2] = indicies[ind+2];
+
+      VMeshTri &tri1 = Tris.alloc();
+      tri1.VertIndex[0] = indicies[ind+2];
+      tri1.VertIndex[1] = indicies[ind+3];
+      tri1.VertIndex[2] = indicies[ind+0];
+    } else {
+      // triangle fan
+      for (int f = ind+1; f < end-1; ++f) {
+        VMeshTri &tri = Tris.alloc();
+        tri.VertIndex[0] = indicies[ind+0];
+        tri.VertIndex[1] = indicies[f+0];
+        tri.VertIndex[2] = indicies[f+1];
+      }
+    }
+    ind = end+1;
+  }
+  Tris.condense();
+}
+
+
+//==========================================================================
+//
+//  GLVoxelMesh::fixTJunctions
+//
+//  t-junction fixer
+//  this will also convert vertex data to triangle strips
+//
+//==========================================================================
+void GLVoxelMesh::fixTJunctions (TArray<VMeshTri> &Tris) {
+  const int oldvtotal = vertices.length();
+  const int uqcount = createEdges();
+  if (vox_verbose_conversion) {
+    GCon->Logf(NAME_Init, "  %d edges found (%d unit quad%s) (%d tris, %d verts)...",
+               edges.length(), uqcount, (uqcount != 1 ? "s" : ""),
+               edges.length()/2, vertices.length());
+  }
+  sortEdges();
+  for (vuint32 f = 0; f < (vuint32)edges.length(); ++f) fixEdgeNew(f);
+  freeSortStructs();
+  if (totaltadded) {
+    if (vox_verbose_conversion) {
+      GCon->Logf(NAME_Init, "  %d t-fix vertices added (%d unique).",
+                 totaltadded, vertices.length()-oldvtotal);
+    }
+    rebuildEdges();
+    recreateTriangles(Tris);
+    if (vox_verbose_conversion) {
+      GCon->Logf(NAME_Init, "  rebuilt model (tjfix): %d tris, %d vertices.",
+        Tris.length(), vertices.length());
+    }
+  }
+
+  // cleanup
+  for (int f = 0; f < edges.length(); ++f) edges[f].moreverts.clear();
+  edges.clear();
 }
 
 
@@ -1535,7 +1955,7 @@ void GLVoxelMesh::clear () {
 //  GLVoxelMesh::create
 //
 //==========================================================================
-void GLVoxelMesh::create (VoxelMesh &vox) {
+void GLVoxelMesh::create (VoxelMesh &vox, TArray<VMeshTri> &Tris) {
   vassert(vox.maxColorRun > 0);
   vassert(vox.maxColorRun <= 1024);
   clear();
@@ -1557,8 +1977,11 @@ void GLVoxelMesh::create (VoxelMesh &vox) {
     vq.imgidx = appendRun(vox.colors.ptr()+vq.cidx, vq.clen);
   }
 
+  //Tris.setLength(vox.quads.length()*2);
+
   // create arrays
-  for (int f = 0; f < vox.quads.length(); ++f) {
+  int triidx = 0;
+  for (int f = 0; f < vox.quads.length(); ++f, triidx += 2) {
     VoxelMesh::VoxQuad &vq = vox.quads[f];
     const vuint32 imgx0 = vq.imgidx%imgWidth;
     const vuint32 imgx1 = imgx0+vq.clen-1;
@@ -1594,11 +2017,25 @@ void GLVoxelMesh::create (VoxelMesh &vox) {
       vxn[nidx] = appendVertex(gv);
     }
 
+    /*
+    // triangles
+    VMeshTri &tri0 = Tris[triidx+0];
+    tri0.VertIndex[0] = vxn[0];
+    tri0.VertIndex[1] = vxn[1];
+    tri0.VertIndex[2] = vxn[2];
+
+    VMeshTri &tri1 = Tris[triidx+1];
+    tri1.VertIndex[0] = vxn[2];
+    tri1.VertIndex[1] = vxn[3];
+    tri1.VertIndex[2] = vxn[0];
+    */
+
+    // triangle fans
     indicies.append(vxn[0]);
     indicies.append(vxn[1]);
     indicies.append(vxn[2]);
     indicies.append(vxn[3]);
-    //indicies.append(65535);
+    indicies.append(BreakIndex);
   }
 
   // fix image colors (sorry)
@@ -1609,6 +2046,12 @@ void GLVoxelMesh::create (VoxelMesh &vox) {
     vuint8 b2 = ip[2];
     ip[0] = b2;
     ip[2] = b0;
+  }
+
+  if (vox_fix_tjunctions) {
+    fixTJunctions(Tris);
+  } else {
+    recreateTriangles(Tris);
   }
 }
 
@@ -1757,7 +2200,7 @@ static bool loadKV6 (VStream &st, VoxelData &vox) {
     return false;
   }
 
-  TArray<KVox> kvox;// = new KVox[](voxcount);
+  TArray<KVox> kvox;
   kvox.setLength(voxcount);
   for (vint32 vidx = 0; vidx < voxcount; ++vidx) {
     KVox &kv = kvox[vidx];
@@ -1868,7 +2311,12 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
       vint32 optlevel = -1;
       if (ok) {
         *strm << optlevel;
-        if (ok && optlevel != kvx_optimized.asInt()) ok = false;
+        if (ok && optlevel != vox_optimisation.asInt()) ok = false;
+      }
+      vint32 tjunk = -1;
+      if (ok) {
+        *strm << tjunk;
+        if (ok && (tjunk < 0 || tjunk > 1 || vox_fix_tjunctions.asBool() != tjunk)) ok = false;
       }
       if (ok) {
         VZLibStreamReader *zstrm = new VZLibStreamReader(true, strm);
@@ -1919,37 +2367,28 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
       ok = loadKVX(memst, vox);
     }
     if (!ok || memst.IsError()) Sys_Error("cannot load voxel model '%s'", *this->Name);
-    vox.optimise(kvx_optimized.asInt() > 3);
+    vox.optimise(vox_optimisation.asInt() > 3);
 
     VoxelMesh vmesh;
     vmesh.buildFrom(vox, useVoxelPivotZ);
     vox.clear();
 
-    glvmesh.create(vmesh);
+    glvmesh.create(vmesh, Tris);
     vmesh.clear();
 
     if (vox_verbose_conversion.asBool()) {
       GCon->Logf(NAME_Init, "voxel model '%s': %d unique vertices, %d triangles, %dx%d color texture; optlevel=%d",
-                 *this->Name, glvmesh.vertices.length(), glvmesh.indicies.length()/4*2,
-                 (int)glvmesh.imgWidth, (int)glvmesh.imgHeight, kvx_optimized.asInt());
+                 *this->Name, glvmesh.vertices.length(), Tris.length(),
+                 (int)glvmesh.imgWidth, (int)glvmesh.imgHeight, vox_optimisation.asInt());
 
     }
   }
+
   if (glvmesh.indicies.length() == 0) Sys_Error("cannot load empty voxel model '%s'", *this->Name);
-  if (glvmesh.indicies.length()%4 != 0) Sys_Error("internal error converting voxel model '%s'", *this->Name);
 
   if (glvmesh.vertices.length() > 65534) {
     GCon->Logf(NAME_Init, "3d model for voxel '%s' has too many vertices", *this->Name);
   }
-
-  for (int f = 0; f < glvmesh.indicies.length(); ++f) {
-    const int vidx = glvmesh.indicies[f];
-    if (vidx < 0 || vidx >= glvmesh.vertices.length()) {
-      Sys_Error("internal error loading voxel model '%s' (vertex index %d is out of range)", *this->Name, f);
-    }
-  }
-
-  //vox.createColorTexture(this->Name);
 
   // skins
   {
@@ -1980,35 +2419,10 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
     STVerts[f].T = glvmesh.vertices[f].t;
   }
 
-  // quads -> triangles
-  // also create triangle strips
-  Tris.setLength(glvmesh.indicies.length()/4*2);
+  const int ilen = glvmesh.indicies.length();
   GlMode = GlTriangleFan;
-  TriVerts.setLength(glvmesh.indicies.length()/4*5);
-  int triidx = 0;
-  int tvxidx = 0;
-  for (int qidx = 0; qidx < glvmesh.indicies.length(); qidx += 4) {
-    const int vx0 = glvmesh.indicies[qidx+0];
-    const int vx1 = glvmesh.indicies[qidx+1];
-    const int vx2 = glvmesh.indicies[qidx+2];
-    const int vx3 = glvmesh.indicies[qidx+3];
-
-    VMeshTri &tri0 = Tris[triidx+0];
-    tri0.VertIndex[0] = vx0;
-    tri0.VertIndex[1] = vx1;
-    tri0.VertIndex[2] = vx2;
-
-    VMeshTri &tri1 = Tris[triidx+1];
-    tri1.VertIndex[0] = vx2;
-    tri1.VertIndex[1] = vx3;
-    tri1.VertIndex[2] = vx0;
-
-    TriVerts[tvxidx++] = vx0;
-    TriVerts[tvxidx++] = vx1;
-    TriVerts[tvxidx++] = vx2;
-    TriVerts[tvxidx++] = vx3;
-    TriVerts[tvxidx++] = 65535; // primitive break
-  }
+  TriVerts.setLength(glvmesh.indicies.length());
+  for (int f = 0; f < ilen; ++f) TriVerts[f] = glvmesh.indicies[f];
 
   glvmesh.clear();
 
@@ -2036,8 +2450,10 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
           if (vox_verbose_conversion.asBool()) GCon->Logf(NAME_Init, "...writing cache to '%s'...", *ccname);
       strm->Serialise(VOX_CACHE_SIGNATURE, (int)strlen(VOX_CACHE_SIGNATURE));
       *strm << this->Name;
-      vint32 optlevel = kvx_optimized.asInt();
+      vint32 optlevel = vox_optimisation.asInt();
       *strm << optlevel;
+      vint32 tjunk = (vox_fix_tjunctions.asBool() ? 1 : 0);
+      *strm << tjunk;
       VZLibStreamWriter *zstrm = new VZLibStreamWriter(strm, vox_cache_compression_level.asInt());
       Save_KVXCache(zstrm);
       bool ok = !zstrm->IsError();

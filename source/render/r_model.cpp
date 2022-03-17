@@ -453,6 +453,7 @@ static VMeshModel *Mod_FindMeshModel (VStr filename, VStr name, int meshIndex,
   mod->loaded = false;
   mod->isVoxel = isVoxel;
   mod->useVoxelPivotZ = useVoxelPivotZ;
+  mod->GlMode = VMeshModel::GlNone;
   GMeshModels.Append(mod);
 
   return mod;

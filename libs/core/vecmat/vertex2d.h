@@ -114,8 +114,20 @@ struct VVoxVertexEx {
       nx == b.nx && ny == b.ny && nz == b.nz;
   }
 
-  inline TVec asTVec () const noexcept { return TVec(x, y, z); }
-  inline TVec normalAsTVec () const noexcept { return TVec(nx, ny, nz); }
+  VVA_FORCEINLINE TVec asTVec () const noexcept { return TVec(x, y, z); }
+  VVA_FORCEINLINE TVec normalAsTVec () const noexcept { return TVec(nx, ny, nz); }
+
+  VVA_FORCEINLINE bool xyzEqu (const VVoxVertexEx &vx) const noexcept {
+    return (x == vx.x && y == vx.y && z == vx.z);
+  }
+
+  VVA_FORCEINLINE float get (unsigned idx) const noexcept{
+    return (idx == 0 ? x : idx == 1 ? y : z);
+  }
+
+  VVA_FORCEINLINE void set (unsigned idx, const float v) noexcept{
+    if (idx == 0) x = v; else if (idx == 1) y = v; else z = v;
+  }
 };
 
 VVA_FORCEINLINE VVA_PURE uint32_t GetTypeHash (const VVoxVertexEx &vi) noexcept {
