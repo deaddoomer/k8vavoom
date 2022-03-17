@@ -1409,16 +1409,11 @@ private:
     AXIS_Z = 2,
   };
 
-  struct VoxNewEdge {
-    vuint32 idx;
-    float time;
-  };
-
   struct VoxEdge {
     vuint32 v0, v1; // start and end vertex
     float dir; // by the axis, not normalized
     float clo, chi; // low and high coords
-    TArray<VoxNewEdge> moreverts; // added vertices
+    TArray<vuint32> moreverts; // added vertices
     vuint8 axis; // AXIS_n
   };
 
@@ -1438,9 +1433,9 @@ private:
   VVA_FORCEINLINE void gridCoords (float fx, float fy, float fz,
                                    int *gx, int *gy, int *gz) const noexcept
   {
-    int vx = (int)fx;
-    int vy = (int)fy;
-    int vz = (int)fz;
+    const int vx = (int)fx;
+    const int vy = (int)fy;
+    const int vz = (int)fz;
     vassert(vx >= gridmin[0] && vy >= gridmin[1] && vz >= gridmin[2]);
     vassert(vx <= gridmax[0] && vy <= gridmax[1] && vz <= gridmax[2]);
     *gx = vx-gridmin[0];
@@ -1479,7 +1474,7 @@ private:
 
   // returns number of unit quads
   int createEdges ();
-  void fixEdgeWithVert (VoxEdge &edge, float fx, float fy, float fz);
+  void fixEdgeWithVert (VoxEdge &edge, float crd);
   void fixEdgeNew (vuint32 eidx);
   void rebuildEdges ();
   void fixTJunctions ();
@@ -1655,9 +1650,9 @@ void GLVoxelMesh::createGrid () {
     gridmin[f] = (int)vmin[f];
     gridmax[f] = (int)vmax[f];
   }
-  unsigned gxs = (unsigned)(gridmax[0]-gridmin[0]+1);
-  unsigned gys = (unsigned)(gridmax[1]-gridmin[1]+1);
-  unsigned gzs = (unsigned)(gridmax[2]-gridmin[2]+1);
+  const unsigned gxs = (unsigned)(gridmax[0]-gridmin[0]+1);
+  const unsigned gys = (unsigned)(gridmax[1]-gridmin[1]+1);
+  const unsigned gzs = (unsigned)(gridmax[2]-gridmin[2]+1);
   gridbmp.setSize(gxs, gys, gzs);
 }
 
@@ -1700,8 +1695,6 @@ int GLVoxelMesh::createEdges () {
       e.clo = vertices[e.v0].get(e.axis);
       e.chi = vertices[e.v1].get(e.axis);
       e.dir = e.chi-e.clo;
-      if (e.clo > e.chi) { const float tmp = e.clo; e.clo = e.chi; e.chi = tmp; }
-      vassert(e.clo < e.chi);
       if (unitquad) unitquad = (e.dir == +1.0f || e.dir == -1.0f);
     }
     // "unit quads" can be ignored, they aren't interesting
@@ -1719,61 +1712,21 @@ int GLVoxelMesh::createEdges () {
 //  GLVoxelMesh::fixEdgeWithVert
 //
 //==========================================================================
-void GLVoxelMesh::fixEdgeWithVert (VoxEdge &edge, float fx, float fy, float fz) {
-  // sanity check
-  const float crd = (edge.axis == AXIS_X ? fx : edge.axis == AXIS_Y ? fy : fz);
-  vassert(crd > edge.clo && crd < edge.chi);
-  for (unsigned axi = 0; axi < 3; ++axi) {
-    if (axi == edge.axis) continue;
-    switch (axi) {
-      case AXIS_X:
-        assert(vertices[edge.v0].x == vertices[edge.v1].x);
-        assert(fx == vertices[edge.v0].x);
-        break;
-      case AXIS_Y:
-        assert(vertices[edge.v0].y == vertices[edge.v1].y);
-        assert(fy == vertices[edge.v0].y);
-        break;
-      case AXIS_Z:
-        assert(vertices[edge.v0].z == vertices[edge.v1].z);
-        assert(fz == vertices[edge.v0].z);
-        break;
-      default: __builtin_trap();
-    }
-  }
-  for (int eci = 0; eci < edge.moreverts.length(); ++eci) {
-    const VVoxVertexEx &gv = vertices[edge.moreverts[eci].idx];
-    if (gv.x == fx && gv.y == fy && gv.z == fz) return;
-  }
-  // ok, need to append a new one
+void GLVoxelMesh::fixEdgeWithVert (VoxEdge &edge, float crd) {
+  // calculate time
+  const float tm = (crd-edge.clo)/edge.dir;
+
   const VVoxVertexEx &evx0 = vertices[edge.v0];
   const VVoxVertexEx &evx1 = vertices[edge.v1];
 
-  VVoxVertexEx nvx;
-  // set coords
-  nvx.x = fx;
-  nvx.y = fy;
-  nvx.z = fz;
-  // copy normal
-  nvx.nx = evx0.nx;
-  nvx.ny = evx0.ny;
-  nvx.nz = evx0.nz;
+  VVoxVertexEx nvx = evx0;
+  // set coord
+  nvx.set(edge.axis, crd);
   // calc new (s,t)
-  const float tm = (nvx.get(edge.axis)-evx0.get(edge.axis))/edge.dir;
-  nvx.s = (evx0.s == evx1.s ? evx1.s : evx0.s+(evx1.s-evx0.s)*tm);
-  nvx.t = (evx0.t == evx1.t ? evx1.t : evx0.t+(evx1.t-evx0.t)*tm);
+  nvx.s += (evx1.s-evx0.s)*tm;
+  nvx.t += (evx1.t-evx0.t)*tm;
 
-  const vuint32 nv = appendVertex(nvx);
-  int insbefore = 0;
-  while (insbefore < edge.moreverts.length()) {
-    if (tm > edge.moreverts[insbefore].time) ++insbefore; else break;
-  }
-  edge.moreverts.setLengthReserve(edge.moreverts.length()+1);
-  for (int c = edge.moreverts.length()-1; c > insbefore; --c) {
-    edge.moreverts[c] = edge.moreverts[c-1];
-  }
-  edge.moreverts[insbefore].idx = nv;
-  edge.moreverts[insbefore].time = tm;
+  edge.moreverts.append(appendVertex(nvx));
   ++totaltadded;
 }
 
@@ -1791,12 +1744,11 @@ void GLVoxelMesh::fixEdgeNew (vuint32 eidx) {
   // check grid by the edge axis
   float gxyz[3];
   for (unsigned f = 0; f < 3; ++f) gxyz[f] = vertices[edge.v0].get(f);
-  const float end = vertices[edge.v1].get(edge.axis);
   const float step = (edge.dir < 0.0f ? -1.0f : +1.0f);
   gxyz[edge.axis] += step;
-  while (gxyz[edge.axis] != end) {
+  while (gxyz[edge.axis] != edge.chi) {
     if (hasVertexAt(gxyz[0], gxyz[1], gxyz[2])) {
-      fixEdgeWithVert(edge, gxyz[0], gxyz[1], gxyz[2]);
+      fixEdgeWithVert(edge, gxyz[edge.axis]);
     }
     gxyz[edge.axis] += step;
   }
@@ -1835,16 +1787,13 @@ void GLVoxelMesh::rebuildEdges () {
         const vuint32 oic = (eic+3)&3; // previous edge
         // sanity checks
         vassert(edges[f+oic].moreverts.length() == 0);
-        for (vuint32 tmpf = 1; tmpf < (vuint32)edges[f+eic].moreverts.length(); ++tmpf) {
-          vassert(edges[f+eic].moreverts[tmpf-1].time < edges[f+eic].moreverts[tmpf].time);
-        }
         vassert(edges[f+oic].v1 == edges[f+eic].v0);
         // create triangle fan
         indicies[newindcount++] = edges[f+oic].v0;
         indicies[newindcount++] = edges[f+eic].v0;
         // append additional vertices (they are already properly sorted)
         for (vuint32 tmpf = 0; tmpf < (vuint32)edges[f+eic].moreverts.length(); ++tmpf) {
-          indicies[newindcount++] = edges[f+eic].moreverts[tmpf].idx;
+          indicies[newindcount++] = edges[f+eic].moreverts[tmpf];
         }
         // and the last vertex
         indicies[newindcount++] = edges[f+eic].v1;
