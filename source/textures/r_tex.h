@@ -224,7 +224,7 @@ public:
   virtual ~VWarpTexture () override;
   virtual bool IsDynamicTexture () const noexcept override;
   virtual void SetFrontSkyLayer () override;
-  virtual bool CheckModified () override;
+  virtual int CheckModified () override;
   virtual void ReleasePixels () override;
   virtual vuint8 *GetPixels () override;
   virtual rgba_t *GetPalette () override;

@@ -92,13 +92,16 @@ bool VCameraTexture::IsHugeTexture () const noexcept {
 //
 //  VCameraTexture::CheckModified
 //
+//  returns 0 if not, positive if only data need to be updated, or
+//  negative to recreate texture
+//
 //==========================================================================
-bool VCameraTexture::CheckModified () {
+int VCameraTexture::CheckModified () {
   if (bUpdated) {
     bUpdated = false;
-    return true;
+    return 1;
   }
-  return false;
+  return 0;
 }
 
 

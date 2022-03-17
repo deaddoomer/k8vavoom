@@ -1432,6 +1432,7 @@ public:
   GLhandleARB LoadShader (VGLShader *gls, const char *progname, const char *incdir, GLenum Type, VStr FileName, const TArray<VStr> &defines=TArray<VStr>());
   GLhandleARB CreateProgram (VGLShader *gls, const char *progname, GLhandleARB VertexShader, GLhandleARB FragmentShader);
 
+  virtual void UnloadAliasModel (VMeshModel *Mdl) override;
   void UploadModel (VMeshModel *Mdl);
   void UnloadModels ();
 

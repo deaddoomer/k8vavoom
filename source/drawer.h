@@ -414,6 +414,7 @@ public:
 
 // ////////////////////////////////////////////////////////////////////////// //
 struct texinfo_t;
+class VMeshModel;
 
 struct AliasModelTrans {
   // transformation matrix
@@ -574,6 +575,8 @@ public:
   virtual bool SetResolution (int AWidth, int AHeight, int fsmode) = 0;
   virtual void InitResolution () = 0;
   virtual void DeinitResolution () = 0;
+
+  virtual void UnloadAliasModel (VMeshModel *Mdl) = 0;
 
   // recreate FBOs with fp/int formats (alpha is not guaranteed)
   // used for overbright

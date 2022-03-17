@@ -150,7 +150,26 @@ bool VMeshModel::IsKnownModelFormat (VStream *strm) {
 //
 //==========================================================================
 void VMeshModel::LoadFromWad () {
-  if (loaded) return;
+  if (loaded) {
+    if (!isVoxel) return;
+    if (!VoxNeedReload()) return;
+    if (Drawer) Drawer->UnloadAliasModel(this);
+  }
+
+  loaded = false;
+  Skins.clear();
+  Frames.clear();
+  AllVerts.clear();
+  AllNormals.clear();
+  STVerts.clear();
+  Tris.clear();
+  TriVerts.clear();
+  AllPlanes.clear();
+  Edges.clear();
+  GlMode = GlNone;
+  vassert(!Uploaded);
+  HadErrors = false;
+  VertsBuffer = IndexBuffer = 0;
 
   // load the file
   VStream *Strm = FL_OpenFileRead(Name);

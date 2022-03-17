@@ -128,12 +128,33 @@ static inline void AliasSetupNormalTransform (const TAVec &angles,
 
 //==========================================================================
 //
+//  VOpenGLDrawer::UnloadAliasModel
+//
+//==========================================================================
+void VOpenGLDrawer::UnloadAliasModel (VMeshModel *Mdl) {
+  if (!Mdl || !Mdl->Uploaded) return;
+  for (int i = 0; i < UploadedModels.length(); ++i) {
+    if (UploadedModels[i] == Mdl) {
+      //GCon->Logf(NAME_Debug, "OpenGL: unloaded model '%s'", *Mdl->Name);
+      p_glDeleteBuffersARB(1, &UploadedModels[i]->VertsBuffer);
+      p_glDeleteBuffersARB(1, &UploadedModels[i]->IndexBuffer);
+      UploadedModels[i]->Uploaded = false;
+      UploadedModels.removeAt(i);
+      return;
+    }
+  }
+}
+
+
+//==========================================================================
+//
 //  VOpenGLDrawer::UploadModel
 //
 //==========================================================================
 void VOpenGLDrawer::UploadModel (VMeshModel *Mdl) {
   if (Mdl->Uploaded) return;
 
+  //GCon->Logf(NAME_Debug, "OpenGL: uploading model '%s'", *Mdl->Name);
   p_glDebugLogf("uploading model <%s:%d>", *Mdl->Name, Mdl->MeshIndex);
 
   // create buffer

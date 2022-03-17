@@ -876,8 +876,14 @@ struct VMeshModel {
   bool loaded; // is this model loaded?
   bool Uploaded; // is this model uploaded to GPU?
   bool HadErrors; // set if this model had some errors (exclude from stencil shadowing)
+
+  // voxel options
   bool isVoxel; // should this model be loaded as a voxel?
   bool useVoxelPivotZ; // should the voxel be z-centered using the pivot point?
+  int voxOptLevel;
+  bool voxFixTJunk;
+  int voxSkinTextureId;
+
   // OpenGL handles
   vuint32 VertsBuffer;
   vuint32 IndexBuffer;
@@ -899,6 +905,8 @@ private:
   void Save_KVXCache (VStream *st);
 
   VStr GenKVXCacheName (const vuint8 *Data, int DataSize);
+
+  bool VoxNeedReload ();
 
 private:
   struct VTempEdge {

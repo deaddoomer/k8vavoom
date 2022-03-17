@@ -439,6 +439,9 @@ protected:
   // called from `GetPixels()`
   void PrepareBrightmap ();
 
+  // this is called for textures with `SrcLump < 0`
+  virtual bool IsSpecialReleasePixelsAllowed ();
+
 public:
   static void FilterFringe (rgba_t *pic, int wdt, int hgt);
   static void PremultiplyImage (rgba_t *pic, int wdt, int hgt);
@@ -535,7 +538,8 @@ public:
   */
 
   virtual void SetFrontSkyLayer ();
-  virtual bool CheckModified ();
+  // returns 0 if not, positive if only data need to be updated, or negative to recreate texture
+  virtual int CheckModified ();
   virtual void Shade (int shade); // should be called before any `GetPixels()` call!
 
   // this can be called to release texture memory

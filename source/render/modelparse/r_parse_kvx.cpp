@@ -47,13 +47,17 @@ class VVoxTexture : public VTexture {
 public:
   int VoxTexIndex;
   vint32 ShadeVal;
+  bool needReupload;
+
+protected:
+  virtual bool IsSpecialReleasePixelsAllowed () override;
 
 public:
   VVoxTexture (int vidx, int ashade);
   virtual ~VVoxTexture () override;
-  virtual void ReleasePixels () override;
   virtual vuint8 *GetPixels () override;
   virtual rgba_t *GetPalette () override;
+  virtual int CheckModified () override;
 };
 
 
@@ -76,6 +80,7 @@ VVoxTexture::VVoxTexture (int vidx, vint32 ashade)
   : VTexture()
   , VoxTexIndex(vidx)
   , ShadeVal(ashade)
+  , needReupload(false)
 {
   vassert(vidx >= 0 && vidx < voxTextures.length());
   SourceLump = -1;
@@ -137,12 +142,30 @@ rgba_t *VVoxTexture::GetPalette () {
 
 //==========================================================================
 //
-//  VVoxTexture::ReleasePixels
+//  VVoxTexture::CheckModified
+//
+//  returns 0 if not, positive if only data need to be updated, or
+//  negative to recreate texture
 //
 //==========================================================================
-void VVoxTexture::ReleasePixels () {
-  VTexture::ReleasePixels();
+int VVoxTexture::CheckModified () {
+  if (needReupload) {
+    needReupload = false;
+    return -1;
+  }
+  return 0;
 }
+
+
+//==========================================================================
+//
+//  VVoxTexture::IsSpecialReleasePixelsAllowed
+//
+//==========================================================================
+bool VVoxTexture::IsSpecialReleasePixelsAllowed () {
+  return true;
+}
+
 
 
 //==========================================================================
@@ -898,7 +921,7 @@ public:
   {}
 
   void clear ();
-  void buildFrom (VoxelData &vox, bool pivotz);
+  void buildFrom (VoxelData &vox, int optlevel, bool pivotz);
 
 public:
   static const uint8_t quadFaces[6][4];
@@ -1330,12 +1353,12 @@ void VoxelMesh::buildOpt3 (VoxelData &vox, bool pivotz) {
 //  VoxelMesh::buildFrom
 //
 //==========================================================================
-void VoxelMesh::buildFrom (VoxelData &vox, bool pivotz) {
+void VoxelMesh::buildFrom (VoxelData &vox, int optlevel, bool pivotz) {
   vassert(vox.xsize && vox.ysize && vox.zsize);
   // now build cubes
-       if (vox_optimisation.asInt() <= 0) buildOpt0(vox, pivotz);
-  else if (vox_optimisation.asInt() <= 1) buildOpt1(vox, pivotz);
-  else if (vox_optimisation.asInt() <= 2) buildOpt2(vox, pivotz);
+       if (optlevel <= 0) buildOpt0(vox, pivotz);
+  else if (optlevel <= 1) buildOpt1(vox, pivotz);
+  else if (optlevel <= 2) buildOpt2(vox, pivotz);
   else /*if (vox_optimisation.asInt() <= 3)*/ buildOpt3(vox, pivotz);
   vassert(maxColorRun <= 1024);
   cx = vox.cx;
@@ -1456,7 +1479,7 @@ public:
   inline ~GLVoxelMesh () { clear(); }
 
   void clear ();
-  void create (VoxelMesh &vox, TArray<VMeshTri> &Tris);
+  void create (VoxelMesh &vox, TArray<VMeshTri> &Tris, bool fixtjunk);
 };
 
 
@@ -1955,7 +1978,7 @@ void GLVoxelMesh::fixTJunctions (TArray<VMeshTri> &Tris) {
 //  GLVoxelMesh::create
 //
 //==========================================================================
-void GLVoxelMesh::create (VoxelMesh &vox, TArray<VMeshTri> &Tris) {
+void GLVoxelMesh::create (VoxelMesh &vox, TArray<VMeshTri> &Tris, bool fixtjunk) {
   vassert(vox.maxColorRun > 0);
   vassert(vox.maxColorRun <= 1024);
   clear();
@@ -2048,7 +2071,7 @@ void GLVoxelMesh::create (VoxelMesh &vox, TArray<VMeshTri> &Tris) {
     ip[2] = b0;
   }
 
-  if (vox_fix_tjunctions) {
+  if (fixtjunk) {
     fixTJunctions(Tris);
   } else {
     recreateTriangles(Tris);
@@ -2276,6 +2299,18 @@ static bool loadKV6 (VStream &st, VoxelData &vox) {
 
 //==========================================================================
 //
+//  VMeshModel::VoxNeedReload
+//
+//==========================================================================
+bool VMeshModel::VoxNeedReload () {
+  return
+    voxOptLevel != clampval(vox_optimisation.asInt(), 0, 4) ||
+    voxFixTJunk != vox_fix_tjunctions.asBool();
+}
+
+
+//==========================================================================
+//
 //  VMeshModel::Load_KVX
 //
 //  FIXME: use `DataSize` for checks!
@@ -2290,6 +2325,9 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
   this->VertsBuffer = 0;
   this->IndexBuffer = 0;
   this->GlMode = GlNone;
+
+  this->voxOptLevel = clampval(vox_optimisation.asInt(), 0, 4);
+  this->voxFixTJunk = vox_fix_tjunctions.asBool();
 
   VStr ccname = GenKVXCacheName(Data, DataSize);
   VStr cacheFileName = VStr("voxmdl_")+ccname+".cache";
@@ -2311,12 +2349,12 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
       vint32 optlevel = -1;
       if (ok) {
         *strm << optlevel;
-        if (ok && optlevel != vox_optimisation.asInt()) ok = false;
+        if (ok && optlevel != this->voxOptLevel) ok = false;
       }
       vint32 tjunk = -1;
       if (ok) {
         *strm << tjunk;
-        if (ok && (tjunk < 0 || tjunk > 1 || vox_fix_tjunctions.asBool() != tjunk)) ok = false;
+        if (ok && (tjunk < 0 || tjunk > 1 || this->voxFixTJunk != tjunk)) ok = false;
       }
       if (ok) {
         VZLibStreamReader *zstrm = new VZLibStreamReader(true, strm);
@@ -2367,19 +2405,19 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
       ok = loadKVX(memst, vox);
     }
     if (!ok || memst.IsError()) Sys_Error("cannot load voxel model '%s'", *this->Name);
-    vox.optimise(vox_optimisation.asInt() > 3);
+    vox.optimise(this->voxOptLevel > 3);
 
     VoxelMesh vmesh;
-    vmesh.buildFrom(vox, useVoxelPivotZ);
+    vmesh.buildFrom(vox, this->voxOptLevel, useVoxelPivotZ);
     vox.clear();
 
-    glvmesh.create(vmesh, Tris);
+    glvmesh.create(vmesh, Tris, this->voxFixTJunk);
     vmesh.clear();
 
     if (vox_verbose_conversion.asBool()) {
       GCon->Logf(NAME_Init, "voxel model '%s': %d unique vertices, %d triangles, %dx%d color texture; optlevel=%d",
                  *this->Name, glvmesh.vertices.length(), Tris.length(),
-                 (int)glvmesh.imgWidth, (int)glvmesh.imgHeight, vox_optimisation.asInt());
+                 (int)glvmesh.imgWidth, (int)glvmesh.imgHeight, this->voxOptLevel);
 
     }
   }
@@ -2387,22 +2425,35 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
   if (glvmesh.indicies.length() == 0) Sys_Error("cannot load empty voxel model '%s'", *this->Name);
 
   if (glvmesh.vertices.length() > 65534) {
-    GCon->Logf(NAME_Init, "3d model for voxel '%s' has too many vertices", *this->Name);
+    GCon->Logf(NAME_Error, "3d model for voxel '%s' has too many vertices", *this->Name);
   }
 
   // skins
   {
     if (voxTextures.length() == 0) GTextureManager.RegisterTextureLoader(&voxTextureLoader);
-    VStr fname = va("\x01:voxtexure:%d", voxTextures.length());
-    VoxelTexture &vxt = voxTextures.alloc();
-    vxt.fname = fname;
-    vxt.width = glvmesh.imgWidth;
-    vxt.height = glvmesh.imgHeight;
-    vxt.data = (vuint8 *)Z_Malloc(glvmesh.imgWidth*glvmesh.imgHeight*4);
-    memcpy(vxt.data, glvmesh.img.ptr(), glvmesh.imgWidth*glvmesh.imgHeight*4);
+    VoxelTexture *vxt;
+    if (voxSkinTextureId < 0) {
+      voxSkinTextureId = voxTextures.length();
+      VStr fname = va("\x01:voxtexure:%d", voxSkinTextureId);
+      vxt = &voxTextures.alloc();
+      vxt->fname = fname;
+      vxt->data = (vuint8 *)Z_Malloc(glvmesh.imgWidth*glvmesh.imgHeight*4);
+    } else {
+      vxt = &voxTextures[voxSkinTextureId];
+      for (int f = 0; f < vxt->tex.length(); ++f) {
+        vxt->tex[f]->ReleasePixels();
+        vxt->tex[f]->needReupload = true;
+        vxt->tex[f]->Width = glvmesh.imgWidth;
+        vxt->tex[f]->Height = glvmesh.imgHeight;
+      }
+      vxt->data = (vuint8 *)Z_Realloc(vxt->data, glvmesh.imgWidth*glvmesh.imgHeight*4);
+    }
+    vxt->width = glvmesh.imgWidth;
+    vxt->height = glvmesh.imgHeight;
+    memcpy(vxt->data, glvmesh.img.ptr(), glvmesh.imgWidth*glvmesh.imgHeight*4);
     Skins.setLength(1);
     VMeshModel::SkinInfo &si = Skins[0];
-    si.fileName = VName(*fname);
+    si.fileName = VName(*vxt->fname);
     si.textureId = -1;
     si.shade = -1;
   }
@@ -2450,9 +2501,9 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
           if (vox_verbose_conversion.asBool()) GCon->Logf(NAME_Init, "...writing cache to '%s'...", *ccname);
       strm->Serialise(VOX_CACHE_SIGNATURE, (int)strlen(VOX_CACHE_SIGNATURE));
       *strm << this->Name;
-      vint32 optlevel = vox_optimisation.asInt();
+      vint32 optlevel = this->voxOptLevel;
       *strm << optlevel;
-      vint32 tjunk = (vox_fix_tjunctions.asBool() ? 1 : 0);
+      vint32 tjunk = (this->voxFixTJunk ? 1 : 0);
       *strm << tjunk;
       VZLibStreamWriter *zstrm = new VZLibStreamWriter(strm, vox_cache_compression_level.asInt());
       Save_KVXCache(zstrm);

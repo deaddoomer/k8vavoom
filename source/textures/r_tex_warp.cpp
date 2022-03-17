@@ -113,8 +113,11 @@ void VWarpTexture::SetFrontSkyLayer () {
 //
 //  VWarpTexture::CheckModified
 //
+//  returns 0 if not, positive if only data need to be updated, or
+//  negative to recreate texture
+//
 //==========================================================================
-bool VWarpTexture::CheckModified () {
+int VWarpTexture::CheckModified () {
   return (GenTime != GTextureManager.Time*Speed);
 }
 

@@ -305,9 +305,12 @@ void VTexture::SetFrontSkyLayer () {
 //
 //  VTexture::CheckModified
 //
+//  returns 0 if not, positive if only data need to be updated, or
+//  negative to recreate texture
+//
 //==========================================================================
-bool VTexture::CheckModified () {
-  return false;
+int VTexture::CheckModified () {
+  return 0;
 }
 
 
@@ -327,9 +330,23 @@ bool VTexture::PixelsReleased () const noexcept {
 //
 //  VTexture::ReleasePixels
 //
+//  this is called for textures with `SrcLump < 0`
+//
+//==========================================================================
+bool VTexture::IsSpecialReleasePixelsAllowed () {
+  return false;
+}
+
+
+//==========================================================================
+//
+//  VTexture::ReleasePixels
+//
 //==========================================================================
 void VTexture::ReleasePixels () {
-  if (SourceLump < 0) return; // this texture cannot be reloaded
+  if (SourceLump < 0) {
+    if (!IsSpecialReleasePixelsAllowed()) return; // this texture cannot be reloaded
+  }
   //GCon->Logf(NAME_Debug, "VTexture::ReleasePixels: '%s' (%d: %s)", *Name, SourceLump, *W_FullLumpName(SourceLump));
   if (InReleasingPixels()) return; // already released
   // safeguard

@@ -349,10 +349,18 @@ bool VOpenGLDrawer::SetTextureLump (SetTexType ttype, VTexture *Tex, VTextureTra
       ShadeColor |= 0xff000000u; // normalise it
     }
     bool needUp = false;
-    if (Tex->lastUpdateFrame != updateFrame && Tex->CheckModified()) {
+    if (Tex->lastUpdateFrame != updateFrame) {
+      // returns 0 if not, positive if only data need to be updated, or
+      // negative to recreate texture
+      const int upmode = Tex->CheckModified();
       //GCon->Logf(NAME_Debug, "texture '%s' needs update! (%u : %u)", *Tex->Name, Tex->lastUpdateFrame, updateFrame);
-      if (gl_recreate_changed_textures) FlushTexture(Tex);
-      needUp = true;
+      if (upmode) {
+        if (upmode < 0 || gl_recreate_changed_textures) {
+          //GCon->Logf(NAME_Debug, "texture '%s' needs update! (flushing)", *Tex->Name);
+          FlushTexture(Tex);
+        }
+        needUp = true;
+      }
     }
     Tex->lastUpdateFrame = updateFrame;
     if (Translation || CMap || ShadeColor) {
@@ -486,7 +494,9 @@ void VOpenGLDrawer::GenerateTexture (SetTexType ttype, VTexture *Tex, GLuint *pH
     if (!*pHandle) glGenTextures(1, pHandle);
     glBindTexture(GL_TEXTURE_2D, *pHandle);
     p_glObjectLabelVA(GL_TEXTURE, *pHandle, "Texture '%s'", *Tex->Name);
+    // this hangs!
     //GCon->Logf(NAME_Debug, "texture '%s'; tid=%d", *Tex->Name, *pHandle);
+    //fprintf(stderr, "*** texture '%s'; tid=%d\n", *Tex->Name, *pHandle);
 
     // try to load high resolution version
     int hitype = (Tex->IsDynamicTexture() ? UpTexNoCompress : (Tex->hiresRepTex ? UpTexHiRes : UpTexNormal));
@@ -571,7 +581,8 @@ void VOpenGLDrawer::GenerateTexture (SetTexType ttype, VTexture *Tex, GLuint *pH
       SrcTex->FreeShadedPixels(shadedPixels);
     } else {
       // normal uploading
-      if (doCrop && !isSpriteBM) SrcTex->CropTexture(); // do not crop brightmaps, it is already done by the main texture cropper
+      if (doCrop && !isSpriteBM && SrcTex->SourceLump >= 0) SrcTex->CropTexture(); // do not crop brightmaps, it is already done by the main texture cropper
+      //if (SrcTex->SourceLump < 0) fprintf(stderr, "*** uploading texture '%s' (%dx%d)\n", *SrcTex->Name, SrcTex->GetWidth(), SrcTex->GetHeight());
       vuint8 *block = SrcTex->GetPixels();
       //if (SrcTex->SourceLump >= 0) GCon->Logf(NAME_Debug, "uploading normal texture '%s' (%dx%d)", *SrcTex->Name, SrcTex->GetWidth(), SrcTex->GetHeight());
       if (SrcTex->Format == TEXFMT_8 || SrcTex->Format == TEXFMT_8Pal) {
