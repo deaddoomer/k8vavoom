@@ -1049,14 +1049,30 @@ VStr GZModelDef::createXml () {
   }
 
   // write class definition
-  res += va("  <class name=\"%s\" noselfshadow=\"true\">\n", *className.xmlEscape());
+  res += va("  <class name=\"%s\" noselfshadow=\"true\" gzdoom=\"true\">\n", *className.xmlEscape());
+
+  TArray<int> mdlUsed;
+  mdlUsed.setLength(models.length());
+  for (auto &&uc : mdlUsed) uc = 0;
   for (auto &&frm : frames) {
     if (frm.vvindex < 0) continue;
-    res += va("    <state sprite=\"%s\" sprite_frame=\"%s\" model=\"%s_%d\" frame_index=\"%d\" gzdoom=\"true\"",
+    mdlUsed[frm.mdindex] += 1;
+  }
+  int usedModelCount = 0;
+  for (auto uc : mdlUsed) if (uc) ++usedModelCount;
+
+  // from here on, `mdlUsed` is "next frame index"
+  for (auto &&uc : mdlUsed) uc = 0;
+  for (auto &&frm : frames) {
+    if (frm.vvindex < 0) continue;
+    res += va("    <state sprite=\"%s\" sprite_frame=\"%s\"",
       *frm.sprbase.toUpperCase().xmlEscape(),
-      *VStr((char)(frm.sprframe+'A')).xmlEscape(),
-      *className.toLowerCase().xmlEscape(), frm.mdindex,
-      frm.vvindex);
+      *VStr((char)(frm.sprframe+'A')).xmlEscape());
+    if (usedModelCount > 1) {
+      res += va(" model=\"%s_%d\"", *className.toLowerCase().xmlEscape(), frm.mdindex);
+    }
+    /*if (mdlUsed[frm.mdindex] != frm.vvindex)*/ res += va(" frame_index=\"%d\"", frm.vvindex);
+    mdlUsed[frm.mdindex] = frm.vvindex+1;
     if (frm.rotationSpeed) res += " rotation=\"true\"";
     if (frm.usePitch < 0) {
       res += va(" usepitch=\"actor%s\"", (frm.usePitchInverted ? "-inverted" : ""));

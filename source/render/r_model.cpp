@@ -141,6 +141,7 @@ struct VScriptSubModel {
 struct VScriptModel {
   VName Name;
   bool HasAlphaMul;
+  //int NextDefFrame;
   TArray<VScriptSubModel> SubModels;
 };
 
@@ -957,6 +958,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
     VScriptModel &SMdl = Mdl->Models.Alloc();
     SMdl.Name = *ModelNode->GetAttribute("name");
     SMdl.HasAlphaMul = false;
+    //SMdl.NextDefFrame = 0;
     if (SMdl.Name == NAME_None) Sys_Error("%s: model declaration has empty name", *ModelNode->Loc.toStringNoCol());
 
     // check nodes
@@ -1290,7 +1292,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       auto bad = ClassDefNode->FindBadAttribute("name", "noselfshadow",
                                                 "iwadonly", "thiswadonly",
                                                 "rotation", "bobbing",
-                                                nullptr);
+                                                "gzdoom", nullptr);
       if (bad) Sys_Error("%s: model '%s' class definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
     }
 
@@ -1314,6 +1316,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
     }
 
     VClassModelScript *Cls = new VClassModelScript();
+    const bool classGZDoom = ParseBool(ClassDefNode, "gzdoom", false);
     Cls->Model = Mdl;
     Cls->Name = (xcls ? xcls->GetName() : *vcClassName);
     Cls->NoSelfShadow = ParseBool(ClassDefNode, "noselfshadow", globNoSelfShadow);
@@ -1379,7 +1382,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       if (F.bobSpeed < 0.0f) F.bobSpeed = 180.0f;
 
       // some special things
-      F.gzdoom = ParseBool(StateDefNode, "gzdoom", false);
+      F.gzdoom = ParseBool(StateDefNode, "gzdoom", classGZDoom);
       if (F.gzdoom) {
         F.gzActorPitchInverted = false;
         F.gzActorPitch = DontUse; // don't use actor pitch
@@ -1507,25 +1510,6 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       F.SubModelIndex = ParseIntWithDefault(StateDefNode, "submodel_index", -1);
       if (F.SubModelIndex < 0) F.SubModelIndex = -1;
 
-      if (!StateDefNode->HasAttribute("frame_index")) {
-        int okfrm = true;
-        for (int sid = 0; sid < Mdl->Models.length(); ++sid) {
-          if (Mdl->Models[sid].SubModels.length()) {
-            if (Mdl->Models[sid].SubModels[0].Frames.length() > 1) {
-              okfrm = false;
-              break;
-            }
-          }
-        }
-        if (!okfrm) {
-          Sys_Error("%s: model '%s' has state without frame index", *StateDefNode->Loc.toStringNoCol(), *Mdl->Name);
-        }
-        F.FrameIndex = 0;
-      } else {
-        F.FrameIndex = ParseIntWithDefault(StateDefNode, "frame_index", 0);
-      }
-      if (ParseBool(StateDefNode, "hidden", false)) F.SubModelIndex = -2; // hidden
-
       if (!StateDefNode->HasAttribute("model")) {
         if (Mdl->Models.length() != 1) {
           Sys_Error("%s: model '%s' has no submodel name", *StateDefNode->Loc.toStringNoCol(),
@@ -1546,6 +1530,27 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
                     *Mdl->Name, *MdlName);
         }
       }
+
+      if (!StateDefNode->HasAttribute("frame_index")) {
+        //F.FrameIndex = Mdl->Models[F.ModelIndex].NextDefFrame;
+        int okfrm = true;
+        const VScriptModel &sms = Mdl->Models[F.ModelIndex];
+        for (int sid = 0; sid < sms.SubModels.length(); ++sid) {
+          if (sms.SubModels[sid].Frames.length() != 1) {
+            okfrm = false;
+            break;
+          }
+        }
+        if (!okfrm || sms.SubModels.length() == 0) {
+          Sys_Error("%s: model '%s' has state without frame index", *StateDefNode->Loc.toStringNoCol(), *Mdl->Name);
+        }
+        F.FrameIndex = 0;
+      } else {
+        F.FrameIndex = ParseIntWithDefault(StateDefNode, "frame_index", 0);
+      }
+      //Mdl->Models[F.ModelIndex].NextDefFrame = F.FrameIndex+1;
+
+      if (ParseBool(StateDefNode, "hidden", false)) F.SubModelIndex = -2; // hidden
 
       if (!Cls->asTranslucent && Mdl->Models[F.ModelIndex].HasAlphaMul) Cls->asTranslucent = true;
 
