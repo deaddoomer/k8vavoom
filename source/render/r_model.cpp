@@ -48,7 +48,7 @@ static VCvarB r_model_ignore_missing_textures("r_model_ignore_missing_textures",
 
 static VCvarB r_preload_alias_models("r_preload_alias_models", true, "Preload all alias models and their skins?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
 
-static VCvarB dbg_dump_gzmodels("dbg_dump_gzmodels", false, "Dump xml files for gz modeldefs?", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
+static VCvarI dbg_dump_gzmodels("dbg_dump_gzmodels", "0", "Dump xml files for gz modeldefs (1:final;2:all)?", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
 
 
 static int cli_DisableModeldef = 0;
@@ -262,6 +262,7 @@ struct VModel {
 
 // ////////////////////////////////////////////////////////////////////////// //
 static TArray<VModel *> mod_known;
+static TArray<VStr> mod_gznames;
 static TArray<VMeshModel *> GMeshModels;
 static TArray<VClassModelScript *> ClassModels;
 static TMapNC<VName, VClassModelScript *> ClassModelMap;
@@ -1733,7 +1734,7 @@ static void ParseGZModelDefs () {
             VStr locname = mdl->className.toLowerCase();
             auto omp = gzmdmap.get(locname);
             if (omp) {
-              if (dbg_dump_gzmodels) {
+              if (dbg_dump_gzmodels.asInt() > 1) {
                 GCon->Log(NAME_Debug, "*** MERGE ***");
                 auto xml = mdl->createXml();
                 GCon->Logf(NAME_Debug, "==== NEW: \n%s\n====", *xml);
@@ -1742,7 +1743,7 @@ static void ParseGZModelDefs () {
               }
               gzmdlist[*omp]->merge(*mdl);
               delete mdl;
-              if (dbg_dump_gzmodels) {
+              if (dbg_dump_gzmodels.asInt() > 1) {
                 auto xml = gzmdlist[*omp]->createXml();
                 GCon->Logf(NAME_Debug, "==== MERGED: \n%s\n====", *xml);
               }
@@ -1792,10 +1793,31 @@ static void ParseGZModelDefs () {
     // get xml here, because we're going to modify the model
     auto xml = mdl->createXml();
     // create impossible name, because why not?
-    if (dbg_dump_gzmodels) GCon->Logf(NAME_Debug, "====\n%s\n====", *xml);
     mdl->className = va("/gzmodels/..%s/..gzmodel_%d.xml", xcls->GetName(), cnt++);
     //GCon->Logf("***<%s>", *mdl->className);
     GCon->Logf(NAME_Init, "  found GZDoom model for '%s'", xcls->GetName());
+    if (dbg_dump_gzmodels.asInt()) {
+      VStr gzxmlname;
+      int gzcount = -1;
+      for (;;) {
+        if (gzcount >= 0) {
+          gzxmlname = va("/models/gzdoom/%s_%d.xml", xcls->GetName(), gzcount);
+        } else {
+          gzxmlname = va("/models/gzdoom/%s.xml", xcls->GetName());
+        }
+        ++gzcount;
+        bool found = false;
+        for (VStr gn : mod_gznames) if (gn == gzxmlname) { found = true; break; }
+        if (!found) {
+          mod_gznames.append(gzxmlname);
+          break;
+        }
+      }
+      GCon->Logf(NAME_Debug, "==== GZ CONVERTED MODEL: BEGIN ====");
+      GCon->Logf(NAME_Debug, "%s", *gzxmlname);
+      GCon->Logf(NAME_Debug, "%s", *xml.xstripright());
+      GCon->Logf(NAME_Debug, "==== GZ CONVERTED MODEL: END ====");
+    }
     VModel *mod = new VModel();
     mod->Name = mdl->className;
     mod_known.Append(mod);
