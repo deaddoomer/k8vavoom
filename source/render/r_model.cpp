@@ -1292,6 +1292,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       auto bad = ClassDefNode->FindBadAttribute("name", "noselfshadow",
                                                 "iwadonly", "thiswadonly",
                                                 "rotation", "bobbing",
+                                                "usepitch", "useroll",
                                                 "gzdoom", nullptr);
       if (bad) Sys_Error("%s: model '%s' class definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
     }
@@ -1301,6 +1302,12 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       auto bad = ClassDefNode->FindBadChild("state", nullptr);
       if (bad) Sys_Error("%s: model '%s' class definition has invalid node '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
     }
+
+    const bool hasClassUsePitch = ClassDefNode->HasAttribute("usepitch");
+    VStr classUsePitch = (hasClassUsePitch ? ClassDefNode->GetAttribute("usepitch") : VStr::EmptyString);
+
+    const bool hasClassUseRoll = ClassDefNode->HasAttribute("useroll");
+    VStr classUseRoll = (hasClassUseRoll ? ClassDefNode->GetAttribute("useroll") : VStr::EmptyString);
 
     VStr vcClassName = ClassDefNode->GetAttribute("name");
     VClass *xcls = VClass::FindClassNoCase(*vcClassName);
@@ -1394,8 +1401,8 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         F.gzActorRoll = DontUse; // don't use actor roll
       }
 
-      if (StateDefNode->HasAttribute("usepitch")) {
-        VStr pv = StateDefNode->GetAttribute("usepitch");
+      if (hasClassUsePitch || StateDefNode->HasAttribute("usepitch")) {
+        VStr pv = (StateDefNode->HasAttribute("usepitch") ? StateDefNode->GetAttribute("usepitch") : classUsePitch);
              if (pv == "actor") F.gzActorPitch = FromActor;
         else if (pv == "momentum") F.gzActorPitch = FromMomentum;
         else if (pv == "actor-inverted") { F.gzActorPitch = FromActor; F.gzActorPitchInverted = true; }
@@ -1405,8 +1412,8 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         else Sys_Error("%s: invalid \"usepitch\" attribute value '%s'", *StateDefNode->Loc.toStringNoCol(), *pv);
       }
 
-      if (StateDefNode->HasAttribute("useroll")) {
-        VStr pv = StateDefNode->GetAttribute("useroll");
+      if (hasClassUseRoll || StateDefNode->HasAttribute("useroll")) {
+        VStr pv = (StateDefNode->HasAttribute("useroll") ? StateDefNode->GetAttribute("useroll") : classUseRoll);
              if (pv == "actor") F.gzActorRoll = FromActor;
         else if (pv == "momentum") F.gzActorRoll = FromMomentum;
         else if (isFalseValue(pv)) F.gzActorRoll = DontUse;

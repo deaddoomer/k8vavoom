@@ -1049,8 +1049,6 @@ VStr GZModelDef::createXml () {
   }
 
   // write class definition
-  res += va("  <class name=\"%s\" noselfshadow=\"true\" gzdoom=\"true\">\n", *className.xmlEscape());
-
   TArray<int> mdlUsed;
   mdlUsed.setLength(models.length());
   for (auto &&uc : mdlUsed) uc = 0;
@@ -1061,6 +1059,70 @@ VStr GZModelDef::createXml () {
   int usedModelCount = 0;
   for (auto uc : mdlUsed) if (uc) ++usedModelCount;
 
+  int rotCount = 0;
+  int totFrmCount = 0;
+  for (auto &&frm : frames) {
+    if (frm.vvindex < 0) continue;
+    ++totFrmCount;
+    if (frm.rotationSpeed) ++rotCount;
+  }
+
+  TArray<int> frmPitchRoll;
+  frmPitchRoll.setLength(totFrmCount);
+  for (auto &&v : frmPitchRoll) v = 0;
+  int frmNN = -1;
+  for (auto &&frm : frames) {
+    if (frm.vvindex < 0) continue;
+    ++frmNN;
+
+    int pitchroll = 0;
+    if (frm.usePitch < 0) {
+      pitchroll = (frm.usePitchInverted ? 1 : 2);
+    } else if (frm.usePitch > 0) {
+      pitchroll = (frm.usePitchInverted ? 3 : 4);
+    }
+
+          if (frm.useRoll < 0) pitchroll += 100;
+    else if (frm.useRoll > 0) pitchroll += 200;
+
+    frmPitchRoll[frmNN] = pitchroll;
+  }
+
+  VStr globPitchRollStr;
+  bool globPitchRoll = true;
+  if (frmPitchRoll.length()) {
+    for (int f = 1; f < frmPitchRoll.length(); ++f) {
+      if (frmPitchRoll[f-1] != frmPitchRoll[f]) {
+        globPitchRoll = false;
+        break;
+      }
+    }
+    if (globPitchRoll) {
+      switch (frmPitchRoll[0]%100) {
+        case 0: break;
+        case 1: globPitchRollStr += " usepitch=\"actor-inverted\""; break;
+        case 2: globPitchRollStr += " usepitch=\"actor\""; break;
+        case 3: globPitchRollStr += " usepitch=\"momentum-inverted\""; break;
+        case 4: globPitchRollStr += " usepitch=\"momentum\""; break;
+        default: __builtin_trap();
+      }
+      frmPitchRoll[0] /= 100;
+      switch (frmPitchRoll[0]) {
+        case 0: break;
+        case 1: globPitchRollStr += " useroll=\"actor\""; break;
+        case 2: globPitchRollStr += " useroll=\"momentum\""; break;
+        default: __builtin_trap();
+      }
+    }
+    frmPitchRoll.clear();
+  }
+
+  const bool globRot = (rotCount == 0 || rotCount == totFrmCount);
+
+  res += va("  <class name=\"%s\" noselfshadow=\"true\"", *className.xmlEscape());
+  if (globRot && rotCount) res += " rotation=\"true\"";
+  if (globPitchRoll) res += globPitchRollStr;
+  res += " gzdoom=\"true\">\n";
   // from here on, `mdlUsed` is "next frame index"
   for (auto &&uc : mdlUsed) uc = 0;
   for (auto &&frm : frames) {
@@ -1073,14 +1135,16 @@ VStr GZModelDef::createXml () {
     }
     /*if (mdlUsed[frm.mdindex] != frm.vvindex)*/ res += va(" frame_index=\"%d\"", frm.vvindex);
     mdlUsed[frm.mdindex] = frm.vvindex+1;
-    if (frm.rotationSpeed) res += " rotation=\"true\"";
-    if (frm.usePitch < 0) {
-      res += va(" usepitch=\"actor%s\"", (frm.usePitchInverted ? "-inverted" : ""));
-    } else if (frm.usePitch > 0) {
-      res += va(" usepitch=\"momentum%s\"", (frm.usePitchInverted ? "-inverted" : ""));
+    if (!globRot && frm.rotationSpeed) res += " rotation=\"true\"";
+    if (!globPitchRoll) {
+      if (frm.usePitch < 0) {
+        res += va(" usepitch=\"actor%s\"", (frm.usePitchInverted ? "-inverted" : ""));
+      } else if (frm.usePitch > 0) {
+        res += va(" usepitch=\"momentum%s\"", (frm.usePitchInverted ? "-inverted" : ""));
+      }
+           if (frm.useRoll < 0) res += va(" useroll=\"actor\"");
+      else if (frm.useRoll > 0) res += va(" useroll=\"momentum\"");
     }
-         if (frm.useRoll < 0) res += va(" useroll=\"actor\"");
-    else if (frm.useRoll > 0) res += va(" useroll=\"momentum\"");
     res += " />\n";
   }
   res += "  </class>\n";
