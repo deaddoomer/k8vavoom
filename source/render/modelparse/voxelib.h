@@ -47,6 +47,78 @@
 #endif
 
 
+/*******************************************************************************
+  HOW TO USE THE LIBRARY:
+
+  load your voxel file into memory buffer, for example.
+  let it be:
+    void *Data; // file data
+    uint32_t DataSize; // file data size
+
+  and then something like this:
+
+    if (DataSize < 4) vox_fatal("cannot load voxel model");
+
+    VoxMemByteStream mst;
+    VoxByteStream *xst = vox_InitMemoryStream(&mst, Data, DataSize);
+
+    // create default palette; it is (r,g,b), each color byte is [0..255]
+    uint8_t defpal[768];
+    for (int cidx = 0; cidx < 256; ++cidx) {
+      defpal[cidx*3+0] = r_palette[cidx].r;
+      defpal[cidx*3+1] = r_palette[cidx].g;
+      defpal[cidx*3+2] = r_palette[cidx].b;
+    }
+
+    VoxelData vox;
+    const VoxFmt vfmt = vox_detectFormat((const uint8_t *)Data);
+    bool ok = false;
+    switch (vfmt) {
+      case VoxFmt_Unknown: // assume KVX
+        vox_logf(VoxLibMsg_Normal, "loading KVX...");
+        ok = vox_loadKVX(*xst, vox, defpal);
+        break;
+      case VoxFmt_KV6:
+        vox_logf(VoxLibMsg_Normal, "loading KV6...");
+        ok = vox_loadKV6(*xst, vox);
+        break;
+      case VoxFmt_Vxl:
+        vox_fatal("cannot load voxel model in VXL format");
+        break;
+      default:
+        break;
+    }
+    if (!ok) vox_fatal("cannot load voxel model");
+
+    bool doHollowFill = true; // option; use `true` for better results
+    bool fixTJunctions = false; // option; use `true` for better results, but more triangles
+    const uint32_t BreakIndex = 65535;
+    int optLevel = 4; // optimisation level: [0..4]
+
+    vox.optimise(doHollowFill);
+
+    vox.cz = 0.0f; // otherwise loaded voxel will have (0,0,0) at it's center
+    VoxelMesh vmesh;
+    vmesh.createFrom(vox, optLevel);
+    vox.clear();
+
+    glvmesh.create(vmesh, fixTJunctions, BreakIndex);
+    vmesh.clear();
+
+  here, `glvmesh` contains vertices and indicies, ready to upload to GPU.
+  `BreakIndex` above is the index of non-existing vertex; it is used to
+  separate triangle fans in indicies array.
+
+  you can also get a simple triangle soup out of the mesh, using a callback:
+
+    glvmesh.createTriangles(&newTriangeCB, (void *)this);
+
+  each vertex in vertex array has properly set coords, (S,T) values (or (U,V) if you like),
+  and normal vector.
+
+ ******************************************************************************/
+
+
 // ////////////////////////////////////////////////////////////////////////// //
 // this function MUST NOT RETURN!
 extern void (*voxlib_fatal) (const char *msg);
