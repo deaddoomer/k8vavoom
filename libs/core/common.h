@@ -87,9 +87,9 @@
 #define MAX_VINT16  ((vint16)0x7fff)
 #define MAX_VINT32  ((vint32)0x7fffffff)
 
-#define MAX_VUINT8  ((vuint8)0xff)
-#define MAX_VUINT16 ((vuint16)0xffff)
-#define MAX_VUINT32 ((vuint32)0xffffffff)
+#define MAX_VUINT8  ((vuint8)0xffU)
+#define MAX_VUINT16 ((vuint16)0xffffU)
+#define MAX_VUINT32 ((vuint32)0xffffffffU)
 
 #include <stdint.h>
 #include <stddef.h>

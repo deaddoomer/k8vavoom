@@ -117,11 +117,11 @@ struct VVoxVertexEx {
   VVA_FORCEINLINE TVec asTVec () const noexcept { return TVec(x, y, z); }
   VVA_FORCEINLINE TVec normalAsTVec () const noexcept { return TVec(nx, ny, nz); }
 
-  VVA_FORCEINLINE float get (unsigned idx) const noexcept{
+  VVA_FORCEINLINE float get (unsigned idx) const noexcept {
     return (idx == 0 ? x : idx == 1 ? y : z);
   }
 
-  VVA_FORCEINLINE void set (unsigned idx, const float v) noexcept{
+  VVA_FORCEINLINE void set (unsigned idx, const float v) noexcept {
     if (idx == 0) x = v; else if (idx == 1) y = v; else z = v;
   }
 };

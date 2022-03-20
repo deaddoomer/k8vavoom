@@ -98,6 +98,16 @@ public:
   VVA_FORCEINLINE VVA_CHECKRESULT VVA_PURE T *ptr () noexcept { return ArrData; }
   VVA_FORCEINLINE VVA_CHECKRESULT VVA_PURE const T *ptr () const noexcept { return ArrData; }
 
+  inline void transferDataFrom (MyType &other) noexcept {
+    if (&other == this) return;
+    clear();
+    ArrNum = other.ArrNum;
+    ArrSize = other.ArrSize;
+    ArrData = other.ArrData;
+    other.ArrNum = other.ArrSize = 0;
+    other.ArrData = nullptr;
+  }
+
   inline void SetPointerData (void *adata, int datalen) noexcept {
     vassert(datalen >= 0);
     if (datalen == 0) {
