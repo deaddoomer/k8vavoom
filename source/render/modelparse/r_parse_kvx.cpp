@@ -233,6 +233,16 @@ static void voxlib_message_cb (VoxLibMsg type, const char *msg) {
 
 //==========================================================================
 //
+//  voxlib_fatal_cb
+//
+//==========================================================================
+static void voxlib_fatal_cb (const char *msg) {
+  Sys_Error("%s", msg);
+}
+
+
+//==========================================================================
+//
 //  VMeshModel::Load_KVX
 //
 //  FIXME: use `DataSize` for checks!
@@ -245,6 +255,7 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
 
   voxlib_verbose = (vox_verbose_conversion.asBool() ? VoxLibMsg_MaxVerbosity : VoxLibMsg_None);
   voxlib_message = &voxlib_message_cb;
+  voxlib_fatal = &voxlib_fatal_cb;
 
   this->Uploaded = false;
   this->VertsBuffer = 0;
@@ -411,8 +422,8 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
   STVerts.setLength(AllVerts.length());
 
   for (int f = 0; f < glvmesh.vertices.length(); ++f) {
-    AllVerts[f] = glvmesh.vertices[f].asTVec();
-    AllNormals[f] = glvmesh.vertices[f].normalAsTVec();
+    AllVerts[f] = TVec(glvmesh.vertices[f].x, glvmesh.vertices[f].y, glvmesh.vertices[f].z);
+    AllNormals[f] = TVec(glvmesh.vertices[f].nx, glvmesh.vertices[f].ny, glvmesh.vertices[f].nz);
     STVerts[f].S = glvmesh.vertices[f].s;
     STVerts[f].T = glvmesh.vertices[f].t;
   }

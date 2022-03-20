@@ -25,12 +25,36 @@
 #ifndef VV_VOXELIB_HEADER
 #define VV_VOXELIB_HEADER
 
-#include "../../../libs/core/core.h"
+// define this for standalone library, independent of k8vavoom
+//#define VOXLIB_STANDALONE
 
 // swap final colors in GL mesh?
-#define VOXLIB_SWAP_COLORS
+//#define VOXLIB_DONT_SWAP_COLORS
+
+// note that allocation functions should fail with fatal error on "out of memory"
+// the code never checks if the returned result is `nullptr`
+// also, `VOXLIB_FREE` should correctly handle `nullptr`, and
+// `VOXLIB_REALLOC` should correctly handle `nullptr` and zero size
+// so the following defines are invalid, and your code WILL segfault on OOM!
+#ifndef VOXLIB_MALLOC
+# define VOXLIB_MALLOC  ::malloc
+#endif
+#ifndef VOXLIB_REALLOC
+# define VOXLIB_REALLOC  ::realloc
+#endif
+#ifndef VOXLIB_FREE
+# define VOXLIB_FREE  ::free
+#endif
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+// this function MUST NOT RETURN!
+extern void (*voxlib_fatal) (const char *msg);
+
+void vox_fatal (const char *msg) __attribute__((noreturn));
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 enum VoxLibMsg {
   VoxLibMsg_None,
   // also used for message types
@@ -52,8 +76,264 @@ extern void (*voxlib_message) (VoxLibMsg type, const char *msg);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+#ifdef VOXLIB_STANDALONE
+# include <stdint.h>
+# include <stdlib.h>
+# include <stdio.h>
+# include <string.h>
+#else
+# include "../../../libs/core/core.h"
+# ifdef VOXLIB_MALLOC
+#  undef VOXLIB_MALLOC
+#  define VOXLIB_MALLOC  ::Z_Malloc
+# endif
+# ifdef VOXLIB_REALLOC
+#  undef VOXLIB_REALLOC
+#  define VOXLIB_REALLOC  ::Z_Realloc
+# endif
+# ifdef VOXLIB_FREE
+#  undef VOXLIB_FREE
+#  define VOXLIB_FREE  ::Z_Free
+# endif
+#endif
+
+#ifndef vassert
+# define vassert(cond_)  do { if (__builtin_expect((!(cond_)), 0)) { char tbuf[128]; snprintf(tbuf, sizeof(tbuf), "assertion at line %d failed: `%s`", __LINE__, #cond_); vox_fatal(tbuf); } } while (0)
+#endif
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 // very simple dynamic array implementation
 // works only for POD types, but i don't need anything else anyway
+template<typename T> class VoxLibArray {
+public:
+  typedef VoxLibArray<T> MyType;
+
+private:
+  // 2d info is from `VScriptArray`
+  int ArrNum; // if bit 31 is set, this is 1st dim of 2d array
+  int ArrSize; // if bit 31 is set in `ArrNum`, this is 2nd dim of 2d array
+  T *ArrData;
+
+public:
+  inline VoxLibArray () : ArrNum(0), ArrSize(0), ArrData(nullptr) {}
+  inline VoxLibArray (const MyType &other) : ArrNum(0), ArrSize(0), ArrData(nullptr) {
+    operator=(other);
+  }
+
+  inline ~VoxLibArray () { clear(); }
+
+  inline void clear () {
+    if (ArrData) VOXLIB_FREE(ArrData);
+    ArrData = nullptr;
+    ArrNum = ArrSize = 0;
+  }
+
+  // doesn't free the array itself
+  inline void reset () { ArrNum = 0; }
+
+  inline int length () const { return ArrNum; }
+  inline int capacity () const { return ArrSize; }
+
+  // don't do any sanity checks here, `ptr()` can be used even on empty arrays
+  inline T *ptr () { return ArrData; }
+  inline const T *ptr () const { return ArrData; }
+
+  inline void transferDataFrom (MyType &other) {
+    if (&other == this) return;
+    clear();
+    ArrNum = other.ArrNum;
+    ArrSize = other.ArrSize;
+    ArrData = other.ArrData;
+    other.ArrNum = other.ArrSize = 0;
+    other.ArrData = nullptr;
+  }
+
+  // this changes only capacity, length will not be increased (but can be decreased)
+  // new memory will not be cleared and inited (there's no need to do that here)
+  void resize (int NewSize) {
+    vassert(NewSize >= 0);
+    if (NewSize <= 0) { clear(); return; }
+
+    if (NewSize == ArrSize) return;
+
+    // realloc buffer
+    ArrData = (T *)VOXLIB_REALLOC(ArrData, NewSize*sizeof(T));
+
+    // no need to init new data, allocator will do it later
+    ArrSize = NewSize;
+    if (ArrNum > NewSize) ArrNum = NewSize;
+  }
+
+  // reserve memory for at least the given number of items
+  // will not shrink the array
+  //inline void reserve (int maxsize) { if (maxsize > ArrSize) return resize(maxsize); }
+
+  template<bool DoResize=true, bool DoReserve=false> void setLength (int NewNum) {
+    vassert(NewNum >= 0);
+    if (DoResize || NewNum > ArrSize) {
+      resize(NewNum+(DoReserve ? NewNum*3/8+(NewNum < 64 ? 64 : 0) : 0));
+    }
+    vassert(ArrSize >= NewNum);
+    if (ArrNum < NewNum) {
+      // initialize new elements
+      memset((void *)(ArrData+ArrNum), 0, (NewNum-ArrNum)*sizeof(T));
+    }
+    ArrNum = NewNum;
+  }
+
+  // don't resize, if it is not necessary
+  template<bool DoResize=false> inline void setLengthReserve (int NewNum) { return setLength<DoResize, true>(NewNum); }
+
+  inline void condense () { return resize(ArrNum); }
+
+  // this won't copy capacity (there is no reason to do it)
+  // alas, i cannot remove this
+  void operator = (const MyType &other) {
+    if (&other == this) return; // oops
+    clear();
+    const int newsz = other.ArrNum;
+    if (newsz) {
+      ArrNum = ArrSize = newsz;
+      ArrData = (T *)VOXLIB_MALLOC(newsz*sizeof(T));
+      memcpy((void *)ArrData, (void *)other.ArrData, (size_t)newsz*sizeof(T));
+    }
+  }
+
+  inline T &operator [] (int index) {
+    vassert(index >= 0 && index < ArrNum);
+    return ArrData[index];
+  }
+
+  inline const T &operator [] (int index) const {
+    vassert(index >= 0 && index < ArrNum);
+    return ArrData[index];
+  }
+
+  inline int append (const T &item) {
+    const int oldlen = ArrNum;
+    setLengthReserve(oldlen+1);
+    ArrData[oldlen] = item;
+    return oldlen;
+  }
+  inline int Append (const T &item) { return append(item); }
+
+  inline T &alloc () {
+    const int oldlen = ArrNum;
+    setLengthReserve(oldlen+1);
+    memset((void *)(ArrData+oldlen), 0, sizeof(T));
+    return ArrData[oldlen];
+  }
+
+  inline void removeAt (int index) {
+    vassert(ArrData != nullptr);
+    vassert(index >= 0 && index < ArrNum);
+    --ArrNum;
+    for (int i = index; i < ArrNum; ++i) ArrData[i] = ArrData[i+1];
+  }
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// very simple hash table implementation
+// works only for POD types, but i don't need anything else anyway
+template<typename KT, typename VT> class VoxLibHash {
+private:
+  static inline uint32_t joaatHashBuf (const void *buf, size_t len, uint32_t seed=0u) {
+    uint32_t hash = seed;
+    const uint8_t *s = (const uint8_t *)buf;
+    while (len--) {
+      hash += *s++;
+      hash += hash<<10;
+      hash ^= hash>>6;
+    }
+    // finalize
+    hash += hash<<3;
+    hash ^= hash>>11;
+    hash += hash<<15;
+    return hash+!hash;
+  }
+
+private:
+  struct BucketEntry {
+    uint32_t hash; // never 0! 0 means "empty"
+    KT key;
+    VT value;
+  };
+
+private:
+  BucketEntry *buckets;
+  uint32_t bucketCount;
+  uint32_t itemCount;
+
+private:
+  void grow () {
+    uint32_t newbksz = (bucketCount ? (bucketCount<<1) : 0x2000U);
+    BucketEntry *nbk = (BucketEntry *)VOXLIB_MALLOC(newbksz*sizeof(BucketEntry));
+    memset(nbk, 0, newbksz*sizeof(BucketEntry));
+    for (uint32_t bidx = 0; bidx < bucketCount; ++bidx) {
+      if (buckets[bidx].hash == 0) continue;
+      uint32_t newbi = buckets[bidx].hash&(newbksz-1U);
+      while (nbk[newbi].hash) newbi = (newbi+1)&(newbksz-1U);
+      memcpy((void *)&nbk[newbi], (void *)&buckets[bidx], sizeof(BucketEntry));
+    }
+    VOXLIB_FREE(buckets);
+    buckets = nbk;
+    bucketCount = newbksz;
+  }
+
+public:
+  inline VoxLibHash ()
+    : buckets(nullptr)
+    , bucketCount(0)
+    , itemCount(0)
+  {}
+
+  inline ~VoxLibHash () { clear(); }
+
+  void clear () {
+    if (buckets) VOXLIB_FREE(buckets);
+    buckets = nullptr;
+    bucketCount = itemCount = 0;
+  }
+
+  VT *get (const KT &key) {
+    if (itemCount == 0) return nullptr;
+    const uint32_t khash = joaatHashBuf((const void *)&key, sizeof(KT));
+    vassert(khash);
+    uint32_t bidx = khash&(bucketCount-1U);
+    while (buckets[bidx].hash) {
+      if (buckets[bidx].hash == khash &&
+          memcmp((const void *)&buckets[bidx].key, (const void *)&key, sizeof(KT)) == 0)
+      {
+        return &buckets[bidx].value;
+      }
+      bidx = (bidx+1)&(bucketCount-1U);
+    }
+    return nullptr;
+  }
+
+  void put (const KT &key, const VT &value) {
+    if (itemCount >= (bucketCount>>1)) grow();
+    const uint32_t khash = joaatHashBuf((const void *)&key, sizeof(KT));
+    vassert(khash);
+    uint32_t bidx = khash&(bucketCount-1U);
+    while (buckets[bidx].hash) {
+      if (buckets[bidx].hash == khash &&
+          memcmp((const void *)&buckets[bidx].key, (const void *)&key, sizeof(KT)) == 0)
+      {
+        // duplicate, replace value
+        memcpy((void *)&buckets[bidx].value, (const void *)&value, sizeof(VT));
+        return;
+      }
+      bidx = (bidx+1)&(bucketCount-1U);
+    }
+    ++itemCount;
+    buckets[bidx].hash = khash;
+    memcpy((void *)&buckets[bidx].key, (const void *)&key, sizeof(KT));
+    memcpy((void *)&buckets[bidx].value, (const void *)&value, sizeof(VT));
+  }
+};
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -71,33 +351,33 @@ public:
     int two;
   };
 
-  TArray<int> cache; // cache
-  TArray<Pair> stack; // stack
+  VoxLibArray<int> cache; // cache
+  VoxLibArray<Pair> stack; // stack
   int top; // top of stack
 
   int wdt, hgt; // dimension of input
-  TArray<uint32_t> grid;
-  TArray<uint32_t> ydotCount; // for each y coord
+  VoxLibArray<uint32_t> grid;
+  VoxLibArray<uint32_t> ydotCount; // for each y coord
   int dotCount;
 
 public:
-  inline Vox2DBitmap () noexcept : top(0), wdt(0), hgt(0), dotCount(0) {}
+  inline Vox2DBitmap () : top(0), wdt(0), hgt(0), dotCount(0) {}
 
-  inline ~Vox2DBitmap () noexcept { clear(); }
+  inline ~Vox2DBitmap () { clear(); }
 
-  inline void push (int a, int b) noexcept {
+  inline void push (int a, int b) {
     stack[top].one = a;
     stack[top].two = b;
     ++top;
   }
 
-  inline void pop (int *a, int *b) noexcept {
+  inline void pop (int *a, int *b) {
     --top;
     *a = stack[top].one;
     *b = stack[top].two;
   }
 
-  inline void clear () noexcept {
+  inline void clear () {
     cache.clear();
     stack.clear();
     grid.clear();
@@ -105,7 +385,7 @@ public:
     wdt = hgt = dotCount = 0;
   }
 
-  void setSize (int awdt, int ahgt) noexcept {
+  void setSize (int awdt, int ahgt) {
     if (awdt < 1) awdt = 0;
     if (ahgt < 1) ahgt = 0;
     wdt = awdt;
@@ -115,13 +395,13 @@ public:
     clearBmp();
   }
 
-  inline void clearBmp () noexcept {
+  inline void clearBmp () {
     memset(grid.ptr(), 0, wdt*hgt*sizeof(uint32_t));
     memset(ydotCount.ptr(), 0, hgt*sizeof(uint32_t));
     dotCount = 0;
   }
 
-  VVA_FORCEINLINE void setPixel (int x, int y, uint32_t rgb) noexcept {
+  inline void setPixel (int x, int y, uint32_t rgb) {
     if (x < 0 || y < 0 || x >= wdt || y >= hgt) return;
     uint32_t *cp = grid.ptr()+(uint32_t)y*(uint32_t)wdt+(uint32_t)x;
     if (!*cp) {
@@ -131,7 +411,7 @@ public:
     *cp = rgb;
   }
 
-  VVA_FORCEINLINE uint32_t resetPixel (int x, int y) noexcept {
+  inline uint32_t resetPixel (int x, int y) {
     if (x < 0 || y < 0 || x >= wdt || y >= hgt) return 0;
     uint32_t *cp = grid.ptr()+(uint32_t)y*(uint32_t)wdt+(uint32_t)x;
     const uint32_t res = *cp;
@@ -143,7 +423,7 @@ public:
     return res;
   }
 
-  inline void updateCache (int currY) noexcept {
+  inline void updateCache (int currY) {
     /*
     for (int m = 0; m < wdt; ++m, ++cp) {
       if (!grid[currY*wdt+m]) cache[m] = 0; else ++cache[m];
@@ -157,7 +437,7 @@ public:
   }
 
   // this is the slowest part of the conversion code.
-  bool doOne (int *rx0, int *ry0, int *rx1, int *ry1) noexcept;
+  bool doOne (int *rx0, int *ry0, int *rx1, int *ry1);
 };
 
 
@@ -167,24 +447,24 @@ public:
 struct __attribute__((packed)) VoxXY16 {
   uint32_t xy; // low word: x; high word: y
 
-  VVA_FORCEINLINE VoxXY16 () noexcept {}
-  VVA_FORCEINLINE VoxXY16 (uint32_t x, uint32_t y) noexcept { xy = (y<<16)|(x&0xffffU); }
-  VVA_FORCEINLINE uint32_t getX () const noexcept { return (xy&0xffffU); }
-  VVA_FORCEINLINE uint32_t getY () const noexcept { return (xy>>16); }
-  VVA_FORCEINLINE void setX (uint32_t x) noexcept { xy = (xy&0xffff0000U)|(x&0xffffU); }
-  VVA_FORCEINLINE void setY (uint32_t y) noexcept { xy = (xy&0x0000ffffU)|(y<<16); }
+  inline VoxXY16 () {}
+  inline VoxXY16 (uint32_t x, uint32_t y) { xy = (y<<16)|(x&0xffffU); }
+  inline uint32_t getX () const { return (xy&0xffffU); }
+  inline uint32_t getY () const { return (xy>>16); }
+  inline void setX (uint32_t x) { xy = (xy&0xffff0000U)|(x&0xffffU); }
+  inline void setY (uint32_t y) { xy = (xy&0x0000ffffU)|(y<<16); }
 };
 
 
 struct __attribute__((packed)) VoxWH16 {
   uint32_t wh; // low word: x; high word: y
 
-  VVA_FORCEINLINE VoxWH16 () noexcept {}
-  VVA_FORCEINLINE VoxWH16 (uint32_t w, uint32_t h) noexcept { wh = (h<<16)|(w&0xffffU); }
-  VVA_FORCEINLINE uint32_t getW () const noexcept { return (wh&0xffffU); }
-  VVA_FORCEINLINE uint32_t getH () const noexcept { return (wh>>16); }
-  VVA_FORCEINLINE void setW (uint32_t w) noexcept { wh = (wh&0xffff0000U)|(w&0xffffU); }
-  VVA_FORCEINLINE void setH (uint32_t h) noexcept { wh = (wh&0x0000ffffU)|(h<<16); }
+  inline VoxWH16 () {}
+  inline VoxWH16 (uint32_t w, uint32_t h) { wh = (h<<16)|(w&0xffffU); }
+  inline uint32_t getW () const { return (wh&0xffffU); }
+  inline uint32_t getH () const { return (wh>>16); }
+  inline void setW (uint32_t w) { wh = (wh&0xffff0000U)|(w&0xffffU); }
+  inline void setH (uint32_t h) { wh = (wh&0x0000ffffU)|(h<<16); }
 };
 
 
@@ -194,23 +474,23 @@ struct VoxTexAtlas {
 public:
   struct Rect {
     int x, y, w, h;
-    static Rect Invalid () noexcept { return Rect(0, 0, 0, 0); }
-    VVA_FORCEINLINE Rect () noexcept : x(0), y(0), w(0), h(0) {}
-    VVA_FORCEINLINE Rect (int ax, int ay, int aw, int ah) noexcept : x(ax), y(ay), w(aw), h(ah) {}
-    VVA_FORCEINLINE bool isValid () const noexcept { return (x >= 0 && y >= 0 && w > 0 && h > 0); }
-    VVA_FORCEINLINE int getArea () const noexcept { return w*h; }
-    VVA_FORCEINLINE int getX1 () const noexcept { return x+w; }
-    VVA_FORCEINLINE int getY1 () const noexcept { return y+h; }
+    static Rect Invalid () { return Rect(0, 0, 0, 0); }
+    inline Rect () : x(0), y(0), w(0), h(0) {}
+    inline Rect (int ax, int ay, int aw, int ah) : x(ax), y(ay), w(aw), h(ah) {}
+    inline bool isValid () const { return (x >= 0 && y >= 0 && w > 0 && h > 0); }
+    inline int getArea () const { return w*h; }
+    inline int getX1 () const { return x+w; }
+    inline int getY1 () const { return y+h; }
   };
 
 private:
   int imgWidth, imgHeight;
-  TArray<Rect> rects;
+  VoxLibArray<Rect> rects;
 
-  enum { BadRect = MAX_VUINT32 };
+  enum { BadRect = 0xffffffffU };
 
   // node id or BadRect
-  uint32_t findBestFit (int w, int h) noexcept;
+  uint32_t findBestFit (int w, int h);
 
 public:
   void clear () {
@@ -218,7 +498,7 @@ public:
     imgWidth = imgHeight = 0;
   }
 
-  void setSize (int awdt, int ahgt) noexcept{
+  void setSize (int awdt, int ahgt) {
     vassert(awdt > 0 && ahgt > 0);
     imgWidth = awdt;
     imgHeight = ahgt;
@@ -226,11 +506,11 @@ public:
     rects.append(Rect(0, 0, awdt, ahgt)); // one big rect
   }
 
-  inline int getWidth () const noexcept{ return imgWidth; }
-  inline int getHeight () const noexcept{ return imgHeight; }
+  inline int getWidth () const { return imgWidth; }
+  inline int getHeight () const { return imgHeight; }
 
   // returns invalid rect if there's no room
-  Rect insert (int cwdt, int chgt) noexcept;
+  Rect insert (int cwdt, int chgt);
 };
 
 
@@ -247,10 +527,10 @@ public:
 
 public:
   uint32_t clrwdt, clrhgt;
-  TArray<uint32_t> colors; // clrwdt by clrhgt
+  VoxLibArray<uint32_t> colors; // clrwdt by clrhgt
 
-  TArray<ColorItem> citems;
-  TMapNC<uint32_t, int> citemhash; // key: color index; value: index in `citems`
+  VoxLibArray<ColorItem> citems;
+  VoxLibHash<uint32_t, int> citemhash; // key: color index; value: index in `citems`
 
   VoxTexAtlas atlas;
 
@@ -260,14 +540,14 @@ private:
                    uint32_t wdt, uint32_t hgt, uint32_t *cidxp, VoxWH16 *whp);
 
 public:
-  uint32_t getWidth () const noexcept { return clrwdt; }
-  uint32_t getHeight () const noexcept { return clrhgt; }
+  uint32_t getWidth () const { return clrwdt; }
+  uint32_t getHeight () const { return clrhgt; }
 
-  VVA_FORCEINLINE uint32_t getTexX (uint32_t cidx) const noexcept {
+  inline uint32_t getTexX (uint32_t cidx) const {
     return citems[cidx].xy.getX();
   }
 
-  VVA_FORCEINLINE uint32_t getTexY (uint32_t cidx) const noexcept {
+  inline uint32_t getTexY (uint32_t cidx) const {
     return citems[cidx].xy.getY();
   }
 
@@ -309,11 +589,11 @@ struct __attribute__((packed)) VoxPix {
   uint32_t nextz; // voxel with the next z; 0 means "no more"
   uint16_t z; // z of the current voxel
 
-  VVA_FORCEINLINE uint32_t rgb () const noexcept {
+  inline uint32_t rgb () const {
     return 0xff000000U|b|((uint32_t)g<<8)|((uint32_t)r<<16);
   }
 
-  VVA_FORCEINLINE uint32_t rgbcull () const noexcept {
+  inline uint32_t rgbcull () const {
     return b|((uint32_t)g<<8)|((uint32_t)r<<16)|((uint32_t)cull<<24);
   }
 };
@@ -328,10 +608,10 @@ struct __attribute__((packed)) VoxPix {
 struct Vox3DBitmap {
   uint32_t xsize, ysize, zsize;
   uint32_t xwdt, xywdt;
-  TArray<uint32_t> bmp; // bit per voxel
+  VoxLibArray<uint32_t> bmp; // bit per voxel
 
 public:
-  inline Vox3DBitmap () noexcept
+  inline Vox3DBitmap ()
     : xsize(0)
     , ysize(0)
     , zsize(0)
@@ -339,12 +619,12 @@ public:
     , xywdt(0)
   {}
 
-  void clear () noexcept {
+  void clear () {
     bmp.clear();
     xsize = ysize = zsize = xwdt = xywdt = 0;
   }
 
-  void setSize (uint32_t xs, uint32_t ys, uint32_t zs) noexcept {
+  void setSize (uint32_t xs, uint32_t ys, uint32_t zs) {
     clear();
     if (!xs || !ys || !zs) return;
     xsize = xs;
@@ -358,7 +638,7 @@ public:
   }
 
   // returns old value
-  VVA_FORCEINLINE uint32_t setPixel (int x, int y, int z) noexcept {
+  inline uint32_t setPixel (int x, int y, int z) {
     if (x < 0 || y < 0 || z < 0) return 1;
     if ((uint32_t)x >= xsize || (uint32_t)y >= ysize || (uint32_t)z >= zsize) return 1;
     //vuint32 *bp = bmp.ptr()+(vuint32)z*xywdt+(vuint32)y*xwdt+((vuint32)x>>5);
@@ -369,13 +649,13 @@ public:
     return res;
   }
 
-  VVA_FORCEINLINE void resetPixel (int x, int y, int z) noexcept {
+  inline void resetPixel (int x, int y, int z) {
     if (x < 0 || y < 0 || z < 0) return;
     if ((uint32_t)x >= xsize || (uint32_t)y >= ysize || (uint32_t)z >= zsize) return;
     bmp/*.ptr()*/[(uint32_t)z*xywdt+(uint32_t)y*xwdt+((uint32_t)x>>5)] &= ~(1U<<((uint32_t)x&0x1f));
   }
 
-  VVA_FORCEINLINE uint32_t getPixel (int x, int y, int z) const noexcept {
+  inline uint32_t getPixel (int x, int y, int z) const {
     if (x < 0 || y < 0 || z < 0) return 1;
     if ((uint32_t)x >= xsize || (uint32_t)y >= ysize || (uint32_t)z >= zsize) return 1;
     return (bmp/*.ptr()*/[(uint32_t)z*xywdt+(uint32_t)y*xwdt+((uint32_t)x>>5)]&(1U<<((uint32_t)x&0x1f)));
@@ -409,10 +689,10 @@ public:
   uint32_t xsize, ysize, zsize;
   float cx, cy, cz;
 
-  TArray<VoxPix> data; // [0] is never used
+  VoxLibArray<VoxPix> data; // [0] is never used
   // xsize*ysize array, offsets in `data`; 0 means "no data here"
   // slabs are sorted from bottom to top, and never intersects
-  TArray<uint32_t> xyofs;
+  VoxLibArray<uint32_t> xyofs;
   uint32_t freelist;
   uint32_t voxpixtotal;
 
@@ -436,16 +716,16 @@ public:
   void clear ();
   void setSize (uint32_t xs, uint32_t ys, uint32_t zs);
 
-  static VVA_FORCEINLINE uint8_t cullmask (uint32_t cidx) noexcept {
+  static inline uint8_t cullmask (uint32_t cidx) {
     return (uint8_t)(1U<<cidx);
   }
 
   // opposite mask
-  static VVA_FORCEINLINE uint8_t cullopmask (uint32_t cidx) noexcept {
+  static inline uint8_t cullopmask (uint32_t cidx) {
     return (uint8_t)(1U<<(cidx^1));
   }
 
-  VVA_FORCEINLINE uint32_t getDOfs (int x, int y) const noexcept {
+  inline uint32_t getDOfs (int x, int y) const {
     if (x < 0 || y < 0) return 0;
     if ((uint32_t)x >= xsize || (uint32_t)y >= ysize) return 0;
     return xyofs/*.ptr()*/[(uint32_t)y*xsize+(uint32_t)x];
@@ -453,7 +733,7 @@ public:
 
   // high byte is cull info
   // returns 0 if there is no such voxel
-  VVA_FORCEINLINE uint32_t voxofs (int x, int y, int z) const noexcept {
+  inline uint32_t voxofs (int x, int y, int z) const {
     uint32_t dofs = getDOfs(x, y);
     while (dofs) {
       if (data/*.ptr()*/[dofs].z == (uint16_t)z) return dofs;
@@ -465,25 +745,25 @@ public:
 
   // high byte is cull info
   // returns 0 if there is no such voxel
-  VVA_FORCEINLINE uint32_t query (int x, int y, int z) const noexcept {
+  inline uint32_t query (int x, int y, int z) const {
     const uint32_t dofs = voxofs(x, y, z);
     return (dofs && data/*.ptr()*/[dofs].cull ? data/*.ptr()*/[dofs].rgbcull() : 0);
   }
 
-  VVA_FORCEINLINE VoxPix *queryVP (int x, int y, int z) noexcept {
+  inline VoxPix *queryVP (int x, int y, int z) {
     const uint32_t dofs = voxofs(x, y, z);
     return (dofs ? &data/*.ptr()*/[dofs] : nullptr);
   }
 
   // high byte is cull info
   // returns 0 if there is no such voxel
-  VVA_FORCEINLINE uint8_t queryCull (int x, int y, int z) const noexcept {
+  inline uint8_t queryCull (int x, int y, int z) const {
     const uint32_t dofs = voxofs(x, y, z);
     return (dofs ? data/*.ptr()*/[dofs].cull : 0);
   }
 
   // only for existing voxels; won't remove empty voxels
-  VVA_FORCEINLINE void setVoxelCull (int x, int y, int z, uint8_t cull) {
+  inline void setVoxelCull (int x, int y, int z, uint8_t cull) {
     VoxPix *vp = queryVP(x, y, z);
     if (vp) vp->cull = (uint8_t)(cull&0x3f);
   }
@@ -537,7 +817,7 @@ struct __attribute__((packed)) VoxQuad {
   VoxWH16 wh; // width and height
   uint8_t cull; // for which face this quad was created?
 
-  void calcNormal () noexcept;
+  void calcNormal ();
 };
 
 /*
@@ -594,7 +874,7 @@ struct VoxelMesh {
   };
 
 public:
-  TArray<VoxQuad> quads;
+  VoxLibArray<VoxQuad> quads;
   // voxel center point
   float cx, cy, cz;
   // color atlas
@@ -602,7 +882,7 @@ public:
 
 private:
   static VoxQuadVertex genVertex (uint8_t type, const float x, const float y, const float z,
-                                  const float xlen, const float ylen, const float zlen) noexcept
+                                  const float xlen, const float ylen, const float zlen)
   {
     VoxQuadVertex vx;
     vx.qtype = type;
@@ -630,10 +910,10 @@ private:
                 const uint32_t *colors);
 
 public:
-  inline VoxelMesh () noexcept : quads(), cx(0.0f), cy(0.0f), cz(0.0f), catlas() {}
-  inline ~VoxelMesh () noexcept { clear(); }
+  inline VoxelMesh () : quads(), cx(0.0f), cy(0.0f), cz(0.0f), catlas() {}
+  inline ~VoxelMesh () { clear(); }
 
-  void clear () noexcept;
+  void clear ();
 
   // optimisation levels:
   //   0: one quad per one voxel face
@@ -655,6 +935,43 @@ public:
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+struct VVoxVertexEx {
+  float x, y, z;
+  float s, t; // will be calculated after texture creation
+  float nx, ny, nz; // normal
+
+  inline VVoxVertexEx ()
+    : x(0.0f)
+    , y(0.0f)
+    , z(0.0f)
+    , s(0.0f)
+    , t(0.0f)
+    , nx(0.0f)
+    , ny(0.0f)
+    , nz(0.0f)
+  {}
+
+  inline bool operator == (const VVoxVertexEx &b) const {
+    return
+      x == b.x && y == b.y && z == b.z &&
+      s == b.s && t == b.t &&
+      nx == b.nx && ny == b.ny && nz == b.nz;
+  }
+
+  //inline TVec asTVec () const { return TVec(x, y, z); }
+  //inline TVec normalAsTVec () const { return TVec(nx, ny, nz); }
+
+  inline float get (unsigned idx) const {
+    return (idx == 0 ? x : idx == 1 ? y : z);
+  }
+
+  inline void set (unsigned idx, const float v) {
+    if (idx == 0) x = v; else if (idx == 1) y = v; else z = v;
+  }
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 /*
   this builds the OpenGL data structures, ready to be uploaded to the GPU.
   it also can perform t-junction fixing. it is using quad data from `VoxelMesh`
@@ -663,12 +980,12 @@ public:
  */
 struct GLVoxelMesh {
   // WARNING! DO NOT CHANGE ANY OF THE PUBLIC FIELDS MANUALLY!
-  TArray<VVoxVertexEx> vertices;
-  TArray<uint32_t> indicies;
+  VoxLibArray<VVoxVertexEx> vertices;
+  VoxLibArray<uint32_t> indicies;
   uint32_t breakIndex;
   uint32_t totaladded;
 
-  TArray<uint32_t> img;
+  VoxLibArray<uint32_t> img;
   uint32_t imgWidth, imgHeight;
 
 private:
@@ -679,7 +996,7 @@ private:
   };
 
 private:
-  TMapNC<VVoxVertexEx, uint32_t> vertcache;
+  VoxLibHash<VVoxVertexEx, uint32_t> vertcache;
   float vmin[3]; // minimum vertex coords
   float vmax[3]; // maximum vertex coords
 
@@ -696,12 +1013,12 @@ private:
     int morefirst; // first added vertex; linked by `next`
     uint8_t axis; // AXIS_n
 
-    inline bool hasMore () const noexcept { return (morefirst >= 0); }
-    inline bool noMore () const noexcept { return (morefirst < 0); }
+    inline bool hasMore () const { return (morefirst >= 0); }
+    inline bool noMore () const { return (morefirst < 0); }
   };
 
-  TArray<VoxEdge> edges;
-  TArray<AddedVert> addedlist;
+  VoxLibArray<VoxEdge> edges;
+  VoxLibArray<AddedVert> addedlist;
 
   Vox3DBitmap gridbmp;
   int gridmin[3];
@@ -711,7 +1028,7 @@ private:
   uint32_t appendVertex (const VVoxVertexEx &gv);
 
 private:
-  inline void gridCoords (float fx, float fy, float fz, int *gx, int *gy, int *gz) const noexcept {
+  inline void gridCoords (float fx, float fy, float fz, int *gx, int *gy, int *gz) const {
     int vx = (int)fx;
     int vy = (int)fy;
     int vz = (int)fz;
@@ -722,19 +1039,19 @@ private:
     *gz = vz-gridmin[2];
   }
 
-  inline void putVertexToGrid (uint32_t vidx) noexcept {
+  inline void putVertexToGrid (uint32_t vidx) {
     int vx, vy, vz;
     gridCoords(vertices[vidx].x, vertices[vidx].y, vertices[vidx].z, &vx, &vy, &vz);
     gridbmp.setPixel(vx, vy, vz);
   }
 
-  inline uint32_t hasVertexAt (float fx, float fy, float fz) const noexcept {
+  inline uint32_t hasVertexAt (float fx, float fy, float fz) const {
     int vx, vy, vz;
     gridCoords(fx, fy, fz, &vx, &vy, &vz);
     return gridbmp.getPixel(vx, vy, vz);
   }
 
-  inline void putEdgeToGrid (uint32_t eidx) noexcept {
+  inline void putEdgeToGrid (uint32_t eidx) {
     VoxEdge &e = edges[eidx];
     putVertexToGrid(e.v0);
     putVertexToGrid(e.v1);
