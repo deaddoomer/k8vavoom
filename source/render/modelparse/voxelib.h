@@ -52,6 +52,11 @@ extern void (*voxlib_message) (VoxLibMsg type, const char *msg);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+// very simple dynamic array implementation
+// works only for POD types, but i don't need anything else anyway
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 /*
   just a 2d bitmap that keeps rgb colors.
   there is also the code to find the biggest non-empty rectangle on the bitmap.
@@ -71,8 +76,8 @@ public:
   int top; // top of stack
 
   int wdt, hgt; // dimension of input
-  TArray<vuint32> grid;
-  TArray<vuint32> ydotCount; // for each y coord
+  TArray<uint32_t> grid;
+  TArray<uint32_t> ydotCount; // for each y coord
   int dotCount;
 
 public:
@@ -111,14 +116,14 @@ public:
   }
 
   inline void clearBmp () noexcept {
-    memset(grid.ptr(), 0, wdt*hgt*sizeof(vuint32));
-    memset(ydotCount.ptr(), 0, hgt*sizeof(vuint32));
+    memset(grid.ptr(), 0, wdt*hgt*sizeof(uint32_t));
+    memset(ydotCount.ptr(), 0, hgt*sizeof(uint32_t));
     dotCount = 0;
   }
 
-  VVA_FORCEINLINE void setPixel (int x, int y, vuint32 rgb) noexcept {
+  VVA_FORCEINLINE void setPixel (int x, int y, uint32_t rgb) noexcept {
     if (x < 0 || y < 0 || x >= wdt || y >= hgt) return;
-    vuint32 *cp = grid.ptr()+(vuint32)y*(vuint32)wdt+(vuint32)x;
+    uint32_t *cp = grid.ptr()+(uint32_t)y*(uint32_t)wdt+(uint32_t)x;
     if (!*cp) {
       ++dotCount;
       ++ydotCount.ptr()[y];
@@ -126,10 +131,10 @@ public:
     *cp = rgb;
   }
 
-  VVA_FORCEINLINE vuint32 resetPixel (int x, int y) noexcept {
+  VVA_FORCEINLINE uint32_t resetPixel (int x, int y) noexcept {
     if (x < 0 || y < 0 || x >= wdt || y >= hgt) return 0;
-    vuint32 *cp = grid.ptr()+(vuint32)y*(vuint32)wdt+(vuint32)x;
-    const vuint32 res = *cp;
+    uint32_t *cp = grid.ptr()+(uint32_t)y*(uint32_t)wdt+(uint32_t)x;
+    const uint32_t res = *cp;
     if (res) {
       *cp = 0;
       --dotCount;
@@ -144,7 +149,7 @@ public:
       if (!grid[currY*wdt+m]) cache[m] = 0; else ++cache[m];
     }
     */
-    const vuint32 *lp = grid.ptr()+(vuint32)currY*(vuint32)wdt;
+    const uint32_t *lp = grid.ptr()+(uint32_t)currY*(uint32_t)wdt;
     int *cp = cache.ptr();
     for (int m = wdt; m--; ++cp) {
       if (*lp++) ++(*cp); else *cp = 0;
@@ -160,26 +165,26 @@ public:
 // just a compact representation of a rectange
 // splitted to two copy-pasted structs for better type checking
 struct __attribute__((packed)) VoxXY16 {
-  vuint32 xy; // low word: x; high word: y
+  uint32_t xy; // low word: x; high word: y
 
   VVA_FORCEINLINE VoxXY16 () noexcept {}
-  VVA_FORCEINLINE VoxXY16 (vuint32 x, vuint32 y) noexcept { xy = (y<<16)|(x&0xffffU); }
-  VVA_FORCEINLINE vuint32 getX () const noexcept { return (xy&0xffffU); }
-  VVA_FORCEINLINE vuint32 getY () const noexcept { return (xy>>16); }
-  VVA_FORCEINLINE void setX (vuint32 x) noexcept { xy = (xy&0xffff0000U)|(x&0xffffU); }
-  VVA_FORCEINLINE void setY (vuint32 y) noexcept { xy = (xy&0x0000ffffU)|(y<<16); }
+  VVA_FORCEINLINE VoxXY16 (uint32_t x, uint32_t y) noexcept { xy = (y<<16)|(x&0xffffU); }
+  VVA_FORCEINLINE uint32_t getX () const noexcept { return (xy&0xffffU); }
+  VVA_FORCEINLINE uint32_t getY () const noexcept { return (xy>>16); }
+  VVA_FORCEINLINE void setX (uint32_t x) noexcept { xy = (xy&0xffff0000U)|(x&0xffffU); }
+  VVA_FORCEINLINE void setY (uint32_t y) noexcept { xy = (xy&0x0000ffffU)|(y<<16); }
 };
 
 
 struct __attribute__((packed)) VoxWH16 {
-  vuint32 wh; // low word: x; high word: y
+  uint32_t wh; // low word: x; high word: y
 
   VVA_FORCEINLINE VoxWH16 () noexcept {}
-  VVA_FORCEINLINE VoxWH16 (vuint32 w, vuint32 h) noexcept { wh = (h<<16)|(w&0xffffU); }
-  VVA_FORCEINLINE vuint32 getW () const noexcept { return (wh&0xffffU); }
-  VVA_FORCEINLINE vuint32 getH () const noexcept { return (wh>>16); }
-  VVA_FORCEINLINE void setW (vuint32 w) noexcept { wh = (wh&0xffff0000U)|(w&0xffffU); }
-  VVA_FORCEINLINE void setH (vuint32 h) noexcept { wh = (wh&0x0000ffffU)|(h<<16); }
+  VVA_FORCEINLINE VoxWH16 (uint32_t w, uint32_t h) noexcept { wh = (h<<16)|(w&0xffffU); }
+  VVA_FORCEINLINE uint32_t getW () const noexcept { return (wh&0xffffU); }
+  VVA_FORCEINLINE uint32_t getH () const noexcept { return (wh>>16); }
+  VVA_FORCEINLINE void setW (uint32_t w) noexcept { wh = (wh&0xffff0000U)|(w&0xffffU); }
+  VVA_FORCEINLINE void setH (uint32_t h) noexcept { wh = (wh&0x0000ffffU)|(h<<16); }
 };
 
 
@@ -205,7 +210,7 @@ private:
   enum { BadRect = MAX_VUINT32 };
 
   // node id or BadRect
-  vuint32 findBestFit (int w, int h) noexcept;
+  uint32_t findBestFit (int w, int h) noexcept;
 
 public:
   void clear () {
@@ -241,28 +246,28 @@ public:
   };
 
 public:
-  vuint32 clrwdt, clrhgt;
-  TArray<vuint32> colors; // clrwdt by clrhgt
+  uint32_t clrwdt, clrhgt;
+  TArray<uint32_t> colors; // clrwdt by clrhgt
 
   TArray<ColorItem> citems;
-  TMapNC<vuint32, int> citemhash; // key: color index; value: index in `citems`
+  TMapNC<uint32_t, int> citemhash; // key: color index; value: index in `citems`
 
   VoxTexAtlas atlas;
 
 private:
-  bool findRectEx (const vuint32 *clrs, vuint32 cwdt, vuint32 chgt,
-                   vuint32 cxofs, vuint32 cyofs,
-                   vuint32 wdt, vuint32 hgt, vuint32 *cidxp, VoxWH16 *whp);
+  bool findRectEx (const uint32_t *clrs, uint32_t cwdt, uint32_t chgt,
+                   uint32_t cxofs, uint32_t cyofs,
+                   uint32_t wdt, uint32_t hgt, uint32_t *cidxp, VoxWH16 *whp);
 
 public:
-  vuint32 getWidth () const noexcept { return clrwdt; }
-  vuint32 getHeight () const noexcept { return clrhgt; }
+  uint32_t getWidth () const noexcept { return clrwdt; }
+  uint32_t getHeight () const noexcept { return clrhgt; }
 
-  VVA_FORCEINLINE vuint32 getTexX (vuint32 cidx) const noexcept {
+  VVA_FORCEINLINE uint32_t getTexX (uint32_t cidx) const noexcept {
     return citems[cidx].xy.getX();
   }
 
-  VVA_FORCEINLINE vuint32 getTexY (vuint32 cidx) const noexcept {
+  VVA_FORCEINLINE uint32_t getTexY (uint32_t cidx) const noexcept {
     return citems[cidx].xy.getY();
   }
 
@@ -279,17 +284,17 @@ public:
   }
 
   // grow image, and relayout everything
-  void growImage (vuint32 inswdt, vuint32 inshgt);
+  void growImage (uint32_t inswdt, uint32_t inshgt);
 
 
-  inline bool findRect (const vuint32 *clrs, vuint32 wdt, vuint32 hgt,
-                        vuint32 *cidxp, VoxWH16 *whp)
+  inline bool findRect (const uint32_t *clrs, uint32_t wdt, uint32_t hgt,
+                        uint32_t *cidxp, VoxWH16 *whp)
   {
     return findRectEx(clrs, wdt, hgt, 0, 0, wdt, hgt, cidxp, whp);
   }
 
   // returns index in `citems`
-  vuint32 addNewRect (const vuint32 *clrs, vuint32 wdt, vuint32 hgt);
+  uint32_t addNewRect (const uint32_t *clrs, uint32_t wdt, uint32_t hgt);
 };
 
 
@@ -299,17 +304,17 @@ public:
   it keeps voxel color, and face visibility info.
  */
 struct __attribute__((packed)) VoxPix {
-  vuint8 b, g, r;
-  vuint8 cull;
-  vuint32 nextz; // voxel with the next z; 0 means "no more"
-  vuint16 z; // z of the current voxel
+  uint8_t b, g, r;
+  uint8_t cull;
+  uint32_t nextz; // voxel with the next z; 0 means "no more"
+  uint16_t z; // z of the current voxel
 
-  VVA_FORCEINLINE vuint32 rgb () const noexcept {
-    return 0xff000000U|b|((vuint32)g<<8)|((vuint32)r<<16);
+  VVA_FORCEINLINE uint32_t rgb () const noexcept {
+    return 0xff000000U|b|((uint32_t)g<<8)|((uint32_t)r<<16);
   }
 
-  VVA_FORCEINLINE vuint32 rgbcull () const noexcept {
-    return b|((vuint32)g<<8)|((vuint32)r<<16)|((vuint32)cull<<24);
+  VVA_FORCEINLINE uint32_t rgbcull () const noexcept {
+    return b|((uint32_t)g<<8)|((uint32_t)r<<16)|((uint32_t)cull<<24);
   }
 };
 
@@ -321,9 +326,9 @@ struct __attribute__((packed)) VoxPix {
   in "hollow fill" and t-junction fixer algorithms.
  */
 struct Vox3DBitmap {
-  vuint32 xsize, ysize, zsize;
-  vuint32 xwdt, xywdt;
-  TArray<vuint32> bmp; // bit per voxel
+  uint32_t xsize, ysize, zsize;
+  uint32_t xwdt, xywdt;
+  TArray<uint32_t> bmp; // bit per voxel
 
 public:
   inline Vox3DBitmap () noexcept
@@ -339,7 +344,7 @@ public:
     xsize = ysize = zsize = xwdt = xywdt = 0;
   }
 
-  void setSize (vuint32 xs, vuint32 ys, vuint32 zs) noexcept {
+  void setSize (uint32_t xs, uint32_t ys, uint32_t zs) noexcept {
     clear();
     if (!xs || !ys || !zs) return;
     xsize = xs;
@@ -349,31 +354,31 @@ public:
     vassert(xwdt<<5 >= xs);
     xywdt = xwdt*ysize;
     bmp.setLength(xywdt*zsize);
-    memset(bmp.ptr(), 0, bmp.length()*sizeof(vuint32));
+    memset(bmp.ptr(), 0, bmp.length()*sizeof(uint32_t));
   }
 
   // returns old value
-  VVA_FORCEINLINE vuint32 setPixel (int x, int y, int z) noexcept {
+  VVA_FORCEINLINE uint32_t setPixel (int x, int y, int z) noexcept {
     if (x < 0 || y < 0 || z < 0) return 1;
-    if ((vuint32)x >= xsize || (vuint32)y >= ysize || (vuint32)z >= zsize) return 1;
+    if ((uint32_t)x >= xsize || (uint32_t)y >= ysize || (uint32_t)z >= zsize) return 1;
     //vuint32 *bp = bmp.ptr()+(vuint32)z*xywdt+(vuint32)y*xwdt+((vuint32)x>>5);
-    vuint32 *bp = &bmp[(vuint32)z*xywdt+(vuint32)y*xwdt+((vuint32)x>>5)];
-    const vuint32 bmask = 1U<<((vuint32)x&0x1f);
-    const vuint32 res = (*bp)&bmask;
+    uint32_t *bp = &bmp[(uint32_t)z*xywdt+(uint32_t)y*xwdt+((uint32_t)x>>5)];
+    const uint32_t bmask = 1U<<((uint32_t)x&0x1f);
+    const uint32_t res = (*bp)&bmask;
     *bp |= bmask;
     return res;
   }
 
   VVA_FORCEINLINE void resetPixel (int x, int y, int z) noexcept {
     if (x < 0 || y < 0 || z < 0) return;
-    if ((vuint32)x >= xsize || (vuint32)y >= ysize || (vuint32)z >= zsize) return;
-    bmp/*.ptr()*/[(vuint32)z*xywdt+(vuint32)y*xwdt+((vuint32)x>>5)] &= ~(1U<<((vuint32)x&0x1f));
+    if ((uint32_t)x >= xsize || (uint32_t)y >= ysize || (uint32_t)z >= zsize) return;
+    bmp/*.ptr()*/[(uint32_t)z*xywdt+(uint32_t)y*xwdt+((uint32_t)x>>5)] &= ~(1U<<((uint32_t)x&0x1f));
   }
 
-  VVA_FORCEINLINE vuint32 getPixel (int x, int y, int z) const noexcept {
+  VVA_FORCEINLINE uint32_t getPixel (int x, int y, int z) const noexcept {
     if (x < 0 || y < 0 || z < 0) return 1;
-    if ((vuint32)x >= xsize || (vuint32)y >= ysize || (vuint32)z >= zsize) return 1;
-    return (bmp/*.ptr()*/[(vuint32)z*xywdt+(vuint32)y*xwdt+((vuint32)x>>5)]&(1U<<((vuint32)x&0x1f)));
+    if ((uint32_t)x >= xsize || (uint32_t)y >= ysize || (uint32_t)z >= zsize) return 1;
+    return (bmp/*.ptr()*/[(uint32_t)z*xywdt+(uint32_t)y*xwdt+((uint32_t)x>>5)]&(1U<<((uint32_t)x&0x1f)));
   }
 };
 
@@ -401,18 +406,18 @@ public:
  */
 struct VoxelData {
 public:
-  vuint32 xsize, ysize, zsize;
+  uint32_t xsize, ysize, zsize;
   float cx, cy, cz;
 
   TArray<VoxPix> data; // [0] is never used
   // xsize*ysize array, offsets in `data`; 0 means "no data here"
   // slabs are sorted from bottom to top, and never intersects
-  TArray<vuint32> xyofs;
-  vuint32 freelist;
-  vuint32 voxpixtotal;
+  TArray<uint32_t> xyofs;
+  uint32_t freelist;
+  uint32_t voxpixtotal;
 
 private:
-  vuint32 allocVox ();
+  uint32_t allocVox ();
 
 public:
   inline VoxelData ()
@@ -429,30 +434,30 @@ public:
   inline ~VoxelData () { clear(); }
 
   void clear ();
-  void setSize (vuint32 xs, vuint32 ys, vuint32 zs);
+  void setSize (uint32_t xs, uint32_t ys, uint32_t zs);
 
-  static VVA_FORCEINLINE vuint8 cullmask (vuint32 cidx) noexcept {
-    return (vuint8)(1U<<cidx);
+  static VVA_FORCEINLINE uint8_t cullmask (uint32_t cidx) noexcept {
+    return (uint8_t)(1U<<cidx);
   }
 
   // opposite mask
-  static VVA_FORCEINLINE vuint8 cullopmask (vuint32 cidx) noexcept {
-    return (vuint8)(1U<<(cidx^1));
+  static VVA_FORCEINLINE uint8_t cullopmask (uint32_t cidx) noexcept {
+    return (uint8_t)(1U<<(cidx^1));
   }
 
-  VVA_FORCEINLINE vuint32 getDOfs (int x, int y) const noexcept {
+  VVA_FORCEINLINE uint32_t getDOfs (int x, int y) const noexcept {
     if (x < 0 || y < 0) return 0;
-    if ((vuint32)x >= xsize || (vuint32)y >= ysize) return 0;
-    return xyofs/*.ptr()*/[(vuint32)y*xsize+(vuint32)x];
+    if ((uint32_t)x >= xsize || (uint32_t)y >= ysize) return 0;
+    return xyofs/*.ptr()*/[(uint32_t)y*xsize+(uint32_t)x];
   }
 
   // high byte is cull info
   // returns 0 if there is no such voxel
-  VVA_FORCEINLINE vuint32 voxofs (int x, int y, int z) const noexcept {
-    vuint32 dofs = getDOfs(x, y);
+  VVA_FORCEINLINE uint32_t voxofs (int x, int y, int z) const noexcept {
+    uint32_t dofs = getDOfs(x, y);
     while (dofs) {
-      if (data/*.ptr()*/[dofs].z == (vuint16)z) return dofs;
-      if (data/*.ptr()*/[dofs].z > (vuint16)z) return 0;
+      if (data/*.ptr()*/[dofs].z == (uint16_t)z) return dofs;
+      if (data/*.ptr()*/[dofs].z > (uint16_t)z) return 0;
       dofs = data/*.ptr()*/[dofs].nextz;
     }
     return 0;
@@ -460,27 +465,27 @@ public:
 
   // high byte is cull info
   // returns 0 if there is no such voxel
-  VVA_FORCEINLINE vuint32 query (int x, int y, int z) const noexcept {
-    const vuint32 dofs = voxofs(x, y, z);
+  VVA_FORCEINLINE uint32_t query (int x, int y, int z) const noexcept {
+    const uint32_t dofs = voxofs(x, y, z);
     return (dofs && data/*.ptr()*/[dofs].cull ? data/*.ptr()*/[dofs].rgbcull() : 0);
   }
 
   VVA_FORCEINLINE VoxPix *queryVP (int x, int y, int z) noexcept {
-    const vuint32 dofs = voxofs(x, y, z);
+    const uint32_t dofs = voxofs(x, y, z);
     return (dofs ? &data/*.ptr()*/[dofs] : nullptr);
   }
 
   // high byte is cull info
   // returns 0 if there is no such voxel
-  VVA_FORCEINLINE vuint8 queryCull (int x, int y, int z) const noexcept {
-    const vuint32 dofs = voxofs(x, y, z);
+  VVA_FORCEINLINE uint8_t queryCull (int x, int y, int z) const noexcept {
+    const uint32_t dofs = voxofs(x, y, z);
     return (dofs ? data/*.ptr()*/[dofs].cull : 0);
   }
 
   // only for existing voxels; won't remove empty voxels
-  VVA_FORCEINLINE void setVoxelCull (int x, int y, int z, vuint8 cull) {
+  VVA_FORCEINLINE void setVoxelCull (int x, int y, int z, uint8_t cull) {
     VoxPix *vp = queryVP(x, y, z);
-    if (vp) vp->cull = (vuint8)(cull&0x3f);
+    if (vp) vp->cull = (uint8_t)(cull&0x3f);
   }
 
 
@@ -488,7 +493,7 @@ public:
 
 
   void removeVoxel (int x, int y, int z);
-  void addVoxel (int x, int y, int z, vuint32 rgb, vuint8 cull);
+  void addVoxel (int x, int y, int z, uint32_t rgb, uint8_t cull);
 
   void checkInvariants ();
 
@@ -500,12 +505,12 @@ public:
 
   // if we have ANY voxel at the corresponding side, don't render that face
   // returns number of fixed voxels
-  vuint32 fixFaceVisibility ();
+  uint32_t fixFaceVisibility ();
 
   // this fills everything outside of the voxel, and
   // then resets culling bits for all invisible faces
   // i don't care about memory yet
-  vuint32 hollowFill ();
+  uint32_t hollowFill ();
 
   // main voxel optimisation entry point
   void optimise (bool doHollowFill);
@@ -519,18 +524,18 @@ public:
 struct /*__attribute__((packed))*/ VoxQuadVertex {
   float x, y, z;
   float dx, dy, dz;
-  vuint8 qtype; // Xn_Yn_Zn
+  uint8_t qtype; // Xn_Yn_Zn
 };
 
 
 // quad is always one texel strip
 struct __attribute__((packed)) VoxQuad {
   VoxQuadVertex vx[4];
-  vuint32 cidx; // in colorpack's `citems`
+  uint32_t cidx; // in colorpack's `citems`
   VoxQuadVertex normal;
   int type/* = Invalid*/;
   VoxWH16 wh; // width and height
-  vuint8 cull; // for which face this quad was created?
+  uint8_t cull; // for which face this quad was created?
 
   void calcNormal () noexcept;
 };
@@ -596,7 +601,7 @@ public:
   VoxColorPack catlas;
 
 private:
-  static VoxQuadVertex genVertex (vuint8 type, const float x, const float y, const float z,
+  static VoxQuadVertex genVertex (uint8_t type, const float x, const float y, const float z,
                                   const float xlen, const float ylen, const float zlen) noexcept
   {
     VoxQuadVertex vx;
@@ -611,18 +616,18 @@ private:
     return vx;
   }
 
-  void setColors (VoxQuad &vq, const vuint32 *clrs, vuint32 wdt, vuint32 hgt);
+  void setColors (VoxQuad &vq, const uint32_t *clrs, uint32_t wdt, uint32_t hgt);
 
-  void addSlabFace (vuint8 cull, vuint8 dmv,
+  void addSlabFace (uint8_t cull, uint8_t dmv,
                     float x, float y, float z,
-                    int len, const vuint32 *colors);
+                    int len, const uint32_t *colors);
 
-  void addCube (vuint8 cull, float x, float y, float z, vuint32 rgb);
+  void addCube (uint8_t cull, float x, float y, float z, uint32_t rgb);
 
-  void addQuad (vuint8 cull,
+  void addQuad (uint8_t cull,
                 float x, float y, float z,
                 int wdt, int hgt, // quad size
-                const vuint32 *colors);
+                const uint32_t *colors);
 
 public:
   inline VoxelMesh () noexcept : quads(), cx(0.0f), cy(0.0f), cz(0.0f), catlas() {}
@@ -645,7 +650,7 @@ public:
   void buildOpt4 (VoxelData &vox);
 
 public:
-  static const vuint8 quadFaces[6][4];
+  static const uint8_t quadFaces[6][4];
 };
 
 
@@ -659,12 +664,12 @@ public:
 struct GLVoxelMesh {
   // WARNING! DO NOT CHANGE ANY OF THE PUBLIC FIELDS MANUALLY!
   TArray<VVoxVertexEx> vertices;
-  TArray<vuint32> indicies;
-  vuint32 uniqueVerts;
-  vuint32 breakIndex;
+  TArray<uint32_t> indicies;
+  uint32_t breakIndex;
+  uint32_t totaladded;
 
-  TArray<vuint32> img;
-  vuint32 imgWidth, imgHeight;
+  TArray<uint32_t> img;
+  uint32_t imgWidth, imgHeight;
 
 private:
   enum {
@@ -674,28 +679,36 @@ private:
   };
 
 private:
-  TMapNC<VVoxVertexEx, vuint32> vertcache;
+  TMapNC<VVoxVertexEx, uint32_t> vertcache;
   float vmin[3]; // minimum vertex coords
   float vmax[3]; // maximum vertex coords
 
 private:
+  struct AddedVert {
+    uint32_t vidx;
+    int next; // next vertex in `addedlist`
+  };
+
   struct VoxEdge {
-    vuint32 v0, v1; // start and end vertex
+    uint32_t v0, v1; // start and end vertex
     float dir; // by the axis, not normalized
     float clo, chi; // low and high coords
-    TArray<vuint32> moreverts; // added vertices
-    vuint8 axis; // AXIS_n
+    int morefirst; // first added vertex; linked by `next`
+    uint8_t axis; // AXIS_n
+
+    inline bool hasMore () const noexcept { return (morefirst >= 0); }
+    inline bool noMore () const noexcept { return (morefirst < 0); }
   };
 
   TArray<VoxEdge> edges;
-  vuint32 totaltadded;
+  TArray<AddedVert> addedlist;
 
   Vox3DBitmap gridbmp;
   int gridmin[3];
   int gridmax[3];
 
 private:
-  vuint32 appendVertex (const VVoxVertexEx &gv);
+  uint32_t appendVertex (const VVoxVertexEx &gv);
 
 private:
   inline void gridCoords (float fx, float fy, float fz, int *gx, int *gy, int *gz) const noexcept {
@@ -709,19 +722,19 @@ private:
     *gz = vz-gridmin[2];
   }
 
-  inline void putVertexToGrid (vuint32 vidx) noexcept {
+  inline void putVertexToGrid (uint32_t vidx) noexcept {
     int vx, vy, vz;
     gridCoords(vertices[vidx].x, vertices[vidx].y, vertices[vidx].z, &vx, &vy, &vz);
     gridbmp.setPixel(vx, vy, vz);
   }
 
-  inline vuint32 hasVertexAt (float fx, float fy, float fz) const noexcept {
+  inline uint32_t hasVertexAt (float fx, float fy, float fz) const noexcept {
     int vx, vy, vz;
     gridCoords(fx, fy, fz, &vx, &vy, &vz);
     return gridbmp.getPixel(vx, vy, vz);
   }
 
-  inline void putEdgeToGrid (vuint32 eidx) noexcept {
+  inline void putEdgeToGrid (uint32_t eidx) noexcept {
     VoxEdge &e = edges[eidx];
     putVertexToGrid(e.v0);
     putVertexToGrid(e.v1);
@@ -733,7 +746,7 @@ private:
   void sortEdges ();
 
   void fixEdgeWithVert (VoxEdge &edge, float crd);
-  void fixEdgeNew (vuint32 eidx);
+  void fixEdgeNew (uint32_t eidx);
   void rebuildEdges ();
 
   // t-junction fixer entry point
@@ -742,19 +755,20 @@ private:
 
 public:
   GLVoxelMesh ()
-    : uniqueVerts(0)
-    , breakIndex(65535)
+    : breakIndex(65535)
+    , totaladded(0)
     , imgWidth(0)
     , imgHeight(0)
-    , totaltadded(0)
-  { clear(); }
+  {
+      clear();
+  }
 
   void clear ();
 
   // count the number of triangles in triangle fan data
   // can be used for informational messages
   // slow!
-  vuint32 countTris ();
+  uint32_t countTris ();
 
   // main entry point
   // `tjfix` is "fix t-junctions" flag
@@ -762,10 +776,10 @@ public:
   // on exit, `vertices` contains a list of vertices, and
   // `indicies` contains a list of vertex indicies, ready to be rendered as triangle fans
   // fans are separated by `BreakIndex` value
-  void create (VoxelMesh &vox, bool tjfix, vuint32 BreakIndex);
+  void create (VoxelMesh &vox, bool tjfix, uint32_t BreakIndex);
 
   // call this after `create()`, to get triangle soup
-  typedef void (*NewTriCB) (vuint32 v0, vuint32 v1, vuint32 v2, void *udata);
+  typedef void (*NewTriCB) (uint32_t v0, uint32_t v1, uint32_t v2, void *udata);
   void createTriangles (NewTriCB cb, void *udata);
 };
 
