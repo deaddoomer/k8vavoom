@@ -26,7 +26,67 @@
 
 //#define VOXELIB_CHECK_INVARIANTS
 
-bool voxlib_verbose = false;
+VoxLibMsg voxlib_verbose = VoxLibMsg_None;
+void (*voxlib_message) (VoxLibMsg type, const char *msg) = nullptr;
+
+
+#define VABUF_SIZE  (4096)
+static char vabuf[VABUF_SIZE];
+
+
+//==========================================================================
+//
+//  vox_logf
+//
+//==========================================================================
+static __attribute__((format(printf, 2, 3))) void vox_logf (VoxLibMsg type, const char *fmt, ...) {
+  if ((int)voxlib_verbose <= 0) return;
+  if ((int)type > (int)voxlib_verbose) return;
+  if (!fmt || !fmt[0] || !voxlib_message) return;
+  va_list ap;
+  va_start(ap, fmt);
+  int size = vsnprintf(vabuf, (size_t)VABUF_SIZE, fmt, ap);
+  va_end(ap);
+  if (size < 0 || size >= VABUF_SIZE) {
+    vabuf[VABUF_SIZE-1] = 0;
+    size_t slen = strlen(vabuf);
+    if (slen+4 > (size_t)VABUF_SIZE) slen = (size_t)VABUF_SIZE-4;
+    strcpy(vabuf+slen, "...");
+  }
+  voxlib_message(type, vabuf);
+}
+
+
+#define VOX_COMATOZE_BUF_SIZE   (128)
+#define VOX_COMATOZE_BUF_COUNT  (8)
+static char vox_comatozebufs[VOX_COMATOZE_BUF_SIZE][VOX_COMATOZE_BUF_COUNT];
+static unsigned vox_comatozebufidx = 0;
+
+
+//==========================================================================
+//
+//  vox_comatoze
+//
+//==========================================================================
+static const char *vox_comatoze (vuint32 n, const char *sfx=nullptr) noexcept {
+  char *buf = vox_comatozebufs[vox_comatozebufidx++];
+  if (vox_comatozebufidx == VOX_COMATOZE_BUF_COUNT) vox_comatozebufidx = 0;
+  int bpos = (int)VOX_COMATOZE_BUF_SIZE;
+  buf[--bpos] = 0;
+  if (sfx) {
+    size_t slen = strlen(sfx);
+    while (slen--) {
+      if (bpos > 0) buf[--bpos] = sfx[slen];
+    }
+  }
+  int xcount = 0;
+  do {
+    if (xcount == 3) { if (bpos > 0) buf[--bpos] = ','; xcount = 0; }
+    if (bpos > 0) buf[--bpos] = '0'+n%10;
+    ++xcount;
+  } while ((n /= 10) != 0);
+  return &buf[bpos];
+}
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -247,7 +307,10 @@ void VoxColorPack::growImage (vuint32 inswdt, vuint32 inshgt) {
   }
 
   // allocate new image, copy old data
-  //GLog.Logf(NAME_Debug, "ATLAS: resized from %ux%u to %ux%u", clrwdt, clrhgt, neww, newh);
+  if (voxlib_verbose >= VoxLibMsg_Debug) {
+    vox_logf(VoxLibMsg_Debug, "ATLAS: resized from %ux%u to %ux%u", clrwdt, clrhgt, neww, newh);
+  }
+
   TArray<vuint32> newclr;
   newclr.setLength(neww*newh);
   memset(newclr.ptr(), 0, neww*newh*sizeof(vuint32));
@@ -357,12 +420,6 @@ vuint32 VoxColorPack::addNewRect (const vuint32 *clrs, vuint32 wdt, vuint32 hgt)
       auto rc = atlas.insert((int)wdt, (int)hgt);
       if (rc.isValid()) {
         coord = VoxXY16(rc.x, rc.y);
-        /*
-        GLog.Logf(NAME_Debug, "inserted: (%d,%d) (%u,%u) : atlas:(%ux%u) (%dx%d)",
-                  rc.x, rc.y, coord.getX(), coord.getY(),
-                  getWidth(), getHeight(),
-                  atlas.getWidth(), atlas.getHeight());
-        */
         break;
       }
       // no room, grow the texture, and relayout everything
@@ -609,7 +666,9 @@ void VoxelData::removeEmptyVoxels () {
       }
     }
   }
-  if (count && voxlib_verbose) GLog.Logf(NAME_Init, "  removed %u empty voxel%s", count, (count != 1 ? "s" : ""));
+  if (count && voxlib_verbose) {
+    vox_logf(VoxLibMsg_Normal, "removed %s empty voxel%s", vox_comatoze(count), (count != 1 ? "s" : ""));
+  }
 }
 
 
@@ -749,7 +808,9 @@ vuint32 VoxelData::hollowFill () {
       stack/*.ptr()*/[stackpos++] = VoxXYZ16((vuint16)nx, (vuint16)ny, (vuint16)nz);
     }
   }
-  //GCon->Logf(NAME_Debug, "*** hollow fill used %d stack items", stack.length());
+  if (voxlib_verbose >= VoxLibMsg_Debug) {
+    vox_logf(VoxLibMsg_Debug, "*** hollow fill used %s stack items", vox_comatoze(stack.length()));
+  }
 
   // unmark contour voxels
   // this is required for proper face removing
@@ -804,20 +865,28 @@ void VoxelData::optimise (bool doHollowFill) {
   if (doHollowFill) {
     //version(voxdata_debug) conwriteln("optimising voxel culling...");
     vuint32 count = hollowFill();
-    if (count && voxlib_verbose) GLog.Logf(NAME_Init, "  hollow fill fixed %u voxel%s", count, (count != 1 ? "s" : ""));
+    if (count && voxlib_verbose) {
+      vox_logf(VoxLibMsg_Normal, "hollow fill fixed %s voxel%s", vox_comatoze(count), (count != 1 ? "s" : ""));
+    }
     count = fixFaceVisibility();
-    if (count && voxlib_verbose) GLog.Logf(NAME_Init, "  final fix fixed %u voxel%s", count, (count != 1 ? "s" : ""));
+    if (count && voxlib_verbose) {
+      vox_logf(VoxLibMsg_Normal, "final fix fixed %s voxel%s", vox_comatoze(count), (count != 1 ? "s" : ""));
+    }
   } else {
     removeInsideFaces();
     //version(voxdata_debug) conwriteln("optimising voxel culling...");
     vuint32 count = fixFaceVisibility();
-    if (count && voxlib_verbose) GLog.Logf(NAME_Init, "  fixed %u voxel%s", count, (count != 1 ? "s" : ""));
+    if (count && voxlib_verbose) {
+      vox_logf(VoxLibMsg_Normal, "fixed %s voxel%s", vox_comatoze(count), (count != 1 ? "s" : ""));
+    }
   }
   removeEmptyVoxels();
   #ifdef VOXELIB_CHECK_INVARIANTS
   checkInvariants();
   #endif
-  if (voxlib_verbose) GLog.Logf(NAME_Init, "  final optimised mesh contains %u individual voxels", voxpixtotal);
+  if (voxlib_verbose) {
+    vox_logf(VoxLibMsg_Normal, "final optimised mesh contains %s individual voxels", vox_comatoze(voxpixtotal));
+  }
 }
 
 
@@ -1340,7 +1409,9 @@ void VoxelMesh::addQuad (vuint8 cull,
 //
 //==========================================================================
 void VoxelMesh::buildOpt0 (VoxelData &vox) {
-  if (voxlib_verbose) GLog.Logf(NAME_Init, "  method: quad per face...");
+  if (voxlib_verbose) {
+    vox_logf(VoxLibMsg_Normal, "method: quad per face...");
+  }
   const float px = vox.cx;
   const float py = vox.cy;
   const float pz = vox.cz;
@@ -1362,7 +1433,9 @@ void VoxelMesh::buildOpt0 (VoxelData &vox) {
 //
 //==========================================================================
 void VoxelMesh::buildOpt1 (VoxelData &vox) {
-  if (voxlib_verbose) GLog.Logf(NAME_Init, "  method: quad per vertical slab...");
+  if (voxlib_verbose) {
+    vox_logf(VoxLibMsg_Normal, "method: quad per vertical slab...");
+  }
   const float px = vox.cx;
   const float py = vox.cy;
   const float pz = vox.cz;
@@ -1421,7 +1494,9 @@ void VoxelMesh::buildOpt1 (VoxelData &vox) {
 //
 //==========================================================================
 void VoxelMesh::buildOpt2 (VoxelData &vox) {
-  if (voxlib_verbose) GLog.Logf(NAME_Init, "  method: quad per vertical slab, top and bottom slabs...");
+  if (voxlib_verbose) {
+    vox_logf(VoxLibMsg_Normal, "method: quad per vertical slab, top and bottom slabs...");
+  }
   const float px = vox.cx;
   const float py = vox.cy;
   const float pz = vox.cz;
@@ -1530,7 +1605,9 @@ static VVA_FORCEINLINE void incXYZ (vuint8 dmv, int &sx, int &sy, int &sz) noexc
 //
 //==========================================================================
 void VoxelMesh::buildOpt3 (VoxelData &vox) {
-  if (voxlib_verbose) GLog.Logf(NAME_Init, "  method: quad per slab in any direction...");
+  if (voxlib_verbose) {
+    vox_logf(VoxLibMsg_Normal, "method: quad per slab in any direction...");
+  }
   const float px = vox.cx;
   const float py = vox.cy;
   const float pz = vox.cz;
@@ -1603,7 +1680,9 @@ void VoxelMesh::buildOpt3 (VoxelData &vox) {
 //
 //==========================================================================
 void VoxelMesh::buildOpt4 (VoxelData &vox) {
-  if (voxlib_verbose) GLog.Logf(NAME_Init, "  method: optimal quad fill...");
+  if (voxlib_verbose) {
+    vox_logf(VoxLibMsg_Normal, "method: optimal quad fill...");
+  }
   const float px = vox.cx;
   const float py = vox.cy;
   const float pz = vox.cz;
@@ -1700,7 +1779,10 @@ void VoxelMesh::createFrom (VoxelData &vox, int optlevel) {
   //tm.stop();
   //conwriteln("basic conversion: ", quads.length, " quads (", quads.length*2, " tris).");
   //conwriteln("converted in ", tm.toString(), "; optlevel is ", vox_optimisation, "/", kvx_max_optim_level);
-  if (voxlib_verbose) GLog.Logf(NAME_Init, "  basic conversion: %d quads (%d tris).", quads.length(), quads.length()*2);
+  if (voxlib_verbose) {
+    vox_logf(VoxLibMsg_Normal, "basic conversion: %s quads (%s tris)",
+             vox_comatoze(quads.length()), vox_comatoze(quads.length()*2));
+  }
   cx = vox.cx;
   cy = vox.cy;
   cz = vox.cz;
@@ -1977,7 +2059,7 @@ void GLVoxelMesh::fixEdgeNew (vuint32 eidx) {
 //  GLVoxelMesh::rebuildEdges
 //
 //==========================================================================
-void GLVoxelMesh::rebuildEdges (vuint32 BreakIndex) {
+void GLVoxelMesh::rebuildEdges () {
   // now we have to rebuild quads
   // each quad will have at least two unmodified edges of unit length
   vuint32 newindcount = (vuint32)edges.length()*5;
@@ -2026,7 +2108,7 @@ void GLVoxelMesh::rebuildEdges (vuint32 BreakIndex) {
           indicies[newindcount++] = edges[f+firstGoodFace].v1;
         }
         // we're done with this quad
-        indicies[newindcount++] = BreakIndex;
+        indicies[newindcount++] = breakIndex;
         continue;
       }
 
@@ -2061,11 +2143,11 @@ void GLVoxelMesh::rebuildEdges (vuint32 BreakIndex) {
             // noic: next
             // loic: last
             indicies[newindcount++] = edges[f+noic].v1;
-            indicies[newindcount++] = BreakIndex;
+            indicies[newindcount++] = breakIndex;
             // we're done here
             break;
           }
-          indicies[newindcount++] = BreakIndex;
+          indicies[newindcount++] = breakIndex;
         }
         continue;
       }
@@ -2127,14 +2209,14 @@ void GLVoxelMesh::rebuildEdges (vuint32 BreakIndex) {
         }
         indicies[newindcount++] = edges[f+eic].v1;
       }
-      indicies[newindcount++] = BreakIndex;
+      indicies[newindcount++] = breakIndex;
     } else {
       // easy deal, just copy it
       indicies[newindcount++] = edges[f+0].v0;
       indicies[newindcount++] = edges[f+1].v0;
       indicies[newindcount++] = edges[f+2].v0;
       indicies[newindcount++] = edges[f+3].v0;
-      indicies[newindcount++] = BreakIndex;
+      indicies[newindcount++] = breakIndex;
     }
   }
 
@@ -2151,7 +2233,7 @@ void GLVoxelMesh::rebuildEdges (vuint32 BreakIndex) {
 //  this will also convert vertex data to triangle strips
 //
 //==========================================================================
-void GLVoxelMesh::fixTJunctions (vuint32 BreakIndex) {
+void GLVoxelMesh::fixTJunctions () {
   //const vuint32 oldvtotal = (vuint32)vertices.length();
   createEdges();
   //conwriteln(edges.length, " edges found (", edges.length/4*2, " tris, ", vertices.length, " verts)...");
@@ -2160,8 +2242,11 @@ void GLVoxelMesh::fixTJunctions (vuint32 BreakIndex) {
   freeSortStructs();
   if (totaltadded) {
     //conwriteln(totaltadded, " t-fix vertices added (", vertices.length-oldvtotal, " unique).");
-    rebuildEdges(BreakIndex);
-    if (voxlib_verbose) GLog.Logf(NAME_Init, "  rebuilt model: %u tris, %d vertices.", countTris(BreakIndex), vertices.length());
+    rebuildEdges();
+    if (voxlib_verbose) {
+      vox_logf(VoxLibMsg_Normal, "rebuilt model: %s tris, %s vertices",
+               vox_comatoze(countTris()), vox_comatoze(vertices.length()));
+    }
   }
   edges.clear();
 }
@@ -2175,13 +2260,13 @@ void GLVoxelMesh::fixTJunctions (vuint32 BreakIndex) {
 //  used for informational messages
 //
 //==========================================================================
-vuint32 GLVoxelMesh::countTris (vuint32 BreakIndex) {
+vuint32 GLVoxelMesh::countTris () {
   vuint32 res = 0;
   vuint32 ind = 0;
   while (ind < (vuint32)indicies.length()) {
-    vassert(indicies[ind] != BreakIndex);
+    vassert(indicies[ind] != breakIndex);
     vuint32 end = ind+1;
-    while (end < (vuint32)indicies.length() && indicies[end] != BreakIndex) ++end;
+    while (end < (vuint32)indicies.length() && indicies[end] != breakIndex) ++end;
     vassert(end < (vuint32)indicies.length());
     vassert(end-ind >= 3);
     if (end-ind == 3) {
@@ -2205,90 +2290,31 @@ vuint32 GLVoxelMesh::countTris (vuint32 BreakIndex) {
 //  GLVoxelMesh::recreateTriangles
 //
 //==========================================================================
-void GLVoxelMesh::recreateTriangles (TArray<VMeshTri> &Tris, vuint32 BreakIndex) {
-  Tris.clear();
+void GLVoxelMesh::createTriangles (NewTriCB cb, void *udata) {
+  if (!cb) return;
   int ind = 0;
   while (ind < indicies.length()) {
-    vassert(indicies[ind] != BreakIndex);
+    vassert(indicies[ind] != breakIndex);
     int end = ind+1;
-    while (end < indicies.length() && indicies[end] != BreakIndex) ++end;
+    while (end < indicies.length() && indicies[end] != breakIndex) ++end;
     vassert(end < indicies.length());
     vassert(end-ind >= 3);
     if (end-ind == 3) {
       // simple triangle
-      VMeshTri &tri = Tris.alloc();
-      tri.VertIndex[0] = indicies[ind+0];
-      tri.VertIndex[1] = indicies[ind+1];
-      tri.VertIndex[2] = indicies[ind+2];
+      cb(indicies[ind+0], indicies[ind+1], indicies[ind+2], udata);
     } else if (end-ind == 4) {
       // quad
-      VMeshTri &tri0 = Tris.alloc();
-      tri0.VertIndex[0] = indicies[ind+0];
-      tri0.VertIndex[1] = indicies[ind+1];
-      tri0.VertIndex[2] = indicies[ind+2];
-
-      VMeshTri &tri1 = Tris.alloc();
-      tri1.VertIndex[0] = indicies[ind+2];
-      tri1.VertIndex[1] = indicies[ind+3];
-      tri1.VertIndex[2] = indicies[ind+0];
+      cb(indicies[ind+0], indicies[ind+1], indicies[ind+2], udata);
+      cb(indicies[ind+2], indicies[ind+3], indicies[ind+0], udata);
     } else {
       // triangle fan
       for (int f = ind+1; f < end-1; ++f) {
-        VMeshTri &tri = Tris.alloc();
-        tri.VertIndex[0] = indicies[ind+0];
-        tri.VertIndex[1] = indicies[f+0];
-        tri.VertIndex[2] = indicies[f+1];
-      }
-    }
-    ind = end+1;
-  }
-  Tris.condense();
-}
-
-
-// create lines for wireframe view
-/*
-void createLines () {
-  lindicies.length = 0;
-  lindicies.assumeSafeAppend;
-
-  vuint32 ind = 0;
-  while (ind < (vuint32)indicies.length) {
-    vassert(indicies[ind] != BreakIndex);
-    vuint32 end = ind+1;
-    while (end < (vuint32)indicies.length && indicies[end] != BreakIndex) ++end;
-    vassert(end < indicies.length);
-    vassert(end-ind >= 3);
-    if (end-ind == 3) {
-      // simple triangle
-      lindicies ~= indicies[ind+0];
-      lindicies ~= indicies[ind+1];
-      lindicies ~= indicies[ind+2];
-      lindicies ~= BreakIndex;
-    } else if (end-ind == 4) {
-      // quad
-      lindicies ~= indicies[ind+0];
-      lindicies ~= indicies[ind+1];
-      lindicies ~= indicies[ind+2];
-      lindicies ~= BreakIndex;
-
-      lindicies ~= indicies[ind+2];
-      lindicies ~= indicies[ind+3];
-      lindicies ~= indicies[ind+0];
-      lindicies ~= BreakIndex;
-    } else {
-      // triangle fan
-      for (int f = ind+1; f < end-1; ++f) {
-        lindicies ~= indicies[ind+0];
-        lindicies ~= indicies[f+0];
-        lindicies ~= indicies[f+1];
-        lindicies ~= BreakIndex;
+        cb(indicies[ind+0], indicies[f+0], indicies[f+1], udata);
       }
     }
     ind = end+1;
   }
 }
-*/
 
 
 //==========================================================================
@@ -2300,6 +2326,7 @@ void createLines () {
 //==========================================================================
 void GLVoxelMesh::create (VoxelMesh &vox, bool tjfix, vuint32 BreakIndex) {
   clear();
+  breakIndex = BreakIndex;
 
   imgWidth = vox.catlas.getWidth();
   imgHeight = vox.catlas.getHeight();
@@ -2319,7 +2346,9 @@ void GLVoxelMesh::create (VoxelMesh &vox, bool tjfix, vuint32 BreakIndex) {
   // calculate quad normals
   const int quadcount = vox.quads.length();
   for (int f = 0; f < quadcount; ++f) vox.quads/*.ptr()*/[f].calcNormal();
-  if (voxlib_verbose) GLog.Logf(NAME_Init, "  color texture size: %dx%d", imgWidth, imgHeight);
+  if (voxlib_verbose) {
+    vox_logf(VoxLibMsg_Normal, "color texture size: %dx%d", imgWidth, imgHeight);
+  }
 
   // create arrays
   for (int f = 0; f < quadcount; ++f) {
@@ -2381,18 +2410,20 @@ void GLVoxelMesh::create (VoxelMesh &vox, bool tjfix, vuint32 BreakIndex) {
     indicies.append(vxn[1]);
     indicies.append(vxn[2]);
     indicies.append(vxn[3]);
-    indicies.append(BreakIndex);
+    indicies.append(breakIndex);
   }
 
   if (voxlib_verbose) {
-    GLog.Logf(NAME_Init, "  OpenGL: %d quads, %u tris, %u unique vertices (of %d)",
-              vox.quads.length(), countTris(BreakIndex), uniqueVerts, vox.quads.length()*4);
+    vox_logf(VoxLibMsg_Normal, "OpenGL: %s quads, %s tris, %s unique vertices (of %s)",
+              vox_comatoze(vox.quads.length()), vox_comatoze(countTris()),
+              vox_comatoze(uniqueVerts), vox_comatoze(vox.quads.length()*4));
   }
 
   if (tjfix) {
-    fixTJunctions(BreakIndex);
+    fixTJunctions();
     if (voxlib_verbose) {
-      GLog.Logf(NAME_Init, "  OpenGL: with fixed t-junctions: %u tris", countTris(BreakIndex));
+      vox_logf(VoxLibMsg_Normal, "OpenGL: with fixed t-junctions: %s tris",
+               vox_comatoze(countTris()));
     }
   }
 
@@ -2401,346 +2432,570 @@ void GLVoxelMesh::create (VoxelMesh &vox, bool tjfix, vuint32 BreakIndex) {
 }
 
 
-#if 0
 // ////////////////////////////////////////////////////////////////////////// //
-// example loaders
+// memory stream
 // ////////////////////////////////////////////////////////////////////////// //
 
 //==========================================================================
 //
-//  loadKVX
+//  mst_readBuf
 //
 //==========================================================================
-private void loadKVX (ref VoxelData vox, VFile fl, vuint32 fsize) {
-  if (fsize > int.max/8) throw new Exception("voxel data too big (kvx)");
-  version(kvx_dump) conwriteln("loading KVX...");
-  auto nextpos = fl.tell+fsize;
-  vuint32[] xofs;
-  vuint16[][] xyofs;
-  vuint8[] data;
-  int xsiz, ysiz, zsiz;
-  int xpivot, ypivot, zpivot;
-  {
-    auto fx = wrapStreamRO(fl, fl.tell, fsize);
-    xsiz = fx.readNum!vuint32;
-    ysiz = fx.readNum!vuint32;
-    zsiz = fx.readNum!vuint32;
-    version(kvx_dump) conwriteln("xsiz=", xsiz, "; ysiz=", ysiz, "; zsiz=", zsiz);
-    if (xsiz < 1 || ysiz < 1 || zsiz < 1 || xsiz > 1024 || ysiz > 1024 || zsiz > 1024) throw new Exception("invalid voxel size");
-    xpivot = fx.readNum!vuint32;
-    ypivot = fx.readNum!vuint32;
-    zpivot = fx.readNum!vuint32;
-    version(kvx_dump) conwriteln("xpivot=", xpivot>>8, "; ypivot=", ypivot>>8, "; zpivot=", zpivot>>8);
-    vuint32 xstart = (xsiz+1)*4+xsiz*(ysiz+1)*2;
-    xofs = new vuint32[](xsiz+1);
-    foreach (ref o; xofs) o = fx.readNum!vuint32-xstart;
-    //conwriteln(xofs);
-    xyofs = new vuint16[][](xsiz, ysiz+1);
-    foreach (const x; 0..xsiz) {
-      foreach (const y; 0..ysiz+1) {
-        xyofs[x][y] = fx.readNum!vuint16;
-      }
-    }
-    vassert(fx.size-fx.tell == fsize-24-(xsiz+1)*4-xsiz*(ysiz+1)*2);
-    data = new vuint8[]((vuint32)(fx.size-fx.tell));
-    fx.rawReadExact(data);
-  }
-  fl.seek(nextpos);
-  // skip mipmaps
-  while (fl.size-fl.tell > 768) {
-    fsize = fl.readNum!vuint32; // size of this voxel (useful for mipmaps)
-    fl.seek(fsize, Seek.Cur);
-    version(kvx_dump) conwriteln("  skiped ", fsize, " bytes of mipmap");
-  }
-  vuint8[768] pal;
-  if (fl.size-fl.tell == 768) {
-    version(kvx_dump) conwriteln("  has palette!");
-    fl.rawReadExact(pal[]);
-    foreach (ref vuint8 c; pal[]) {
-      if (c > 63) throw new Exception("invalid palette value");
-      c = clampToByte(255*c/64);
-    }
-  } else {
-    foreach (const cidx; 0..256) {
-      pal[cidx*3+0] = cidx;
-      pal[cidx*3+1] = cidx;
-      pal[cidx*3+2] = cidx;
-    }
-  }
-  const float px = 1.0f*xpivot/256.0f;
-  const float py = 1.0f*ypivot/256.0f;
-  const float pz = 1.0f*zpivot/256.0f;
-  // now build cubes
-  version(kvx_dump) conwriteln("building voxel data...");
-  vox.setSize(xsiz, ysiz, zsiz);
-  foreach (const y; 0..ysiz) {
-    foreach (const x; 0..xsiz) {
-      vuint32 sofs = xofs[x]+xyofs[x][y];
-      vuint32 eofs = xofs[x]+xyofs[x][y+1];
-      while (sofs < eofs) {
-        int ztop = data/*.ptr()*/[sofs++];
-        vuint32 zlen = data/*.ptr()*/[sofs++];
-        vuint8 cull = data/*.ptr()*/[sofs++];
-        if (!zlen) continue;
-        //conwritefln("  x=%s; y=%s; z=%s; len=%s; cull=0x%02x", x, y, ztop, zlen, cull);
-        // colors
-        foreach (const cidx; 0..zlen) {
-          vuint8 palcol = data/*.ptr()*/[sofs++];
-          vuint8 cl = cull;
-          version(none) {
-            // no need to do this, voxel optimiser will take care of it
-            if (cidx != 0) cl &= (vuint8)~0x10;
-            if (cidx != zlen-1) cl &= (vuint8)~0x20;
-          }
-          const vuint8 r = pal[palcol*3+0];
-          const vuint8 g = pal[palcol*3+1];
-          const vuint8 b = pal[palcol*3+2];
-          //addCube(cl, (xsiz-x-1)-px, y-py, (zsiz-ztop-1)-pz, b|(g<<8)|(r<<16));
-          //version(kvx_dump) conwriteln("  adding voxel at (", x, ",", y, ",", ztop, ")");
-          vox.addVoxel(xsiz-x-1, y, zsiz-ztop-1, b|(g<<8)|(r<<16), cl);
-          //version(kvx_dump) conwriteln("    added.");
-          ++ztop;
-        }
-      }
-      vassert(sofs == eofs);
-    }
-  }
-  vox.cx = px;
-  vox.cy = py;
-  vox.cz = pz;
+static bool mst_readBuf (void *buf, uint32_t len, VoxByteStream *strm) {
+  VoxMemByteStream *mst = (VoxMemByteStream *)strm;
+  if (mst->currOfs >= mst->dataSize) return false;
+  if (len > mst->dataSize-mst->currOfs) return false;
+  memcpy(buf, ((const uint8_t *)strm->udata)+mst->currOfs, len);
+  mst->currOfs += len;
+  return true;
 }
 
 
 //==========================================================================
 //
-//  loadKV6
+//  mst_seek
 //
 //==========================================================================
-private void loadKV6 (ref VoxelData vox, VFile fl) {
-  version(kvx_dump) conwriteln("loading KV6...");
-  int xsiz, ysiz, zsiz;
-  float xpivot, ypivot, zpivot;
-  xsiz = fl.readNum!vuint32;
-  ysiz = fl.readNum!vuint32;
-  zsiz = fl.readNum!vuint32;
-  version(kvx_dump) conwriteln("xsiz=", xsiz, "; ysiz=", ysiz, "; zsiz=", zsiz);
-  if (xsiz < 1 || ysiz < 1 || zsiz < 1 || xsiz > 1024 || ysiz > 1024 || zsiz > 1024) {
-    throw new Exception("invalid voxel size (kv6)");
+static bool mst_seek (uint32_t ofs, VoxByteStream *strm) {
+  VoxMemByteStream *mst = (VoxMemByteStream *)strm;
+  if (ofs >= mst->dataSize) return false;
+  mst->currOfs = ofs;
+  return true;
+}
+
+
+//==========================================================================
+//
+//  mst_totalSize
+//
+//==========================================================================
+static uint32_t mst_totalSize (VoxByteStream *strm) {
+  VoxMemByteStream *mst = (VoxMemByteStream *)strm;
+  return mst->dataSize;
+}
+
+
+//==========================================================================
+//
+//  vox_InitMemoryStream
+//
+//  returns `mst`, but properly casted
+//  there is no need to deinit this stream
+//
+//==========================================================================
+VoxByteStream *vox_InitMemoryStream (VoxMemByteStream *mst, const void *buf, uint32_t buflen) {
+  if (!mst) return nullptr;
+  if (!buf) buflen = 0;
+  if (!buflen) buf = nullptr;
+  mst->strm.readBuf = &mst_readBuf;
+  mst->strm.seek = &mst_seek;
+  mst->strm.totalSize = &mst_totalSize;
+  mst->strm.udata = (void *)buf;
+  mst->dataSize = buflen;
+  mst->currOfs = 0;
+  return (VoxByteStream *)mst;
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// various loaders
+// ////////////////////////////////////////////////////////////////////////// //
+
+#define CPOS_ERR  (0xffffffffU)
+#define WASERR()  (cpos == CPOS_ERR)
+
+#define CHECKERR()  do { \
+  if (cpos == CPOS_ERR) { \
+    vox_logf(VoxLibMsg_Error, "error reading voxel data"); \
+    return false; \
+  } \
+} while (0)
+
+
+#define XRD(tp_)  \
+  if (*cpos != CPOS_ERR) { \
+    tp_ res; \
+    if (strm.readBuf(&res, (uint32_t)sizeof(tp_), &strm)) { \
+      cpos += (uint32_t)sizeof(tp_); \
+      return res; \
+    } \
+  } \
+  *cpos = CPOS_ERR; \
+  return 0
+
+
+// WARNING! no big endian support yet!
+static inline uint8_t readUByte (VoxByteStream &strm, uint32_t *cpos) { XRD(uint8_t); }
+static inline uint16_t readUShort (VoxByteStream &strm, uint32_t *cpos) { XRD(uint16_t); }
+static inline uint32_t readULong (VoxByteStream &strm, uint32_t *cpos) { XRD(uint32_t); }
+static inline int32_t readILong (VoxByteStream &strm, uint32_t *cpos) { XRD(int32_t); }
+static inline float readFloat (VoxByteStream &strm, uint32_t *cpos) { XRD(float); }
+static inline float readDouble (VoxByteStream &strm, uint32_t *cpos) { XRD(double); }
+
+static inline bool readBuf (VoxByteStream &strm, void *buf, uint32_t len, uint32_t *cpos) {
+  if (*cpos == CPOS_ERR) return false;
+  if (!len) return true;
+  if (!strm.readBuf(buf, len, &strm)) {
+    *cpos = CPOS_ERR;
+    return false;
   }
-  xpivot = fl.readNum!float;
-  ypivot = fl.readNum!float;
-  zpivot = fl.readNum!float;
-  version(kvx_dump) conwriteln("xpivot=", xpivot, "; ypivot=", ypivot, "; zpivot=", zpivot);
-  vuint32 voxcount = fl.readNum!vuint32;
-  if (voxcount == 0 || voxcount > int.max/8) throw new Exception("invalid number of voxels");
-  static struct KVox {
-    vuint32 rgb;
-    vuint8 zlo;
-    vuint8 zhi;
-    vuint8 cull;
-    vuint8 normidx;
+  cpos += len;
+  return true;
+}
+
+
+//==========================================================================
+//
+//  vox_detectFormat
+//
+//  detect voxel file format by the first 4 file bytes
+//  KVX format has no signature, so it cannot be reliably detected
+//
+//==========================================================================
+VoxFmt vox_detectFormat (const uint8_t bytes[4]) {
+  if (!bytes) return VoxFmt_Unknown;
+  if (memcmp(bytes, "Kvxl", 4) == 0) return VoxFmt_KV6;
+  if (memcmp(bytes, "\x00\x20\x07\x09", 4) == 0) return VoxFmt_Vxl;
+  return VoxFmt_Unknown;
+}
+
+
+#define CHECK_STRM()  \
+  if (!strm.readBuf || !strm.seek || !strm.totalSize) return false; \
+  uint32_t cpos = 0; \
+  const uint32_t tsize = strm.totalSize(&strm)
+
+
+//==========================================================================
+//
+//  vox_loadKVX
+//
+//==========================================================================
+bool vox_loadKVX (VoxByteStream &strm, VoxelData &vox, const uint8_t defpal[768]) {
+  CHECK_STRM();
+
+  if (tsize < 28 || tsize > 0x00ffffffU) {
+    vox_logf(VoxLibMsg_Error, "invalid voxel data (kvx)");
+    return false;
   }
-  auto kvox = new KVox[](voxcount);
-  foreach (const vidx; 0..voxcount) {
-    auto kv = &kvox[vidx];
-    kv.rgb = 0;
-    kv.rgb |= fl.readNum!vuint8;
-    kv.rgb |= fl.readNum!vuint8<<8;
-    kv.rgb |= fl.readNum!vuint8<<16;
-    kv.rgb |= 0xff_00_00_00U;
-    fl.readNum!vuint8; // always 128; ignore
-    kv.zlo = fl.readNum!vuint8;
-    kv.zhi = fl.readNum!vuint8;
-    if (kv.zhi) vassert(0, "zhi is not zero!");
-    kv.cull = fl.readNum!vuint8;
-    kv.normidx = fl.readNum!vuint8;
+
+  uint32_t fsize = readULong(strm, &cpos);
+  if (WASERR() || fsize < 56 || fsize > 0x00ffffffU || fsize > tsize) {
+    vox_logf(VoxLibMsg_Error, "invalid voxel data (kvx)");
+    return false;
   }
-  auto xofs = new vuint32[](xsiz+1);
-  vuint32 curvidx = 0;
-  foreach (ref v; xofs[0..$-1]) {
-    v = curvidx;
-    auto count = fl.readNum!vuint32;
-    curvidx += count;
+
+  TArray<uint32_t> xofs;
+  TArray<uint16_t> xyofs;
+  TArray<uint8_t> data;
+
+  int32_t xsiz = readILong(strm, &cpos); CHECKERR();
+  int32_t ysiz = readILong(strm, &cpos); CHECKERR();
+  int32_t zsiz = readILong(strm, &cpos); CHECKERR();
+  if (voxlib_verbose) vox_logf(VoxLibMsg_Normal, "voxel size: %dx%dx%d", xsiz, ysiz, zsiz);
+  if (xsiz < 1 || ysiz < 1 || zsiz < 1 ||
+      xsiz > 1024 || ysiz > 1024 || zsiz > 1024)
+  {
+    vox_logf(VoxLibMsg_Error, "invalid voxel size (kvx)");
+    return false;
   }
-  xofs[$-1] = curvidx;
-  auto xyofs = new vuint32[][](xsiz, ysiz+1);
-  foreach (const xx; 0..xsiz) {
-    curvidx = 0;
-    foreach (const yy; 0..ysiz) {
-      xyofs[xx][yy] = curvidx;
-      auto count = fl.readNum!vuint16;
-      curvidx += count;
+
+  int32_t xpivot = readILong(strm, &cpos); CHECKERR();
+  int32_t ypivot = readILong(strm, &cpos); CHECKERR();
+  int32_t zpivot = readILong(strm, &cpos); CHECKERR();
+
+  const int ww = ysiz+1;
+
+  uint32_t xstart = (xsiz+1)*4+xsiz*(ysiz+1)*2;
+
+  xofs.setLength(xsiz+1);
+  for (int f = 0; f <= xsiz; ++f) {
+    xofs[f] = readULong(strm, &cpos); CHECKERR();
+    xofs[f] -= xstart;
+  }
+
+  xyofs.setLength(xsiz*ww);
+  for (int x = 0; x < xsiz; ++x) {
+    for (int y = 0; y <= ysiz; ++y) {
+      xyofs[x*ww+y] = readUShort(strm, &cpos); CHECKERR();
     }
-    xyofs[xx][$-1] = curvidx;
   }
+  //assert(fx.size-fx.tell == fsize-24-(xsiz+1)*4-xsiz*(ysiz+1)*2);
+  //data = new vuint8[](cast(vuint32)(fx.size-fx.tell));
+  data.setLength(fsize-24-(xsiz+1)*4-xsiz*(ysiz+1)*2);
+  if (!readBuf(strm, data.ptr(), (unsigned)data.length(), &cpos)) {
+    vox_logf(VoxLibMsg_Error, "error reading voxel data (kvx)");
+    return false;
+  }
+
+  // read palette
+  uint8_t pal[768];
+  if (cpos < tsize && tsize-cpos >= 768) {
+    cpos = tsize-768;
+    if (!strm.seek(cpos, &strm)) {
+      vox_logf(VoxLibMsg_Error, "error reading voxel data (kvx)");
+      return false;
+    }
+    if (!readBuf(strm, pal, 768, &cpos)) {
+      vox_logf(VoxLibMsg_Error, "error reading voxel data (kvx)");
+      return false;
+    }
+    for (unsigned cidx = 0; cidx < 768; ++cidx) {
+      int v = 255*((int)pal[cidx])/64;
+      if (v < 0) v = 0; else if (v > 255) v = 255;
+      pal[cidx] = (uint8_t)v;
+    }
+  } else if (!defpal) {
+    for (unsigned cidx = 0; cidx < 256; ++cidx) {
+      pal[cidx*3+0] = (uint8_t)cidx;
+    }
+  } else {
+    memcpy(pal, defpal, 768);
+  }
+
+  const float px = (float)xpivot/256.0f;
+  const float py = (float)ypivot/256.0f;
+  const float pz = (float)zpivot/256.0f;
+
   // now build cubes
   vox.setSize(xsiz, ysiz, zsiz);
-  foreach (const y; 0..ysiz) {
-    foreach (const x; 0..xsiz) {
-      vuint32 sofs = xofs[x]+xyofs[x][y];
-      vuint32 eofs = xofs[x]+xyofs[x][y+1];
+  for (int y = 0; y < ysiz; ++y) {
+    for (int x = 0; x < xsiz; ++x) {
+      uint32_t sofs = xofs[x]+xyofs[x*ww+y];
+      uint32_t eofs = xofs[x]+xyofs[x*ww+y+1];
       //if (sofs == eofs) continue;
       //assert(sofs < data.length && eofs <= data.length);
       while (sofs < eofs) {
-        auto kv = &kvox[sofs++];
-        //debug(kvx_dump) conwritefln("  x=%s; y=%s; zlo=%s; zhi=%s; cull=0x%02x", x, y, kv.zlo, kv.zhi, kv.cull);
+        int ztop = data[sofs++];
+        uint32_t zlen = data[sofs++];
+        uint8_t cull = data[sofs++];
+        // colors
+        for (uint32_t cidx = 0; cidx < zlen; ++cidx) {
+          uint8_t palcol = data[sofs++];
+          /*
+          vuint8 cl = cull;
+          if (cidx != 0) cl &= ~0x10;
+          if (cidx != zlen-1) cl &= ~0x20;
+          */
+          const uint32_t rgb =
+            pal[palcol*3+2]|
+            ((uint32_t)pal[palcol*3+1]<<8)|
+            ((uint32_t)pal[palcol*3+0]<<16);
+          ++ztop;
+          vox.addVoxel(xsiz-x-1, y, zsiz-ztop, rgb, cull);
+        }
+      }
+      //assert(sofs == eofs);
+    }
+  }
+
+  vox.cx = px;
+  vox.cy = py;
+  vox.cz = pz;
+
+  return true;
+}
+
+
+//==========================================================================
+//
+//  vox_loadKV6
+//
+//==========================================================================
+bool vox_loadKV6 (VoxByteStream &strm, VoxelData &vox) {
+  struct KVox {
+    uint32_t rgb;
+    uint8_t zlo, zhi;
+    uint8_t cull;
+    uint8_t normidx;
+  };
+
+  CHECK_STRM();
+
+  if (tsize < 32 || tsize > 0x00ffffffU) {
+    vox_logf(VoxLibMsg_Error, "invalid voxel data (kv6)");
+    return false;
+  }
+
+  uint32_t sign = readULong(strm, &cpos); CHECKERR();
+  if (sign != 0x6c78764bU) {
+    vox_logf(VoxLibMsg_Error, "invalid voxel data signature (kv6)");
+    return false;
+  }
+
+  int32_t xsiz = readILong(strm, &cpos); CHECKERR();
+  int32_t ysiz = readILong(strm, &cpos); CHECKERR();
+  int32_t zsiz = readILong(strm, &cpos); CHECKERR();
+  if (voxlib_verbose) vox_logf(VoxLibMsg_Normal, "voxel size: %dx%dx%d", xsiz, ysiz, zsiz);
+  if (xsiz < 1 || ysiz < 1 || zsiz < 1 ||
+      xsiz > 1024 || ysiz > 1024 || zsiz > 1024)
+  {
+    vox_logf(VoxLibMsg_Error, "invalid voxel size");
+    return false;
+  }
+
+  float xpivot = readILong(strm, &cpos); CHECKERR();
+  float ypivot = readILong(strm, &cpos); CHECKERR();
+  float zpivot = readILong(strm, &cpos); CHECKERR();
+
+  int32_t voxcount = readILong(strm, &cpos); CHECKERR();
+  if (voxcount <= 0 || voxcount > 0x00ffffff) {
+    vox_logf(VoxLibMsg_Error, "invalid number of voxels");
+    return false;
+  }
+
+  TArray<KVox> kvox;
+  kvox.setLength(voxcount);
+  for (int32_t vidx = 0; vidx < voxcount; ++vidx) {
+    KVox &kv = kvox[vidx];
+    uint8_t r8 = readUByte(strm, &cpos); CHECKERR();
+    uint8_t g8 = readUByte(strm, &cpos); CHECKERR();
+    uint8_t b8 = readUByte(strm, &cpos); CHECKERR();
+    kv.rgb = b8|(g8<<8)|(r8<<16);
+    uint8_t dummy = readUByte(strm, &cpos); CHECKERR(); // always 128; ignore
+    (void)dummy;
+    uint8_t zlo = readUByte(strm, &cpos); CHECKERR();
+    uint8_t zhi = readUByte(strm, &cpos); CHECKERR();
+    uint8_t cull = readUByte(strm, &cpos); CHECKERR();
+    uint8_t normidx = readUByte(strm, &cpos); CHECKERR();
+    kv.zlo = zlo;
+    kv.zhi = zhi;
+    kv.cull = cull;
+    kv.normidx = normidx;
+    if (kv.zhi != 0) {
+      vox_logf(VoxLibMsg_Error, "wtf?! zhi is not 0! (kv6)");
+      return false;
+    }
+  }
+
+  TArray<uint32_t> xofs;
+  xofs.setLength(xsiz+1);
+  uint32_t curvidx = 0;
+  for (int vidx = 0; vidx < xsiz; ++vidx) {
+    xofs[vidx] = curvidx;
+    uint32_t count = readULong(strm, &cpos); CHECKERR();
+    curvidx += count;
+  }
+  xofs[xofs.length()-1] = curvidx;
+
+  TArray<uint32_t> xyofs;
+  const int ww = ysiz+1;
+  xyofs.setLength(xsiz*ww);
+  for (int xxidx = 0; xxidx < xsiz; ++xxidx) {
+    curvidx = 0;
+    for (int yyidx = 0; yyidx < ysiz; ++yyidx) {
+      xyofs[xxidx*ww+yyidx] = curvidx;
+      uint32_t count = readULong(strm, &cpos); CHECKERR();
+      curvidx += count;
+    }
+    xyofs[xxidx*ww+ysiz] = curvidx;
+  }
+
+  // now build cubes
+  vox.setSize(xsiz, ysiz, zsiz);
+  for (int y = 0; y < ysiz; ++y) {
+    for (int x = 0; x < xsiz; ++x) {
+      uint32_t sofs = xofs[x]+xyofs[x*ww+y];
+      uint32_t eofs = xofs[x]+xyofs[x*ww+y+1];
+      //if (sofs == eofs) continue;
+      //assert(sofs < data.length && eofs <= data.length);
+      while (sofs < eofs) {
+        const KVox &kv = kvox[sofs++];
         int z = kv.zlo;
-        foreach (const cidx; 0..kv.zhi+1) {
-          z += 1;
+        for (int cidx = 0; cidx <= kv.zhi; ++cidx) {
+          ++z;
           vox.addVoxel(xsiz-x-1, y, zsiz-z, kv.rgb, kv.cull);
         }
       }
     }
   }
-  //conwriteln(texpos);
+
   vox.cx = xpivot;
   vox.cy = ypivot;
   vox.cz = zpivot;
+
+  return true;
 }
 
 
 //==========================================================================
 //
-//  loadVox
+//  vox_loadVox
 //
 //==========================================================================
-private void loadVox (ref VoxelData vox, VFile fl, vuint32 xsiz) {
-  version(kvx_dump) conwriteln("loading VOX...");
-  vuint32 ysiz = fl.readNum!vuint32;
-  vuint32 zsiz = fl.readNum!vuint32;
-  /*debug(kvx_dump)*/ conwriteln("xsiz=", xsiz, "; ysiz=", ysiz, "; zsiz=", zsiz);
-  if (xsiz < 1 || ysiz < 1 || zsiz < 1 || xsiz > 1024 || ysiz > 1024 || zsiz > 1024) {
-    throw new Exception("invalid voxel size (vox)");
+bool vox_loadVox (VoxByteStream &strm, VoxelData &vox, const uint8_t defpal[768]) {
+  CHECK_STRM();
+
+  if (tsize < 16 || tsize > 0x03ffffffU) {
+    vox_logf(VoxLibMsg_Error, "invalid voxel data (kv6)");
+    return false;
   }
-  auto fpos = fl.tell();
-  fl.seek(fpos+xsiz*ysiz*zsiz);
-  //auto data = new ubyte[](xsiz*ysiz*zsiz);
-  //fl.rawReadExact(data);
-  vuint8[768] pal;
-  fl.rawReadExact(pal[]);
-  foreach (ref vuint8 c; pal[]) {
-    if (c > 63) throw new Exception("invalid palette value");
-    c = clampToByte(255*c/64);
+
+  int32_t xsiz = readILong(strm, &cpos); CHECKERR();
+  int32_t ysiz = readILong(strm, &cpos); CHECKERR();
+  int32_t zsiz = readILong(strm, &cpos); CHECKERR();
+  if (voxlib_verbose) vox_logf(VoxLibMsg_Normal, "voxel size: %dx%dx%d", xsiz, ysiz, zsiz);
+  if (xsiz < 1 || ysiz < 1 || zsiz < 1 ||
+      xsiz > 1024 || ysiz > 1024 || zsiz > 1024)
+  {
+    vox_logf(VoxLibMsg_Error, "invalid voxel size (vox)");
+    return false;
   }
+
+  TArray<uint8_t> data;
+  data.setLength(xsiz*ysiz*zsiz);
+  if (!readBuf(strm, data.ptr(), (uint32_t)data.length(), &cpos)) {
+    vox_logf(VoxLibMsg_Error, "error reading voxel data");
+    return false;
+  }
+
+  uint8_t pal[768];
+  if (cpos < tsize && tsize-cpos >= 768) {
+    if (!readBuf(strm, pal, 768, &cpos)) {
+      vox_logf(VoxLibMsg_Error, "error reading voxel palette");
+      return false;
+    }
+    for (unsigned cidx = 0; cidx < 768; ++cidx) {
+      int v = 255*((int)pal[cidx])/64;
+      if (v < 0) v = 0; else if (v > 255) v = 255;
+      pal[cidx] = (uint8_t)v;
+    }
+  } else if (!defpal) {
+    for (unsigned cidx = 0; cidx < 256; ++cidx) {
+      pal[cidx*3+0] = (uint8_t)cidx;
+    }
+  } else {
+    memcpy(pal, defpal, 768);
+  }
+
   const float px = 1.0f*xsiz/2.0f;
   const float py = 1.0f*ysiz/2.0f;
   const float pz = 1.0f*zsiz/2.0f;
+
   // now build cubes
-  fl.seek(fpos);
+  uint32_t dpos = 0;
   vox.setSize(xsiz, ysiz, zsiz);
-  foreach (const x; 0..xsiz) {
-    foreach (const y; 0..ysiz) {
-      foreach (const z; 0..zsiz) {
-        vuint8 palcol = fl.readNum!vuint8;
+  for (int x = 0; x < xsiz; ++x) {
+    for (int y = 0; y < ysiz; ++y) {
+      for (int z = 0; z < zsiz; ++z) {
+        uint8_t palcol = data[dpos++];
         if (palcol != 255) {
-          vuint32 rgb = pal[palcol*3+2]|((vuint32)pal[palcol*3+1]<<8)|((vuint32)pal[palcol*3+0]<<16);
-          //addCube(0xff, (xsiz-x-1)-px, y-py, (zsiz-z-1)-pz, b|(g<<8)|(r<<16));
-          vox.addVoxel(xsiz-x-1, y, zsiz-z-1, rgb, 0xff);
+          uint32_t rgb = pal[palcol*3+2]|((uint32_t)pal[palcol*3+1]<<8)|((uint32_t)pal[palcol*3+0]<<16);
+          vox.addVoxel(xsiz-x-1, y, zsiz-z-1, rgb, 0x3f);
         }
       }
     }
   }
+
   vox.cx = px;
   vox.cy = py;
   vox.cz = pz;
+
+  return true;
 }
 
 
 //==========================================================================
 //
-//  loadVxl
+//  vox_loadVxl
 //
 //==========================================================================
-private void loadVxl (ref VoxelData vox, VFile fl) {
-  vuint32 xsiz = fl.readNum!vuint32;
-  vuint32 ysiz = fl.readNum!vuint32;
-  vuint32 zsiz = 256;
-  /*debug(kvx_dump)*/ conwriteln("xsiz=", xsiz, "; ysiz=", ysiz, "; zsiz=", zsiz);
-  if (xsiz < 1 || ysiz < 1 || zsiz < 1 || xsiz > 1024 || ysiz > 1024 || zsiz > 1024) throw new Exception("invalid voxel size");
-  //immutable float px = 1.0f*xsiz/2.0f;
-  //immutable float py = 1.0f*ysiz/2.0f;
-  //immutable float pz = 1.0f*zsiz/2.0f;
+bool vox_loadVxl (VoxByteStream &strm, VoxelData &vox) {
+  CHECK_STRM();
+
+  if (tsize < 32 || tsize > 0x00ffffffU) {
+    vox_logf(VoxLibMsg_Error, "invalid voxel data (vxl)");
+    return false;
+  }
+
+  uint32_t sign = readULong(strm, &cpos); CHECKERR();
+  if (sign != 0x09072000U) {
+    vox_logf(VoxLibMsg_Error, "invalid voxel data signature (vxl)");
+    return false;
+  }
+
+  int32_t xsiz = readILong(strm, &cpos); CHECKERR();
+  int32_t ysiz = readILong(strm, &cpos); CHECKERR();
+  int32_t zsiz = 256;
+  if (voxlib_verbose) vox_logf(VoxLibMsg_Normal, "voxel size: %dx%dx%d", xsiz, ysiz, zsiz);
+  if (xsiz < 1 || ysiz < 1 || zsiz < 1 ||
+      xsiz > 1024 || ysiz > 1024 || zsiz > 1024)
+  {
+    vox_logf(VoxLibMsg_Error, "invalid voxel size (vox)");
+    return false;
+  }
+
   float px, py, pz;
   // camera
-  px = fl.readNum!double;
-  py = fl.readNum!double;
-  pz = fl.readNum!double;
+  px = readDouble(strm, &cpos); CHECKERR();
+  py = readDouble(strm, &cpos); CHECKERR();
+  pz = readDouble(strm, &cpos); CHECKERR();
   pz = zsiz-1-pz;
   // unit right
-  fl.readNum!double;
-  fl.readNum!double;
-  fl.readNum!double;
+  (void)readDouble(strm, &cpos); CHECKERR();
+  (void)readDouble(strm, &cpos); CHECKERR();
+  (void)readDouble(strm, &cpos); CHECKERR();
   // unit down
-  fl.readNum!double;
-  fl.readNum!double;
-  fl.readNum!double;
+  (void)readDouble(strm, &cpos); CHECKERR();
+  (void)readDouble(strm, &cpos); CHECKERR();
+  (void)readDouble(strm, &cpos); CHECKERR();
   // unit forward
-  fl.readNum!double;
-  fl.readNum!double;
-  fl.readNum!double;
+  (void)readDouble(strm, &cpos); CHECKERR();
+  (void)readDouble(strm, &cpos); CHECKERR();
+  (void)readDouble(strm, &cpos); CHECKERR();
 
   vox.setSize(xsiz, ysiz, zsiz);
 
+  /*
   void vxlReset (int x, int y, int z) {
     vox.removeVoxel(xsiz-x-1, y, zsiz-z-1);
   }
 
-  void vxlPaint (int x, int y, int z, vuint32 clr) {
+  void vxlPaint (int x, int y, int z, uint32_t clr) {
     vox.addVoxel(xsiz-x-1, y, zsiz-z-1, clr, 0x3f);
   }
+  */
 
   // now carve crap out of it
-  auto data = new vuint8[]((vuint32)(fl.size-fl.tell));
-  fl.rawReadExact(data);
-  const(vuint8)* v = data.ptr;
-  foreach (const y; 0..ysiz) {
-    foreach (const x; 0..xsiz) {
-      vuint32 z = 0;
+  if (cpos >= tsize && tsize-cpos > 0x03fffffff) {
+    vox_logf(VoxLibMsg_Error, "invalid voxel data (vxl)");
+    return false;
+  }
+
+  TArray<uint8_t> data;
+  data.setLength((int)(tsize-cpos));
+  if (!readBuf(strm, data.ptr(), (uint32_t)data.length(), &cpos)) {
+    vox_logf(VoxLibMsg_Error, "error reading voxel data");
+    return false;
+  }
+
+  const uint8_t *v = data.ptr();
+  for (int x = 0; x < xsiz; ++x) {
+    for (int y = 0; y < ysiz; ++y) {
+      int z = 0;
       for (;;) {
-        foreach (const i; z..v[1]) vxlReset(x, y, i);
+        for (int i = z; i < v[1]; ++i) vox.removeVoxel(xsiz-x-1, y, zsiz-i-1);
         for (z = v[1]; z <= v[2]; ++z) {
-          const(vuint32)* cp = (const(vuint32)*)(v+(z-v[1]+1)*4);
-          vxlPaint(x, y, z, *cp);
+          const uint32_t *cp = (const uint32_t *)(v+(z-v[1]+1)*4);
+          //vxlPaint(x, y, z, *cp);
+          vox.addVoxel(xsiz-x-1, y, zsiz-z-1, *cp, 0x3f);
         }
         if (!v[0]) break;
         z = v[2]-v[1]-v[0]+2;
         v += v[0]*4;
         for (z += v[3]; z < v[3]; ++z) {
-          const(vuint32)* cp = (const(vuint32)*)(v+(z-v[3])*4);
-          vxlPaint(x, y, z, *cp);
+          const uint32_t *cp = (const uint32_t *)(v+(z-v[3])*4);
+          //vxlPaint(x, y, z, *cp);
+          vox.addVoxel(xsiz-x-1, y, zsiz-z-1, *cp, 0x3f);
         }
       }
       v += (v[2]-v[1]+2)*4;
     }
   }
+
   vox.cx = px;
   vox.cy = py;
   vox.cz = pz;
-}
 
-
-//==========================================================================
-//
-//  loadVoxel
-//
-//==========================================================================
-public void loadVoxel (ref VoxelData vox, string fname, bool asvox=false) {
-  auto fl = VFile(fname);
-  vuint32 fsize = fl.readNum!vuint32; // size of this voxel (useful for mipmaps)
-  auto tm = iv.timer.Timer(true);
-  if (fsize == 0x6c78764bU) {
-    loadKV6(vox, fl);
-  } else if (fsize == 0x09072000U) {
-    loadVxl(vox, fl);
-  } else {
-    if (fname.endsWithCI(".vox")) loadVox(vox, fl, fsize);
-    else loadKVX(vox, fl, fsize);
-  }
-  tm.stop();
-  conwriteln("loaded in ", tm.toString(), "; grid size: ", vox.xsize, "x", vox.ysize, "x", vox.zsize);
-  tm.restart();
-  vox.optimise(vox_optimize_hollow);
-  tm.stop();
-  conwriteln("optimised in ", tm.toString());
+  return true;
 }
-#endif

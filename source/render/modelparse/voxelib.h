@@ -25,15 +25,30 @@
 #ifndef VV_VOXELIB_HEADER
 #define VV_VOXELIB_HEADER
 
-//#include "../../../libs/core/core.h"
-#include "../../gamedefs.h"
-#include "../r_local.h"
+#include "../../../libs/core/core.h"
 
 // swap final colors in GL mesh?
 #define VOXLIB_SWAP_COLORS
 
 
-extern bool voxlib_verbose;
+enum VoxLibMsg {
+  VoxLibMsg_None,
+  // also used for message types
+  VoxLibMsg_Error, // this message is ALWAYS generated
+  VoxLibMsg_Normal,
+  VoxLibMsg_Warning,
+  VoxLibMsg_Debug,
+  // used only for `voxlib_verbose`
+  VoxLibMsg_MaxVerbosity,
+};
+
+// verbose conversion? set this to `false` for somewhat faster processing
+// (it is faster, because the library doesn't need to calculate some otherwise
+// useless things)
+extern VoxLibMsg voxlib_verbose;
+
+// `msg` is never `nullptr` or empty string
+extern void (*voxlib_message) (VoxLibMsg type, const char *msg);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -642,9 +657,11 @@ public:
   texture mapping coordinates.
  */
 struct GLVoxelMesh {
+  // WARNING! DO NOT CHANGE ANY OF THE PUBLIC FIELDS MANUALLY!
   TArray<VVoxVertexEx> vertices;
   TArray<vuint32> indicies;
   vuint32 uniqueVerts;
+  vuint32 breakIndex;
 
   TArray<vuint32> img;
   vuint32 imgWidth, imgHeight;
@@ -717,15 +734,16 @@ private:
 
   void fixEdgeWithVert (VoxEdge &edge, float crd);
   void fixEdgeNew (vuint32 eidx);
-  void rebuildEdges (vuint32 BreakIndex);
+  void rebuildEdges ();
 
   // t-junction fixer entry point
   // this will also convert vertex data to triangle strips
-  void fixTJunctions (vuint32 BreakIndex);
+  void fixTJunctions ();
 
 public:
   GLVoxelMesh ()
     : uniqueVerts(0)
+    , breakIndex(65535)
     , imgWidth(0)
     , imgHeight(0)
     , totaltadded(0)
@@ -736,15 +754,92 @@ public:
   // count the number of triangles in triangle fan data
   // can be used for informational messages
   // slow!
-  vuint32 countTris (vuint32 BreakIndex);
+  vuint32 countTris ();
 
   // main entry point
   // `tjfix` is "fix t-junctions" flag
   // `BreakIndex` is OpenGL "break index" (uniqie index that finishes triangle fan)
+  // on exit, `vertices` contains a list of vertices, and
+  // `indicies` contains a list of vertex indicies, ready to be rendered as triangle fans
+  // fans are separated by `BreakIndex` value
   void create (VoxelMesh &vox, bool tjfix, vuint32 BreakIndex);
 
-  void recreateTriangles (TArray<VMeshTri> &Tris, vuint32 BreakIndex);
+  // call this after `create()`, to get triangle soup
+  typedef void (*NewTriCB) (vuint32 v0, vuint32 v1, vuint32 v2, void *udata);
+  void createTriangles (NewTriCB cb, void *udata);
 };
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// stream interface for loaders
+//
+
+struct VoxByteStream {
+  // read bytes to buffer
+  // `buf` is never `nullptr`, `len` is never `0`
+  // should either read exactly `len` bytes and return `true`,
+  // or return `false` on any error
+  // note that the caller may ask to read more bytes than there is in the stream
+  // in this case, return `false`
+  bool (*readBuf) (void *buf, uint32_t len, VoxByteStream *strm);
+
+  // seek to the given byte
+  // guaranteed to always seek forward
+  // should return `false` on error
+  // note that the caller may ask to seek outside the stread
+  // in this case, return `false`
+  bool (*seek) (uint32_t ofs, VoxByteStream *strm);
+
+  // get total size of the stream
+  // nobody knows what to do on error; return 0 or something
+  uint32_t (*totalSize) (VoxByteStream *strm);
+
+  void *udata;
+};
+
+
+// memory stream reader, for your convenience
+struct VoxMemByteStream {
+  VoxByteStream strm;
+  // `udata` is data pointer
+  uint32_t dataSize;
+  uint32_t currOfs;
+};
+
+
+// returns `mst`, but properly casted
+// there is no need to deinit this stream
+VoxByteStream *vox_InitMemoryStream (VoxMemByteStream *mst, const void *buf, uint32_t buflen);
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// loaders
+//
+// WARNING! passed `strm` must not be used before passing
+//          (i.e. its position should be at the very first stream byte)
+//
+
+enum VoxFmt {
+  VoxFmt_Unknown,
+  VoxFmt_KV6,
+  VoxFmt_Vxl,
+};
+
+// detect voxel file format by the first 4 file bytes
+// KVX format has no signature, so it cannot be reliably detected
+VoxFmt vox_detectFormat (const uint8_t bytes[4]);
+
+// WARNING! loaders perform very little input file validation!
+
+// load KVX model
+// WARNING! does no format detection checks!
+// `defpal` is the default palette in `r, g, b` triplets
+// palette colors should be in [0..255] range
+bool vox_loadKVX (VoxByteStream &strm, VoxelData &vox, const uint8_t defpal[768]);
+bool vox_loadKV6 (VoxByteStream &strm, VoxelData &vox);
+bool vox_loadVxl (VoxByteStream &strm, VoxelData &vox);
+// raw voxel cube with dimensions
+bool vox_loadVox (VoxByteStream &strm, VoxelData &vox, const uint8_t defpal[768]);
 
 
 #endif

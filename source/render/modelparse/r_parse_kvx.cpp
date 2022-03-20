@@ -194,224 +194,6 @@ static VTexture *voxTextureLoader (VStr fname, vint32 shade) {
 
 //==========================================================================
 //
-//  loadKVX
-//
-//==========================================================================
-static bool loadKVX (VStream &st, VoxelData &vox) {
-  st.Seek(0);
-  vint32 fsize;
-  st << fsize;
-  if (fsize < 8 || fsize > 0x00ffffff) {
-    GCon->Logf(NAME_Error, "voxel data too big (kvx)");
-    return false;
-  }
-
-  int nextpos = st.Tell()+fsize;
-  TArray<vuint32> xofs;
-  //ushort[][] xyofs;
-  TArray<vuint16> xyofs;
-  TArray<vuint8> data;
-  vint32 xsiz, ysiz, zsiz;
-  vint32 xpivot, ypivot, zpivot;
-
-  st << xsiz << ysiz << zsiz;
-  if (xsiz < 1 || ysiz < 1 || zsiz < 1 || xsiz > 1024 || ysiz > 1024 || zsiz > 1024) {
-    GCon->Logf(NAME_Error, "invalid voxel size (kvx)");
-    return false;
-  }
-  const int ww = ysiz+1;
-
-  st << xpivot << ypivot << zpivot;
-  vuint32 xstart = (xsiz+1)*4+xsiz*(ysiz+1)*2;
-  //TArray<vuint32> xofs;
-  xofs.setLength(xsiz+1);
-  for (int f = 0; f <= xsiz; ++f) {
-    st << xofs[f];
-    xofs[f] -= xstart;
-  }
-  //xyofs = new ushort[][](xsiz, ysiz+1);
-  xyofs.setLength(xsiz*ww);
-  for (int x = 0; x < xsiz; ++x) {
-    for (int y = 0; y <= ysiz; ++y) {
-      st << xyofs[x*ww+y];
-    }
-  }
-  //assert(fx.size-fx.tell == fsize-24-(xsiz+1)*4-xsiz*(ysiz+1)*2);
-  //data = new vuint8[](cast(vuint32)(fx.size-fx.tell));
-  data.setLength(fsize-24-(xsiz+1)*4-xsiz*(ysiz+1)*2);
-  st.Serialise(data.ptr(), data.length());
-
-  st.Seek(nextpos);
-  // skip mipmaps
-  while (st.TotalSize()-st.Tell() > 768) {
-    st << fsize; // size of this voxel (useful for mipmaps)
-    st.Seek(st.Tell()+fsize);
-  }
-
-  vuint8 pal[768];
-  if (st.TotalSize()-st.Tell() == 768) {
-    st.Serialise(pal, 768);
-    for (int cidx = 0; cidx < 768; ++cidx) pal[cidx] = clampToByte(255*pal[cidx]/64);
-  } else {
-    for (int cidx = 0; cidx < 256; ++cidx) {
-      pal[cidx*3+0] = r_palette[cidx].r;
-      pal[cidx*3+1] = r_palette[cidx].g;
-      pal[cidx*3+2] = r_palette[cidx].b;
-    }
-  }
-
-  const float px = (float)xpivot/256.0f;
-  const float py = (float)ypivot/256.0f;
-  const float pz = (float)zpivot/256.0f;
-
-  // now build cubes
-  vox.setSize(xsiz, ysiz, zsiz);
-  for (int y = 0; y < ysiz; ++y) {
-    for (int x = 0; x < xsiz; ++x) {
-      vuint32 sofs = xofs[x]+xyofs[x*ww+y];
-      vuint32 eofs = xofs[x]+xyofs[x*ww+y+1];
-      //if (sofs == eofs) continue;
-      //assert(sofs < data.length && eofs <= data.length);
-      while (sofs < eofs) {
-        int ztop = data[sofs++];
-        vuint32 zlen = data[sofs++];
-        vuint8 cull = data[sofs++];
-        // colors
-        for (vuint32 cidx = 0; cidx < zlen; ++cidx) {
-          vuint8 palcol = data[sofs++];
-          /*
-          vuint8 cl = cull;
-          if (cidx != 0) cl &= ~0x10;
-          if (cidx != zlen-1) cl &= ~0x20;
-          */
-          const vuint32 rgb =
-            pal[palcol*3+2]|
-            ((vuint32)pal[palcol*3+1]<<8)|
-            ((vuint32)pal[palcol*3+0]<<16);
-          ++ztop;
-          vox.addVoxel(xsiz-x-1, y, zsiz-ztop, rgb, cull);
-        }
-      }
-      //assert(sofs == eofs);
-    }
-  }
-
-  vox.cx = px;
-  vox.cy = py;
-  vox.cz = pz;
-
-  return true;
-}
-
-
-//==========================================================================
-//
-//  loadKV6
-//
-//==========================================================================
-static bool loadKV6 (VStream &st, VoxelData &vox) {
-  struct KVox {
-    vuint32 rgb;
-    vuint8 zlo, zhi;
-    vuint8 cull;
-    vuint8 normidx;
-  };
-
-  st.Seek(0);
-
-  vint32 xsiz, ysiz, zsiz;
-  st << xsiz << ysiz << zsiz;
-  if (xsiz < 1 || ysiz < 1 || zsiz < 1 || xsiz > 1024 || ysiz > 1024 || zsiz > 1024) {
-    GCon->Logf(NAME_Error, "invalid voxel size (kv6)");
-    return false;
-  }
-
-  float xpivot, ypivot, zpivot;
-  st << xpivot << ypivot << zpivot;
-
-  vint32 voxcount;
-  st << voxcount;
-  if (voxcount <= 0 || voxcount > 0x00ffffff) {
-    GCon->Logf(NAME_Error, "invalid number of voxels (kv6)");
-    return false;
-  }
-
-  TArray<KVox> kvox;
-  kvox.setLength(voxcount);
-  for (vint32 vidx = 0; vidx < voxcount; ++vidx) {
-    KVox &kv = kvox[vidx];
-    vuint8 r8, g8, b8;
-    st << r8 << g8 << b8;
-    kv.rgb = b8|(g8<<8)|(r8<<16);
-    vuint8 dummy;
-    st << dummy; // always 128; ignore
-    vuint8 zlo, zhi, cull, normidx;
-    st << zlo << zhi << cull << normidx;
-    kv.zlo = zlo;
-    kv.zhi = zhi;
-    kv.cull = cull;
-    kv.normidx = normidx;
-    if (kv.zhi != 0) {
-      GCon->Logf(NAME_Error, "wtf?! zhi is not 0! (kv6)");
-      return false;
-    }
-  }
-
-  TArray<vuint32> xofs;
-  xofs.setLength(xsiz+1);
-  vuint32 curvidx = 0;
-  for (int vidx = 0; vidx < xsiz; ++vidx) {
-    xofs[vidx] = curvidx;
-    vuint32 count;
-    st << count;
-    curvidx += count;
-  }
-  xofs[xofs.length()-1] = curvidx;
-
-  TArray<vuint32> xyofs;
-  const int ww = ysiz+1;
-  xyofs.setLength(xsiz*ww);
-  //auto xyofs = new vuint32[][](xsiz, ysiz+1);
-  for (int xxidx = 0; xxidx < xsiz; ++xxidx) {
-    curvidx = 0;
-    for (int yyidx = 0; yyidx < ysiz; ++yyidx) {
-      xyofs[xxidx*ww+yyidx] = curvidx;
-      vuint32 count;
-      st << count;
-      curvidx += count;
-    }
-    xyofs[xxidx*ww+ysiz] = curvidx;
-  }
-
-  // now build cubes
-  vox.setSize(xsiz, ysiz, zsiz);
-  for (int y = 0; y < ysiz; ++y) {
-    for (int x = 0; x < xsiz; ++x) {
-      vuint32 sofs = xofs[x]+xyofs[x*ww+y];
-      vuint32 eofs = xofs[x]+xyofs[x*ww+y+1];
-      //if (sofs == eofs) continue;
-      //assert(sofs < data.length && eofs <= data.length);
-      while (sofs < eofs) {
-        const KVox &kv = kvox[sofs++];
-        int z = kv.zlo;
-        for (int cidx = 0; cidx <= kv.zhi; ++cidx) {
-          ++z;
-          vox.addVoxel(xsiz-x-1, y, zsiz-z, kv.rgb, kv.cull);
-        }
-      }
-    }
-  }
-
-  vox.cx = xpivot;
-  vox.cy = ypivot;
-  vox.cz = zpivot;
-
-  return true;
-}
-
-
-//==========================================================================
-//
 //  VMeshModel::VoxNeedReload
 //
 //==========================================================================
@@ -420,6 +202,32 @@ bool VMeshModel::VoxNeedReload () {
     voxOptLevel != clampval(vox_optimisation.asInt(), -1, 3)+1 ||
     voxFixTJunk != vox_fix_tjunctions.asBool() ||
     voxHollowFill != vox_fix_faces.asBool();
+}
+
+
+//==========================================================================
+//
+//  newTriangeCB
+//
+//==========================================================================
+static void newTriangeCB (vuint32 v0, vuint32 v1, vuint32 v2, void *udata) {
+  VMeshModel *mdl = (VMeshModel *)udata;
+  VMeshTri &tri = mdl->Tris.alloc();
+  tri.VertIndex[0] = v0;
+  tri.VertIndex[1] = v1;
+  tri.VertIndex[2] = v2;
+}
+
+
+//==========================================================================
+//
+//  voxlib_message_cb
+//
+//  `msg` is never `nullptr` or empty string
+//
+//==========================================================================
+static void voxlib_message_cb (VoxLibMsg type, const char *msg) {
+  GCon->Logf(NAME_Init, "  %s", msg);
 }
 
 
@@ -435,7 +243,8 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
 
   if (DataSize < 8) Sys_Error("invalid voxel model '%s'", *this->Name);
 
-  voxlib_verbose = vox_verbose_conversion;
+  voxlib_verbose = (vox_verbose_conversion.asBool() ? VoxLibMsg_MaxVerbosity : VoxLibMsg_None);
+  voxlib_message = &voxlib_message_cb;
 
   this->Uploaded = false;
   this->VertsBuffer = 0;
@@ -512,21 +321,37 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
 
   GLVoxelMesh glvmesh;
   {
-    VMemoryStreamRO memst(this->Name, Data, DataSize);
-    vuint32 sign;
-    memst << sign;
-    memst.Seek(0);
+    if (DataSize < 4) Sys_Error("cannot load voxel model '%s'", *this->Name);
+    VoxMemByteStream mst;
+    VoxByteStream *xst = vox_InitMemoryStream(&mst, Data, DataSize);
+
+    uint8_t defpal[768];
+    for (int cidx = 0; cidx < 256; ++cidx) {
+      defpal[cidx*3+0] = r_palette[cidx].r;
+      defpal[cidx*3+1] = r_palette[cidx].g;
+      defpal[cidx*3+2] = r_palette[cidx].b;
+    }
 
     VoxelData vox;
+    const VoxFmt vfmt = vox_detectFormat((const uint8_t *)Data);
     bool ok = false;
-    if (sign == 0x6c78764bU) {
-      if (vox_verbose_conversion.asBool()) GCon->Logf(NAME_Init, "  loading KV6...");
-      ok = loadKV6(memst, vox);
-    } else {
-      if (vox_verbose_conversion.asBool()) GCon->Logf(NAME_Init, "  loading KVX...");
-      ok = loadKVX(memst, vox);
+    switch (vfmt) {
+      case VoxFmt_Unknown: // assume KVX
+        if (vox_verbose_conversion.asBool()) GCon->Logf(NAME_Init, "  loading KVX...");
+        ok = vox_loadKVX(*xst, vox, defpal);
+        break;
+      case VoxFmt_KV6:
+        if (vox_verbose_conversion.asBool()) GCon->Logf(NAME_Init, "  loading KV6...");
+        ok = vox_loadKV6(*xst, vox);
+        break;
+      case VoxFmt_Vxl:
+        Sys_Error("cannot load voxel model '%s' in VXL format", *this->Name);
+        break;
+      default:
+        break;
     }
-    if (!ok || memst.IsError()) Sys_Error("cannot load voxel model '%s'", *this->Name);
+    if (!ok) Sys_Error("cannot load voxel model '%s'", *this->Name);
+
     vox.optimise(this->voxHollowFill);
 
     if (!useVoxelPivotZ) vox.cz = 0.0f;
@@ -536,7 +361,9 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
 
     glvmesh.create(vmesh, this->voxFixTJunk, BreakIndex/*, this->Name*/);
     vmesh.clear();
-    glvmesh.recreateTriangles(Tris, BreakIndex);
+    Tris.clear();
+    glvmesh.createTriangles(&newTriangeCB, (void *)this);
+    Tris.condense();
 
     if (vox_verbose_conversion.asBool()) {
       GCon->Logf(NAME_Init, "voxel model '%s': %d unique vertices, %d triangles, %dx%d color texture; optlevel=%d",
