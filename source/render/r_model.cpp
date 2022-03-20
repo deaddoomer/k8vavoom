@@ -457,6 +457,7 @@ static VMeshModel *Mod_FindMeshModel (VStr filename, VStr name, int meshIndex,
   mod->useVoxelPivotZ = useVoxelPivotZ;
   mod->voxOptLevel = -1;
   mod->voxFixTJunk = false;
+  mod->voxHollowFill = true;
   mod->voxSkinTextureId = -1;
   mod->GlMode = VMeshModel::GlNone;
   GMeshModels.Append(mod);

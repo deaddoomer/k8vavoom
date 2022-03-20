@@ -882,6 +882,7 @@ struct VMeshModel {
   bool useVoxelPivotZ; // should the voxel be z-centered using the pivot point?
   int voxOptLevel;
   bool voxFixTJunk;
+  bool voxHollowFill;
   int voxSkinTextureId;
 
   // OpenGL handles

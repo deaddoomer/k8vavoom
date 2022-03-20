@@ -198,6 +198,7 @@ menudef VideoOptions {
       "Normal",
       "Better",
       "Maximum",
+      "Ultra",
     }
     help =
       "Voxel models must be converted to polygonal models for",
@@ -206,12 +207,22 @@ menudef VideoOptions {
       "",
       "\c[Cyan]Normal\c- The fastest one, creates less 'Space Ants'.",
       "\c[Cyan]Better\c- Slightly slower, but produces better models.",
-      "\c[Cyan]Maximum\c- The slowest one, but gives the best results.",
-      "If in doubt, choose '\c[WHITE]Maximum\c-'.",
+      "\c[Cyan]Maximum\c- Evenslowest one, but gives better results.",
+      "\c[Cyan]Ultra\c- The slowest one, but gives the best results.",
+      "If in doubt, choose '\c[WHITE]Ultra\c-'.",
       "",
       "Note that all methods will create 'Space Ants', but"
       "you may trade some rendering speed for visual quality",
       "by turning '\c[WHITE]Fix T-Junctions\c-' option '\c[WHITE]ON\c-'.";
+  }
+
+  option bool {
+    title = "Fix Face Visibility";
+    cvar = vox_fix_faces;
+    help =
+      "Some KVX models contains invalid visibility info.",
+      "The engine can recalculate it for better conversion."
+      "This is fast, so if in doubt, leave this '\c[WHITE]ON\c-'.";
   }
 
   option bool {

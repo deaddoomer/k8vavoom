@@ -181,6 +181,7 @@ set(RENDERBASE_SOURCES
   render/r_model.cpp
   render/r_model_gz.cpp
   render/modelparse/md2_normals.h
+  render/modelparse/voxelib.cpp
   render/modelparse/r_parsecommon.cpp
   render/modelparse/r_parse_md2.cpp
   render/modelparse/r_parse_md3.cpp
