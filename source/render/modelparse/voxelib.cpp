@@ -1186,11 +1186,9 @@ public:
   inline VoxVc3 (const VoxVc3 &src) : x(src.x), y(src.y), z(src.z) {}
 
   inline VoxVc3 &operator = (const VoxVc3 &src) noexcept = default;
-
   inline VoxVc3 operator - (const VoxVc3 &v2) const { return VoxVc3(x-v2.x, y-v2.y, z-v2.z); }
 
   inline float lengthSquared () const { return (x*x)+(y*y)+(z*z); }
-
   inline VoxVc3 cross (const VoxVc3 &v2) const { return VoxVc3((y*v2.z)-(z*v2.y), (z*v2.x)-(x*v2.z), (x*v2.y)-(y*v2.x)); }
 };
 
@@ -2395,52 +2393,43 @@ void GLVoxelMesh::create (VoxelMesh &vox, bool tjfix, uint32_t BreakIndex) {
   // create arrays
   for (int f = 0; f < quadcount; ++f) {
     VoxQuad &vq = vox.quads[f];
-    const uint32_t imgx0 = vox.catlas.getTexX(vq.cidx);
-    const uint32_t imgx1 = vox.catlas.getTexX(vq.cidx)+vq.wh.getW()-1;
-    const uint32_t imgy0 = vox.catlas.getTexY(vq.cidx);
-    const uint32_t imgy1 = vox.catlas.getTexY(vq.cidx)+vq.wh.getH()-1;
     uint32_t vxn[4];
 
     VVoxVertexEx gv;
-    const float u = ((float)imgx0+0.5f)/(float)imgWidth;
-    const float v = ((float)imgy0+0.5f)/(float)imgHeight;
-    const float u0 = ((float)imgx0+0.04f)/(float)imgWidth;
-    const float u1 = ((float)imgx1+0.96f)/(float)imgWidth;
-    const float v0 = ((float)imgy0+0.04f)/(float)imgHeight;
-    const float v1 = ((float)imgy1+0.96f)/(float)imgHeight;
     for (uint32_t nidx = 0; nidx < 4; ++nidx) {
       const VoxQuadVertex &vx = vq.vx[nidx];
       gv.x = vx.x;
       gv.y = vx.y;
       gv.z = vx.z;
       if (vq.type == VoxelMesh::ZLong) {
-        gv.s = (vx.dz ? u1 : u0);
-        gv.t = v;
+        gv.s = calcS(vox, vq, (vx.dz ? 1 : -1));
+        gv.t = calcT(vox, vq, 0);
       } else if (vq.type == VoxelMesh::XLong) {
-        gv.s = (vx.dx ? u1 : u0);
-        gv.t = v;
+        gv.s = calcS(vox, vq, (vx.dx ? 1 : -1));
+        gv.t = calcT(vox, vq, 0);
       } else if (vq.type == VoxelMesh::YLong) {
-        gv.s = (vx.dy ? u1 : u0);
-        gv.t = v;
+        gv.s = calcS(vox, vq, (vx.dy ? 1 : -1));
+        gv.t = calcT(vox, vq, 0);
       } else if (vq.type == VoxelMesh::Point) {
-        gv.s = u;
-        gv.t = v;
+        gv.s = calcS(vox, vq, 0);
+        gv.t = calcT(vox, vq, 0);
       } else {
-        gv.s = u0;
-        gv.t = v0;
-        vassert(vq.type == VoxelMesh::Quad);
+        int spos = -1, tpos = -1;
+        assert(vq.type == VoxelMesh::Quad);
         if (vq.cull&VoxelMesh::Cull_ZAxisMask) {
-          if (vx.qtype&VoxelMesh::DMV_X) gv.s = u1;
-          if (vx.qtype&VoxelMesh::DMV_Y) gv.t = v1;
+          if (vx.qtype&VoxelMesh::DMV_X) spos = 1;
+          if (vx.qtype&VoxelMesh::DMV_Y) tpos = 1;
         } else if (vq.cull&VoxelMesh::Cull_XAxisMask) {
-          if (vx.qtype&VoxelMesh::DMV_Y) gv.s = u1;
-          if (vx.qtype&VoxelMesh::DMV_Z) gv.t = v1;
+          if (vx.qtype&VoxelMesh::DMV_Y) spos = 1;
+          if (vx.qtype&VoxelMesh::DMV_Z) tpos = 1;
         } else if (vq.cull&VoxelMesh::Cull_YAxisMask) {
-          if (vx.qtype&VoxelMesh::DMV_X) gv.s = u1;
-          if (vx.qtype&VoxelMesh::DMV_Z) gv.t = v1;
+          if (vx.qtype&VoxelMesh::DMV_X) spos = 1;
+          if (vx.qtype&VoxelMesh::DMV_Z) tpos = 1;
         } else {
           vassert(0);
         }
+        gv.s = calcS(vox, vq, spos);
+        gv.t = calcT(vox, vq, tpos);
       }
       gv.nx = vq.normal.x;
       gv.ny = vq.normal.y;

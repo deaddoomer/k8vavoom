@@ -628,6 +628,7 @@ public:
     citems.clear();
     citemhash.clear();
     atlas.clear();
+    clrwdt = clrhgt = 0;
   }
 
   // prepare for new run
@@ -1098,6 +1099,27 @@ private:
 
 private:
   uint32_t appendVertex (const VVoxVertexEx &gv);
+
+  // pos: <0 is left; 0 is center; >0 is right
+  float calcS (VoxelMesh &vox, const VoxQuad &vq, int pos) const {
+    uint32_t cp = vox.catlas.getTexX(vq.cidx);
+    if (pos > 0) cp += vq.wh.getW()-1;
+    float fp = (float)(int)cp;
+         if (pos < 0) fp += 0.004f;
+    else if (pos > 0) fp += 0.996f;
+    else fp += 0.5f;
+    return fp/(float)(int)imgWidth;
+  }
+
+  float calcT (VoxelMesh &vox, const VoxQuad &vq, int pos) const {
+    uint cp = vox.catlas.getTexY(vq.cidx);
+    if (pos > 0) cp += vq.wh.getH()-1;
+    float fp = (float)(int)cp;
+         if (pos < 0) fp += 0.004f;
+    else if (pos > 0) fp += 0.996f;
+    else fp += 0.5f;
+    return fp/(float)(int)imgHeight;
+  }
 
 private:
   inline void gridCoords (float fx, float fy, float fz, int *gx, int *gy, int *gz) const {
