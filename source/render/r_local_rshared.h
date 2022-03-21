@@ -583,6 +583,7 @@ protected:
   // returns `false` if the light is invisible
   // this also sets the list of touched subsectors for dynamic light
   // (this is used in `LightPoint()` and such
+  // must set: `LitCalcBBox`, `CurrLightNoGeoClip`
   bool CalcLightVis (const TVec &org, const float radius, const TVec &aconeDir, const float aconeAngle, int dlnum=-1);
   inline bool CalcPointLightVis (const TVec &org, const float radius, int dlnum=-1) { return CalcLightVis(org, radius, TVec(0.0f, 0.0f, 0.0f), 0.0f, dlnum); }
 
