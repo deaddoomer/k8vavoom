@@ -2435,6 +2435,8 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
     }
 
     if (!IsViewModel) {
+      bool pitchFromMom = false;
+
       const vuint8 rndVal = (mobj ? (hashU32(mobj->ServerUId)>>4)&0xffu : 0);
       /* old code
         if (FDef.AngleStart || FDef.AngleEnd != 1.0f) {
@@ -2457,12 +2459,15 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
       if (!mobj || FDef.gzActorPitch == DontUse) {
         Md2Angle.pitch = 0.0f;
       } else {
-        if (FDef.gzActorPitch == FromMomentum) Md2Angle.pitch = VectorAnglePitch(mobj->Velocity);
-        if (FDef.gzActorPitchInverted) Md2Angle.pitch += 180.0f;
+        if (FDef.gzActorPitch == FromMomentum && !mobj->Velocity.isZero()) {
+          Md2Angle.pitch = VectorAnglePitch(mobj->Velocity);
+          if (FDef.gzActorPitchInverted) Md2Angle.pitch += 180.0f;
+          pitchFromMom = true;
+        }
         Md2Angle.pitch = FDef.anglePitch.GetAngle(Md2Angle.pitch, rndVal);
       }
 
-      if (Level && mobj) {
+      if (!pitchFromMom && Level && mobj) {
         if (r_model_autorotating && FDef.rotateSpeed) {
           Md2Angle.yaw = AngleMod(Md2Angle.yaw+Level->Time*FDef.rotateSpeed+rndVal*38.6f);
         }
@@ -2684,12 +2689,12 @@ bool VRenderLevelShared::DrawAliasModel (VEntity *mobj, VName clsName, const TVe
     return false;
   }
 
-  /*
+  #if 0
   GCon->Logf(NAME_Debug, "***FOUND view model for class `%s` (fidx=%d): %s", *clsName, FIdx, *Frame.toString());
   GCon->Logf(NAME_Debug, "  State: %s", *mobj->State->Loc.toStringNoCol());
   GCon->Logf(NAME_Debug, "  MFI: %s", *mobj->getMFI().toString());
   GCon->Logf(NAME_Debug, "  NEXT MFI: %s", *mobj->getNextMFI().toString());
-  */
+  #endif
 
   // note that gzdoom-imported modeldef can have more than one model attached to one frame
   // process all attachments -- they should differ by model or submodel indicies
@@ -2717,13 +2722,22 @@ bool VRenderLevelShared::DrawAliasModel (VEntity *mobj, VName clsName, const TVe
       // by sprite name
       //if (IsViewModel) GCon->Logf(NAME_Debug, "000: %s: sprite=%s %c; midx=%d; smidx=%d; inter=%g (%g); nidx=%d", *Cls->Name, *cfrm.sprite, 'A'+cfrm.frame, cfrm.ModelIndex, cfrm.SubModelIndex, Inter, cfrm.Inter, FIdx);
       FIdx = cfrm.nextSpriteIdx;
-      //GCon->Logf(NAME_Debug, "000: %s: sprite=%s %c; midx=%d; smidx=%d; inter=%g (%g); nidx=%d", *Cls->Name, *cfrm.sprite, 'A'+cfrm.frame, cfrm.ModelIndex, cfrm.SubModelIndex, Inter, cfrm.Inter, FIdx);
+      #if 0
+      GCon->Logf(NAME_Debug, "001: %s: sprite=%s %c; midx=%d; smidx=%d; inter=%g (%g); nidx=%d", *Cls->Name, *cfrm.sprite, 'A'+cfrm.frame, cfrm.ModelIndex, cfrm.SubModelIndex, Inter, cfrm.Inter, FIdx);
+      #endif
       while (FIdx >= 0) {
         const VScriptedModelFrame &nfrm = Cls->Frames[FIdx];
-        //GCon->Logf(NAME_Debug, "  001: %s: sprite=%s %c; midx=%d; smidx=%d; inter=%g (%g)", *Cls->Name, *nfrm.sprite, 'A'+nfrm.frame, nfrm.ModelIndex, nfrm.SubModelIndex, Inter, nfrm.Inter);
+        #if 0
+        GCon->Logf(NAME_Debug, "  002: %s: sprite=%s %c; midx=%d; smidx=%d; inter=%g (%g) (FIdx=%d)", *Cls->Name, *nfrm.sprite, 'A'+nfrm.frame, nfrm.ModelIndex, nfrm.SubModelIndex, Inter, nfrm.Inter, FIdx);
+        #endif
         if (cfrm.ModelIndex != nfrm.ModelIndex || cfrm.SubModelIndex != nfrm.SubModelIndex) {
-               if (nfrm.Inter <= Inter) res = FIdx;
-          else if (nfrm.Inter > Inter) break; // the author shouldn't write incorrect defs
+          if (nfrm.Inter <= Inter) {
+            res = FIdx;
+            // gozzo hack
+            if (Cls->isGZDoom) break;
+          } else if (nfrm.Inter > Inter) {
+            break; // the author shouldn't write incorrect defs
+          }
         }
         FIdx = nfrm.nextSpriteIdx;
       }
@@ -2733,8 +2747,13 @@ bool VRenderLevelShared::DrawAliasModel (VEntity *mobj, VName clsName, const TVe
       while (FIdx >= 0) {
         const VScriptedModelFrame &nfrm = Cls->Frames[FIdx];
         if (cfrm.ModelIndex != nfrm.ModelIndex || cfrm.SubModelIndex != nfrm.SubModelIndex) {
-               if (nfrm.Inter <= Inter) res = FIdx;
-          else if (nfrm.Inter > Inter) break; // the author shouldn't write incorrect defs
+          if (nfrm.Inter <= Inter) {
+            res = FIdx;
+            // gozzo hack
+            if (Cls->isGZDoom) break;
+          } else if (nfrm.Inter > Inter) {
+            break; // the author shouldn't write incorrect defs
+          }
         }
         FIdx = nfrm.nextNumberIdx;
       }
