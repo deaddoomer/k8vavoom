@@ -2246,7 +2246,7 @@ static inline bool CheckModelEarlyRejects (const RenderStyleInfo &ri, ERenderPas
       if (ri.isTranslucent()) return false;
       break;
     case RPASS_Trans:
-      if (!ri.isTranslucent()) return false;
+      //if (!ri.isTranslucent()) return false;
       break;
   }
   return true;
@@ -2323,9 +2323,11 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
     // `RPASS_Normal` means "lightmapped renderer", it always does it right
     if (Pass != RPASS_Normal) {
       // translucent?
-      if (Pass == RPASS_Glass || Pass == RPASS_Trans) {
+      if (Pass == RPASS_Glass) {
         // render only translucent models here
         if (Md2Alpha >= 1.0f) continue;
+      } else if (Pass == RPASS_Trans) {
+        //if (Md2Alpha >= 1.0f) continue;
       } else {
         if (Pass != RPASS_NonShadow && Md2Alpha < 1.0f) continue;
       }
