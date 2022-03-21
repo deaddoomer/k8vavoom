@@ -116,6 +116,10 @@
   each vertex in vertex array has properly set coords, (S,T) values (or (U,V) if you like),
   and normal vector.
 
+  the color texture is in `glvmesh.img`; size is `glvmesh.imgWidth` and `glvmesh.imgHeight`
+  to get texture bytes (32-bit color, 4 bytes per color, alpha is 255), use
+  `glvmesh.img.ptr()`
+
  ******************************************************************************/
 
 
@@ -1100,25 +1104,25 @@ private:
 private:
   uint32_t appendVertex (const VVoxVertexEx &gv);
 
-  // pos: <0 is left; 0 is center; >0 is right
-  float calcS (VoxelMesh &vox, const VoxQuad &vq, int pos) const {
-    uint32_t cp = vox.catlas.getTexX(vq.cidx);
-    if (pos > 0) cp += vq.wh.getW()-1;
+  static inline float calcTX (uint cp, int pos, uint sz) {
     float fp = (float)(int)cp;
          if (pos < 0) fp += 0.004f;
     else if (pos > 0) fp += 0.996f;
     else fp += 0.5f;
-    return fp/(float)(int)imgWidth;
+    return fp/(float)(int)sz;
   }
 
-  float calcT (VoxelMesh &vox, const VoxQuad &vq, int pos) const {
-    uint cp = vox.catlas.getTexY(vq.cidx);
+  // pos: <0 is left; 0 is center; >0 is right
+  inline float calcS (VoxelMesh &vox, const VoxQuad &vq, int pos) const {
+    uint32_t cp = vox.catlas.getTexX(vq.cidx);
+    if (pos > 0) cp += vq.wh.getW()-1;
+    return calcTX(cp, pos, imgWidth);
+  }
+
+  inline float calcT (VoxelMesh &vox, const VoxQuad &vq, int pos) const {
+    uint32_t cp = vox.catlas.getTexY(vq.cidx);
     if (pos > 0) cp += vq.wh.getH()-1;
-    float fp = (float)(int)cp;
-         if (pos < 0) fp += 0.004f;
-    else if (pos > 0) fp += 0.996f;
-    else fp += 0.5f;
-    return fp/(float)(int)imgHeight;
+    return calcTX(cp, pos, imgHeight);
   }
 
 private:
@@ -1171,7 +1175,7 @@ public:
     , imgWidth(0)
     , imgHeight(0)
   {
-      clear();
+    clear();
   }
 
   void clear ();

@@ -435,20 +435,19 @@ uint32_t VoxColorPack::addNewRect (const uint32_t *clrs, uint32_t wdt, uint32_t 
     while (clrhgt < hgt) clrhgt <<= 1;
     if (clrhgt < clrwdt) clrhgt = clrwdt; //!!
     atlas.setSize(clrwdt, clrhgt);
-    coord = VoxXY16(0, 0);
     colors.setLength(clrwdt*clrhgt);
     memset(colors.ptr(), 0, clrwdt*clrhgt*sizeof(uint32_t));
-  } else {
-    // insert into atlas; grow texture if cannot insert
-    for (;;) {
-      auto rc = atlas.insert((int)wdt, (int)hgt);
-      if (rc.isValid()) {
-        coord = VoxXY16(rc.x, rc.y);
-        break;
-      }
-      // no room, grow the texture, and relayout everything
-      growImage(wdt, hgt);
+  }
+
+  // insert into atlas; grow texture if cannot insert
+  for (;;) {
+    auto rc = atlas.insert((int)wdt, (int)hgt);
+    if (rc.isValid()) {
+      coord = VoxXY16(rc.x, rc.y);
+      break;
     }
+    // no room, grow the texture, and relayout everything
+    growImage(wdt, hgt);
   }
 
   // copy source colors into the atlas image
