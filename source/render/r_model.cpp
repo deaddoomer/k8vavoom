@@ -1984,12 +1984,75 @@ static int FindFrame (VClassModelScript &Cls, const VAliasModelFrameInfo &Frame,
 }
 
 
+//==========================================================================
+//
+//  FindFrameGZ
+//
+//  returns first frame found
+//  note that there can be several frames for one sprite!
+//
+//==========================================================================
+static int FindFrameGZ (VClassModelScript &Cls, const VAliasModelFrameInfo &Frame,
+                        int midx, int smidx)
+{
+  UpdateClassFrameCache(Cls);
+
+  // try cached frames
+  if (Cls.OneForAll) return 0; // guaranteed
+
+  // we have to check both index and frame here, because we don't know which was defined
+  // i can preprocess this, but meh, i guess that hashtable+chain is fast enough
+
+  int res = -1;
+
+  //FIXME: reduce pasta!
+  if (Frame.sprite != NAME_None && Frame.frame >= 0 && Frame.frame < 4096) {
+    // by sprite name
+    int *idxp = Cls.SprFrameMap.get(SprNameFrameToInt(Frame.sprite, Frame.frame));
+    if (idxp) {
+      int idx = *idxp;
+      while (idx >= 0) {
+        const VScriptedModelFrame &frm = Cls.Frames[idx];
+        if (frm.ModelIndex == midx && frm.SubModelIndex == smidx) {
+          res = idx;
+          break;
+        }
+        idx = frm.nextSpriteIdx;
+      }
+      if (res >= 0) return res;
+      return *idxp;
+    }
+  }
+
+  if (Frame.index >= 0) {
+    // by index
+    int *idxp = Cls.NumFrameMap.get(Frame.index);
+    if (idxp) {
+      int idx = *idxp;
+      while (idx >= 0) {
+        const VScriptedModelFrame &frm = Cls.Frames[idx];
+        if (frm.ModelIndex == midx && frm.SubModelIndex == smidx) {
+          res = idx;
+          break;
+        }
+        idx = frm.nextNumberIdx;
+      }
+      if (res >= 0) return res;
+      return *idxp;
+    }
+  }
+
+  return 0;
+}
+
+
 #define FINDNEXTFRAME_CHECK_FRM  \
   const VScriptedModelFrame &nfrm = Cls.Frames[nidx]; \
   if (FDef.ModelIndex == nfrm.ModelIndex && FDef.SubModelIndex == nfrm.SubModelIndex && \
-      nfrm.Inter >= FDef.Inter && nfrm.Inter < bestInter) \
+      (Cls.isGZDoom || (nfrm.Inter >= FDef.Inter && nfrm.Inter < bestInter))) \
   { \
     res = nidx; \
+    if (Cls.isGZDoom) break; \
     bestInter = nfrm.Inter; \
   }
 
@@ -1999,19 +2062,22 @@ static int FindFrame (VClassModelScript &Cls, const VAliasModelFrameInfo &Frame,
 //  FindNextFrame
 //
 //==========================================================================
-static int FindNextFrame (VClassModelScript &Cls, int FIdx, const VAliasModelFrameInfo &Frame, float Inter, float &InterpFrac) {
+static int FindNextFrame (VClassModelScript &Cls, int FIdx, const VAliasModelFrameInfo &Frame,
+                          float Inter, float &InterpFrac)
+{
   if (FIdx < 0) { InterpFrac = 0.0f; return -1; } // just in case
   UpdateClassFrameCache(Cls);
   if (Inter < 0.0f) Inter = 0.0f; // just in case
 
   const VScriptedModelFrame &FDef = Cls.Frames[FIdx];
 
-  // previous code was using `FIdx+1`, and it was wrong
-  // just in case, check for valid `Inter`
-  // walk the list
+  int res = -1;
   if (FDef.Inter < 1.0f) {
+    // previous code was using `FIdx+1`, and it was wrong
+    // just in case, check for valid `Inter`
+    // walk the list
+
     // doesn't finish time slice
-    int res = -1;
     float bestInter = 9999.9f;
 
     if (FDef.sprite != NAME_None) {
@@ -2029,24 +2095,34 @@ static int FindNextFrame (VClassModelScript &Cls, int FIdx, const VAliasModelFra
         nidx = nfrm.nextNumberIdx;
       }
     }
+  }
 
-    // found interframe?
+
+  // found interframe?
+  if (res >= 0) {
+    const VScriptedModelFrame &nfrm = Cls.Frames[res];
+    if (nfrm.Inter <= FDef.Inter) {
+      InterpFrac = 1.0f;
+    } else {
+      float frc = (Inter-FDef.Inter)/(nfrm.Inter-FDef.Inter);
+      if (!isFiniteF(frc)) frc = 1.0f; // just in case
+      InterpFrac = frc;
+    }
+    return res;
+  }
+
+  // gozzo hack
+  if (Cls.isGZDoom) {
+    res = FindFrameGZ(Cls, Frame, FDef.ModelIndex, FDef.SubModelIndex);
     if (res >= 0) {
-      const VScriptedModelFrame &nfrm = Cls.Frames[res];
-      if (nfrm.Inter <= FDef.Inter) {
-        InterpFrac = 1.0f;
-      } else {
-        float frc = (Inter-FDef.Inter)/(nfrm.Inter-FDef.Inter);
-        if (!isFiniteF(frc)) frc = 1.0f; // just in case
-        InterpFrac = frc;
-      }
+      InterpFrac = Inter;
       return res;
     }
   }
 
   // no interframe models found, get normal frame
   InterpFrac = (FDef.Inter >= 0.0f && FDef.Inter < 1.0f ? (Inter-FDef.Inter)/(1.0f-FDef.Inter) : 1.0f);
-  return FindFrame(Cls, Frame, 0);
+  return FindFrame(Cls, Frame, 0.0f);
 }
 
 
@@ -2462,7 +2538,7 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
         if (FDef.gzActorPitch == FromMomentum && !mobj->Velocity.isZero()) {
           Md2Angle.pitch = VectorAnglePitch(mobj->Velocity);
           if (FDef.gzActorPitchInverted) Md2Angle.pitch += 180.0f;
-          pitchFromMom = true;
+          if (Cls.isGZDoom) pitchFromMom = true; // gozzo hack
         }
         Md2Angle.pitch = FDef.anglePitch.GetAngle(Md2Angle.pitch, rndVal);
       }
@@ -2710,6 +2786,11 @@ bool VRenderLevelShared::DrawAliasModel (VEntity *mobj, VName clsName, const TVe
       Interpolate = origInterp;
     }
 
+    #if 0
+    GCon->Logf(NAME_Debug, "xxx: %s: midx=%d; smidx=%d; inter=%g (%g); FIdx=%d; NFIdx=%d; Interpolate=%s",
+               *Cls->Name, Cls->Frames[FIdx].ModelIndex, Cls->Frames[FIdx].SubModelIndex,
+               Inter, InterpFrac, FIdx, NFIdx, (Interpolate ? "tan" : "ona"));
+    #endif
     DrawModel(Level, mobj, Org, Angles, ScaleX, ScaleY, *Cls, FIdx, NFIdx, Trans,
       ColorMap, Version, ri, IsViewModel,
       InterpFrac, Interpolate, CurrLightPos, CurrLightRadius, Pass,
