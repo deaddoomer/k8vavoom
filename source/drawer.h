@@ -274,10 +274,11 @@ public:
   }
 
   // WARNING! call *ONLY* for sprites (and models)
-  inline trans_sprite_t *AllocTransSprite (const RenderStyleInfo &ri) noexcept {
+  // `forceTrans` is used for glass
+  inline trans_sprite_t *AllocTransSprite (const RenderStyleInfo &ri, bool forceTrans=false) noexcept {
     if (ri.flags&RenderStyleInfo::FlagShadow) {
       return &GetCurrentDLS().DrawSpriteShadowsList.alloc();
-    } else if (ri.alpha < 1.0f || ri.isTranslucent()) {
+    } else if (forceTrans || ri.alpha < 1.0f || ri.isTranslucent()) {
       return &GetCurrentDLS().DrawSpriListAlpha.alloc();
     } else {
       return &GetCurrentDLS().DrawSpriteList.alloc();
@@ -806,6 +807,8 @@ public:
   virtual void DrawWorldTexturesPass () = 0;
   virtual void DrawWorldFogPass () = 0;
   virtual void EndFogPass () = 0;
+
+  virtual void SetupTranslucentPass () = 0;
 
   virtual void BeginModelsAmbientPass () = 0;
   virtual void EndModelsAmbientPass () = 0;

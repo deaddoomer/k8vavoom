@@ -68,6 +68,7 @@ enum ERenderPass {
   RPASS_NonShadow, // render "simple" models that doesn't require complex lighting (additive, for example)
   RPASS_ShadowMaps, // render shadow maps
   RPASS_Glass, // render translucent submodels only
+  RPASS_Trans, // render translucent models only
 };
 
 

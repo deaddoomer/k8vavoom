@@ -339,6 +339,7 @@ void VOpenGLDrawer::DrawAliasModel (const TVec &origin, const TAVec &angles,
       PushDepthMask();
       //glDepthMask(GL_FALSE);
       GLDisableDepthWrite();
+      //GCon->Logf(NAME_Debug, "DrawAliasModel-NODEPTH <%s:%d>", *Mdl->Name, Mdl->MeshIndex);
     }
 
     DRAW_TRI_ELEMENTS();

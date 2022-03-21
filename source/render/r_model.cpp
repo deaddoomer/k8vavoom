@@ -2169,6 +2169,9 @@ static inline bool CheckModelEarlyRejects (const RenderStyleInfo &ri, ERenderPas
     case RPASS_Glass:
       if (ri.isTranslucent()) return false;
       break;
+    case RPASS_Trans:
+      if (!ri.isTranslucent()) return false;
+      break;
   }
   return true;
 }
@@ -2244,7 +2247,12 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
     // `RPASS_Normal` means "lightmapped renderer", it always does it right
     if (Pass != RPASS_Normal) {
       // translucent?
-      if (Pass != RPASS_NonShadow && Pass != RPASS_Glass && Md2Alpha < 1.0f) continue;
+      if (Pass == RPASS_Glass || Pass == RPASS_Trans) {
+        // render only translucent models here
+        if (Md2Alpha >= 1.0f) continue;
+      } else {
+        if (Pass != RPASS_NonShadow && Md2Alpha < 1.0f) continue;
+      }
     }
 
     // locate the proper data
@@ -2332,9 +2340,13 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
         case RPASS_Fog: passname = "fog"; break;
         case RPASS_NonShadow: passname = "nonshadow"; break;
         case RPASS_Glass: passname = "glass"; break;
+        case RPASS_Trans: passname = "trans"; break;
         default: Sys_Error("WTF?!");
       }
-      GCon->Logf("000: MODEL(%s): class='%s'; alpha=%f; noshadow=%d; usedepth=%d", passname, *Cls.Name, Md2Alpha, (int)SubMdl.NoShadow, (int)SubMdl.UseDepth);
+      GCon->Logf("000: MODEL(%s): class='%s'; model='%s':%d alpha=%f; noshadow=%d; usedepth=%d",
+                 passname, *Cls.Name,
+                 *SubMdl.Model->Name, submodindex,
+                 Md2Alpha, (int)SubMdl.NoShadow, (int)SubMdl.UseDepth);
     }
 
     switch (Pass) {
@@ -2379,6 +2391,7 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
         //if (!ri.isAdditive()) continue; // already checked
         break;
       case RPASS_Glass:
+      case RPASS_Trans:
         break;
     }
 
@@ -2477,6 +2490,7 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
       case RPASS_Normal:
       case RPASS_NonShadow:
       case RPASS_Glass:
+      case RPASS_Trans:
         if (true /*IsViewModel || !isShadowVol*/) {
           RenderStyleInfo newri = ri;
           newri.light = Md2Light;
@@ -2485,13 +2499,17 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
           if (Pass == RPASS_Glass && !newri.translucency) {
             newri.translucency = RenderStyleInfo::Translucent;
           }
+          if (Pass == RPASS_NonShadow) {
+            if (!ri.isAdditive() && (ri.isTranslucent() || Md2Alpha < 1.0f)) break;
+          }
+          if (gl_dbg_log_model_rendering) GCon->Logf("       RENDER!");
           Drawer->DrawAliasModel(Md2Org, Md2Angle, Transform,
             SubMdl.Model, Md2Frame, Md2NextFrame, SkinTex,
             Trans, ColorMap,
             newri,
             IsViewModel, smooth_inter, Interpolate, SubMdl.UseDepth,
             SubMdl.AllowTransparency,
-            !IsViewModel && isShadowVol); // for advanced renderer, we need to fill z-buffer, but not color buffer
+            (Pass != RPASS_Glass ? (!IsViewModel && isShadowVol) : false)); // for advanced renderer, we need to fill z-buffer, but not color buffer
         }
         break;
       case RPASS_Ambient:

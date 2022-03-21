@@ -630,6 +630,8 @@ public:
   virtual void DrawWorldFogPass () override;
   virtual void EndFogPass () override;
 
+  virtual void SetupTranslucentPass () override;
+
   virtual void StartSkyPolygons () override;
   virtual void EndSkyPolygons () override;
   virtual void DrawSkyPolygon (surface_t *, bool, VTexture *, float, VTexture *, float, int) override;

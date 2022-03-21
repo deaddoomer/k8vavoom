@@ -244,7 +244,7 @@ void VRenderLevelShared::QueueTranslucentAliasModel (VEntity *mobj, const Render
 
   //trans_sprite_t &spr = trans_sprites[traspUsed++];
   //trans_sprite_t &spr = GetCurrentDLS().DrawSpriteList.alloc();
-  trans_sprite_t *spr = AllocTransSprite(ri);
+  trans_sprite_t *spr = AllocTransSprite(ri, asGlass);
   spr->ent = mobj;
   spr->rstyle = ri;
   spr->dist = dist;
@@ -983,7 +983,7 @@ void VRenderLevelShared::DrawTransSpr (trans_sprite_t &spr) {
     case TSP_Model:
       // alias model
       TSDisablePOfs(transSprState);
-      DrawEntityModel(spr.ent, spr.rstyle, spr.TimeFrac, RPASS_Normal);
+      DrawEntityModel(spr.ent, spr.rstyle, spr.TimeFrac, RPASS_Trans);
       break;
     case TSP_ModelGlass:
       // alias model
@@ -1015,6 +1015,8 @@ void VRenderLevelShared::DrawTranslucentPolys () {
   //FIXME: we should use proper sort order instead, because with separate lists additive sprites
   //       are broken by translucent surfaces (additive sprite rendered first even if it is nearer
   //       than the surface)
+
+  Drawer->SetupTranslucentPass();
 
   transSprState.reset();
   transSprState.allowTransPolys = !dbg_disable_translucent_polys.asBool();

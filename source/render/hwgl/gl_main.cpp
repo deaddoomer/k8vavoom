@@ -1564,3 +1564,15 @@ bool VOpenGLDrawer::IsMainFBOFloat () {
 bool VOpenGLDrawer::IsCameraFBO () {
   return (currMainFBO >= 0);
 }
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::SetupTranslucentPass
+//
+//==========================================================================
+void VOpenGLDrawer::SetupTranslucentPass () {
+  //glDepthMask(GL_TRUE); // allow z-buffer writes
+  GLEnableDepthWrite();
+  RestoreDepthFunc();
+}
