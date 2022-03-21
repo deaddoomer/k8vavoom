@@ -120,6 +120,9 @@
   to get texture bytes (32-bit color, 4 bytes per color, alpha is 255), use
   `glvmesh.img.ptr()`
 
+  WARNING! YOU *HAVE* TO USE `GL_NEAREST` FILTERING ON THE COLOR TEXTURE, OR EVERYTHING WILL
+           LOOK FUCKIN' UGLY!
+
  ******************************************************************************/
 
 
