@@ -504,7 +504,7 @@ void P_InitAnimated () {
 
     ad.StartFrameDef = FrameDefs.length();
     ad.range = 1; // this is ranged animation
-    // we are always goind forward, indicies in framedefs will take care of the rest
+    // we are always goind forward, indices in framedefs will take care of the rest
     ad.Type = ANIM_Forward;
     ad.NumFrames = ids.length();
     // hack for BadApple.wad; it is still slightly off, but much better than it was before
@@ -806,7 +806,7 @@ static void ParseFTAnim (int wadfile, VScriptParser *sc, int fttype) {
 //
 //==========================================================================
 static int AddSwitchDef (TSwitch *Switch) {
-//meh, RAM is cheap; besides, replacing switches may cause problems with indicies and such
+//meh, RAM is cheap; besides, replacing switches may cause problems with indices and such
 #if 0
   for (auto &&it : Switches.itemsIdx()) {
     TSwitch *sw = it.value();

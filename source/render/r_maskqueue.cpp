@@ -1065,7 +1065,7 @@ void VRenderLevelShared::DrawTranslucentPolys () {
       // insert sprites in surface list, and render the combined list
       //GCon->Logf(NAME_Debug, "*** %d translucent sprites, %d translucent walls", dls.DrawSpriListAlpha.length(), dls.DrawSurfListAlpha.length());
 
-      // build list of last subsector surface indicies
+      // build list of last subsector surface indices
       lastSSurf.resetNoDtor();
       lastSSurfMap.reset();
       const trans_sprite_t *sfc = dls.DrawSurfListAlpha.ptr();

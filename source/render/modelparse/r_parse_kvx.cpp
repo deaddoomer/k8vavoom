@@ -384,7 +384,7 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
     }
   }
 
-  if (glvmesh.indicies.length() == 0) Sys_Error("cannot load empty voxel model '%s'", *this->Name);
+  if (glvmesh.indices.length() == 0) Sys_Error("cannot load empty voxel model '%s'", *this->Name);
 
   // skins
   {
@@ -428,10 +428,10 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
     STVerts[f].T = glvmesh.vertices[f].t;
   }
 
-  const int ilen = glvmesh.indicies.length();
+  const int ilen = glvmesh.indices.length();
   GlMode = GlTriangleFan;
-  TriVerts.setLength(glvmesh.indicies.length());
-  for (int f = 0; f < ilen; ++f) TriVerts[f] = glvmesh.indicies[f];
+  TriVerts.setLength(glvmesh.indices.length());
+  for (int f = 0; f < ilen; ++f) TriVerts[f] = glvmesh.indices[f];
 
   glvmesh.clear();
 

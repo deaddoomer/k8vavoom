@@ -187,7 +187,7 @@ void VOpenGLDrawer::UploadModel (VMeshModel *Mdl) {
   p_glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, Mdl->IndexBuffer);
   p_glObjectLabelVA(GL_BUFFER, Mdl->IndexBuffer, "Model idx buffer <%s:%d>", *Mdl->Name, Mdl->MeshIndex);
 
-  // vertex indicies
+  // vertex indices
   if (p_glPrimitiveRestartIndex && Mdl->TriVerts.length() && Mdl->GlMode != 0) {
     p_glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 2*Mdl->TriVerts.length(), &Mdl->TriVerts[0], GL_STATIC_DRAW_ARB);
   } else {

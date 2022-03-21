@@ -97,7 +97,7 @@
 
     vox.optimise(doHollowFill);
 
-    vox.cz = 0.0f; // otherwise loaded voxel will have (0,0,0) at it's center
+    vox.cz = 0.0f; // otherwise loaded voxel will have (0,0,0) at its center
     VoxelMesh vmesh;
     vmesh.createFrom(vox, optLevel);
     vox.clear();
@@ -105,9 +105,9 @@
     glvmesh.create(vmesh, fixTJunctions, BreakIndex);
     vmesh.clear();
 
-  here, `glvmesh` contains vertices and indicies, ready to upload to GPU.
-  `BreakIndex` above is the index of non-existing vertex; it is used to
-  separate triangle fans in indicies array.
+  here, `glvmesh` contains vertices and indices, ready to upload to GPU.
+  `BreakIndex` above is the index of a non-existing vertex; it is used to
+  separate triangle fans in the indices array.
 
   you can also get a simple triangle soup out of the mesh, using a callback:
 
@@ -1055,13 +1055,13 @@ struct VVoxVertexEx {
 /*
   this builds the OpenGL data structures, ready to be uploaded to the GPU.
   it also can perform t-junction fixing. it is using quad data from `VoxelMesh`
-  as a source, and creates triangle fans from those, calucluating the proper
+  as a source, and creates triangle fans from those, calculuating the proper
   texture mapping coordinates.
  */
 struct GLVoxelMesh {
   // WARNING! DO NOT CHANGE ANY OF THE PUBLIC FIELDS MANUALLY!
   VoxLibArray<VVoxVertexEx> vertices;
-  VoxLibArray<uint32_t> indicies;
+  VoxLibArray<uint32_t> indices;
   uint32_t breakIndex;
   uint32_t totaladded;
 
@@ -1192,7 +1192,7 @@ public:
   // `tjfix` is "fix t-junctions" flag
   // `BreakIndex` is OpenGL "break index" (uniqie index that finishes triangle fan)
   // on exit, `vertices` contains a list of vertices, and
-  // `indicies` contains a list of vertex indicies, ready to be rendered as triangle fans
+  // `indices` contains a list of vertex indices, ready to be rendered as triangle fans
   // fans are separated by `BreakIndex` value
   void create (VoxelMesh &vox, bool tjfix, uint32_t BreakIndex);
 

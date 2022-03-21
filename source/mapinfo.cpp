@@ -627,7 +627,7 @@ void InitMapInfo () {
       if (lastMapinfoLump < 0 && lastZMapinfoLump < 0 && lastVMapinfoLump < 0 && lastUmapinfoLump >= 0) {
         LoadUmapinfoLump(lastUmapinfoLump);
       }
-      // reset/update remembered lump indicies
+      // reset/update remembered lump indices
       lastMapinfoFile = currFile;
       lastMapinfoLump = lastVMapinfoLump = lastZMapinfoLump = lastUmapinfoLump = -1; // haven't seen yet
       // load keyconfs from previous files

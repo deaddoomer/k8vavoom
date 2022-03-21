@@ -28,7 +28,7 @@
 
 #include "../client/cl_local.h"
 
-// wall quad vertex indicies
+// wall quad vertex indices
 enum {
   QUAD_V1_BOTTOM = 0,
   QUAD_V1_TOP    = 1,

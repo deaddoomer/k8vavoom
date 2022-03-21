@@ -818,7 +818,7 @@ void GZModelDef::merge (GZModelDef &other) {
     }
 
     // find sprite frame to replace
-    // HACK: same model indicies will be replaced; this is how GZDoom does it
+    // HACK: same model indices will be replaced; this is how GZDoom does it
     int spfindex = -1;
     for (auto &&sit : frames.itemsIdx()) {
       Frame &ff = sit.value();
@@ -897,7 +897,7 @@ void GZModelDef::merge (GZModelDef &other) {
         frm.vvindex = newvvindex[frm.vvindex];
       }
       mdl.frameMap = newmap;
-      // fix indicies
+      // fix indices
       for (auto &&xit : mdl.frameMap.itemsIdx()) xit.value().vvframe = xit.index();
     }
   }

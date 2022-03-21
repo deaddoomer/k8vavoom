@@ -2773,7 +2773,7 @@ bool VRenderLevelShared::DrawAliasModel (VEntity *mobj, VName clsName, const TVe
   #endif
 
   // note that gzdoom-imported modeldef can have more than one model attached to one frame
-  // process all attachments -- they should differ by model or submodel indicies
+  // process all attachments -- they should differ by model or submodel indices
 
   const bool origInterp = Interpolate;
   while (FIdx >= 0) {

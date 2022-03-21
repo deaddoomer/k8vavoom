@@ -159,7 +159,7 @@ bool VLevel::SaveCachedData (VStream *strm) {
     if (f%512 == 0) NET_SendNetworkHeartbeat();
   }
 
-  // write vertex indicies in linedefs
+  // write vertex indices in linedefs
   int lncount = NumLines;
   *arrstrm << lncount;
   GCon->Logf("cache: writing %d linedef vertices", NumLines);

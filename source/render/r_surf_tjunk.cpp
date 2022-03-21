@@ -208,7 +208,7 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
     TJLOG(NAME_Debug, "FixSegTJunctions:003:   vidx=%d; lvidx=%d; lvxCount=%d", vidx, lvidx, lvxCount);
     if (!lvxCount) continue;
 
-    // get side indicies
+    // get side indices
     int vf0 = 0;
     while (vf0 < surf->count && (surf->verts[vf0].x != segv->x || surf->verts[vf0].y != segv->y)) ++vf0;
     if (vf0 >= surf->count-1) {

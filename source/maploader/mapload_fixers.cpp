@@ -528,7 +528,7 @@ static bool isBadTriangle (const sector_t *tsec, const sector_t *mysec) {
 static TArray<int> lineMarks;
 static int lineMarkId = 0;
 
-static TArray<int> lineSectorPart; // line indicies
+static TArray<int> lineSectorPart; // line indices
 
 
 //==========================================================================

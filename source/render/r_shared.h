@@ -865,8 +865,8 @@ struct VMeshModel {
   TArray<TVec> AllVerts;
   TArray<TVec> AllNormals; // normals are per-vertex!
   TArray<VMeshSTVert> STVerts;
-  TArray<VMeshTri> Tris; // vetex indicies
-  TArray<vuint16> TriVerts; // vetex indicies for triangle strips and such, with 65535 as restart index
+  TArray<VMeshTri> Tris; // vetex indices
+  TArray<vuint16> TriVerts; // vetex indices for triangle strips and such, with 65535 as restart index
   // the following two arrays are used only in stencil shadows
   // they are lazily created
   TArray<TPlane> AllPlanes; // for `Tris`

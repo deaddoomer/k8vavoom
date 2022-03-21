@@ -291,11 +291,11 @@ void VMeshModel::Load_MD2 (const vuint8 *Data, int DataSize) {
   }
 
   if (pmodel->get_numframes() == 1 && validTri.length()) {
-    // rebuild triangle indicies, why not
+    // rebuild triangle indices, why not
     #if 0
     if (hadError) {
       VMeshFrame &Frame = this->Frames[0];
-      TArray<VMeshTri> NewTris; // vetex indicies
+      TArray<VMeshTri> NewTris; // vetex indices
       Frame.TriCount = 0;
       for (unsigned j = 0; j < pmodel->get_numtris(); ++j) {
         if (validTri[j]) {

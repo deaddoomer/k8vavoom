@@ -1868,7 +1868,7 @@ uint32_t GLVoxelMesh::appendVertex (const VVoxVertexEx &gv) {
 //==========================================================================
 void GLVoxelMesh::clear () {
   vertices.clear();
-  indicies.clear();
+  indices.clear();
   vertcache.clear();
   totaladded = 0;
   // our voxels are 1024x1024x1024 at max
@@ -1969,18 +1969,18 @@ void GLVoxelMesh::sortEdges () {
 //==========================================================================
 void GLVoxelMesh::createEdges () {
   addedlist.clear();
-  edges.setLength(indicies.length()/5*4); // one quad is 4 edges
+  edges.setLength(indices.length()/5*4); // one quad is 4 edges
   uint32_t eidx = 0;
   uint32_t uqcount = 0;
-  for (uint32_t f = 0; f < (uint32_t)indicies.length(); f += 5) {
+  for (uint32_t f = 0; f < (uint32_t)indices.length(); f += 5) {
     bool unitquad = true;
     for (uint32_t vx0 = 0; vx0 < 4; ++vx0) {
       const uint32_t vx1 = (vx0+1)&3;
       VoxEdge &e = edges[eidx++];
       memset(&e, 0, sizeof(VoxEdge));
       e.morefirst = -1;
-      e.v0 = indicies[f+vx0];
-      e.v1 = indicies[f+vx1];
+      e.v0 = indices[f+vx0];
+      e.v1 = indices[f+vx1];
       if (vertices[e.v0].x != vertices[e.v1].x) {
         vassert(vertices[e.v0].y == vertices[e.v1].y);
         vassert(vertices[e.v0].z == vertices[e.v1].z);
@@ -2082,7 +2082,7 @@ void GLVoxelMesh::rebuildEdges () {
     for (int avidx = edges[f].morefirst; avidx >= 0; avidx = addedlist[avidx].next) ++vcnt;
     if (vcnt) newindcount += vcnt+8;
   }
-  indicies.setLength(newindcount);
+  indices.setLength(newindcount);
 
   newindcount = 0;
   for (uint32_t f = 0; f < (uint32_t)edges.length(); f += 4) {
@@ -2108,28 +2108,28 @@ void GLVoxelMesh::rebuildEdges () {
       if (firstGoodFace >= 0) {
         // yay, we can use v1 of the first face as the start of the fan
         vassert(edges[f+firstGoodFace].noMore());
-        indicies[newindcount++] = edges[f+firstGoodFace].v1;
+        indices[newindcount++] = edges[f+firstGoodFace].v1;
         // then v1 of the second good face
         firstGoodFace = (firstGoodFace+1)&3;
         vassert(edges[f+firstGoodFace].noMore());
-        indicies[newindcount++] = edges[f+firstGoodFace].v1;
+        indices[newindcount++] = edges[f+firstGoodFace].v1;
         // then add points of the other two faces (ignoring v0)
         for (uint32_t c = 0; c < 2; ++c) {
           firstGoodFace = (firstGoodFace+1)&3;
           int avidx = edges[f+firstGoodFace].morefirst;
           while (avidx >= 0) {
-            indicies[newindcount++] = addedlist[avidx].vidx;
+            indices[newindcount++] = addedlist[avidx].vidx;
             avidx = addedlist[avidx].next;
           }
           /*
           for (uint32_t midx = 0; midx < (uint32_t)edges[f+firstGoodFace].moreverts.length(); ++midx) {
-            indicies[newindcount++] = edges[f+firstGoodFace].moreverts[midx];
+            indices[newindcount++] = edges[f+firstGoodFace].moreverts[midx];
           }
           */
-          indicies[newindcount++] = edges[f+firstGoodFace].v1;
+          indices[newindcount++] = edges[f+firstGoodFace].v1;
         }
         // we're done with this quad
-        indicies[newindcount++] = breakIndex;
+        indices[newindcount++] = breakIndex;
         continue;
       }
 
@@ -2147,21 +2147,21 @@ void GLVoxelMesh::rebuildEdges () {
           vassert(edges[f+oic].noMore());
           vassert(edges[f+oic].v1 == edges[f+eic].v0);
           // create triangle fan
-          indicies[newindcount++] = edges[f+oic].v0;
-          indicies[newindcount++] = edges[f+eic].v0;
+          indices[newindcount++] = edges[f+oic].v0;
+          indices[newindcount++] = edges[f+eic].v0;
           // append additional vertices (they are already properly sorted)
           int avidx = edges[f+eic].morefirst;
           while (avidx >= 0) {
-            indicies[newindcount++] = addedlist[avidx].vidx;
+            indices[newindcount++] = addedlist[avidx].vidx;
             avidx = addedlist[avidx].next;
           }
           /*
           for (uint32_t tmpf = 0; tmpf < (uint32_t)edges[f+eic].moreverts.length(); ++tmpf) {
-            indicies[newindcount++] = edges[f+eic].moreverts[tmpf];
+            indices[newindcount++] = edges[f+eic].moreverts[tmpf];
           }
           */
           // and the last vertex
-          indicies[newindcount++] = edges[f+eic].v1;
+          indices[newindcount++] = edges[f+eic].v1;
           // if the opposite side is not modified, we can finish the fan right now
           const uint32_t loic = (eic+2)&3;
           if (edges[f+loic].noMore()) {
@@ -2170,12 +2170,12 @@ void GLVoxelMesh::rebuildEdges () {
             // eic: current
             // noic: next
             // loic: last
-            indicies[newindcount++] = edges[f+noic].v1;
-            indicies[newindcount++] = breakIndex;
+            indices[newindcount++] = edges[f+noic].v1;
+            indices[newindcount++] = breakIndex;
             // we're done here
             break;
           }
-          indicies[newindcount++] = breakIndex;
+          indices[newindcount++] = breakIndex;
         }
         continue;
       }
@@ -2229,37 +2229,37 @@ void GLVoxelMesh::rebuildEdges () {
       AddedVert &av = addedlist.alloc();
       av.next = -1;
       av.vidx = appendVertex(nvx);
-      indicies[newindcount++] = av.vidx;
+      indices[newindcount++] = av.vidx;
 
       // append v0 of the first edge
-      indicies[newindcount++] = edges[f+0].v0;
+      indices[newindcount++] = edges[f+0].v0;
       // append all vertices except v0 for all edges
       for (uint32_t eic = 0; eic < 4; ++eic) {
         int avidx = edges[f+eic].morefirst;
         while (avidx >= 0) {
-          indicies[newindcount++] = addedlist[avidx].vidx;
+          indices[newindcount++] = addedlist[avidx].vidx;
           avidx = addedlist[avidx].next;
         }
         /*
         for (uint32_t midx = 0; midx < (uint32_t)edges[f+eic].moreverts.length(); ++midx) {
-          indicies[newindcount++] = edges[f+eic].moreverts[midx];
+          indices[newindcount++] = edges[f+eic].moreverts[midx];
         }
         */
-        indicies[newindcount++] = edges[f+eic].v1;
+        indices[newindcount++] = edges[f+eic].v1;
       }
-      indicies[newindcount++] = breakIndex;
+      indices[newindcount++] = breakIndex;
     } else {
       // easy deal, just copy it
-      indicies[newindcount++] = edges[f+0].v0;
-      indicies[newindcount++] = edges[f+1].v0;
-      indicies[newindcount++] = edges[f+2].v0;
-      indicies[newindcount++] = edges[f+3].v0;
-      indicies[newindcount++] = breakIndex;
+      indices[newindcount++] = edges[f+0].v0;
+      indices[newindcount++] = edges[f+1].v0;
+      indices[newindcount++] = edges[f+2].v0;
+      indices[newindcount++] = edges[f+3].v0;
+      indices[newindcount++] = breakIndex;
     }
   }
 
-  indicies.setLength(newindcount);
-  indicies.condense();
+  indices.setLength(newindcount);
+  indices.condense();
 }
 
 
@@ -2302,11 +2302,11 @@ void GLVoxelMesh::fixTJunctions () {
 uint32_t GLVoxelMesh::countTris () {
   uint32_t res = 0;
   uint32_t ind = 0;
-  while (ind < (uint32_t)indicies.length()) {
-    vassert(indicies[ind] != breakIndex);
+  while (ind < (uint32_t)indices.length()) {
+    vassert(indices[ind] != breakIndex);
     uint32_t end = ind+1;
-    while (end < (uint32_t)indicies.length() && indicies[end] != breakIndex) ++end;
-    vassert(end < (uint32_t)indicies.length());
+    while (end < (uint32_t)indices.length() && indices[end] != breakIndex) ++end;
+    vassert(end < (uint32_t)indices.length());
     vassert(end-ind >= 3);
     if (end-ind == 3) {
       // simple triangle
@@ -2332,23 +2332,23 @@ uint32_t GLVoxelMesh::countTris () {
 void GLVoxelMesh::createTriangles (NewTriCB cb, void *udata) {
   if (!cb) return;
   int ind = 0;
-  while (ind < indicies.length()) {
-    vassert(indicies[ind] != breakIndex);
+  while (ind < indices.length()) {
+    vassert(indices[ind] != breakIndex);
     int end = ind+1;
-    while (end < indicies.length() && indicies[end] != breakIndex) ++end;
-    vassert(end < indicies.length());
+    while (end < indices.length() && indices[end] != breakIndex) ++end;
+    vassert(end < indices.length());
     vassert(end-ind >= 3);
     if (end-ind == 3) {
       // simple triangle
-      cb(indicies[ind+0], indicies[ind+1], indicies[ind+2], udata);
+      cb(indices[ind+0], indices[ind+1], indices[ind+2], udata);
     } else if (end-ind == 4) {
       // quad
-      cb(indicies[ind+0], indicies[ind+1], indicies[ind+2], udata);
-      cb(indicies[ind+2], indicies[ind+3], indicies[ind+0], udata);
+      cb(indices[ind+0], indices[ind+1], indices[ind+2], udata);
+      cb(indices[ind+2], indices[ind+3], indices[ind+0], udata);
     } else {
       // triangle fan
       for (int f = ind+1; f < end-1; ++f) {
-        cb(indicies[ind+0], indicies[f+0], indicies[f+1], udata);
+        cb(indices[ind+0], indices[f+0], indices[f+1], udata);
       }
     }
     ind = end+1;
@@ -2436,11 +2436,11 @@ void GLVoxelMesh::create (VoxelMesh &vox, bool tjfix, uint32_t BreakIndex) {
       vxn[nidx] = appendVertex(gv);
     }
 
-    indicies.append(vxn[0]);
-    indicies.append(vxn[1]);
-    indicies.append(vxn[2]);
-    indicies.append(vxn[3]);
-    indicies.append(breakIndex);
+    indices.append(vxn[0]);
+    indices.append(vxn[1]);
+    indices.append(vxn[2]);
+    indices.append(vxn[3]);
+    indices.append(breakIndex);
   }
 
   if (voxlib_verbose) {

@@ -436,7 +436,7 @@ public:
   virtual void GLEnableDepthTestSlow () noexcept override;
 
 public:
-  // scissor array indicies
+  // scissor array indices
   enum {
     SCS_MINX,
     SCS_MINY,
@@ -1300,8 +1300,8 @@ protected:
   // used on all stages
   // order: all solid surfaces (DrawSurfListSolid), all masked surfaces (DrawSurfListMasked)
   VBO<TVec> vboAdvSurf;
-  TArray<GLsizei> vboCounters; // number of indicies in each primitive
-  TArray<GLint> vboStartInds; // starting indicies
+  TArray<GLsizei> vboCounters; // number of indices in each primitive
+  TArray<GLint> vboStartInds; // starting indices
 
   void vboAdvAppendSurface (surface_t *surf);
 
@@ -1317,13 +1317,13 @@ protected:
   // VBO for shadowmap surfaces (including masked)
   // for each solid surface
   VBO<TVec> vboSMapSurf;
-  TArray<GLsizei> vboSMapCounters; // number of indicies in each primitive
-  TArray<GLint> vboSMapStartInds; // starting indicies
+  TArray<GLsizei> vboSMapCounters; // number of indices in each primitive
+  TArray<GLint> vboSMapStartInds; // starting indices
 
   // for each textured solid surface
   VBO<SMapVBOVertex> vboSMapSurfTex;
-  TArray<GLsizei> vboSMapCountersTex; // number of indicies in each primitive
-  TArray<GLint> vboSMapStartIndsTex; // starting indicies
+  TArray<GLsizei> vboSMapCountersTex; // number of indices in each primitive
+  TArray<GLint> vboSMapStartIndsTex; // starting indices
 
   float vboSMapTexIW, vboSMapTexIH;
   VTexture *vboSMapTex;
