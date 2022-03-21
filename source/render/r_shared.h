@@ -967,6 +967,8 @@ extern VCvarB r_fix_tjunctions;
 extern VCvarB dbg_fix_tjunctions;
 extern VCvarB warn_fix_tjunctions;
 
+extern VCvarB r_use_model_renderlist;
+
 extern float PixelAspect;
 extern float BaseAspect;
 extern float PSpriteOfsAspect;

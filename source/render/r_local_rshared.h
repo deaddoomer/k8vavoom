@@ -975,13 +975,26 @@ public:
 
   bool DrawAliasModel (VEntity *mobj, VName clsName, const TVec &Org, const TAVec &Angles,
     float ScaleX, float ScaleY,
-    const VAliasModelFrameInfo &Frame, const VAliasModelFrameInfo &NextFrame, //old:VState *State, VState *NextState,
+    const VAliasModelFrameInfo &Frame, const VAliasModelFrameInfo &NextFrame,
     VTextureTranslation *Trans, int Version,
     const RenderStyleInfo &ri,
     bool IsViewModel, float Inter, bool Interpolate,
     ERenderPass Pass);
 
+  bool ModelListQueueAliasModel (VEntity *mobj, VName clsName,
+    const TVec &Org, const TAVec &Angles,
+    float ScaleX, float ScaleY,
+    const VAliasModelFrameInfo &Frame, const VAliasModelFrameInfo &NextFrame,
+    VTextureTranslation *Trans, int Version,
+    const RenderStyleInfo &ri,
+    bool IsViewModel, float Inter, bool Interpolate);
+
+  // used in regular renderer, and for translucent models
   bool DrawEntityModel (VEntity *Ent, const RenderStyleInfo &ri, float Inter, ERenderPass Pass);
+
+  // for advanced renderer, it is cheaper to build the list first
+  void ModelListStart ();
+  void ModelListFinish ();
 
   // returns `true` if this model should be queued as translucent
   // need to be used to properly render models with translucent submodels

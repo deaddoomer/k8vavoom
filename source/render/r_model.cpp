@@ -50,6 +50,8 @@ static VCvarB r_preload_alias_models("r_preload_alias_models", true, "Preload al
 
 static VCvarI dbg_dump_gzmodels("dbg_dump_gzmodels", "0", "Dump xml files for gz modeldefs (1:final;2:all)?", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
 
+VCvarB r_use_model_renderlist("r_use_model_renderlist", true, "Use prebuilt renderlists for models in advrender?", CVAR_NoShadow);
+
 
 static int cli_DisableModeldef = 0;
 static int cli_IgnoreReplaced = 0;
@@ -2134,6 +2136,277 @@ static inline void lerpvec (TVec &a, const TVec b, const float t) noexcept {
 }
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+struct ModelRenderPassInfo {
+  VEntity *mobj;
+  VScriptModel *ScMdl;
+  VScriptSubModel *SubMdl;
+  TVec Md2Org;
+  TAVec Md2Angle;
+  AliasModelTrans Transform;
+  RenderStyleInfo ri;
+  int Md2Frame, Md2NextFrame;
+  VTexture *SkinTex;
+  VTextureTranslation *Trans;
+  int ColorMap;
+  float Md2Alpha; // NOT multiplied by `SubMdl.AlphaMul`
+  vuint32 Md2Light;
+  float smooth_inter;
+  bool Interpolate;
+  // next for the same entity; -1 means "no more", otherwise index in `rpmodels`
+  int nextemdl;
+};
+
+
+// sorry for this global
+static TArray<ModelRenderPassInfo> rpmodels;
+static TMapNC<VEntity *, int> rpmodelsMap; // -1 means "no alias model"
+
+
+//==========================================================================
+//
+//  DrawModelCalcRenderInfo
+//
+//==========================================================================
+static void DrawModelCalcRenderInfo (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVec &Angles,
+  float ScaleX, float ScaleY, VClassModelScript &Cls, int FIdx, int NFIdx,
+  VTextureTranslation *Trans, int ColorMap, int Version,
+  const RenderStyleInfo &ri,
+  bool IsViewModel, float Inter,
+  bool Interpolate, int &lastemdl)
+{
+  VScriptedModelFrame &FDef = Cls.Frames[FIdx];
+  const int allowedsubmod = FDef.SubModelIndex;
+  if (allowedsubmod == -2) return; // this frame is hidden
+  VScriptedModelFrame &NFDef = Cls.Frames[NFIdx];
+  VScriptModel &ScMdl = Cls.Model->Models[FDef.ModelIndex];
+
+  int submodindex = -1;
+  for (auto &&SubMdl : ScMdl.SubModels) {
+    ++submodindex;
+    if (allowedsubmod >= 0 && submodindex != allowedsubmod) continue; // only one submodel allowed
+    if (SubMdl.Version != -1 && SubMdl.Version != Version) continue;
+    if (SubMdl.AlphaMul <= 0.0f) continue;
+
+    if (FDef.FrameIndex >= SubMdl.Frames.length()) {
+      if (FDef.FrameIndex != 0x7fffffff) {
+        GCon->Logf("Bad sub-model frame index %d for model '%s' (class '%s')", FDef.FrameIndex, *ScMdl.Name, *Cls.Name);
+        FDef.FrameIndex = 0x7fffffff;
+      }
+      continue;
+    }
+
+    // cannot interpolate between different models or submodels
+    if (Interpolate) {
+      if (FDef.ModelIndex != NFDef.ModelIndex ||
+          FDef.SubModelIndex != NFDef.SubModelIndex ||
+          NFDef.FrameIndex >= SubMdl.Frames.length())
+      {
+        Interpolate = false;
+      }
+    }
+
+    VScriptSubModel::VFrame &F = SubMdl.Frames[FDef.FrameIndex];
+    VScriptSubModel::VFrame &NF = SubMdl.Frames[Interpolate ? NFDef.FrameIndex : FDef.FrameIndex];
+
+    // alpha
+    float Md2Alpha = ri.alpha;
+    if (FDef.AlphaStart != 1.0f || FDef.AlphaEnd != 1.0f) Md2Alpha *= FDef.AlphaStart+(FDef.AlphaEnd-FDef.AlphaStart)*Inter;
+    if (F.AlphaStart != 1.0f || F.AlphaEnd != 1.0f) Md2Alpha *= F.AlphaStart+(F.AlphaEnd-F.AlphaStart)*Inter;
+    if (Md2Alpha <= 0.01f) continue;
+    if (Md2Alpha > 1.0f) Md2Alpha = 1.0f;
+    //Md2Alpha = 0.8f;
+
+    // locate the proper data
+    SubMdl.Model->LoadFromWad();
+    //FIXME: this should be done earilier
+    //!if (SubMdl.Model->HadErrors) SubMdl.NoShadow = true;
+
+    // skin animations
+    int Md2SkinIdx = 0;
+    if (F.SkinIndex >= 0) {
+      Md2SkinIdx = F.SkinIndex;
+    } else if (SubMdl.SkinAnimSpeed) {
+      Md2SkinIdx = int((Level ? Level->Time : 0)*SubMdl.SkinAnimSpeed)%SubMdl.SkinAnimRange;
+    }
+    if (Md2SkinIdx < 0) Md2SkinIdx = 0; // just in case
+
+    // get the proper skin texture ID
+    int SkinID;
+    if (SubMdl.Skins.length()) {
+      // skins defined in definition file override all skins in MD2 file
+      if (Md2SkinIdx < 0 || Md2SkinIdx >= SubMdl.Skins.length()) {
+        if (SubMdl.Skins.length() == 0) Sys_Error("model '%s' has no skins", *SubMdl.Model->Name);
+        //if (SubMdl.SkinShades.length() == 0) Sys_Error("model '%s' has no skin shades", *SubMdl.Model->Name);
+        Md2SkinIdx = 0;
+      }
+      SkinID = SubMdl.Skins[Md2SkinIdx].textureId;
+      if (SkinID < 0) {
+        SkinID = GTextureManager.AddFileTextureShaded(SubMdl.Skins[Md2SkinIdx].fileName, TEXTYPE_Skin, SubMdl.Skins[Md2SkinIdx].shade);
+        SubMdl.Skins[Md2SkinIdx].textureId = SkinID;
+      }
+    } else {
+      if (SubMdl.Model->Skins.length() == 0) Sys_Error("model '%s' has no skins", *SubMdl.Model->Name);
+      Md2SkinIdx = Md2SkinIdx%SubMdl.Model->Skins.length();
+      if (Md2SkinIdx < 0) Md2SkinIdx = (Md2SkinIdx+SubMdl.Model->Skins.length())%SubMdl.Model->Skins.length();
+      SkinID = SubMdl.Model->Skins[Md2SkinIdx].textureId;
+      if (SkinID < 0) {
+        //SkinID = GTextureManager.AddFileTexture(SubMdl.Model->Skins[Md2SkinIdx%SubMdl.Model->Skins.length()], TEXTYPE_Skin);
+        SkinID = GTextureManager.AddFileTextureShaded(SubMdl.Model->Skins[Md2SkinIdx].fileName, TEXTYPE_Skin, SubMdl.Model->Skins[Md2SkinIdx].shade);
+        SubMdl.Model->Skins[Md2SkinIdx].textureId = SkinID;
+      }
+    }
+    if (SkinID < 0) SkinID = GTextureManager.DefaultTexture;
+
+    // check for missing texture
+    if (SkinID == GTextureManager.DefaultTexture) {
+      if (r_model_ignore_missing_textures) return;
+    }
+
+    VTexture *SkinTex = GTextureManager(SkinID);
+    if (!SkinTex || SkinTex->Type == TEXTYPE_Null) return; // do not render models without textures
+
+    // get and verify frame number
+    int Md2Frame = F.Index;
+    if ((unsigned)Md2Frame >= (unsigned)SubMdl.Model->Frames.length()) {
+      if (developer) GCon->Logf(NAME_Dev, "no such frame %d in model '%s'", Md2Frame, *SubMdl.Model->Name);
+      Md2Frame = (Md2Frame <= 0 ? 0 : SubMdl.Model->Frames.length()-1);
+      // stop further warnings
+      F.Index = Md2Frame;
+    }
+
+    // get and verify next frame number
+    int Md2NextFrame = Md2Frame;
+    if (Interpolate) {
+      Md2NextFrame = NF.Index;
+      if ((unsigned)Md2NextFrame >= (unsigned)SubMdl.Model->Frames.length()) {
+        if (developer) GCon->Logf(NAME_Dev, "no such next frame %d in model '%s'", Md2NextFrame, *SubMdl.Model->Name);
+        Md2NextFrame = (Md2NextFrame <= 0 ? 0 : SubMdl.Model->Frames.length()-1);
+        // stop further warnings
+        NF.Index = Md2NextFrame;
+      }
+    }
+
+    // position
+    TVec Md2Org = Org;
+
+    // angle
+    TAVec Md2Angle = Angles;
+    // position model
+    if (SubMdl.PositionModel) PositionModel(Md2Org, Md2Angle, SubMdl.PositionModel, F.PositionIndex);
+
+    const float smooth_inter = (Interpolate ? SMOOTHSTEP(Inter) : 0.0f);
+
+    AliasModelTrans Transform = F.Transform;
+    bool updateRot = false;
+
+    if (Interpolate && smooth_inter > 0.0f && &F != &NF) {
+      if (smooth_inter >= 1.0f) {
+        Transform = NF.Transform;
+      } else if (Transform.MatTrans != NF.Transform.MatTrans) {
+        Transform.DecTrans = Transform.DecTrans.interpolate(NF.Transform.DecTrans, smooth_inter);
+        Transform.MatTrans.recompose(Transform.DecTrans);
+        //FIXME: what to do with RotCenter here?
+        // gzdoom-style scale/offset?
+        if (Transform.gzdoom || NF.Transform.gzdoom) {
+          lerpvec(Transform.gzPreScaleOfs, NF.Transform.gzPreScaleOfs, smooth_inter);
+          lerpvec(Transform.gzScale, NF.Transform.gzScale, smooth_inter);
+          Transform.gzdoom = true;
+        }
+        //Transform.TransRot = Transform.MatTrans.getAngles();
+        updateRot = true;
+      }
+    }
+
+    if (!Transform.gzdoom) {
+      Transform.MatTrans.scaleXY(ScaleX, ScaleY);
+    } else {
+      // done in renderer
+      Transform.gzScale.x *= ScaleX;
+      Transform.gzScale.y *= ScaleX;
+      Transform.gzScale.z *= ScaleY;
+    }
+
+    if (!IsViewModel) {
+      const vuint8 rndVal = (mobj ? (hashU32(mobj->ServerUId)>>4)&0xffu : 0);
+      /* old code
+        if (FDef.AngleStart || FDef.AngleEnd != 1.0f) {
+          Md2Angle.yaw = AngleMod(Md2Angle.yaw+FDef.AngleStart+(FDef.AngleEnd-FDef.AngleStart)*Inter);
+        }
+      */
+
+      Md2Angle.yaw = FDef.angleYaw.GetAngle(Md2Angle.yaw, rndVal);
+
+      if (FDef.AngleStart || FDef.AngleEnd != FDef.AngleStart) {
+        Md2Angle.yaw = AngleMod(Md2Angle.yaw+FDef.AngleStart+(FDef.AngleEnd-FDef.AngleStart)*Inter);
+      }
+
+      if (FDef.gzActorRoll == DontUse) {
+        Md2Angle.roll = 0.0f;
+      } else {
+        Md2Angle.roll = FDef.angleRoll.GetAngle(Md2Angle.roll, rndVal);
+      }
+
+      if (!mobj || FDef.gzActorPitch == DontUse) {
+        Md2Angle.pitch = 0.0f;
+      } else {
+        if (FDef.gzActorPitch == FromMomentum) Md2Angle.pitch = VectorAnglePitch(mobj->Velocity);
+        if (FDef.gzActorPitchInverted) Md2Angle.pitch += 180.0f;
+        Md2Angle.pitch = FDef.anglePitch.GetAngle(Md2Angle.pitch, rndVal);
+      }
+
+      if (Level && mobj) {
+        if (r_model_autorotating && FDef.rotateSpeed) {
+          Md2Angle.yaw = AngleMod(Md2Angle.yaw+Level->Time*FDef.rotateSpeed+rndVal*38.6f);
+        }
+
+        if (r_model_autobobbing && FDef.bobSpeed) {
+          //GCon->Logf("UID: %3u (%s)", (hashU32(mobj->GetUniqueId())&0xff), *mobj->GetClass()->GetFullName());
+          const float bobHeight = 4.0f;
+          const float zdelta = msin(AngleMod(Level->Time*FDef.bobSpeed+rndVal*44.5f))*bobHeight;
+          Md2Org.z += zdelta+bobHeight;
+        }
+      }
+
+      // VMatrix4::RotateY: roll
+      // VMatrix4::RotateZ: yaw
+      // VMatrix4::RotateX: pitch
+    }
+
+    if (updateRot) Transform.TransRot = Transform.MatTrans.getAngles();
+
+    // light
+    vuint32 Md2Light = ri.light;
+    if (SubMdl.FullBright) Md2Light = 0xffffffff;
+
+    ModelRenderPassInfo &nfo = rpmodels.alloc();
+    const int ridx = rpmodels.length()-1;
+    nfo.mobj = mobj;
+    nfo.ScMdl = &ScMdl;
+    nfo.SubMdl = &SubMdl;
+    nfo.Md2Org = Md2Org;
+    nfo.Md2Angle = Md2Angle;
+    nfo.Transform = Transform;
+    nfo.ri = ri;
+    nfo.Md2Frame = Md2Frame;
+    nfo.Md2NextFrame = Md2NextFrame;
+    nfo.SkinTex = SkinTex;
+    nfo.Trans = Trans;
+    nfo.ColorMap = ColorMap;
+    nfo.Md2Alpha = Md2Alpha;
+    nfo.Md2Light = Md2Light;
+    nfo.smooth_inter = smooth_inter;
+    nfo.Interpolate = Interpolate;
+    nfo.nextemdl = -1;
+
+    if (mobj && lastemdl < 0) rpmodelsMap.put(mobj, ridx);
+
+    if (lastemdl >= 0) rpmodels[lastemdl].nextemdl = ridx;
+    lastemdl = ridx;
+  }
+}
+
+
 //==========================================================================
 //
 //  CheckModelEarlyRejects
@@ -2171,6 +2444,164 @@ static inline bool CheckModelEarlyRejects (const RenderStyleInfo &ri, ERenderPas
       break;
   }
   return true;
+}
+
+
+//==========================================================================
+//
+//  DrawModelWithRenderInfo
+//
+//==========================================================================
+static void DrawModelWithRenderInfo (ModelRenderPassInfo &nfo,
+                                     VLevel *Level, const TVec &LightPos, float LightRadius,
+                                     ERenderPass Pass, bool isShadowVol)
+{
+  // some early rejects
+  if (!CheckModelEarlyRejects(nfo.ri, Pass)) return;
+
+  if (nfo.ScMdl->HasAlphaMul && nfo.SubMdl->AlphaMul < 1.0f) {
+    if (Pass != RPASS_Glass && Pass != RPASS_Normal) return;
+  }
+
+  float Md2Alpha = nfo.Md2Alpha;
+  // alpha
+  if (nfo.ScMdl->HasAlphaMul) {
+    if (Pass == RPASS_Glass || Pass == RPASS_Normal) Md2Alpha *= nfo.SubMdl->AlphaMul;
+    if (Md2Alpha <= 0.01f) return;
+    if (Md2Alpha > 1.0f) Md2Alpha = 1.0f;
+  }
+
+  // alpha-blended things should be rendered with "non-shadow" pass
+  // `RPASS_Normal` means "lightmapped renderer", it always does it right
+  if (Pass != RPASS_Normal) {
+    // translucent?
+    if (Pass != RPASS_NonShadow && Pass != RPASS_Glass && Md2Alpha < 1.0f) return;
+  }
+
+  switch (Pass) {
+    case RPASS_Normal:
+      break;
+    case RPASS_Ambient:
+      //if (ri.isTranslucent() && ri.stencilColor) continue; // already checked
+      //if (ri.isAdditive()) continue; // already checked
+      break;
+    case RPASS_ShadowVolumes:
+      if (Md2Alpha < 1.0f || nfo.SubMdl->NoShadow || nfo.SubMdl->Model->HadErrors) return;
+      break;
+    case RPASS_ShadowMaps:
+      if (Md2Alpha < 1.0f || nfo.SubMdl->NoShadow) return;
+      //if (ri.isTranslucent() && ri.stencilColor) continue; // already checked
+      //if (ri.isAdditive()) continue; // already checked
+      break;
+    case RPASS_Textures:
+      //if (Md2Alpha <= getAlphaThreshold() && !ri.isAdditive()) continue; // already checked
+      //if (ri.isAdditive()) continue; // already checked
+      break;
+    case RPASS_Light:
+      if (Md2Alpha <= getAlphaThreshold() /*|| SubMdl.NoShadow*/) return;
+      //if (ri.isTranslucent() && ri.stencilColor) continue; // no need to
+      //if (ri.isAdditive()) continue; // already checked
+      break;
+    case RPASS_Fog:
+      /*
+      // noshadow model is rendered as "noshadow", so it doesn't need fog
+      if (Md2Alpha <= getAlphaThreshold() || SubMdl.NoShadow) {
+        //if (gl_dbg_log_model_rendering) GCon->Logf("  SKIP FOG FOR MODEL(%s): class='%s'; alpha=%f; noshadow=%d", passname, *Cls.Name, Md2Alpha, (int)SubMdl.NoShadow);
+        continue;
+      }
+      */
+      break;
+    case RPASS_NonShadow:
+      //if (Md2Alpha >= 1.0f && !Additive && !SubMdl.NoShadow) continue;
+      //!if (Md2Alpha < 1.0f || ri.isAdditive() /*|| SubMdl.NoShadow*/) continue;
+      //if (Md2Alpha >= 1.0f && !ri.isAdditive() /*|| SubMdl.NoShadow*/) continue;
+      //if (ri.isTranslucent() && ri.stencilColor) continue;
+      //
+      //if (!ri.isAdditive()) continue; // already checked
+      break;
+    case RPASS_Glass:
+      break;
+  }
+
+  switch (Pass) {
+    case RPASS_Normal:
+    case RPASS_NonShadow:
+    case RPASS_Glass:
+      if (true /*IsViewModel || !isShadowVol*/) {
+        RenderStyleInfo newri = nfo.ri;
+        newri.light = nfo.Md2Light;
+        newri.alpha = Md2Alpha;
+        if (!newri.translucency && Md2Alpha < 1.0f) newri.translucency = RenderStyleInfo::Translucent;
+        if (Pass == RPASS_Glass && !newri.translucency) {
+          newri.translucency = RenderStyleInfo::Translucent;
+        }
+        Drawer->DrawAliasModel(nfo.Md2Org, nfo.Md2Angle, nfo.Transform,
+          nfo.SubMdl->Model, nfo.Md2Frame, nfo.Md2NextFrame, nfo.SkinTex,
+          nfo.Trans, nfo.ColorMap,
+          newri,
+          /*IsViewModel*/false, nfo.smooth_inter, nfo.Interpolate, nfo.SubMdl->UseDepth,
+          nfo.SubMdl->AllowTransparency,
+          /*!IsViewModel &&*/ isShadowVol); // for advanced renderer, we need to fill z-buffer, but not color buffer
+      }
+      break;
+    case RPASS_Ambient:
+      if (!nfo.SubMdl->AllowTransparency) {
+        Drawer->DrawAliasModelAmbient(nfo.Md2Org, nfo.Md2Angle, nfo.Transform,
+          nfo.SubMdl->Model, nfo.Md2Frame, nfo.Md2NextFrame, nfo.SkinTex,
+          nfo.Md2Light, Md2Alpha, nfo.smooth_inter, nfo.Interpolate, nfo.SubMdl->UseDepth,
+          nfo.SubMdl->AllowTransparency);
+      }
+      break;
+    case RPASS_ShadowVolumes:
+      Drawer->DrawAliasModelShadow(nfo.Md2Org, nfo.Md2Angle, nfo.Transform,
+        nfo.SubMdl->Model, nfo.Md2Frame, nfo.Md2NextFrame, nfo.smooth_inter, nfo.Interpolate,
+        LightPos, LightRadius);
+      break;
+    case RPASS_ShadowMaps:
+      Drawer->DrawAliasModelShadowMap(nfo.Md2Org, nfo.Md2Angle, nfo.Transform,
+        nfo.SubMdl->Model, nfo.Md2Frame, nfo.Md2NextFrame, nfo.SkinTex,
+        Md2Alpha, nfo.smooth_inter, nfo.Interpolate, nfo.SubMdl->AllowTransparency);
+      break;
+    case RPASS_Light:
+      Drawer->DrawAliasModelLight(nfo.Md2Org, nfo.Md2Angle, nfo.Transform,
+        nfo.SubMdl->Model, nfo.Md2Frame, nfo.Md2NextFrame, nfo.SkinTex,
+        Md2Alpha, nfo.smooth_inter, nfo.Interpolate, nfo.SubMdl->AllowTransparency);
+      break;
+    case RPASS_Textures:
+      Drawer->DrawAliasModelTextures(nfo.Md2Org, nfo.Md2Angle, nfo.Transform,
+        nfo.SubMdl->Model, nfo.Md2Frame, nfo.Md2NextFrame, nfo.SkinTex,
+        nfo.Trans, nfo.ColorMap, nfo.ri, nfo.smooth_inter, nfo.Interpolate, nfo.SubMdl->UseDepth,
+        nfo.SubMdl->AllowTransparency);
+      break;
+    case RPASS_Fog:
+      Drawer->DrawAliasModelFog(nfo.Md2Org, nfo.Md2Angle, nfo.Transform,
+        nfo.SubMdl->Model, nfo.Md2Frame, nfo.Md2NextFrame, nfo.SkinTex,
+        nfo.ri.fade, Md2Alpha, nfo.smooth_inter, nfo.Interpolate, nfo.SubMdl->AllowTransparency);
+      break;
+  }
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::ModelListStart
+//
+//  for advanced renderer, it is cheaper to build the list first
+//
+//==========================================================================
+void VRenderLevelShared::ModelListStart () {
+  rpmodels.reset();
+  rpmodelsMap.reset();
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::ModelListFinish
+//
+//==========================================================================
+void VRenderLevelShared::ModelListFinish () {
+  // nothing to do here yet
 }
 
 
@@ -2640,7 +3071,7 @@ bool VRenderLevelShared::DrawAliasModel (VEntity *mobj, const TVec &Org, const T
 //==========================================================================
 bool VRenderLevelShared::DrawAliasModel (VEntity *mobj, VName clsName, const TVec &Org, const TAVec &Angles,
   float ScaleX, float ScaleY,
-  const VAliasModelFrameInfo &Frame, const VAliasModelFrameInfo &NextFrame, //old:VState *State, VState *NextState,
+  const VAliasModelFrameInfo &Frame, const VAliasModelFrameInfo &NextFrame,
   VTextureTranslation *Trans, int Version,
   const RenderStyleInfo &ri,
   bool IsViewModel, float Inter, bool Interpolate,
@@ -2649,9 +3080,28 @@ bool VRenderLevelShared::DrawAliasModel (VEntity *mobj, VName clsName, const TVe
   if (clsName == NAME_None) return false;
   if (!IsViewModel && !IsAliasModelAllowedFor(mobj)) return false;
 
+  const bool doList = (Pass != RPASS_Normal && !IsViewModel && mobj && r_use_model_renderlist.asBool());
+
+  int *ckp = nullptr;
+  if (doList) ckp = rpmodelsMap.get(mobj);
+  int lastemdl = -1;
+
+  const bool isSVol = (IsShadowVolumeRenderer() && !IsShadowMapRenderer());
+
+  // check if we have it cached
+  if (ckp) {
+    if (*ckp < 0) return false; // oops
+    // render list
+    for (int midx = *ckp; midx >= 0; midx = rpmodels[midx].nextemdl) {
+      DrawModelWithRenderInfo(rpmodels[midx], Level, CurrLightPos, CurrLightRadius, Pass, isSVol);
+    }
+    return true;
+  }
+
   VClassModelScript *Cls = FindClassModelByName(clsName);
   if (!Cls) {
     //GCon->Logf(NAME_Debug, "NO VIEW MODEL for class `%s`", *clsName);
+    if (doList) rpmodelsMap.put(mobj, -1);
     return false;
   }
 
@@ -2663,6 +3113,7 @@ bool VRenderLevelShared::DrawAliasModel (VEntity *mobj, VName clsName, const TVe
     GCon->Logf(NAME_Debug, "  NEXT MFI: %s", *mobj->getNextMFI().toString());
     */
     //abort();
+    if (doList) rpmodelsMap.put(mobj, -1);
     return false;
   }
 
@@ -2687,10 +3138,14 @@ bool VRenderLevelShared::DrawAliasModel (VEntity *mobj, VName clsName, const TVe
       Interpolate = origInterp;
     }
 
-    DrawModel(Level, mobj, Org, Angles, ScaleX, ScaleY, *Cls, FIdx, NFIdx, Trans,
-      ColorMap, Version, ri, IsViewModel,
-      InterpFrac, Interpolate, CurrLightPos, CurrLightRadius, Pass,
-      IsShadowVolumeRenderer() && !IsShadowMapRenderer());
+    if (doList) {
+      DrawModelCalcRenderInfo(Level, mobj, Org, Angles, ScaleX, ScaleY, *Cls, FIdx, NFIdx, Trans,
+        ColorMap, Version, ri, IsViewModel, InterpFrac, Interpolate, lastemdl);
+    } else {
+      DrawModel(Level, mobj, Org, Angles, ScaleX, ScaleY, *Cls, FIdx, NFIdx, Trans,
+        ColorMap, Version, ri, IsViewModel,
+        InterpFrac, Interpolate, CurrLightPos, CurrLightRadius, Pass, isSVol);
+    }
 
     // try next one
     const VScriptedModelFrame &cfrm = Cls->Frames[FIdx];
@@ -2722,6 +3177,16 @@ bool VRenderLevelShared::DrawAliasModel (VEntity *mobj, VName clsName, const TVe
       }
     }
     FIdx = res;
+  }
+
+  if (doList) {
+    ckp = rpmodelsMap.get(mobj);
+    if (ckp) {
+      // render list
+      for (int midx = *ckp; midx >= 0; midx = rpmodels[midx].nextemdl) {
+        DrawModelWithRenderInfo(rpmodels[midx], Level, CurrLightPos, CurrLightRadius, Pass, isSVol);
+      }
+    }
   }
 
   return true;

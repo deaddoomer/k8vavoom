@@ -484,6 +484,8 @@ void VRenderLevelShadowVolume::RenderScene (const refdef_t *RD, const VViewClipp
   //MarkLeaves(); // moved to `PrepareWorldRender()`
   //if (!MirrorLevel && !r_disable_world_update) UpdateFakeSectors(); // moved to `PrepareWorldRender()`
 
+  ModelListStart();
+
   RenderCollectSurfaces(RD, Range);
 
   MiniStopTimer profBeforeDraw("BeforeDrawWorldSV", prof_r_bsp_world_render.asBool());
@@ -527,6 +529,8 @@ void VRenderLevelShadowVolume::RenderScene (const refdef_t *RD, const VViewClipp
   MiniStopTimer profDrawMObjNonShadow("RenderMobjsNonShadow", prof_r_bsp_mobj_render.asBool());
   RenderMobjs(RPASS_NonShadow);
   profDrawMObjNonShadow.stopAndReport();
+
+  ModelListFinish();
 
   // render light bulbs
   // use "normal" model rendering code here (yeah)
