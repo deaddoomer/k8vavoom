@@ -444,3 +444,25 @@ void Cheat_MObj_Set () {
 
   printwarn("unknown property: '%s'", Cmd_GetArgV(1));
 }
+
+
+//==========================================================================
+//
+//  Cheat_MObj_State
+//
+//==========================================================================
+void Cheat_MObj_State () {
+  if (selectorCheatEntity && selectorCheatEntity.IsDestroyed) selectorCheatEntity = none;
+
+  if (!MO.bIsPlayer || !Level) return;
+
+  if (!selectorCheatEntity) {
+    printwarn("no entity selected!");
+    return;
+  }
+
+  EntityEx ee = selectorCheatEntity;
+
+  printdebug("%C: current state is %s (time=%s) (sprite: '%s' frame '%c')", ee, ee.State, ee.StateTime,
+             string(ee.DispSpriteName).toUpperCase(), ((ee.DispSpriteFrame>>24)&0xff)+65);
+}
