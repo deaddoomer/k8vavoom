@@ -1086,7 +1086,6 @@ uint32_t VoxelDataSmall::createSlab (VoxelData &vox, uint32_t dofs0) {
 //==========================================================================
 void VoxelDataSmall::createFrom (VoxelData &vox) {
   clear();
-  //vox.removeEmptyVoxels(); // just in case
   xsize = vox.xsize;
   ysize = vox.ysize;
   zsize = vox.zsize;
@@ -1100,10 +1099,6 @@ void VoxelDataSmall::createFrom (VoxelData &vox) {
       xyofs[(uint32_t)y*xsize+(uint32_t)x] = dofs;
     }
   }
-  /*
-  conwriteln("*** created compressed voxel data; ", data.length, " bytes for ",
-             xsize, "x", ysize, "x", zsize);
-  */
   checkValidity(vox);
 }
 
@@ -1120,29 +1115,24 @@ uint32_t VoxelDataSmall::queryVox (int x, int y, int z) {
   uint32_t dofs = xyofs/*.ptr()*/[(uint32_t)y*xsize+(uint32_t)x];
   if (!dofs) return 0;
   const uint16_t *dptr = (const uint16_t *)(data.ptr()+dofs);
-    //conwriteln("z=", z, "; zlo=", dptr[0], "; zhi=", dptr[1], "; runcount=", dptr[2]);
   if ((uint16_t)z < *dptr++) return 0;
   if ((uint16_t)z > *dptr++) return 0;
   uint32_t runcount = *dptr++;
   if (runcount <= 4) {
     // there is no reason to perform binary search here
     while ((uint16_t)z > *dptr) dptr += 4;
-      //conwriteln("  rz0=", dptr[0], "; rz1=", dptr[1], "; rofs=", dptr[2]);
     if (z == *dptr) {
       const uint32_t *dv = (const uint32_t *)(((const uint8_t *)dptr)+dptr[2]);
       return *dv;
     } else {
       dptr -= 4;
       const uint16_t cz = *dptr;
-        //conwriteln("  cz=", cz, "; cz1=", dptr[1], "; rofs=", dptr[2]);
       vassert(cz < z);
       if ((uint16_t)z >= dptr[1]) return 0; // no such voxel
       const uint32_t *dv = (const uint32_t *)(((const uint8_t *)dptr)+dptr[2]);
       return *(dv+z-cz);
     }
   } else {
-    //{ import core.stdc.stdio : printf; printf("runcount=%u\n", cast(uint)runcount); }
-    //assert(0);
     // perform binary search
     uint32_t lo = 0, hi = runcount-1;
     for (;;) {
@@ -1161,9 +1151,7 @@ uint32_t VoxelDataSmall::queryVox (int x, int y, int z) {
       }
     }
     const uint16_t *dp = dptr+(lo<<2);
-    //{ import core.stdc.stdio : printf; printf("000: z=%u; lo=%u; cz0=%u; cz1=%u\n", cast(uint)z, cast(uint)lo, cast(uint)dp[0], cast(uint)dp[1]); }
     while ((uint16_t)z >= dp[1]) dp += 4;
-    //{ import core.stdc.stdio : printf; printf("001:   lo=%u; cz0=%u; cz1=%u\n", cast(uint)z, cast(uint)lo, cast(uint)dp[0], cast(uint)dp[1]); }
     if ((uint16_t)z < dp[0]) return 0;
     const uint32_t *dv = (const uint32_t *)(((const uint8_t *)dp)+dp[2]);
     return *(dv+z-*dp);

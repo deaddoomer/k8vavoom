@@ -1107,7 +1107,7 @@ private:
 private:
   uint32_t appendVertex (VVoxVertexEx &gv);
 
-  static inline float calcTX (uint cp, int pos, uint sz) {
+  static inline float calcTX (uint32_t cp, int pos, uint32_t sz) {
     float fp = (float)(int)cp;
          if (pos < 0) fp += 0.004f;
     else if (pos > 0) fp += 0.996f;
