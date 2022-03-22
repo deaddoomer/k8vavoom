@@ -32,11 +32,18 @@ void main () {
   vec4 Vert = mix(vec4(Position, 1.0), Vert2, Inter)*ModelToWorldMat;
   gl_Position = gl_ModelViewProjectionMatrix*Vert;
 
-  //VNormal = NormalToWorldMat*mix(VertNormal, Vert2Normal, Inter);
-  VNormal = normalize(mix(VertNormal, Vert2Normal, Inter)*NormalToWorldMat);
   VertToLight = LightPos-Vert.xyz;
 
+  #if 1
+  VNormal = normalize(mix(VertNormal, Vert2Normal, Inter)*NormalToWorldMat);
+  #else
+  VNormal = normalize(NormalToWorldMat*mix(VertNormal, Vert2Normal, Inter));
+  #endif
+
   SurfDist = dot(VNormal, Vert.xyz);
+
+  //VNormal = (gl_ModelViewMatrix*vec4(VNormal, 1.0)).xyz;
+
   /*
   float SurfDist = dot(VNormal, Vert.xyz);
   Dist = dot(LightPos, VNormal)-SurfDist;

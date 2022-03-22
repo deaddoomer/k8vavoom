@@ -1,5 +1,6 @@
 #version 120
 $include "common/common.inc"
+//#define VV_DEBUG_NORMALS
 
 uniform sampler2D Texture;
 //uniform sampler2D AmbLightTexture;
@@ -13,7 +14,7 @@ uniform vec3 StencilColor;
 varying vec2 TextureCoordinate;
 
 
-#if 0
+#ifdef VV_DEBUG_NORMALS
 varying vec3 Normal;
 #endif
 
@@ -44,11 +45,11 @@ void main () {
 #endif
   FinalColor.a *= InAlpha;
 
-#if 0
-  FinalColor.x = 0;
-  FinalColor.y = 0;
-  FinalColor.z = Normal.y;
-  if (FinalColor.z < 0) { FinalColor.r = 1.0; FinalColor.z = -FinalColor.z; }
+#ifdef VV_DEBUG_NORMALS
+  FinalColor.x = Normal.y;
+  FinalColor.y = Normal.x;
+  FinalColor.z = Normal.z;
+  //if (FinalColor.z < 0) { FinalColor.r = 1.0; FinalColor.z = -FinalColor.z; }
 #endif
 
   out_FragValue0 = clamp(FinalColor, 0.0, 1.0);

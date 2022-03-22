@@ -1,5 +1,6 @@
 #version 120
 $include "common/common.inc"
+//#define VV_DEBUG_NORMALS
 
 attribute vec3 Position;
 
@@ -12,7 +13,7 @@ attribute vec2 TexCoord;
 varying vec2 TextureCoordinate;
 
 
-#if 0
+#ifdef VV_DEBUG_NORMALS
 uniform mat3 NormalToWorldMat;
 attribute vec3 Vert2Normal;
 varying vec3 Normal;
@@ -25,8 +26,7 @@ void main () {
 
   TextureCoordinate = TexCoord;
 
-
-#if 0
+#ifdef VV_DEBUG_NORMALS
   Normal = Vert2Normal*NormalToWorldMat;
   //Normal = NormalToWorldMat*Vert2Normal;
 #endif
