@@ -1827,20 +1827,26 @@ void VMatrix4::recompose (const VMatrix4Decomposed &dec) {
 
   // apply scale
   //scale3d(dec.scaleX, dec.scaleY, dec.scaleZ);
-  m[0][0] *= dec.scale.x;
-  m[1][0] *= dec.scale.x;
-  m[2][0] *= dec.scale.x;
-  m[3][0] *= dec.scale.x;
+  if (dec.scale.x != 1.0f) {
+    m[0][0] *= dec.scale.x;
+    m[1][0] *= dec.scale.x;
+    m[2][0] *= dec.scale.x;
+    m[3][0] *= dec.scale.x;
+  }
 
-  m[0][1] *= dec.scale.y;
-  m[1][1] *= dec.scale.y;
-  m[2][1] *= dec.scale.y;
-  m[3][1] *= dec.scale.y;
+  if (dec.scale.y != 1.0f) {
+    m[0][1] *= dec.scale.y;
+    m[1][1] *= dec.scale.y;
+    m[2][1] *= dec.scale.y;
+    m[3][1] *= dec.scale.y;
+  }
 
-  m[0][2] *= dec.scale.z;
-  m[1][2] *= dec.scale.z;
-  m[2][2] *= dec.scale.z;
-  m[3][2] *= dec.scale.z;
+  if (dec.scale.z != 1.0f) {
+    m[0][2] *= dec.scale.z;
+    m[1][2] *= dec.scale.z;
+    m[2][2] *= dec.scale.z;
+    m[3][2] *= dec.scale.z;
+  }
 }
 
 
