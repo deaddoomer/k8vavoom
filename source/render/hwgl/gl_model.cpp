@@ -112,17 +112,20 @@ static inline void AliasSetupNormalTransform (const TAVec &angles,
                                               const AliasModelTrans &Transform,
                                               VMatrix4 &RotationMatrix)
 {
-  TAVec aa = angles;
-  aa.pitch += Transform.TransRot.pitch;
-  aa.roll += Transform.TransRot.roll;
-  aa.yaw += Transform.TransRot.yaw;
-  RotationMatrix = VMatrix4::BuildRotate(aa);
-  /*
-  RotationMatrix = VMatrix4::Identity;
-  if (aa.roll) RotationMatrix *= VMatrix4::RotateY(aa.roll);
-  if (aa.yaw) RotationMatrix *= VMatrix4::RotateZ(aa.yaw);
-  if (aa.pitch) RotationMatrix *= VMatrix4::RotateX(aa.pitch);
-  */
+  #if 0
+  VMatrix4Decomposed DecTrans;
+  Transform.MatTrans.decompose(DecTrans);
+  DecTrans.scale = TVec(1.0f, 1.0f, 1.0f);
+  DecTrans.translate = TVec::ZeroVector;
+  RotationMatrix.recompose(DecTrans);
+  RotationMatrix.invert(); // dunno why, but we need this
+  #else
+  RotationMatrix = Transform.MatTransNorm;
+  #endif
+  if (angles.yaw || angles.pitch || angles.roll) {
+    RotationMatrix *= VMatrix4::BuildRotate(angles);
+  }
+  return;
 }
 
 

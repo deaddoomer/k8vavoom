@@ -420,7 +420,7 @@ class VMeshModel;
 struct AliasModelTrans {
   // transformation matrix
   VMatrix4 MatTrans;
-  TAVec TransRot; // extracted from `MatTrans`, for normals
+  VMatrix4 MatTransNorm;
   // for frame interpolator; we can precalc this
   VMatrix4Decomposed DecTrans;
   // gzdoom specifics
@@ -433,7 +433,7 @@ struct AliasModelTrans {
 
   inline AliasModelTrans () noexcept
     : MatTrans(VMatrix4::Identity)
-    , TransRot(0.0f, 0.0f, 0.0f)
+    , MatTransNorm(VMatrix4::Identity)
     , DecTrans()
     , gzdoom(false)
     , gzScale(1.0f, 1.0f, 1.0f)
@@ -442,11 +442,24 @@ struct AliasModelTrans {
     , RotCenter(0.0f, 0.0f, 0.0f)
   {}
 
+  inline void rebuildNormMat () noexcept {
+    VMatrix4Decomposed dc = DecTrans;
+    dc.scale = TVec(1.0f, 1.0f, 1.0f);
+    dc.translate = TVec::ZeroVector;
+    MatTransNorm.recompose(dc);
+    MatTransNorm.invert(); // dunno why, but we need this
+  }
+
+  inline void recompose () noexcept {
+    MatTrans.recompose(DecTrans);
+    rebuildNormMat();
+  }
+
   inline void decompose () noexcept {
     MatTrans.decompose(DecTrans);
-    TransRot = MatTrans.getAngles();
     gzdoom = (gzScale != TVec(1.0f, 1.0f, 1.0f) || gzPreScaleOfs != TVec::ZeroVector);
     userotcenter = (RotCenter != TVec::ZeroVector);
+    rebuildNormMat();
   }
 };
 

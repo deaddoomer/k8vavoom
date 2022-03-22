@@ -939,6 +939,8 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
   }
 
   Mdl->DefaultClass = nullptr;
+  // "noselfshadow" means "don't cast shadow from self light source"
+  // this is generally the case for light decorations, and doesn't hurt for others
   const bool globNoSelfShadow = ParseBool(&Doc->Root, "noselfshadow", true);
   const bool globNoShadow = ParseBool(&Doc->Root, "noshadow", false);
   const bool globFullBright = ParseBool(&Doc->Root, "fullbright", false);
@@ -1173,6 +1175,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         F.PositionIndex = 0;
         // frame transformation
         F.Transform = BaseTrans;
+        F.Transform.decompose();
         // alpha
         F.AlphaStart = 1.0f;
         F.AlphaEnd = 1.0f;
@@ -2483,14 +2486,13 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
     const float smooth_inter = (Interpolate ? SMOOTHSTEP(Inter) : 0.0f);
 
     AliasModelTrans Transform = F.Transform;
-    bool updateRot = false;
 
     if (Interpolate && smooth_inter > 0.0f && &F != &NF) {
       if (smooth_inter >= 1.0f) {
         Transform = NF.Transform;
       } else if (Transform.MatTrans != NF.Transform.MatTrans) {
         Transform.DecTrans = Transform.DecTrans.interpolate(NF.Transform.DecTrans, smooth_inter);
-        Transform.MatTrans.recompose(Transform.DecTrans);
+        Transform.recompose();
         //FIXME: what to do with RotCenter here?
         // gzdoom-style scale/offset?
         if (Transform.gzdoom || NF.Transform.gzdoom) {
@@ -2499,7 +2501,6 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
           Transform.gzdoom = true;
         }
         //Transform.TransRot = Transform.MatTrans.getAngles();
-        updateRot = true;
       }
     }
 
@@ -2562,8 +2563,6 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
       // VMatrix4::RotateZ: yaw
       // VMatrix4::RotateX: pitch
     }
-
-    if (updateRot) Transform.TransRot = Transform.MatTrans.getAngles();
 
     // light
     vuint32 Md2Light = ri.light;
