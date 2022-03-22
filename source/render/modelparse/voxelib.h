@@ -503,11 +503,6 @@ public:
   }
 
   inline void updateCache (int currY) {
-    /*
-    for (int m = 0; m < wdt; ++m, ++cp) {
-      if (!grid[currY*wdt+m]) cache[m] = 0; else ++cache[m];
-    }
-    */
     const uint32_t *lp = grid.ptr()+(uint32_t)currY*(uint32_t)wdt;
     int *cp = cache.ptr();
     for (int m = wdt; m--; ++cp) {
@@ -523,7 +518,7 @@ public:
 // ////////////////////////////////////////////////////////////////////////// //
 // just a compact representation of a rectange
 // splitted to two copy-pasted structs for better type checking
-struct __attribute__((packed)) VoxXY16 {
+struct VoxXY16 {
   uint32_t xy; // low word: x; high word: y
 
   inline VoxXY16 () {}
@@ -535,7 +530,7 @@ struct __attribute__((packed)) VoxXY16 {
 };
 
 
-struct __attribute__((packed)) VoxWH16 {
+struct VoxWH16 {
   uint32_t wh; // low word: x; high word: y
 
   inline VoxWH16 () {}
@@ -553,13 +548,13 @@ struct VoxTexAtlas {
 public:
   struct Rect {
     int x, y, w, h;
+
     static Rect Invalid () { return Rect(0, 0, 0, 0); }
+
     inline Rect () : x(0), y(0), w(0), h(0) {}
     inline Rect (int ax, int ay, int aw, int ah) : x(ax), y(ay), w(aw), h(ah) {}
     inline bool isValid () const { return (x >= 0 && y >= 0 && w > 0 && h > 0); }
     inline int getArea () const { return w*h; }
-    inline int getX1 () const { return x+w; }
-    inline int getY1 () const { return y+h; }
   };
 
 private:
@@ -889,7 +884,7 @@ struct /*__attribute__((packed))*/ VoxQuadVertex {
 
 
 // quad is always one texel strip
-struct __attribute__((packed)) VoxQuad {
+struct VoxQuad {
   VoxQuadVertex vx[4];
   uint32_t cidx; // in colorpack's `citems`
   VoxQuadVertex normal;
@@ -1015,7 +1010,7 @@ public:
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-struct VVoxVertexEx {
+struct __attribute__((packed)) VVoxVertexEx {
   float x, y, z;
   float s, t; // will be calculated after texture creation
   float nx, ny, nz; // normal
@@ -1031,21 +1026,19 @@ struct VVoxVertexEx {
     , nz(0.0f)
   {}
 
+  inline VVoxVertexEx (const VVoxVertexEx &b) = default;
+  inline VVoxVertexEx &operator = (const VVoxVertexEx &b) = default;
+
   inline bool operator == (const VVoxVertexEx &b) const {
-    return
-      x == b.x && y == b.y && z == b.z &&
-      s == b.s && t == b.t &&
-      nx == b.nx && ny == b.ny && nz == b.nz;
+    if (&b == this) return true;
+    return (memcmp((const void *)this, (const void *)&b, sizeof(VVoxVertexEx)) == 0);
   }
 
-  //inline TVec asTVec () const { return TVec(x, y, z); }
-  //inline TVec normalAsTVec () const { return TVec(nx, ny, nz); }
-
-  inline float get (unsigned idx) const {
+  inline float get (const unsigned idx) const {
     return (idx == 0 ? x : idx == 1 ? y : z);
   }
 
-  inline void set (unsigned idx, const float v) {
+  inline void set (const unsigned idx, const float v) {
     if (idx == 0) x = v; else if (idx == 1) y = v; else z = v;
   }
 };
