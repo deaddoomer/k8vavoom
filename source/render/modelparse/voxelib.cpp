@@ -1222,17 +1222,17 @@ const uint8_t VoxelMesh::quadFaces[6][4] = {
 
 
 const float VoxelMesh::quadNormals[6][4] = {
-  // right (&0x01) (right)
+  // right (&0x01)
   { 1.0f, 0.0f, 0.0f},
-  // left (&0x02) (left)
+  // left (&0x02)
   {-1.0f, 0.0f, 0.0f},
-  // top (&0x04) (near)
+  // near (&0x04)
   { 0.0f,-1.0f, 0.0f},
-  // bottom (&0x08) (far)
+  // far (&0x08)
   { 0.0f, 1.0f, 0.0f},
-  // back (&0x10)  (top)
+  // top (&0x10)
   { 0.0f, 0.0f, 1.0f},
-  // front (&0x20)  (bottom)
+  // bottom (&0x20)
   { 0.0f, 0.0f,-1.0f},
 };
 
@@ -1268,15 +1268,30 @@ void VoxelMesh::setColors (VoxQuad &vq, const uint32_t *clrs, uint32_t wdt, uint
 }
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+// VoxelMesh
+// ////////////////////////////////////////////////////////////////////////// //
+
 //==========================================================================
 //
 //  VoxelMesh::quadCalcNormal
 //
 //==========================================================================
 void VoxelMesh::quadCalcNormal (VoxQuad &vq) {
-  vq.normal.x = vq.normal.dx = quadNormals[vq.cull][0];
-  vq.normal.y = vq.normal.dy = quadNormals[vq.cull][1];
-  vq.normal.z = vq.normal.dz = quadNormals[vq.cull][2];
+  uint32_t qidx;
+  switch (vq.cull) {
+    case 0x01: qidx = 0; break;
+    case 0x02: qidx = 1; break;
+    case 0x04: qidx = 2; break;
+    case 0x08: qidx = 3; break;
+    case 0x10: qidx = 4; break;
+    case 0x20: qidx = 5; break;
+    default: __builtin_trap();
+  }
+  vq.normal.x = vq.normal.dx = quadNormals[qidx][0];
+  vq.normal.y = vq.normal.dy = quadNormals[qidx][1];
+  vq.normal.z = vq.normal.dz = quadNormals[qidx][2];
+  vq.normal.qtype = 0xff;
 }
 
 
@@ -1329,6 +1344,7 @@ void VoxelMesh::addSlabFace (uint8_t cull, uint8_t dmv,
     vq.vx[vidx] = genVertex(quadFaces[qidx][vidx], x, y, z, dx, dy, dz);
   }
   setColors(vq, colors, (uint32_t)(allsame ? 1 : len), 1);
+
   vq.type = qtype;
   vq.cull = cull;
   quadCalcNormal(vq);
@@ -1824,11 +1840,31 @@ void VoxelMesh::createFrom (VoxelData &vox, int optlevel) {
 
 //==========================================================================
 //
+//  normNegZero
+//
+//==========================================================================
+static inline void normNegZero (float *f) {
+  if (*f == 0.0f) memset((void *)f, 0, sizeof(*f));
+}
+
+
+//==========================================================================
+//
 //  GLVoxelMesh::appendVertex
 //
 //==========================================================================
-uint32_t GLVoxelMesh::appendVertex (const VVoxVertexEx &gv) {
+uint32_t GLVoxelMesh::appendVertex (VVoxVertexEx &gv) {
   ++totaladded;
+  // normalize negative zeroes
+  normNegZero(&gv.x);
+  normNegZero(&gv.y);
+  normNegZero(&gv.z);
+  normNegZero(&gv.s);
+  normNegZero(&gv.t);
+  normNegZero(&gv.nx);
+  normNegZero(&gv.ny);
+  normNegZero(&gv.nz);
+  // check hashtable
   auto vp = vertcache.get(gv);
   if (vp) return *vp;
   const uint32_t res = (uint32_t)vertices.length();

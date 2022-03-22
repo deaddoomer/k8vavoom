@@ -1105,7 +1105,7 @@ private:
   int gridmax[3];
 
 private:
-  uint32_t appendVertex (const VVoxVertexEx &gv);
+  uint32_t appendVertex (VVoxVertexEx &gv);
 
   static inline float calcTX (uint cp, int pos, uint sz) {
     float fp = (float)(int)cp;
