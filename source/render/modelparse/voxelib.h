@@ -896,8 +896,6 @@ struct __attribute__((packed)) VoxQuad {
   int type/* = Invalid*/;
   VoxWH16 wh; // width and height
   uint8_t cull; // for which face this quad was created?
-
-  void calcNormal ();
 };
 
 /*
@@ -977,6 +975,7 @@ private:
   }
 
   void setColors (VoxQuad &vq, const uint32_t *clrs, uint32_t wdt, uint32_t hgt);
+  void quadCalcNormal (VoxQuad &vq);
 
   void addSlabFace (uint8_t cull, uint8_t dmv,
                     float x, float y, float z,
@@ -1011,6 +1010,7 @@ public:
 
 public:
   static const uint8_t quadFaces[6][4];
+  static const float quadNormals[6][4];
 };
 
 

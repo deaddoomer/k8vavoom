@@ -1175,51 +1175,6 @@ uint32_t VoxelDataSmall::queryVox (int x, int y, int z) {
 // VoxelMesh
 // ////////////////////////////////////////////////////////////////////////// //
 
-class VoxVc3 {
-public:
-  float x, y, z;
-
-public:
-  inline VoxVc3 () {}
-  inline VoxVc3 (float ax, float ay, float az) : x(ax), y(ay), z(az) {}
-  inline VoxVc3 (const VoxVc3 &src) : x(src.x), y(src.y), z(src.z) {}
-
-  inline VoxVc3 &operator = (const VoxVc3 &src) noexcept = default;
-  inline VoxVc3 operator - (const VoxVc3 &v2) const { return VoxVc3(x-v2.x, y-v2.y, z-v2.z); }
-
-  inline float lengthSquared () const { return (x*x)+(y*y)+(z*z); }
-  inline VoxVc3 cross (const VoxVc3 &v2) const { return VoxVc3((y*v2.z)-(z*v2.y), (z*v2.x)-(x*v2.z), (x*v2.y)-(y*v2.x)); }
-};
-
-
-//==========================================================================
-//
-//  VoxQuad::calcNormal
-//
-//==========================================================================
-void VoxQuad::calcNormal () {
-  const VoxVc3 v1 = VoxVc3(vx[0].x, vx[0].y, vx[0].z);
-  const VoxVc3 v2 = VoxVc3(vx[1].x, vx[1].y, vx[1].z);
-  const VoxVc3 v3 = VoxVc3(vx[2].x, vx[2].y, vx[2].z);
-  const VoxVc3 d1 = v2-v3;
-  const VoxVc3 d2 = v1-v3;
-  VoxVc3 PlaneNormal = d1.cross(d2);
-  const float flensq = PlaneNormal.lengthSquared();
-  if (flensq == 0.0f) {
-    PlaneNormal = VoxVc3(0.0f, 0.0f, 1.0f);
-  } else {
-    const float vlen = sqrtf(flensq);
-    PlaneNormal.x /= vlen;
-    PlaneNormal.y /= vlen;
-    PlaneNormal.z /= vlen;
-  }
-  normal.x = normal.dx = PlaneNormal.x;
-  normal.y = normal.dy = PlaneNormal.y;
-  normal.z = normal.dz = PlaneNormal.z;
-}
-
-
-// ////////////////////////////////////////////////////////////////////////// //
 const uint8_t VoxelMesh::quadFaces[6][4] = {
   // right (&0x01) (right)
   {
@@ -1266,6 +1221,22 @@ const uint8_t VoxelMesh::quadFaces[6][4] = {
 };
 
 
+const float VoxelMesh::quadNormals[6][4] = {
+  // right (&0x01) (right)
+  { 1.0f, 0.0f, 0.0f},
+  // left (&0x02) (left)
+  {-1.0f, 0.0f, 0.0f},
+  // top (&0x04) (near)
+  { 0.0f,-1.0f, 0.0f},
+  // bottom (&0x08) (far)
+  { 0.0f, 1.0f, 0.0f},
+  // back (&0x10)  (top)
+  { 0.0f, 0.0f, 1.0f},
+  // front (&0x20)  (bottom)
+  { 0.0f, 0.0f,-1.0f},
+};
+
+
 //==========================================================================
 //
 //  VoxelMesh::clear
@@ -1294,6 +1265,18 @@ void VoxelMesh::setColors (VoxQuad &vq, const uint32_t *clrs, uint32_t wdt, uint
   }
   vq.cidx = catlas.addNewRect(clrs, wdt, hgt);
   vq.wh = VoxWH16(wdt, hgt);
+}
+
+
+//==========================================================================
+//
+//  VoxelMesh::quadCalcNormal
+//
+//==========================================================================
+void VoxelMesh::quadCalcNormal (VoxQuad &vq) {
+  vq.normal.x = vq.normal.dx = quadNormals[vq.cull][0];
+  vq.normal.y = vq.normal.dy = quadNormals[vq.cull][1];
+  vq.normal.z = vq.normal.dz = quadNormals[vq.cull][2];
 }
 
 
@@ -1348,6 +1331,7 @@ void VoxelMesh::addSlabFace (uint8_t cull, uint8_t dmv,
   setColors(vq, colors, (uint32_t)(allsame ? 1 : len), 1);
   vq.type = qtype;
   vq.cull = cull;
+  quadCalcNormal(vq);
   quads.append(vq);
 }
 
@@ -1440,9 +1424,10 @@ void VoxelMesh::addQuad (uint8_t cull,
   } else {
     setColors(vq, colors, wdt, hgt);
   }
+
   vq.type = qtype;
   vq.cull = cull;
-
+  quadCalcNormal(vq);
   quads.append(vq);
 }
 
@@ -2382,14 +2367,12 @@ void GLVoxelMesh::create (VoxelMesh &vox, bool tjfix, uint32_t BreakIndex) {
   }
   #endif
 
-  // calculate quad normals
-  const int quadcount = vox.quads.length();
-  for (int f = 0; f < quadcount; ++f) vox.quads/*.ptr()*/[f].calcNormal();
   if (voxlib_verbose) {
     vox_logf(VoxLibMsg_Normal, "color texture size: %dx%d", imgWidth, imgHeight);
   }
 
   // create arrays
+  const int quadcount = vox.quads.length();
   for (int f = 0; f < quadcount; ++f) {
     VoxQuad &vq = vox.quads[f];
     uint32_t vxn[4];
