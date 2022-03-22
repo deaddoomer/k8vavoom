@@ -349,7 +349,7 @@ private:
   void grow () {
     uint32_t newbksz = (bucketCount ? (bucketCount<<1) : 0x2000U);
     BucketEntry *nbk = (BucketEntry *)VOXLIB_MALLOC(newbksz*sizeof(BucketEntry));
-    memset(nbk, 0, newbksz*sizeof(BucketEntry));
+    memset((void *)nbk, 0, newbksz*sizeof(BucketEntry));
     for (uint32_t bidx = 0; bidx < bucketCount; ++bidx) {
       if (buckets[bidx].hash == 0) continue;
       uint32_t newbi = buckets[bidx].hash&(newbksz-1U);

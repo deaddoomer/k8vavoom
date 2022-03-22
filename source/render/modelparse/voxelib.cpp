@@ -1986,7 +1986,7 @@ void GLVoxelMesh::createEdges () {
     for (uint32_t vx0 = 0; vx0 < 4; ++vx0) {
       const uint32_t vx1 = (vx0+1)&3;
       VoxEdge &e = edges[eidx++];
-      memset(&e, 0, sizeof(VoxEdge));
+      memset((void *)&e, 0, sizeof(VoxEdge));
       e.morefirst = -1;
       e.v0 = indices[f+vx0];
       e.v1 = indices[f+vx1];
