@@ -192,6 +192,25 @@ void VMeshModel::LoadFromWad () {
 
 //==========================================================================
 //
+//  calcTriNormal
+//
+//==========================================================================
+static inline void calcTriNormal (TPlane &plane, TVec v1, TVec v2, TVec v3) {
+  const TVec d1 = v2-v3;
+  const TVec d2 = v1-v3;
+  TVec PlaneNormal = d1.cross(d2);
+  if (PlaneNormal.lengthSquared() == 0.0f) {
+    PlaneNormal = TVec(0.0f, 0.0f, 1.0f);
+  } else {
+    PlaneNormal = PlaneNormal.normalise();
+  }
+  const float PlaneDist = PlaneNormal.dot(v3);
+  plane.Set(PlaneNormal, PlaneDist);
+}
+
+
+//==========================================================================
+//
 //  VMeshModel::EnsureEdgesPlanes
 //
 //==========================================================================
@@ -200,24 +219,28 @@ void VMeshModel::EnsureEdgesPlanes () {
   if (Frames.length() == 0 || Tris.length() == 0) return;
 
   // build planes
-  AllPlanes.setLength(Tris.length());
-  for (int tidx = 0; tidx < Tris.length(); ++tidx) {
-    // plane (for each triangle)
-    const VMeshTri &tri = Tris[tidx];
-    const TVec v1 = AllVerts[tri.VertIndex[0]];
-    const TVec v2 = AllVerts[tri.VertIndex[1]];
-    const TVec v3 = AllVerts[tri.VertIndex[2]];
-    const TVec d1 = v2-v3;
-    const TVec d2 = v1-v3;
-    TVec PlaneNormal = d1.cross(d2);
-    if (PlaneNormal.lengthSquared() == 0.0f) {
-      PlaneNormal = TVec(0.0f, 0.0f, 1.0f);
-    } else {
-      PlaneNormal = PlaneNormal.normalise();
+  AllPlanes.setLength(Tris.length()*Frames.length());
+  int pidx = 0;
+  for (int fidx = 0; fidx < Frames.length(); ++fidx) {
+    VMeshFrame &frm = Frames[fidx];
+    const int tcount = frm.TriCount;
+    assert(tcount <= Tris.length());
+    for (int tidx = 0; tidx < tcount; ++tidx) {
+      const VMeshTri &tri = Tris[tidx];
+      calcTriNormal(AllPlanes[pidx++],
+                    frm.Verts[tri.VertIndex[0]],
+                    frm.Verts[tri.VertIndex[1]],
+                    frm.Verts[tri.VertIndex[2]]);
     }
-    const float PlaneDist = PlaneNormal.dot(v3);
-    AllPlanes[tidx].Set(PlaneNormal, PlaneDist);
+    for (int tidx = tcount; tidx < Tris.length(); ++tidx) {
+      const VMeshTri &tri = Tris[tidx];
+      calcTriNormal(AllPlanes[pidx++],
+                    AllVerts[tri.VertIndex[0]],
+                    AllVerts[tri.VertIndex[1]],
+                    AllVerts[tri.VertIndex[2]]);
+    }
   }
+  vassert(pidx == AllPlanes.length());
 
   // build edges
   TArray<VTempEdge> bldEdges;
@@ -233,10 +256,10 @@ void VMeshModel::EnsureEdgesPlanes () {
   CopyEdgesTo(Edges, bldEdges);
 
   // assign planes to frames
-  int pidx = 0;
+  pidx = 0;
   for (int fidx = 0; fidx < Frames.length(); ++fidx) {
     VMeshFrame &frm = Frames[fidx];
     frm.Planes = &AllPlanes[pidx];
-    pidx += frm.TriCount;
+    pidx += Tris.length();
   }
 }

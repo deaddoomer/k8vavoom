@@ -243,20 +243,8 @@ void VMeshModel::Load_MD3 (const vuint8 *Data, int DataSize) {
     AllNormals.append(TVec(0.0f, 0.0f, 1.0f));
   }
 
-  // frames
-  bool hadError = false;
-  bool showError = true;
-
-  // if we have only one frame, and that frame has invalid triangles, just rebuild it
-  TArray<vuint8> validTri;
-  if (pmodel->get_frameNum() == 1) {
-    validTri.setLength((int)pmesh->get_triNum());
-    if (pmesh->get_triNum()) memset(validTri.ptr(), 0, pmesh->get_triNum());
-  }
-
   this->Frames.setLength(pmodel->get_frameNum());
 
-  int triIgnored = 0;
   for (unsigned i = 0; i < pmodel->get_frameNum(); ++i, ++pframe) {
     VMeshFrame &Frame = this->Frames[i];
     Frame.Name = getStrZ(pframe->name, 16);
@@ -268,78 +256,15 @@ void VMeshModel::Load_MD3 (const vuint8 *Data, int DataSize) {
     Frame.VertsOffset = 0;
     Frame.NormalsOffset = 0;
     Frame.TriCount = pmesh->get_triNum();
-
-    // process triangles
-    for (unsigned j = 0; j < pmesh->get_triNum(); ++j) {
-      TVec PlaneNormal;
-      TVec v3(0, 0, 0);
-      bool reported = false, hacked = false;
-      for (int vnn = 0; vnn < 3; ++vnn) {
-        TVec v1 = Frame.Verts[this->Tris[j].VertIndex[(vnn+0)%3]];
-        TVec v2 = Frame.Verts[this->Tris[j].VertIndex[(vnn+1)%3]];
-             v3 = Frame.Verts[this->Tris[j].VertIndex[(vnn+2)%3]];
-
-        TVec d1 = v2-v3;
-        TVec d2 = v1-v3;
-        PlaneNormal = d1.cross(d2);
-        if (PlaneNormal.lengthSquared() == 0.0f) {
-          //k8:hack!
-          if (mdl_report_errors && !reported) {
-            GCon->Logf("Alias model '%s' has degenerate triangle %d; v1=(%f,%f,%f), v2=(%f,%f,%f); v3=(%f,%f,%f); d1=(%f,%f,%f); d2=(%f,%f,%f); cross=(%f,%f,%f)",
-              *this->Name, j, v1.x, v1.y, v1.z, v2.x, v2.y, v2.z, v3.x, v3.y, v3.z, d1.x, d1.y, d1.z, d2.x, d2.y, d2.z, PlaneNormal.x, PlaneNormal.y, PlaneNormal.z);
-          }
-          PlaneNormal = TVec(0.0f, 0.0f, 1.0f);
-          reported = true;
-        } else {
-          hacked = (vnn != 0);
-          break;
-        }
-      }
-      if (mdl_report_errors && reported) {
-        if (hacked) GCon->Log("  hacked around"); else { GCon->Log("  CANNOT FIX"); PlaneNormal = TVec(0, 0, 1); }
-      }
-      hadError = hadError || reported;
-      if (reported) {
-        ++triIgnored;
-        if (mdl_report_errors) GCon->Logf("  triangle #%u is ignored", j);
-        if (validTri.length()) validTri[j] = 0;
-      } else {
-        if (validTri.length()) validTri[j] = 1;
-      }
-    }
-  }
-
-  if (pmodel->get_frameNum() == 1 && validTri.length()) {
-    // rebuild triangle indices, why not
-    #if 0
-    if (hadError) {
-      VMeshFrame &Frame = this->Frames[0];
-      TArray<VMeshTri> NewTris; // vetex indices
-      Frame.TriCount = 0;
-      for (unsigned j = 0; j < pmesh->get_triNum(); ++j) {
-        if (validTri[j]) {
-          NewTris.append(this->Tris[j]);
-          ++Frame.TriCount;
-        }
-      }
-      if (Frame.TriCount == 0) Sys_Error("model %s has no valid triangles", *this->Name);
-      // replace index array
-      this->Tris.setLength(NewTris.length());
-      memcpy(this->Tris.ptr(), NewTris.ptr(), NewTris.length()*sizeof(VMeshTri));
-      pmesh->get_triNum() = Frame.TriCount;
-      if (showError) {
-        GCon->Logf(NAME_Warning, "Alias model '%s' has %d degenerate triangles out of %u! model rebuilt.", *this->Name, triIgnored, pmesh->get_triNum());
-      }
-    }
-    #endif
-  } else {
-    if (hadError && showError) {
-      GCon->Logf(NAME_Warning, "Alias model '%s' has %d degenerate triangles out of %u!", *this->Name, triIgnored, pmesh->get_triNum());
+    if (Frame.TriCount > (unsigned)Tris.length()) {
+      GCon->Logf(NAME_Error, "model '%s' frame #%u has too many triangles (%d insted of %d); clamped!",
+                 *this->Name, i, Frame.TriCount, Tris.length());
+      Frame.TriCount = (unsigned)Tris.length();
     }
   }
 
   // if there were some errors, disable shadows for this model, it is probably broken anyway
-  this->HadErrors = hadError;
+  this->HadErrors = false; //hadError;
 
   this->loaded = true;
 }
