@@ -699,11 +699,27 @@ override bool MoveThing (TVec Pos, bool Fog) {
 final bool TestLocation () {
   if (!bColideWithThings && !bColideWithWorld) return true;
   if (CheckPosition(Origin)) {
+    #if 0
+    printdebug("%C: OK00; Sector=%s; org.z=%s; floorz=%s; height=%s (%s); ceilz=%s",
+               self, Sector-&XLevel.Sectors[0],
+               Origin.z, FloorZ, Height, Origin.z+Height, CeilingZ);
+    #endif
     // XY is ok, now check Z
+    #if 0
     if (Origin.z < FloorZ || Origin.z+Height > CeilingZ) {
       // bad Z
       return false;
     }
+    #else
+    //FIXME: use sector floor z instead of modified ones, otherwise some spawns may fail?
+    //FIXME: for now, check step height
+    if (Origin.z < FloorZ) {
+      if (Origin.z < FloorZ-fmax(0.0f, MaxStepHeight-1.0f)) return false;
+      if (Height > CeilingZ-FloorZ) return false;
+    } else {
+      if (Origin.z+Height > CeilingZ) return false;
+    }
+    #endif
     return true;
   }
   return false;

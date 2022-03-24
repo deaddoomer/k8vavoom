@@ -527,6 +527,11 @@ override int ExecuteActionSpecial (int Special, int Arg1, int Arg2, int Arg3,
                                    int Arg4, int Arg5, line_t *Line, int Side, Entity E)
 {
   EntityEx A = EntityEx(E);
+  #if 0
+  printdebug("%C: ExecuteActionSpecial: %s; Arg1=%s; Arg2=%s; Arg3=%s; Arg4=%s; Arg5=%s; line=%s, Side=%s",
+             E, LineSpecial2Str(Special), Arg1, Arg2, Arg3, Arg4, Arg5,
+             (Line ? Line-&XLevel.Lines[0] : -666), Side);
+  #endif
   int buttonSuccess = false;
   switch (Special) {
     case LNSPEC_PolyStartLine:
@@ -3838,13 +3843,17 @@ override bool EV_ThingProjectile (int Arg1, int Arg2, int Arg3, int Arg4,
 
   class!EntityEx moType = class!EntityEx(FindClassFromScriptId(Arg2, LineSpecialGameInfo(Game).GameFilterFlag));
   moType = class!EntityEx(moType.Replacement); //k8: dunno if we need this
-  if (!moType) return false;
+  if (!moType) {
+    printwarn("ThingSpawn: unknown thing type: %s", Arg2);
+    return false;
+  }
 
   if (Level.Game.nomonsters && moType.default.bMonster) return false;
 
   float angle = float(Arg3)*360.0/256.0;
   foreach (EntityEx A; eachTID(tid, Activator)) {
     EntityEx newAct = Spawn(moType, A.Origin);
+    //printdebug("%C: ThingSpawn: tid=%s; obj=%C; A=%C, origin:%s", moType, tid, newAct, A, A.Origin);
     if (!newAct || newAct.IsDestroyed) {
       if (!tid) break;
       continue;
@@ -3854,6 +3863,7 @@ override bool EV_ThingProjectile (int Arg1, int Arg2, int Arg3, int Arg4,
       newAct.SetOrigin2(newAct.Origin, properFloorCheck:false);
     }
     if (!newAct.TestLocation()) {
+      //printdebug("%C: ThingSpawn:   DIDN'T FIT! at %s", newAct, newAct.Origin);
       // didn't fit
       // if it counts as kill, adjust total kills count
       if (newAct.CountsAsKill()) --TotalKills;
@@ -3873,6 +3883,7 @@ override bool EV_ThingProjectile (int Arg1, int Arg2, int Arg3, int Arg4,
     }
     if (!tid) break;
   }
+
   return success;
 }
 
