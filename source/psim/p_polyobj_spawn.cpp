@@ -345,56 +345,12 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     LevelFlags |= LF_Has3DPolyObjects;
   } else {
     //if (xseg) refsec = xseg->linedef->frontsector;
-    #if 1
     //po->refsector = PointInSubsector(TVec(x, y, 0.0f))->sector; // so we'll be able to fix polyobject height
     po->refsector = PointInSubsector_PObj(TVec(x, y, 0.0f))->sector; // so we'll be able to fix polyobject height
     if (dbg_pobj_verbose_spawn.asBool()) {
       GCon->Logf(NAME_Debug, "POBJ #%d: point-in-sector: %d", po->tag,
                  IsPointInSector2D(po->refsector, TVec(x, y, 0.0f)));
     }
-    #else
-    int nodenum = NumNodes-1;
-    do {
-      const node_t *node = Nodes+nodenum;
-      const float dist = node->PointDistance(TVec(x, y, 0.0f));
-      if (dbg_pobj_verbose_spawn.asBool()) {
-        if (dist == 0.0f) {
-          int newnum = -1;
-          const float fdx = -node->normal.y;
-          const float fdy = +node->normal.x;
-          GCon->Logf(NAME_Debug, "POBJ #%d:   fdx=%g; fdy=%g", po->tag, fdx, fdy);
-          /*
-               if (fdx == 0) newnum = node->children[(unsigned)(fdy > 0)];
-          else if (fdy == 0) newnum = node->children[(unsigned)(fdx < 0)];
-          else*/ {
-            //nodenum = node->children[1/*(unsigned)(dist <= 0.0f)*/]; // is this right?
-            vint32 dx = (vint32)(x*65536.0)-node->sx;
-            vint32 dy = (vint32)(y*65536.0)-node->sy;
-            GCon->Logf(NAME_Debug, "POBJ #%d:   dx=%d; dy=%d (node: dx=%d; dy=%d)", po->tag, dx, dy, node->dx, node->dy);
-            // try to quickly decide by looking at sign bits
-            if ((node->dy^node->dx^dx^dy)&0x80000000) {
-              if ((node->dy^dx)&0x80000000) {
-                // (left is negative)
-                newnum = node->children[1];
-              } else {
-                newnum = node->children[0];
-              }
-            } else {
-              const float left = (float)node->dy*(float)dx;
-              const float right = (float)dy*(float)node->dx;
-              newnum = node->children[(unsigned)(right >= left)];
-            }
-          }
-          GCon->Logf(NAME_Debug, "POBJ #%d: node #%d, dist=%g; newn=%d (real: %d); left=%d, right=%d",
-                     po->tag, nodenum, dist,
-                     newnum, node->children[dist <= 0.0f],
-                     node->children[0], node->children[1]);
-        }
-      }
-      nodenum = node->children[dist <= 0.0f];
-    } while (BSPIDX_IS_NON_LEAF(nodenum));
-    po->refsector = Subsectors[BSPIDX_LEAF_SUBSECTOR(nodenum)].sector;
-    #endif
     refsec = po->refsector;
     po->refsectorOldFloorHeight = refsec->floor.GetRealDist();
   }
