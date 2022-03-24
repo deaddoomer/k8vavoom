@@ -107,6 +107,8 @@ static VCvarB acs_show_typed_scripts("acs_show_typed_scripts", false, "DEBUG", C
 static VCvarB acs_abort_on_unknown_acsf("acs_abort_on_unknown_acsf", true, "Abort on unknown ACSF function? (WARNING: setting this 'off' may break some maps)", CVAR_Archive|CVAR_NoShadow);
 static VCvarB acs_emulate_zandronum_acsf("acs_emulate_zandronum_acsf", false, "Emulate some Zandronum ACSF functions? (WARNING: setting this 'off' may break some maps)", CVAR_Archive|CVAR_NoShadow);
 
+static VCvarB acs_debug_start_acs("acs_debug_start_acs", false, "Show some info for `StartACS` special?", CVAR_PreInit|CVAR_NoShadow);
+
 static VCvarB dbg_acs_allow_unimplemented_opcodes("dbg_acs_allow_unimplemented_opcodes", false, "Override 'acs_halt_on_unimplemented_opcode', non-persistent", CVAR_PreInit|CVAR_NoShadow);
 
 extern VCvarF mouse_x_sensitivity;
@@ -626,6 +628,14 @@ private:
     GAME_NET_COOPERATIVE,
     GAME_NET_DEATHMATCH,
     GAME_TITLE_MAP
+  };
+
+  enum EGameSkill {
+    SKILL_VERY_EASY,
+    SKILL_EASY,
+    SKILL_NORMAL,
+    SKILL_HARD,
+    SKILL_VERY_HARD,
   };
 
   enum ETexturePosition {
@@ -3765,12 +3775,14 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       else if (GGameInfo->NetMode == NM_Standalone) *sp = GAME_SINGLE_PLAYER;
       else if (svs.deathmatch) *sp = GAME_NET_DEATHMATCH;
       else *sp = GAME_NET_COOPERATIVE;
+      //GCon->Logf(NAME_Debug, "ACS: PCD_GameType: %d", *sp);
       ++sp;
       ACSVM_BREAK;
 
     ACSVM_CASE(PCD_GameSkill)
       ACSVM_CHECK_STACK_OVER(1);
       *sp = Level->World->SkillAcsReturn;
+      //GCon->Logf(NAME_Debug, "ACS: PCD_GameSkill: %d", *sp);
       ++sp;
       ACSVM_BREAK;
 
@@ -6703,9 +6715,16 @@ IMPLEMENT_FUNCTION(VLevel, StartACS) {
   vobjGetParamSelf(num, map, arg1, arg2, arg3, activator, line, side, Always, WantResult);
   if (!Self) { VObject::VMDumpCallStack(); Sys_Error("null self in VLevel::StartACS"); }
   int res = 0;
-  //fprintf(stderr, "000: activator=<%s>; line=%p; side=%d\n", (activator ? activator->GetClass()->GetName() : "???"), line, side);
-  //GCon->Logf("StartACS: num=%d; map=%d; arg1=%d; arg2=%d; arg3=%d", num, map, arg1, arg2, arg3);
+  if (acs_debug_start_acs.asBool()) {
+    GCon->Logf(NAME_Debug, "StartACS: activator=<%s>; line=%d; side=%d",
+               (activator ? activator->GetClass()->GetName() : "NONE"),
+               (line ? (int)(ptrdiff_t)(line-&Self->Lines[0]) : -666), side);
+    GCon->Logf(NAME_Debug, "StartACS: num=%d; map=%d; arg1=%d; arg2=%d; arg3=%d", num, map, arg1, arg2, arg3);
+  }
   bool br = Self->Acs->Start(num, map, arg1, arg2, arg3, 0, activator, line, side, Always, WantResult, false, &res);
+  if (acs_debug_start_acs.asBool()) {
+    GCon->Logf(NAME_Debug, "StartACS: result=%d", (int)br);
+  }
   if (WantResult) RET_INT(res); else RET_INT(br ? 1 : 0);
 }
 
