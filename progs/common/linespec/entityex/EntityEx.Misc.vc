@@ -4954,8 +4954,13 @@ override state CanRaise () {
 //
 //  DoThingRaise
 //
+//  `Mage` is set to the Entity that tries to resurrect this one
+//  (can be `None` for level events)
+//
+//  `skipCheckPosition` is *specified* for decorate code
+//
 //===========================================================================
-final bool DoThingRaise (optional bool skipCheckPosition) {
+bool DoThingRaise (optional bool skipCheckPosition, optional EntityEx Mage) {
   state RaiseState = CanRaise();
   if (!RaiseState) return false; // monster doesn't have a raise state
 

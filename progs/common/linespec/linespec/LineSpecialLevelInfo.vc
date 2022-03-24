@@ -4468,7 +4468,7 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
 /*final*/ bool EV_ThingRaise (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5, EntityEx A) {
   bool Ret = false;
   foreach (EntityEx Ent; eachTID(Arg1, A)) {
-    if (Ent.DoThingRaise()) Ret = true;
+    if (Ent.DoThingRaise(Mage:none)) Ret = true;
   }
   return Ret;
 }

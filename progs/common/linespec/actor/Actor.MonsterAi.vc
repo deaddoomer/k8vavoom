@@ -659,7 +659,7 @@ final bool CheckForResurrect (bool UseVileStates) {
 
       if (!CanSee(Other, disableBetterSight:true)) continue; // can't see, possibly in other region
 
-      if (!EntityEx(Other).DoThingRaise()) continue;
+      if (!EntityEx(Other).DoThingRaise(Mage:self)) continue;
 
       // this is now a archvile minion, so hate what he hates
       EntityEx(Other).CopyFriendliness(self, false);
@@ -1192,7 +1192,7 @@ final void doKillXXX (EntityEx dest, name adamagetype, int flags, optional name 
 //==========================================================================
 [decorate] final void A_RaiseMaster (optional int flags) {
   if (!Master) return;
-  if (Master.DoThingRaise(!!(flags&RF_NOCHECKPOSITION))) {
+  if (Master.DoThingRaise(skipCheckPosition:!!(flags&RF_NOCHECKPOSITION), Mage:self)) {
     if (flags&RF_TRANSFERFRIENDLINESS) Master.CopyFriendliness(self, false);
   }
 }
@@ -1207,7 +1207,7 @@ final void doKillXXX (EntityEx dest, name adamagetype, int flags, optional name 
   Actor A;
   foreach AllThinkers(Actor, A) {
     if (A.Master != self) continue;
-    if (A.DoThingRaise(!!(flags&RF_NOCHECKPOSITION))) {
+    if (A.DoThingRaise(skipCheckPosition:!!(flags&RF_NOCHECKPOSITION), Mage:self)) {
       if (flags&RF_TRANSFERFRIENDLINESS) A.CopyFriendliness(self, false);
     }
   }
@@ -1225,7 +1225,7 @@ final void doKillXXX (EntityEx dest, name adamagetype, int flags, optional name 
   Actor A;
   foreach AllThinkers(Actor, A) {
     if (A.Master == mainMaster && A != self) {
-      if (A.DoThingRaise(!!(flags&RF_NOCHECKPOSITION))) {
+      if (A.DoThingRaise(skipCheckPosition:!!(flags&RF_NOCHECKPOSITION), Mage:self)) {
         if (flags&RF_TRANSFERFRIENDLINESS) A.CopyFriendliness(self, false);
       }
     }
