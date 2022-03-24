@@ -299,12 +299,12 @@ subsector_t *VLevel::PointInSubsector_Buggy (const TVec &point) const noexcept {
       // dx: -node.normal.y
       const float fdx = -node->normal.y;
       const float fdy = +node->normal.x;
-           if (fdx == 0) nodenum = node->children[(unsigned)(fdy > 0)];
-      else if (fdy == 0) nodenum = node->children[(unsigned)(fdx < 0)];
+           if (fdx == 0.0f) nodenum = node->children[(unsigned)(fdy > 0.0f)];
+      else if (fdy == 0.0f) nodenum = node->children[(unsigned)(fdx < 0.0f)];
       else {
         //nodenum = node->children[1/*(unsigned)(dist <= 0.0f)*/]; // is this right?
-        vint32 dx = (vint32)(point.x*65536.0)-node->sx;
-        vint32 dy = (vint32)(point.y*65536.0)-node->sy;
+        vint32 dx = (vint32)(point.x*65536.0f)-node->sx;
+        vint32 dy = (vint32)(point.y*65536.0f)-node->sy;
         // try to quickly decide by looking at sign bits
         if ((node->dy^node->dx^dx^dy)&0x80000000) {
           if ((node->dy^dx)&0x80000000) {
@@ -343,6 +343,60 @@ subsector_t *VLevel::PointInSubsector (const TVec &point) const noexcept {
     nodenum = node->children[node->PointOnSide(point)];
   } while (BSPIDX_IS_NON_LEAF(nodenum));
   return &Subsectors[BSPIDX_LEAF_SUBSECTOR(nodenum)];
+}
+
+
+//==========================================================================
+//
+//  VLevel::PointInSubsector_PObj_Worker
+//
+//  much slower, but tries to resolve "point on a linedef" conflicts slightly better
+//
+//==========================================================================
+subsector_t *VLevel::PointInSubsector_PObj_Worker (const TVec &point, int nodenum) const noexcept {
+  subsector_t *sres;
+  while (BSPIDX_IS_NON_LEAF(nodenum)) {
+    const node_t *node = Nodes+nodenum;
+    const float dist = node->PointDistance(point);
+    unsigned side = (unsigned)(dist <= 0.0f);
+    if (dist == 0.0f) {
+      // try both sides
+      //GCon->Logf(NAME_Debug, "node %d: trying side %u", nodenum, side);
+      sres = PointInSubsector_PObj_Worker(point, node->children[side]);
+      if (sres) return sres;
+      side ^= 1;
+      //GCon->Logf(NAME_Debug, "node %d: trying opposite side %u", nodenum, side);
+    }
+    nodenum = node->children[side];
+  }
+  sres = &Subsectors[BSPIDX_LEAF_SUBSECTOR(nodenum)];
+  if (IsPointInSector2D(sres->sector, point)) return sres;
+  return nullptr;
+}
+
+
+//==========================================================================
+//
+//  VLevel::PointInSubsector
+//
+//  much slower, but tries to resolve "point on a linedef" conflicts slightly better
+//
+//==========================================================================
+subsector_t *VLevel::PointInSubsector_PObj (const TVec &point) const noexcept {
+  // single subsector is a special case
+  if (!NumNodes || NumSubsectors < 2) return Subsectors;
+  const node_t *node = Nodes+(NumNodes-1);
+  const float dist = node->PointDistance(point);
+  unsigned side = (unsigned)(dist <= 0.0f);
+  //GCon->Logf(NAME_Debug, "root node: trying side %u (dist=%g)", side, dist);
+  subsector_t *sres = PointInSubsector_PObj_Worker(point, node->children[side]);
+  if (sres) return sres;
+  side ^= 1;
+  //GCon->Logf(NAME_Debug, "root node: trying opposite side %u (dist=%g)", side, dist);
+  sres = PointInSubsector_PObj_Worker(point, node->children[side]);
+  if (sres) return sres;
+  //GCon->Logf(NAME_Debug, "root node: default fallback");
+  return PointInSubsector_Buggy(point);
 }
 
 

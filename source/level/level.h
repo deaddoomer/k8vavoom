@@ -883,6 +883,9 @@ private:
   static VName goreBloodDecalSplatRadius;
   static VName goreBloodDecalSmearRadius;
 
+private:
+  subsector_t *PointInSubsector_PObj_Worker (const TVec &point, int nodenum) const noexcept;
+
 public:
   static void LevelStaticInit ();
 
@@ -898,6 +901,8 @@ public:
   subsector_t *PointInSubsector_Buggy (const TVec &point) const noexcept;
   // bugfixed algo
   subsector_t *PointInSubsector (const TVec &point) const noexcept;
+  // much slower, but tries to resolve "point on a linedef" conflicts slightly better
+  subsector_t *PointInSubsector_PObj (const TVec &point) const noexcept;
 
   bool IsPointInSubsector2D (const subsector_t *sub, TVec in) const noexcept;
   // checks all subsectors

@@ -1255,6 +1255,12 @@ void VRenderLevelShared::RenderPolyObj (subsector_t *sub) {
     sec_region_t *secregion = region->secregion;
     for (auto &&it : sub->PObjFirst()) {
       polyobj_t *pobj = it.pobj();
+      #if 0
+      GCon->Logf(NAME_Debug, "SUB:%d (sector %d): pobj %d",
+                 (int)(ptrdiff_t)(sub-&Level->Subsectors[0]),
+                 (int)(ptrdiff_t)(sub->sector-&Level->Sectors[0]),
+                 pobj->tag);
+      #endif
       if (pobj->rendercount != BspVisFrame) {
         pobj->rendercount = BspVisFrame; // mark as rendered
         TSecPlaneRef po_floor, po_ceiling;
