@@ -647,15 +647,20 @@ static bool performTransOperation (VXmlNode *SN, VMatrix4 &trans) {
     }
 
     int idx = -1;
+    bool gzrot = false;
     if (type == "value") {
+      if (op == OpRotate) {
+        Sys_Error("%s: `value` has no sence for rotation", *loc.toStringNoCol());
+      }
       if (wasNN[0] || wasNN[1] || wasNN[2]) {
         Sys_Error("%s: arg '%s' conflicts with previous args", *loc.toStringNoCol(), *type);
       }
       wasNN[0] = wasNN[1] = wasNN[2] = true;
     } else {
-           if (type == "x" || (op == OpRotate && type == "pitch")) idx = 0; // RotateX is pitch
-      else if (type == "y" || (op == OpRotate && type == "roll")) idx = 1; // RotateY is roll
-      else if (type == "z" || (op == OpRotate && type == "yaw")) idx = 2; // RotateZ is yaw
+           if ((op != OpRotate && type == "x") || (op == OpRotate && type == "pitch")) idx = 0; // RotateX is pitch
+      else if ((op != OpRotate && type == "y") || (op == OpRotate && type == "roll")) idx = 1; // RotateY is roll
+      else if ((op != OpRotate && type == "z") || (op == OpRotate && type == "yaw")) idx = 2; // RotateZ is yaw
+      else if (op == OpRotate && type == "gz_voxel_yaw") { idx = 2; gzrot = true; } // gz voxel rotation
       else Sys_Error("%s: unknown arg '%s'", *loc.toStringNoCol(), *type);
       if (wasNN[idx]) Sys_Error("%s: duplicate arg '%s'", *loc.toStringNoCol(), *type);
       wasNN[idx] = true;
@@ -665,6 +670,9 @@ static bool performTransOperation (VXmlNode *SN, VMatrix4 &trans) {
     if (!value.convertFloat(&flt) || !isfinite(flt)) {
       Sys_Error("%s: arg '%s' is not a valid float (%s)", *loc.toStringNoCol(), *type, *value);
     }
+    // gz voxel rotation angle?
+    if (gzrot) vec[idx] = 90-flt;
+    if (op == OpRotate) flt = AngleMod360(flt);
     if (idx < 0) vec.x = vec.y = vec.z = flt; else vec[idx] = flt;
   }
 
