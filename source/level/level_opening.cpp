@@ -273,7 +273,9 @@ void VLevel::BuildSectorOpenings (const line_t *xldef, TArray<opening_t> &dest, 
   GetBaseSectorOpening(op, sector, point, usePoint);
 
   // if this sector has no 3d floors, we don't need to do any extra work
-  if (!sector->Has3DFloors() /*|| !(sector->SectorFlags&sector_t::SF_Has3DMidTex)*/ && (!do3DMidtex || !xldef || !(xldef->flags&ML_3DMIDTEX))) {
+  if (!sector->Has3DFloors() /*|| !(sector->SectorFlags&sector_t::SF_Has3DMidTex)*/ &&
+      (!do3DMidtex || !xldef || !(xldef->flags&ML_3DMIDTEX)))
+  {
     return;
   }
 
@@ -299,6 +301,10 @@ void VLevel::BuildSectorOpenings (const line_t *xldef, TArray<opening_t> &dest, 
     if (usePoint) {
       bottom = reg->efloor.GetPointZClamped(point);
       top = reg->eceiling.GetPointZClamped(point);
+      /*
+      if (reg->efloor.isSlope()) GCon->Logf(NAME_Debug, "SLOPE-FLOOR: %g (min=%g; max=%g); noclamp=%g", bottom, reg->efloor.splane->minz, reg->efloor.splane->maxz, reg->efloor.GetPointZ(point));
+      if (reg->eceiling.isSlope()) GCon->Logf(NAME_Debug, "SLOPE-CEILING: %g (min=%g; max=%g); noclamp=%g", top, reg->eceiling.splane->minz, reg->eceiling.splane->maxz, reg->eceiling.GetPointZ(point));
+      */
     } else {
       bottom = reg->efloor.splane->minz;
       top = reg->eceiling.splane->maxz;
@@ -676,6 +682,13 @@ opening_t *VLevel::LineOpenings (const line_t *linedef, const TVec point, unsign
 
     return dop;
   }
+
+  #if 0
+  GCon->Logf(NAME_Debug, "LS-FRONT: 3df=%d; 3ds=%d", (int)linedef->frontsector->Has3DFloors(),
+             (int)linedef->frontsector->Has3DSlopes());
+  GCon->Logf(NAME_Debug, "LS-BACK: 3df=%d; 3ds=%d", (int)linedef->backsector->Has3DFloors(),
+             (int)linedef->backsector->Has3DSlopes());
+  #endif
 
   // has 3d floors at least on one side, do full-featured intersection calculation
   op0list_lop.resetNoDtor();

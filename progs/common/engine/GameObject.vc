@@ -986,7 +986,9 @@ struct sec_params_t {
 
 struct TSecPlaneRef {
   sec_plane_t *splane;
+  float minZ, maxZ;
   bool flipped;
+  bool useMinMax;
 };
 
 

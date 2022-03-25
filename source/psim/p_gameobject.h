@@ -784,15 +784,44 @@ struct TSecPlaneRef {
   // WARNING! do not change this values, they are used to index things in other code!
   enum Type { Unknown = -1, Floor = 0, Ceiling = 1 };
 
-  sec_plane_t *splane;
-  /*bool*/vint32 flipped; // actually, bit flags
+  enum {
+    Flags_None     = 0,
+    Flag_Flipped   = 1<<0,
+    Flag_UseMinMax = 1<<1,
+  };
 
-  inline TSecPlaneRef () noexcept : splane(nullptr), flipped(false) {}
-  inline TSecPlaneRef (const TSecPlaneRef &sp) noexcept : splane(sp.splane), flipped(sp.flipped) {}
-  explicit TSecPlaneRef (sec_plane_t *aplane, bool arev) noexcept : splane(aplane), flipped(arev) {}
+  sec_plane_t *splane;
+  float minZ, maxZ;
+  /*bool*/vint32 flags; // actually, bit flags
+
+  inline TSecPlaneRef () noexcept
+    : splane(nullptr)
+    , minZ(0.0f)
+    , maxZ(0.0f)
+    , flags(Flags_None)
+  {}
+
+  inline TSecPlaneRef (const TSecPlaneRef &sp) noexcept
+    : splane(sp.splane)
+    , minZ(sp.minZ)
+    , maxZ(sp.maxZ)
+    , flags(sp.flags)
+  {}
+
+  explicit TSecPlaneRef (sec_plane_t *aplane, bool arev) noexcept
+    : splane(aplane)
+    , minZ(0.0f)
+    , maxZ(0.0f)
+    , flags(arev ? Flag_Flipped : Flags_None)
+  {}
 
   inline void operator = (const TSecPlaneRef &sp) noexcept {
-    if (this != &sp) { splane = sp.splane; flipped = sp.flipped; }
+    if (this != &sp) {
+      splane = sp.splane;
+      minZ = sp.minZ;
+      maxZ = sp.maxZ;
+      flags = sp.flags;
+    }
   }
 
   inline bool isValid () const noexcept { return !!splane; }
@@ -803,36 +832,61 @@ struct TSecPlaneRef {
   inline bool isSlope () const noexcept { return (fabsf(GetNormalZSafe()) != 1.0f); }
 
   // see enum at the top
-  inline Type classify () const noexcept { const float z = GetNormalZSafe(); return (z < 0.0f ? Ceiling : z > 0.0f ? Floor : Unknown); }
+  inline Type classify () const noexcept {
+    const float z = GetNormalZSafe();
+    return (z < 0.0f ? Ceiling : z > 0.0f ? Floor : Unknown);
+  }
 
-  inline void set (sec_plane_t *aplane, bool arev) noexcept { splane = aplane; flipped = arev; }
+  inline bool isFlipped () const noexcept { return !!(flags&Flag_Flipped); }
+  inline bool isOwnMinMax () const noexcept { return !!(flags&Flag_UseMinMax); }
 
-  inline TVec GetNormal () const noexcept { return (!flipped ? splane->normal : -splane->normal); }
-  inline float GetNormalZ () const noexcept { return (!flipped ? splane->normal.z : -splane->normal.z); }
-  inline float GetNormalZSafe () const noexcept { return (splane ? (!flipped ? splane->normal.z : -splane->normal.z) : 0.0f); }
-  inline float GetDist () const noexcept { return (!flipped ? splane->dist : -splane->dist); }
-  inline TPlane GetPlane () const noexcept { TPlane res; res.normal = (!flipped ? splane->normal : -splane->normal); res.dist = (!flipped ? splane->dist : -splane->dist); return res; }
+  inline void set (sec_plane_t *aplane, bool arev) noexcept {
+    splane = aplane;
+    flags = (arev ? Flag_Flipped : Flags_None);
+  }
 
-  inline float PointDistance (const TVec &p) const noexcept { return (!flipped ? p.dot(splane->normal)-splane->dist : p.dotv2neg(splane->normal)+splane->dist); }
+  inline TVec GetNormal () const noexcept { return (flags&Flag_Flipped ? -splane->normal : splane->normal); }
+  inline float GetNormalZ () const noexcept { return (flags&Flag_Flipped ? -splane->normal.z : splane->normal.z); }
+  inline float GetNormalZSafe () const noexcept { return (splane ? (flags&Flag_Flipped ? -splane->normal.z : splane->normal.z) : 0.0f); }
+  inline float GetDist () const noexcept { return (flags&Flag_Flipped ? -splane->dist : splane->dist); }
+  inline TPlane GetPlane () const noexcept {
+    TPlane res;
+    res.normal = (flags&Flag_Flipped ? -splane->normal : splane->normal);
+    res.dist = (flags&Flag_Flipped ? -splane->dist : splane->dist);
+    return res;
+  }
+
+  inline float PointDistance (const TVec &p) const noexcept {
+    return (flags&Flag_Flipped ? p.dotv2neg(splane->normal)+splane->dist : p.dot(splane->normal)-splane->dist);
+  }
 
   // valid only for horizontal planes!
   //inline float GetRealDist () const noexcept { return (!flipped ? splane->dist*splane->normal.z : (-splane->dist)*(-splane->normal.z)); }
-  inline float GetRealDist () const noexcept { return ((!flipped ? splane->dist : -splane->dist)*splane->normal.z); }
+  inline float GetRealDist () const noexcept {
+    return ((flags&Flag_Flipped ? -splane->dist : splane->dist)*splane->normal.z);
+  }
 
-  inline void Flip () noexcept { flipped = !flipped; }
+  inline void Flip () noexcept { flags ^= Flag_Flipped; }
 
   // get z of point with given x and y coords
   // don't try to use it on a vertical plane
   inline VVA_CHECKRESULT float GetPointZ (float x, float y) const noexcept {
-    return (!flipped ? splane->GetPointZ(x, y) : splane->GetPointZRev(x, y));
+    return (flags&Flag_Flipped ? splane->GetPointZRev(x, y) : splane->GetPointZ(x, y));
   }
 
   inline VVA_CHECKRESULT float GetPointZClamped (float x, float y) const noexcept {
     //return clampval((!flipped ? splane->GetPointZ(x, y) : splane->GetPointZRev(x, y)), splane->minz, splane->maxz);
-    return (!flipped ? splane->GetPointZClamped(x, y) : splane->GetPointZRevClamped(x, y));
+    //return (!flipped ? splane->GetPointZClamped(x, y) : splane->GetPointZRevClamped(x, y));
+    if (flags&Flag_UseMinMax) {
+      return clampval((flags&Flag_Flipped ? splane->GetPointZRev(x, y) : splane->GetPointZ(x, y)), minZ, maxZ);
+    } else {
+      return (flags&Flag_Flipped ? splane->GetPointZRevClamped(x, y) : splane->GetPointZClamped(x, y));
+    }
   }
 
-  inline VVA_CHECKRESULT float DotPoint (const TVec &point) const noexcept { return (!flipped ? point.dot(splane->normal) : point.dotv2neg(splane->normal)); }
+  inline VVA_CHECKRESULT float DotPoint (const TVec &point) const noexcept {
+    return (flags&Flag_Flipped ? point.dotv2neg(splane->normal) : point.dot(splane->normal));
+  }
 
   inline VVA_CHECKRESULT float GetPointZ (const TVec &v) const noexcept { return GetPointZ(v.x, v.y); }
 
