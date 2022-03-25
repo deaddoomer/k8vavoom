@@ -178,10 +178,13 @@ void CalcMsgCoords () {
       // screen coords
       bCenterX = (MsgX < -1.0f);
       float nx;
+      //k8: looks like it should be this way
       if (bCenterX) {
-        nx = fclamp(MsgX+2, 0.0f, 1.0f);
+        //nx = fclamp(MsgX+2, 0.0f, 1.0f);
+        nx = fclamp(fabs(MsgX)-2, 0.0f, 1.0f);
       } else {
-        nx = fclamp(MsgX+1, 0.0f, 1.0f);
+        //nx = fclamp(MsgX+1, 0.0f, 1.0f);
+        nx = fclamp(fabs(MsgX), 0.0f, 1.0f);
       }
       DrawMsgX = int(nx*Width);
     } else {
