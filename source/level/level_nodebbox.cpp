@@ -223,6 +223,39 @@ void VLevel::GetSubsectorBBox (subsector_t *sub, float bbox[6]) {
 
 //==========================================================================
 //
+//  VLevel::CalcSecPlaneMinMax
+//
+//==========================================================================
+void VLevel::CalcSecPlaneMinMax (sector_t *sector, TSecPlaneRef &plane) {
+  if (!sector) {
+    plane.flags |= TSecPlaneRef::Flag_UseMinMax;
+    plane.flags ^= TSecPlaneRef::Flag_UseMinMax;
+    return;
+  }
+
+  float minz = +99999.0f;
+  float maxz = -99999.0f;
+
+  line_t **llist = sector->lines;
+  for (int cnt = sector->linecount; cnt--; ++llist) {
+    line_t *ld = *llist;
+    float z = plane.GetPointZ(*ld->v1);
+    minz = min2(minz, z);
+    maxz = max2(maxz, z);
+    z = plane.GetPointZ(*ld->v2);
+    minz = min2(minz, z);
+    maxz = max2(maxz, z);
+  }
+
+  plane.flags |= TSecPlaneRef::Flag_UseMinMax;
+  plane.minZ = minz;
+  plane.maxZ = maxz;
+}
+
+
+
+//==========================================================================
+//
 //  VLevel::CalcSecMinMaxs
 //
 //==========================================================================

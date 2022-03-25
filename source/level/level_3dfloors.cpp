@@ -197,42 +197,8 @@ void VLevel::AddExtraFloorShitty (line_t *line, sector_t *dst) {
   }
 
   //FIXME: this won't work for moving platforms with slopes. not that i care, tho.
-  if (reg->efloor.isSlope() || reg->eceiling.isSlope()) {
-    float minzf = +99999.0f;
-    float maxzf = -99999.0f;
-    float minzc = +99999.0f;
-    float maxzc = -99999.0f;
-    line_t **llist = dst->lines;
-    for (int cnt = dst->linecount; cnt--; ++llist) {
-      line_t *ld = *llist;
-      {
-        float z = reg->efloor.GetPointZ(*ld->v1);
-        minzf = min2(minzf, z);
-        maxzf = max2(maxzf, z);
-        z = reg->efloor.GetPointZ(*ld->v2);
-        minzf = min2(minzf, z);
-        maxzf = max2(maxzf, z);
-      }
-      {
-        float z = reg->eceiling.GetPointZ(*ld->v1);
-        minzc = min2(minzc, z);
-        maxzc = max2(maxzc, z);
-        z = reg->eceiling.GetPointZ(*ld->v2);
-        minzc = min2(minzc, z);
-        maxzc = max2(maxzc, z);
-      }
-    }
-    if (reg->efloor.isSlope()) {
-      reg->efloor.flags |= TSecPlaneRef::Flag_UseMinMax;
-      reg->efloor.minZ = minzf;
-      reg->efloor.maxZ = maxzf;
-    }
-    if (reg->eceiling.isSlope()) {
-      reg->eceiling.flags |= TSecPlaneRef::Flag_UseMinMax;
-      reg->eceiling.minZ = minzc;
-      reg->eceiling.maxZ = maxzc;
-    }
-  }
+  if (reg->efloor.isSlope()) CalcSecPlaneMinMax(dst, reg->efloor);
+  if (reg->eceiling.isSlope()) CalcSecPlaneMinMax(dst, reg->eceiling);
 
   if (!isSolid) {
     // non-solid regions has visible floor and ceiling only when camera is inside
