@@ -5140,7 +5140,9 @@ override void PlayerTick (float deltaTime) {
   // scrollers and such
   if (MO.Sector) {
     PlayerProcessScrollSectors(deltaTime);
-    if (MO.Sector->special || MO.Sector->Damage || SectorHas3DFloors(MO.Sector)) PlayerInSpecialSector(deltaTime);
+    if (MO.Sector->special || MO.Sector->Damage || SectorHas3DFloors(MO.Sector)) {
+      PlayerInSpecialSector(deltaTime);
+    }
   }
 
   // do not apply effects continuously on the same tick

@@ -139,6 +139,14 @@ void VLevel::AddExtraFloorShitty (line_t *line, sector_t *dst) {
   if (doDump) { GCon->Logf("3d floor for tag %d (dst #%d, src #%d) (floorz=%g; ceilz=%g)", line->arg1, (int)(ptrdiff_t)(dst-Sectors), (int)(ptrdiff_t)(src-Sectors), floorz, ceilz); }
   if (doDump) { GCon->Logf("::: BEFORE"); dumpSectorRegions(dst); }
 
+  #if 0
+  if (src->SectorFlags&sector_t::SF_ExtrafloorSource) {
+    GCon->Logf(NAME_Warning, "control sector #%d already used for 3d floor; additional 3d floor sector is #%d",
+               (int)(ptrdiff_t)(src-&Sectors[0]),
+               (int)(ptrdiff_t)(dst-&Sectors[0]));
+  }
+  #endif
+
   // append link
   if (!AppendControlLink(src, dst)) return; // oops, something is wrong, don't create this 3d floor
   src->SectorFlags |= sector_t::SF_ExtrafloorSource;

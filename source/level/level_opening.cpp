@@ -606,7 +606,9 @@ float VLevel::GetSectorFloorPointZ (sector_t *sector, const TVec &point) {
 //  sets opentop and openbottom to the window through a two sided line
 //
 //==========================================================================
-opening_t *VLevel::LineOpenings (const line_t *linedef, const TVec point, unsigned NoBlockFlags, bool do3dmidtex, bool usePoint) {
+opening_t *VLevel::LineOpenings (const line_t *linedef, const TVec point, unsigned NoBlockFlags,
+                                 bool do3dmidtex, bool usePoint)
+{
   if (linedef->sidenum[1] == -1 || !linedef->backsector) return nullptr; // single sided line
 
   NoBlockFlags &= (SPF_MAX_FLAG-1u);
