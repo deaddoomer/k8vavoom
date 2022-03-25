@@ -280,6 +280,7 @@ void Reset () {
   hbarPicBack = default.hbarPicBack;
   hbarPicFill = default.hbarPicFill;
   hbarPicBorder = default.hbarPicBorder;
+  SetSize(0, 0);
 }
 
 
