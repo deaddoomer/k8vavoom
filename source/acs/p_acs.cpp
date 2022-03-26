@@ -4030,8 +4030,9 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
         Activator->eventClearInventory();
       } else {
         for (int i = 0; i < MAXPLAYERS; ++i) {
-          if (Level->Game->Players[i] && Level->Game->Players[i]->PlayerFlags&VBasePlayer::PF_Spawned) {
-            Level->Game->Players[i]->MO->eventClearInventory();
+          VBasePlayer *Plr = Level->Game->Players[i];
+          if (Plr && (Plr->PlayerFlags&VBasePlayer::PF_Spawned) && Plr->MO) {
+            Plr->MO->eventClearInventory();
           }
         }
       }
@@ -5451,8 +5452,18 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
     ACSVM_CASE(PCD_GiveActorInventory)
       ACSVM_CHECK_STACK_UNDER(3);
       {
-        for (VEntity *mobj = Level->FindMobjFromTID(sp[-3], nullptr); mobj; mobj = Level->FindMobjFromTID(sp[-3], mobj)) {
-          mobj->eventGiveInventory(GetNameLowerCase(sp[-2]), sp[-1], false); // disable replacement
+        // damn it! TID 0 here means "all players"
+        if (sp[-3] == 0) {
+          for (int pn = 0; pn < MAXPLAYERS; ++pn) {
+            VBasePlayer *Plr = Level->Game->Players[pn];
+            if (Plr && (Plr->PlayerFlags&VBasePlayer::PF_Spawned) && Plr->MO) {
+              Plr->MO->eventGiveInventory(GetNameLowerCase(sp[-2]), sp[-1], false); // disable replacement
+            }
+          }
+        } else {
+          for (VEntity *mobj = Level->FindMobjFromTID(sp[-3], nullptr); mobj; mobj = Level->FindMobjFromTID(sp[-3], mobj)) {
+            mobj->eventGiveInventory(GetNameLowerCase(sp[-2]), sp[-1], false); // disable replacement
+          }
         }
       }
       sp -= 3;
@@ -5462,8 +5473,18 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
       ACSVM_CHECK_STACK_UNDER(3);
       {
         //int searcher = -1;
-        for (VEntity *mobj = Level->FindMobjFromTID(sp[-3], nullptr); mobj; mobj = Level->FindMobjFromTID(sp[-3], mobj)) {
-          mobj->eventTakeInventory(GetNameLowerCase(sp[-2]), sp[-1], false); // disable replacement
+        // damn it! TID 0 here means "all players"
+        if (sp[-3] == 0) {
+          for (int pn = 0; pn < MAXPLAYERS; ++pn) {
+            VBasePlayer *Plr = Level->Game->Players[pn];
+            if (Plr && (Plr->PlayerFlags&VBasePlayer::PF_Spawned) && Plr->MO) {
+              Plr->MO->eventTakeInventory(GetNameLowerCase(sp[-2]), sp[-1], false); // disable replacement
+            }
+          }
+        } else {
+          for (VEntity *mobj = Level->FindMobjFromTID(sp[-3], nullptr); mobj; mobj = Level->FindMobjFromTID(sp[-3], mobj)) {
+            mobj->eventTakeInventory(GetNameLowerCase(sp[-2]), sp[-1], false); // disable replacement
+          }
         }
       }
       sp -= 3;
@@ -5472,8 +5493,20 @@ int VAcs::RunScript (float DeltaTime, bool immediate) {
     ACSVM_CASE(PCD_CheckActorInventory)
       ACSVM_CHECK_STACK_UNDER(2);
       {
-        VEntity *Ent = EntityFromTID(sp[-2], Activator);
-        sp[-2] = (!Ent ? 0 : Ent->eventCheckInventory(GetNameLowerCase(sp[-1]), false, true)); // disable replacement, from ACS
+        // damn it! TID 0 here means "all players"
+        if (sp[-2] == 0) {
+          int res = 0;
+          for (int pn = 0; pn < MAXPLAYERS; ++pn) {
+            VBasePlayer *Plr = Level->Game->Players[pn];
+            if (Plr && (Plr->PlayerFlags&VBasePlayer::PF_Spawned) && Plr->MO) {
+              res += Plr->MO->eventCheckInventory(GetNameLowerCase(sp[-1]), false, true); // disable replacement, from ACS
+            }
+          }
+          sp[-2] = res;
+        } else {
+          VEntity *Ent = EntityFromTID(sp[-2], Activator);
+          sp[-2] = (!Ent ? 0 : Ent->eventCheckInventory(GetNameLowerCase(sp[-1]), false, true)); // disable replacement, from ACS
+        }
       }
       --sp;
       ACSVM_BREAK;
