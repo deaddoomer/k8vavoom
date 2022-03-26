@@ -48,6 +48,7 @@ file(GLOB basepak_SRC CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/uidef/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/uidef/menus/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/uidef/menus/debug/*.txt
+  ${CMAKE_CURRENT_SOURCE_DIR}/uidef/menus/gmopts/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/uidef/menus/sound/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/uidef/menus/video/*.txt
 
