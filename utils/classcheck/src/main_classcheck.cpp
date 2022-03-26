@@ -438,6 +438,7 @@ void scanSources (TArray<VStr> &list, VStr path, const VStr &mask1, const VStr &
       scanSources(list, path+name, mask1, mask2);
     } else {
       if (name.startsWith("stb_")) continue;
+      if (name.startsWith("voxelib")) continue;
       //if (name == "r_portal.cpp") continue;
       //if (name == "vc_statement.h") continue;
            if (!mask1.isEmpty() && name.globMatch(mask1)) appendFile(list, path+name);
@@ -638,7 +639,7 @@ Type *parseShitppType (SemParser *par, VStr tpname) {
   if (par->eat("&")) return nullptr;
   if (tpname == "vuint32") tpname = "vint32";
   if (tpname == "vint8") tpname = "vuint8";
-  if (tpname == "TArray") tpname = "array";
+  if (tpname == "TArray" || tpname == "TArrayNC") tpname = "array";
   if (tpname == "VTextureID") tpname = "vint32";
   if (tpname == "template") { parseShitppSkipTemplateShit(par); return nullptr; }
   Type *tp = new Type();
@@ -1488,10 +1489,16 @@ void checkVCType (Type *tp) {
         ok = (vcType->toString() == "array!vint32");
       }
       if (!ok) {
-        wasFail = true;
-        doAdd = false;
-        GLog.Logf(NAME_Error, "%s <-> %s: field #%d (%s : %s) has different types (%s : %s)", *tp->toString(), *spt->toString(), f, *vcf->name, *spf->name, *vcType->toString(), *spType->toString());
-        ++errorCount;
+        if ((vcType->toString() == "vint32" && spType->toString() == "uint32_t") ||
+            (vcType->toString() == "vint32" && spType->toString() == "int32_t"))
+        {
+          GLog.Logf(NAME_Warning, "%s <-> %s: field #%d (%s : %s) has different (but compatible) types (%s : %s)", *tp->toString(), *spt->toString(), f, *vcf->name, *spf->name, *vcType->toString(), *spType->toString());
+        } else {
+          wasFail = true;
+          doAdd = false;
+          GLog.Logf(NAME_Error, "%s <-> %s: field #%d (%s : %s) has different types (%s : %s)", *tp->toString(), *spt->toString(), f, *vcf->name, *spf->name, *vcType->toString(), *spType->toString());
+          ++errorCount;
+        }
         //return;
       }
     }
