@@ -36,7 +36,7 @@
 //
 //==========================================================================
 TVec P_SectorClosestPoint (const sector_t *sec, const TVec in, line_t **resline) {
-  if (!sec || sec->isAnyPObj()) {
+  if (!sec || sec->isAnyPObj() || sec->linecount == 0) {
     if (resline) *resline = nullptr;
     return in;
   }
@@ -46,8 +46,10 @@ TVec P_SectorClosestPoint (const sector_t *sec, const TVec in, line_t **resline)
   float bestx = x, besty = y;
   line_t *bestline = nullptr;
 
-  line_t *line = sec->lines[0];
-  for (int f = sec->linecount; f--; ++line) {
+  line_t **slinesptr = sec->lines;
+  for (int f = sec->linecount; f--; ++slinesptr) {
+    line_t *line = *slinesptr;
+
     const TVec *v1 = line->v1;
     const TVec *v2 = line->v2;
     float a = v2->x-v1->x;
@@ -73,9 +75,16 @@ TVec P_SectorClosestPoint (const sector_t *sec, const TVec in, line_t **resline)
         iy = v1->y+u*b;
       }
     }
+
     a = ix-x;
     b = iy-y;
     const float dist = a*a+b*b;
+    #if 0
+    GCon->Logf(NAME_Debug, "CLOSEST: sector #%d, line #%d, dist=%g, best=%g",
+               (int)(ptrdiff_t)(sec-&GLevel->Sectors[0]),
+               (int)(ptrdiff_t)(line-&GLevel->Lines[0]),
+               dist, bestdist);
+    #endif
     if (dist < bestdist) {
       bestdist = dist;
       bestx = ix;
