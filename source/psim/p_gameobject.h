@@ -1102,7 +1102,7 @@ struct sector_t {
   // mapblock bounding box for height changes (not used anymore)
   //vint32 blockbox[4];
 
-  // origin for any sounds played by the sector
+  // origin for any sounds played by the sector (the middle of the bounding box)
   TVec soundorg;
 
   // if == validcount, already checked (used in various traversing, like LOS, and other line tracing)

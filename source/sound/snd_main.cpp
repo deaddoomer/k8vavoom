@@ -39,6 +39,9 @@ static int cli_NoMusic = 0;
 int cli_DebugSound = 0;
 
 
+extern VCvarB gm_compat_sector_sound;
+
+
 /*static*/ bool cliRegister_sndmain_args =
   VParsedArgs::RegisterFlagSet("-nosound", "disable all sound (including music)", &cli_NoSound) &&
   VParsedArgs::RegisterAlias("-no-sound", "-nosound") &&
@@ -1212,9 +1215,14 @@ void VAudio::UpdateSfx () {
                 sector_t *sec = Level->FindSectorBySoundID(Channel[i].origin_id&0x00ffffff);
                 if (sec) {
                   if (!sec->isInnerPObj()) {
-                    // normal sector
+                    // normal sector, do nothing
+                    /*
                     Channel[i].origin = sec->soundorg;
                     Channel[i].origin.z = (sec->floor.minz+sec->floor.maxz)*0.5f+8.0f;
+                    */
+                    if (cl && !gm_compat_sector_sound.asBool()) {
+                      Channel[i].origin = Level->CalcSectorSoundOrigin(sec, cl->ViewOrg);
+                    }
                   } else {
                     // 3d pobj
                     Channel[i].origin = sec->ownpobj->startSpot;

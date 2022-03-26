@@ -27,6 +27,7 @@
 #include "../server/server.h"
 #include "../server/sv_local.h"
 #include "../server/sv_save.h"
+#include "../client/client.h" /* for `cl` */
 #include "../language.h"
 #include "../infostr.h"
 #include "p_entity.h"
@@ -142,6 +143,16 @@ void VLevelInfo::SectorStartSound (const sector_t *Sector, int SoundId,
   if (Sector) {
     if (Sector->SectorFlags&sector_t::SF_Silent) return;
     const int oid = (int)(ptrdiff_t)(Sector-XLevel->Sectors)+(org ? (SNDORG_SectorOrg<<24) : (SNDORG_Sector<<24));
+    TVec sorg;
+    if (org) {
+      sorg = *org;
+    } else if (cl) {
+      sorg = XLevel->CalcSectorSoundOrigin(Sector, cl->ViewOrg);
+    } else {
+      sorg = Sector->soundorg;
+      sorg.z = (Sector->floor.minz+Sector->floor.maxz)*0.5f+8.0f;
+    }
+    /*
     TVec sorg = (org ? *org : Sector->soundorg);
     if (!org) {
       if (!Sector->isInnerPObj()) {
@@ -152,6 +163,7 @@ void VLevelInfo::SectorStartSound (const sector_t *Sector, int SoundId,
         sorg = Sector->ownpobj->startSpot;
       }
     }
+    */
     if (Attenuation <= 0.0f) Attenuation = 1.0f; //WARNING! zero attenuation means "local sound"
     StartSound(sorg, oid, SoundId, Channel, Volume, Attenuation, false);
   } else {
@@ -178,7 +190,14 @@ void VLevelInfo::SectorStopSound (const sector_t *sector, int channel) {
 void VLevelInfo::SectorStartSequence (const sector_t *Sector, VName Name, int ModeNum) {
   if (Sector) {
     if (Sector->SectorFlags&sector_t::SF_Silent) return;
-    StartSoundSequence(Sector->soundorg, (int)(ptrdiff_t)(Sector-XLevel->Sectors)+(SNDORG_Sector<<24), Name, ModeNum);
+    TVec sorg;
+    if (cl) {
+      sorg = XLevel->CalcSectorSoundOrigin(Sector, cl->ViewOrg);
+    } else {
+      sorg = Sector->soundorg;
+      sorg.z = (Sector->floor.minz+Sector->floor.maxz)*0.5f+8.0f;
+    }
+    StartSoundSequence(sorg, (int)(ptrdiff_t)(Sector-XLevel->Sectors)+(SNDORG_Sector<<24), Name, ModeNum);
   } else {
     StartSoundSequence(TVec(0, 0, 0), 0, Name, ModeNum);
   }

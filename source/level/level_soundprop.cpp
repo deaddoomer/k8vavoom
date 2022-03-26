@@ -32,6 +32,7 @@ static VCvarB gm_compat_everything_can_hear("gm_compat_everything_can_hear", fal
 static VCvarF gm_compat_max_hearing_distance("gm_compat_max_hearing_distance", "0", "Maximum hearing distance (0 means unlimited)?", CVAR_Archive);
 static VCvarB gm_compat_better_sound_distance("gm_compat_better_sound_distance", true, "Check line distance on sound propagation?", CVAR_Archive);
 static VCvarB dbg_disable_sound_alert("dbg_disable_sound_alert", false, "Disable sound alerting?", CVAR_PreInit|CVAR_NoShadow);
+VCvarB gm_compat_sector_sound("gm_compat_sector_sound", false, "Use sector bbox to calculate sector sound origin (as in Vanilla)?", CVAR_Archive);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -234,4 +235,55 @@ IMPLEMENT_FUNCTION(VLevel, doRecursiveSound) {
   if (!dbg_disable_sound_alert) {
     Self->doRecursiveSound(*elist, sec, soundtarget, maxdist, sndorigin);
   }
+}
+
+
+//==========================================================================
+//
+// CalcSectorSoundOrg
+//
+//  Returns the perceived sound origin for a sector. If the listener is
+//  inside the sector, then the origin is their location. Otherwise, the
+//  origin is from the nearest wall on the sector.
+//
+//  `lstOrg` is the origin of the listener
+//
+//==========================================================================
+TVec VLevel::CalcSectorSoundOrigin (const sector_t *sector, TVec lstOrg) {
+  if (!sector) return lstOrg;
+
+  // 3d pobj?
+  if (sector->isInnerPObj()) return sector->ownpobj->startSpot;
+
+  TVec res;
+  if (gm_compat_sector_sound.asBool()) {
+    // vanilla
+    res = sector->soundorg;
+  } else {
+    // are we inside the sector?
+    if (IsPointInSector2D(sector, lstOrg)) {
+      // yes, the closest point is the one we're on
+      res = lstOrg;
+      #if 0
+      GCon->Logf(NAME_Debug, "CalcSectorSoundOrigin: in sector #%d", (int)(ptrdiff_t)(sector-&Sectors[0]));
+      #endif
+    } else {
+      // find the closest point on the sector's boundary lines and use
+      // that as the perceived origin of the sound
+      res = P_SectorClosestPoint(sector, lstOrg, nullptr/*resline*/);
+      #if 0
+      GCon->Logf(NAME_Debug, "CalcSectorSoundOrigin: sector #%d closest point is (%g,%g) to (%g,%g)",
+                 (int)(ptrdiff_t)(sector-&Sectors[0]), res.x, res.y, lstOrg.x, lstOrg.y);
+      #endif
+    }
+  }
+
+  const float topZ = sector->ceiling.GetPointZClamped(lstOrg);
+  const float botZ = sector->floor.GetPointZClamped(lstOrg);
+  res.z = clampval(lstOrg.z, botZ, topZ);
+  #if 0
+  GCon->Logf(NAME_Debug, "CalcSectorSoundOrigin: sector #%d z=%g (min=%g; max=%g; org=%g)",
+                 (int)(ptrdiff_t)(sector-&Sectors[0]), res.z, botZ, topZ, lstOrg.z);
+  #endif
+  return res;
 }

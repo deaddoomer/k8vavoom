@@ -987,6 +987,9 @@ public:
   // returns `true` if movement was blocked
   bool ChangeSector (sector_t *sector, int crunch);
 
+  // `lstOrg` is the origin of the listener
+  TVec CalcSectorSoundOrigin (const sector_t *sector, TVec lstOrg);
+
   // returns `false` on hit
   bool TraceLine (linetrace_t &Trace, const TVec &Start, const TVec &End, unsigned PlaneNoBlockFlags, unsigned moreLineBlockFlags=0);
 
