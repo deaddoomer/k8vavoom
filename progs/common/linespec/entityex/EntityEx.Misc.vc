@@ -2001,12 +2001,22 @@ override bool ACSDropInventory (name itemName) {
 //  DropItem
 //
 //==========================================================================
-final EntityEx DropItem (class!EntityEx type, int amount, float chance, optional TVec dropofs, optional bool AllowReplace) {
+EntityEx DropItem (class!EntityEx type, int amount, float chance,
+                   optional TVec dropofs, optional bool AllowReplace)
+{
   if (Random() > chance) return none;
 
   float DropZ = 0.0;
   if (!Level.CompatNoTossDrops) DropZ = Height/2.0;
-  if (!specified_dropofs) dropofs = vector(0.0, 0.0, DropZ);
+  if (!specified_dropofs) {
+    dropofs = vector(0.0, 0.0, DropZ);
+    // move it forward a little, to avoid z-fighting with a body
+    TVec v = AngleYawVector(Angles.yaw);
+    float fwd = 0.8+cast(float)((P_Random()&0x3f)/42.0);
+    v *= fwd;
+    //printdebug("offset: fwd=%s; v=%s", fwd, v);
+    dropofs += v;
+  }
   EntityEx A = SpawnEntityChecked(class!EntityEx, type, Origin+dropofs, AllowReplace:AllowReplace!optional);
   if (!A) return none;
 
@@ -2041,8 +2051,15 @@ final EntityEx DropItem (class!EntityEx type, int amount, float chance, optional
   }
 
   if (!Level.CompatNoTossDrops) {
+    #if 0
     A.Velocity.x = (Random()-Random())*35.0;
     A.Velocity.y = (Random()-Random())*35.0;
+    #else
+    float speed = Random()*35.0;
+    A.Velocity = AngleYawVector(Angles.yaw-55+110*Random());
+    A.Velocity *= speed;
+    //printdebug("%C: speed=%s; vel=%s", self, speed, A.Velocity);
+    #endif
     A.Velocity.z = (5.0+Random()*4.0)*35.0;
   }
 
