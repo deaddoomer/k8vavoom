@@ -198,7 +198,7 @@ void VLevel::AddScriptThinker (VLevelScriptThinker *sth, bool ImmediateRun) {
   if (ImmediateRun) return;
   // cleanup is done in `RunScriptThinkers()`
   scriptThinkers.append(sth);
-  //GCon->Logf("*** ADDED ACS: %s (%d)", *sth->DebugDumpToString(), scriptThinkers.length());
+  //GCon->Logf(NAME_Debug, "*** ADDED ACS: %s (%d)", *sth->DebugDumpToString(), scriptThinkers.length());
   if (scriptThinkers.length() > 16384) Host_Error("too many ACS thinkers spawned");
 }
 
