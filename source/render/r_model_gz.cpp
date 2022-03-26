@@ -28,6 +28,9 @@
 #include "r_local_gz.h"
 
 
+static VCvarB gz_mdl_fix_hud_weapon_scale("gz_mdl_fix_hud_weapon_scale", true, "Don't allow negative scales for MODELDEF HUD weapons?", CVAR_PreInit|CVAR_NoShadow|CVAR_Archive);
+
+
 //==========================================================================
 //
 //  GZModelDef::GZModelDef
@@ -136,29 +139,10 @@ VStr GZModelDef::buildPath (VScriptParser *sc, VStr path) {
 
 //==========================================================================
 //
-//  sanitiseScale
-//
-//==========================================================================
-static TVec sanitiseScale (const TVec &scale) {
-  TVec res = scale;
-  if (!isFiniteF(res.x) || !res.x) res.x = 1.0f;
-  if (!isFiniteF(res.y) || !res.y) res.y = 1.0f;
-  if (!isFiniteF(res.z) || !res.z) res.z = 1.0f;
-  // usually, scale "-1" is for GZDoom HUD weapons. wtf?!
-  // it seems, that this is *required* in GZDoom for some reason
-  res.x = fabsf(res.x);
-  res.y = fabsf(res.y);
-  res.z = fabsf(res.z);
-  return res;
-}
-
-
-//==========================================================================
-//
 //  buildMat
 //
 //==========================================================================
-static void buildMat (VMatrix4 &mat, TAVec angleOffset) {
+static void buildMat (VMatrix4 &mat, const TAVec angleOffset) {
   // GZDoom does it like this:
   //   0. Y pixel stretching (used for voxels; but k8vavoom does this in projection)
   //      default stretch is 1.2, so we prolly need to y-scale the model by 1/1.2?
@@ -181,10 +165,34 @@ static void buildMat (VMatrix4 &mat, TAVec angleOffset) {
 
 //==========================================================================
 //
+//  sanitiseScale
+//
+//==========================================================================
+static TVec sanitiseScale (const TVec &scale) {
+  TVec res = scale;
+  if (!isFiniteF(res.x) || !res.x) res.x = 1.0f;
+  if (!isFiniteF(res.y) || !res.y) res.y = 1.0f;
+  if (!isFiniteF(res.z) || !res.z) res.z = 1.0f;
+  // usually, scale "-1" is for GZDoom HUD weapons. wtf?!
+  // it seems, that this is *required* in GZDoom for some reason
+  if (gz_mdl_fix_hud_weapon_scale.asBool()) {
+    res.x = fabsf(res.x);
+    res.y = fabsf(res.y);
+    res.z = fabsf(res.z);
+  }
+  return res;
+}
+
+
+//==========================================================================
+//
 //  calcOffset
 //
 //==========================================================================
-static inline TVec calcOffset (TVec offset, const TVec &scale) {
+static inline TVec calcOffset (TVec offset, TVec scale) {
+  if (!isFiniteF(scale.x) || !scale.x) scale.x = 1.0f;
+  if (!isFiniteF(scale.y) || !scale.y) scale.y = 1.0f;
+  if (!isFiniteF(scale.z) || !scale.z) scale.z = 1.0f;
   if (scale != TVec(1.0f, 1.0f, 1.0f)) {
     offset.x /= scale.x;
     offset.y /= scale.y;
@@ -342,25 +350,25 @@ void GZModelDef::parse (VScriptParser *sc) {
       // x
       sc->ExpectFloatWithSign();
       if (sc->Float == 0) sc->Message(va("invalid x scale in model '%s'", *className));
-      scale.x = sc->Float;
+      scale.y = sc->Float;
       // y
       sc->ExpectFloatWithSign();
       if (sc->Float == 0) sc->Message(va("invalid y scale in model '%s'", *className));
-      scale.y = sc->Float;
+      scale.x = sc->Float;
       // z
       sc->ExpectFloatWithSign();
       if (sc->Float == 0) sc->Message(va("invalid z scale in model '%s'", *className));
       scale.z = sc->Float;
       // normalize
-      scale = sanitiseScale(scale);
+      //scale = sanitiseScale(scale);
       continue;
     }
     // "Offset"
     if (sc->Check("Offset")) {
       sc->ExpectFloatWithSign();
-      offset.x = sc->Float;
-      sc->ExpectFloatWithSign();
       offset.y = sc->Float;
+      sc->ExpectFloatWithSign();
+      offset.x = sc->Float;
       sc->ExpectFloatWithSign();
       offset.z = sc->Float;
       continue;
@@ -410,7 +418,7 @@ void GZModelDef::parse (VScriptParser *sc) {
       // frmcmd<0: Frame      sprbase sprframe modelindex framename
       Frame frm;
       buildMat(frm.matTrans, angleOffset);
-      frm.gzScale = scale;
+      frm.gzScale = sanitiseScale(scale);
       frm.gzPreScaleOfs = calcOffset(offset, scale);
       // sprite name
       sc->ExpectString();
@@ -501,7 +509,7 @@ void GZModelDef::parse (VScriptParser *sc) {
   VMatrix4 mat;
   buildMat(mat, angleOffset);
   offset = calcOffset(offset, scale);
-  checkModelSanity(mat, scale, offset);
+  checkModelSanity(mat, sanitiseScale(scale), offset);
 }
 
 
