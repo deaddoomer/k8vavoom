@@ -399,9 +399,15 @@ void GZModelDef::parse (VScriptParser *sc) {
       usePitchInverted = false;
       continue;
     }
+
     // "frameindex"
-    if (sc->Check("frameindex")) {
-      // FrameIndex sprbase sprframe modelindex frameindex
+    int frmcmd = 0;
+         if (sc->Check("frameindex")) frmcmd = 1;
+    else if (sc->Check("frame")) frmcmd = -1;
+
+    if (frmcmd) {
+      // frmcmd>0: FrameIndex sprbase sprframe modelindex frameindex
+      // frmcmd<0: Frame      sprbase sprframe modelindex framename
       Frame frm;
       buildMat(frm.matTrans, angleOffset);
       frm.gzScale = scale;
@@ -417,74 +423,61 @@ void GZModelDef::parse (VScriptParser *sc) {
         // gozzo wiki says that there can be only one frame, so fuck it
         sc->Message(va("invalid sprite frame '%s' in model '%s'; FIX YOUR BROKEN CODE!", *sc->String, *className));
       }
+      VStr sprframes = sc->String;
+      /*
       char fc = sc->String[0];
       if (fc >= 'a' && fc <= 'z') fc = fc-'a'+'A';
       frm.sprframe = fc-'A';
       if (frm.sprframe < 0 || frm.sprframe > 31) sc->Error(va("invalid sprite frame '%s' in model '%s'", *sc->String, *className));
+      */
       // model index
       sc->ExpectNumber();
       // model "-1" means "hidden"
       if (sc->Number < 0 || sc->Number > 1024) sc->Error(va("invalid model index %d in model '%s'", sc->Number, *className));
       frm.mdindex = frm.origmdindex = sc->Number;
-      // frame index
-      sc->ExpectNumber();
-      if (sc->Number < 0 || sc->Number > 1024) sc->Error(va("invalid model frame %d in model '%s'", sc->Number, *className));
-      frm.frindex = frm.origmdlframe = sc->Number;
-      // check if we already have equal frame, there is no need to keep duplicates
-      bool replaced = false;
-      for (auto &&ofr : frames) {
-        if (frm == ofr) {
-          // i found her!
-          ofr.frindex = frm.frindex;
-          replaced = true;
-        }
+      if (frmcmd > 0) {
+        // frame index
+        sc->ExpectNumber();
+        if (sc->Number < 0 || sc->Number > 1024) sc->Error(va("invalid model frame %d in model '%s'", sc->Number, *className));
+        frm.frindex = frm.origmdlframe = sc->Number;
+      } else {
+        // frame name
+        sc->ExpectString();
+        //if (sc->String.isEmpty()) sc->Error(va("empty model frame name model '%s'", *className));
+        frm.frindex = frm.origmdlframe = -1;
+        frm.frname = sc->String;
       }
-      // store it, if it wasn't a replacement
-      if (!replaced) frames.append(frm);
+
+      // now create models frames for all sprite frames
+      for (int spfidx = 0; spfidx < sprframes.length(); ++spfidx) {
+        Frame xfrm = frm;
+
+        char fc = sprframes[spfidx];
+        if (fc >= 'a' && fc <= 'z') fc = fc-'a'+'A';
+        xfrm.sprframe = fc-'A';
+        if (xfrm.sprframe < 0 || xfrm.sprframe > 31) sc->Error(va("invalid sprite frame '%s' in model '%s'", *sc->String, *className));
+
+        // check if we already have equal frame, there is no need to keep duplicates
+        bool replaced = false;
+        for (auto &&ofr : frames) {
+          if (xfrm == ofr) {
+            // i found her!
+            if (frmcmd > 0) {
+              ofr.frindex = xfrm.frindex;
+            } else {
+              ofr.frindex = -1;
+              ofr.frname = xfrm.frname;
+            }
+            replaced = true;
+          }
+        }
+        // store it, if it wasn't a replacement
+        if (!replaced) frames.append(xfrm);
+      }
+
       continue;
     }
-    // "frame"
-    if (sc->Check("frame")) {
-      // Frame sprbase sprframe modelindex framename
-      Frame frm;
-      buildMat(frm.matTrans, angleOffset);
-      frm.gzScale = scale;
-      frm.gzPreScaleOfs = calcOffset(offset, scale);
-      // sprite name
-      sc->ExpectString();
-      frm.sprbase = sc->String.toLowerCase();
-      if (frm.sprbase.length() != 4) sc->Error(va("invalid sprite name '%s' in model '%s'", *frm.sprbase, *className));
-      // sprite frame
-      sc->ExpectString();
-      if (sc->String.length() != 1) sc->Error(va("invalid sprite frame '%s' in model '%s'", *sc->String, *className));
-      char fc = sc->String[0];
-      if (fc >= 'a' && fc <= 'z') fc = fc-'a'+'A';
-      frm.sprframe = fc-'A';
-      if (frm.sprframe < 0 || frm.sprframe > 31) sc->Error(va("invalid sprite frame '%s' in model '%s'", *sc->String, *className));
-      // model index
-      sc->ExpectNumber();
-      // model "-1" means "hidden"
-      if (sc->Number < 0 || sc->Number > 1024) sc->Error(va("invalid model index %d in model '%s'", sc->Number, *className));
-      frm.mdindex = frm.origmdindex = sc->Number;
-      // frame name
-      sc->ExpectString();
-      //if (sc->String.isEmpty()) sc->Error(va("empty model frame name model '%s'", *className));
-      frm.frindex = frm.origmdlframe = -1;
-      frm.frname = sc->String;
-      // check if we already have equal frame, there is no need to keep duplicates
-      bool replaced = false;
-      for (auto &&ofr : frames) {
-        if (frm == ofr) {
-          // i found her!
-          ofr.frindex = -1;
-          ofr.frname = frm.frname;
-          replaced = true;
-        }
-      }
-      // store it, if it wasn't a replacement
-      if (!replaced) frames.append(frm);
-      continue;
-    }
+
     // unknown shit, try to ignore it
     if (!sc->GetString()) sc->Error(va("unexpected EOF in model '%s'", *className));
     sc->Message(va("unknown MODELDEF command '%s' in model '%s'", *sc->String, *className));
