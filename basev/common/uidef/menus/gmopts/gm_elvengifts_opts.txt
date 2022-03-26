@@ -1,0 +1,102 @@
+menudef GameplayOptions_ElvenGifts {
+  //selector = MenuSelector_SmallRight;
+  Title = "ELVEN GIFTS";
+
+
+  header "Ammo King Mode";
+
+  option bool {
+    title = "Ammo King";
+    cvar = k8AmmoKing;
+    help =
+      "MORE AMMO! EVEN MORE AMMO!"
+      ""
+      "Overrides ammo limits."
+      "Note that default limits will be used if they're higher.";
+  }
+
+  option bool {
+    title = "Ammo King Backpack";
+    cvar = k8AmmoKing_AllowBackpack;
+    help = "Allow backpack doubling effect in Ammo King mode?";
+  }
+
+  option slider {
+    title = "Max Shells with Headshots";
+    cvar = k8AmmoKing_MaxShells_HS;
+    step = 1;
+    min = 1;
+    max = 999;
+  }
+
+  option slider {
+    title = "Max Shells w/o Headshots";
+    cvar = k8AmmoKing_MaxShells_Normal;
+    step = 1;
+    min = 1;
+    max = 999;
+  }
+
+  option slider {
+    title = "Max Bullets with Headshots";
+    cvar = k8AmmoKing_MaxBullets_HS;
+    step = 1;
+    min = 1;
+    max = 999;
+  }
+
+  option slider {
+    title = "Max Bullets w/o Headshots";
+    cvar = k8AmmoKing_MaxBullets_Normal;
+    step = 1;
+    min = 1;
+    max = 999;
+  }
+
+  option slider {
+    title = "Max Rockets";
+    cvar = k8AmmoKing_MaxRockets;
+    step = 1;
+    min = 1;
+    max = 999;
+  }
+
+  option slider {
+    title = "Max Cells";
+    cvar = k8AmmoKing_MaxCells;
+    step = 1;
+    min = 1;
+    max = 999;
+  }
+
+  option slider {
+    title = "Max Other Types";
+    cvar = k8AmmoKing_MaxOther;
+    step = 1;
+    min = 1;
+    max = 999;
+  }
+
+
+  header "Elven Gifts";
+
+  option bool {
+    title = "Elven Gift";
+    cvar = k8ElvenGift;
+    help = "Give some weapons and ammo on game start.";
+  }
+
+  option bool {
+    title = "Elven Detection";
+    cvar = k8ElvenDetect;
+    help = "Activate Elven Senses when entering into new place.";
+  }
+
+  option bool {
+    title = "No Pain Elemental Attacks";
+    cvar = k8ElvenPaineless;
+    help =
+      "Disable Pain Elemental attacks."
+      "Turn on, and Pain Elementals won't spit any Lost Souls.";
+  }
+}

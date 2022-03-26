@@ -1,5 +1,4 @@
 menus {
-
   "menus/accessibility.txt",
   "menus/amoptions.txt",
   "menus/gameplay.txt",
@@ -34,4 +33,12 @@ menus {
 
   "menus/debug/amcheatoptions.txt",
   "menus/debug/clipdebug.txt",
+
+  "menus/gmopts/gm_advlimits_opts.txt",
+  "menus/gmopts/gm_disoverride_opts.txt",
+  "menus/gmopts/gm_elvengifts_opts.txt",
+  "menus/gmopts/gm_headshots_opts.txt",
+  "menus/gmopts/gm_skillover_opts.txt",
+  "menus/gmopts/gm_terrain_opts.txt",
+  "menus/gmopts/gm_weapon_opts.txt",
 }

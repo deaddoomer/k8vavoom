@@ -1,0 +1,45 @@
+menudef GameplayOptions_Terrain {
+  //selector = MenuSelector_SmallRight;
+  Title = "TERRAIN/BOOT PRINT OPTIONS";
+
+
+  header "Terrain";
+
+  option bool {
+    title = "Footstep Sound";
+    cvar = gm_footsteps;
+    help = "Allow playing terrain footstep sounds?";
+  }
+
+  option bool {
+    title = "Optional Terrain";
+    cvar = gm_optional_terrain;
+    help =
+      "Detect some liquids for Vanilla Doom?",
+      "Some standard flats will emit a sound, and be detected as liquid terrain.";
+  }
+
+
+  header "Boot Prints";
+
+  option bool {
+    title = "Decal Boot Prints";
+    cvar = gm_decal_bootprints;
+    help = "Allow boot prints from floor decals?";
+  }
+
+  option bool {
+    title = "Terrain Boot Prints";
+    cvar = gm_terrain_bootprints;
+    help = "Allow any terrain boot prints?";
+  }
+
+  option bool {
+    title = "Optional Terrain Boot Prints";
+    cvar = gm_optional_bootprints;
+    help =
+      "Allow optional terrain boot prints?",
+      "Optional boot prints mostly used for Vanilla Doom liquids.",
+      "If you will turn off terrain decals above, this option will have no effect.";
+  }
+}

@@ -1,0 +1,71 @@
+menudef GameplayOptions_Headshots {
+  //selector = MenuSelector_SmallRight;
+  Title = "HEADSHOTS OPTIONS";
+
+  // headshots gore effects moved to gore mod
+
+
+  header "Headshots Options";
+
+  option bool {
+    title = "Headshots (incl. criticals)";
+    cvar = k8HSEnabled;
+    help = "Allow headshots.";
+  }
+
+  option bool {
+    title = "Critical Headshots";
+    cvar = k8HSCriticals;
+    help =
+      "If headshots turned on, sometimes you can deliver a critical"
+      "headshot, with x2, x3, or even x10 damage."
+      "Has no effect if headshots turned off.";
+  }
+
+  option bool {
+    title = "Announce criticals";
+    cvar = k8HSShowCriticals;
+    help = "Show message on critical headshot.";
+  }
+
+  option slider {
+    title = "Distance multiplier";
+    cvar = k8HSDistMult;
+    step = 0.1;
+    min = 0.8;
+    max = 4.0;
+    help = "Controls critical headshot distance.";
+  }
+
+
+  header "Headshots Fastkill";
+
+  option bool {
+    title = "Fastkills";
+    cvar = k8HSFastKillAnnoyingMonsters;
+    help =
+      "Some 'annoying' mosters will get additional damage."
+      "Use following options to tune this.";
+  }
+
+  option bool {
+    title = "FK Pain Elementals";
+    cvar = k8HSInstaKillPainElementals;
+    help = "Kill Pain Elementals with one shot.";
+  }
+
+  option bool {
+    title = "FK Lost Souls";
+    cvar = k8HSInstaKillLostSouls;
+    help = "Kill Lost Souls with one shot.";
+  }
+
+  option slider {
+    title = "Arch-Vile FK Damage";
+    cvar = k8HSFastKillArchVileDamage;
+    step = 10;
+    min = 10;
+    max = 400;
+    help = "Amount of damage dealt to Arch-Vile.";
+  }
+}

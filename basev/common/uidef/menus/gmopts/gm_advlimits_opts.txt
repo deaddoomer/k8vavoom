@@ -1,0 +1,36 @@
+menudef GameplayOptions_AdvLimits {
+  //selector = MenuSelector_SmallRight;
+  Title = "NON-VANILLA LIMITS";
+
+  option bool {
+    title = "Disable Running";
+    cvar = sv_disable_run;
+    help =
+      "Disable running.",
+      "\cJYou need to restart network game for this to take effect.";
+  }
+
+  option bool {
+    title = "Disable Jumping";
+    cvar = sv_disable_jump;
+    help =
+      "Disable jumping.",
+      "\cJYou need to restart network game for this to take effect.";
+  }
+
+  option bool {
+    title = "Disable Crouching";
+    cvar = sv_disable_crouch;
+    help =
+      "Disable crouching.",
+      "\cJYou need to restart network game for this to take effect.";
+  }
+
+  option bool {
+    title = "Disable Freelook";
+    cvar = sv_disable_mlook;
+    help =
+      "Disable mouse freelook.",
+      "\cJYou need to restart network game for this to take effect.";
+  }
+}

@@ -136,44 +136,6 @@ menudef GameplayOptions {
   }
 
 
-  header "Terrain And Boot Print Options";
-
-  option bool {
-    title = "Footstep Sound";
-    cvar = gm_footsteps;
-    help = "Allow playing terrain footstep sounds?";
-  }
-
-  option bool {
-    title = "Optional Terrain";
-    cvar = gm_optional_terrain;
-    help =
-      "Detect some liquids for Vanilla Doom?",
-      "Some standard flats will emit a sound, and be detected as liquid terrain.";
-  }
-
-  option bool {
-    title = "Decal Boot Prints";
-    cvar = gm_decal_bootprints;
-    help = "Allow boot prints from floor decals?";
-  }
-
-  option bool {
-    title = "Terrain Boot Prints";
-    cvar = gm_terrain_bootprints;
-    help = "Allow any terrain boot prints?";
-  }
-
-  option bool {
-    title = "Optional Terrain Boot Prints";
-    cvar = gm_optional_bootprints;
-    help =
-      "Allow optional terrain boot prints?",
-      "Optional boot prints mostly used for Vanilla Doom liquids.",
-      "If you will turn off terrain decals above, this option will have no effect.";
-  }
-
-
   header "Other Options";
 
   option bool {
@@ -264,33 +226,7 @@ menudef GameplayOptions {
   }
 
 
-  header "Pickup/Weapon Behaviour";
-
-  option bool {
-    title = "Berserk autoswitch";
-    cvar = k8BerserkSwitch;
-    help = "\cGWARNING! This may not work for custom weapon packs.";
-  }
-
-  option bool {
-    title = "Stealth Fist";
-    cvar = k8StealthFist;
-    help =
-      "If your fist attack doesn't hit any monster, or monster was"
-      "immediately killed, other monsters will not be alerted."
-      "This can be used for limited 'stealth' gameplay."
-      "\cGWARNING! This may not work for custom weapon packs.";
-  }
-
-  option bool {
-    title = "Stealth Chainsaw";
-    cvar = k8StealthChainsaw;
-    help =
-      "If your chainsaw attack doesn't hit any monster, or monster was"
-      "immediately killed, other monsters will not be alerted."
-      "This can be used for limited 'stealth' gameplay."
-      "\cGWARNING! This may not work for custom weapon packs.";
-  }
+  header "Weapon Behaviour";
 
   option enum {
     title = "Force Projectile Fire";
@@ -311,41 +247,6 @@ menudef GameplayOptions {
 
   //TODO
   //if (GameName == "hexen") CreateOnOffCvar("Alt. Monster Behaviour", 'alternate_monster_attacks');
-
-
-  header "Autoaim Options";
-
-  option bool {
-    title = "Global Autoaim";
-    cvar = autoaim;
-    help =
-      "Controls global autoaim. Note that if autoaim is turned on,"
-      "headshots will not work properly.";
-  }
-
-  option enum {
-    title = "Autoaim for hitscans";
-    cvar = k8HitscanAutoAim;
-    list { "No", "Yes", "Forced" };
-    help =
-      "Controls autoaim for standard pistol, shotgun, and minigun.",
-      "If you will turn Global Autoaim off, this will not have any effect.",
-      "You can turn this off to perform headshots, but still use autoaiming",
-      "for rockets and plasma.",
-      "",
-      "'FORCED' option will ignore 'no autoaim' weapon flag.";
-  }
-
-  option enum {
-    title = "Autoaim for projectiles";
-    cvar = k8ProjectileAutoAim;
-    list { "No", "Yes", "Forced" };
-    help =
-      "Controls autoaim for weapons firing projectiles (rocket, plasma, etc.).",
-      "If you will turn Global Autoaim off, this will not have any effect.",
-      "",
-      "'FORCED' option will ignore 'no autoaim' weapon flag.";
-  }
 
 
   header "Misc. Options";
@@ -396,365 +297,55 @@ menudef GameplayOptions {
   }
 
 
-  header "Override disables";
+  header "Self-Imposed Constraints";
 
   option bool {
-    title = "Ignore 'nojump'";
-    cvar = sv_ignore_nojump;
-    help = "Ignore 'NOJUMP' MAPINFO option.";
-  }
-
-  option bool {
-    title = "Ignore 'nocrouch'";
-    cvar = sv_ignore_nocrouch;
-    help = "Ignore 'NOCROUCH' MAPINFO option.";
-  }
-
-  option bool {
-    title = "Ignore 'nofreelook'";
-    cvar = sv_ignore_nomlook;
-    help = "Ignore 'NOFREELOOK' MAPINFO option.";
-  }
-
-  option bool {
-    title = "Ignore 'resethealth'";
-    cvar = sv_ignore_reset_health;
-    help = "Ignore 'RESETHEALTH' MAPINFO option.";
-  }
-
-  option bool {
-    title = "Ignore 'resetinventory'";
-    cvar = sv_ignore_reset_inventory;
-    help = "Ignore 'RESETINVENTORY' MAPINFO option.";
-  }
-
-  option bool {
-    title = "Ignore 'resetitems'";
-    cvar = sv_ignore_reset_items;
-    help = "Ignore 'RESETITEMS' MAPINFO option.";
-  }
-
-  option enum {
-    title = "Switch Range Check";
-    cvar = g_switch_range_check_override;
-    list {
-      "Default",
-      "Never",
-      "Always",
-    }
-    help = "Check vertical range for switches?";
-  }
-
-
-  header "Self-imposed constraints";
-
-  option bool {
-    title = "Start new map with pistol";
+    title = "New Map With Pistol";
     cvar = sv_force_pistol_start;
     help = "Force 'pistol start' (but don't reset health).";
   }
 
   option bool {
-    title = "Start new map with default health";
+    title = "New Map With Default Health";
     cvar = sv_force_health_reset;
     help = "Force default health on new map (but don't reset weapons).";
   }
 
 
-  header "Advanced Features Limits";
+  header "";
 
-  option bool {
-    title = "Disable Running";
-    cvar = sv_disable_run;
-    help =
-      "Disable running.",
-      "\cJYou need to restart network game for this to take effect.";
+  option submenu {
+    title = "Terrain/Boot Print Options";
+    submenu = "GameplayOptions_Terrain";
   }
 
-  option bool {
-    title = "Disable Jumping";
-    cvar = sv_disable_jump;
-    help =
-      "Disable jumping.",
-      "\cJYou need to restart network game for this to take effect.";
+  option submenu {
+    title = "Weapon/Autoaim Options";
+    submenu = "GameplayOptions_WeaponAutoaim";
   }
 
-  option bool {
-    title = "Disable Crouching";
-    cvar = sv_disable_crouch;
-    help =
-      "Disable crouching.",
-      "\cJYou need to restart network game for this to take effect.";
+  option submenu {
+    title = "Mapinfo Override Options";
+    submenu = "GameplayOptions_OverrideMapinfo";
   }
 
-  option bool {
-    title = "Disable Freelook";
-    cvar = sv_disable_mlook;
-    help =
-      "Disable mouse freelook.",
-      "\cJYou need to restart network game for this to take effect.";
+  option submenu {
+    title = "Limit Non-Vanilla Features";
+    submenu = "GameplayOptions_AdvLimits";
   }
 
-
-  header "Skill Overrides";
-
-  option enum {
-    title = "Force fast/slow monsters";
-    cvar = g_fast_monsters_override;
-    list {
-      "Default",
-      "Fast",
-      "Slow",
-      "Only Fast States",
-      "All States Fast",
-    }
-    help =
-      "Force fast/slow monsters.",
-      "\c[!WHITE]Only Fast States\c: only states that are marked as \"FAST\" in DECORATE.",
-      "\c[!WHITE]All States Fast\c: make all states faster.",
-      "\cJYou need to restart the map for this to take effect.";
+  option submenu {
+    title = "Skill Overrides";
+    submenu = "GameplayOptions_SkillOverrides";
   }
 
-  option slider {
-    title = "Fast Monster Rate";
-    cvar = gm_state_faster_percent;
-    min = 0;
-    max = 100;
-    step = 5;
-    help =
-      "Percentage of state time for fast states (\"fast monsters\" mode).",
-      "0 is \"one tick\", 50 is default, 100 is \"unchanged\".";
+  option submenu {
+    title = "Headshots Options";
+    submenu = "GameplayOptions_Headshots";
   }
 
-  option slider {
-    title = "Force monster respawn";
-    cvar = g_monsters_respawn_override;
-    min = -1;
-    max = 300;
-    step = 1;
-    help =
-      "Force monster respawn time, in seconds.",
-      "Nightmare is 12, 0 is \"don't change\", -1 is \"disabled\".",
-      "\cJYou need to restart the map for this to take effect.";
-  }
-
-  option slider {
-    title = "Respawn limit";
-    cvar = g_skill_respawn_limit_override;
-    min = -1;
-    max = 300;
-    step = 1;
-    help =
-      "Override respawn limit.",
-      "Do not touch if you don't know what is this!";
-  }
-
-  option slider {
-    title = "Ammo multiplier";
-    cvar = g_skill_ammo_factor_override;
-    min = 0;
-    max = 16;
-    step = 0.1;
-    help =
-      "Ammo amount multiplier. Default is 1.",
-      "Effect is immediate.";
-  }
-
-  option slider {
-    title = "Damage multiplier";
-    cvar = g_skill_damage_factor_override;
-    min = 0;
-    max = 16;
-    step = 0.1;
-    help =
-      "Damage amount multiplier. Default is 1."
-      "Effect is immediate.";
-  }
-
-  option slider {
-    title = "ProjAttack chance multiplier";
-    cvar = g_skill_aggressiveness_override;
-    min = 0;
-    max = 16;
-    step = 0.1;
-    help =
-      "The greater, the less chance of monster projectile attack. Default is 1."
-      "Effect is immediate.";
-  }
-
-  option slider {
-    title = "Projectile speed multiplier";
-    cvar = gm_monster_proj_speed_mult;
-    min = 0;
-    max = 16;
-    step = 0.1;
-    help =
-      "Monster projectile speed multiplier."
-      "Effect is immediate.";
-  }
-
-
-  header "Headshots Options";
-
-  option bool {
-    title = "Headshots (incl. criticals)";
-    cvar = k8HSEnabled;
-    help = "Allow headshots.";
-  }
-
-  option bool {
-    title = "Critical Headshots";
-    cvar = k8HSCriticals;
-    help =
-      "If headshots turned on, sometimes you can deliver a critical"
-      "headshot, with x2, x3, or even x10 damage."
-      "Has no effect if headshots turned off.";
-  }
-
-  option bool {
-    title = "Announce criticals";
-    cvar = k8HSShowCriticals;
-    help = "Show message on critical headshot.";
-  }
-
-  option slider {
-    title = "Distance multiplier";
-    cvar = k8HSDistMult;
-    step = 0.1;
-    min = 0.8;
-    max = 4.0;
-    help = "Controls critical headshot distance.";
-  }
-
-
-  header "Headshots Fastkill";
-
-  option bool {
-    title = "Fastkills";
-    cvar = k8HSFastKillAnnoyingMonsters;
-    help =
-      "Some 'annoying' mosters will get additional damage."
-      "Use following options to tune this.";
-  }
-
-  option bool {
-    title = "FK Pain Elementals";
-    cvar = k8HSInstaKillPainElementals;
-    help = "Kill Pain Elementals with one shot.";
-  }
-
-  option bool {
-    title = "FK Lost Souls";
-    cvar = k8HSInstaKillLostSouls;
-    help = "Kill Lost Souls with one shot.";
-  }
-
-  option slider {
-    title = "Arch-Vile FK Damage";
-    cvar = k8HSFastKillArchVileDamage;
-    step = 10;
-    min = 10;
-    max = 400;
-    help = "Amount of damage dealt to Arch-Vile.";
-  }
-
-  // headshots gore effects moved to gore mod
-
-
-  header "Ammo King Mode";
-
-  option bool {
-    title = "Ammo King";
-    cvar = k8AmmoKing;
-    help =
-      "MORE AMMO! EVEN MORE AMMO!"
-      ""
-      "Overrides ammo limits."
-      "Note that default limits will be used if they're higher.";
-  }
-
-  option bool {
-    title = "Ammo King Backpack";
-    cvar = k8AmmoKing_AllowBackpack;
-    help = "Allow backpack doubling effect in Ammo King mode?";
-  }
-
-  option slider {
-    title = "Max Shells with Headshots";
-    cvar = k8AmmoKing_MaxShells_HS;
-    step = 1;
-    min = 1;
-    max = 999;
-  }
-
-  option slider {
-    title = "Max Shells w/o Headshots";
-    cvar = k8AmmoKing_MaxShells_Normal;
-    step = 1;
-    min = 1;
-    max = 999;
-  }
-
-  option slider {
-    title = "Max Bullets with Headshots";
-    cvar = k8AmmoKing_MaxBullets_HS;
-    step = 1;
-    min = 1;
-    max = 999;
-  }
-
-  option slider {
-    title = "Max Bullets w/o Headshots";
-    cvar = k8AmmoKing_MaxBullets_Normal;
-    step = 1;
-    min = 1;
-    max = 999;
-  }
-
-  option slider {
-    title = "Max Rockets";
-    cvar = k8AmmoKing_MaxRockets;
-    step = 1;
-    min = 1;
-    max = 999;
-  }
-
-  option slider {
-    title = "Max Cells";
-    cvar = k8AmmoKing_MaxCells;
-    step = 1;
-    min = 1;
-    max = 999;
-  }
-
-  option slider {
-    title = "Max Other Types";
-    cvar = k8AmmoKing_MaxOther;
-    step = 1;
-    min = 1;
-    max = 999;
-  }
-
-
-  header "Elven Gifts";
-
-  option bool {
-    title = "Elven Gift";
-    cvar = k8ElvenGift;
-    help = "Give some weapons and ammo on game start.";
-  }
-
-  option bool {
-    title = "Elven Detection";
-    cvar = k8ElvenDetect;
-    help = "Activate Elven Senses when entering into new place.";
-  }
-
-  option bool {
-    title = "No Pain Elemental Attacks";
-    cvar = k8ElvenPaineless;
-    help =
-      "Disable Pain Elemental attacks."
-      "Turn on, and Pain Elementals won't spit any Lost Souls.";
+  option submenu {
+    title = "Elven Gifts";
+    submenu = "GameplayOptions_ElvenGifts";
   }
 }

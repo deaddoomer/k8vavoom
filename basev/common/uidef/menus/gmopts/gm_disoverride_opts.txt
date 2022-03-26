@@ -1,0 +1,51 @@
+menudef GameplayOptions_OverrideMapinfo {
+  //selector = MenuSelector_SmallRight;
+  Title = "MAPINFO OVERRIDE OPTIONS";
+
+  option bool {
+    title = "Ignore 'nojump'";
+    cvar = sv_ignore_nojump;
+    help = "Ignore 'NOJUMP' MAPINFO option.";
+  }
+
+  option bool {
+    title = "Ignore 'nocrouch'";
+    cvar = sv_ignore_nocrouch;
+    help = "Ignore 'NOCROUCH' MAPINFO option.";
+  }
+
+  option bool {
+    title = "Ignore 'nofreelook'";
+    cvar = sv_ignore_nomlook;
+    help = "Ignore 'NOFREELOOK' MAPINFO option.";
+  }
+
+  option bool {
+    title = "Ignore 'resethealth'";
+    cvar = sv_ignore_reset_health;
+    help = "Ignore 'RESETHEALTH' MAPINFO option.";
+  }
+
+  option bool {
+    title = "Ignore 'resetinventory'";
+    cvar = sv_ignore_reset_inventory;
+    help = "Ignore 'RESETINVENTORY' MAPINFO option.";
+  }
+
+  option bool {
+    title = "Ignore 'resetitems'";
+    cvar = sv_ignore_reset_items;
+    help = "Ignore 'RESETITEMS' MAPINFO option.";
+  }
+
+  option enum {
+    title = "Switch Range Check";
+    cvar = g_switch_range_check_override;
+    list {
+      "Default",
+      "Never",
+      "Always",
+    }
+    help = "Check vertical range for switches?";
+  }
+}

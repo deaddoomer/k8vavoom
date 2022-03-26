@@ -1,0 +1,68 @@
+menudef GameplayOptions_WeaponAutoaim {
+  //selector = MenuSelector_SmallRight;
+  Title = "WEAPON AND AAIM OPTIONS";
+
+
+  header "Weapon Options";
+
+  option bool {
+    title = "Berserk autoswitch";
+    cvar = k8BerserkSwitch;
+    help = "\cGWARNING! This may not work for custom weapon packs.";
+  }
+
+  option bool {
+    title = "Stealth Fist";
+    cvar = k8StealthFist;
+    help =
+      "If your fist attack doesn't hit any monster, or monster was"
+      "immediately killed, other monsters will not be alerted."
+      "This can be used for limited 'stealth' gameplay."
+      "\cGWARNING! This may not work for custom weapon packs.";
+  }
+
+  option bool {
+    title = "Stealth Chainsaw";
+    cvar = k8StealthChainsaw;
+    help =
+      "If your chainsaw attack doesn't hit any monster, or monster was"
+      "immediately killed, other monsters will not be alerted."
+      "This can be used for limited 'stealth' gameplay."
+      "\cGWARNING! This may not work for custom weapon packs.";
+  }
+
+
+  header "Autoaim Options";
+
+  option bool {
+    title = "Global Autoaim";
+    cvar = autoaim;
+    help =
+      "Controls global autoaim. Note that if autoaim is turned on,"
+      "headshots will not work properly.";
+  }
+
+  option enum {
+    title = "Autoaim for hitscans";
+    cvar = k8HitscanAutoAim;
+    list { "No", "Yes", "Forced" };
+    help =
+      "Controls autoaim for standard pistol, shotgun, and minigun.",
+      "If you will turn Global Autoaim off, this will not have any effect.",
+      "You can turn this off to perform headshots, but still use autoaiming",
+      "for rockets and plasma.",
+      "",
+      "'FORCED' option will ignore 'no autoaim' weapon flag.";
+  }
+
+  option enum {
+    title = "Autoaim for projectiles";
+    cvar = k8ProjectileAutoAim;
+    list { "No", "Yes", "Forced" };
+    help =
+      "Controls autoaim for weapons firing projectiles (rocket, plasma, etc.).",
+      "If you will turn Global Autoaim off, this will not have any effect.",
+      "",
+      "'FORCED' option will ignore 'no autoaim' weapon flag.";
+  }
+}
