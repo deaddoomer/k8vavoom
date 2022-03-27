@@ -34,6 +34,8 @@
 
 //#define VV_DBG_VERBOSE_REL_LINE_FC
 
+static VCvarB mv_new_slope_code("mv_new_slope_code", true, "Use experimental slope walking code?", CVAR_Archive|CVAR_NoShadow);
+
 
 //==========================================================================
 //
@@ -451,6 +453,15 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
   // set openrange, opentop, openbottom
   opening_t *open = XLevel->LineOpenings(ld, hitPoint, SPF_NOBLOCKING, !(EntityFlags&EF_Missile)/*do3dmidtex*/); // missiles ignores 3dmidtex
 
+  /*
+  if (IsPlayer()) {
+    GCon->Logf(NAME_Debug, "line #%d: end=(%g,%g,%g); hp=(%g,%g,%g)",
+               (int)(ptrdiff_t)(ld-&XLevel->Lines[0]),
+               tmtrace.End.x, tmtrace.End.y, tmtrace.End.z,
+               hitPoint.x, hitPoint.y, hitPoint.z);
+  }
+  */
+
   #ifdef VV_DBG_VERBOSE_REL_LINE_FC
   if (IsPlayer()) {
     GCon->Logf(NAME_Debug, "  checking line: %d; sz=%g; ez=%g; hgt=%g; traceFZ=%g; traceCZ=%g", (int)(ptrdiff_t)(ld-&XLevel->Lines[0]), tmtrace.End.z, tmtrace.End.z+hgt, hgt, tmtrace.FloorZ, tmtrace.CeilingZ);
@@ -507,6 +518,10 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
         #ifdef VV_DBG_VERBOSE_REL_LINE_FC
         if (IsPlayer()) GCon->Logf(NAME_Debug, "    !floorcheck; slopez=%g; open->bottom=%g; tmtrace.FloorZ=%g; >=%d (%d)", open->efloor.GetNormalZ(), open->bottom, tmtrace.FloorZ, (int)(open->bottom > tmtrace.FloorZ), (int)replaceIt);
         #endif
+        // this is required for proper slope processing
+        if (replaceIt && mv_new_slope_code.asBool()) {
+          if (open->bottom-tmtrace.FloorZ <= MaxStepHeight) replaceIt = false;
+        }
       } else {
         replaceIt = (open->bottom > tmtrace.FloorZ || (open->bottom == tmtrace.FloorZ && tmtrace.EFloor.isSlope()));
         #ifdef VV_DBG_VERBOSE_REL_LINE_FC

@@ -689,9 +689,25 @@ final void ZMovement (float DeltaTime, float OldFloorZ, float OldFloorNZ, sector
       if (!bBounceFloors) Velocity.z = fmax(0.0, Velocity.z);
       // check if we're on the same slope
       if (!Velocity.z && OldFloorNZ != 1.0 && EFloor.spGetNormalZ == OldFloorNZ) {
-        //if (bIsPlayer) printdebug("%C: same slope (up)!", self);
-        oldz = FloorZ;
-        Origin.z = oldz;
+        #if 0
+        if (bIsPlayer) {
+          printdebug("%C: same slope (up)! Origin.z=%s; oldz=%s; FloorZ=%s; OldFloorZ=%s", self, Origin.z, oldz, FloorZ, OldFloorZ);
+          /*
+          if (OldSector != Sector) printdebug("%C: !!!sector change!", self);
+          tmtrace_t ttx;
+          //GetFloorAndCeiling(out ttx);
+          GetFloorAndCeilingEx(out ttx, Origin+vector(0, 0, 1), collideWorld:true);
+          printdebug("%C:  0:ttx.FloorZ=%s", self, ttx.FloorZ);
+          GetFloorAndCeiling(out ttx);
+          printdebug("%C:  1:ttx.FloorZ=%s", self, ttx.FloorZ);
+          */
+        }
+        #endif
+        //if (!GetCvarB('mv_new_slope_code'))
+        {
+          oldz = FloorZ;
+          Origin.z = oldz;
+        }
       }
     }
   }
