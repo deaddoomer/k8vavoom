@@ -144,7 +144,7 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
   // check lines
   if (EntityFlags&EF_ColideWithWorld) {
     #ifdef VV_DBG_VERBOSE_REL_LINE_FC
-    GCon->Logf(NAME_Debug, "xxx: %s(%u): checking lines...; FloorZ=%g", GetClass()->GetName(), GetUniqueId(), tmtrace.FloorZ);
+    if (IsPlayer()) GCon->Logf(NAME_Debug, "xxx: %s(%u): checking lines...; FloorZ=%g", GetClass()->GetName(), GetUniqueId(), tmtrace.FloorZ);
     #endif
     //XLevel->IncrementValidCount();
     //gotNewValid = true;
@@ -161,7 +161,7 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
           // if we don't want pickups, don't activate specials
           if (!CheckRelLine(tmtrace, ld, noPickups)) {
             #ifdef VV_DBG_VERBOSE_REL_LINE_FC
-            /*if (IsPlayer())*/ GCon->Logf(NAME_Debug, "%s:  BLOCKED by line #%d (FloorZ=%g)", GetClass()->GetName(), (int)(ptrdiff_t)(ld-&XLevel->Lines[0]), tmtrace.FloorZ);
+            if (IsPlayer()) GCon->Logf(NAME_Debug, "%s:  BLOCKED by line #%d (FloorZ=%g)", GetClass()->GetName(), (int)(ptrdiff_t)(ld-&XLevel->Lines[0]), tmtrace.FloorZ);
             #endif
             good = false;
             // find the fractional intercept point along the trace line
@@ -180,7 +180,7 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
           }
           #ifdef VV_DBG_VERBOSE_REL_LINE_FC
           else {
-            /*if (IsPlayer())*/ GCon->Logf(NAME_Debug, "%s:  OK line #%d (FloorZ=%g)", GetClass()->GetName(), (int)(ptrdiff_t)(ld-&XLevel->Lines[0]), tmtrace.FloorZ);
+            if (IsPlayer()) GCon->Logf(NAME_Debug, "%s:  OK line #%d (FloorZ=%g)", GetClass()->GetName(), (int)(ptrdiff_t)(ld-&XLevel->Lines[0]), tmtrace.FloorZ);
           }
           #endif
         }
@@ -249,7 +249,7 @@ bool VEntity::CheckRelPosition (tmtrace_t &tmtrace, TVec Pos, bool noPickups, bo
   if (tmtrace.BlockingMobj) return false;
 
   #ifdef VV_DBG_VERBOSE_REL_LINE_FC
-  GCon->Logf(NAME_Debug, "xxx: %s(%u): VALID; FloorZ=%g", GetClass()->GetName(), GetUniqueId(), tmtrace.FloorZ);
+  if (IsPlayer()) GCon->Logf(NAME_Debug, "xxx: %s(%u): VALID; FloorZ=%g", GetClass()->GetName(), GetUniqueId(), tmtrace.FloorZ);
   #endif
 
   return true;
@@ -452,7 +452,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
   opening_t *open = XLevel->LineOpenings(ld, hitPoint, SPF_NOBLOCKING, !(EntityFlags&EF_Missile)/*do3dmidtex*/); // missiles ignores 3dmidtex
 
   #ifdef VV_DBG_VERBOSE_REL_LINE_FC
-  /*if (IsPlayer())*/ {
+  if (IsPlayer()) {
     GCon->Logf(NAME_Debug, "  checking line: %d; sz=%g; ez=%g; hgt=%g; traceFZ=%g; traceCZ=%g", (int)(ptrdiff_t)(ld-&XLevel->Lines[0]), tmtrace.End.z, tmtrace.End.z+hgt, hgt, tmtrace.FloorZ, tmtrace.CeilingZ);
     for (opening_t *op = open; op; op = op->next) {
       GCon->Logf(NAME_Debug, "   %p: bot=%g; top=%g; range=%g; lowfloor=%g; fnormz=%g", op, op->bottom, op->top, op->range, op->lowfloor, op->efloor.GetNormalZSafe());
@@ -462,7 +462,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
 
   open = VLevel::FindRelOpening(open, tmtrace.End.z, tmtrace.End.z+hgt);
   #ifdef VV_DBG_VERBOSE_REL_LINE_FC
-  /*if (IsPlayer())*/ GCon->Logf(NAME_Debug, "  open=%p; railing=%d", open, (int)!!(ld->flags&ML_RAILING));
+  if (IsPlayer()) GCon->Logf(NAME_Debug, "  open=%p; railing=%d", open, (int)!!(ld->flags&ML_RAILING));
   #endif
   // process railings
   if (open && (ld->flags&ML_RAILING)) {
@@ -491,7 +491,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
       if (replaceIt) {
         /*if (!skipSpecials || open->top >= Origin.z+hgt)*/ {
           #ifdef VV_DBG_VERBOSE_REL_LINE_FC
-          /*if (IsPlayer())*/ GCon->Logf(NAME_Debug, "    copy ceiling; hgt=%g; z+hgt=%g; top=%g; curcz-top=%g", hgt, Origin.z+hgt, open->top, tmtrace.CeilingZ-open->top);
+          if (IsPlayer()) GCon->Logf(NAME_Debug, "    copy ceiling; hgt=%g; z+hgt=%g; top=%g; curcz-top=%g", hgt, Origin.z+hgt, open->top, tmtrace.CeilingZ-open->top);
           #endif
           tmtrace.CopyOpenCeiling(open);
           tmtrace.CeilingLine = ld;
@@ -504,16 +504,19 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
       if (open->efloor.GetNormalZ() != 1.0f) {
         // slope; use epsilon
         replaceIt = (open->bottom-tmtrace.FloorZ > 0.1f);
+        #ifdef VV_DBG_VERBOSE_REL_LINE_FC
+        if (IsPlayer()) GCon->Logf(NAME_Debug, "    !floorcheck; slopez=%g; open->bottom=%g; tmtrace.FloorZ=%g; >=%d (%d)", open->efloor.GetNormalZ(), open->bottom, tmtrace.FloorZ, (int)(open->bottom > tmtrace.FloorZ), (int)replaceIt);
+        #endif
       } else {
         replaceIt = (open->bottom > tmtrace.FloorZ || (open->bottom == tmtrace.FloorZ && tmtrace.EFloor.isSlope()));
         #ifdef VV_DBG_VERBOSE_REL_LINE_FC
-        /*if (IsPlayer())*/ GCon->Logf(NAME_Debug, "    !floorcheck; open->bottom=%g; tmtrace.FloorZ=%g; >=%d (%d)", open->bottom, tmtrace.FloorZ, (int)(open->bottom > tmtrace.FloorZ), (int)replaceIt);
+        if (IsPlayer()) GCon->Logf(NAME_Debug, "    !floorcheck; open->bottom=%g; tmtrace.FloorZ=%g; >=%d (%d)", open->bottom, tmtrace.FloorZ, (int)(open->bottom > tmtrace.FloorZ), (int)replaceIt);
         #endif
       }
       if (replaceIt) {
         /*if (!skipSpecials || open->bottom <= Origin.z)*/ {
           #ifdef VV_DBG_VERBOSE_REL_LINE_FC
-          /*if (IsPlayer())*/ GCon->Logf(NAME_Debug, "    copy floor; z=%g; bot=%g; curfz-bot=%g", Origin.z, open->bottom, tmtrace.FloorZ-open->bottom);
+          if (IsPlayer()) GCon->Logf(NAME_Debug, "    copy floor; z=%g; bot=%g; curfz-bot=%g", Origin.z, open->bottom, tmtrace.FloorZ-open->bottom);
           #endif
           tmtrace.CopyOpenFloor(open);
           tmtrace.FloorLine = ld;
@@ -521,7 +524,7 @@ bool VEntity::CheckRelLine (tmtrace_t &tmtrace, line_t *ld, bool skipSpecials) {
       }
     } else {
       #ifdef VV_DBG_VERBOSE_REL_LINE_FC
-      GCon->Logf(NAME_Debug, "...skip floor");
+      if (IsPlayer()) GCon->Logf(NAME_Debug, "...skip floor");
       #endif
     }
 

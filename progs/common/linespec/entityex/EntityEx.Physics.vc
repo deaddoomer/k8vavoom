@@ -643,7 +643,7 @@ final void ZMovement (float DeltaTime, float OldFloorZ, float OldFloorNZ, sector
   float oldz = Origin.z;
   bool wasonground = (oldz == OldFloorZ);
 
-  //printdebug("000: %C: oldz=%s; FloorZ=%s; OldFloorZ=%s; z=%s; wasonground=%B", self, oldz, FloorZ, OldFloorZ, Origin.z, wasonground);
+  //if (bIsPlayer) printdebug("000: %C: oldz=%s; FloorZ=%s; OldFloorZ=%s; z=%s; wasonground=%B; EFloor.normal=%s", self, oldz, FloorZ, OldFloorZ, Origin.z, wasonground, EFloor.spGetNormal);
   //if (bIsPlayer) printdebug("%C: JumpTime=%s", self, JumpTime);
 
   //Mass = (Mass.isinf ? 10000 : fclamp(Mass, 0, 10000)); // done in C++ code
