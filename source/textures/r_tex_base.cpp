@@ -30,6 +30,7 @@
 
 //#define VV_VERY_VERBOSE_TEXTURE_LOADER
 static VCvarB dbg_verbose_texture_loader("dbg_verbose_texture_loader", false, "WERY verbose texture loader?", CVAR_PreInit|CVAR_NoShadow);
+static VCvarB dbg_verbose_texture_crop("dbg_verbose_texture_crop", false, "WERY verbose texture loader?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 
 VTexture *VTexture::gcHead = nullptr;
 VTexture *VTexture::gcTail = nullptr;
@@ -1684,7 +1685,7 @@ void VTexture::CropTexture () {
     vassert(!Brightmap->alreadyCropped);
   }
 
-  if (GTextureCropMessages) {
+  if (GTextureCropMessages && dbg_verbose_texture_crop.asBool()) {
     GCon->Logf(NAME_Debug, "%s (%s): crop from (0,0)-(%d,%d) to (%d,%d)-(%d,%d) -- %dx%d -> %dx%d", *Name, *W_FullLumpName(SourceLump), Width-1, Height-1, x0, y0, x1, y1, Width, Height, neww, newh);
   }
 
