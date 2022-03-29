@@ -48,6 +48,19 @@ static VCvarB r_model_autobobbing("r_model_autobobbing", true, "Allow model auto
 static VCvarB r_model_ignore_missing_textures("r_model_ignore_missing_textures", false, "Do not render models with missing textures (if `false`, renders with checkerboards)?", CVAR_Archive|CVAR_NoShadow);
 
 
+static TMap<VStr, VModel *> GFixedModelMap;
+
+
+//==========================================================================
+//
+//  RM_FreeModelRenderer
+//
+//==========================================================================
+void RM_FreeModelRenderer () {
+  GFixedModelMap.clear();
+}
+
+
 //==========================================================================
 //
 //  SprNameFrameToInt
@@ -662,6 +675,8 @@ static void DrawModel (VLevel *Level, VEntity *mobj, const TVec &Org, const TAVe
         }
       */
 
+      Md2Org.z += FDef.zoffset.GetOffset(rndVal);
+
       Md2Angle.yaw = FDef.angleYaw.GetAngle(Md2Angle.yaw, rndVal);
 
       if (FDef.AngleStart || FDef.AngleEnd != FDef.AngleStart) {
@@ -993,17 +1008,17 @@ bool VRenderLevelShared::DrawAliasModel (VEntity *mobj, VName clsName, const TVe
 //==========================================================================
 static VModel *FindFixedModelFor (VEntity *Ent, bool verbose) {
   vassert(Ent);
-  auto mpp = fixedModelMap.get(Ent->FixedModelName);
+  auto mpp = GFixedModelMap.get(Ent->FixedModelName);
   if (mpp) return *mpp;
   // first time
   VStr fname = VStr("models/")+Ent->FixedModelName;
   if (!FL_FileExists(fname)) {
     if (verbose) GCon->Logf(NAME_Warning, "Can't find alias model '%s'", *Ent->FixedModelName);
-    fixedModelMap.put(Ent->FixedModelName, nullptr);
+    GFixedModelMap.put(Ent->FixedModelName, nullptr);
     return nullptr;
   } else {
     VModel *mdl = Mod_FindName(fname);
-    fixedModelMap.put(Ent->FixedModelName, mdl);
+    GFixedModelMap.put(Ent->FixedModelName, mdl);
     return mdl;
   }
 }

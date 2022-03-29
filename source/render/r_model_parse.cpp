@@ -64,17 +64,16 @@ static int parseHexRGB (VStr str) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 // in "r_local.h"
-bool ClassModelMapRebuild = true;
-TArray<VModel *> mod_known;
-TArray<VStr> mod_gznames;
-TArray<VMeshModel *> GMeshModels;
-TArray<VClassModelScript *> ClassModels;
+bool ClassModelMapNeedRebuild = true;
 TMapNC<VName, VClassModelScript *> ClassModelMap;
-TMapNC<int, bool> AllModelTexturesSeen;
-TMap<VStr, VModel *> fixedModelMap;
-
 // in "r_public.h"
 TArray<int> AllModelTextures;
+
+static TArray<VModel *> mod_known;
+static TArray<VStr> mod_gznames;
+static TArray<VMeshModel *> GMeshModels;
+static TArray<VClassModelScript *> ClassModels;
+static TMapNC<int, bool> AllModelTexturesSeen;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -124,7 +123,7 @@ bool GZModelDefEx::IsModelFileExists (VStr mdpath) {
 //==========================================================================
 void RM_RebuildClassModelMap () {
   // build map
-  ClassModelMapRebuild = false;
+  ClassModelMapNeedRebuild = false;
   ClassModelMap.reset();
   for (auto &&mdl : ClassModels) {
     if (mdl->Name == NAME_None || !mdl->Model || mdl->Frames.length() == 0) continue;
@@ -213,9 +212,9 @@ void R_FreeModels () {
   }
   ClassModels.clear();
 
-  fixedModelMap.clear();
+  RM_FreeModelRenderer();
   ClassModelMap.clear();
-  ClassModelMapRebuild = true;
+  ClassModelMapNeedRebuild = true;
 }
 
 
@@ -273,6 +272,36 @@ static float xatof (VXmlNode *N, VStr str) {
 
 //==========================================================================
 //
+//  ParseIntWithDefault
+//
+//==========================================================================
+static int ParseIntWithDefault (VXmlNode *SN, const char *fieldname, int defval) {
+  vassert(SN);
+  vassert(fieldname && fieldname[0]);
+  if (!SN->HasAttribute(fieldname)) return defval;
+  int val = defval;
+  if (!SN->GetAttribute(fieldname).trimAll().convertInt(&val)) Sys_Error("model node '%s' should have integer value, but '%s' found", fieldname, *SN->GetAttribute(fieldname));
+  return val;
+}
+
+
+//==========================================================================
+//
+//  ParseFloatWithDefault
+//
+//==========================================================================
+static float ParseFloatWithDefault (VXmlNode *SN, const char *fieldname, float defval) {
+  vassert(SN);
+  vassert(fieldname && fieldname[0]);
+  if (!SN->HasAttribute(fieldname)) return defval;
+  float val = defval;
+  if (!SN->GetAttribute(fieldname).trimAll().convertFloat(&val)) Sys_Error("model node '%s' should have floating value, but '%s' found", fieldname, *SN->GetAttribute(fieldname));
+  return val;
+}
+
+
+//==========================================================================
+//
 //  ParseAngle
 //
 //==========================================================================
@@ -289,6 +318,17 @@ static void ParseAngle (VXmlNode *N, const char *name, ModelAngle &angle) {
       if (val.ICmp("random") == 0) angle.SetRelativeRandom(); else angle.SetRelative(xatof(N, val));
     }
   }
+}
+
+
+//==========================================================================
+//
+//  ParseRndZOffset
+//
+//==========================================================================
+static void ParseRndZOffset (VXmlNode *N, ModelZOffset &zoffset) {
+  zoffset.vmin = ParseFloatWithDefault(N, "random_zoffset_min", zoffset.vmin);
+  zoffset.vmax = ParseFloatWithDefault(N, "random_zoffset_max", zoffset.vmax);
 }
 
 
@@ -622,36 +662,6 @@ static void ParseTransform (VStr mfile, int mindex, VXmlNode *SN, VMatrix4 &tran
   finmt *= ofsmat;
 
   trans = finmt;
-}
-
-
-//==========================================================================
-//
-//  ParseIntWithDefault
-//
-//==========================================================================
-static int ParseIntWithDefault (VXmlNode *SN, const char *fieldname, int defval) {
-  vassert(SN);
-  vassert(fieldname && fieldname[0]);
-  if (!SN->HasAttribute(fieldname)) return defval;
-  int val = defval;
-  if (!SN->GetAttribute(fieldname).trimAll().convertInt(&val)) Sys_Error("model node '%s' should have integer value, but '%s' found", fieldname, *SN->GetAttribute(fieldname));
-  return val;
-}
-
-
-//==========================================================================
-//
-//  ParseFloatWithDefault
-//
-//==========================================================================
-static float ParseFloatWithDefault (VXmlNode *SN, const char *fieldname, float defval) {
-  vassert(SN);
-  vassert(fieldname && fieldname[0]);
-  if (!SN->HasAttribute(fieldname)) return defval;
-  float val = defval;
-  if (!SN->GetAttribute(fieldname).trimAll().convertFloat(&val)) Sys_Error("model node '%s' should have floating value, but '%s' found", fieldname, *SN->GetAttribute(fieldname));
-  return val;
 }
 
 
@@ -1095,6 +1105,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
                                                 "iwadonly", "thiswadonly",
                                                 "rotation", "bobbing",
                                                 "usepitch", "useroll",
+                                                "random_zoffset_min", "random_zoffset_max",
                                                 "gzdoom", nullptr);
       if (bad) Sys_Error("%s: model '%s' class definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
     }
@@ -1135,6 +1146,8 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
     Cls->asTranslucent = false;
     Cls->iwadonly = ParseBool(ClassDefNode, "iwadonly", globIWadOnly);
     Cls->thiswadonly = ParseBool(ClassDefNode, "thiswadonly", globThisWadOnly);
+    ModelZOffset defzoffset;
+    ParseRndZOffset(ClassDefNode, defzoffset);
 
     bool deleteIt = !xcls;
     if (!deleteIt && cli_IgnoreModelClass.has(*Cls->Name)) {
@@ -1145,7 +1158,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
     if (!deleteIt && xcls) {
       if (!Mdl->DefaultClass) Mdl->DefaultClass = Cls;
       ClassModels.Append(Cls);
-      ClassModelMapRebuild = true;
+      ClassModelMapNeedRebuild = true;
     }
     ClassDefined = true;
     //GCon->Logf("found model for class '%s'", *Cls->Name);
@@ -1172,6 +1185,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
                                                   "index", "last_index", "sprite", "sprite_frame",
                                                   "model", "frame_index", "submodel_index", "hidden",
                                                   "inter", "angle_start", "angle_end", "alpha_start", "alpha_end",
+                                                  "random_zoffset_min", "random_zoffset_max",
                                                   nullptr);
         if (bad) Sys_Error("%s: model '%s' class state definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
       }
@@ -1181,6 +1195,9 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       ParseAngle(StateDefNode, "yaw", F.angleYaw);
       ParseAngle(StateDefNode, "pitch", F.anglePitch);
       ParseAngle(StateDefNode, "roll", F.angleRoll);
+
+      F.zoffset = defzoffset;
+      ParseRndZOffset(StateDefNode, F.zoffset);
 
       F.rotateSpeed = ParseFloatWithDefault(StateDefNode, "rotation_speed", -1.0f);
       F.bobSpeed = ParseFloatWithDefault(StateDefNode, "bobbing_speed", -1.0f);
@@ -1413,7 +1430,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
         *ClassDefNode->Loc.toStringNoCol(), *Mdl->Name, *Cls->Name);
       }
       ClassModels.Remove(Cls);
-      ClassModelMapRebuild = true;
+      ClassModelMapNeedRebuild = true;
       deleteIt = true;
     }
 

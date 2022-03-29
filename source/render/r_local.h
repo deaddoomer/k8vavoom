@@ -346,12 +346,13 @@ struct VScriptedModelFrame {
   ModelAngle angleYaw;
   ModelAngle angleRoll;
   ModelAngle anglePitch;
+  ModelZOffset zoffset;
   float rotateSpeed; // yaw rotation speed
   float bobSpeed; // bobbing speed
   int gzActorPitch; // 0: don't use; <0: actor; >0: momentum
   bool gzActorPitchInverted;
   int gzActorRoll; // 0: don't use; <0: actor; >0: momentum
-  bool gzdoom;
+  bool gzdoom; // is this a model from GZDoom MODELDEF?
   //
   VName sprite;
   int frame; // sprite frame
@@ -374,6 +375,7 @@ struct VScriptedModelFrame {
     angleYaw = src.angleYaw;
     angleRoll = src.angleRoll;
     anglePitch = src.anglePitch;
+    zoffset = src.zoffset;
     rotateSpeed = src.rotateSpeed;
     bobSpeed = src.bobSpeed;
     gzActorPitch = src.gzActorPitch;
@@ -414,20 +416,16 @@ struct VModel {
 };
 
 
-extern bool ClassModelMapRebuild;
-extern TArray<VModel *> mod_known;
-extern TArray<VStr> mod_gznames;
-extern TArray<VMeshModel *> GMeshModels;
-extern TArray<VClassModelScript *> ClassModels;
+extern bool ClassModelMapNeedRebuild;
 extern TMapNC<VName, VClassModelScript *> ClassModelMap;
-extern TMapNC<int, bool> AllModelTexturesSeen;
-extern TMap<VStr, VModel *> fixedModelMap;
 
+
+void RM_FreeModelRenderer ();
 
 void RM_RebuildClassModelMap();
 
-static inline VClassModelScript *RM_FindClassModelByName (VName clsName) {
-  if (ClassModelMapRebuild) RM_RebuildClassModelMap();
+static inline VVA_OKUNUSED VClassModelScript *RM_FindClassModelByName (VName clsName) {
+  if (ClassModelMapNeedRebuild) RM_RebuildClassModelMap();
   auto mp = ClassModelMap.get(clsName);
   return (mp ? *mp : nullptr);
 }
