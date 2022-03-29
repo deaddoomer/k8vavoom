@@ -727,7 +727,8 @@ void VBasePlayer::DoClientIntermission (VName NextMap) {
 
   if (linfo.Cluster != einfo.Cluster || G_CheckFinale()) {
     // cluster leaving text
-    if (linfo.Cluster) SetupClusterText(ClusterText_Exit, im.LeaveText, P_GetClusterDef(linfo.Cluster));
+    // k8: do not show cluster leaving text on secret exit
+    if (linfo.Cluster && (!didSecret || G_CheckFinale())) SetupClusterText(ClusterText_Exit, im.LeaveText, P_GetClusterDef(linfo.Cluster));
     // cluster entering text
     if (einfo.Cluster) SetupClusterText(ClusterText_Enter, im.EnterText, P_GetClusterDef(einfo.Cluster));
   }
