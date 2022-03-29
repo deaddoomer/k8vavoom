@@ -178,8 +178,9 @@ set(RENDERBASE_SOURCES
   render/r_main_decals.cpp
   render/r_main_reg.cpp
   render/r_main_adv.cpp
-  render/r_model.cpp
+  render/r_model_parse.cpp
   render/r_model_gz.cpp
+  render/r_model_render.cpp
   render/modelparse/md2_normals.h
   render/modelparse/voxelib.cpp
   render/modelparse/r_parsecommon.cpp

@@ -216,6 +216,224 @@ struct subregion_info_t {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+// models
+struct VModel;
+
+struct ModelAngle {
+public:
+  enum Mode { Relative, RelativeRandom, Absolute, AbsoluteRandom };
+public:
+  float angle;
+  Mode mode;
+
+  inline ModelAngle () noexcept : angle(0.0f), mode(Relative) {}
+
+  inline void SetRelative (float aangle) noexcept { angle = AngleMod(aangle); mode = Relative; }
+  inline void SetAbsolute (float aangle) noexcept { angle = AngleMod(aangle); mode = Absolute; }
+  inline void SetAbsoluteRandom () noexcept { angle = AngleMod(360.0f*FRandomFull()); mode = AbsoluteRandom; }
+  inline void SetRelativeRandom () noexcept { angle = AngleMod(360.0f*FRandomFull()); mode = RelativeRandom; }
+
+  inline bool IsRelative () const noexcept { return (mode <= RelativeRandom); }
+  inline bool IsRandom () const noexcept { return (mode == RelativeRandom || mode == AbsoluteRandom); }
+
+  inline bool IsEmpty () const noexcept { return (mode == Relative && angle == 0.0f); }
+
+  inline float GetAngle (float baseangle, vuint8 rndVal) const noexcept {
+    const float ang = (!IsRandom() ? angle : AngleMod((float)rndVal*360.0f/255.0f));
+    return (IsRelative() ? AngleMod(baseangle+ang) : ang);
+  }
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+struct ModelZOffset {
+public:
+  float vmin, vmax;
+
+  inline ModelZOffset () noexcept : vmin(0.0f), vmax(0.0f) {}
+
+  inline float GetOffset (vuint8 rndVal) const noexcept {
+    return (FASU(vmin)^FASU(vmax) ? vmin+(vmax-vmin)*((float)rndVal/255.0f) : vmin);
+  }
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+struct VScriptSubModel {
+  struct VFrame {
+    int Index;
+    int PositionIndex;
+    float AlphaStart;
+    float AlphaEnd;
+    AliasModelTrans Transform;
+    int SkinIndex;
+
+    void copyFrom (const VFrame &src) {
+      Index = src.Index;
+      PositionIndex = src.PositionIndex;
+      AlphaStart = src.AlphaStart;
+      AlphaEnd = src.AlphaEnd;
+      Transform = src.Transform;
+      SkinIndex = src.SkinIndex;
+    }
+  };
+
+  VMeshModel *Model;
+  VMeshModel *PositionModel;
+  int SkinAnimSpeed;
+  int SkinAnimRange;
+  int Version;
+  int MeshIndex; // for md3
+  TArray<VFrame> Frames;
+  TArray<VMeshModel::SkinInfo> Skins;
+  bool FullBright;
+  bool NoShadow;
+  bool UseDepth;
+  bool AllowTransparency;
+  float AlphaMul;
+
+  void copyFrom (VScriptSubModel &src) {
+    Model = src.Model;
+    PositionModel = src.PositionModel;
+    SkinAnimSpeed = src.SkinAnimSpeed;
+    SkinAnimRange = src.SkinAnimRange;
+    Version = src.Version;
+    MeshIndex = src.MeshIndex; // for md3
+    FullBright = src.FullBright;
+    NoShadow = src.NoShadow;
+    UseDepth = src.UseDepth;
+    AllowTransparency = src.AllowTransparency;
+    AlphaMul = src.AlphaMul;
+    // copy skin names
+    Skins.setLength(src.Skins.length());
+    for (int f = 0; f < src.Skins.length(); ++f) Skins[f] = src.Skins[f];
+    // copy skin shades
+    //SkinShades.setLength(src.SkinShades.length());
+    //for (int f = 0; f < src.SkinShades.length(); ++f) SkinShades[f] = src.SkinShades[f];
+    // copy frames
+    Frames.setLength(src.Frames.length());
+    for (int f = 0; f < src.Frames.length(); ++f) Frames[f].copyFrom(src.Frames[f]);
+  }
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+struct VScriptModel {
+  VName Name;
+  bool HasAlphaMul;
+  //int NextDefFrame;
+  TArray<VScriptSubModel> SubModels;
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+enum {
+  MdlAndle_DontUse = 0,
+  MdlAndle_FromActor = -1,
+  MdlAndle_FromMomentum = 1,
+};
+
+struct VScriptedModelFrame {
+  int Number;
+  float Inter;
+  int ModelIndex;
+  int SubModelIndex; // you can select submodel from any model if you wish to; use -1 to render all submodels; -2 to render none
+  int FrameIndex;
+  float AngleStart;
+  float AngleEnd;
+  float AlphaStart;
+  float AlphaEnd;
+  ModelAngle angleYaw;
+  ModelAngle angleRoll;
+  ModelAngle anglePitch;
+  float rotateSpeed; // yaw rotation speed
+  float bobSpeed; // bobbing speed
+  int gzActorPitch; // 0: don't use; <0: actor; >0: momentum
+  bool gzActorPitchInverted;
+  int gzActorRoll; // 0: don't use; <0: actor; >0: momentum
+  bool gzdoom;
+  //
+  VName sprite;
+  int frame; // sprite frame
+  // index for next frame with the same sprite and frame
+  int nextSpriteIdx;
+  // index for next frame with the same number
+  int nextNumberIdx;
+  bool disabled;
+
+  void copyFrom (const VScriptedModelFrame &src) {
+    Number = src.Number;
+    Inter = src.Inter;
+    ModelIndex = src.ModelIndex;
+    SubModelIndex = src.SubModelIndex;
+    FrameIndex = src.FrameIndex;
+    AngleStart = src.AngleStart;
+    AngleEnd = src.AngleEnd;
+    AlphaStart = src.AlphaStart;
+    AlphaEnd = src.AlphaEnd;
+    angleYaw = src.angleYaw;
+    angleRoll = src.angleRoll;
+    anglePitch = src.anglePitch;
+    rotateSpeed = src.rotateSpeed;
+    bobSpeed = src.bobSpeed;
+    gzActorPitch = src.gzActorPitch;
+    gzActorPitchInverted = src.gzActorPitchInverted;
+    gzActorRoll = src.gzActorRoll;
+    gzdoom = src.gzdoom;
+    sprite = src.sprite;
+    frame = src.frame;
+    nextSpriteIdx = src.nextSpriteIdx;
+    nextNumberIdx = src.nextNumberIdx;
+    disabled = src.disabled;
+  }
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+struct VClassModelScript {
+  VName Name;
+  VModel *Model;
+  bool NoSelfShadow;
+  bool OneForAll; // no need to do anything, this is "one model for all frames"
+  TArray<VScriptedModelFrame> Frames;
+  bool CacheBuilt;
+  bool isGZDoom;
+  bool iwadonly;
+  bool thiswadonly;
+  bool asTranslucent; // always queue this as translucent model?
+  TMapNC<vuint32, int> SprFrameMap; // sprite name -> frame index (first)
+  TMapNC<int, int> NumFrameMap; // frame number -> frame index (first)
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+struct VModel {
+  VStr Name;
+  TArray<VScriptModel> Models;
+  VClassModelScript *DefaultClass;
+};
+
+
+extern bool ClassModelMapRebuild;
+extern TArray<VModel *> mod_known;
+extern TArray<VStr> mod_gznames;
+extern TArray<VMeshModel *> GMeshModels;
+extern TArray<VClassModelScript *> ClassModels;
+extern TMapNC<VName, VClassModelScript *> ClassModelMap;
+extern TMapNC<int, bool> AllModelTexturesSeen;
+extern TMap<VStr, VModel *> fixedModelMap;
+
+
+void RM_RebuildClassModelMap();
+
+static inline VClassModelScript *RM_FindClassModelByName (VName clsName) {
+  if (ClassModelMapRebuild) RM_RebuildClassModelMap();
+  auto mp = ClassModelMap.get(clsName);
+  return (mp ? *mp : nullptr);
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 extern VCvarF gl_maxdist;
 extern VCvarF r_lights_radius;
 extern VCvarB r_models_strict;

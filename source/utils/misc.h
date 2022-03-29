@@ -31,7 +31,8 @@
 
 
 // this is used to compare floats like ints which is faster
-#define FASI(var_) (*(const int32_t *)&(var_))
+#define FASI(var_) (*(const VVA_MAYALIAS int32_t *)&(var_))
+#define FASU(var_) (*(const VVA_MAYALIAS uint32_t *)&(var_))
 
 // used to work with double-linked lists
 #define DLListAppendEx(item_,head_,tail_,prevname_,nextname_)  do { \
