@@ -815,108 +815,6 @@ void VRenderLevelShared::QueueSprite (VEntity *thing, RenderStyleInfo &ri, bool 
 
 //==========================================================================
 //
-//  traspSpriteCmp
-//
-//==========================================================================
-static int traspSpriteCmp (const void *a, const void *b, void *) {
-  if (a == b) return 0;
-  const VRenderLevelShared::trans_sprite_t *ta = (const VRenderLevelShared::trans_sprite_t *)a;
-  const VRenderLevelShared::trans_sprite_t *tb = (const VRenderLevelShared::trans_sprite_t *)b;
-
-  // sort by distance to view origin (nearest last)
-  const float d0 = ta->dist;
-  const float d1 = tb->dist;
-  if (d0 < d1) return +1; // a is nearer, so it is last (a is greater)
-  if (d0 > d1) return -1; // b is nearer, so it is last (a is lesser)
-
-  // non-translucent objects should come first
-  #if 0
-  // translucent/additive
-  const unsigned aTrans = (unsigned)(ta->rstyle.alpha < 1.0f || (ta->rstyle.isTranslucent() && !ta->rstyle.isStenciled()));
-  const unsigned bTrans = (unsigned)(tb->rstyle.alpha < 1.0f || (tb->rstyle.isTranslucent() && !tb->rstyle.isStenciled()));
-
-  // if both has that bit set, the result of xoring will be 0
-  if (aTrans^bTrans) {
-    // only one is translucent
-    vassert(aTrans == 0 || bTrans == 0);
-    return (aTrans ? 1/*a is translucent, b is not; b first (a is greater)*/ : -1/*a is not translucent, b is translucent; a first (a is lesser)*/);
-  }
-  #endif
-
-  #if 0
-  // mirrors come first, then comes floor/ceiling surfaces
-  if ((ta->rstyle.flags^tb->rstyle.flags)&(RenderStyleInfo::FlagCeiling|RenderStyleInfo::FlagFloor|RenderStyleInfo::FlagMirror)) {
-    if ((ta->rstyle.flags^tb->rstyle.flags)&RenderStyleInfo::FlagMirror) {
-      return (ta->rstyle.flags&RenderStyleInfo::FlagMirror ? -1 : 1);
-    }
-    return (ta->rstyle.flags&(RenderStyleInfo::FlagCeiling|RenderStyleInfo::FlagFloor) ? -1 : 1);
-  }
-
-  // shadows come first
-  // oriented comes next
-  const unsigned taspec = ta->rstyle.flags&(RenderStyleInfo::FlagShadow|RenderStyleInfo::FlagOriented);
-  const unsigned tbspec = tb->rstyle.flags&(RenderStyleInfo::FlagShadow|RenderStyleInfo::FlagOriented);
-  // if both has the same bits set, the result of xoring will be 0
-  if (taspec^tbspec) {
-    // one is shadow?
-    if ((taspec^tbspec)&RenderStyleInfo::FlagShadow) {
-      return (taspec&RenderStyleInfo::FlagShadow ? -1/*a first (a is lesser)*/ : 1/*b first (a is greater)*/);
-    }
-    // one is oriented?
-    if ((taspec^tbspec)&RenderStyleInfo::FlagOriented) {
-      return (taspec&RenderStyleInfo::FlagOriented ? -1/*a first (a is lesser)*/ : 1/*b first (a is greater)*/);
-    }
-  }
-  #endif
-
-  #if 0
-  // sort by special type
-  const unsigned tahang = ta->rstyle.flags&~RenderStyleInfo::FlagOptionsMask;
-  const unsigned tbhang = tb->rstyle.flags&~RenderStyleInfo::FlagOptionsMask;
-
-  if (tahang|tbhang) {
-    if (tahang != tbhang) return (tahang > tbhang ? -1/*a first (a is lesser) */ : 1/*b first (a is greater)*/);
-  }
-  #endif
-
-  // priority check
-  // higher priority comes first
-  if (ta->prio < tb->prio) return 1; // a has lower priority, it should come last (a > b)
-  if (ta->prio > tb->prio) return -1; // a has higher priority, it should come first (a < b)
-
-  #if 0
-  // sort by object type
-  // first masked polys, then sprites, then alias models
-  // type 0: masked polys
-  // type 1: sprites
-  // type 2: alias models
-  const int typediff = (int)ta->type-(int)tb->type;
-  if (typediff) return typediff;
-
-  /*
-  // priority check
-  // higher priority comes first
-  if (ta->prio < tb->prio) return 1; // a has lower priority, it should come last (a > b)
-  if (ta->prio > tb->prio) return -1; // a has higher priority, it should come first (a < b)
-  */
-
-  if (ta->objid < tb->objid) return -1;
-  if (ta->objid > tb->objid) return 1;
-
-  // sort sprites by lump number, why not
-  if (ta->type == TSP_Sprite) {
-    if (ta->lump < tb->lump) return -1;
-    if (ta->lump > tb->lump) return 1;
-  }
-  #endif
-
-  // nothing to check anymore, consider equal
-  return 0;
-}
-
-
-//==========================================================================
-//
 //  TSNextPOfs
 //
 //==========================================================================
@@ -996,12 +894,73 @@ void VRenderLevelShared::DrawTransSpr (trans_sprite_t &spr) {
 
 
 // sorry for globals
-// last surface of the subsector, index in `DrawSurfListAlpha`
-// subsector is determined by the surface
-static TArray<int> lastSSurf;
-// to avoid looping over `lastSSurf` each time, use this hash
-// value is index in `lastSSurf`
-static TMapNC<const subsector_t *, int> lastSSurfMap;
+// use pointers to `trans_sprite_t` structs, for sorting speed
+static TArrayNC<VRenderLevelDrawer::trans_sprite_t *> transSprPtrs;
+
+
+//==========================================================================
+//
+//  simpleSpriteCmp
+//
+//==========================================================================
+static int simpleSpriteCmp (const void *a, const void *b, void *) {
+  if (a == b) return 0;
+
+  const VRenderLevelShared::trans_sprite_t *ta = *(const VRenderLevelShared::trans_sprite_t **)a;
+  const VRenderLevelShared::trans_sprite_t *tb = *(const VRenderLevelShared::trans_sprite_t **)b;
+
+  //const float dd = ta->dist-tb->dist;
+  //return (isLessZeroF(dd) ? +1 : isGreatZeroF(dd) ? -1 : 0);
+  return
+    ta->dist < tb->dist ? +1 :
+    ta->dist > tb->dist ? -1 :
+    0;
+}
+
+
+//==========================================================================
+//
+//  transIsBehindPlane
+//
+//==========================================================================
+static inline bool transIsBehindPlane (const VRenderLevelDrawer::trans_sprite_t *sp,
+                                       const TPlane &plane)
+{
+  const bool cameraInFront = (plane.PointDistance(Drawer->vieworg) >= 0.0f);
+
+  bool objInFront;
+
+  // check radius first (early exit if possible)
+  float rad = (plane.normal.z == 0.0f ? sp->ent->Radius : sp->ent->Height);
+  if (rad <= 4.0f) {
+    // for small things, just check the origin
+    objInFront = (plane.PointDistance(sp->ent->Origin) >= 0.0f);
+  } else {
+    const int sps = plane.SphereOnSide2(sp->ent->Origin, rad);
+
+    if (sp->type == VRenderLevelDrawer::TSP_Sprite) {
+      if (sps == 0) {
+        objInFront = true;
+      } else if (sps == 1) {
+        objInFront = false;
+      } else {
+        // check sprite vertices
+        objInFront = true;
+        for (unsigned f = 0; f < 4; ++f) {
+          if (plane.PointDistance(sp->Verts[f]) < 0.0f) {
+            objInFront = false;
+            break;
+          }
+        }
+      }
+    } else {
+      // for models, assume behind (the best thing we can do here)
+      objInFront = (sps == 0);
+    }
+  }
+
+  return (objInFront != cameraInFront);
+}
 
 
 //==========================================================================
@@ -1025,7 +984,7 @@ void VRenderLevelShared::DrawTranslucentPolys () {
 
   // render sprite shadpows first (there is no need to sort them)
   if (dls.DrawSpriteShadowsList.length() > 0) {
-    // there is no need to sort solid sprites
+    // there is no need to sort shadow sprites
     for (auto &&spr : dls.DrawSpriteShadowsList) DrawTransSpr(spr);
   }
 
@@ -1043,7 +1002,7 @@ void VRenderLevelShared::DrawTranslucentPolys () {
 
     i.e. the whole wall-ws-sprite sorting step can be omited if we have no translucent sprites
 
-    BSP INVARIANT: subsector walls are appended before subsector flats
+    BSP INVARIANT: subsector walls are appended after subsector flats
 
     THING TO CHECK: polyobjects can get in there, don't try to sort with polyobject flats
    */
@@ -1055,183 +1014,73 @@ void VRenderLevelShared::DrawTranslucentPolys () {
 
   if (dls.DrawSpriListAlpha.length()) {
     // we have some translucent sprites; sort them
-    #if 0
-    GCon->Logf(NAME_Debug, "=================");
-    for (auto &&spr : dls.DrawSpriListAlpha) {
-      GCon->Logf(NAME_Debug, "  %s: %s (%d)", spr.ent->GetClass()->GetName(), spr.rstyle.toCString(), (int)spr.rstyle.isTranslucent());
+    // after sorting, the furthest sprite will have the lowest index
+    const int splen = dls.DrawSpriListAlpha.length();
+    {
+      transSprPtrs.setLengthReserve(splen);
+      trans_sprite_t **destp = transSprPtrs.ptr();
+      trans_sprite_t *spp = dls.DrawSpriListAlpha.ptr();
+      for (int f = 0; f < splen; ++f) *destp++ = spp++;
+      if (!dbg_disable_sprite_sorting) {
+        xxsort_r(transSprPtrs.ptr(), transSprPtrs.length(), sizeof(transSprPtrs[0]), &simpleSpriteCmp, nullptr);
+      }
     }
-    #endif
-    if (!dbg_disable_sprite_sorting) {
-      xxsort_r(dls.DrawSpriListAlpha.ptr(), dls.DrawSpriListAlpha.length(), sizeof(dls.DrawSpriListAlpha[0]), &traspSpriteCmp, nullptr);
-    }
+
+    trans_sprite_t **spxpp = transSprPtrs.ptr();
     if (!dls.DrawSurfListAlpha.length()) {
-      // but no translucent surfaces, so simply sort sprites by distance, and render
-      for (auto &&spr : dls.DrawSpriListAlpha) DrawTransSpr(spr);
+      // no translucent surfaces, so simply render sorted sprites
+      for (int f = transSprPtrs.length(); f--; ++spxpp) DrawTransSpr(**spxpp);
     } else {
       // ok, we have a complex case here: both translucent surfaces, and translucent sprites
       // insert sprites in surface list, and render the combined list
+      // translucent surfaces are grouped by subsectors, from nearest to furthest
+      // (this is guaranteed by BSP renderer)
+      // subsector flats are added first, then subsector walls
+
+      // to sort things, first merge lists, then sort.
+      //
+      // sorter sprite compare is a normal compare
+      //
+      // sprite vs surface compare:
+      //   check if any sprite quad vertex is behind the surface ("on" means "no")
+      //   if behind, sprite is "greater" (because rendering is done in reverse order)
+      // special case: 2-sided surface that is away from the camera, must be flipped
+      //
+      // surface vs surface comapre:
+      //   keep original order
+
       //GCon->Logf(NAME_Debug, "*** %d translucent sprites, %d translucent walls", dls.DrawSpriListAlpha.length(), dls.DrawSurfListAlpha.length());
 
-      // build list of last subsector surface indices
-      lastSSurf.resetNoDtor();
-      lastSSurfMap.reset();
-      const trans_sprite_t *sfc = dls.DrawSurfListAlpha.ptr();
-      const int sfccount = dls.DrawSurfListAlpha.length();
-      for (int idx = 0; idx < sfccount; ) {
-        if (sfc->type == TSP_Wall) {
-          const surface_t *surf = sfc->surf;
-          vassert(surf->subsector);
-          const subsector_t *ss = surf->subsector;
-          #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
-          const int startidx = idx;
-          #endif
-          for (++idx, ++sfc; idx < sfccount; ++idx, ++sfc) {
-            if (sfc->type != TSP_Wall) continue;
-            surf = sfc->surf;
-            vassert(surf->subsector);
-            if (surf->subsector != ss) break;
-          }
-          lastSSurfMap.put(ss, lastSSurf.length());
-          lastSSurf.append(idx-1);
-          #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
-          GCon->Logf(NAME_Debug, "::: subsector #%d: fist=%d, last=%d (total=%d)", (int)(ptrdiff_t)(ss-&Level->Subsectors[0]), startidx, idx-1, sfccount);
-          #endif
-        } else {
-          ++idx;
-          ++sfc;
+      // render it like this:
+      // first, all sprites behind the current surface; then, the surface
+      // surfaces are sorted by distance by BSP traversal, sprites are sorted above
+      int spidx = 0;
+
+      //FIXME: i may need to change flat/wall rendering order
+      // currently, BSP first adds subsector flats, then subsector walls
+      // so with reverse order, subsector walls comes first, then flats
+      // this may conflict with water rendering
+      // maybe write special code to sort sprites/water?
+
+      // render surfaces from the last one
+      trans_sprite_t *swp = dls.DrawSurfListAlpha.ptr()+dls.DrawSurfListAlpha.length()-1;
+      for (int f = dls.DrawSurfListAlpha.length(); f--; --swp) {
+        // render all sprites behind this surface
+        while (spidx < splen && transIsBehindPlane(*spxpp, swp->surf->plane)) {
+          DrawTransSpr(**spxpp);
+          ++spxpp;
+          ++spidx;
         }
+        // now the surface itself
+        DrawTransSpr(*swp);
       }
-      const int lastSSCount = lastSSurf.length();
-      #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
-      GCon->Logf(NAME_Debug, "::: %d subsector edges found", lastSSCount);
-      #endif
 
-      // insert sprites
-      for (auto &&spr : dls.DrawSpriListAlpha) {
-        vassert(spr.type != TSP_Wall);
-        // just in case
-        if (!spr.ent || !spr.ent->SubSector) {
-          // wtf?!
-          dls.DrawSurfListAlpha.append(spr);
-          continue;
-        }
-        const subsector_t *spsub = spr.ent->SubSector;
-        const int count = dls.DrawSurfListAlpha.length();
-        const TVec sorg0 = spr.origin;
-        const TVec sorg1 = sorg0+TVec(0.0f, 0.0f, max2(0.0f, spr.ent->Height));
-        #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
-        const bool doDump =
-          spr.lump > 0 &&
-          VStr::startsWith(*GTextureManager.GetTextureName(spr.lump), "bal1");
-        #endif
-        #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
-        if (doDump) GCon->Logf(NAME_Debug, " ++ checking sprite '%s' at (%g,%g,%g)", *GTextureManager.GetTextureName(spr.lump), sorg0.x, sorg0.y, sorg0.z);
-        #endif
-
-        // start from the last subsector surface
-        #if 0
-        int lastSSIdx = 0;
-        int *ssp = lastSSurf.ptr();
-        for (; lastSSIdx < lastSSCount; ++lastSSIdx, ++ssp) {
-          sfc = dls.DrawSurfListAlpha.ptr()+(*ssp);
-          vassert(sfc->type == TSP_Wall);
-          if (sfc->surf->subsector == spsub) break;
-        }
-        if (lastSSIdx >= lastSSCount) {
-          // not found, wtf?!
-          dls.DrawSurfListAlpha.append(spr);
-          continue;
-        }
-        #else
-        auto lssp = lastSSurfMap.get(spsub);
-        if (!lssp) {
-          // no such subsector, append to the end of the list (but before all other sprites there)
-          int iidx = dls.DrawSurfListAlpha.length();
-          sfc = dls.DrawSurfListAlpha.ptr()+iidx-1;
-          while (iidx > 0) {
-            if (sfc->type == TSP_Wall) break;
-            --iidx;
-            --sfc;
-          }
-          dls.DrawSurfListAlpha.insert(iidx, spr);
-          continue;
-        }
-        int lastSSIdx = *lssp;
-        int *ssp = lastSSurf.ptr()+lastSSIdx;
-        #endif
-
-        // check back, against non-wall surfaces
-        // flats are sorted from top to bottom (and rendered from bottom to top)
-        int idx = lastSSurf[lastSSIdx];
-        /*const trans_sprite_t * */sfc = dls.DrawSurfListAlpha.ptr()+idx;
-        #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
-        if (doDump) {
-          GCon->Logf(NAME_Debug, "    checking back from surface #%d", idx);
-        }
-        #endif
-        int lowestSFC = -1;
-        float lowestDist = -FLT_MAX;
-        while (idx > 0) {
-          if (sfc->type != TSP_Wall) {
-            --idx;
-            --sfc;
-            continue;
-          }
-          const surface_t *surf = sfc->surf;
-          // if we moved out of the subsector, stop
-          if (surf->subsector != spsub) {
-            // insert after this if this is a wall, or before this if this is a flat
-            #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
-            if (doDump) {
-              GCon->Logf(NAME_Debug, "    different subsector flat #%d norm=(%g,%g,%g)", idx, surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z);
-            }
-            #endif
-            // a flat?
-            if (surf->plane.normal.z != 0.0f) {
-              // insert before this
-              --sfc;
-              --idx;
-            }
-            break;
-          }
-          vassert(surf->subsector);
-          // ignore walls (just in case)
-          if (surf->plane.normal.z != 0.0f) {
-            // check distance
-            // check sprite top for the floor, and bottom for the ceiling
-            const float sdist = surf->plane.PointDistance(surf->plane.normal.z > 0.0f ? sorg1 : sorg0);
-            #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
-            if (doDump) {
-              GCon->Logf(NAME_Debug, "    distance to flat #%d is %g; lowestSFC=%d; lowestDist=%g; norm=(%g,%g,%g)", idx, sdist, lowestSFC, lowestDist, surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z);
-            }
-            #endif
-            if (sdist < 0.0f && sdist > lowestDist) {
-              // insert after this
-              lowestDist = sdist;
-              lowestSFC = idx;
-            }
-          }
-          --idx;
-          --sfc;
-        }
-        // insert after idx
-        if (lowestSFC >= 0) idx = lowestSFC+1; // insert after this flat
-        // move behind all sprites
-        sfc = dls.DrawSurfListAlpha.ptr();
-        while (idx > 0 && sfc[idx-1].type == TSP_Sprite) --idx;
-        vassert(idx >= 0 && idx <= count);
-        #ifdef VV_RENDER_DEBUG_TRANSLUCENT_SPRITES
-        if (doDump) GCon->Logf(NAME_Debug, "    final position: %d", idx);
-        #endif
-        // insert
-        dls.DrawSurfListAlpha.insert(idx, spr);
-        // fix subsector edges
-        for (; lastSSIdx < lastSSCount; ++lastSSIdx, ++ssp) {
-          if (*ssp >= idx) ++(*ssp);
-        }
+      // render all sprites which are at the front of the closest surface
+      while (spidx < splen) {
+        DrawTransSpr(**spxpp);
+        ++spxpp;
+        ++spidx;
       }
-      // render in reverse order
-      for (trans_sprite_t &spr : dls.DrawSurfListAlpha.reverse()) DrawTransSpr(spr);
     }
   } else if (dls.DrawSurfListAlpha.length()) {
     vassert(dls.DrawSpriListAlpha.length() == 0);

@@ -211,8 +211,8 @@ public:
     TVec texorg; // masked polys and sprites
     int translation; // masked polys and sprites
     int type; // TSP_xxx -- 0: masked polygon (wall); 1: sprite; 2: alias model
-    float dist; // for soriting
-    vuint32 objid; // for entities
+    float dist; // for soriting; distance to camera plane
+    vuint32 objid; // for entities; for surfaces, sort index (used in sorter)
     RenderStyleInfo rstyle;
 
     // no need to setup this
