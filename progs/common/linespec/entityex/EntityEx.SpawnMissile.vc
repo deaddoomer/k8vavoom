@@ -376,7 +376,7 @@ final EntityEx SpawnMissile (EntityEx dest, class!EntityEx type, optional float 
   A.Target = self; // where it came from
   MultProjSpeed(A);
 
-  TVec dir = (dest ? dest.Origin-Origin : Velocity);
+  TVec dir = (dest ? dest.Origin-Origin : AngleYawVector(Angles.yaw));
   MissileFixDir(dir, dest, A);
   VectorAngles(dir, out A.Angles);
 
@@ -403,7 +403,7 @@ final EntityEx SpawnMissileXYZ (TVec org, EntityEx dest, class!EntityEx type) {
   A.Target = self;  // Originator
   MultProjSpeed(A);
 
-  TVec dir = dest.Origin-Origin;
+  TVec dir = (dest ? dest.Origin-Origin : AngleYawVector(Angles.yaw));
   MissileFixDir(dir, dest, A);
   VectorAngles(dir, out A.Angles);
 
