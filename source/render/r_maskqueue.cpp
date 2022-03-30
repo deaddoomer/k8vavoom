@@ -1016,6 +1016,7 @@ void VRenderLevelShared::DrawTranslucentPolys () {
   //       are broken by translucent surfaces (additive sprite rendered first even if it is nearer
   //       than the surface)
 
+  // this simply enables z-writes, and restores z comparision function
   Drawer->SetupTranslucentPass();
 
   transSprState.reset();
@@ -1054,6 +1055,12 @@ void VRenderLevelShared::DrawTranslucentPolys () {
 
   if (dls.DrawSpriListAlpha.length()) {
     // we have some translucent sprites; sort them
+    #if 0
+    GCon->Logf(NAME_Debug, "=================");
+    for (auto &&spr : dls.DrawSpriListAlpha) {
+      GCon->Logf(NAME_Debug, "  %s: %s (%d)", spr.ent->GetClass()->GetName(), spr.rstyle.toCString(), (int)spr.rstyle.isTranslucent());
+    }
+    #endif
     if (!dbg_disable_sprite_sorting) {
       xxsort_r(dls.DrawSpriListAlpha.ptr(), dls.DrawSpriListAlpha.length(), sizeof(dls.DrawSpriListAlpha[0]), &traspSpriteCmp, nullptr);
     }
