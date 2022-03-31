@@ -664,6 +664,8 @@ static void vmWriter (const char *buf, bool debugPrint, VName wrname) {
   } else if (buf[0]) {
     if (writeToConsole) conWriteStr(buf, strlen(buf)); else printf("%s", buf);
   }
+  fflush(stdout);
+  fflush(stderr);
 }
 
 
