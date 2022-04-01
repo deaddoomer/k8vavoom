@@ -340,6 +340,7 @@ public:
   virtual void PrecacheLevel () = 0;
   virtual void UncacheLevel () = 0;
 
+
 public: // automap
   typedef bool (*AMCheckSubsectorCB) (const subsector_t *sub);
   typedef bool (*AMIsHiddenSubsectorCB) (const subsector_t *sub);
@@ -589,6 +590,12 @@ public:
   virtual bool SetResolution (int AWidth, int AHeight, int fsmode) = 0;
   virtual void InitResolution () = 0;
   virtual void DeinitResolution () = 0;
+
+  // may do nothing
+  // called in level precaching, and in level uncaching
+  // `infomsg` is used to identify various call sites
+  // it may be shown before reports
+  virtual void ReportGPUMemoryUse (const char *infomsg) = 0;
 
   virtual void UnloadAliasModel (VMeshModel *Mdl) = 0;
 

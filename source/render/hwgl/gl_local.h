@@ -538,6 +538,12 @@ protected:
   inline bool IsAnyShadowMapDirty () const noexcept { return (shadowCube[smapCurrent].smapDirty&0x3f); }
   inline void MarkAllShadowMapsClear () noexcept { shadowCube[smapCurrent].smapDirty = 0u; }
 
+protected:
+  GLint gpuMemEvictCountPrev;
+  GLint gpuMemEvictMemPrev;
+
+  void InitGPUMemoryUse ();
+
 public:
   // VDrawer interface
   VOpenGLDrawer ();
@@ -545,6 +551,12 @@ public:
 
   virtual void InitResolution () override;
   virtual void DeinitResolution () override;
+
+  // may do nothing
+  // called in level precaching, and in level uncaching
+  // `infomsg` is used to identify various call sites
+  // it may be shown before reports
+  virtual void ReportGPUMemoryUse (const char *infomsg) override;
 
   // recreate FBOs with fp/int formats (alpha is not guaranteed)
   // used for overbright

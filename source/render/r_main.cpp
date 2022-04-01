@@ -2359,6 +2359,8 @@ void VRenderLevelShared::PrecacheLevel () {
 
   NukeLightmapCache();
 
+  if (Drawer) Drawer->ReportGPUMemoryUse("starting level precaching");
+
   if (r_dbg_disable_all_precaching) return;
 
   TMapNC<vint32, vint32> texturetype; // key: textureid, value: texturetype
@@ -2449,6 +2451,7 @@ void VRenderLevelShared::PrecacheLevel () {
     GTextureCropMessages = true;
   }
 
+  if (Drawer) Drawer->ReportGPUMemoryUse("level precaching complete");
   R_PBarUpdate("Textures", maxpbar, maxpbar, true); // final update
 }
 
@@ -2459,6 +2462,8 @@ void VRenderLevelShared::PrecacheLevel () {
 //
 //==========================================================================
 void VRenderLevelShared::UncacheLevel () {
+  if (Drawer) Drawer->ReportGPUMemoryUse("starting level uncaching");
+
   if (r_reupload_level_textures || gl_release_ram_textures_mode.asInt() >= 1) {
     TMapNC<vint32, bool> texturepresent;
 
@@ -2492,6 +2497,8 @@ void VRenderLevelShared::UncacheLevel () {
       if (gl_release_ram_textures_mode.asInt() >= 1) tex->ReleasePixels();
     }
   }
+
+  if (Drawer) Drawer->ReportGPUMemoryUse("level unaching complete");
 }
 
 

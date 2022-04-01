@@ -41,6 +41,22 @@
 #include "splashfont.inc"
 #endif
 
+#ifndef GPU_MEMORY_INFO_DEDICATED_VIDMEM_NVX
+# define GPU_MEMORY_INFO_DEDICATED_VIDMEM_NVX          0x9047
+#endif
+#ifndef GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX
+# define GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX    0x9048
+#endif
+#ifndef GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX
+# define GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX  0x9049
+#endif
+#ifndef GPU_MEMORY_INFO_EVICTION_COUNT_NVX
+# define GPU_MEMORY_INFO_EVICTION_COUNT_NVX            0x904A
+#endif
+#ifndef GPU_MEMORY_INFO_EVICTED_MEMORY_NVX
+# define GPU_MEMORY_INFO_EVICTED_MEMORY_NVX            0x904B
+#endif
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 extern VCvarB r_bloom;
@@ -462,6 +478,8 @@ static VVA_OKUNUSED bool CheckVendorString (VStr vs, const char *fuckedName) {
 VOpenGLDrawer::VOpenGLDrawer ()
   : VDrawer()
   , shaderHead(nullptr)
+  , gpuMemEvictCountPrev(0)
+  , gpuMemEvictMemPrev(0)
   , surfList()
   , mainFBO()
   , mainFBOFP()
@@ -843,6 +861,77 @@ void VOpenGLDrawer::GLDisableDepthTestSlow () noexcept {
 //==========================================================================
 void VOpenGLDrawer::GLEnableDepthTestSlow () noexcept {
   glEnable(GL_DEPTH_TEST);
+}
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::InitGPUMemoryUse
+//
+//==========================================================================
+void VOpenGLDrawer::InitGPUMemoryUse () {
+  GLint vals[4]; // i may want to add AMD support later
+  memset(vals, 0, sizeof(vals));
+
+  gpuMemEvictMemPrev = 0;
+  gpuMemEvictCountPrev = 0;
+
+  GLDRW_RESET_ERROR();
+  glGetIntegerv(GPU_MEMORY_INFO_EVICTION_COUNT_NVX, vals);
+  if (glGetError() != 0) return; // no such enum, nothing to do anymore
+  gpuMemEvictCountPrev = vals[0];
+
+  glGetIntegerv(GPU_MEMORY_INFO_EVICTED_MEMORY_NVX, vals);
+  if (glGetError() != 0) return; // no such enum, nothing to do anymore
+  gpuMemEvictMemPrev = vals[0];
+}
+
+
+//==========================================================================
+//
+//  VOpenGLDrawer::ReportGPUMemoryUse
+//
+//  may do nothing
+//  called in level precaching, and in level uncaching
+//  `infomsg` is used to identify various call sites
+//  it may be shown before reports
+//
+//==========================================================================
+void VOpenGLDrawer::ReportGPUMemoryUse (const char *infomsg) {
+  GLint vals[4]; // i may want to add AMD support later
+  int memAvail, memEvict, countEvict;
+
+  memset(vals, 0, sizeof(vals));
+
+  GLDRW_RESET_ERROR();
+  glGetIntegerv(GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX, vals);
+  if (glGetError() != 0) return; // no such enum, nothing to do anymore
+  memAvail = vals[0];
+
+  glGetIntegerv(GPU_MEMORY_INFO_EVICTION_COUNT_NVX, vals);
+  if (glGetError() != 0) return; // no such enum, nothing to do anymore
+  countEvict = vals[0];
+
+  glGetIntegerv(GPU_MEMORY_INFO_EVICTED_MEMORY_NVX, vals);
+  if (glGetError() != 0) return; // no such enum, nothing to do anymore
+  memEvict = vals[0];
+
+  if (memEvict < gpuMemEvictMemPrev) gpuMemEvictMemPrev = memEvict;
+  if (countEvict < gpuMemEvictCountPrev) gpuMemEvictCountPrev = countEvict;
+
+  if (memAvail != 0) {
+    if (infomsg && infomsg[0]) GCon->Logf("OpenGL: ===== %s =====", infomsg);
+    GCon->Logf("OpenGL: %sGPU VRAM available: %s MB", (infomsg && infomsg[0] ? "  " : ""), comatoze((vuint32)memAvail/1024U));
+    if (countEvict > gpuMemEvictCountPrev) {
+      GCon->Logf("OpenGL:   eviction count since last report: %s", comatoze((vuint32)(countEvict-gpuMemEvictCountPrev)));
+    }
+    if (memEvict > gpuMemEvictMemPrev) {
+      GCon->Logf("OpenGL:   evicted memory since last report: %s MB", comatoze((vuint32)(memEvict-gpuMemEvictMemPrev)/1024U));
+    }
+  }
+
+  gpuMemEvictMemPrev = memEvict;
+  gpuMemEvictCountPrev = countEvict;
 }
 
 
@@ -1411,6 +1500,8 @@ void VOpenGLDrawer::InitResolution () {
 #endif
 
   GLDRW_CHECK_ERROR("finish OpenGL initialization");
+
+  InitGPUMemoryUse();
 
   gl_can_cas_filter = CasFX.CheckOpenGLVersion(glVerMajor, glVerMinor, false);
 
