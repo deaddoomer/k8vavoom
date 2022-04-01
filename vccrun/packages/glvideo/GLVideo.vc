@@ -321,6 +321,11 @@ native final static float glFogEnd { set; }
 native final static void glSetFogColor (float r, float g, float b, optional float a);
 
 
+static native final float glPolygonOffsetFactor { get; }
+static native final float glPolygonOffsetUnits { get; }
+static native final void glPolygonOffset (float factor, float units);
+
+
 // ////////////////////////////////////////////////////////////////////////// //
 struct ScissorRect {
   int x, y, w, h;

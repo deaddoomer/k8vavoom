@@ -157,6 +157,9 @@ private:
   static bool in3dmode;
   friend class VOpenGLTexture;
 
+  static float glPolyOfsFactor;
+  static float glPolyOfsUnit;
+
   static bool dbgDumpOpenGLInfo;
 
 public:
@@ -357,6 +360,10 @@ public:
   DECLARE_FUNCTION(set_glFogStart)
   DECLARE_FUNCTION(set_glFogEnd)
   DECLARE_FUNCTION(glSetFogColor)
+
+  DECLARE_FUNCTION(get_glPolygonOffsetFactor)
+  DECLARE_FUNCTION(get_glPolygonOffsetUnits)
+  DECLARE_FUNCTION(glPolygonOffset)
 
   DECLARE_FUNCTION(clearScreen)
 

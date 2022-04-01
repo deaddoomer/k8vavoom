@@ -2042,6 +2042,8 @@ int VGLVideo::alphaTestFunc = VGLVideo::STC_Always;
 float VGLVideo::alphaFuncVal = 0.0f;
 bool VGLVideo::in3dmode = false;
 bool VGLVideo::dbgDumpOpenGLInfo = false;
+float VGLVideo::glPolyOfsFactor = 0.0f;
+float VGLVideo::glPolyOfsUnit = 0.0f;
 
 
 struct TimerInfo {
@@ -4069,6 +4071,10 @@ IMPLEMENT_FUNCTION(VGLVideo, glSetup2D) {
 
   in3dmode = false;
   glDisable(GL_CULL_FACE);
+
+  glPolyOfsFactor = glPolyOfsUnit = 0.0f;
+  glPolygonOffset(0.0f, 0.0f);
+  glDisable(GL_POLYGON_OFFSET_FILL);
 }
 
 
@@ -4159,6 +4165,10 @@ IMPLEMENT_FUNCTION(VGLVideo, glSetup3D) {
   in3dmode = true;
   glEnable(GL_CULL_FACE);
   glCullFace(GL_FRONT);
+
+  glPolyOfsFactor = glPolyOfsUnit = 0.0f;
+  glPolygonOffset(0.0f, 0.0f);
+  glDisable(GL_POLYGON_OFFSET_FILL);
 }
 
 
@@ -4247,6 +4257,25 @@ IMPLEMENT_FUNCTION(VGLVideo, glVertex) {
     if (t.specified || s.specified) glTexCoord2f(s, t);
     glVertex3f(p.x, p.y, p.z);
   }
+}
+
+
+IMPLEMENT_FUNCTION(VGLVideo, get_glPolygonOffsetFactor) { RET_FLOAT(glPolyOfsFactor); }
+IMPLEMENT_FUNCTION(VGLVideo, get_glPolygonOffsetUnits) { RET_FLOAT(glPolyOfsUnit); }
+
+IMPLEMENT_FUNCTION(VGLVideo, glPolygonOffset) {
+  float factor, unit;
+  vobjGetParam(factor, unit);
+  if (mInited && (factor != glPolyOfsFactor || unit != glPolyOfsUnit)) {
+    glPolygonOffset(factor, unit);
+    if (factor || unit) {
+      glEnable(GL_POLYGON_OFFSET_FILL);
+    } else {
+      glDisable(GL_POLYGON_OFFSET_FILL);
+    }
+  }
+  glPolyOfsFactor = factor;
+  glPolyOfsUnit = unit;
 }
 
 
