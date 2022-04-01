@@ -30,6 +30,7 @@
 
 
 static VCvarB dbg_pobj_verbose_spawn("dbg_pobj_verbose_spawn", false, "Verbose polyobject spawner?", CVAR_PreInit|CVAR_Hidden|CVAR_NoShadow);
+static VCvarB pobj_better_spawn("pobj_better_spawn", true, "Try harder to determine polyobject starting sector?", CVAR_PreInit|CVAR_Hidden|CVAR_NoShadow);
 
 
 // polyobj line start special
@@ -345,8 +346,11 @@ void VLevel::SpawnPolyobj (mthing_t *thing, float x, float y, float height, int 
     LevelFlags |= LF_Has3DPolyObjects;
   } else {
     //if (xseg) refsec = xseg->linedef->frontsector;
-    //po->refsector = PointInSubsector(TVec(x, y, 0.0f))->sector; // so we'll be able to fix polyobject height
-    po->refsector = PointInSubsector_PObj(TVec(x, y, 0.0f))->sector; // so we'll be able to fix polyobject height
+    if (pobj_better_spawn.asBool()) {
+      po->refsector = PointInSubsector_PObj(TVec(x, y, 0.0f))->sector; // so we'll be able to fix polyobject height
+    } else {
+      po->refsector = PointInSubsector(TVec(x, y, 0.0f))->sector; // so we'll be able to fix polyobject height
+    }
     if (dbg_pobj_verbose_spawn.asBool()) {
       GCon->Logf(NAME_Debug, "POBJ #%d: point-in-sector: %d", po->tag,
                  IsPointInSector2D(po->refsector, TVec(x, y, 0.0f)));
