@@ -319,19 +319,19 @@ void GZModelDef::parse (VScriptParser *sc) {
     // "AngleOffset"
     if (sc->Check("AngleOffset")) {
       sc->ExpectFloatWithSign();
-      angleOffset.yaw = AngleMod(sc->Float);
+      angleOffset.yaw = AngleMod(sc->Float+180);
       continue;
     }
     // "PitchOffset"
     if (sc->Check("PitchOffset")) {
       sc->ExpectFloatWithSign();
-      angleOffset.pitch = AngleMod(sc->Float);
+      angleOffset./*pitch*/roll = AngleMod(sc->Float);
       continue;
     }
     // "RollOffset"
     if (sc->Check("RollOffset")) {
       sc->ExpectFloatWithSign();
-      angleOffset.roll = AngleMod(sc->Float);
+      angleOffset./*roll*/pitch = AngleMod(sc->Float+180);
       continue;
     }
     // "rotation-center"
