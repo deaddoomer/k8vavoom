@@ -37,6 +37,9 @@ IMPLEMENT_CLASS(V, GameInfo)
 
 VGameInfo *GGameInfo = nullptr;
 
+static TArray<VClass *> savedPlayerClasses;
+static bool playerClassesSaved = false;
+
 
 //==========================================================================
 //
@@ -227,11 +230,36 @@ COMMAND(AddSlotDefault) {
 //  COMMAND ForcePlayerClass
 //
 //==========================================================================
-COMMAND(ForcePlayerClass) {
-  CMD_FORWARD_TO_SERVER();
-  if (GGameInfo->NetMode >= NM_Client) {
-    GCon->Logf(NAME_Error, "Cannot force player class on client!");
-    return;
+static void savePlayerClasses () {
+  if (playerClassesSaved) return;
+  playerClassesSaved = true;
+  vassert(savedPlayerClasses.length() == 0);
+
+  VClass *PPClass = VClass::FindClass("PlayerPawn");
+  if (!PPClass) return;
+
+  for (VClass *cc : GGameInfo->PlayerClasses) {
+    if (!cc) continue;
+    if (!cc->IsChildOf(PPClass)) continue;
+    savedPlayerClasses.append(cc);
+  }
+}
+
+
+//==========================================================================
+//
+//  COMMAND ForcePlayerClass
+//
+//==========================================================================
+COMMAND_WITH_AC(ForcePlayerClass) {
+  savePlayerClasses();
+
+  if (GGameInfo->NetMode > NM_TitleMap) {
+    CMD_FORWARD_TO_SERVER();
+    if (GGameInfo->NetMode >= NM_Client) {
+      GCon->Logf(NAME_Error, "Cannot force player class on client!");
+      return;
+    }
   }
 
   if (Args.length() < 2) {
@@ -247,13 +275,15 @@ COMMAND(ForcePlayerClass) {
 
   TArray<VClass *> clist;
   for (int f = 1; f < Args.length(); ++f) {
-    VClass *Class = VClass::FindClassNoCase(*Args[f]);
+    VStr cn = Args[f];
+    if (cn.length() && cn[0] == '*') cn.chopLeft(1);
+    VClass *Class = VClass::FindClassNoCase(*cn);
     if (!Class) {
-      GCon->Logf(NAME_Warning, "ForcePlayerClass: No such class `%s`", *Args[f]);
+      GCon->Logf(NAME_Warning, "ForcePlayerClass: No such class `%s`", *cn);
       continue;
     }
     if (!Class->IsChildOf(PPClass)) {
-      GCon->Logf(NAME_Warning, "ForcePlayerClass: '%s' is not a player pawn class", *Args[f]);
+      GCon->Logf(NAME_Warning, "ForcePlayerClass: '%s' is not a player pawn class", *cn);
       continue;
     }
     clist.append(Class);
@@ -271,16 +301,62 @@ COMMAND(ForcePlayerClass) {
 
 //==========================================================================
 //
+//  COMMAND_AC ForcePlayerClass
+//
+//==========================================================================
+COMMAND_AC(ForcePlayerClass) {
+  savePlayerClasses();
+
+  VClass *PPClass = VClass::FindClass("PlayerPawn");
+  if (!PPClass) return VStr::EmptyString;
+
+  TArray<VClass *> clist;
+  for (auto &&cc : savedPlayerClasses) {
+    if (!cc) continue;
+    if (!cc->IsChildOf(PPClass)) continue;
+    clist.append(cc);
+  }
+
+  if (clist.length() == 0) return VStr::EmptyString;
+
+  TArray<VStr> list;
+  VStr prefix = (aidx < args.length() ? args[aidx] : VStr());
+  if (aidx == 1) {
+    if (prefix.length() && prefix[0] == '*') {
+      VStr pfx = prefix;
+      pfx.chopLeft(1);
+      VClass::ForEachChildOf("PlayerPawn", [&list, &pfx](VClass *cls) {
+        if (pfx.length() == 0 || VStr::startsWithCI(cls->GetName(), *pfx)) {
+          list.append(VStr("*")+cls->GetName());
+        }
+        return FERes::FOREACH_NEXT;
+      });
+    } else {
+      for (VClass *cn : clist) list.append(cn->GetName());
+    }
+    return VCommand::AutoCompleteFromListCmd(prefix, list);
+  } else {
+    return VStr::EmptyString;
+  }
+}
+
+
+//==========================================================================
+//
 //  COMMAND PrintPlayerClasses
 //
 //==========================================================================
 COMMAND(PrintPlayerClasses) {
-  CMD_FORWARD_TO_SERVER();
-  if (GGameInfo->NetMode >= NM_Client) {
-    GCon->Logf(NAME_Error, "Cannot list player classes on client!");
-    return;
+  savePlayerClasses();
+
+  if (GGameInfo->NetMode > NM_TitleMap) {
+    CMD_FORWARD_TO_SERVER();
+    if (GGameInfo->NetMode >= NM_Client) {
+      GCon->Logf(NAME_Error, "Cannot list player classes on client!");
+      return;
+    }
   }
 
   GCon->Logf("=== %d known player class%s ===", GGameInfo->PlayerClasses.length(), (GGameInfo->PlayerClasses.length() != 1 ? "es" : ""));
-  for (auto &&cc : GGameInfo->PlayerClasses) GCon->Logf("  %s (%s)", cc->GetName(), *cc->Loc.toStringNoCol());
+  for (auto &&cc : savedPlayerClasses) GCon->Logf("  %s (%s)", cc->GetName(), *cc->Loc.toStringNoCol());
 }
