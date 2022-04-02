@@ -430,14 +430,37 @@ const float HammerRange = DEFAULT_MELEERANGE+DEFAULT_MELEERANGE/2.0;
 //  A_MLightningAttack
 //
 //==========================================================================
-[decorate] final void A_MLightningAttack () self(Actor) {
+[decorate] final void A_MLightningAttack (optional string flrname, optional string ceilname) self(Actor) {
   if (!bIsPlayer) return;
 
   Weapon Wpn = PlayerEx(Player).ReadyWeapon;
   if (!Wpn) return;
 
-  Lightning fmo = Lightning(SpawnPlayerMissile(LightningFloor));
-  Lightning cmo = Lightning(SpawnPlayerMissile(LightningCeiling));
+  class!Actor fll = LightningFloor;
+  if (specified_flrname && flrname.length) {
+    // find which type to spawn
+    auto moClass = class!Actor(FindClassNoCaseStr(flrname));
+    if (moClass) {
+      auto moRepl = class!Actor(GetClassReplacement(moClass));
+      if (moRepl) moClass = moRepl;
+    }
+    fll = moClass;
+  }
+
+  class!Actor cll = LightningCeiling;
+  if (specified_ceilname && ceilname.length) {
+    // find which type to spawn
+    auto moClass = class!Actor(FindClassNoCaseStr(ceilname));
+    if (moClass) {
+      auto moRepl = class!Actor(GetClassReplacement(moClass));
+      if (moRepl) moClass = moRepl;
+    }
+    cll = moClass;
+  }
+
+  Lightning fmo = Lightning(SpawnPlayerMissile(fll));
+  Lightning cmo = Lightning(SpawnPlayerMissile(cll));
+
   if (fmo) {
     fmo.ZigZagCount = 0;
     fmo.LightningLink = cmo;
