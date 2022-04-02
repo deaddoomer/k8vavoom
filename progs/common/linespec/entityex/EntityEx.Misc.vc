@@ -2855,7 +2855,7 @@ final bool RepairArmorWith (int amount, optional class!BasicArmorBonus armorbonu
 //
 //==========================================================================
 final EntityEx SpawnPuff (TVec Org, float Range, class!EntityEx PuffType,
-  bool HitThing, optional sector_t *sec, optional line_t *li, optional TVec realOrg,
+  EntityEx HitThing, optional sector_t *sec, optional line_t *li, optional TVec realOrg,
   optional name decalType, optional int pufftid, optional bool disableRandomZ)
 {
   EntityEx puff;
@@ -2918,8 +2918,30 @@ final EntityEx SpawnPuff (TVec Org, float Range, class!EntityEx PuffType,
 
     // [BB] set the target of the puff to this actor
     if (puff.bPuffGetsOwner) puff.Target = Target;
-         if (!HitThing && puff.FindState('Crash')) puff.SetState(puff.FindState('Crash'));
-    else if (Range <= DEFAULT_MELEERANGE && puff.MeleeState) puff.SetState(puff.MeleeState);
+
+    if (HitThing) {
+      if (puff.bHitTarget) puff.Target = HitThing;
+      if (puff.bHitMaster) puff.Master = HitThing;
+      if (puff.bHitTracer) puff.Tracer = HitThing;
+    }
+
+    state st = none;
+    if (HitThing) {
+      //FIXME: check "thruXXX" flags here
+      if (puff.bPuffOnActors && !HitThing.bNoBlood /*&& !HitThing.bInvulnerable*/) {
+        st = puff.FindState('XDeath');
+      }
+      if (!st && Range <= DEFAULT_MELEERANGE) st = puff.MeleeState;
+    } else {
+      st = puff.FindState('Crash');
+    }
+
+    /*
+    if (!st && !HitThing) st = puff.FindState('Crash');
+    if (!st && Range <= DEFAULT_MELEERANGE) st = puff.MeleeState;
+    */
+
+    if (st) puff.SetState(st);
 
     if (HitThing && puff.SightSound) {
       // hit thing sound

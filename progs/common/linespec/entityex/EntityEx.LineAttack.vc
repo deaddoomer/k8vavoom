@@ -474,7 +474,7 @@ final bool LineAttack (TVec dir, float distance, int LADamage,
     // plane hit?
     if (in.bIsAPlane) {
       // plane hit, no thing found
-      if (!in.bIsASky && PuffType) puffEntity = SpawnPuff(in.hitpoint, distance, PuffType, false);
+      if (!in.bIsASky && PuffType) puffEntity = SpawnPuff(in.hitpoint, distance, PuffType, none);
       return false;
     }
 
@@ -498,7 +498,8 @@ final bool LineAttack (TVec dir, float distance, int LADamage,
 
       // spawn bullet puffs
       if (!in.bIsASky && PuffType) {
-        puffEntity = SpawnPuff(hitPoint, distance, PuffType, false, in.sector, li, realHitPoint, decalType!optional, pufftid!optional, disableRandomZ!optional);
+        puffEntity = SpawnPuff(hitPoint, distance, PuffType, none, in.sector, li,
+                               realHitPoint, decalType!optional, pufftid!optional, disableRandomZ!optional);
       }
 
       // don't go any farther
@@ -527,7 +528,7 @@ final bool LineAttack (TVec dir, float distance, int LADamage,
 
     // spawn bullet puffs or blood spots, depending on target type
     if ((PuffType && PuffType.default.bPuffOnActors) || th.bNoBlood || th.bInvulnerable || th.bDormant) {
-      puffEntity = SpawnPuff(hitPoint, distance, PuffType, true, pufftid:pufftid!optional, disableRandomZ:disableRandomZ!optional);
+      puffEntity = SpawnPuff(hitPoint, distance, PuffType, th, pufftid:pufftid!optional, disableRandomZ:disableRandomZ!optional);
     }
 
     if (!PuffType || !PuffType.default.bBloodlessImpact) {
@@ -561,7 +562,7 @@ final bool LineAttack (TVec dir, float distance, int LADamage,
 
   if (PuffType) {
     if (PuffType.default.ActiveSound) PlaySound(PuffType.default.ActiveSound, /*CHAN_WEAPON*/CHAN_AUTO); // play miss sound
-    if (PuffType.default.bAlwaysPuff) puffEntity = SpawnPuff(dst, distance, PuffType, false, pufftid:pufftid!optional, disableRandomZ:disableRandomZ!optional);
+    if (PuffType.default.bAlwaysPuff) puffEntity = SpawnPuff(dst, distance, PuffType, none, pufftid:pufftid!optional, disableRandomZ:disableRandomZ!optional);
   }
 
   return true;
@@ -618,7 +619,7 @@ final void RailAttack (TVec dir, float Offset, int RailDamage,
   foreach PathTraverse(out in, shootOrigin, dst, PT_ADDLINES|PT_ADDTHINGS, SPF_NOBLOCKING|SPF_NOBLOCKSHOOT, ML_BLOCKEVERYTHING) {
     // plane hit?
     if (in.bIsAPlane) {
-      if (!in.bIsASky && PuffType) SpawnPuff(in.hitpoint, distance, PuffType, false);
+      if (!in.bIsASky && PuffType) SpawnPuff(in.hitpoint, distance, PuffType, none);
       lineEnd = in.hitpoint;
       break;
     }
@@ -642,7 +643,7 @@ final void RailAttack (TVec dir, float Offset, int RailDamage,
 
       // spawn bullet puffs
       if (!in.bIsASky && PuffType) {
-        SpawnPuff(hitPoint, distance, PuffType, false, in.sector, li, realHitPoint);
+        SpawnPuff(hitPoint, distance, PuffType, none, in.sector, li, realHitPoint);
       }
 
       // don't go any farther
@@ -670,7 +671,7 @@ final void RailAttack (TVec dir, float Offset, int RailDamage,
     // spawn bullet puffs or blood spots, depending on target type
     bool doBlood = false;
     if (th.bNoBlood || th.bInvulnerable || th.bDormant) {
-      if (PuffType) SpawnPuff(hitPoint, distance, PuffType, true);
+      if (PuffType) SpawnPuff(hitPoint, distance, PuffType, th);
     } else {
       doBlood =(!PuffType || !PuffType.default.bBloodlessImpact);
     }

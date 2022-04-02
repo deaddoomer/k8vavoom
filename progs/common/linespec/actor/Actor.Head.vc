@@ -209,7 +209,7 @@ override void Destroyed () {
 //==========================================================================
 [decorate] final void A_RocketInFlight () {
   PlaySound('misc/missileinflight', CHAN_VOICE);
-  SpawnPuff(Origin, MISSILERANGE, MiniMissilePuff, false, decalType:'none');
+  SpawnPuff(Origin, MISSILERANGE, MiniMissilePuff, none, decalType:'none');
   EntityEx A = Spawn(RocketTrail, Origin-Velocity/35.0);
   if (A) A.Velocity.z = 1.0*35.0;
 }

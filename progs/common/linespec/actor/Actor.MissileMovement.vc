@@ -95,7 +95,7 @@ const float TRACE2ANGLE = 7.0*45.0/16.0;
   if (XLevel.TicTime&3) return;
 
   // spawn a puff of smoke behind the rocket
-  SpawnPuff(Origin, MISSILERANGE, BulletPuff, false, decalType:'none');
+  SpawnPuff(Origin, MISSILERANGE, BulletPuff, none, decalType:'none');
 
   A = Spawn(RevenantTracerSmoke, Origin-Velocity*Level.Game.frametime);
   if (A) {

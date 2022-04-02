@@ -170,7 +170,7 @@ final void InitSpawnedItem (EntityEx A, bool TransTransl, bool SetMaster,
     //printdebug("%C: spawn on victim %C from %C", self, Victim, spw);
     // spawn bullet puffs or blood spots, depending on target type
     if (PuffType.default.bPuffOnActors || Victim.bNoBlood || Victim.bInvulnerable || Victim.bDormant) {
-      spw.SpawnPuff(Org, Range, PuffType, true, disableRandomZ:disableRandomZ!optional);
+      spw.SpawnPuff(Org, Range, PuffType, Victim, disableRandomZ:disableRandomZ!optional);
     }
 
     /*
@@ -193,7 +193,7 @@ final void InitSpawnedItem (EntityEx A, bool TransTransl, bool SetMaster,
       */
     }
   } else {
-    spw.SpawnPuff(Org, Range, PuffType, false, disableRandomZ:disableRandomZ!optional);
+    spw.SpawnPuff(Org, Range, PuffType, none, disableRandomZ:disableRandomZ!optional);
   }
 }
 

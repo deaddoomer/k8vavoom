@@ -129,7 +129,7 @@ final void DebugCheckMidTex () {
     auto real_hit_point = tr.hit;
     auto hitPoint = real_hit_point-(4.0*aimDir);
     // spawn bullet puff
-    SpawnPuff(hitPoint, /*distance*/8192, BulletPuff, false, tr.sec, tr.line, real_hit_point);
+    SpawnPuff(hitPoint, /*distance*/8192, BulletPuff, none, tr.sec, tr.line, real_hit_point);
     #endif
   }
 
