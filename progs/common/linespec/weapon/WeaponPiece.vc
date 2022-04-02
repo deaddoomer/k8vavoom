@@ -36,6 +36,8 @@ Weapon GivenWeapon;
 //
 //==========================================================================
 override bool TryPickup (EntityEx Toucher) {
+  if (!CheckInventoryRestrictions(Toucher)) return false;
+
   GivenWeapon = none;
 
   WeaponHolder Hold = none;

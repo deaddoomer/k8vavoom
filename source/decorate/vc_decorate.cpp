@@ -181,6 +181,7 @@ enum {
   PROP_DefaultAlpha,
   PROP_Activation,
   PROP_PoisonDamage,
+  PROP_StringArray,
 };
 
 enum {
@@ -1048,6 +1049,9 @@ static void ParseDecorateDef (VXmlDocument &Doc) {
         P.SetField(Lst.Class, *PN->GetAttribute("property"));
       } else if (PN->Name == "prop_poison_damage") {
         VPropDef &P = Lst.NewProp(PROP_PoisonDamage, PN);
+        P.SetField(Lst.Class, *PN->GetAttribute("property"));
+      } else if (PN->Name == "prop_string_array") {
+        VPropDef &P = Lst.NewProp(PROP_StringArray, PN);
         P.SetField(Lst.Class, *PN->GetAttribute("property"));
       } else if (PN->Name == "flag") {
         VFlagDef &F = Lst.NewFlag(FLAG_Bool, PN);
@@ -2850,6 +2854,16 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
             }
           }
           break;
+        case PROP_StringArray:
+          {
+            TArray<VStr> &st = *(TArray<VStr>*)pdef->Field->GetFieldPtr(DefObj);
+            st.clear();
+            do {
+              sc->ExpectString();
+              if (sc->String.xstrip().length() != 0) st.append(sc->String);
+            } while (sc->Check(","));
+          }
+          break;
         case PROP_Power_Class:
           // This is a very inconvenient shit!
           // but ZDoom had to prepend "power" to the name...
@@ -3460,10 +3474,13 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
     }
 
     //HACK!
+    /*
     if (Prop.strEquCI("Inventory.RestrictedTo")) {
       sc->ExpectString();
       while (sc->Check(",")) sc->ExpectString();
-    } else {
+    } else
+    */
+    {
       sc->SkipLine();
     }
   }

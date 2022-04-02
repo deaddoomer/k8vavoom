@@ -237,6 +237,7 @@ override void Destroyed () {
 //
 //==========================================================================
 override bool TryPickup (EntityEx Toucher) {
+  if (!CheckInventoryRestrictions(Toucher)) return false;
   // if sprites for ready state are missing, you can't pick up this weapon
   state ReadyState = FindState('Ready');
   if (ReadyState && AreStateSpritesPresent(ReadyState)) {

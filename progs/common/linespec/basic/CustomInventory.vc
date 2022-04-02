@@ -32,6 +32,7 @@ class CustomInventory : Inventory abstract;
 //
 //==========================================================================
 override bool TryPickup (EntityEx Toucher) {
+  if (!CheckInventoryRestrictions(Toucher)) return false;
   //printdebug("CustomInventory:%C: TryPickup: Toucher=%C (self at %s)", self, Toucher, GetClassLocationStr(Class));
   state S = FindState('Pickup');
   bool IsOk = CallStateChain(Toucher, S);

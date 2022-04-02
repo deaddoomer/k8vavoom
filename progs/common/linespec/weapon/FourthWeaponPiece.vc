@@ -44,6 +44,8 @@ override bool TryPickup (EntityEx Toucher) {
   int GaveAmmo;
   //Inventory Inv;
 
+  if (!CheckInventoryRestrictions(Toucher)) return false;
+
   //bool checkAssembled = true;
   gaveWeapon = false;
   if (!ClassIsChildOf(Toucher.Class, GetClassReplacement(PieceClass))) {

@@ -58,6 +58,9 @@ class!Actor PickupFlashType;
 name PickupSound;
 name UseSound;
 
+array!string ForbiddenTo;
+array!string RestrictedTo;
+
 bool bBigPowerup; // originally these didn't respawn in deathmatch
 bool bFullVolPickupSound; // play pickup sound at full volume
 bool bPickupGood; // used by HandlePickup
@@ -345,7 +348,42 @@ void DetachedFromOwner () {
 
 //==========================================================================
 //
+//  CheckInventoryRestrictions
+//
+//  returns `false` if not allowed to pickup
+//
+//==========================================================================
+override bool CheckInventoryRestrictions (EntityEx Toucher) {
+  if (!Toucher || !Toucher.bIsPlayer) return true;
+  // check forbiddens
+  if (ForbiddenTo.length) {
+    name cname = Toucher.Class.Name;
+    foreach (string cn; ForbiddenTo) {
+      if (cname.strEquCI(cn)) return false; // cannot pickup
+    }
+  }
+  // check restricteds
+  if (RestrictedTo.length) {
+    name cname = Toucher.Class.Name;
+    //printdebug("%C: CHECKING RESTRICTEDS: for player class <%s>", self, cname);
+    foreach (string cn; RestrictedTo) {
+      if (cname.strEquCI(cn)) {
+        //printdebug("%C:   ALLOWED!", self);
+        return true;
+      }
+    }
+    return false;
+  }
+  // done
+  return true;
+}
+
+
+//==========================================================================
+//
 //  TouchSpecial
+//
+//  called when something touched a pickup
 //
 //==========================================================================
 override void TouchSpecial (EntityEx Toucher, optional bool noflash) {
@@ -353,7 +391,10 @@ override void TouchSpecial (EntityEx Toucher, optional bool noflash) {
   if (Toucher.Health <= 0) return; // toucher is dead
 
   // make sure that if it's a voodoo doll touching item it's given to the actual player actor
-  if (Toucher.bIsPlayer) Toucher = EntityEx(Toucher.Player.MO);
+  if (Toucher.bIsPlayer) {
+    Toucher = EntityEx(Toucher.Player.MO);
+    if (!Toucher) return; // this should not happen, but better be safe...
+  }
 
   if (!TryPickup(Toucher)) return;
 
@@ -393,6 +434,7 @@ void CoopPickedUp (EntityEx Toucher) {
 //
 //==========================================================================
 bool TryPickup (EntityEx Toucher) {
+  if (!CheckInventoryRestrictions(Toucher)) return false;
   //printdebug("%C: TryPickup: new owner `%C`; bTransferInventory=%B)", self, Toucher, bTransferInventory);
   EntityEx NewToucher = Toucher;
   bPickupGood = false;

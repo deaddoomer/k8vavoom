@@ -32,6 +32,7 @@ class MapRevealer : Inventory abstract;
 //
 //==========================================================================
 override bool TryPickup (EntityEx Toucher) {
+  if (!CheckInventoryRestrictions(Toucher)) return false;
   if (Toucher.bIsPlayer) PlayerEx(Toucher.Player).AddRevealedMap();
   GiveQuest(Toucher);
   if (bTransferInventory) TransferInventoryTo(Toucher);

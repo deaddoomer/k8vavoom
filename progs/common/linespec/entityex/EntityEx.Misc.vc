@@ -5194,6 +5194,18 @@ void TouchSpecial (EntityEx Toucher, optional bool noflash) {
 
 //==========================================================================
 //
+//  CheckInventoryRestrictions
+//
+//  returns `false` if not allowed to pickup
+//
+//==========================================================================
+bool CheckInventoryRestrictions (EntityEx Toucher) {
+  return true;
+}
+
+
+//==========================================================================
+//
 //  checkIfTargetInLOS
 //
 //  workhorse for following decorate LOS checks

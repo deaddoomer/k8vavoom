@@ -49,6 +49,7 @@ override bool ShouldRespawn () {
 //
 //==========================================================================
 override bool TryPickup (EntityEx Toucher) {
+  if (!CheckInventoryRestrictions(Toucher)) return false;
   bool Result = Level.ExecuteActionSpecial(Special, Args[0], Args[1],
                         Args[2], Args[3], Args[4], nullptr, 0, Toucher);
   if (Result) {

@@ -6196,6 +6196,7 @@ void CheatHelper_AllWeapons (bool full) {
     Wpn.AmmoGive1 = 0;
     Wpn.AmmoGive2 = 0;
     if (!Wpn.TryPickup(EntityEx(MO))) {
+      //printdebug("%C: rejected weapon '%C'!", MO, Wpn);
       Wpn.Destroy();
     } else {
       if (WpnCls.Replacee && WpnCls.Replacee != WpnCls) print("CHEAT: got '%C' (replacee: '%C')!", WpnCls, WpnCls.Replacee);

@@ -32,6 +32,8 @@ class AmmoFillup : DummyStrifeItem;
 //
 //==========================================================================
 override bool TryPickup (EntityEx Toucher) {
+  if (!Toucher.Player) return false;
+  if (!CheckInventoryRestrictions(Toucher)) return false;
   PlayerEx(Toucher.Player).GiveAmmo(ClipOfBullets, 0);
   Inventory AmmoItem = Toucher.FindInventory(ClipOfBullets);
   if (AmmoItem.Amount < 50) {

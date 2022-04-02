@@ -32,6 +32,7 @@ class PrisonPass : Inventory;
 //
 //==========================================================================
 override bool TryPickup (EntityEx Toucher) {
+  if (!CheckInventoryRestrictions(Toucher)) return false;
   ::TryPickup(Toucher);
   Level.ExecuteActionSpecial(LNSPEC_DoorOpen, 223, 16, 0, 0, 0, nullptr, 0, Toucher);
   return true;

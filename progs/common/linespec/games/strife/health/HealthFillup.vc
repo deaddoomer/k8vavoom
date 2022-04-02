@@ -34,6 +34,8 @@ class HealthFillup : DummyStrifeItem;
 override bool TryPickup (EntityEx Toucher) {
   int hlAmount;
 
+  if (!CheckInventoryRestrictions(Toucher)) return false;
+
   switch (Level.World.GameSkill) {
     case 0:
     case 4:

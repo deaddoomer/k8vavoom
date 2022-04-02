@@ -409,6 +409,8 @@
     <prop_int name="Inventory.GiveQuest" property="GiveQuestNum" />
     <prop_int name = "Inventory.InterHubAmount" property="InterHubAmount" />
     <prop_string_unsupported name="Inventory.PickupAnnouncerEntry" /> <!-- From SkullTag -->
+    <prop_string_array name="Inventory.ForbiddenTo" property="ForbiddenTo" />
+    <prop_string_array name="Inventory.RestrictedTo" property="RestrictedTo" />
 
     <flag name="Quiet" property="bQuiet" />
     <flag name="AutoActivate" property="bAutoActivate" />

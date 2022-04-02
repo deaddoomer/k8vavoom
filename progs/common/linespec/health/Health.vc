@@ -36,6 +36,7 @@ string LowHealthMessage;
 //
 //==========================================================================
 override bool TryPickup (EntityEx Toucher) {
+  if (!CheckInventoryRestrictions(Toucher)) return false;
   if (Toucher.bIsPlayer) {
     PlayerEx pex = PlayerEx(Toucher.Player);
     PrevHealth = Toucher.Health;

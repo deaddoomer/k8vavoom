@@ -32,6 +32,7 @@ class CloseDoor222 : DummyStrifeItem;
 //
 //==========================================================================
 override bool TryPickup (EntityEx Toucher) {
+  if (!CheckInventoryRestrictions(Toucher)) return false;
   Level.ExecuteActionSpecial(LNSPEC_DoorClose, 222, 16, 0, 0, 0, nullptr, 0, Toucher);
   GoAwayAndDie();
   return true;

@@ -36,6 +36,7 @@ class!Actor WeaponClass;
 override bool TryPickup (EntityEx Toucher) {
   if (!ClassIsChildOf(Toucher.Class, GetClassReplacement(WeaponClass))) {
     // wrong class, but try to pick up for mana
+    if (!CheckInventoryRestrictions(Toucher)) return false;
     if (ShouldStay() && !bDropped) return false;
     bool gaveMana = false;
     if (PlayerEx(Toucher.Player).GiveAmmo(AmmoType1, AmmoGive1)) gaveMana = true;
