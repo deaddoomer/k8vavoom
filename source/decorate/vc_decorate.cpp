@@ -1572,7 +1572,7 @@ static bool IsValidFrameName (VStr str) noexcept {
   if (str.isEmpty()) return false;
   for (const char *s = *str; *s; ++s) {
     const char ch = VStr::ToUpper(*s);
-    if (ch == '#') continue;
+    if (ch == '#' || ch == '-') continue;
     if (ch < 'A' || ch > '^') return false;
   }
   return true;
@@ -1589,14 +1589,57 @@ static bool IsValidFrameName (VStr str) noexcept {
 static bool CanBeSpriteNameWorker (VScriptParser *sc, bool asGoto) noexcept {
   // get argument
   if (!sc->GetString()) return false;
+  //if (asGoto) GCon->Logf(NAME_Debug, "***GOTO CHECK(000): str=<%s>; crossed=%d; ateol=%d", *sc->String, (int)sc->Crossed, (int)sc->IsAtEol());
+  if (sc->Crossed) return false;
   //GCon->Logf(NAME_Debug, "asGoto=%d: <%s>", (int)asGoto, *sc->String.quote(true));
   if (IsNonSpriteStringStart(sc->String)) return false;
   if (sc->IsAtEol()) return false; // no frames -- not a sprite line
+
+  if (asGoto) {
+    // "goto" check
+    // "goto +2", or something
+    if (sc->String.startsWith("+")) return false;
+  }
+  if (!IsValidFrameName(sc->String)) return false;
+
+  // there should be a duration
+  if (!sc->GetString()) return false;
+  //if (asGoto) GCon->Logf(NAME_Debug, "***GOTO CHECK(001): str=<%s>; crossed=%d; ateol=%d", *sc->String, (int)sc->Crossed, (int)sc->IsAtEol());
+  if (sc->Crossed) return false;
+  //if (sc->IsAtEol()) return false; // no duration -- not a sprite line
+
+  if (asGoto) {
+    // "goto label+2"
+    if (sc->String.startsWith("+")) return false;
+  }
+
+  if (IsNonSpriteStringStart(sc->String)) return false; // bad duration
+
+  if (sc->String.strEquCI("random")) return true; // valid duration
+  // must be a number
+  //if (sc->String == "-1") return true; // valid duration
+  if (sc->String.length() < 1) return false; // bad duration
+  int spos = 0;
+  if (sc->String[0] == '-') {
+    if (sc->String.length() < 2) return false; // bad duration
+    spos = 1;
+  }
+  for (; spos < sc->String.length(); ++spos) {
+    char ch = sc->String[spos];
+    if (ch < '0' || ch > '9') return false; // bad duration
+  }
+
+  // looks like a valid duration
+  return true;
+
+/*
   if (!asGoto) {
     // not a "goto"
     if (!IsValidFrameName(sc->String)) return false;
     // there should be a duration
     if (!sc->GetString()) return false;
+    if (sc->Crossed) return false;
+    if (sc->IsAtEol()) return false; // no duration -- not a sprite line
     return !IsNonSpriteStringStart(sc->String);
   } else {
     // "goto" check
@@ -1604,10 +1647,13 @@ static bool CanBeSpriteNameWorker (VScriptParser *sc, bool asGoto) noexcept {
     if (sc->String.startsWith("+")) return false;
     // there should be a duration
     if (!sc->GetString()) return false;
+    if (sc->Crossed) return false;
+    if (sc->IsAtEol()) return false; // no duration -- not a sprite line
     // "goto label+2"
     if (sc->String.startsWith("+")) return false;
     return !IsNonSpriteStringStart(sc->String);
   }
+*/
 }
 
 
