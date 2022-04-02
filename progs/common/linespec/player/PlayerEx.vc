@@ -1852,6 +1852,11 @@ void ProcessWeaponActions () {
   }
 
   #if 0
+  printdebug("TICK: %s (bWeaponWasWeaponReady=%B)", MO.XLevel.TicTime, bWeaponWasWeaponReady);
+  if (ReadyWeapon) {
+    printdebug("%C: ReadyWeapon=%C; PendingWeapon=%C; rwstate=%s (%s)", self, ReadyWeapon, PendingWeapon,
+               ViewStates[PS_WEAPON].State, ViewStates[PS_WEAPON].StateTime);
+  }
   if (bWeaponAllowSwitch ||
       bWeaponAllowPrimaryFire ||
       bWeaponAllowAltFire ||
@@ -1863,6 +1868,7 @@ void ProcessWeaponActions () {
     printdebug("%C: bWeaponAllowAltFire=%B", self, bWeaponAllowAltFire);
     printdebug("%C: bWeaponAllowReload=%B", self, bWeaponAllowReload);
     printdebug("%C: bWeaponAllowZoom=%B", self, bWeaponAllowZoom);
+    printdebug("%C: ATTACK IS %B", self, !!(Buttons&BT_ATTACK));
   }
   #endif
 
@@ -1891,8 +1897,9 @@ void ProcessWeaponActions () {
     return;
   }
 
+  // this is to emulate proper firing (once per tick)
   if (!bWeaponWasWeaponReady) return;
-  bWeaponWasWeaponReady = false;
+  if (!GetCvarB('wpn_gzdoom_firing')) bWeaponWasWeaponReady = false;
   Wpn.bBobFrozen = false; // just in case
 
   bool oldNoBob = Wpn.bBobDisabled;

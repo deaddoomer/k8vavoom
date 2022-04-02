@@ -251,6 +251,8 @@ override void Init () {
   CreateCvarBool('alternate_monster_attacks', false, "Alternate monster attacks in Hexen?", CVAR_ARCHIVE);
   CreateCvarBool('wpn_autoswitch', IsReleaseMode, "Should we autoswitch to new weapon?", CVAR_ARCHIVE);
 
+  CreateCvarBool('wpn_gzdoom_firing', true, "Allow firing at any state moment, not only at the beginning (this is how [G]ZDoom works)?", CVAR_ARCHIVE);
+
   CreateCvarBool('r_flip_corpses', false, "Randomly flip corpses?", CVAR_ARCHIVE);
 
   CreateCvarBool('r_bootprints', true, "Allow bootprints?", CVAR_ARCHIVE);
