@@ -704,55 +704,121 @@ void VScriptParser::ParseQuotedString (const char qch) noexcept {
 
 //==========================================================================
 //
+//  skipNum
+//
+//==========================================================================
+static const char *skipNum (const char *s, const char *end, int base) {
+  if (base <= 0) base = 10;
+  if (s >= end) return nullptr;
+  if (VStr::digitInBase(*s, base) < 0) return nullptr;
+  ++s;
+  while (s < end) {
+    if (*s != '_') {
+      if (VStr::digitInBase(*s, base) < 0) return s;
+    }
+    ++s;
+  }
+  return s;
+}
+
+
+//==========================================================================
+//
+//  isValidNum
+//
+//  returns number end, or `nullptr` if definitely not a number
+//
+//==========================================================================
+static const char *isValidNum (const char *s, const char *end) {
+  if (s >= end) return nullptr;
+
+  // sign
+  if (*s == '+' || *s == '-') {
+    if (++s >= end) return nullptr;
+  }
+
+  // hex number?
+  if (*s == '0' && s+1 < end && s+2 < end && (s[1] == 'x' || s[1] == 'X')) {
+    s += 2;
+    return skipNum(s, end, 16);
+  }
+
+  if (*s != '.') {
+    // integral part
+    s = skipNum(s, end, 10);
+    if (!s || s >= end) return s;
+  } else {
+    // no integral part, so fractional part should have at least one digit
+    if (s+1 >= end) return nullptr;
+    if (s[1] < '0' || s[1] > '9') return nullptr;
+  }
+
+  // fractional part
+  if (*s == '.') {
+    if (++s >= end) return s;
+    if (*s >= '0' && *s <= '9') {
+      s = skipNum(s, end, 10);
+      if (!s || s >= end) return s;
+    }
+  }
+
+  // exponent
+  if (*s != 'e' && *s != 'E') return s;
+  if (++s >= end) return nullptr;
+
+  // sign
+  if (*s == '+' || *s == '-') {
+    if (++s >= end) return nullptr;
+  }
+
+  // exponent digits
+  return skipNum(s, end, 10);
+}
+
+
+//==========================================================================
+//
 //  VScriptParser::ParseCMode
 //
 //==========================================================================
 void VScriptParser::ParseCMode () noexcept {
-  // special double-character eq-token?
-  if (ScriptPtr[1] == '=' && CharClassifier::isC2Spec(ScriptPtr[0])) {
-    String += *ScriptPtr++;
-    String += *ScriptPtr++;
-    return;
-  }
+  if (ScriptPtr+1 < ScriptEndPtr) {
+    // special double-character eq-token?
+    if (ScriptPtr[1] == '=' && CharClassifier::isC2Spec(ScriptPtr[0])) {
+      String += *ScriptPtr++;
+      String += *ScriptPtr++;
+      return;
+    }
 
-  // special double-character token?
-  if ((ScriptPtr[0] == '&' && ScriptPtr[1] == '&') ||
-      (ScriptPtr[0] == '|' && ScriptPtr[1] == '|') ||
-      (ScriptPtr[0] == '<' && ScriptPtr[1] == '<') ||
-      (ScriptPtr[0] == '>' && ScriptPtr[1] == '>') ||
-      (ScriptPtr[0] == ':' && ScriptPtr[1] == ':') ||
-      (ScriptPtr[0] == '+' && ScriptPtr[1] == '+') ||
-      (ScriptPtr[0] == '-' && ScriptPtr[1] == '-'))
-  {
-    if (ScriptPtr[0] == '>' && ScriptPtr[1] == '>' && ScriptPtr[2] == '>') String += *ScriptPtr++; // for `>>>`
-    String += *ScriptPtr++;
-    String += *ScriptPtr++;
-    return;
+    // special double-character token?
+    if ((ScriptPtr[0] == '&' && ScriptPtr[1] == '&') ||
+        (ScriptPtr[0] == '|' && ScriptPtr[1] == '|') ||
+        (ScriptPtr[0] == '<' && ScriptPtr[1] == '<') ||
+        (ScriptPtr[0] == '>' && ScriptPtr[1] == '>') ||
+        (ScriptPtr[0] == ':' && ScriptPtr[1] == ':') ||
+        (ScriptPtr[0] == '+' && ScriptPtr[1] == '+') ||
+        (ScriptPtr[0] == '-' && ScriptPtr[1] == '-'))
+    {
+      if (ScriptPtr[0] == '>' && ScriptPtr[1] == '>' && ScriptPtr[2] == '>') String += *ScriptPtr++; // for `>>>`
+      String += *ScriptPtr++;
+      String += *ScriptPtr++;
+      return;
+    }
   }
 
   // number?
+  // have to do it this way to omit underscores
   if (CharClassifier::isNumStart(ScriptPtr, AllowNumSign)) {
-    if (ScriptPtr[0] == '+' || ScriptPtr[0] == '-') String += *ScriptPtr++;
-    if (ScriptPtr[0] == '.') { String += "0."; ++ScriptPtr; }
-    while (ScriptPtr < ScriptEndPtr) {
-      const char ch = *ScriptPtr++;
-      if (ch == '_') continue;
-      if (CharClassifier::isCNumTerm(ch)) { --ScriptPtr; break; }
-      String += ch;
-    }
-    //fprintf(stderr, "<%s> (%d)\n", *String, CharClassifier::isCNumTerm('e'));
-    if (String.length() > 1 && (ScriptPtr[-1] == 'e' || ScriptPtr[-1] == 'E') &&
-        (ScriptPtr[0] == '+' || ScriptPtr[0] == '-' || CharClassifier::isDigit(*ScriptPtr)))
-    {
-      if (!CharClassifier::isDigit(*ScriptPtr)) String += *ScriptPtr++;
-      while (ScriptPtr < ScriptEndPtr) {
+    const char *ee = isValidNum(ScriptPtr, ScriptEndPtr);
+    if (ee && (ee >= ScriptEndPtr || CharClassifier::isCIdTerm(*ee))) {
+      // looks like a valid number
+      while (ScriptPtr < ee) {
         const char ch = *ScriptPtr++;
         if (ch == '_') continue;
-        if (!CharClassifier::isDigit(*ScriptPtr)) { --ScriptPtr; break; }
         String += ch;
       }
+      return;
     }
-    return;
   }
 
   // special single-character token?

@@ -1718,6 +1718,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
 
   // goto that follows goto should be ignored
   bool lastWasGoto = false;
+  vassert(sc->IsCMode());
 
   sc->Expect("{");
   SkipSemicolonsToEOL(sc);
