@@ -250,6 +250,13 @@ IMPLEMENT_FREE_FUNCTION(VObject, AreStateSpritesPresent) {
 }
 
 
+// R_IsSpritePresent(string sprname)
+IMPLEMENT_FREE_FUNCTION(VObject, R_IsSpritePresent) {
+  P_GET_STR(str);
+  RET_BOOL(R_IsSpritePresent(*str));
+}
+
+
 //native static final int R_GetBloodTranslation (int color, optional bool allowadd/*=false*/);
 IMPLEMENT_FREE_FUNCTION(VObject, R_GetBloodTranslation) {
   vint32 color;

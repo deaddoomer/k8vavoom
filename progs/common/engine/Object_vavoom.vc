@@ -399,6 +399,9 @@ native static final void KBCheatAppend (string keys, string concmd);
 
 native static final bool AreStateSpritesPresent (state State);
 
+// can check for "NNNN", for "NNNNF", "NNNNFx", "NNNNFxFx"
+native static final bool R_IsSpritePresent (string sprname);
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 // misc

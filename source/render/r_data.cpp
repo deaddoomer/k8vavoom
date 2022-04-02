@@ -794,6 +794,49 @@ bool R_AreSpritesPresent (int Index) {
 
 //==========================================================================
 //
+//  R_IsSpritePresent
+//
+//==========================================================================
+bool R_IsSpritePresent (const char *sprname) {
+  if (!sprname || !sprname[0] || !sprname[1] || !sprname[2] || !sprname[3]) {
+    return false;
+  }
+
+  int frame = -1, rot = -1;
+  if (sprname[4]) {
+    frame = VStr::ToUpper(sprname[4])-'A';
+    if (frame < 0 || frame > 127) return false;
+    if (sprname[5]) {
+      // Fx
+      rot = sprname[5]-'0';
+      if (rot < 0 || rot > 15) return false;
+      // skip mirror info
+      if (sprname[6] && sprname[7] && sprname[8]) return false;
+    }
+  }
+
+  char SprName[8];
+  memcpy(SprName, sprname, 4);
+  SprName[4] = 0;
+  VName sn = VName(SprName, VName::FindLower);
+  if (sn == NAME_None) return false; // no reason to try
+
+  int sidx = VClass::FindSprite(sn);
+  if (sidx < 0 || sidx >= sprites.length()) return false;
+
+  // check frame
+  if (frame < 0) return true;
+  const spritedef_t &sd = sprites[sidx];
+  if (frame >= sd.numframes) return false; // no frame
+
+  // check rotation
+  if (rot < 0) return true;
+  return (sd.spriteframes[frame].lump[rot] > 0);
+}
+
+
+//==========================================================================
+//
 //  InitNamedTranslations
 //
 //==========================================================================

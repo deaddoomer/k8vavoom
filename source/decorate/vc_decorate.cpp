@@ -2657,6 +2657,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
       Prop += ".";
       Prop += sc->String;
     }
+
     //VName PropName = *Prop.ToLower();
     bool FoundProp = false;
     for (int j = 0; j < FlagList.length() && !FoundProp; ++j) {
@@ -3180,8 +3181,20 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
               pdef->Field->SetInt(DefObj, (r<<16)|(g<<8)|b|(a<<24));
             }
             if (fuckfloat) {
+              if (sc->Check(",")) {
+                sc->ExpectFloat();
+              } else if (sc->GetString()) {
+                if (sc->Crossed || sc->String == "}") {
+                  sc->UnGet();
+                } else {
+                  sc->UnGet();
+                  sc->ExpectFloat();
+                }
+              }
+              /*
               sc->Check(",");
               if (!sc->Crossed) sc->ExpectFloat();
+              */
             }
           }
           break;
@@ -3398,7 +3411,14 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
     } else {
       if (!vcWarningsSilenced) GLog.Logf(NAME_Warning, "%s: Unknown property \"%s\"", *prloc.toStringNoCol(), *Prop);
     }
-    sc->SkipLine();
+
+    //HACK!
+    if (Prop.strEquCI("Inventory.RestrictedTo")) {
+      sc->ExpectString();
+      while (sc->Check(",")) sc->ExpectString();
+    } else {
+      sc->SkipLine();
+    }
   }
 
   sc->SetCMode(false);

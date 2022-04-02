@@ -150,7 +150,11 @@ void R_InitData ();
 void R_ShutdownData ();
 void R_InstallSprite (const char *, int);
 void R_InstallSpriteComplete ();
+
 bool R_AreSpritesPresent (int);
+// can check for "NNNN", for "NNNNF", "NNNNFx", "NNNNFxFx"
+bool R_IsSpritePresent (const char *sprname);
+
 int R_ParseDecorateTranslation (VScriptParser *sc, int GameMax, VStr trname=VStr::EmptyString);
 int R_FindTranslationByName (VStr trname);
 int R_GetBloodTranslation (int Col, bool allowAdd);
