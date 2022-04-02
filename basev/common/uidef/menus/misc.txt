@@ -392,4 +392,15 @@ menudef MiscOptions {
       "\cGWARNING! This may cause some mods (especially weapon mods) to malfunction!"
       "Also, you will get a console warning in any case.";
   }
+
+  option bool {
+    title = "Emulate GZDoom Weapon firing";
+    cvar = wpn_gzdoom_firing;
+    help =
+      "GZDoom allows weapon firing during the whole state, not only at the",
+      "beginning, when 'A_WeaponReady' was called. This is not how Vanilla",
+      "works, but some DECORATE mods rely on this.",
+      "",
+      "It is turned on by default for now. Let's hope nothing will break.";
+  }
 }
