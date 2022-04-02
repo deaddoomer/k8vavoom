@@ -1131,7 +1131,7 @@ VStr GZModelDef::createXml () {
     res += va("    <state sprite=\"%s\" sprite_frame=\"%s\"",
       *frm.sprbase.toUpperCase().xmlEscape(),
       *VStr((char)(frm.sprframe+'A')).xmlEscape());
-    if (usedModelCount > 1) {
+    /*if (usedModelCount > 1)*/ {
       res += va(" model=\"%s_%d\"", *className.toLowerCase().xmlEscape(), frm.mdindex);
     }
     /*if (mdlUsed[frm.mdindex] != frm.vvindex)*/ res += va(" frame_index=\"%d\"", frm.vvindex);
