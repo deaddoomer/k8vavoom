@@ -182,6 +182,45 @@ override void MonsterMorphed () {
 }
 
 
+//==========================================================================
+//
+//  A_MinotaurDeath
+//
+//==========================================================================
+[decorate] final void A_MinotaurDeath () {
+  if (!R_IsSpritePresent("MNTRF1") && !R_IsSpritePresent("MNTRF0")) {
+    SetState(FindState('FadeOut'));
+  }
+}
+
+
+//==========================================================================
+//
+//  A_SpawnMinotaurDeathSmoke
+//
+//==========================================================================
+[decorate] final void A_SpawnMinotaurDeathSmoke () {
+  // find which type to spawn
+  auto moClass = class!EntityEx(FindClassNoCaseStr("MinotaurSmokeExit"));
+  if (!moClass) {
+    // can't find thing type
+    printwarn("Summon: unknown class 'MinotaurSmokeExit'");
+    return;
+  }
+
+  auto moRepl = class!EntityEx(GetClassReplacement(moClass));
+  if (moRepl) moClass = moRepl;
+
+  class!Actor act = class!Actor(moClass);
+  if (!act) {
+    printwarn("Summon: class 'MinotaurSmokeExit' is not an actor");
+    return;
+  }
+
+  A_SpawnItemEx(act);
+}
+
+
 states {
 Spawn:
 Look:
@@ -226,7 +265,7 @@ Pain:
   MNTR E 6 A_Pain
   Goto See
 Death:
-  MNTR F 6
+  MNTR F 6 A_MinotaurDeath
   MNTR G 5
   MNTR H 6 A_Scream
   MNTR I 5
@@ -241,6 +280,17 @@ Death:
   MNTR R 6
   MNTR S 5
   MNTR T -1 A_BossDeath
+  Stop
+FadeOut:
+  MNTR E 6
+  MNTR E 2 A_Scream
+  MNTR E 5 A_SpawnMinotaurDeathSmoke
+  MNTR E 5
+  MNTR E 5 A_NoBlocking
+  MNTR E 5
+  MNTR E 5 A_MinotaurFade1
+  MNTR E 5 A_MinotaurFade0
+  MNTR E 10 A_BossDeath
   Stop
 }
 
