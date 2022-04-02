@@ -29,6 +29,8 @@
 
 
 static VCvarB gz_mdl_fix_hud_weapon_scale("gz_mdl_fix_hud_weapon_scale", true, "Don't allow negative scales for MODELDEF HUD weapons?", CVAR_PreInit|CVAR_NoShadow|CVAR_Archive);
+static VCvarB gz_mdl_debug_force_attach("gz_mdl_debug_force_attach", false, "Show 'force-attaching' messages for MODELDEF?", CVAR_PreInit|CVAR_NoShadow|CVAR_Archive);
+static VCvarB gz_mdl_debug_attach_override("gz_mdl_debug_attach_override", false, "Show 'attached several times' messages for MODELDEF?", CVAR_PreInit|CVAR_NoShadow|CVAR_Archive);
 
 
 //==========================================================================
@@ -679,7 +681,9 @@ void GZModelDef::checkModelSanity (const VMatrix4 &mat, TVec scale, TVec offset)
       vassert(frm.vvindex >= 0);
       // if only one model used, but we have more, attach all models
       if (mdcount < 2 && validModelCount > 1) {
-        GCon->Logf(NAME_Warning, "force-attaching all models to gz alias model '%s', frame %s %c", *className, *frm.sprbase.toUpperCase(), 'A'+frm.sprframe);
+        if (gz_mdl_debug_force_attach.asBool()) {
+          GCon->Logf(NAME_Warning, "force-attaching all models to gz alias model '%s', frame %s %c", *className, *frm.sprbase.toUpperCase(), 'A'+frm.sprframe);
+        }
         for (int mnum = 0; mnum < models.length(); ++mnum) {
           if (mnum == frm.mdindex) continue;
           if (models[mnum].modelFile.isEmpty()) continue;
@@ -824,7 +828,9 @@ void GZModelDef::merge (GZModelDef &other) {
     for (auto &&sit : frames.itemsIdx()) {
       Frame &ff = sit.value();
       if (ff == ofrm) {
-        GLog.WriteLine(NAME_Warning, "class '%s' (%s%c) attaches alias models several times!", *className, *ff.sprbase.toUpperCase(), 'A'+ff.sprframe);
+        if (gz_mdl_debug_attach_override.asBool()) {
+          GLog.WriteLine(NAME_Warning, "class '%s' (%s%c) attaches alias models several times!", *className, *ff.sprbase.toUpperCase(), 'A'+ff.sprframe);
+        }
         spfindex = sit.index();
         break;
       }

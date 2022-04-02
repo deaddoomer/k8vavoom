@@ -33,6 +33,7 @@
 static VCvarI mdl_verbose_loading("mdl_verbose_loading", "0", "Verbose alias model loading?", CVAR_NoShadow/*|CVAR_Archive*/);
 static VCvarB r_preload_alias_models("r_preload_alias_models", true, "Preload all alias models and their skins?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
 static VCvarI dbg_dump_gzmodels("dbg_dump_gzmodels", "0", "Dump xml files for gz modeldefs (1:final;2:all)?", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
+static VCvarB mdl_debug_md3("mdl_debug_md3", false, "Show 'automatic submodels' for MD3?", CVAR_PreInit|CVAR_NoShadow|CVAR_Archive);
 
 
 static int cli_DisableModeldef = 0;
@@ -1032,9 +1033,11 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
             md3strm->Serialise(&n, 4);
             n = LittleLong(n);
             if (n > 1 && n < 64) {
-              GCon->Logf(NAME_Init, "%s: model '%s' got automatic submodel%s for %u more mesh%s",
-                         *ModelDefNode->Loc.toStringNoCol(), *Md2->Model->Name,
-                         (n > 2 ? "s" : ""), n-1, (n > 2 ? "es" : ""));
+              if (mdl_debug_md3.asBool()) {
+                GCon->Logf(NAME_Init, "%s: model '%s' got automatic submodel%s for %u more mesh%s",
+                           *ModelDefNode->Loc.toStringNoCol(), *Md2->Model->Name,
+                           (n > 2 ? "s" : ""), n-1, (n > 2 ? "es" : ""));
+              }
               for (unsigned f = 1; f < n; ++f) {
                 VScriptSubModel &newmdl = SMdl.SubModels.Alloc();
                 Md2 = &SMdl.SubModels[Md2Index]; // this pointer may change, so refresh it
