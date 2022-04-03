@@ -964,28 +964,44 @@ public:
   void FreeSegParts (segpart_t *) noexcept;
 
 public:
+  struct MdlDrawInfo {
+    VEntity *mobj;
+    VLevel *Level;
+    VClassModelScript *Cls;
+    TVec Org;
+    TAVec Angles;
+    float ScaleX;
+    float ScaleY;
+    VAliasModelFrameInfo Frame;
+    VAliasModelFrameInfo NextFrame;
+    int FIdx;
+    int NFIdx;
+    VTextureTranslation *Trans;
+    int ColorMap;
+    int Version;
+    RenderStyleInfo ri;
+    bool IsViewModel;
+    float Inter;
+    bool Interpolate;
+    TVec LightPos;
+    float LightRadius;
+  };
+
   // models
-  bool DrawAliasModel (VEntity *mobj, const TVec &Org, const TAVec &Angles,
-    float ScaleX, float ScaleY, VModel *Mdl,
-    const VAliasModelFrameInfo &Frame, const VAliasModelFrameInfo &NextFrame,
-    VTextureTranslation *Trans, int Version,
-    const RenderStyleInfo &ri,
-    bool IsViewModel, float Inter, bool Interpolate,
-    ERenderPass Pass);
+  // this is used to draw so-called "fixed model"
+  // returns `false` if there is no model
+  bool DrawAliasModelFixed (MdlDrawInfo &nfo, VModel *Mdl, ERenderPass Pass);
 
-  bool DrawAliasModel (VEntity *mobj, VName clsName, const TVec &Org, const TAVec &Angles,
-    float ScaleX, float ScaleY,
-    const VAliasModelFrameInfo &Frame, const VAliasModelFrameInfo &NextFrame, //old:VState *State, VState *NextState,
-    VTextureTranslation *Trans, int Version,
-    const RenderStyleInfo &ri,
-    bool IsViewModel, float Inter, bool Interpolate,
-    ERenderPass Pass);
+  // this is used to draw entity models
+  // returns `false` if there is no model
+  bool DrawAliasModel (MdlDrawInfo &nfo, VName clsName, ERenderPass Pass);
 
+  // main model rendering entry point
   bool DrawEntityModel (VEntity *Ent, const RenderStyleInfo &ri, float Inter, ERenderPass Pass);
 
   // returns `true` if this model should be queued as translucent
   // need to be used to properly render models with translucent submodels
-  bool IsTranslucentEntityModel (VEntity *Ent, const RenderStyleInfo &ri, float Inter);
+  bool IsModelWithGlass (VEntity *Ent);
 
   bool CheckAliasModelFrame (VEntity *Ent, float Inter);
   bool HasEntityAliasModel (VEntity *Ent) const;

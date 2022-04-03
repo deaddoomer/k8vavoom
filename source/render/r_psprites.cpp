@@ -270,10 +270,25 @@ bool VRenderLevelShared::RenderViewModel (VViewState *VSt, float SX, float SY, c
     TimeFrac = midval(0.0f, TimeFrac, 1.0f);
   }
 
+  /*
   const bool res = DrawAliasModel(nullptr, VSt->State->Outer->Name, origin, cl->ViewAngles, 1.0f, 1.0f,
     VSt->State->getMFI(), (VSt->State->NextState ? VSt->State->NextState->getMFI() : VSt->State->getMFI()),
     nullptr, 0, ri, true, TimeFrac, r_interpolate_frames,
     RPASS_Normal);
+  */
+  MdlDrawInfo nfo;
+  memset((void *)&nfo, 0, sizeof(nfo));
+  nfo.Level = Level;
+  nfo.Org = origin;
+  nfo.Angles = cl->ViewAngles;
+  nfo.ScaleX = nfo.ScaleY = 1.0f;
+  nfo.Frame = VSt->State->getMFI();
+  nfo.NextFrame = (VSt->State->NextState ? VSt->State->NextState->getMFI() : VSt->State->getMFI());
+  nfo.ri = ri;
+  nfo.IsViewModel = true;
+  nfo.Inter = TimeFrac;
+  nfo.Interpolate = r_interpolate_frames;
+  const bool res = DrawAliasModel(nfo, VSt->State->Outer->Name, RPASS_Normal);
 
   if (restoreFOV) {
     // restore original FOV (just in case)

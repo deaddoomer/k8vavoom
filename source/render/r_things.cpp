@@ -254,9 +254,10 @@ bool VRenderLevelShared::RenderAliasModel (VEntity *mobj, const RenderStyleInfo 
     QueueTranslucentAliasModel(mobj, ri, TimeFrac, false/*asGlass*/);
     return true;
   } else {
-    if (IsTranslucentEntityModel(mobj, ri, TimeFrac)) {
+    if (IsModelWithGlass(mobj)) {
       if (!CheckAliasModelFrame(mobj, TimeFrac)) return false;
       QueueTranslucentAliasModel(mobj, ri, TimeFrac, true/*asGlass*/);
+      // still need to draw non-glass part
     }
     return DrawEntityModel(mobj, ri, TimeFrac, Pass);
   }
