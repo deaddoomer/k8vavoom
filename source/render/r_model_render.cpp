@@ -944,6 +944,7 @@ bool VRenderLevelShared::DrawAliasModel (MdlDrawInfo &nfo, VName clsName, ERende
 
   const bool origInterp = nfo.Interpolate;
   const float oldInter = nfo.Inter;
+
   while (nfo.FIdx >= 0) {
     float InterpFrac;
     nfo.NFIdx = FindNextFrame(*nfo.Cls, nfo.FIdx, nfo.NextFrame, oldInter, InterpFrac);

@@ -965,15 +965,17 @@ public:
 
 public:
   struct MdlDrawInfo {
-    VEntity *mobj;
     VLevel *Level;
+    VEntity *mobj;
     VClassModelScript *Cls;
     TVec Org;
     TAVec Angles;
     float ScaleX;
     float ScaleY;
+    // this frame info is used in high-level code
     VAliasModelFrameInfo Frame;
     VAliasModelFrameInfo NextFrame;
+    // and this frame info is used in low-level code
     int FIdx;
     int NFIdx;
     VTextureTranslation *Trans;
@@ -990,17 +992,19 @@ public:
   // models
   // this is used to draw so-called "fixed model"
   // returns `false` if there is no model
+  // do not call manually, use `DrawEntityModel()` instead!
   bool DrawAliasModelFixed (MdlDrawInfo &nfo, VModel *Mdl, ERenderPass Pass);
 
   // this is used to draw entity models
   // returns `false` if there is no model
+  // do not call manually, use `DrawEntityModel()` instead!
   bool DrawAliasModel (MdlDrawInfo &nfo, VName clsName, ERenderPass Pass);
 
   // main model rendering entry point
   bool DrawEntityModel (VEntity *Ent, const RenderStyleInfo &ri, float Inter, ERenderPass Pass);
 
-  // returns `true` if this model should be queued as translucent
-  // need to be used to properly render models with translucent submodels
+  // returns `true` if this model should be queued as glass-translucent
+  // need to be used to properly render models with translucent submodels ("glass")
   bool IsModelWithGlass (VEntity *Ent);
 
   bool CheckAliasModelFrame (VEntity *Ent, float Inter);
