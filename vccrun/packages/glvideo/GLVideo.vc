@@ -107,6 +107,7 @@ native final static bool directMode { get; set; }
 // in "depth testing mode" we are using z coordinate to do depth testing (default is off)
 // note that `clearScreen()` will clear depth buffer only if this mode is on
 native final static bool depthTest { get; set; }
+native final static bool depthWrite { get; set; }
 
 enum ZFunc {
   Never,
@@ -224,6 +225,9 @@ native final static int realStencilBits { get; }
 native final static bool framebufferHasAlpha { get; }
 
 native final static bool stencil { get; set; }
+// sfail: when stencil test failed
+// dpfail: when depth test failed (but stencil test passed)
+// dppass: when depth test passed (stencil test passed too; disabled depth testing ends here too)
 native final static void stencilOp (StencilOp sfail, StencilOp dpfail, optional StencilOp dppass);
 // (refval&mask) func (stecilbuf&mask)
 native final static void stencilFunc (StencilFunc func, int refval, optional int mask);

@@ -2030,6 +2030,7 @@ int VGLVideo::mHeight = 0;
 bool VGLVideo::smoothLine = false;
 bool VGLVideo::directMode = false;
 bool VGLVideo::depthTest = false;
+bool VGLVideo::depthWrite = false;
 bool VGLVideo::stencilEnabled = false;
 int VGLVideo::depthFunc = VGLVideo::ZFunc_Less;
 int VGLVideo::currZ = 0;
@@ -2666,6 +2667,7 @@ void VGLVideo::close () noexcept {
     mHeight = 0;
     directMode = false;
     depthTest = false;
+    depthWrite = false;
     depthFunc = VGLVideo::ZFunc_Less;
     currZ = 0;
     currZFloat = 1.0f;
@@ -2830,6 +2832,7 @@ bool VGLVideo::open (VStr winname, int width, int height, int fullscreen) {
   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
 
   if (depthTest) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+  if (depthWrite) glDepthMask(GL_TRUE); else glDepthMask(GL_FALSE);
   realizeZFunc();
   glDisable(GL_CULL_FACE);
   //glDisable(GL_BLEND);
@@ -3918,6 +3921,20 @@ IMPLEMENT_FUNCTION(VGLVideo, set_depthTest) {
   }
 }
 
+IMPLEMENT_FUNCTION(VGLVideo, get_depthWrite) {
+  RET_BOOL(depthWrite);
+}
+
+IMPLEMENT_FUNCTION(VGLVideo, set_depthWrite) {
+  bool m;
+  vobjGetParam(m);
+  if (!mInited) { depthWrite = m; return; }
+  if (m != depthWrite) {
+    depthWrite = m;
+    if (m) glDepthMask(GL_TRUE); else glDepthMask(GL_FALSE);
+  }
+}
+
 IMPLEMENT_FUNCTION(VGLVideo, get_depthFunc) {
   RET_INT(depthFunc);
 }
@@ -4086,7 +4103,9 @@ IMPLEMENT_FUNCTION(VGLVideo, glSetup2D) {
 
   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
 
+  depthWrite = false;
   if (depthTest) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+  if (depthWrite) glDepthMask(GL_TRUE); else glDepthMask(GL_FALSE);
   realizeZFunc();
   glDisable(GL_CULL_FACE);
   //glDisable(GL_BLEND);
@@ -4151,7 +4170,9 @@ IMPLEMENT_FUNCTION(VGLVideo, glSetup3D) {
 
   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
 
+  depthWrite = true;
   if (depthTest) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+  if (depthWrite) glDepthMask(GL_TRUE); else glDepthMask(GL_FALSE);
   realizeZFunc();
   glDisable(GL_CULL_FACE);
   //glDisable(GL_BLEND);
@@ -4462,15 +4483,19 @@ IMPLEMENT_FUNCTION(VGLVideo, stencilOp) {
   VOptParamInt dppass(STC_Keep);
   vobjGetParam(sfail, dpfail, dppass);
   if (!dppass.specified) dppass = dpfail;
-  if (mInited) glStencilOp(convertStencilOp(sfail), convertStencilOp(dpfail), convertStencilOp(dppass));
+  if (mInited) {
+    glStencilOp(convertStencilOp(sfail), convertStencilOp(dpfail), convertStencilOp(dppass));
+  }
 }
 
 //native final static void stencilFunc (StencilFunc func, int refval, optional int mask);
 IMPLEMENT_FUNCTION(VGLVideo, stencilFunc) {
   int func, refval;
-  VOptParamInt mask(-1);
+  VOptParamUInt mask(0xffffffffU);
   vobjGetParam(func, refval, mask);
-  if (mInited) glStencilFunc(convertStencilFunc(func), refval, mask);
+  if (mInited) {
+    glStencilFunc(convertStencilFunc(func), refval, mask);
+  }
 }
 
 

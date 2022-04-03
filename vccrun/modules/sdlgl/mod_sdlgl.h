@@ -146,6 +146,7 @@ private:
   static bool smoothLine;
   static bool directMode;
   static bool depthTest;
+  static bool depthWrite;
   static bool stencilEnabled;
   static int depthFunc;
   static int currZ;
@@ -294,6 +295,9 @@ public:
 
   DECLARE_FUNCTION(get_depthTest)
   DECLARE_FUNCTION(set_depthTest)
+
+  DECLARE_FUNCTION(get_depthWrite)
+  DECLARE_FUNCTION(set_depthWrite)
 
   DECLARE_FUNCTION(get_depthFunc)
   DECLARE_FUNCTION(set_depthFunc)
