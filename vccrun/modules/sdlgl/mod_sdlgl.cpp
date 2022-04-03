@@ -2941,6 +2941,44 @@ void VGLVideo::clear (int rgb) noexcept {
 }
 
 
+//==========================================================================
+//
+//  VGLVideo::clearDepth
+//
+//==========================================================================
+void VGLVideo::clearDepth (float val) noexcept {
+  if (!mInited) return;
+  glClearDepth(val);
+  glClear(GL_DEPTH_BUFFER_BIT);
+  glClearDepth(1.0);
+}
+
+
+//==========================================================================
+//
+//  VGLVideo::clearStencil
+//
+//==========================================================================
+void VGLVideo::clearStencil (int val) noexcept {
+  if (!mInited) return;
+  glClearStencil(val);
+  glClear(GL_STENCIL_BUFFER_BIT);
+  glClearStencil(0);
+}
+
+
+//==========================================================================
+//
+//  VGLVideo::clearColor
+//
+//==========================================================================
+void VGLVideo::clearColor (int rgb) noexcept {
+  if (!mInited) return;
+  glClearColor(((rgb>>16)&0xff)/255.0f, ((rgb>>8)&0xff)/255.0f, (rgb&0xff)/255.0f, 0.0);
+  glClear(GL_COLOR_BUFFER_BIT);
+}
+
+
 // ////////////////////////////////////////////////////////////////////////// //
 VMethod *VGLVideo::onDrawVC = nullptr;
 VMethod *VGLVideo::onEventVC = nullptr;
@@ -3785,6 +3823,24 @@ IMPLEMENT_FUNCTION(VGLVideo, clearScreen) {
   VOptParamUInt rgb(0);
   vobjGetParam(rgb);
   VGLVideo::clear(rgb);
+}
+
+IMPLEMENT_FUNCTION(VGLVideo, clearDepth) {
+  VOptParamFloat val(1.0f);
+  vobjGetParam(val);
+  VGLVideo::clearDepth(val);
+}
+
+IMPLEMENT_FUNCTION(VGLVideo, clearStencil) {
+  VOptParamUInt val(0);
+  vobjGetParam(val);
+  VGLVideo::clearStencil(val);
+}
+
+IMPLEMENT_FUNCTION(VGLVideo, clearColor) {
+  VOptParamUInt rgb(0);
+  vobjGetParam(rgb);
+  VGLVideo::clearColor(rgb);
 }
 
 

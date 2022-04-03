@@ -205,6 +205,9 @@ public:
   static void close () noexcept;
 
   static void clear (int rgb=0) noexcept;
+  static void clearDepth (float val=1.0f) noexcept;
+  static void clearStencil (int val=0) noexcept;
+  static void clearColor (int rgb=0) noexcept;
 
   static void dispatchEvents ();
   static void runEventLoop ();
@@ -366,6 +369,9 @@ public:
   DECLARE_FUNCTION(glPolygonOffset)
 
   DECLARE_FUNCTION(clearScreen)
+  DECLARE_FUNCTION(clearDepth)
+  DECLARE_FUNCTION(clearStencil)
+  DECLARE_FUNCTION(clearColor)
 
   DECLARE_FUNCTION(get_stencil)
   DECLARE_FUNCTION(set_stencil)

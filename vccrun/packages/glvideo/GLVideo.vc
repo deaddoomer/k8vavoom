@@ -87,6 +87,10 @@ native final static void closeScreen ();
 native final static void clearScreen (optional int rgb);
 //native final static void clearScreenRGB (int r, int g, int b);
 
+native final static void clearDepth (optional float val/*=1.0f*/);
+native final static void clearStencil (optional int val/*=0*/);
+native final static void clearColor (optional int rgb/*=0*/);
+
 native final static void runEventLoop ();
 
 native final static void requestRefresh ();
