@@ -379,7 +379,7 @@ override void AttachToOwner (EntityEx NewOwner, optional Inventory oldInv) {
 //  this is called only from `AttachToOwner()`
 //
 //==========================================================================
-final Ammo AddAmmo (EntityEx Toucher, class!Ammo AmmoType, int count) {
+Ammo AddAmmo (EntityEx Toucher, class!Ammo AmmoType, int count) {
   if (!AmmoType) return none;
 
   if (!bIgnoreSkill) {
@@ -414,7 +414,7 @@ final Ammo AddAmmo (EntityEx Toucher, class!Ammo AmmoType, int count) {
 //  AddExistingAmmo
 //
 //==========================================================================
-final bool AddExistingAmmo (Ammo AmmoItem, int count, optional bool checkOnly) {
+bool AddExistingAmmo (Ammo AmmoItem, int count, optional bool checkOnly) {
   int oldammo;
 
   if (!AmmoItem || count <= 0) return false;
@@ -450,7 +450,7 @@ final bool AddExistingAmmo (Ammo AmmoItem, int count, optional bool checkOnly) {
 //  AddWeapon
 //
 //==========================================================================
-final Weapon AddWeapon (class!Weapon WeaponType) {
+Weapon AddWeapon (class!Weapon WeaponType) {
   if (!WeaponType) return none;
   Weapon Wpn = Weapon(EntityEx(Owner).FindInventory(WeaponType/*, disableReplacement:true*/));
   if (!Wpn) {
@@ -672,7 +672,7 @@ bool CheckSpecialWeaponAmmo (ubyte Mode) {
 //  Special hack for BDW Assault Rifle and BDW Shotgun
 //
 //==========================================================================
-final bool CheckAmmoAmount (ubyte Mode, optional bool RequireAmmo) {
+bool CheckAmmoAmount (ubyte Mode, optional bool RequireAmmo) {
   if (Mode == FIRE_Primary) {
     if (!RequireAmmo && bAmmoOptional) return true; //k8: is this right?
     //printdebug("%C: AmmoType1=%C; Ammo1=%C", self, AmmoType1, Ammo1);
@@ -788,7 +788,7 @@ bool CheckAmmo (ubyte Mode, bool AutoSwitch, optional bool RequireAmmo) {
 //  DepleteAmmo
 //
 //==========================================================================
-final bool DepleteAmmo (ubyte Mode, optional bool CheckEnough, optional int DehackedUse) {
+bool DepleteAmmo (ubyte Mode, optional bool CheckEnough, optional int DehackedUse) {
   // search for infinite ammo power; any subclass will do
   if (EntityEx(Owner).FindInfiniteAmmoPowerup()) {
     // don't waste ammo if we have an infinite ammo powerup
@@ -837,7 +837,7 @@ final bool DepleteAmmo (ubyte Mode, optional bool CheckEnough, optional int Deha
 //  EndPowerup
 //
 //===========================================================================
-final void EndPowerup () {
+void EndPowerup () {
   if (SisterWeapon) {
     PlayerEx(Owner.Player).SetWeapon(SisterWeapon);
     if (SisterWeapon.GetReadyState() != GetReadyState()) {

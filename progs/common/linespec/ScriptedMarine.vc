@@ -109,7 +109,7 @@ override void Tick (float DeltaTime) {
 //  SetWeapon
 //
 //==========================================================================
-final void SetWeapon (int WpnNum) {
+void SetWeapon (int WpnNum) {
   MeleeState = none;
   MissileState = none;
 
@@ -138,7 +138,7 @@ final void SetWeapon (int WpnNum) {
 //  SetSprite
 //
 //==========================================================================
-final void SetSprite (class!EntityEx SrcClass) {
+void SetSprite (class!EntityEx SrcClass) {
   if (SrcClass) {
     FixedSpriteName = GetStateSpriteName(FindClassState(SrcClass, 'Spawn'));
     ScaleX = SrcClass.default.ScaleX;

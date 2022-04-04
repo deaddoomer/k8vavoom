@@ -297,7 +297,7 @@ override void ClientTick (float DeltaTime) {
 //  IntensityToRadius
 //
 //==========================================================================
-final float IntensityToRadius (float Val) {
+float IntensityToRadius (float Val) {
   return LevelInfo.GZSizeToRadius(Val, Attenuated, attmult:2.0);
 }
 

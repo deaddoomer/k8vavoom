@@ -48,7 +48,7 @@ override void Tick (float DeltaTime) {
 //  Returns true if the pig morphs.
 //
 //==========================================================================
-final bool UpdateMorphedMonster () {
+bool UpdateMorphedMonster () {
   if (Health <= 0) return false;
   if (UnmorphTime > XLevel.Time) return false;
   if (!UnmorphActor(none, false)) return false;

@@ -662,7 +662,7 @@ float GetAttackZOfs () {
 //  Moves the given origin along a given angle.
 //
 //==========================================================================
-final void ThrustPlayer (float angle, float move, float deltaTime) {
+void ThrustPlayer (float angle, float move, float deltaTime) {
   if ((!EntityEx(MO).FindInventory(PowerFlight) || MO.Origin.z <= MO.FloorZ) &&
       ((EntityEx(MO).GetActorTerrain()->Friction &&
         EntityEx(MO).GetActorTerrain()->Friction < EntityEx::FRICTION_NORMAL) ||
@@ -875,7 +875,7 @@ void CrouchMove (float deltaTime, int direction) {
 //  CanCrouch
 //
 //==========================================================================
-final bool CanCrouch () {
+bool CanCrouch () {
   if (!IsCrouchEnabled()) return false;
   return (!bFly || MO.Origin.z <= MO.FloorZ);
 }
@@ -886,7 +886,7 @@ final bool CanCrouch () {
 //  IsCrouchButtonCrouch
 //
 //==========================================================================
-final bool IsCrouchButtonCrouch () {
+bool IsCrouchButtonCrouch () {
   if (!IsCrouchEnabled()) return false;
   if (Buttons&BT_CROUCH) {
     return (!bFly || MO.Origin.z <= MO.FloorZ);
@@ -2795,7 +2795,7 @@ void ClientSparkParticles (int Count, TVec Org, float Angle) {
 //  AddBlend
 //
 //==========================================================================
-final void AddBlend (ref float r, ref float g, ref float b, ref float a, int Col) {
+void AddBlend (ref float r, ref float g, ref float b, ref float a, int Col) {
   if (!(Col&0xff000000)) return; // no alpha
   float r1 = float((Col>>16)&0xff)/255.0;
   float g1 = float((Col>>8)&0xff)/255.0;
@@ -2817,7 +2817,7 @@ final void AddBlend (ref float r, ref float g, ref float b, ref float a, int Col
 //  overrides blend color alpha
 //
 //==========================================================================
-final void AddBlendWithAlpha (ref float r, ref float g, ref float b, ref float a, int Col, float alpha) {
+void AddBlendWithAlpha (ref float r, ref float g, ref float b, ref float a, int Col, float alpha) {
   if (alpha <= 0) return; // no alpha
   float r1 = float((Col>>16)&0xff)/255.0;
   float g1 = float((Col>>8)&0xff)/255.0;

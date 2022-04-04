@@ -204,7 +204,7 @@ override void Tick (float DeltaTime) {
 //  IsAutoaimDisabled
 //
 //==========================================================================
-final bool IsAutoaimDisabled (optional int forceType) {
+bool IsAutoaimDisabled (optional int forceType) {
   name cvname;
        if (forceType > 0) cvname = 'k8HitscanAutoAim';
   else if (forceType < 0) cvname = 'k8ProjectileAutoAim';
@@ -221,7 +221,7 @@ final bool IsAutoaimDisabled (optional int forceType) {
 //  BecomeItem
 //
 //==========================================================================
-final void BecomeItem () {
+void BecomeItem () {
   UnlinkFromWorld();
   bNoSector = true;
   bNoBlockmap = true;
@@ -238,7 +238,7 @@ final void BecomeItem () {
 //  BecomePickup
 //
 //==========================================================================
-final void BecomePickup () {
+void BecomePickup () {
   if (Owner) EntityEx(Owner).RemoveInventory(self);
   UnlinkFromWorld();
   bNoSector = false;
@@ -616,7 +616,7 @@ bool ShouldRespawn () {
 //  if it can reuse the item.
 //
 //==========================================================================
-final bool GoAway () {
+bool GoAway () {
   // never respawn dropped items
   if (bDropped) {
     if (PickupFlashType) {
@@ -645,7 +645,7 @@ final bool GoAway () {
 //  GoAwayAndDie
 //
 //==========================================================================
-final void GoAwayAndDie () {
+void GoAwayAndDie () {
   if (!GoAway()) {
     bSpecial = false;
     SetState(FindState('HoldAndDestroy'));
@@ -679,7 +679,7 @@ float GetRespawnTime (bool asRavenPickup) {
 //  Hide
 //
 //==========================================================================
-final void Hide () {
+void Hide () {
   bSpecial = false;
   bInvisible = true;
   if (LineSpecialGameInfo(Level.Game).bRavenStylePickupRespawn) {
@@ -739,7 +739,7 @@ void PlayPickupSound (EntityEx Toucher) {
 //  GiveQuest
 //
 //==========================================================================
-final void GiveQuest (EntityEx Toucher) {
+void GiveQuest (EntityEx Toucher) {
   if (GiveQuestNum) {
     Toucher.GiveInventoryType(class!Inventory(FindClass(name(va("QuestItem%d", GiveQuestNum)))));
   }

@@ -87,10 +87,10 @@ void DamageEx (EntityEx inflictor, EntityEx source, int damage, name DmgType, bo
 //  note that damage resist returns 0
 //
 //==========================================================================
-final int Damage (EntityEx inflictor, EntityEx source, int damage,
-                  optional name DmgType, optional bool NoArmor, optional bool forced,
-                  optional bool spawnBlood,
-                  optional bool ignoreDamageFactors, optional bool ignorePowerups)
+int Damage (EntityEx inflictor, EntityEx source, int damage,
+            optional name DmgType, optional bool NoArmor, optional bool forced,
+            optional bool spawnBlood,
+            optional bool ignoreDamageFactors, optional bool ignorePowerups)
 {
   if (!bShootable && !forced) return 0; // shouldn't happen...
   if (!Level.Game.IsAuthority) return 0;
@@ -801,7 +801,7 @@ bool MorphedDeath (out EntityEx Morphed, out int MorphedStyle, out int MorphedHe
 //  Sets up all data concerning poisoning
 //
 //==========================================================================
-final void PoisonPlayer (EntityEx poisoner, int poison) {
+void PoisonPlayer (EntityEx poisoner, int poison) {
   if ((PlayerEx(Player).Cheats&PlayerEx::CF_GODMODE) || bInvulnerable) return;
   if (!Level.Game.IsAuthority) return;
   PlayerEx(Player).PoisonCount += poison;
@@ -819,7 +819,7 @@ final void PoisonPlayer (EntityEx poisoner, int poison) {
 //  Similar to Actor::Damage
 //
 //==========================================================================
-final void PoisonDamage (EntityEx inflictor, EntityEx source, int damage, bool playPainSound) {
+void PoisonDamage (EntityEx inflictor, EntityEx source, int damage, bool playPainSound) {
   if (Health <= 0) return;
   if (bInvulnerable && damage < 10000) return; // mobj is invulnerable
   if (!Level.Game.IsAuthority) return;

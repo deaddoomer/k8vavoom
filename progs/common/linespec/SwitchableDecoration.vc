@@ -79,7 +79,7 @@ int ActivationType /*= THINGSPEC_Default*/;
 //  checkActivatorValidity
 //
 //==========================================================================
-final bool checkActivatorValidity (EntityEx Activator) {
+bool checkActivatorValidity (EntityEx Activator) {
   //printdebug("%C: checkActivatorValidity: Activator=%C; ActivationType=%s", self, Activator, ActivationType);
   if (ActivationType) {
     //if (ActivationType&AF_ThingActs) Activator = self; //k8:not sure; done in caller
@@ -103,7 +103,7 @@ final bool checkActivatorValidity (EntityEx Activator) {
 //  this is common code for both `Activate()` and `Deactivate()`
 //
 //==========================================================================
-final bool performAction (EntityEx Activator, EntityEx origAct, bool isActivate) {
+bool performAction (EntityEx Activator, EntityEx origAct, bool isActivate) {
   #ifdef SWITCHABLE_DECORATION_USE_NEW_METHOD
   if (ActivationType&AF_Switch) {
     printdebug("%C: 000: isActivate=%B, activated_internal=%B", self, isActivate, !!(ActivationType&AF_Activated_Internal));

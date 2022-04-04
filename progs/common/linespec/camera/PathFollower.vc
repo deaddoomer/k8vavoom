@@ -210,7 +210,7 @@ override bool Activate (EntityEx Activator) {
 //  CommonTick
 //
 //==========================================================================
-final void CommonTick (float DeltaTime) {
+void CommonTick (float DeltaTime) {
   if (!bActive) return;
 
   if (bJustStepped) {

@@ -49,9 +49,9 @@ enum {
 //  Morph
 //
 //==========================================================================
-final bool Morph (class!MorphedMonster MonsterClass,
-                  class!PlayerPawn PlayerClass, float Duration, int MorphStyle,
-                  class!Actor MorphFlash, class!Actor UnmorphFlash)
+bool Morph (class!MorphedMonster MonsterClass,
+            class!PlayerPawn PlayerClass, float Duration, int MorphStyle,
+            class!Actor MorphFlash, class!Actor UnmorphFlash)
 {
   if (bIsPlayer)
   {
@@ -69,8 +69,8 @@ final bool Morph (class!MorphedMonster MonsterClass,
 //  MorphMonster
 //
 //==========================================================================
-final bool MorphMonster (class!MorphedMonster MonsterClass, float Duration,
-                         int MorphStyle, class!Actor MorphFlash, class!Actor UnmorphFlash)
+bool MorphMonster (class!MorphedMonster MonsterClass, float Duration,
+                   int MorphStyle, class!Actor MorphFlash, class!Actor UnmorphFlash)
 {
   if (!bMonster) return false;
   if (bBoss) return false;
@@ -122,9 +122,9 @@ void MonsterMorphed () {
 //  Returns true if the player gets turned into a monster.
 //
 //==========================================================================
-final bool MorphPlayer (class!PlayerPawn PlayerClass, float Duration,
-                        int MorphStyle, class!Actor MorphFlash, class!Actor UnmorphFlash,
-                        EntityEx Activator)
+bool MorphPlayer (class!PlayerPawn PlayerClass, float Duration,
+                  int MorphStyle, class!Actor MorphFlash, class!Actor UnmorphFlash,
+                  EntityEx Activator)
 {
   if (bInvulnerable && (self != Activator || !(MorphStyle&MORPH_WHENINVULNERABLE))) {
     // immune when invulnerable

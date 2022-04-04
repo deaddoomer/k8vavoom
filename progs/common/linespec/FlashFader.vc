@@ -43,9 +43,9 @@ EntityEx ForWho;
 //  Init
 //
 //==========================================================================
-final void Init (float ABlendR1, float ABlendG1, float ABlendB1, float ABlendA1,
-                 float ABlendR2, float ABlendG2, float ABlendB2, float ABlendA2,
-                 float ADuration, EntityEx AForWho)
+void Init (float ABlendR1, float ABlendG1, float ABlendB1, float ABlendA1,
+           float ABlendR2, float ABlendG2, float ABlendB2, float ABlendA2,
+           float ADuration, EntityEx AForWho)
 {
   BlendR1 = ABlendR1;
   BlendG1 = ABlendG1;
@@ -99,7 +99,7 @@ override void Tick (float DeltaTime) {
 //  Cancel
 //
 //==========================================================================
-final void Cancel () {
+void Cancel () {
   Duration = Time;
   BlendA2 = 0.0;
 }
@@ -110,7 +110,7 @@ final void Cancel () {
 //  SetBlend
 //
 //==========================================================================
-final void SetBlend (float Inter) {
+void SetBlend (float Inter) {
   if (!ForWho || !ForWho.bIsPlayer) return;
   PlayerEx P = PlayerEx(ForWho.Player);
   float InvInter = 1.0-Inter;

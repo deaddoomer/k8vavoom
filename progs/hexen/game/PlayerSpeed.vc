@@ -25,41 +25,40 @@
 //**************************************************************************
 class PlayerSpeed : Actor;
 
+
 //==========================================================================
 //
 //  A_SpeedFade
 //
 //==========================================================================
-
-final void A_SpeedFade()
-{
+[decorate] final void A_SpeedFade () {
   RenderStyle = STYLE_Translucent;
   Alpha = 0.333;
 }
 
-states
-{
+
+states {
 Spawn:
-  //  Fighter
+  // Fighter
   PLAY A 5
   PLAY A 3 A_SpeedFade
   Stop
-  //  Cleric
+  // Cleric
   CLER A 5
   CLER A 3 A_SpeedFade
   Stop
-  //  Mage
+  // Mage
   MAGE A 5
   MAGE A 3 A_SpeedFade
   Stop
-  //  Pig
+  // Pig
   PIGY A 5
   PIGY A 3 A_SpeedFade
   Stop
 }
 
-defaultproperties
-{
+
+defaultproperties {
   RenderStyle = STYLE_Translucent;
   Alpha = 0.666;
   bNoBlockmap = true;

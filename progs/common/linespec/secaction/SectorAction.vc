@@ -113,7 +113,7 @@ bool TriggerAction (EntityEx Triggerer, int ActType) {
 //  CheckTrigger
 //
 //==========================================================================
-final bool CheckTrigger (EntityEx Triggerer) {
+bool CheckTrigger (EntityEx Triggerer) {
   if (!Level.Game.IsAuthority) return false;
   if (Special &&
       (Triggerer.bIsPlayer ||

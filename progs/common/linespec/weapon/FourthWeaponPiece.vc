@@ -146,7 +146,7 @@ override bool ShouldStay () {
 //  GetPieceValueTrans
 //
 //==========================================================================
-final int GetPieceValueTrans (int Val) {
+int GetPieceValueTrans (int Val) {
   switch (Val) {
     case WPIECE1: return WPIECE1|WPIECE2|WPIECE3;
     case WPIECE2: return WPIECE2|WPIECE3;

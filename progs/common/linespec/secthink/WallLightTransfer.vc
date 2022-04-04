@@ -41,7 +41,7 @@ int LastLight;
 //  EV_ThingSpawn
 //
 //==========================================================================
-final void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
+void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   Sector = InSector;
   TargetId = Arg1;
   Flags = Arg2;
@@ -92,7 +92,7 @@ override void Tick (float DeltaTime) {
 //  DoTransfer
 //
 //==========================================================================
-final void DoTransfer (line_t *Line, int Light) {
+void DoTransfer (line_t *Line, int Light) {
   int snums[2];
   snums[0] = (Flags&WLF_SIDE1 ? Line->sidenum[0] : -1);
   snums[1] = (Flags&WLF_SIDE2 ? Line->sidenum[1] : -1);

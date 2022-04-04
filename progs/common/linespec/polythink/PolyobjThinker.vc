@@ -183,7 +183,7 @@ void RemoveFromThinkerChain () {
 //  PolyobjStartSequence
 //
 //==========================================================================
-final void PolyobjStartSequence (polyobj_t *mobj, name sequence, int ModeNum) {
+void PolyobjStartSequence (polyobj_t *mobj, name sequence, int ModeNum) {
   Level.PolyobjStartSequence(mobj, sequence, ModeNum);
 }
 
@@ -193,7 +193,7 @@ final void PolyobjStartSequence (polyobj_t *mobj, name sequence, int ModeNum) {
 //  PolyobjStopSequence
 //
 //==========================================================================
-final void PolyobjStopSequence (polyobj_t *mobj) {
+void PolyobjStopSequence (polyobj_t *mobj) {
   Level.PolyobjStopSequence(mobj);
 }
 
