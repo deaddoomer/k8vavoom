@@ -27,7 +27,9 @@
 #include "../server/server.h"
 #include "../server/sv_local.h"
 #include "../server/sv_save.h"
-#include "../client/client.h" /* for `cl` */
+#ifdef CLIENT
+# include "../client/client.h" /* for `cl` */
+#endif
 #include "../language.h"
 #include "../infostr.h"
 #include "p_entity.h"
@@ -146,9 +148,13 @@ void VLevelInfo::SectorStartSound (const sector_t *Sector, int SoundId,
     TVec sorg;
     if (org) {
       sorg = *org;
-    } else if (cl) {
+    }
+    #ifdef CLIENT
+    else if (cl) {
       sorg = XLevel->CalcSectorSoundOrigin(Sector, cl->ViewOrg);
-    } else {
+    }
+    #endif
+    else {
       sorg = Sector->soundorg;
       sorg.z = (Sector->floor.minz+Sector->floor.maxz)*0.5f+8.0f;
     }
@@ -191,9 +197,12 @@ void VLevelInfo::SectorStartSequence (const sector_t *Sector, VName Name, int Mo
   if (Sector) {
     if (Sector->SectorFlags&sector_t::SF_Silent) return;
     TVec sorg;
+    #ifdef CLIENT
     if (cl) {
       sorg = XLevel->CalcSectorSoundOrigin(Sector, cl->ViewOrg);
-    } else {
+    } else
+    #endif
+    {
       sorg = Sector->soundorg;
       sorg.z = (Sector->floor.minz+Sector->floor.maxz)*0.5f+8.0f;
     }
