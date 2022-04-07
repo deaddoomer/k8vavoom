@@ -886,7 +886,7 @@ void SB_DrawDamageIndicator (int dir, int clr, float alpha, int udflag) {
 //  advanced damage indicator code
 //
 //==========================================================================
-void SB_DrawAdvancedDamage (K8VPlayer cl) {
+void SB_DrawAdvancedDamage (PlayerEx cl) {
   //if (!GetCvarB('r_statusbar_advdamage')) return;
   #if 0
   //printdebug("Width=%s; Height=%s", Width, Height);

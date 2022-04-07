@@ -130,7 +130,7 @@ const int ST_MUCHPAIN = 20;
 
 const float ST_FULLSCREEN_ALPHA = 0.65;
 
-K8VPlayer cl;
+PlayerEx cl;
 
 // pics
 int pic_bar;
@@ -1145,7 +1145,7 @@ final void UpdateFaceWidget (float FrameTime) {
 
   if (sb_face_priority < 5) {
     // invulnerability
-    if ((cl.Cheats&K8VPlayer::CF_GODMODE) || EntityEx(cl.MO).bInvulnerable) {
+    if ((cl.Cheats&PlayerEx::CF_GODMODE) || EntityEx(cl.MO).bInvulnerable) {
       sb_face_priority = 4;
       sb_faceindex = ST_GODFACE;
       sb_facetime = 0.01;

@@ -44,7 +44,7 @@ class BotPlayer : BotPlayerBase;
 override bool CheckOtherItem (Actor aitem, out bool res) {
   if (::CheckOtherItem(aitem, out res)) return true;
 
-  if ((aitem.Class == Soulsphere || aitem.Class == Megasphere) && botmo.Health >= 2*K8VPlayer::MAXHEALTH) {
+  if ((aitem.Class == Soulsphere || aitem.Class == Megasphere) && botmo.Health >= 2*PlayerEx::MAXHEALTH) {
     res = false;
     return true;
   }

@@ -152,7 +152,7 @@ enum {
 };
 
 
-K8VPlayer player; // points to reference player
+PlayerEx player; // points to reference player
 Actor botmo;
 Actor ITarget;  // immediate target (where to go) (k8: currently unused)
 
@@ -854,8 +854,8 @@ bool CheckAmmoItem (Ammo ammo, out bool res) {
 //
 //==========================================================================
 bool CheckOtherItem (Actor aitem, out bool res) {
-  if (Health(aitem) && botmo.Health >= K8VPlayer::MAXHEALTH) { res = false; return true; }
-  //if ((aitem.Class == Soulsphere || aitem.Class == Megasphere) && botmo.Health >= 2*K8VPlayer::MAXHEALTH) return false;
+  if (Health(aitem) && botmo.Health >= PlayerEx::MAXHEALTH) { res = false; return true; }
+  //if ((aitem.Class == Soulsphere || aitem.Class == Megasphere) && botmo.Health >= 2*PlayerEx::MAXHEALTH) return false;
 
   BasicArmor Armor = BasicArmor(botmo.FindInventory(BasicArmor, disableReplacement:true));
   if (!Armor) return false;
@@ -1201,10 +1201,10 @@ void PerformLastCheckActions (const ref EntityEx::PathInfo pi) {
   if (pi.needJump && !bot_no_jump && player.IsJumpEnabled()) player.Buttons |= BT_JUMP;
 #endif
   if (pi.needUse) {
-    //EntityEx(player.MO).UseLines(K8VPlayer::DEFAULT_USERANGE, K8VPlayer::DEFAULT_USETHINGRANGE, '*usefail');
+    //EntityEx(player.MO).UseLines(PlayerEx::DEFAULT_USERANGE, PlayerEx::DEFAULT_USETHINGRANGE, '*usefail');
     float ur, utr;
     player.GetUseRanges(out ur, out utr);
-    EntityEx(player.MO).UseLines(/*K8VPlayer::DEFAULT_USERANGE*/ur, /*K8VPlayer::DEFAULT_USETHINGRANGE*/utr, '', // don't produce any sound on fail
+    EntityEx(player.MO).UseLines(/*PlayerEx::DEFAULT_USERANGE*/ur, /*PlayerEx::DEFAULT_USETHINGRANGE*/utr, '', // don't produce any sound on fail
       &checkLineUse, &onLineUsed, &checkThingUse, &onThingUsed);
   }
 }
