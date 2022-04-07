@@ -537,7 +537,7 @@ static VName ldrTranslatePlayerClassName (VObject *self, VName clsname) {
     }
   }
   GCon->Logf(NAME_Debug, "class `%s` is not a child of `PlayerEx`, skipped translation (this is normal loader fix).",
-               *clsname);
+             *clsname);
   return NAME_None;
 }
 
