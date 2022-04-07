@@ -565,6 +565,10 @@ public:
   typedef bool (*CanSkipReadingClassFn) (VObject *self, VName clsname);
   static TArray<CanSkipReadingClassFn> CanSkipReadingClassCBList;
 
+  // return `NAME_None` to skip translation
+  typedef VName (*ClassNameTranslationFn) (VObject *self, VName oldClassName);
+  static TArray<ClassNameTranslationFn> ClassNameTranslationCBList;
+
 public:
   // constructors
   VObject () noexcept;

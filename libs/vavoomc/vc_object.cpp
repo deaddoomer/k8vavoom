@@ -49,6 +49,7 @@ int VObject::standaloneExecutor = 0;
 TMap<VStrCI, bool> VObject::cliAsmDumpMethods;
 TArray<VObject::CanSkipReadingClassFn> VObject::CanSkipReadingClassCBList;
 TMapNC<VName, VName> VObject::IOClassNameTranslation;
+TArray<VObject::ClassNameTranslationFn> VObject::ClassNameTranslationCBList;
 
 VObject::GetVCvarObjectFn VObject::GetVCvarObject = nullptr;
 
@@ -1053,12 +1054,22 @@ void VObject::Serialise (VStream &strm) {
     if (tnp) {
       clsname = *tnp;
       if (clsname == NAME_None) VPackage::IOError(va("cannot load translated object of `none` class"));
+    } else {
+      for (auto &&cb : ClassNameTranslationCBList) {
+        VName newClassName = cb(this, clsname);
+        if (newClassName != NAME_None && newClassName != clsname) {
+          clsname = newClassName;
+          break;
+        }
+      }
     }
     VClass *cls = VClass::FindClass(*clsname);
     if (!cls) {
       // can we skip it?
       bool skipit = false;
-      for (auto &&cb : CanSkipReadingClassCBList) if (cb(this, clsname)) { skipit = true; break; }
+      for (auto &&cb : CanSkipReadingClassCBList) {
+        if (cb(this, clsname)) { skipit = true; break; }
+      }
       if (skipit) {
         // get data size
         GLog.Logf(NAME_Warning, "I/O: skipping '%s' in '%s' (this may, or may not work)", *clsname, GetClass()->GetName());
