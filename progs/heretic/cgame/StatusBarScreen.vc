@@ -28,7 +28,7 @@ class StatusBarScreen : StatusBarShared;
 const int BAR_X = 160;
 const int BAR_Y = 438;
 
-Player cl;
+K8VPlayer cl;
 
 // Chain
 int HealthMarker;
@@ -277,7 +277,7 @@ override void SB_DrawMainBar(bool inAutomap)
   //  Background
   DrawPic(BAR_X, BAR_Y, pic_barback);
 
-  if (cl.Cheats & Player::CF_GODMODE)
+  if (cl.Cheats & K8VPlayer::CF_GODMODE)
   {
     //  God mode
     DrawPic(BAR_X + 16, BAR_Y + 9, pic_god1);
@@ -480,7 +480,7 @@ void SB_DrawIcons () {
 
   // artifact rotating icons
   Powerup Pw = Powerup(EntityEx(cl.MO).FindInventory(PowerFlight));
-  if (Pw && (Pw.EffectTime > Player::BLINKTHRESHOLD || !(int(2.0*Pw.EffectTime)&1))) {
+  if (Pw && (Pw.EffectTime > K8VPlayer::BLINKTHRESHOLD || !(int(2.0*Pw.EffectTime)&1))) {
     int frame = (int(cl.MO.Level.XLevel.Time*35.0) /* ClGame.GLevel.TicTime */ / 3)&15;
     if (cl.MO.bFly) {
       if (hitCenterFrame && frame != 15 && frame != 0) {
@@ -498,7 +498,7 @@ void SB_DrawIcons () {
   }
 
   Pw = Powerup(EntityEx(cl.MO).FindInventory(PowerWeaponLevel2));
-  if (Pw && !cl.MorphTime && (Pw.EffectTime > Player::BLINKTHRESHOLD || !(int(2.0*Pw.EffectTime)&1))) {
+  if (Pw && !cl.MorphTime && (Pw.EffectTime > K8VPlayer::BLINKTHRESHOLD || !(int(2.0*Pw.EffectTime)&1))) {
     DrawPic(/*xfix*/(620), 17, pic_book[(int(cl.MO.Level.XLevel.Time*35.0)/3)&15]);
   }
 }

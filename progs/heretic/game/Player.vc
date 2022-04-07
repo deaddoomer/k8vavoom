@@ -23,7 +23,8 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class Player : PlayerEx;
+// renamed from `Player` to `K8VPlayer`, to avoid name clashing with mods
+class K8VPlayer : PlayerEx;
 
 BotPlayer Bot;
 
@@ -261,7 +262,7 @@ override void KilledActor (EntityEx Victim) {
   // check for frag changes
   if (Victim.bIsPlayer) {
     if (bIsBot) Bot.Killed(Victim);
-    if (Victim.Player.bIsBot) Player(Victim.Player).Bot.Died(EntityEx(MO));
+    if (Victim.Player.bIsBot) K8VPlayer(Victim.Player).Bot.Died(EntityEx(MO));
 
     // frag stuff
     if (Victim == MO) {

@@ -371,7 +371,7 @@ void SV_Init () {
 
   ServerNetContext = new VServerNetContext();
 
-  VClass *PlayerClass = VClass::FindClass("Player");
+  VClass *PlayerClass = VClass::FindClass("K8VPlayer");
   for (int i = 0; i < MAXPLAYERS; ++i) {
     GPlayersBase[i] = (VBasePlayer *)VObject::StaticSpawnWithReplace(PlayerClass);
     if (developer) GCon->Logf(NAME_Dev, "spawned base player object for player #%d, with actual class <%s>", i, *GPlayersBase[i]->GetClass()->GetFullName());

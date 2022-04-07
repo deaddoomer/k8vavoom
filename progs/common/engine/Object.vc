@@ -104,6 +104,7 @@ vector TAVec {
 };
 
 
+// Ax+By+Cz=D (ABC is normal, D is distance)
 struct TPlane {
   TVec normal;
   float dist;

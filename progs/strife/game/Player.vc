@@ -23,7 +23,8 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class Player : PlayerEx;
+// renamed from `Player` to `K8VPlayer`, to avoid name clashing with mods
+class K8VPlayer : PlayerEx;
 
 const float INFRATIME = 120.0;
 

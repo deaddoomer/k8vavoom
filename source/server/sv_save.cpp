@@ -482,6 +482,9 @@ public:
 
 #ifdef CLIENT
 static bool skipCallbackInited = false;
+static VName oldPlrClassName = NAME_None;
+static VName newPlrClassName = NAME_None;
+static VName clsPlayerExName = NAME_None;
 
 
 //==========================================================================
@@ -498,10 +501,11 @@ static bool checkSkipClassCB (VObject *self, VName clsname) {
       //if (VStr::strEqu(cls->GetName(), "VLevel")) return true;
       if (cls->GetVName() == NAME_VLevel) {
         GCon->Logf(NAME_Debug, "VLevel subclass `%s` replaced with `%s` (this is normal gore fix).",
-          *clsname, self->GetClass()->GetName());
+                   *clsname, self->GetClass()->GetName());
         return true;
       }
     }
+    return false;
   }
 
   //TODO: skip any Gore Mod related things?
@@ -519,6 +523,27 @@ static bool checkSkipClassCB (VObject *self, VName clsname) {
 
 //==========================================================================
 //
+//  ldrTranslatePlayerClassName
+//
+//==========================================================================
+static VName ldrTranslatePlayerClassName (VObject *self, VName clsname) {
+  if (clsname != oldPlrClassName) return NAME_None;
+  // check if it is a descendant of "PlayerEx"
+  for (VClass *cls = self->GetClass(); cls; cls = cls->GetSuperClass()) {
+    if (cls->GetVName() == clsPlayerExName) {
+      GCon->Logf(NAME_Debug, "PlayerEx subclass `%s` translated to `%s` (this is normal loader fix).",
+                 *clsname, *newPlrClassName);
+      return newPlrClassName;
+    }
+  }
+  GCon->Logf(NAME_Debug, "class `%s` is not a child of `PlayerEx`, skipped translation (this is normal loader fix).",
+               *clsname);
+  return NAME_None;
+}
+
+
+//==========================================================================
+//
 //  SV_SetupSkipCallback
 //
 //==========================================================================
@@ -526,6 +551,11 @@ static void SV_SetupSkipCallback () {
   if (skipCallbackInited) return;
   skipCallbackInited = true;
   VObject::CanSkipReadingClassCBList.append(&checkSkipClassCB);
+  // translate `Player` to `K8VPlayer`
+  oldPlrClassName = VName("Player");
+  newPlrClassName = VName("K8VPlayer");
+  clsPlayerExName = VName("PlayerEx");
+  VObject::ClassNameTranslationCBList.append(&ldrTranslatePlayerClassName);
   // translate old `Level` class to `VLevel`
   // nope, don't do that
   //VObject::IOClassNameTranslation.put(VName("Level"), NAME_VLevel);

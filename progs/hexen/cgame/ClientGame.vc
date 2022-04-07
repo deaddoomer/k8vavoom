@@ -146,7 +146,7 @@ override void OnHostError()
 
 override void StatusBarStartMap()
 {
-  StatusBarScreen(GSBar).cl = Player(cl);
+  StatusBarScreen(GSBar).cl = K8VPlayer(cl);
   GSBar.Show();
   GSBar.StartMap();
   GImission.Hide();

@@ -750,7 +750,7 @@ void CL_SetupNetClient (VSocketPublic *Sock) {
   if (cls.demorecording) Sys_Error("SOMETHING WICKED THIS WAY COMES...");
 
   // create player structure
-  cl = (VBasePlayer *)VObject::StaticSpawnWithReplace(VClass::FindClass("Player"));
+  cl = (VBasePlayer *)VObject::StaticSpawnWithReplace(VClass::FindClass("K8VPlayer"));
   cl->PlayerFlags |= VBasePlayer::PF_IsClient;
   cl->ClGame = GClGame;
   GClGame->cl = cl;
@@ -826,7 +826,7 @@ void CL_PlayDemo (VStr DemoName, bool IsTimeDemo) {
   cls.demoplayback = true;
 
   // create player structure
-  cl = (VBasePlayer *)VObject::StaticSpawnWithReplace(VClass::FindClass("Player"));
+  cl = (VBasePlayer *)VObject::StaticSpawnWithReplace(VClass::FindClass("K8VPlayer"));
   cl->PlayerFlags |= VBasePlayer::PF_IsClient;
   cl->ClGame = GClGame;
   GClGame->cl = cl;
