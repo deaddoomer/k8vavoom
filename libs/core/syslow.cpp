@@ -807,7 +807,8 @@ uint64_t Sys_Time_Micro () {
 double Sys_Time_ExU (uint64_t *usecs) {
   const uint64_t msc = Sys_Time_Micro();
   if (usecs) *usecs = msc;
-  return (timeOffset+(double)msc)/1000000.0;
+  //return (timeOffset+(double)msc)/1000000.0;
+  return (timeOffset+(double)msc/1000.0)/1000.0;
 }
 
 
