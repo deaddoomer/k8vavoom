@@ -45,6 +45,23 @@ string generateOutFile (string name) {
 }
 
 
+//Error: ztest_nameclash_00.vc:4: Field `max` conflicts with method in parent class `Object` at ./engine/Object.vc:637
+const(char)[] stripLineNumber (const(char)[] s) {
+  auto xp0 = s.indexOf("` conflicts with method in parent class `Object` at ./engine/Object.vc:");
+  if (xp0 < 0) return s;
+  while (s.length && s[$-1] >= '0' && s[$-1] <= '9') s = s[0..$-1];
+  return s;
+}
+
+
+bool isOutStrEqu (const(char)[] s0, const(char)[] s1) {
+  if (s0.length == s1.length && s0 == s1) return true;
+  s0 = stripLineNumber(s0);
+  s1 = stripLineNumber(s1);
+  return (s0.length == s1.length && s0 == s1);
+}
+
+
 TestResult runTest (string name) {
   string[] args;
   args.reserve(vccrunArgs.length+1);
@@ -120,7 +137,7 @@ TestResult runTest (string name) {
     // check output text
     if (result.passed) {
       foreach (auto idx, string s; checkout) {
-        if (s != output[idx]) {
+        if (!isOutStrEqu(s, output[idx])) {
           import std.format : format;
           result.passed = false;
           result.errormsg = format("test output doesn't match!");
@@ -132,7 +149,7 @@ TestResult runTest (string name) {
     // check error text
     if (result.passed) {
       foreach (auto idx, string s; checkerr) {
-        if (s != errors[idx]) {
+        if (!isOutStrEqu(s, errors[idx])) {
           import std.format : format;
           result.passed = false;
           result.errormsg = format("test errors aren't match!");
