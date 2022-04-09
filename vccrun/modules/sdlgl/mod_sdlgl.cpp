@@ -1436,11 +1436,11 @@ void VOpenGLTexture::blitExt (int dx0, int dy0, int dx1, int dy1, int x0, int y0
   const float fy1 = (float)y1/(float)img->height;
   const float z = VGLVideo::currZFloat;
 
-  if (angle != 0) {
+  if (angle != 0.0f) {
     glPushMatrix();
-    glTranslatef(dx0+(dx1-dx0)/2.0, dy0+(dy1-dy0)/2.0, 0);
-    glRotatef(angle, 0, 0, 1);
-    glTranslatef(-(dx0+(dx1-dx0)/2.0), -(dy0+(dy1-dy0)/2.0), 0);
+    glTranslatef(dx0+(dx1-dx0)/2.0f, dy0+(dy1-dy0)/2.0f, 0.0f);
+    glRotatef(angle, 0.0f, 0.0f, 1.0f);
+    glTranslatef(-(dx0+(dx1-dx0)/2.0f), -(dy0+(dy1-dy0)/2.0f), 0.0f);
   }
 
   glBegin(GL_QUADS);
@@ -1450,7 +1450,7 @@ void VOpenGLTexture::blitExt (int dx0, int dy0, int dx1, int dy1, int x0, int y0
     glTexCoord2f(fx0, fy1); glVertex3f(dx0, dy1, z);
   glEnd();
 
-  if (angle != 0) glPopMatrix();
+  if (angle != 0.0f) glPopMatrix();
 }
 
 
@@ -1599,11 +1599,11 @@ void VOpenGLTexture::blitAt (int dx0, int dy0, float scale, float angle) const n
   const float dx1 = dx0+w*scale;
   const float dy1 = dy0+h*scale;
 
-  if (angle != 0) {
+  if (angle != 0.0f) {
     glPushMatrix();
-    glTranslatef(dx0+(dx1-dx0)/2.0, dy0+(dy1-dy0)/2.0, 0);
-    glRotatef(angle, 0, 0, 1);
-    glTranslatef(-(dx0+(dx1-dx0)/2.0), -(dy0+(dy1-dy0)/2.0), 0);
+    glTranslatef(dx0+(dx1-dx0)/2.0f, dy0+(dy1-dy0)/2.0f, 0.0f);
+    glRotatef(angle, 0.0f, 0.0f, 1.0f);
+    glTranslatef(-(dx0+(dx1-dx0)/2.0f), -(dy0+(dy1-dy0)/2.0f), 0.0f);
   }
 
   glBegin(GL_QUADS);
@@ -1613,7 +1613,7 @@ void VOpenGLTexture::blitAt (int dx0, int dy0, float scale, float angle) const n
     glTexCoord2f(0.0f, 1.0f); glVertex3f(dx0, dy1, z);
   glEnd();
 
-  if (angle != 0) glPopMatrix();
+  if (angle != 0.0f) glPopMatrix();
 }
 
 
@@ -4056,7 +4056,7 @@ IMPLEMENT_FUNCTION(VGLVideo, glLoadIdentity) { if (mInited) glLoadIdentity(); }
 // static native final void glScale (float sx, float sy, optional float sz);
 IMPLEMENT_FUNCTION(VGLVideo, glScale) {
   float x, y;
-  VOptParamFloat z(1);
+  VOptParamFloat z(1.0f);
   vobjGetParam(x, y, z);
   if (mInited) glScalef(x, y, z);
 }
@@ -4064,7 +4064,7 @@ IMPLEMENT_FUNCTION(VGLVideo, glScale) {
 // static native final void glTranslate (float dx, float dy, optional float dz);
 IMPLEMENT_FUNCTION(VGLVideo, glTranslate) {
   float x, y;
-  VOptParamFloat z(0);
+  VOptParamFloat z(0.0f);
   vobjGetParam(x, y, z);
   if (mInited) glTranslatef(x, y, z);
 }
@@ -4086,6 +4086,31 @@ IMPLEMENT_FUNCTION(VGLVideo, set_glMatrixMode) {
       case GLMatrixMode_ModelView: glMatrixMode(GL_MODELVIEW); break;
       case GLMatrixMode_Projection: glMatrixMode(GL_PROJECTION); break;
     }
+  }
+}
+
+//static native final void glGetMatrix (GLMatrix mode, ref TMatrix4 m);
+IMPLEMENT_FUNCTION(VGLVideo, glGetMatrix) {
+  int mode;
+  VMatrix4 *mt;
+  vobjGetParam(mode, mt);
+  if (mInited) {
+    switch (mode) {
+      case GLMatrixMode_ModelView: glGetFloatv(GL_MODELVIEW_MATRIX, (*mt)[0]); break;
+      case GLMatrixMode_Projection: glGetFloatv(GL_PROJECTION_MATRIX, (*mt)[0]); break;
+      default: mt->SetIdentity(); break;
+    }
+  } else {
+    mt->SetIdentity();
+  }
+}
+
+//static native final void glSetMatrix (ref TMatrix4 m);
+IMPLEMENT_FUNCTION(VGLVideo, glSetMatrix) {
+  VMatrix4 *mt;
+  vobjGetParam(mt);
+  if (mInited) {
+    glLoadMatrixf((*mt)[0]);
   }
 }
 

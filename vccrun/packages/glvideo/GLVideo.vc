@@ -273,6 +273,9 @@ static native final void glLoadIdentity ();
 static native final void glScale (float sx, float sy, optional float sz);
 static native final void glTranslate (float dx, float dy, optional float dz);
 static native final void glRotate (float angle, TVec axis);
+static native final void glGetMatrix (GLMatrix mode, ref TMatrix4 m);
+// uses current matrix mode
+static native final void glSetMatrix (ref TMatrix4 m);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
