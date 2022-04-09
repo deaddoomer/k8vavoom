@@ -3211,3 +3211,541 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TPlane, Angle2DSignedToPlaneFlipTo) {
     RET_FLOAT(PlanesAngle2DSignedFlipTo(Self, To));
   }
 }
+
+
+//**************************************************************************
+//
+//  TMatrix4
+//
+//**************************************************************************
+//native void SetIdentity ();
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, SetIdentity) {
+  VMatrix4 *Self;
+  vobjGetParam(Self);
+  Self->SetIdentity();
+}
+
+//native void SetZero ();
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, SetZero) {
+  VMatrix4 *Self;
+  vobjGetParam(Self);
+  Self->SetZero();
+}
+
+//native void copyFrom (const ref TMatrix4 m2);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, copyFrom) {
+  VMatrix4 *Self;
+  VMatrix4 *m2;
+  vobjGetParam(Self, m2);
+  if (Self != m2) {
+    if (m2) *Self = *m2; else Self->SetIdentity();
+  }
+}
+
+//native bool equal (const ref TMatrix4 m2) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, equal) {
+  VMatrix4 *Self;
+  VMatrix4 *m2;
+  vobjGetParam(Self, m2);
+  if (Self != m2) {
+    RET_BOOL(*Self == *m2);
+  } else {
+    RET_BOOL(true);
+  }
+}
+
+//native void mul (const ref TMatrix4 mt);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, mul) {
+  VMatrix4 *Self;
+  VMatrix4 *m2;
+  vobjGetParam(Self, m2);
+  *Self *= *m2;
+}
+
+//native void mulrev (const ref TMatrix4 mt);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, mulrev) {
+  VMatrix4 *Self;
+  VMatrix4 *m2;
+  vobjGetParam(Self, m2);
+  VMatrix4 xm = *m2;
+  xm *= *Self;
+  *Self = xm;
+}
+
+//native TVec vmul (const TVec v) const; // matrix by vector
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, vmul) {
+  VMatrix4 *Self;
+  TVec v;
+  vobjGetParam(Self, v);
+  RET_VEC((*Self)*v);
+}
+
+//native TVec vmulrev (const TVec v) const; // vector by matrix
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, vmulrev) {
+  VMatrix4 *Self;
+  TVec v;
+  vobjGetParam(Self, v);
+  RET_VEC(v*(*Self));
+}
+
+// unary minus, i.e. negate all matrix elements
+//native void negate ();
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, negate) {
+  VMatrix4 *Self;
+  vobjGetParam(Self);
+  for (unsigned f = 0; f < 4; ++f) {
+    for (unsigned c = 0; f < 4; ++f) {
+      Self->m[f][c] = -Self->m[f][c];
+    }
+  }
+}
+
+// this is for camera matrices
+//native TVec getUpVector () const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, getUpVector) {
+  VMatrix4 *Self;
+  vobjGetParam(Self);
+  RET_VEC(Self->getUpVector());
+}
+
+//native TVec getRightVector () const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, getRightVector) {
+  VMatrix4 *Self;
+  vobjGetParam(Self);
+  RET_VEC(Self->getRightVector());
+}
+
+//native TVec getForwardVector () const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, getForwardVector) {
+  VMatrix4 *Self;
+  vobjGetParam(Self);
+  RET_VEC(Self->getForwardVector());
+}
+
+//native float getDeterminant () const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, getDeterminant) {
+  VMatrix4 *Self;
+  vobjGetParam(Self);
+  RET_FLOAT(Self->Determinant());
+}
+
+//native void Transpose () const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, Transpose) {
+  VMatrix4 *Self;
+  vobjGetParam(Self);
+  *Self = Self->Transpose();
+}
+
+//native void RotateX (float angle);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, RotateX) {
+  VMatrix4 *Self;
+  float angle;
+  vobjGetParam(Self, angle);
+  *Self = VMatrix4::RotateX(angle);
+}
+
+//native void RotateY (float angle);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, RotateY) {
+  VMatrix4 *Self;
+  float angle;
+  vobjGetParam(Self, angle);
+  *Self = VMatrix4::RotateY(angle);
+}
+
+//native void RotateZ (float angle);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, RotateZ) {
+  VMatrix4 *Self;
+  float angle;
+  vobjGetParam(Self, angle);
+  *Self = VMatrix4::RotateZ(angle);
+}
+
+//native void Translate (const TVec v);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, Translate) {
+  VMatrix4 *Self;
+  TVec v;
+  vobjGetParam(Self, v);
+  *Self = VMatrix4::Translate(v);
+}
+
+//native void TranslateNeg (const TVec v);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, TranslateNeg) {
+  VMatrix4 *Self;
+  TVec v;
+  vobjGetParam(Self, v);
+  *Self = VMatrix4::TranslateNeg(v);
+}
+
+//native void Scale (const TVec v);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, Scale) {
+  VMatrix4 *Self;
+  TVec v;
+  vobjGetParam(Self, v);
+  *Self = VMatrix4::Scale(v);
+}
+
+//native void Rotate (const TVec v); // x, y and z are angles; does x, then y, then z
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, Rotate) {
+  VMatrix4 *Self;
+  TVec v;
+  vobjGetParam(Self, v);
+  *Self = VMatrix4::Rotate(v);
+}
+
+//native void RotateZXYv (const TVec v);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, RotateZXYv) {
+  VMatrix4 *Self;
+  TVec v;
+  vobjGetParam(Self, v);
+  *Self = VMatrix4::RotateZXY(v);
+}
+
+//native void RotateZXYa (const TAVec v);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, RotateZXYa) {
+  VMatrix4 *Self;
+  TAVec v;
+  vobjGetParam(Self, v);
+  *Self = VMatrix4::RotateZXY(v);
+}
+
+//native void Invert ();
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, Invert) {
+  VMatrix4 *Self;
+  vobjGetParam(Self);
+  Self->invert();
+}
+
+//native TVec rotateVector (const TVec V) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, rotateVector) {
+  VMatrix4 *Self;
+  TVec v;
+  vobjGetParam(Self, v);
+  RET_VEC(Self->RotateVector(v));
+}
+
+// ignore rotation part
+//native TVec translateVector (const TVec V) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, translateVector) {
+  VMatrix4 *Self;
+  TVec v;
+  vobjGetParam(Self, v);
+  RET_VEC(Self->TranslateVector(v));
+}
+
+//native TVec transform (const TVec V) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, transform) {
+  VMatrix4 *Self;
+  TVec v;
+  vobjGetParam(Self, v);
+  RET_VEC(Self->Transform(v));
+}
+
+//native TVec transformW (const TVec V, const float w) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, transformW) {
+  VMatrix4 *Self;
+  TVec v;
+  float w;
+  vobjGetParam(Self, v, w);
+  RET_VEC(Self->Transform(v, w));
+}
+
+//native TVec transform2 (const TVec V) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, transform2) {
+  VMatrix4 *Self;
+  TVec v;
+  vobjGetParam(Self, v);
+  RET_VEC(Self->Transform2(v));
+}
+
+//native TVec transform2OnlyXY (const TVec V) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, transform2OnlyXY) {
+  VMatrix4 *Self;
+  TVec v;
+  vobjGetParam(Self, v);
+  RET_VEC(Self->Transform2OnlyXY(v));
+}
+
+//native float transform2OnlyZ (const TVec V) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, transform2OnlyZ) {
+  VMatrix4 *Self;
+  TVec v;
+  vobjGetParam(Self, v);
+  RET_FLOAT(Self->Transform2OnlyZ(v));
+}
+
+//native TVec transform2W (const TVec V, const float w) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, transform2W) {
+  VMatrix4 *Self;
+  TVec v;
+  float w;
+  vobjGetParam(Self, v, w);
+  RET_VEC(Self->Transform2(v, w));
+}
+
+//native float transformInPlace (ref TVec V) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, transformInPlace) {
+  VMatrix4 *Self;
+  TVec *v;
+  vobjGetParam(Self, v);
+  RET_FLOAT(Self->TransformInPlace(*v));
+}
+
+//native float transformInPlaceW (ref TVec V, const float w) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, transformInPlaceW) {
+  VMatrix4 *Self;
+  TVec *v;
+  float w;
+  vobjGetParam(Self, v, w);
+  RET_FLOAT(Self->TransformInPlace(*v, w));
+}
+
+//native float transform2InPlace (ref TVec V) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, transform2InPlace) {
+  VMatrix4 *Self;
+  TVec *v;
+  vobjGetParam(Self, v);
+  RET_FLOAT(Self->Transform2InPlace(*v));
+}
+
+//native float transform2InPlaceW (ref TVec V, const float w) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, transform2InPlaceW) {
+  VMatrix4 *Self;
+  TVec *v;
+  float w;
+  vobjGetParam(Self, v, w);
+  RET_FLOAT(Self->Transform2InPlace(*v, w));
+}
+
+//native void ModelProjectCombine (const ref TMatrix4 model, const ref VMatrix4 proj);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, ModelProjectCombine) {
+  VMatrix4 *Self;
+  VMatrix4 *model;
+  VMatrix4 *proj;
+  vobjGetParam(Self, model, proj);
+  Self->ModelProjectCombine(*model, *proj);
+}
+
+//native void extractFrustumLeft (ref TPlane plane) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, extractFrustumLeft) {
+  VMatrix4 *Self;
+  TPlane *plane;
+  vobjGetParam(Self, plane);
+  Self->ExtractFrustumLeft(*plane);
+}
+
+//native void extractFrustumRight (ref TPlane plane) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, extractFrustumRight) {
+  VMatrix4 *Self;
+  TPlane *plane;
+  vobjGetParam(Self, plane);
+  Self->ExtractFrustumRight(*plane);
+}
+
+//native void extractFrustumTop (ref TPlane plane) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, extractFrustumTop) {
+  VMatrix4 *Self;
+  TPlane *plane;
+  vobjGetParam(Self, plane);
+  Self->ExtractFrustumTop(*plane);
+}
+
+//native void extractFrustumBottom (ref TPlane plane) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, extractFrustumBottom) {
+  VMatrix4 *Self;
+  TPlane *plane;
+  vobjGetParam(Self, plane);
+  Self->ExtractFrustumBottom(*plane);
+}
+
+//native void extractFrustumFar (ref TPlane plane) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, extractFrustumFar) {
+  VMatrix4 *Self;
+  TPlane *plane;
+  vobjGetParam(Self, plane);
+  Self->ExtractFrustumFar(*plane);
+}
+
+//native void extractFrustumNear (ref TPlane plane) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, extractFrustumNear) {
+  VMatrix4 *Self;
+  TPlane *plane;
+  vobjGetParam(Self, plane);
+  Self->ExtractFrustumNear(*plane);
+}
+
+//native void Frustum (float left, float right, float bottom, float top, float nearVal, float farVal);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, Frustum) {
+  VMatrix4 *Self;
+  float left, right, bottom, top, nearVal, farVal;
+  vobjGetParam(Self, left, right, bottom, top, nearVal, farVal);
+  *Self = VMatrix4::Frustum(left, right, bottom, top, nearVal, farVal);
+}
+
+//native void Ortho (float left, float right, float bottom, float top, float nearVal, float farVal);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, Ortho) {
+  VMatrix4 *Self;
+  float left, right, bottom, top, nearVal, farVal;
+  vobjGetParam(Self, left, right, bottom, top, nearVal, farVal);
+  *Self = VMatrix4::Ortho(left, right, bottom, top, nearVal, farVal);
+}
+
+//native void Perspective (float fovY, float aspect, float zNear, float zFar);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, Perspective) {
+  VMatrix4 *Self;
+  float fovY, aspect, zNear, zFar;
+  vobjGetParam(Self, fovY, aspect, zNear, zFar);
+  *Self = VMatrix4::Perspective(fovY, aspect, zNear, zFar);
+}
+
+//native void LookAtFucked (const TVec eye, const TVec center, const TVec up);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, LookAtFucked) {
+  VMatrix4 *Self;
+  TVec eye, center, up;
+  vobjGetParam(Self, eye, center, up);
+  *Self = VMatrix4::LookAtFucked(eye, center, up);
+}
+
+//native void ProjectionNegOne (float fovY, float aspect, float zNear, float zFar);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, ProjectionNegOne) {
+  VMatrix4 *Self;
+  float fovY, aspect, zNear, zFar;
+  vobjGetParam(Self, fovY, aspect, zNear, zFar);
+  *Self = VMatrix4::ProjectionNegOne(fovY, aspect, zNear, zFar);
+}
+
+//native void ProjectionZeroOne (float fovY, float aspect, float zNear, float zFar);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, ProjectionZeroOne) {
+  VMatrix4 *Self;
+  float fovY, aspect, zNear, zFar;
+  vobjGetParam(Self, fovY, aspect, zNear, zFar);
+  *Self = VMatrix4::ProjectionZeroOne(fovY, aspect, zNear, zFar);
+}
+
+//native void LookAtGLM (const TVec eye, const TVec center, const TVec up);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, LookAtGLM) {
+  VMatrix4 *Self;
+  TVec eye, center, up;
+  vobjGetParam(Self, eye, center, up);
+  *Self = VMatrix4::LookAtGLM(eye, center, up);
+}
+
+//native void LookAt (const TVec eye, const TVec center, const TVec up);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, LookAt) {
+  VMatrix4 *Self;
+  TVec eye, center, up;
+  vobjGetParam(Self, eye, center, up);
+  *Self = VMatrix4::LookAt(eye, center, up);
+}
+
+//native void lookingAt (const TVec target);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, lookingAt) {
+  VMatrix4 *Self;
+  TVec target;
+  vobjGetParam(Self, target);
+  Self->lookingAt(target);
+}
+
+//native void lookingAtUp (const TVec target, const TVec upVec);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, lookingAtUp) {
+  VMatrix4 *Self;
+  TVec target, upVec;
+  vobjGetParam(Self, target, upVec);
+  Self->lookingAt(target, upVec);
+}
+
+//native void rotate (float angle, const TVec axis);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, rotate) {
+  VMatrix4 *Self;
+  float angle;
+  TVec axis;
+  vobjGetParam(Self, angle, axis);
+  Self->rotate(angle, axis);
+}
+
+//native void rotateX (float angle);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, rotateX) {
+  VMatrix4 *Self;
+  float angle;
+  vobjGetParam(Self, angle);
+  Self->rotateX(angle);
+}
+
+//native void rotateY (float angle);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, rotateY) {
+  VMatrix4 *Self;
+  float angle;
+  vobjGetParam(Self, angle);
+  Self->rotateY(angle);
+}
+
+//native void rotateZ (float angle);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, rotateZ) {
+  VMatrix4 *Self;
+  float angle;
+  vobjGetParam(Self, angle);
+  Self->rotateZ(angle);
+}
+
+//native TAVec getAngles () const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, getAngles) {
+  VMatrix4 *Self;
+  vobjGetParam(Self);
+  RET_AVEC(Self->getAngles());
+}
+
+//native void blend (const ref VMatrix4 m2, float blend) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, blend) {
+  VMatrix4 *Self;
+  VMatrix4 *m2;
+  float blend;
+  vobjGetParam(Self, m2, blend);
+  *Self = Self->blended(*m2, blend);
+}
+
+//void toQuaternion (ref TQuaternion quat) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, toQuaternion) {
+  VMatrix4 *Self;
+  float *q;
+  vobjGetParam(Self, q);
+  Self->toQuaternion(q);
+}
+
+//void FromQuaternion (const ref TQuaternion quat);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, FromQuaternion) {
+  VMatrix4 *Self;
+  float *q;
+  vobjGetParam(Self, q);
+  Self->fromQuaternion(q);
+}
+
+//native void BuildScale (const TVec vv);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, BuildScale) {
+  VMatrix4 *Self;
+  TVec v;
+  vobjGetParam(Self, v);
+  *Self = VMatrix4::BuildScale(v);
+}
+
+//native void BuildOffset (const TVec vv);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, BuildOffset) {
+  VMatrix4 *Self;
+  TVec v;
+  vobjGetParam(Self, v);
+  *Self = VMatrix4::BuildOffset(v);
+}
+
+//native void BuildRotate (const TAVec aa);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, BuildRotate) {
+  VMatrix4 *Self;
+  TAVec a;
+  vobjGetParam(Self, a);
+  *Self = VMatrix4::BuildRotate(a);
+}
+
+//native void scaleXY (const float ScaleX, const float ScaleY);
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TMatrix4, scaleXY) {
+  VMatrix4 *Self;
+  float scaleX, scaleY;
+  vobjGetParam(Self, scaleX, scaleY);
+  Self->scaleXY(scaleX, scaleY);
+}

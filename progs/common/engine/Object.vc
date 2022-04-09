@@ -253,6 +253,175 @@ struct TPlane {
 };
 
 
+struct TQuaternion {
+  float[4] q;
+};
+
+
+struct TMatrix4 {
+  float[16] m;
+
+  native void SetIdentity ();
+  native void SetZero ();
+
+  native void copyFrom (const ref TMatrix4 m2);
+  native bool equal (const ref TMatrix4 m2) const;
+
+  // multiplies this matrix by `mt`
+  // matrix composition is done in normal forward order, i.e.
+  // `rot.mul(offset)` will rotate, then offset
+  native void mul (const ref TMatrix4 mt);
+  // reverse multiplication, i.e. multiply `mt` by `self`
+  native void mulrev (const ref TMatrix4 mt);
+
+  // use this to get vector transformed by matrix
+  // i.e. you should multiply matrix by vector to apply matrix transformations
+  // WARNING: multiplying vector by matrix gives something completely different
+  native TVec vmul (const TVec v) const; // matrix by vector
+  native TVec vmulrev (const TVec v) const; // vector by matrix
+
+  // unary minus, i.e. negate all matrix elements
+  native void negate ();
+
+  // this is for camera matrices
+  native TVec getUpVector () const;
+  native TVec getRightVector () const;
+  native TVec getForwardVector () const;
+
+  native float getDeterminant () const;
+
+  // note that all methods starting with a capital letter will replace current matrix
+  // i.e. old matrix value will be discarded, not combined
+
+  native void Transpose () const;
+
+  // more matrix operations (not used in k8vavoom, but nice to have)
+  // this is for OpenGL coordinate system
+  native void RotateX (float angle);
+  native void RotateY (float angle);
+  native void RotateZ (float angle);
+
+  native void Translate (const TVec v);
+  native void TranslateNeg (const TVec v);
+
+  native void Scale (const TVec v);
+  native void Rotate (const TVec v); // x, y and z are angles; does x, then y, then z
+
+  // for camera; x is pitch (up/down); y is yaw (left/right); z is roll (tilt)
+  native void RotateZXYv (const TVec v);
+  native void RotateZXYa (const TAVec v);
+
+  // inversions
+  // general inversion
+  native void Invert ();
+
+  // vector transformations
+
+  // ignore translation column
+  native TVec rotateVector (const TVec V) const;
+
+  // ignore rotation part
+  native TVec translateVector (const TVec V) const;
+
+  native TVec transform (const TVec V) const;
+  native TVec transformW (const TVec V, const float w) const;
+
+  // this can be used to transform with OpenGL model/projection matrices
+  native TVec transform2 (const TVec V) const;
+  // this can be used to transform with OpenGL model/projection matrices
+  native TVec transform2OnlyXY (const TVec V) const;
+  // this can be used to transform with OpenGL model/projection matrices
+  native float transform2OnlyZ (const TVec V) const;
+  // this can be used to transform with OpenGL model/projection matrices
+  native TVec transform2W (const TVec V, const float w) const;
+
+  // returns `w`
+  native float transformInPlace (ref TVec V) const;
+  // returns `w`
+  native float transformInPlaceW (ref TVec V, const float w) const;
+  // returns `w`
+  // this can be used to transform with OpenGL model/projection matrices
+  native float transform2InPlace (ref TVec V) const;
+  // returns `w`
+  // this can be used to transform with OpenGL model/projection matrices
+  native float transform2InPlaceW (ref TVec V, const float w) const;
+
+  // combine the two matrices (multiply projection by modelview)
+  // destroys (ignores) current matrix
+  native void ModelProjectCombine (const ref TMatrix4 model, const ref TMatrix4 proj);
+
+  // this expects result of `ModelProjectCombine()`
+  //native void extractFrustum (TPlane planes[6]) const noexcept;
+
+  // the following expects result of `ModelProjectCombine()`
+  native void extractFrustumLeft (ref TPlane plane) const;
+  native void extractFrustumRight (ref TPlane plane) const;
+  native void extractFrustumTop (ref TPlane plane) const;
+  native void extractFrustumBottom (ref TPlane plane) const;
+  native void extractFrustumFar (ref TPlane plane) const;
+  native void extractFrustumNear (ref TPlane plane) const;
+
+  // same as `glFrustum()`
+  native void Frustum (float left, float right, float bottom, float top, float nearVal, float farVal);
+  // same as `glOrtho()`
+  native void Ortho (float left, float right, float bottom, float top, float nearVal, float farVal);
+  // same as `gluPerspective()`
+  // sets the frustum to perspective mode
+  // fovY   - Field of vision in degrees in the y direction
+  // aspect - Aspect ratio of the viewport
+  // zNear  - The near clipping distance
+  // zFar   - The far clipping distance
+  native void Perspective (float fovY, float aspect, float zNear, float zFar);
+
+  native void LookAtFucked (const TVec eye, const TVec center, const TVec up);
+
+  // for [-1..1]
+  native void ProjectionNegOne (float fovY, float aspect, float zNear, float zFar);
+  // for [0..1]
+  native void ProjectionZeroOne (float fovY, float aspect, float zNear, float zFar);
+
+  native void LookAtGLM (const TVec eye, const TVec center, const TVec up);
+
+  // does `gluLookAt()`
+  native void LookAt (const TVec eye, const TVec center, const TVec up);
+
+  // rotate matrix to face along the target direction
+  // this function will clear the previous rotation and scale, but it will keep the previous translation
+  // it is for rotating object to look at the target, NOT for camera
+  native void lookingAt (const TVec target);
+  native void lookingAtUp (const TVec target, const TVec upVec);
+
+  native void rotate (float angle, const TVec axis);
+  native void rotateX (float angle);
+  native void rotateY (float angle);
+  native void rotateZ (float angle);
+
+  // retrieve angles in degree from rotation matrix, M = Rx*Ry*Rz, in degrees
+  // Rx: rotation about X-axis, pitch
+  // Ry: rotation about Y-axis, yaw (heading)
+  // Rz: rotation about Z-axis, roll
+  native TAVec getAngles () const;
+
+  // blends two matrices together, at a given percentage (range is [0..1]), blend==0: m2 is ignored
+  // WARNING! it won't sanitize `blend`
+  native void blend (const ref TMatrix4 m2, float blend) const;
+
+  native void toQuaternion (ref TQuaternion quat) const;
+  native void FromQuaternion (const ref TQuaternion quat);
+
+  // doesn't process perspective projection
+  //bool decompose (VMatrix4Decomposed &dec) const;
+  //void recompose (const VMatrix4Decomposed &dec);
+
+  // used in alias model parser
+  native void BuildScale (const TVec vv);
+  native void BuildOffset (const TVec vv);
+  native void BuildRotate (const TAVec aa);
+
+  native void scaleXY (const float ScaleX, const float ScaleY);
+};
+
+
 //**************************************************************************
 // Keys and buttons
 enum {
