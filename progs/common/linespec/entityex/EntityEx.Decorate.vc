@@ -328,6 +328,9 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
 [decorate] final TAVec decorate_AVectorSetYaw (TAVec a, float v) { a.yaw = v; return a; }
 
 [decorate] final TVec decorate_YawVector (float yaw) { return AngleYawVector(yaw); }
+[decorate] final TVec decorate_PitchVector (float pitch) { return AnglePitchVector(pitch); }
+[decorate] final float decorate_VectorAngleYaw (TVec v) { return VectorAngleYaw(v); }
+[decorate] final float decorate_VectorAnglePitch (TVec v) { return VectorAnglePitch(v); }
 
 [decorate] final TVec decorate_DirVector (const TAVec ang) {
   TVec res;
