@@ -496,6 +496,17 @@ final void DoExplode (int damage, float distance, bool damageSelf, optional int 
   if (!specified_dmgsource) dmgsource = Target;
   if (!specified_dmgtype) dmgtype = DamageType;
 
+  // Zan hack (emulate old bug)
+  if (damageSelf && Target && Target.bIsPlayer &&
+      (Target isa 'Zan') && (self isa 'ExplosiveBarrel'))
+  {
+    //printdebug("%C: Zan exploded the barrel!", self);
+    // protect Voodoo dolls?
+    if (CvarExists('k8ZanMod_DamageSelfBarrel')) {
+      if (!GetCvarB('k8ZanMod_DamageSelfBarrel')) damageSelf = false;
+    }
+  }
+
   if (specified_dmgdistance && dmgdistance > 0) {
     RadiusAttack(dmgsource, damage, distance, damageSelf, dmgtype, DoDamage:true, damagedistance:dmgdistance);
   } else {
