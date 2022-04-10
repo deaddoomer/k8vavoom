@@ -497,7 +497,7 @@ final void DoExplode (int damage, float distance, bool damageSelf, optional int 
   if (!specified_dmgtype) dmgtype = DamageType;
 
   if (specified_dmgdistance && dmgdistance > 0) {
-    RadiusAttack(dmgsource, damage, distance, damageSelf, dmgtype, dmgdistance);
+    RadiusAttack(dmgsource, damage, distance, damageSelf, dmgtype, DoDamage:true, damagedistance:dmgdistance);
   } else {
     RadiusAttack(dmgsource, damage, distance, damageSelf, dmgtype);
   }
@@ -645,6 +645,7 @@ final void do_simple_A_Explode (optional int damage, optional float aradius, opt
   //else if (!dmgsource) dmgsource = self; //k8: missile without `Target` set is the source of the damage
 
   if (specified_dmgdistance && dmgdistance > 0) {
+    //printdebug("%C: damage=%s; distance=%s; damageSelf=%B; src=%C; type=%s", self, damage, distance, damageSelf, dmgsource, dmgType);
     DoExplode(damage, distance, damageSelf, dmgdistance, dmgsource:dmgsource, dmgtype:dmgType);
   } else {
     DoExplode(damage, distance, damageSelf, dmgsource:dmgsource, dmgtype:dmgType);
