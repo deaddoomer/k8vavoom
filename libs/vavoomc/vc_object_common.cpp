@@ -190,6 +190,41 @@ IMPLEMENT_FUNCTION(VObject, AngleMod180) {
 }
 */
 
+//native static final TVec Project2D (const TVec v1, const TVec v2, const TVec p);
+IMPLEMENT_FUNCTION(VObject, Project2D) {
+  TVec v1, v2, p;
+  vobjGetParam(v1, v2, p);
+  RET_VEC(Project2D(v1, v2, p));
+}
+
+//native static final float PerpDot2D (const TVec a, const TVec b, const TVec c);
+IMPLEMENT_FUNCTION(VObject, PerpDot2D) {
+  TVec a, b, c;
+  vobjGetParam(a, b, c);
+  RET_FLOAT(PerpDot2D(a, b, c));
+}
+
+//native static final bool IsPointOnLine2D (const TVec v1, const TVec v2, const TVec p);
+IMPLEMENT_FUNCTION(VObject, IsPointOnLine2D) {
+  TVec v1, v2, p;
+  vobjGetParam(v1, v2, p);
+  RET_BOOL(IsPointOnLine2D(v1, v2, p));
+}
+
+//native static final bool IsPointOnSeg2D (const TVec v1, const TVec v2, const TVec p);
+IMPLEMENT_FUNCTION(VObject, IsPointOnSeg2D) {
+  TVec v1, v2, p;
+  vobjGetParam(v1, v2, p);
+  RET_BOOL(IsPointOnSeg2D(v1, v2, p));
+}
+
+//native static final bool IsProjectedPointOnSeg2D (const TVec v1, const TVec v2, const TVec p);
+IMPLEMENT_FUNCTION(VObject, IsProjectedPointOnSeg2D) {
+  TVec v1, v2, p;
+  vobjGetParam(v1, v2, p);
+  RET_BOOL(IsProjectedPointOnSeg2D(v1, v2, p));
+}
+
 // native static final void AngleVectors (const TAVec angles, out TVec forward, optional out TVec right, optional out TVec up);
 IMPLEMENT_FUNCTION(VObject, AngleVectors) {
   // note that optional out will still get a temporary storage
