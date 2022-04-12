@@ -474,42 +474,62 @@ static_assert(sizeof(TVec) == sizeof(float)*3, "TVec layout fail (2)");
 VVA_FORCEINLINE VVA_PURE uint32_t GetTypeHash (const TVec &v) noexcept { return joaatHashBuf(&v, 3*sizeof(float)); }
 
 
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec operator * (const float s, const TVec &v) noexcept { return TVec(s*v.x, s*v.y, s*v.z); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec operator * (const float s, const TVec &v) noexcept {
+  return TVec(s*v.x, s*v.y, s*v.z);
+}
 
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec abs (const TVec &v1) noexcept { return v1.abs(); }
+// calculates the area of the parallelogram of the three points
+// this is actually the same as the area of the triangle defined by the three points, multiplied by 2
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float PerpDot2D (const TVec a, const TVec b, const TVec c) noexcept {
+  return (a.x-c.x)*(b.y-c.y)-(a.y-c.y)*(b.x-c.x);
+}
 
-/*
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float Length (const TVec &v) noexcept { return v.length(); }
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float length (const TVec &v) noexcept { return v.length(); }
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float Length2D (const TVec &v) noexcept { return v.length2D(); }
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float length2D (const TVec &v) noexcept { return v.length2D(); }
+// project `p` to the line (v1,v2)
+// ignores z
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec Project2D (const TVec v1, const TVec v2, const TVec p) noexcept {
+  const TVec e1 = TVec(v2.x-v1.x, v2.y-v1.y);
+  const float len2sq = e1.x*e1.x+e1.y*e1.y;
+  if (len2sq < 0.001f) return v1; // cannot properly project onto point
+  const float ilen2sq = 1.0f/len2sq;
+  const TVec e2 = TVec(p.x-v1.x, p.y-v1.y);
+  const float dp = e1.dot2D(e2);
+  return TVec(v1.x+(dp*e1.x)*ilen2sq, v1.y+(dp*e1.y)*ilen2sq);
+}
 
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float LengthSquared (const TVec &v) noexcept { return v.lengthSquared(); }
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float lengthSquared (const TVec &v) noexcept { return v.lengthSquared(); }
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float Length2DSquared (const TVec &v) noexcept { return v.length2DSquared(); }
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float length2DSquared (const TVec &v) noexcept { return v.length2DSquared(); }
-*/
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE bool IsPointOnLine2D (const TVec v1, const TVec v2, const TVec p) noexcept {
+  // calculate epsilon
+  const float dx1 = v2.x-v1.x;
+  const float dy1 = v2.y-v1.y;
+  const float epsilon = 0.003f*(dx1*dx1+dy1*dy1);
+  // calculate the area of the parallelogram of the three points
+  const float area = (v1.x-p.x)*(v2.y-p.y)-(v1.y-p.y)*(v2.x-p.x);
+  // check it
+  return (fabsf(area) < epsilon);
+}
 
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec Normalise (const TVec &v) noexcept { return v.normalise(); }
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec normalise (const TVec &v) noexcept { return v.normalise(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE bool IsPointOnSeg2D (const TVec v1, const TVec v2, const TVec p) noexcept {
+  // point must be in line bounding box
+  if (v1.x < v2.x) {
+    if (p.x < v1.x || p.x > v2.x) return false;
+  } else {
+    if (p.x < v2.x || p.x > v1.x) return false;
+  }
+  if (v1.y < v2.y) {
+    if (p.y < v1.y || p.y > v2.y) return false;
+  } else {
+    if (p.y < v2.y || p.y > v1.y) return false;
+  }
+  return IsPointOnLine2D(v1, v2, p);
+}
 
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec normalise2D (const TVec &v) noexcept { return v.normalise2D(); }
+static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE bool IsProjectedPointOnSeg2D (const TVec v1, const TVec v2, const TVec p) noexcept {
+  const TVec e1 = TVec(v2.x-v1.x, v2.y-v1.y);
+  const float recArea = e1.dot2D(e1);
+  const TVec e2 = TVec(p.x-v1.x, p.y-v1.y);
+  const float val = e1.dot2D(e2);
+  return (val > 0.0f && val < recArea);
+}
 
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float DotProduct (const TVec &v1, const TVec &v2) noexcept { return v1.dot(v2); }
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float dot (const TVec &v1, const TVec &v2) noexcept { return v1.dot(v2); }
-
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float DotProductV2Neg (const TVec &v1, const TVec &v2) noexcept { return v1.dotv2neg(v2); }
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float dotv2neg (const TVec &v1, const TVec &v2) noexcept { return v1.dotv2neg(v2); }
-
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float DotProduct2D (const TVec &v1, const TVec &v2) noexcept { return v1.dot2D(v2); }
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float dot2D (const TVec &v1, const TVec &v2) noexcept { return v1.dot2D(v2); }
-
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec CrossProduct (const TVec &v1, const TVec &v2) noexcept { return v1.cross(v2); }
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec cross (const TVec &v1, const TVec &v2) noexcept { return v1.cross(v2); }
-
-// returns signed magnitude of cross-product (z, as x and y are effectively zero in 2d)
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float CrossProduct2D (const TVec &v1, const TVec &v2) noexcept { return v1.cross2D(v2); }
-//static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float cross2D (const TVec &v1, const TVec &v2) noexcept { return v1.cross2D(v2); }
 
 static VVA_OKUNUSED VVA_FORCEINLINE VStream &operator << (VStream &Strm, TVec &v) { return Strm << v.x << v.y << v.z; }
 
