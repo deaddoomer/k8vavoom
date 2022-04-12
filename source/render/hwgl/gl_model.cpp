@@ -94,9 +94,11 @@ static inline void AliasSetupTransform (const TVec &modelorg, const TAVec &angle
 
   // rotate model
   if (Transform.userotcenter) RotationMatrix *= VMatrix4::BuildOffset(Transform.RotCenter);
-  if (angles.yaw || angles.pitch || angles.roll) {
+
+  if (isU32NonZeroF(angles.yaw)|isU32NonZeroF(angles.pitch)|isU32NonZeroF(angles.roll)) {
     RotationMatrix *= VMatrix4::BuildRotate(angles);
   }
+
   if (Transform.userotcenter) RotationMatrix *= VMatrix4::BuildOffset(-Transform.RotCenter);
 
   RotationMatrix *= VMatrix4::BuildOffset(modelorg);
@@ -122,10 +124,9 @@ static inline void AliasSetupNormalTransform (const TAVec &angles,
   #else
   RotationMatrix = Transform.MatTransNorm;
   #endif
-  if (angles.yaw || angles.pitch || angles.roll) {
+  if (isU32NonZeroF(angles.yaw)|isU32NonZeroF(angles.pitch)|isU32NonZeroF(angles.roll)) {
     RotationMatrix *= VMatrix4::BuildRotate(angles);
   }
-  return;
 }
 
 
@@ -165,17 +166,23 @@ void VOpenGLDrawer::UploadModel (VMeshModel *Mdl) {
   p_glBindBufferARB(GL_ARRAY_BUFFER_ARB, Mdl->VertsBuffer);
   p_glObjectLabelVA(GL_BUFFER, Mdl->VertsBuffer, "Model verts buffer <%s:%d>", *Mdl->Name, Mdl->MeshIndex);
 
-  int Size = (int)sizeof(VMeshSTVert)*Mdl->STVerts.length()+(int)sizeof(TVec)*Mdl->STVerts.length()*2*Mdl->Frames.length();
-  p_glBufferDataARB(GL_ARRAY_BUFFER_ARB, Size, nullptr, GL_STATIC_DRAW_ARB);
+  const int bufsize =
+    // texture coords
+    (int)sizeof(VMeshSTVert)*Mdl->STVerts.length()+
+    // vertices and normals
+    (int)sizeof(TVec)*Mdl->STVerts.length()*2*Mdl->Frames.length();
+  p_glBufferDataARB(GL_ARRAY_BUFFER_ARB, bufsize, nullptr, GL_STATIC_DRAW_ARB);
 
   // upload data
   GLintptr nnofs = 0;
   // texture coords array
   p_glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, nnofs, sizeof(VMeshSTVert)*Mdl->STVerts.length(), &Mdl->STVerts[0]);
   nnofs += sizeof(VMeshSTVert)*Mdl->STVerts.length();
+
   // vertices array
   p_glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, nnofs, sizeof(TVec)*Mdl->AllVerts.length(), &Mdl->AllVerts[0]);
   nnofs += sizeof(TVec)*Mdl->AllVerts.length();
+
   // normals array
   p_glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, nnofs, sizeof(TVec)*Mdl->AllNormals.length(), &Mdl->AllNormals[0]);
 
@@ -185,7 +192,7 @@ void VOpenGLDrawer::UploadModel (VMeshModel *Mdl) {
     Mdl->Frames[i].NormalsOffset = sizeof(VMeshSTVert)*Mdl->STVerts.length()+sizeof(TVec)*Mdl->AllVerts.length()+i*sizeof(TVec)*Mdl->STVerts.length();
   }
 
-  // indexes
+  // indices
   p_glGenBuffersARB(1, &Mdl->IndexBuffer);
   p_glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, Mdl->IndexBuffer);
   p_glObjectLabelVA(GL_BUFFER, Mdl->IndexBuffer, "Model idx buffer <%s:%d>", *Mdl->Name, Mdl->MeshIndex);
@@ -201,7 +208,7 @@ void VOpenGLDrawer::UploadModel (VMeshModel *Mdl) {
   p_glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
   p_glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
   Mdl->Uploaded = true;
-  UploadedModels.Append(Mdl);
+  UploadedModels.append(Mdl);
 
   p_glDebugLogf("done uploading model <%s:%d>", *Mdl->Name, Mdl->MeshIndex);
 }
@@ -218,7 +225,7 @@ void VOpenGLDrawer::UnloadModels () {
     p_glDeleteBuffersARB(1, &UploadedModels[i]->IndexBuffer);
     UploadedModels[i]->Uploaded = false;
   }
-  UploadedModels.Clear();
+  UploadedModels.reset();
 }
 
 
@@ -246,7 +253,8 @@ void VOpenGLDrawer::DrawAliasModel (const TVec &origin, const TAVec &angles,
                                     bool is_view_model, float Inter, bool /*Interpolate*/,
                                     bool ForceDepthUse, bool AllowTransparency, bool onlyDepth)
 {
-  if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return; // do not render models without textures
+  // do not render models without textures
+  if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return;
 
   if (is_view_model) {
     // hack the depth range to prevent view model from poking into walls
@@ -410,7 +418,8 @@ void VOpenGLDrawer::DrawAliasModelAmbient (const TVec &origin, const TAVec &angl
                                            float Inter, bool /*Interpolate*/,
                                            bool ForceDepth, bool AllowTransparency)
 {
-  if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return; // do not render models without textures
+  // do not render models without textures
+  if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return;
 
   VMeshFrame *FrameDesc = &Mdl->Frames[frame];
   VMeshFrame *NextFrameDesc = &Mdl->Frames[nextframe];
@@ -449,12 +458,14 @@ void VOpenGLDrawer::DrawAliasModelAmbient (const TVec &origin, const TAVec &angl
   p_glBindBufferARB(GL_ARRAY_BUFFER_ARB, Mdl->VertsBuffer);
 
   if (ShadowsModelAmbient.loc_Position >= 0) {
-    p_glVertexAttribPointerARB(ShadowsModelAmbient.loc_Position, 3, GL_FLOAT, GL_FALSE, 0, (void *)(size_t)FrameDesc->VertsOffset);
+    p_glVertexAttribPointerARB(ShadowsModelAmbient.loc_Position, 3, GL_FLOAT, GL_FALSE, 0,
+                               (void *)(size_t)FrameDesc->VertsOffset);
     p_glEnableVertexAttribArrayARB(ShadowsModelAmbient.loc_Position);
   }
 
   if (ShadowsModelAmbient.loc_Vert2 >= 0) {
-    p_glVertexAttribPointerARB(ShadowsModelAmbient.loc_Vert2, 3, GL_FLOAT, GL_FALSE, 0, (void *)(size_t)NextFrameDesc->VertsOffset);
+    p_glVertexAttribPointerARB(ShadowsModelAmbient.loc_Vert2, 3, GL_FLOAT, GL_FALSE, 0,
+                               (void *)(size_t)NextFrameDesc->VertsOffset);
     p_glEnableVertexAttribArrayARB(ShadowsModelAmbient.loc_Vert2);
   }
 
@@ -547,7 +558,11 @@ void VOpenGLDrawer::DrawAliasModelAmbient (const TVec &origin, const TAVec &angl
 //  always called after `BeginLightPass()`
 //
 //==========================================================================
-void VOpenGLDrawer::BeginModelsLightPass (const TVec &LightPos, float Radius, float LightMin, vuint32 Color, const bool aspotLight, const TVec &aconeDir, const float aconeAngle, bool doShadow) {
+void VOpenGLDrawer::BeginModelsLightPass (const TVec &LightPos, float Radius, float LightMin,
+                                          vuint32 Color, const bool aspotLight,
+                                          const TVec &aconeDir, const float aconeAngle,
+                                          bool doShadow)
+{
   smapBShaderIndex = (unsigned int)gl_shadowmap_blur.asInt();
   if (smapBShaderIndex >= SMAP_BLUR_MAX) smapBShaderIndex = SMAP_NOBLUR;
 
@@ -607,22 +622,26 @@ void VOpenGLDrawer::EndModelsLightPass () {
   p_glBindBufferARB(GL_ARRAY_BUFFER_ARB, Mdl->VertsBuffer); \
  \
   if ((shad_).loc_Position >= 0) { \
-    p_glVertexAttribPointerARB((shad_).loc_Position, 3, GL_FLOAT, GL_FALSE, 0, (void *)(size_t)FrameDesc->VertsOffset); \
+    p_glVertexAttribPointerARB((shad_).loc_Position, 3, GL_FLOAT, GL_FALSE, 0, \
+                               (void *)(size_t)FrameDesc->VertsOffset); \
     p_glEnableVertexAttribArrayARB((shad_).loc_Position); \
   } \
  \
   if ((shad_).loc_VertNormal >= 0) { \
-    p_glVertexAttribPointerARB((shad_).loc_VertNormal, 3, GL_FLOAT, GL_FALSE, 0, (void *)(size_t)FrameDesc->NormalsOffset); \
+    p_glVertexAttribPointerARB((shad_).loc_VertNormal, 3, GL_FLOAT, GL_FALSE, 0, \
+                               (void *)(size_t)FrameDesc->NormalsOffset); \
     p_glEnableVertexAttribArrayARB((shad_).loc_VertNormal); \
   } \
  \
   if ((shad_).loc_Vert2 >= 0) { \
-    p_glVertexAttribPointerARB((shad_).loc_Vert2, 3, GL_FLOAT, GL_FALSE, 0, (void *)(size_t)NextFrameDesc->VertsOffset); \
+    p_glVertexAttribPointerARB((shad_).loc_Vert2, 3, GL_FLOAT, GL_FALSE, 0, \
+                               (void *)(size_t)NextFrameDesc->VertsOffset); \
     p_glEnableVertexAttribArrayARB((shad_).loc_Vert2); \
   } \
  \
   if ((shad_).loc_Vert2Normal >= 0) { \
-    p_glVertexAttribPointerARB((shad_).loc_Vert2Normal, 3, GL_FLOAT, GL_FALSE, 0, (void *)(size_t)NextFrameDesc->NormalsOffset); \
+    p_glVertexAttribPointerARB((shad_).loc_Vert2Normal, 3, GL_FLOAT, GL_FALSE, 0, \
+                               (void *)(size_t)NextFrameDesc->NormalsOffset); \
     p_glEnableVertexAttribArrayARB((shad_).loc_Vert2Normal); \
   } \
  \
@@ -729,7 +748,8 @@ void VOpenGLDrawer::DrawAliasModelLight (const TVec &origin, const TAVec &angles
                                          VTexture *Skin, float Alpha, float Inter,
                                          bool /*Interpolate*/, bool AllowTransparency)
 {
-  if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return; // do not render models without textures
+  // do not render models without textures
+  if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return;
 
   VMeshFrame *FrameDesc = &Mdl->Frames[frame];
   VMeshFrame *NextFrameDesc = &Mdl->Frames[nextframe];
@@ -830,7 +850,8 @@ void VOpenGLDrawer::DrawAliasModelShadowMap (const TVec &origin, const TAVec &an
                               VTexture *Skin, float /*Alpha*/, float Inter,
                               bool /*Interpolate*/, bool /*AllowTransparency*/)
 {
-  if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return; // do not render models without textures
+  // do not render models without textures
+  if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return;
   if (!gl_dbg_adv_render_shadow_models) return;
 
   VMeshFrame *FrameDesc = &Mdl->Frames[frame];
@@ -860,7 +881,8 @@ void VOpenGLDrawer::DrawAliasModelShadowMap (const TVec &origin, const TAVec &an
   p_glBindBufferARB(GL_ARRAY_BUFFER_ARB, Mdl->VertsBuffer);
   //GLDRW_CHECK_ERROR("model shadowmap: bind array buffer");
 
-  p_glVertexAttribPointerARB(ShadowsModelShadowMap.loc_Position, 3, GL_FLOAT, GL_FALSE, 0, (void *)(size_t)FrameDesc->VertsOffset);
+  p_glVertexAttribPointerARB(ShadowsModelShadowMap.loc_Position, 3, GL_FLOAT, GL_FALSE, 0,
+                             (void *)(size_t)FrameDesc->VertsOffset);
   //GLDRW_CHECK_ERROR("model shadowmap: set position attribute pointer");
   p_glEnableVertexAttribArrayARB(ShadowsModelShadowMap.loc_Position);
   //GLDRW_CHECK_ERROR("model shadowmap: enable position attribute");
@@ -868,7 +890,8 @@ void VOpenGLDrawer::DrawAliasModelShadowMap (const TVec &origin, const TAVec &an
   //p_glVertexAttribPointerARB(ShadowsModelShadowMap.loc_VertNormal, 3, GL_FLOAT, GL_FALSE, 0, (void *)(size_t)FrameDesc->NormalsOffset);
   //p_glEnableVertexAttribArrayARB(ShadowsModelShadowMap.loc_VertNormal);
 
-  p_glVertexAttribPointerARB(ShadowsModelShadowMap.loc_Vert2, 3, GL_FLOAT, GL_FALSE, 0, (void *)(size_t)NextFrameDesc->VertsOffset);
+  p_glVertexAttribPointerARB(ShadowsModelShadowMap.loc_Vert2, 3, GL_FLOAT, GL_FALSE, 0,
+                             (void *)(size_t)NextFrameDesc->VertsOffset);
   //GLDRW_CHECK_ERROR("model shadowmap: set vert2 attribute pointer");
   p_glEnableVertexAttribArrayARB(ShadowsModelShadowMap.loc_Vert2);
   //GLDRW_CHECK_ERROR("model shadowmap: enable vert2 attribute");
@@ -1002,9 +1025,11 @@ void VOpenGLDrawer::DrawAliasModelShadow (const TVec &origin, const TAVec &angle
   if (gl_gpu_debug_models) p_glDebugLogf("DrawAliasModelShadow <%s:%d>", *Mdl->Name, Mdl->MeshIndex);
 
   p_glBindBufferARB(GL_ARRAY_BUFFER_ARB, Mdl->VertsBuffer);
-  p_glVertexAttribPointerARB(ShadowsModelShadowVol.loc_Position, 3, GL_FLOAT, GL_FALSE, 0, (void *)(size_t)FrameDesc->VertsOffset);
+  p_glVertexAttribPointerARB(ShadowsModelShadowVol.loc_Position, 3, GL_FLOAT, GL_FALSE, 0,
+                             (void *)(size_t)FrameDesc->VertsOffset);
   p_glEnableVertexAttribArrayARB(ShadowsModelShadowVol.loc_Position);
-  p_glVertexAttribPointerARB(ShadowsModelShadowVol.loc_Vert2, 3, GL_FLOAT, GL_FALSE, 0, (void *)(size_t)NextFrameDesc->VertsOffset);
+  p_glVertexAttribPointerARB(ShadowsModelShadowVol.loc_Vert2, 3, GL_FLOAT, GL_FALSE, 0,
+                             (void *)(size_t)NextFrameDesc->VertsOffset);
   p_glEnableVertexAttribArrayARB(ShadowsModelShadowVol.loc_Vert2);
 
   // caps
@@ -1108,9 +1133,11 @@ void VOpenGLDrawer::DrawAliasModelTextures (const TVec &origin, const TAVec &ang
                                             VMeshModel *Mdl, int frame, int nextframe,
                                             VTexture *Skin, VTextureTranslation *Trans, int CMap,
                                             const RenderStyleInfo &ri, float Inter,
-                                            bool /*Interpolate*/, bool /*ForceDepth*/, bool AllowTransparency)
+                                            bool /*Interpolate*/, bool /*ForceDepth*/,
+                                            bool AllowTransparency)
 {
-  if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return; // do not render models without textures
+  // do not render models without textures
+  if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return;
 
   VMeshFrame *FrameDesc = &Mdl->Frames[frame];
   VMeshFrame *NextFrameDesc = &Mdl->Frames[nextframe];
@@ -1187,7 +1214,8 @@ void VOpenGLDrawer::DrawAliasModelTextures (const TVec &origin, const TAVec &ang
     ShadowsModelTextures.SetNormalToWorldMat(NormalMat[0]);
     ShadowsModelTextures.UploadChangedUniforms();
 
-    p_glVertexAttribPointerARB(ShadowsModelTextures.loc_Vert2Normal, 3, GL_FLOAT, GL_FALSE, 0, (void *)(size_t)NextFrameDesc->NormalsOffset);
+    p_glVertexAttribPointerARB(ShadowsModelTextures.loc_Vert2Normal, 3, GL_FLOAT, GL_FALSE, 0,
+                               (void *)(size_t)NextFrameDesc->NormalsOffset);
     p_glEnableVertexAttribArrayARB(ShadowsModelTextures.loc_Vert2Normal);
   }
 #endif
@@ -1254,7 +1282,8 @@ void VOpenGLDrawer::DrawAliasModelFog (const TVec &origin, const TAVec &angles,
                                        VTexture *Skin, vuint32 Fade, float Alpha, float Inter,
                                        bool /*Interpolate*/, bool AllowTransparency)
 {
-  if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return; // do not render models without textures
+  // do not render models without textures
+  if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return;
 
   VMeshFrame *FrameDesc = &Mdl->Frames[frame];
   VMeshFrame *NextFrameDesc = &Mdl->Frames[nextframe];
