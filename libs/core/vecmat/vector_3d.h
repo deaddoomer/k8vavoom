@@ -465,6 +465,53 @@ public:
   VVA_FORCEINLINE VVA_CHECKRESULT unsigned get2DBBoxSupportPointIndex () const noexcept {
     return (unsigned)isGreatEquZeroF(x)|((unsigned)isGreatEquZeroF(y)<<1);
   }
+
+
+  // project `this` to the line (v1,v2)
+  // ignores z
+  VVA_FORCEINLINE VVA_CHECKRESULT TVec project2D (const TVec v1, const TVec v2) const noexcept {
+    const TVec e1 = TVec(v2.x-v1.x, v2.y-v1.y);
+    const float len2sq = e1.x*e1.x+e1.y*e1.y;
+    if (len2sq < 0.001f) return v1; // cannot properly project onto point
+    const float ilen2sq = 1.0f/len2sq;
+    const TVec e2 = TVec(this->x-v1.x, this->y-v1.y);
+    const float dp = e1.dot2D(e2);
+    return TVec(v1.x+(dp*e1.x)*ilen2sq, v1.y+(dp*e1.y)*ilen2sq);
+  }
+
+  VVA_FORCEINLINE VVA_CHECKRESULT bool isPointOnLine2D (const TVec v1, const TVec v2) const noexcept {
+    // calculate epsilon
+    const float dx1 = v2.x-v1.x;
+    const float dy1 = v2.y-v1.y;
+    const float epsilon = 0.003f*(dx1*dx1+dy1*dy1);
+    // calculate the area of the parallelogram of the three points
+    const float area = (v1.x-this->x)*(v2.y-this->y)-(v1.y-this->y)*(v2.x-this->x);
+    // check it
+    return (fabsf(area) < epsilon);
+  }
+
+  VVA_FORCEINLINE VVA_CHECKRESULT bool isPointOnSeg2D (const TVec v1, const TVec v2) const noexcept {
+    // point must be in line bounding box
+    if (v1.x < v2.x) {
+      if (this->x < v1.x || this->x > v2.x) return false;
+    } else {
+      if (this->x < v2.x || this->x > v1.x) return false;
+    }
+    if (v1.y < v2.y) {
+      if (this->y < v1.y || this->y > v2.y) return false;
+    } else {
+      if (this->y < v2.y || this->y > v1.y) return false;
+    }
+    return isPointOnLine2D(v1, v2);
+  }
+
+  VVA_FORCEINLINE VVA_CHECKRESULT bool isProjectedPointOnSeg2D (const TVec v1, const TVec v2) const noexcept {
+    const TVec e1 = TVec(v2.x-v1.x, v2.y-v1.y);
+    const float recArea = e1.dot2D(e1);
+    const TVec e2 = TVec(this->x-v1.x, this->y-v1.y);
+    const float val = e1.dot2D(e2);
+    return (val > 0.0f && val < recArea);
+  }
 };
 
 static_assert(__builtin_offsetof(TVec, y) == __builtin_offsetof(TVec, x)+sizeof(float), "TVec layout fail (0)");
@@ -482,52 +529,6 @@ static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec operator * (const float
 // this is actually the same as the area of the triangle defined by the three points, multiplied by 2
 static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE float PerpDot2D (const TVec a, const TVec b, const TVec c) noexcept {
   return (a.x-c.x)*(b.y-c.y)-(a.y-c.y)*(b.x-c.x);
-}
-
-// project `p` to the line (v1,v2)
-// ignores z
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE TVec Project2D (const TVec v1, const TVec v2, const TVec p) noexcept {
-  const TVec e1 = TVec(v2.x-v1.x, v2.y-v1.y);
-  const float len2sq = e1.x*e1.x+e1.y*e1.y;
-  if (len2sq < 0.001f) return v1; // cannot properly project onto point
-  const float ilen2sq = 1.0f/len2sq;
-  const TVec e2 = TVec(p.x-v1.x, p.y-v1.y);
-  const float dp = e1.dot2D(e2);
-  return TVec(v1.x+(dp*e1.x)*ilen2sq, v1.y+(dp*e1.y)*ilen2sq);
-}
-
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE bool IsPointOnLine2D (const TVec v1, const TVec v2, const TVec p) noexcept {
-  // calculate epsilon
-  const float dx1 = v2.x-v1.x;
-  const float dy1 = v2.y-v1.y;
-  const float epsilon = 0.003f*(dx1*dx1+dy1*dy1);
-  // calculate the area of the parallelogram of the three points
-  const float area = (v1.x-p.x)*(v2.y-p.y)-(v1.y-p.y)*(v2.x-p.x);
-  // check it
-  return (fabsf(area) < epsilon);
-}
-
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE bool IsPointOnSeg2D (const TVec v1, const TVec v2, const TVec p) noexcept {
-  // point must be in line bounding box
-  if (v1.x < v2.x) {
-    if (p.x < v1.x || p.x > v2.x) return false;
-  } else {
-    if (p.x < v2.x || p.x > v1.x) return false;
-  }
-  if (v1.y < v2.y) {
-    if (p.y < v1.y || p.y > v2.y) return false;
-  } else {
-    if (p.y < v2.y || p.y > v1.y) return false;
-  }
-  return IsPointOnLine2D(v1, v2, p);
-}
-
-static VVA_OKUNUSED VVA_CHECKRESULT VVA_FORCEINLINE bool IsProjectedPointOnSeg2D (const TVec v1, const TVec v2, const TVec p) noexcept {
-  const TVec e1 = TVec(v2.x-v1.x, v2.y-v1.y);
-  const float recArea = e1.dot2D(e1);
-  const TVec e2 = TVec(p.x-v1.x, p.y-v1.y);
-  const float val = e1.dot2D(e2);
-  return (val > 0.0f && val < recArea);
 }
 
 
