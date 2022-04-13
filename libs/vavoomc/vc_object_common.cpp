@@ -190,39 +190,11 @@ IMPLEMENT_FUNCTION(VObject, AngleMod180) {
 }
 */
 
-//native static final TVec Project2D (const TVec v1, const TVec v2, const TVec p);
-IMPLEMENT_FUNCTION(VObject, Project2D) {
-  TVec v1, v2, p;
-  vobjGetParam(v1, v2, p);
-  RET_VEC(Project2D(v1, v2, p));
-}
-
 //native static final float PerpDot2D (const TVec a, const TVec b, const TVec c);
 IMPLEMENT_FUNCTION(VObject, PerpDot2D) {
   TVec a, b, c;
   vobjGetParam(a, b, c);
   RET_FLOAT(PerpDot2D(a, b, c));
-}
-
-//native static final bool IsPointOnLine2D (const TVec v1, const TVec v2, const TVec p);
-IMPLEMENT_FUNCTION(VObject, IsPointOnLine2D) {
-  TVec v1, v2, p;
-  vobjGetParam(v1, v2, p);
-  RET_BOOL(IsPointOnLine2D(v1, v2, p));
-}
-
-//native static final bool IsPointOnSeg2D (const TVec v1, const TVec v2, const TVec p);
-IMPLEMENT_FUNCTION(VObject, IsPointOnSeg2D) {
-  TVec v1, v2, p;
-  vobjGetParam(v1, v2, p);
-  RET_BOOL(IsPointOnSeg2D(v1, v2, p));
-}
-
-//native static final bool IsProjectedPointOnSeg2D (const TVec v1, const TVec v2, const TVec p);
-IMPLEMENT_FUNCTION(VObject, IsProjectedPointOnSeg2D) {
-  TVec v1, v2, p;
-  vobjGetParam(v1, v2, p);
-  RET_BOOL(IsProjectedPointOnSeg2D(v1, v2, p));
 }
 
 // native static final void AngleVectors (const TAVec angles, out TVec forward, optional out TVec right, optional out TVec up);
@@ -2669,6 +2641,38 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TVec, doomBox2DSupportPoint) {
   radius = fabsf(radius);
   CreateDoom2DBBox(bbox, origin, radius);
   RET_VEC(Self->get2DBBoxSupportPoint(bbox));
+}
+
+//native TVec project2D (const TVec v1, const TVec v2) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TVec, project2D) {
+  TVec *Self;
+  TVec v1, v2;
+  vobjGetParam(Self, v1, v2);
+  RET_VEC(Self->project2D(v1, v2));
+}
+
+//native bool isPointOnLine2D (const TVec v1, const TVec v2) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TVec, isPointOnLine2D) {
+  TVec *Self;
+  TVec v1, v2;
+  vobjGetParam(Self, v1, v2);
+  RET_BOOL(Self->isPointOnLine2D(v1, v2));
+}
+
+//native bool isPointOnSeg2D (const TVec v1, const TVec v2) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TVec, isPointOnSeg2D) {
+  TVec *Self;
+  TVec v1, v2;
+  vobjGetParam(Self, v1, v2);
+  RET_BOOL(Self->isPointOnSeg2D(v1, v2));
+}
+
+//native bool isProjectedPointOnSeg2D (const TVec v1, const TVec v2) const;
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, TVec, isProjectedPointOnSeg2D) {
+  TVec *Self;
+  TVec v1, v2;
+  vobjGetParam(Self, v1, v2);
+  RET_BOOL(Self->isProjectedPointOnSeg2D(v1, v2));
 }
 
 

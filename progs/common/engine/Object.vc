@@ -94,6 +94,12 @@ vector TVec {
   native TVec doomBox3DSupportPoint (const TVec origin, const float radius, const float height) const;
   native TVec box2DSupportPoint (const TVec bmin, const TVec bmax) const;
   native TVec doomBox2DSupportPoint (const TVec origin, const float radius) const;
+
+  // project `self` to the line (v1,v2); ignores z
+  native TVec project2D (const TVec v1, const TVec v2) const;
+  native bool isPointOnLine2D (const TVec v1, const TVec v2) const;
+  native bool isPointOnSeg2D (const TVec v1, const TVec v2) const;
+  native bool isProjectedPointOnSeg2D (const TVec v1, const TVec v2) const;
 };
 
 
@@ -860,6 +866,11 @@ alias DotProduct = dot;
 native static final float dot2d (const TVec v1, const TVec v2) [builtin VecDot2D];
 alias DotProduct2D = dot2d;
 alias dot2D = dot2d;
+// calculates the area of the parallelogram of the three points
+// this is actually the same as the area of the triangle defined by the three points, multiplied by 2
+native static final float PerpDot2D (const TVec a, const TVec b, const TVec c);
+alias perpDot2D = PerpDot2D;
+alias perpDot2d = PerpDot2D;
 // cross product (perpendicular vector)
 native static final TVec cross (const TVec v1, const TVec v2) [builtin VecCross];
 alias CrossProduct = cross;
@@ -867,17 +878,7 @@ alias CrossProduct = cross;
 native static final float cross2d (const TVec v1, const TVec v2) [builtin VecCross2D];
 alias CrossProduct2D = cross2d;
 alias cross2D = cross2d;
-
-// calculates the area of the parallelogram of the three points
-// this is actually the same as the area of the triangle defined by the three points, multiplied by 2
-native static final float PerpDot2D (const TVec a, const TVec b, const TVec c);
 // creates vectors for given angle vector
-// project `p` to the line (v1,v2); ignores z
-native static final TVec Project2D (const TVec v1, const TVec v2, const TVec p);
-native static final bool IsPointOnLine2D (const TVec v1, const TVec v2, const TVec p);
-native static final bool IsPointOnSeg2D (const TVec v1, const TVec v2, const TVec p);
-native static final bool IsProjectedPointOnSeg2D (const TVec v1, const TVec v2, const TVec p);
-
 native static final void AngleVectors (const TAVec angles, out TVec forward, optional out TVec right, optional out TVec up);
 // simplified version of AngleVectors, creates only forward vector (this is slightly faster)
 native static final void AngleVector (const TAVec angles, out TVec forward);
