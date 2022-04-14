@@ -1464,6 +1464,8 @@ void VOpenGLDrawer::InitResolution () {
 
   #ifndef GL4ES_HACKS
   glDisable(GL_POLYGON_SMOOTH);
+  glDisable(GL_MULTISAMPLE);
+  glDisable(GL_LINE_SMOOTH);
   #endif
 
   // this is used in model renderer
@@ -1477,6 +1479,8 @@ void VOpenGLDrawer::InitResolution () {
     GCon->Log(NAME_Init, "OpenGL: no `glPrimitiveRestartIndex()` found, optimised voxel rendering is disabled.");
     gl_can_use_primitive_restart = false;
   }
+
+  GLDRW_RESET_ERROR();
 
   // shaders
   shaderHead = nullptr; // just in case

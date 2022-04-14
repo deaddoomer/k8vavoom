@@ -462,7 +462,7 @@ void VOpenGLDrawer::EndAutomap () {
   glEnd();
   GLEnableBlend();
   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-  glDisable(GL_LINE_SMOOTH);
+  //glDisable(GL_LINE_SMOOTH);
 }
 
 
