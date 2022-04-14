@@ -172,6 +172,8 @@ class VBasePlayer : public VGameObject {
     WAF_ALLOW_USER2        = 1u<<7,
     WAF_ALLOW_USER3        = 1u<<8,
     WAF_ALLOW_USER4        = 1u<<9,
+    // k8vavoom extensions
+    WAF_SECONDARY_SAME_AMMO = 1u<<10,
   };
   vuint32 WeaponActionFlags;
 

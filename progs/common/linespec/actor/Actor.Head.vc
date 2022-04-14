@@ -852,6 +852,7 @@ override void Destroyed () {
   Player.bWeaponAllowUser2 = !!(Flags&WRF_ALLOWUSER2);
   Player.bWeaponAllowUser3 = !!(Flags&WRF_ALLOWUSER3);
   Player.bWeaponAllowUser4 = !!(Flags&WRF_ALLOWUSER4);
+  Player.bSecondarySameAmmo = !!(Flags&WRF_SECONDARY_SAME_AMMO);
 
   // reset fire buttons for non-autofiring weapon
   if ((Flags&WRF_NOFIRE) != 0 && Wpn.bNoAutoFire) {

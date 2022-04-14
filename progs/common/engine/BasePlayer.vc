@@ -111,6 +111,7 @@ native transient bool bWeaponAllowUser1;
 native transient bool bWeaponAllowUser2;
 native transient bool bWeaponAllowUser3;
 native transient bool bWeaponAllowUser4;
+native transient bool bSecondarySameAmmo;
 
 string UserInfo;
 

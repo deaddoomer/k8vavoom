@@ -2210,7 +2210,7 @@ bool FireWeapon (optional state firestate) {
 bool AltFireWeapon (optional state firestate) {
   if (!ReadyWeapon) return false;
   if (!firestate) firestate = ReadyWeapon.GetAltAttackState(Refire);
-  return CommonFireWeapon(Weapon::FIRE_Secondary, firestate);
+  return CommonFireWeapon((bSecondarySameAmmo ? Weapon::FIRE_Primary : Weapon::FIRE_Secondary), firestate);
 }
 
 

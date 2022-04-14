@@ -177,6 +177,9 @@ const [decorate] int WRF_ALLOWUSER1 = 128;
 const [decorate] int WRF_ALLOWUSER2 = 256;
 const [decorate] int WRF_ALLOWUSER3 = 512;
 const [decorate] int WRF_ALLOWUSER4 = 1024;
+// k8vavoom extensions
+// use primary ammo for secondary fire?
+const [decorate] int WRF_SECONDARY_SAME_AMMO = 1<<24;
 
 // flags for A_RailAttack and A_CustomRailgun
 const [decorate] int RGF_SILENT        = 1;
