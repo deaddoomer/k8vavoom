@@ -1112,13 +1112,28 @@ bool IsNormalLikeDamage (name DmgType) {
 
 //==========================================================================
 //
+//  isZanCloudHack
+//
+//  hack for Zan Toxic Cloud
+//  (so it shouldn't block revenant missiles, for examle)
+//  set +GHOST +NOTARGET (but *never* +PROJECTILE) and
+//  `DamageFactor "Normal", -667.0` to disable projectile blocking
+//
+//==========================================================================
+final bool isZanCloudHack () {
+  return (bGhost && !bMissile && (bNeverTarget || bReallyNeverTarget));
+}
+
+
+//==========================================================================
+//
 //  FindDamageFactorInternal
 //
 //  `df` is "normal damage" if damage factor not found
 //  returns `true` if found
 //
 //==========================================================================
-final bool FindDamageFactorInternal (name DmgType, out DamageFactor dfres) {
+final bool FindDamageFactorInternal (name DmgType, out DamageFactor dfres, optional bool skipClamp) {
   float dmgNormal = float.nan;
   bool normalNoArmor = false;
   bool normalReplace = false;
@@ -1136,7 +1151,7 @@ final bool FindDamageFactorInternal (name DmgType, out DamageFactor dfres) {
     }
     if (dmgNormal.isnan && nameicmp(df.DamageType, 'None') == 0) {
       dmgNormal = df.Factor;
-      if (dmgNormal < 0) dmgNormal = 1; // this is what GZDoom does
+      if (!skipClamp && dmgNormal < 0) dmgNormal = (dmgNormal == -667.0 && isZanCloudHack() ? 0 : 1); // this is what GZDoom does
       normalReplace = df.replaceFactor;
       normalNoArmor = df.skipArmor;
     }
@@ -1154,7 +1169,7 @@ final bool FindDamageFactorInternal (name DmgType, out DamageFactor dfres) {
     }
     if (dmgNormal.isnan && nameicmp(df.DamageType, 'None') == 0) {
       dmgNormal = df.Factor;
-      if (dmgNormal < 0) dmgNormal = 1; // this is what GZDoom does
+      if (!skipClamp && dmgNormal < 0) dmgNormal = (dmgNormal == -667.0 && isZanCloudHack() ? 0 : 1); // this is what GZDoom does
       normalReplace = df.replaceFactor;
       normalNoArmor = df.skipArmor;
     }
@@ -1175,7 +1190,10 @@ final bool FindDamageFactorInternal (name DmgType, out DamageFactor dfres) {
 //  returns `defaultFactor` if no damage type found
 //
 //==========================================================================
-final float FindDamageFactor (name DmgType, float defaultFactor, out bool replaceFactor, out bool skipArmor) {
+final float FindDamageFactor (name DmgType, float defaultFactor,
+                              out bool replaceFactor, out bool skipArmor,
+                              optional bool skipClamp)
+{
   replaceFactor = false;
   skipArmor = false;
 
@@ -1185,10 +1203,10 @@ final float FindDamageFactor (name DmgType, float defaultFactor, out bool replac
   DamageFactor df;
 
   // try usual name
-  if (FindDamageFactorInternal(DmgType, out df)) {
+  if (FindDamageFactorInternal(DmgType, out df, skipClamp!optional)) {
     //printdebug("%C:FindDamageFactor:000: dtype=%s; factor=%s; replace=%B; noarmor=%B", self, df.DamageType, df.Factor, df.replaceFactor, df.skipArmor);
     float dmgFactor = df.Factor;
-    if (dmgFactor < 0) dmgFactor = 1; // this is what GZDoom does
+    if (!skipClamp && dmgFactor < 0) dmgFactor = (dmgFactor == -667.0 && isZanCloudHack() ? 0 : 1); // this is what GZDoom does
     replaceFactor = df.replaceFactor;
     skipArmor = df.skipArmor;
     return dmgFactor;
@@ -1199,10 +1217,10 @@ final float FindDamageFactor (name DmgType, float defaultFactor, out bool replac
 
   // try some mapped names
   if (nameicmp(DmgType, 'BDW_Bullet') == 0 || nameicmp(DmgType, 'Shell') == 0) {
-    if (FindDamageFactorInternal('Bullet', out df)) {
+    if (FindDamageFactorInternal('Bullet', out df, skipClamp!optional)) {
       //printdebug("%C:FindDamageFactor:001: dtype=%s; factor=%s; replace=%B; noarmor=%B", self, df.DamageType, df.Factor, df.replaceFactor, df.skipArmor);
       float dmgFactor = df.Factor;
-      if (dmgFactor < 0) dmgFactor = 1; // this is what GZDoom does
+      if (!skipClamp && dmgFactor < 0) dmgFactor = (dmgFactor == -667.0 && isZanCloudHack() ? 0 : 1); // this is what GZDoom does
       replaceFactor = df.replaceFactor;
       skipArmor = df.skipArmor;
       return dmgFactor;
@@ -1210,10 +1228,12 @@ final float FindDamageFactor (name DmgType, float defaultFactor, out bool replac
   }
 
   if (nameicmp(DmgType, 'BDW_Shell') == 0) {
-    if (FindDamageFactorInternal('Shell', out df) || FindDamageFactorInternal('Bullet', out df)) {
+    if (FindDamageFactorInternal('Shell', out df, skipClamp!optional) ||
+        FindDamageFactorInternal('Bullet', out df, skipClamp!optional))
+    {
       //printdebug("%C:FindDamageFactor:002: dtype=%s; factor=%s; replace=%B; noarmor=%B", self, df.DamageType, df.Factor, df.replaceFactor, df.skipArmor);
       float dmgFactor = df.Factor;
-      if (dmgFactor < 0) dmgFactor = 1; // this is what GZDoom does
+      if (!skipClamp && dmgFactor < 0) dmgFactor = (dmgFactor == -667.0 && isZanCloudHack() ? 0 : 1); // this is what GZDoom does
       replaceFactor = df.replaceFactor;
       skipArmor = df.skipArmor;
       return dmgFactor;
@@ -1224,7 +1244,7 @@ final float FindDamageFactor (name DmgType, float defaultFactor, out bool replac
   if (!dfnormal.Factor.isnan && IsNormalLikeDamage(DmgType)) {
     //printdebug("%C:FindDamageFactor:003: dtype=%s; factor=%s; replace=%B; noarmor=%B", self, df.DamageType, df.Factor, df.replaceFactor, df.skipArmor);
     float dmgFactor = dfnormal.Factor;
-    if (dmgFactor < 0) dmgFactor = 1; // this is what GZDoom does
+    if (!skipClamp && dmgFactor < 0) dmgFactor = (dmgFactor == -667.0 && isZanCloudHack() ? 0 : 1); // this is what GZDoom does
     replaceFactor = dfnormal.replaceFactor;
     skipArmor = dfnormal.skipArmor;
     return dmgFactor;

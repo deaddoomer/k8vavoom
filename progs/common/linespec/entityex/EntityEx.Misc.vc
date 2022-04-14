@@ -1154,6 +1154,17 @@ override bool Touch (Entity InOther, bool disableEffects) {
     if (TargetSUId == Other.ServerUId) return true;
   }
 
+  // hack for Zan
+  // set +GHOST +NOTARGET (but *never* +PROJECTILE) and `DamageFactor "Normal", -667.0` to disable projectile blocking
+  if (Other.isZanCloudHack()) {
+    bool rep, sam;
+    float dff = Other.FindDamageFactor(DamageType, 1.0, out rep, out sam, skipClamp:true);
+    if (dff == -667.0) {
+      //printdebug("%C: touched `%C`, activated Zan Hack", self, Other);
+      return true;
+    }
+  }
+
   // for Korax Arena
   if (Other.IsTouched(self, disableEffects)) {
     return ProcessHitFlags(Other, !Other.bSolid && !Other.bSpecial && (!Other.bShootable || !Other.bTouchy) && !Other.bBlockedBySolidActors, disableEffects);
