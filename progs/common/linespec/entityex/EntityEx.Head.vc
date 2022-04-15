@@ -368,7 +368,8 @@ bool bHitTracer;
 bool bHitOwner;
 
 bool bOldRadiusDamage; // does not take z into account when doing radius damage
-transient bool bFixMapthingPos; // there is no reason to save it, it is used only when spawning map things anyway
+// there is no reason to save it, it is used only when spawning map things anyway
+transient bool bFixMapthingPos;
 
 bool bNoInfightSpecies;
 
@@ -379,6 +380,10 @@ bool bDecalsOnly2S;
 
 bool bMissileHeadshotsAllowed; // allow headshots with this missile?
 bool bMeIsMuzzleFlash; // ignore light from this actor in `CalcLight()`
+
+// set to `true` by `SetActorProperty(PROP_Damage)`
+// if set, do not call custom damage expression function, always use `MissileDamage` calculation
+bool bForceUseMissileDamage;
 
 float NextBumpTime; // next allowed bump time
 

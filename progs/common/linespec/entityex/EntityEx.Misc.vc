@@ -1240,7 +1240,7 @@ override bool Touch (Entity InOther, bool disableEffects) {
 
     if (bMThruSpecies && Target && IsSameSpecies(Target, self)) return ProcessHitFlags(Other, true, disableEffects);
 
-    if ((BounceType == BOUNCE_Doom || BounceType == BOUNCE_Hexen) && /*MissileDamage*/GetMissileDamage(0, 1) == 0) {
+    if ((BounceType == BOUNCE_Doom || BounceType == BOUNCE_Hexen) && GetMissileDamage(0, 1) == 0) {
       // yet ripper rips, not bounces, even if it doesn't do any damage!
       if (Target != Other && Other.bSolid && !Other.bCorpse) {
         //ProcessHitFlags(Other, false, disableEffects);
@@ -1441,14 +1441,32 @@ bool Slam (EntityEx Other) {
 
 //==========================================================================
 //
+//  GetMissileDamageIntr
+//
+//  this can be overriden by decorate parser `Damage (expr)` property
+//
+//   ((random(0, 255)&Mask)+Add)*MissileDamage
+//
+//==========================================================================
+int GetMissileDamageIntr (int Mask, int Add) {
+  if (!MissileDamage) return 0;
+  return ((Mask ? (P_Random()&Mask) : 0)+Add)*MissileDamage;
+  //if (!Mask) return Add*MissileDamage;
+  //return ((P_Random()&Mask)+Add)*MissileDamage;
+}
+
+
+//==========================================================================
+//
 //  GetMissileDamage
 //
 //==========================================================================
-int GetMissileDamage (int Mask, int Add) {
+final int GetMissileDamage (int Mask, int Add) {
   if (MissileDamageOverride) return (MissileDamageOverride != int.min ? MissileDamageOverride : 0);
+  // always use `MissileDamage`?
+  if (!bForceUseMissileDamage) return GetMissileDamageIntr(Mask, Add);
   if (!MissileDamage) return 0;
-  if (!Mask) return Add*MissileDamage;
-  return ((P_Random()&Mask)+Add)*MissileDamage;
+  return ((Mask ? (P_Random()&Mask) : 0)+Add)*MissileDamage;
 }
 
 
@@ -3184,8 +3202,8 @@ override void SetActorProperty (int Prop, int IntVal, string StrVal) {
   switch (Prop) {
     case APROP_Health: Health = IntVal; if (bIsPlayer) Player.Health = IntVal; break;
     case APROP_Speed: Speed = float(IntVal)/65536.0*35.0; if (Speed < 0) Speed = 0; break;
-    case APROP_Damage: MissileDamage = IntVal; break;
-    case APROP_Alpha: Alpha = float(IntVal)/65536.0; break;
+    case APROP_Damage: MissileDamage = IntVal; bForceUseMissileDamage = true; break; //FIXME: is this right?
+    case APROP_Alpha: Alpha = fclamp(float(IntVal)/65536.0, 0.0, 1.0); break;
     case APROP_RenderStyle: RenderStyle = ACSRenderStyleToVavoom(IntVal); break;
     case APROP_Ambush: bAmbush = !!IntVal; break;
     case APROP_Invulnerable: bInvulnerable = !!IntVal; break;
@@ -3258,7 +3276,7 @@ override int GetActorProperty (int Prop) {
   switch (Prop) {
     case APROP_Health: return Health;
     case APROP_Speed: return int(Speed/35.0*65536.0);
-    case APROP_Damage: return GetMissileDamage(0, 1);
+    case APROP_Damage: return GetMissileDamage(0, 1); //FIXME: is this right?
     case APROP_Alpha: return int(Alpha*65536.0);
     case APROP_RenderStyle: return ACSRenderStyleFromVavoom(RenderStyle);
     case APROP_Ambush: return bAmbush;

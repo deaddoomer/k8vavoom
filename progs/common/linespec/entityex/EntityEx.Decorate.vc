@@ -98,6 +98,8 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
 //
 //==========================================================================
 [decorate] final int decorate_random (int From, int To) {
+  return IRandomBetween(From, To);
+  /*
   if (From > To) {
     int Tmp = From;
     From = To;
@@ -111,6 +113,7 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
     RVal = P_Random();
   }
   return From+RVal%(To-From+1);
+  */
 }
 
 
@@ -120,8 +123,11 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
 //
 //==========================================================================
 [decorate] final int decorate_random2 (optional int Mask) {
+  return (specified_Mask ? (P_Random()&Mask)-(P_Random()&Mask) : P_Random()-P_Random());
+  /*
   if (specified_Mask) return (P_Random()&Mask)-(P_Random()&Mask);
   return P_Random()-P_Random();
+  */
 }
 
 
@@ -131,7 +137,8 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
 //
 //==========================================================================
 [decorate] final float decorate_frandom (float From, float To) {
-  return From+FRandomFull()*(To-From);
+  //return From+FRandomFull()*(To-From);
+  return FRandomBetween(From, To);
 }
 
 
@@ -251,6 +258,7 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+[decorate] final bool decorate_CvarExists (name Name) { return CvarExists(Name); }
 [decorate] final float decorate_GetCVar (name Name) { return GetCvarF(Name); }
 [decorate] final float decorate_GetCVarF (name Name) { return GetCvarF(Name); }
 [decorate] final int decorate_GetCVarI (name Name) { return GetCvarI(Name); }
@@ -401,7 +409,7 @@ private final EntityEx dccDoAPtr (optional int aptr0) {
 //  GetCrouchFactor
 //
 //==========================================================================
-[decorate] final float GetCrouchFactor (optional int aptr0) {
+[decorate] final float decorate_GetCrouchFactor (optional int aptr0) {
   if (!specified_aptr0) aptr0 = AAPTR_DEFAULT;
   EntityEx sex = EntityEx(self);
   if (!sex) return 1.0;
@@ -416,7 +424,7 @@ private final EntityEx dccDoAPtr (optional int aptr0) {
 //  IsDecalsAllowed
 //
 //==========================================================================
-[decorate] final int IsDecalsAllowed () {
+[decorate] final int decorate_IsDecalsAllowed () {
   return GetCvarB('r_decals');
 }
 
@@ -426,7 +434,7 @@ private final EntityEx dccDoAPtr (optional int aptr0) {
 //  IsFlatDecalsAllowed
 //
 //==========================================================================
-[decorate] final int IsFlatDecalsAllowed () {
+[decorate] final int decorate_IsFlatDecalsAllowed () {
   return (GetCvarB('r_decals') && GetCvarB('r_decals_flat'));
 }
 
@@ -436,6 +444,6 @@ private final EntityEx dccDoAPtr (optional int aptr0) {
 //  IsWallDecalsAllowed
 //
 //==========================================================================
-[decorate] final int IsWallDecalsAllowed () {
+[decorate] final int decorate_IsWallDecalsAllowed () {
   return (GetCvarB('r_decals') && GetCvarB('r_decals_wall'));
 }

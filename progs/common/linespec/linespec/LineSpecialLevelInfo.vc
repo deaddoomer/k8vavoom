@@ -5934,7 +5934,10 @@ override void SpawnMapThing (mthing_t *mthing) {
 
   // spawn it
   EntityEx thg = EntityEx(SpawnThinker(moClass, default, default, mthing, AllowReplace:false));
-  if (thg && !thg.IsDestroyed && thg.bFixMapthingPos) thg.FixMapthingPos();
+  if (thg && !thg.IsDestroyed && thg.bFixMapthingPos) {
+    thg.bFixMapthingPos = false; // just in case
+    thg.FixMapthingPos();
+  }
   //print("SpawnMapThing: '%C' (%d) height=%f (defheight=%f); org=%s", thg, mthing.type, thg.Height, moClass.default.Height, thg.Origin);
   //if (moClass.default.bSolid && !thg.bSolid) print("  ****FUUUUUUU");
 
