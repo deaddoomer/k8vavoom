@@ -143,8 +143,9 @@ void VState::Emit () {
     if (!Function) {
       ParseError(Loc, "No such method `%s` in class `%s`", *FunctionName, ((VClass *)Outer)->GetName());
     } else {
-      if (Function->Flags&FUNC_VarArgs) { ParseError(Loc, "State method must not have varargs"); return; }
-      if (Function->ReturnType.Type != TYPE_Void) ParseError(Loc, "State method must not return a value");
+      if (Function->Flags&FUNC_VarArgs) ParseError(Loc, "State method must not have varargs");
+      // executor will properly remove the result, and some decorate methods should return something
+      //if (Function->ReturnType.Type != TYPE_Void) ParseError(Loc, "State method must not return a value");
       if (!Function->IsGoodStateMethod()) ParseError(Loc, "State method must be callable without arguments");
       // ok, state methods can be virtual and static now
       if (Type != Vavoom && (Function->Flags&FUNC_Static) != 0) ParseError(Loc, "State method must not be static");
