@@ -632,12 +632,13 @@ final int do_simple_A_Explode (optional int damage, optional float aradius, opti
 
   if (!specified_damage || damage < 0) {
     damage = ExplosionDamage;
+    //if (!damage) damage = 128;
     Alert = false; // per ZDoom wiki
   }
 
   if (!specified_distance || distance < 0) distance = ExplosionRadius;
 
-  if (damage < 0) damage = 128;
+  if (damage <= 0) damage = 128;
   if (distance <= 0) distance = damage;
 
   // NailBomb effect, from SMMU but not from its source code: instead it was
