@@ -258,6 +258,51 @@ final void worker_JumpIfInInventory (EntityEx tgt, class!Actor ItemType, int Amo
 
 //==========================================================================
 //
+//  worker_JumpIfInInventoryLess
+//
+//==========================================================================
+final void worker_JumpIfInInventoryLess (EntityEx tgt, class!Actor ItemType, int Amount, state Label) {
+  KeepChainResult();
+  class!Inventory itp = class!Inventory(ItemType);
+
+  bool doJump = true;
+  if (itp && tgt) {
+    Inventory Item = tgt.FindInventory(itp, disableReplacement:true); //k8: i hope so
+    if (Item) {
+      Ammo ammo = Ammo(Item);
+      int maxam = (ammo ? ammo.k8GetAmmoKingMax() : Item.MaxAmount);
+      doJump = (Item.Amount < Amount);
+    }
+  }
+  if (doJump) DoJump(Label);
+}
+
+
+//==========================================================================
+//
+//  A_JumpIfInventoryLess
+//
+//==========================================================================
+[decorate] final void A_JumpIfInventoryLess (class!Actor ItemType, int Amount, state Label, optional int aptr) {
+  EntityEx tgt = EntityEx(DecorDoAAPtr('A_JumpIfInventoryLess', aptr!optional));
+  worker_JumpIfInInventoryLess(tgt, ItemType, Amount, Label);
+}
+
+
+//==========================================================================
+//
+//  A_JumpIfInTargetInventoryLess
+//
+//==========================================================================
+[decorate] final void A_JumpIfInTargetInventoryLess (class!Actor ItemType, int Amount, state Label, optional int aptr) {
+  EntityEx tgt;
+  if (Target) tgt = EntityEx(Target.DecorDoAAPtr('A_JumpIfInTargetInventoryLess', aptr!optional));
+  worker_JumpIfInInventoryLess(tgt, ItemType, Amount, Label);
+}
+
+
+//==========================================================================
+//
 //  worker_JumpIfNotInInventory
 //
 //==========================================================================
