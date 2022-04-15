@@ -141,6 +141,27 @@ static VExpression *ParseRandomPick (VScriptParser *sc, VClass *Class, bool asFl
 }
 
 
+// map decorate methods to normal methods
+// used to avoid method call overhead for cvars, for example
+//FIXME: move this to VC compiler
+struct DecoMethodMapItem {
+  const char *dcname;
+  const char *vcname;
+};
+
+
+static const DecoMethodMapItem dmtmap[] = {
+  {.dcname="CvarExists", .vcname=""},
+  {.dcname="GetCVar", .vcname="GetCvarF"},
+  {.dcname="GetCVarF", .vcname=""},
+  {.dcname="GetCVarI", .vcname=""},
+  {.dcname="GetCvarB", .vcname=""},
+  {.dcname="GetCvarS", .vcname=""},
+
+  {.dcname=0, .vcname=0},
+};
+
+
 //==========================================================================
 //
 //  ParseFunCallWithName
@@ -246,7 +267,18 @@ static VMethod *ParseFunCallWithName (VScriptParser *sc, VStr FuncName, VClass *
     }
 
     // the search is case-insensitive anyway
-    if (!Func) Func = Class->FindDecorateStateAction(FuncName/*.toLowerCase()*/);
+    if (!Func) {
+      for (const DecoMethodMapItem *dme = dmtmap; dme->dcname; ++dme) {
+        if (FuncName.strEquCI(dme->dcname)) {
+          const char *vcname = dme->vcname;
+          if (!vcname || !vcname[0]) vcname = dme->dcname;
+          Func = Class->FindMethodChecked(vcname);
+          //GCon->Logf(NAME_Debug, "%s: CALL `%s`", *sc->GetVCLoc().toStringNoCol(), *FuncName);
+          break;
+        }
+      }
+      if (!Func) Func = Class->FindDecorateStateAction(FuncName/*.toLowerCase()*/);
+    }
   } else {
     if (inIgnoreList) *inIgnoreList = true;
   }
@@ -302,7 +334,11 @@ static VExpression *ParseMethodCall (VScriptParser *sc, VClass *Class, VStr Name
   int NumArgs = 0;
   bool inIgnoreList = false;
   VMethod *Func = ParseFunCallWithName(sc, Name, Class, NumArgs, Args, parenEaten, &inIgnoreList); // got paren
-  if (!inIgnoreList) return new VDecorateInvocation((Func ? Func->GetVName() : VName(*Name, VName::AddLower)), Loc, NumArgs, Args);
+  if (!inIgnoreList) {
+    //return new VDecorateInvocation((Func ? Func->GetVName() : VName(*Name, VName::AddLower)), Loc, NumArgs, Args);
+    if (Func) return new VDecorateInvocation(Func, Func->GetVName(), Loc, NumArgs, Args);
+    return new VDecorateInvocation(VName(*Name/*, VName::AddLower*/), Loc, NumArgs, Args);
+  }
   // this is ignored method, return zero integer literal instead
   return new VIntLiteral(0, sc->GetVCLoc());
 }

@@ -793,8 +793,9 @@ VExpression *VDecorateInvocation::DoResolve (VEmitContext &ec) {
     if (!M) {
       if (VStr::strEquCI(*Name, "va") ||
           VStr::strEquCI(*Name, "fmin") || VStr::strEquCI(*Name, "fmax") ||
-          VStr::strEquCI(*Name, "fclamp"))
+          VStr::strEquCI(*Name, "fclamp") || VStr::strEquCI(*Name, "fabs"))
       {
+        Name = Name.GetLower();
         M = ec.SelfClass->FindMethod(Name);
       } else if (VStr::strEquCI(*Name, "min") || VStr::strEquCI(*Name, "max") ||
                  VStr::strEquCI(*Name, "clamp") || VStr::strEquCI(*Name, "abs"))
@@ -802,11 +803,11 @@ VExpression *VDecorateInvocation::DoResolve (VEmitContext &ec) {
         // determine if we want an integer one
         if (HasFloatArg(ec)) {
           VStr fname = VStr("f")+(*Name);
-          VName nn = VName(*fname, VName::AddLower);
-          M = ec.SelfClass->FindMethod(nn);
+          Name = VName(*fname, VName::AddLower);
         } else {
-          M = ec.SelfClass->FindMethod(Name);
+          Name = Name.GetLower();
         }
+        M = ec.SelfClass->FindMethod(Name);
       } else {
         M = ec.SelfClass->FindDecorateStateAction(*Name);
       }
@@ -861,6 +862,7 @@ VExpression *VDecorateInvocation::DoResolve (VEmitContext &ec) {
   } else {
     ParseError(Loc, "Unknown decorate action `%s`", *Name);
   }
+
   delete this;
   return nullptr;
 }

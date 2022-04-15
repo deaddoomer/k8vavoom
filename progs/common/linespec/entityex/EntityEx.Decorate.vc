@@ -258,12 +258,14 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+/* mapped directly
 [decorate] final bool decorate_CvarExists (name Name) { return CvarExists(Name); }
 [decorate] final float decorate_GetCVar (name Name) { return GetCvarF(Name); }
 [decorate] final float decorate_GetCVarF (name Name) { return GetCvarF(Name); }
 [decorate] final int decorate_GetCVarI (name Name) { return GetCvarI(Name); }
 [decorate] final bool decorate_GetCVarB (name Name) { return GetCvarB(Name); }
 [decorate] final string decorate_GetCVarS (name Name) { return GetCvarS(Name); }
+*/
 
 
 // ////////////////////////////////////////////////////////////////////////// //
