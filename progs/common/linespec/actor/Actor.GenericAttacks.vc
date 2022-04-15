@@ -487,11 +487,13 @@ final void DoAttack (bool DoMelee, bool DoMissile, int aMeleeDamage,
 //
 //  Handles a bunch of exploding things.
 //
+//  returns number of actors hurted
+//
 //==========================================================================
-final void DoExplode (int damage, float distance, bool damageSelf, optional int dmgdistance,
+final int DoExplode (int damage, float distance, bool damageSelf, optional int dmgdistance,
                       optional EntityEx dmgsource, optional name dmgtype)
 {
-  if (!Level.Game.IsAuthority) return;
+  if (!Level.Game.IsAuthority) return 0;
 
   if (!specified_dmgsource) dmgsource = Target;
   if (!specified_dmgtype) dmgtype = DamageType;
@@ -507,10 +509,12 @@ final void DoExplode (int damage, float distance, bool damageSelf, optional int 
     }
   }
 
+  int res;
+
   if (specified_dmgdistance && dmgdistance > 0) {
-    RadiusAttack(dmgsource, damage, distance, damageSelf, dmgtype, DoDamage:true, damagedistance:dmgdistance);
+    res = RadiusAttack(dmgsource, damage, distance, damageSelf, dmgtype, DoDamage:true, damagedistance:dmgdistance);
   } else {
-    RadiusAttack(dmgsource, damage, distance, damageSelf, dmgtype);
+    res = RadiusAttack(dmgsource, damage, distance, damageSelf, dmgtype);
   }
 
   if (Origin.z <= FloorZ+distance) HitFloorType();
@@ -529,6 +533,8 @@ final void DoExplode (int damage, float distance, bool damageSelf, optional int 
   // clear old dynamic light and trail effects
   bDynamicLight = false;
   bLeaveTrail = false;
+
+  return res;
 }
 
 
@@ -539,8 +545,8 @@ final void DoExplode (int damage, float distance, bool damageSelf, optional int 
 //  Handles a bunch of exploding things.
 //
 //==========================================================================
-[decorate] final void A_Explode () {
-  do_simple_A_Explode();
+[decorate] final int A_Explode () {
+  return do_simple_A_Explode();
 }
 
 
@@ -551,7 +557,7 @@ final void DoExplode (int damage, float distance, bool damageSelf, optional int 
 //  Handles a bunch of exploding things.
 //
 //==========================================================================
-final void do_simple_A_Explode (optional int damage, optional float aradius, optional int flags) {
+final int do_simple_A_Explode (optional int damage, optional float aradius, optional int flags) {
   bool damageSelf = (specified_flags ? !!(flags&XF_HURTSOURCE) : true);
   if (!specified_damage) damage = 128;
   float distance = (specified_aradius ? aradius : cast(float)damage);
@@ -561,9 +567,9 @@ final void do_simple_A_Explode (optional int damage, optional float aradius, opt
   CheckSplash(distance);
 
   if (flags&XF_EXPLICITDAMAGETYPE) {
-    DoExplode(damage, distance, damageSelf, dmgtype:'None');
+    return DoExplode(damage, distance, damageSelf, dmgtype:'None');
   } else {
-    DoExplode(damage, distance, damageSelf);
+    return DoExplode(damage, distance, damageSelf);
   }
 }
 
@@ -573,9 +579,10 @@ final void do_simple_A_Explode (optional int damage, optional float aradius, opt
 //  A_ExplodeAndAlert
 //
 //==========================================================================
-[decorate] final void A_ExplodeAndAlert () {
-  A_Explode();
+[decorate] final int A_ExplodeAndAlert () {
+  int res = A_Explode();
   if (Target && Target.bIsPlayer) LineSpecialLevelInfo(Level).NoiseAlert(Target, self);
+  return res;
 }
 
 
@@ -584,14 +591,14 @@ final void do_simple_A_Explode (optional int damage, optional float aradius, opt
 //  A_ExplodeParms
 //
 //==========================================================================
-[decorate] final void A_ExplodeParms () {
+[decorate] final int A_ExplodeParms () {
   int damage = ExplosionDamage;
   float distance = float(ExplosionRadius);
   ubyte damageSelf = !bExplosionDontHurtSelf;
 
   if (!damage) damage = 128;
   if (!distance) distance = float(damage);
-  DoExplode(damage, distance, damageSelf);
+  return DoExplode(damage, distance, damageSelf);
 }
 
 
@@ -600,7 +607,7 @@ final void do_simple_A_Explode (optional int damage, optional float aradius, opt
 //  decorate_A_Explode
 //
 //==========================================================================
-[decorate] final void decorate_A_Explode (optional int damage, optional float distance,
+[decorate] final int decorate_A_Explode (optional int damage, optional float distance,
                                optional int flags, optional bool Alert, optional int dmgdistance,
                                optional int nails, optional int naildamage,
                                optional class!EntityEx PuffType, optional name dmgType)
@@ -610,7 +617,8 @@ final void do_simple_A_Explode (optional int damage, optional float aradius, opt
     XF_EXPLICITDAMAGETYPE -- The damagetype parameter will never change to the actor's damagetype.
     XF_NOSPLASH -- No splash: if set, the explosion does not create any terrain splashes.
   */
-  bool damageSelf = (specified_flags ? !!(flags&XF_HURTSOURCE) : true);
+  if (!specified_flags) flags = XF_HURTSOURCE;
+  bool damageSelf = !!(flags&XF_HURTSOURCE);
   name NailDamageType = 'Nail';
 
   if (!specified_dmgType) {
@@ -622,15 +630,15 @@ final void do_simple_A_Explode (optional int damage, optional float aradius, opt
     NailDamageType = dmgType; //k8: dunno
   }
 
-  if (!specified_damage) {
+  if (!specified_damage || damage < 0) {
     damage = ExplosionDamage;
-    distance = ExplosionRadius;
-    damageSelf = !bExplosionDontHurtSelf;
-    if (!damageSelf && specified_flags && (flags&XF_HURTSOURCE)) damageSelf = true; //k8:dunno
+    Alert = false; // per ZDoom wiki
   }
 
-  if (!damage) damage = 128;
-  if (!distance) distance = (specified_damage ? damage : 128);
+  if (!specified_distance || distance < 0) distance = ExplosionRadius;
+
+  if (damage < 0) damage = 128;
+  if (distance <= 0) distance = damage;
 
   // NailBomb effect, from SMMU but not from its source code: instead it was
   // implemented and generalized from the documentation at
@@ -650,20 +658,24 @@ final void do_simple_A_Explode (optional int damage, optional float aradius, opt
     }
   }
 
-  EntityEx dmgsource = Target;
-  if (flags&XF_NOTMISSILE) dmgsource = self;
+  EntityEx dmgsource = (flags&XF_NOTMISSILE ? self : Target);
   //k8: zdoom wiki doesn't demand this; i consider wiki as The Specs
   //else if (!dmgsource) dmgsource = self; //k8: missile without `Target` set is the source of the damage
 
+  int res;
+
   if (specified_dmgdistance && dmgdistance > 0) {
     //printdebug("%C: damage=%s; distance=%s; damageSelf=%B; src=%C; type=%s", self, damage, distance, damageSelf, dmgsource, dmgType);
-    DoExplode(damage, distance, damageSelf, dmgdistance, dmgsource:dmgsource, dmgtype:dmgType);
+    res = DoExplode(damage, distance, damageSelf, dmgdistance, dmgsource:dmgsource, dmgtype:dmgType);
   } else {
-    DoExplode(damage, distance, damageSelf, dmgsource:dmgsource, dmgtype:dmgType);
+    res = DoExplode(damage, distance, damageSelf, dmgsource:dmgsource, dmgtype:dmgType);
   }
+
   if (!(flags&XF_NOSPLASH)) CheckSplash(float(distance));
 
   if (Alert && dmgsource && dmgsource.bIsPlayer) LineSpecialLevelInfo(Level).NoiseAlert(dmgsource, self);
+
+  return res;
 }
 
 
@@ -712,9 +724,9 @@ final void do_simple_A_Explode (optional int damage, optional float aradius, opt
 //  A_Detonate
 //
 //==========================================================================
-[decorate] final void A_Detonate () {
+[decorate] final int A_Detonate () {
   int damage = GetMissileDamage(0, 1);
-  DoExplode(damage, float(damage), true);
+  return DoExplode(damage, float(damage), true);
 }
 
 

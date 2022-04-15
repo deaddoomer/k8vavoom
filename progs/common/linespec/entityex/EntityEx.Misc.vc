@@ -292,16 +292,18 @@ final void SetOrigin2 (TVec aorigin, optional int properFloorCheck, optional flo
 //
 //  Source is the creature that caused the explosion at spot.
 //
+//  returns number of actors hurted
+//
 //==========================================================================
-final void RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
-                         bool DamageSource, optional name BombDmgType, optional bool DoDamage,
-                         optional int damagedistance, optional bool thrustZ,
-                         optional float fullthrustdistance, optional bool NoImpactDamage,
-                         optional name onlyThisSpecie)
+final int RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
+                        bool DamageSource, optional name BombDmgType, optional bool DoDamage,
+                        optional int damagedistance, optional bool thrustZ,
+                        optional float fullthrustdistance, optional bool NoImpactDamage,
+                        optional name onlyThisSpecie)
 {
   EntityEx Other;
 
-  if (!Level.Game.IsAuthority) return;
+  if (!Level.Game.IsAuthority) return 0;
 
   if (!specified_thrustZ) thrustZ = DoDamage; //k8: see below
   if (!specified_DoDamage) DoDamage = true;
@@ -318,6 +320,8 @@ final void RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
              BombDmgType, DoDamage, damagedistance, thrustZ,
              fullthrustdistance, NoImpactDamage, onlyThisSpecie);
   #endif
+
+  int count = 0;
 
   foreach RadiusThings(Other, Origin, BombDistance) {
     // vulnerable actors can be damaged by radius attacks even if not shootable
@@ -407,6 +411,7 @@ final void RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
           int dmg = Other.Damage(self, Source, damage, BombDmgType); // !0: done or absorbed
           //print("%C: got RadiusAttack from `%C`, damage=%s; dmg=%s; type=%s", self, Source, damage, dmg, BombDmgType);
           if (damage > 1 && dmg) Other.SpawnBloodAtHeadExplosion(damage, Source);
+          if (damage > 0 && dmg > 0) ++count;
         }
       } else {
         // dunno, GZDoom does it like this
@@ -442,6 +447,8 @@ final void RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
       }
     }
   }
+
+  return count;
 }
 
 

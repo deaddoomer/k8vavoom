@@ -268,11 +268,7 @@ final void worker_JumpIfInInventoryLess (EntityEx tgt, class!Actor ItemType, int
   bool doJump = true;
   if (itp && tgt) {
     Inventory Item = tgt.FindInventory(itp, disableReplacement:true); //k8: i hope so
-    if (Item) {
-      Ammo ammo = Ammo(Item);
-      int maxam = (ammo ? ammo.k8GetAmmoKingMax() : Item.MaxAmount);
-      doJump = (Item.Amount < Amount);
-    }
+    if (Item) doJump = (Item.Amount < Amount);
   }
   if (doJump) DoJump(Label);
 }
