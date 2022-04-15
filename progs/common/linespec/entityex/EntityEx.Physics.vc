@@ -527,13 +527,15 @@ final void XYMovement (float DeltaTime, float ScrollX, float ScrollY, sector_t *
   // split move in multiple steps if moving too fast
   int Steps = 1;
   float MyMaxStep = fmax(fabs(xmove), fabs(ymove));
-  float MaxStep = Radius-1.0;
-  if (MaxStep <= 0.0) MaxStep = MAXMOVESTEP;
+  //float MaxStep = Radius-1.0;
+  float MaxStep = Radius*0.7;
+       if (MaxStep <= 0.0) MaxStep = MAXMOVESTEP;
+  //else if (MaxStep < 0.04) MaxStep = 0.04;
 
   if (MyMaxStep > MaxStep) Steps = int(MyMaxStep/MaxStep)+1;
 
-  float StepXMove = xmove/float(Steps);
-  float StepYMove = ymove/float(Steps);
+  float StepXMove = xmove/cast(float)(Steps);
+  float StepYMove = ymove/cast(float)(Steps);
 
   TVec oldOrigin = Origin;
   foreach (auto snum; 0..Steps) {
