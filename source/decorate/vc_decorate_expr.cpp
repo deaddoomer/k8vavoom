@@ -148,12 +148,13 @@ static VExpression *ParseRandomPick (VScriptParser *sc, VClass *Class, bool asFl
 //==========================================================================
 static VMethod *ParseFunCallWithName (VScriptParser *sc, VStr FuncName, VClass *Class, int &NumArgs, VExpression **Args, bool gotParen, bool *inIgnoreList) {
   // get function name and parse arguments
-  VStr FuncNameLower = FuncName.ToLower();
+  //VStr FuncNameLower = FuncName.ToLower();
   NumArgs = 0;
   int totalCount = 0;
 
   if (inIgnoreList) *inIgnoreList = false;
 
+  const bool oldSISilenced = skipSpanishInquisition;
   auto oldEsc = sc->IsEscape();
   sc->SetEscape(true);
 
@@ -162,6 +163,13 @@ static VMethod *ParseFunCallWithName (VScriptParser *sc, VStr FuncName, VClass *
     if (!sc->Check(")")) {
       do {
         ++totalCount;
+
+        if (totalCount == 1 && FuncName.length() == 8 && FuncName.strEquCI("A_JumpIf")) {
+          // `A_JumpIf()` first arg is always logical
+          skipSpanishInquisition = true;
+        } else {
+          skipSpanishInquisition = oldSISilenced;
+        }
 
         // check for named arguments
         auto saved = sc->SavePos();
@@ -196,9 +204,9 @@ static VMethod *ParseFunCallWithName (VScriptParser *sc, VStr FuncName, VClass *
         if (NumArgs == VMethod::MAX_PARAMS) {
           delete Args[NumArgs];
           Args[NumArgs] = nullptr;
-          if (!VStr::strEquCI(*FuncName, "A_Jump") &&
-              !VStr::strEquCI(*FuncName, "randompick") &&
-              !VStr::strEquCI(*FuncName, "decorate_randompick"))
+          if (!FuncName.strEquCI("A_Jump") &&
+              !FuncName.strEquCI("randompick") &&
+              !FuncName.strEquCI("decorate_randompick"))
           {
             ParseError(sc->GetVCLoc(), "Too many arguments to `%s`", *FuncName);
           }
@@ -210,6 +218,7 @@ static VMethod *ParseFunCallWithName (VScriptParser *sc, VStr FuncName, VClass *
     }
   }
   sc->SetEscape(oldEsc);
+  skipSpanishInquisition = oldSISilenced;
 
   VMethod *Func = nullptr;
 
@@ -236,7 +245,8 @@ static VMethod *ParseFunCallWithName (VScriptParser *sc, VStr FuncName, VClass *
       }
     }
 
-    if (!Func) Func = Class->FindDecorateStateAction(FuncNameLower);
+    // the search is case-insensitive anyway
+    if (!Func) Func = Class->FindDecorateStateAction(FuncName/*.toLowerCase()*/);
   } else {
     if (inIgnoreList) *inIgnoreList = true;
   }
@@ -245,11 +255,11 @@ static VMethod *ParseFunCallWithName (VScriptParser *sc, VStr FuncName, VClass *
     //GCon->Logf(NAME_Debug, "***8:<%s> %s", *FuncName, *sc->GetVCLoc().toStringNoCol());
   } else {
     if (NumArgs > Func->NumParams &&
-        (VStr::strEquCI(*FuncName, "A_Jump") ||
-         VStr::strEquCI(*FuncName, "randompick") ||
-         VStr::strEquCI(*FuncName, "decorate_randompick") ||
-         VStr::strEquCI(*FuncName, "frandompick") ||
-         VStr::strEquCI(*FuncName, "decorate_frandompick")))
+        (FuncName.strEquCI("A_Jump") ||
+         FuncName.strEquCI("randompick") ||
+         FuncName.strEquCI("decorate_randompick") ||
+         FuncName.strEquCI("frandompick") ||
+         FuncName.strEquCI("decorate_frandompick")))
     {
       ParseWarning(sc->GetVCLoc(), "Too many arguments to `%s` (%d -- are you nuts?!)", *FuncName, totalCount);
       for (int f = Func->NumParams; f < NumArgs; ++f) { delete Args[f]; Args[f] = nullptr; }
@@ -561,6 +571,17 @@ static VExpression *ParseExpressionGeneral (VScriptParser *sc, VClass *Class, in
         return new VAssignment(VAssignment::Assign, lhs, val, l);
       }
     }
+    // hack for `!XF_HURTSOURCE` (some mod authors loves to do this)
+    if (!sc->QuotedString && token == "!") {
+      auto sp = sc->SavePos();
+      if (sc->Check("XF_HURTSOURCE")) {
+        if (!sc->QuotedString) {
+          //GCon->Logf(NAME_Debug, "%s: !XF_HURTSOURCE hack!", *sc->GetVCLoc().toStringNoCol());
+          return new VIntLiteral(0, sc->GetVCLoc());
+        }
+      }
+      sc->RestorePos(sp);
+    }
     // process unaries
     for (const MathOpHandler *mop = oplist; mop->op; ++mop) {
       if (mop->prio != prio) continue;
@@ -616,7 +637,7 @@ static VExpression *ParseExpressionGeneral (VScriptParser *sc, VClass *Class, in
     //const TLocation tokloc = sc->GetVCLoc();
     //VStr origToken = token;
     // hacks for some dumbfucks
-    if (!inCodeBlock) {
+    if (!inCodeBlock && !skipSpanishInquisition) {
       if (token.strEqu("||")) {
         int lcls = ClassifyLogicalExpression(lhs);
         switch (lcls) {
@@ -658,6 +679,20 @@ static VExpression *ParseExpressionGeneral (VScriptParser *sc, VClass *Class, in
             break;
         }
       } else if (token.strEqu("=")) {
+        if (prio == 7 && !vcWarningsSilenced) {
+          GLog.Logf(NAME_Error, "%s: Spanish Inquisition says: in decorate, thou shalt use `==` for comparisons. Prepare to AUTO-DA-FE, APOSTATE!", *sc->GetVCLoc().toStringNoCol());
+        }
+        token = "==";
+      }
+    } else if (!inCodeBlock) {
+      // Spanish Inquisition is silenced
+      vassert(skipSpanishInquisition);
+      #if 0
+      if (token == "||" || token == "&&" || token == "&" || token == "|") {
+        GCon->Logf(NAME_Debug, "%s: Spanish Inquisition is silenced (token=`%s`)", *sc->GetVCLoc().toStringNoCol(), *token);
+      }
+      #endif
+      if (token.strEqu("=")) {
         if (prio == 7 && !vcWarningsSilenced) {
           GLog.Logf(NAME_Error, "%s: Spanish Inquisition says: in decorate, thou shalt use `==` for comparisons. Prepare to AUTO-DA-FE, APOSTATE!", *sc->GetVCLoc().toStringNoCol());
         }

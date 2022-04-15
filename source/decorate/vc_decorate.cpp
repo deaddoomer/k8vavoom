@@ -682,6 +682,10 @@ static VMethod *FuncA_FreezeDeathChunks;
 
 static TArray<VFlagList> FlagList;
 
+// for `A_JumpIf()`
+static bool skipSpanishInquisition = false;
+
+// setting this also turns off Spanish Inquisition
 static bool inCodeBlock = false;
 static TArray<VStr> codeBlockLocals;
 
