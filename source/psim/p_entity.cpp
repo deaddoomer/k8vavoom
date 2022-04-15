@@ -845,7 +845,7 @@ bool VEntity::SetState (VState *InState) {
           SavedVObjectPtr svp(&_stateRouteSelf);
           _stateRouteSelf = nullptr;
           setStateNewState = nullptr;
-          ExecuteFunctionNoArgs(this, st->Function); //k8: allow VMT lookups (k8:why?)
+          VObject::ExecuteFunctionNoArgs(this, st->Function); //k8: allow VMT lookups (k8:why?)
           if (IsGoingToDie()) {
             State = nullptr;
             break;
@@ -1169,7 +1169,7 @@ bool VEntity::CallStateChain (VEntity *Actor, VState *AState) {
       XLevel->CallingState = S;
       // assume success by default
       Call.Result = 1;
-      ExecuteFunctionNoArgs(Actor, S->Function); //k8: allow VMT lookups (k8:why?)
+      VObject::ExecuteFunctionNoArgs(Actor, S->Function); //k8: allow VMT lookups (k8:why?)
       // at least one success means overal success (do it later)
       //res |= Call.Result;
     } else {

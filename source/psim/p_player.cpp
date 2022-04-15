@@ -398,7 +398,7 @@ void VBasePlayer::SetViewState (int position, VState *InState) {
           if (!MO->_stateRouteSelf) {
             GCon->Logf(NAME_Warning, "Player: viewobject(%d) is not set! state is %s", position, *state->Loc.toStringNoCol());
           }
-          ExecuteFunctionNoArgs(MO, state->Function); // allow VMT lookups
+          VObject::ExecuteFunctionNoArgs(MO, state->Function); // allow VMT lookups
         }
         if (!VSt.State) break;
         if (ViewStates[position].NewState && !VState::IsNoJumpState(ViewStates[position].NewState)) {
