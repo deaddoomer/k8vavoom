@@ -45,7 +45,11 @@ static char vabuf[VABUF_SIZE];
 //  vox_logf
 //
 //==========================================================================
-static __attribute__((format(printf, 2, 3))) void vox_logf (VoxLibMsg type, const char *fmt, ...) {
+static
+#ifndef _MSC_VER
+__attribute__((format(printf, 2, 3)))
+#endif
+void vox_logf (VoxLibMsg type, const char *fmt, ...) {
   if (type != VoxLibMsg_Error) {
     if ((int)voxlib_verbose <= 0) return;
     if ((int)type > (int)voxlib_verbose) return;
@@ -70,7 +74,12 @@ static __attribute__((format(printf, 2, 3))) void vox_logf (VoxLibMsg type, cons
 //  vox_fatal
 //
 //==========================================================================
-__attribute__((noreturn)) void vox_fatal (const char *msg) {
+#ifdef _MSC_VER
+__declspec(noreturn)
+#else
+__attribute__((noreturn))
+#endif
+void vox_fatal (const char *msg) {
   if (!msg || !msg[0]) msg = "voxlib fatal error";
   if (!voxlib_fatal) {
     vox_logf(VoxLibMsg_Error, "%s", msg);
@@ -480,12 +489,14 @@ uint32_t VoxColorPack::addNewRect (const uint32_t *clrs, uint32_t wdt, uint32_t 
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-struct __attribute__((packed)) VoxXYZ16 {
+vv_push_pack
+struct vv_packed_struct VoxXYZ16 {
   uint16_t x, y, z;
 
   inline VoxXYZ16 () {}
   inline VoxXYZ16 (uint16_t ax, uint16_t ay, uint16_t az) : x(ax), y(ay), z(az) {}
 };
+vv_pop_pack
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -2421,7 +2432,7 @@ void GLVoxelMesh::create (VoxelMesh &vox, bool tjfix, uint32_t BreakIndex) {
         gv.t = calcT(vox, vq, 0);
       } else {
         int spos = -1, tpos = -1;
-        assert(vq.type == VoxelMesh::Quad);
+        vassert(vq.type == VoxelMesh::Quad);
         if (vq.cull&VoxelMesh::Cull_ZAxisMask) {
           if (vx.qtype&VoxelMesh::DMV_X) spos = 1;
           if (vx.qtype&VoxelMesh::DMV_Y) tpos = 1;
@@ -2656,7 +2667,7 @@ bool vox_loadKVX (VoxByteStream &strm, VoxelData &vox, const uint8_t defpal[768]
       xyofs[x*ww+y] = readUShort(strm, &cpos); CHECKERR();
     }
   }
-  //assert(fx.size-fx.tell == fsize-24-(xsiz+1)*4-xsiz*(ysiz+1)*2);
+  //vassert(fx.size-fx.tell == fsize-24-(xsiz+1)*4-xsiz*(ysiz+1)*2);
   //data = new vuint8[](cast(vuint32)(fx.size-fx.tell));
   data.setLength(fsize-24-(xsiz+1)*4-xsiz*(ysiz+1)*2);
   if (!readBuf(strm, data.ptr(), (unsigned)data.length(), &cpos)) {
@@ -2700,7 +2711,7 @@ bool vox_loadKVX (VoxByteStream &strm, VoxelData &vox, const uint8_t defpal[768]
       uint32_t sofs = xofs[x]+xyofs[x*ww+y];
       uint32_t eofs = xofs[x]+xyofs[x*ww+y+1];
       //if (sofs == eofs) continue;
-      //assert(sofs < data.length && eofs <= data.length);
+      //vassert(sofs < data.length && eofs <= data.length);
       while (sofs < eofs) {
         int ztop = data[sofs++];
         uint32_t zlen = data[sofs++];
@@ -2721,7 +2732,7 @@ bool vox_loadKVX (VoxByteStream &strm, VoxelData &vox, const uint8_t defpal[768]
           vox.addVoxel(xsiz-x-1, y, zsiz-ztop, rgb, cull);
         }
       }
-      //assert(sofs == eofs);
+      //vassert(sofs == eofs);
     }
   }
 
@@ -2834,7 +2845,7 @@ bool vox_loadKV6 (VoxByteStream &strm, VoxelData &vox) {
       uint32_t sofs = xofs[x]+xyofs[x*ww+y];
       uint32_t eofs = xofs[x]+xyofs[x*ww+y+1];
       //if (sofs == eofs) continue;
-      //assert(sofs < data.length && eofs <= data.length);
+      //vassert(sofs < data.length && eofs <= data.length);
       while (sofs < eofs) {
         const KVox &kv = kvox[sofs++];
         int z = kv.zlo;

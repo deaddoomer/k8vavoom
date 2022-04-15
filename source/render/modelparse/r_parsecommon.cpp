@@ -224,7 +224,7 @@ void VMeshModel::EnsureEdgesPlanes () {
   for (int fidx = 0; fidx < Frames.length(); ++fidx) {
     VMeshFrame &frm = Frames[fidx];
     const int tcount = frm.TriCount;
-    assert(tcount <= Tris.length());
+    vassert(tcount <= Tris.length());
     for (int tidx = 0; tidx < tcount; ++tidx) {
       const VMeshTri &tri = Tris[tidx];
       calcTriNormal(AllPlanes[pidx++],

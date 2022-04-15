@@ -125,12 +125,29 @@
 
  ******************************************************************************/
 
+// ////////////////////////////////////////////////////////////////////////// //
+// M$VC support modelled after Dasho code, thank you!
+#ifdef _MSC_VER
+# define vv__builtin_expect(cond_val_,exp_val_)  (cond_val_)
+# define vv_packed_struct
+# define vv_push_pack  __pragma(pack(push, 1))
+# define vv_pop_pack   __pragma(pack(pop))
+#else
+# define vv__builtin_expect  __builtin_expect
+# define vv_packed_struct  __attribute__((packed))
+# define vv_push_pack
+# define vv_pop_pack
+#endif
 
 // ////////////////////////////////////////////////////////////////////////// //
 // this function MUST NOT RETURN!
 extern void (*voxlib_fatal) (const char *msg);
 
+#ifdef _MSC_VER
+void __declspec(noreturn) vox_fatal (const char *msg);
+#else
 void vox_fatal (const char *msg) __attribute__((noreturn));
+#endif
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -177,7 +194,7 @@ extern void (*voxlib_message) (VoxLibMsg type, const char *msg);
 #endif
 
 #ifndef vassert
-# define vassert(cond_)  do { if (__builtin_expect((!(cond_)), 0)) { char tbuf[128]; snprintf(tbuf, sizeof(tbuf), "assertion at line %d failed: `%s`", __LINE__, #cond_); vox_fatal(tbuf); } } while (0)
+# define vassert(cond_)  do { if (vv__builtin_expect((!(cond_)), 0)) { char tbuf[128]; snprintf(tbuf, sizeof(tbuf), "assertion at line %d failed: `%s`", __LINE__, #cond_); vox_fatal(tbuf); } } while (0)
 #endif
 
 
@@ -658,7 +675,8 @@ public:
   this is a struct that keeps info about an individual voxel.
   it keeps voxel color, and face visibility info.
  */
-struct __attribute__((packed)) VoxPix {
+vv_push_pack
+struct vv_packed_struct VoxPix {
   uint8_t b, g, r;
   uint8_t cull;
   uint32_t nextz; // voxel with the next z; 0 means "no more"
@@ -672,6 +690,7 @@ struct __attribute__((packed)) VoxPix {
     return b|((uint32_t)g<<8)|((uint32_t)r<<16)|((uint32_t)cull<<24);
   }
 };
+vv_pop_pack
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -1010,7 +1029,8 @@ public:
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-struct __attribute__((packed)) VVoxVertexEx {
+vv_push_pack
+struct vv_packed_struct VVoxVertexEx {
   float x, y, z;
   float s, t; // will be calculated after texture creation
   float nx, ny, nz; // normal
@@ -1042,6 +1062,7 @@ struct __attribute__((packed)) VVoxVertexEx {
     if (idx == 0) x = v; else if (idx == 1) y = v; else z = v;
   }
 };
+vv_pop_pack
 
 
 // ////////////////////////////////////////////////////////////////////////// //
