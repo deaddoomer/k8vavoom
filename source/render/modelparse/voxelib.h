@@ -206,9 +206,8 @@ public:
   typedef VoxLibArray<T> MyType;
 
 private:
-  // 2d info is from `VScriptArray`
-  int ArrNum; // if bit 31 is set, this is 1st dim of 2d array
-  int ArrSize; // if bit 31 is set in `ArrNum`, this is 2nd dim of 2d array
+  int ArrNum;
+  int ArrSize;
   T *ArrData;
 
 public:
