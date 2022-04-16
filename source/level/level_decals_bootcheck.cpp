@@ -181,7 +181,14 @@ void VLevel::CheckFloorDecalDamage (bool isPlayer, TVec org, subsector_t *sub, V
     if (TicTime%ticks) continue;
     // gen damage
     dec->floorDamage.genValue(0.0f);
-    const int dmg = (int)dec->floorDamage.value;
+    dec->floorDamageAlphaMul.genValue(0.0f);
+    int dmg;
+    if (dc->alpha < 1.0f && dec->floorDamageAlphaMul.value > 0.0f) {
+      dmg = (int)(dec->floorDamage.value*(dec->floorDamageAlphaMul.value*dc->alpha));
+      //GCon->Logf(NAME_Debug, "dc '%s': fdmg=%g; alpha=%g (%g); dmg=%d", *dec->name, dec->floorDamage.value, dc->alpha, (dec->floorDamageAlphaMul.value*dc->alpha), dmg);
+    } else {
+      dmg = (int)dec->floorDamage.value;
+    }
     if (dmg < 1) continue;
     // check coords
     ShrinkBBox2D(dcbb2d, dc->bbox2d, shrinkRatio);

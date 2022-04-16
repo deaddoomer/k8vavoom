@@ -798,6 +798,8 @@ bool VDecalDef::parse (VScriptParser *sc) {
         if (sc->Check("floordamagesuitleak")) { parseNumOrRandom(sc, &floorDamageSuitLeak); continue; }
         if (sc->Check("floordamagetype")) { sc->ExpectString(); floorDamageType = VName(*sc->String); continue; }
 
+        if (sc->Check("floordamagealphamul")) { parseNumOrRandom(sc, &floorDamageAlphaMul); continue; }
+
         sc->Error(va("unknown k8vavoom decal keyword '%s'", *sc->String));
       }
       continue;

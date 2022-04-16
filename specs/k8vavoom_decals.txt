@@ -61,13 +61,18 @@ FloorDamageMonsters <value>
 
 FloorDamagePlayer <value>
   should floor decal damage player?
-  0 or 1, default is 0.
+  0 or 1, default is 1.
 
 FloorDamageSuitLeak <value>
   how leaky is player protection suit for this decal?
   [0..255]; 0 means "always active", >255 means "never active"
   default is 5.
   i.e. leak probability is `FloorDamageSuitLeak/256`.
+
+FloorDamageAlphaMul <value>
+  if <value> is greater than zero, and decal alpha is less than 1.0,
+  multiply floor damage by (alpha*<value>).
+  default is 0.
 
 
 

@@ -140,6 +140,7 @@ public:
   float bootalpha;
   VTerrainBootprint *bootprint;
   bool hasFloorDamage;
+  DecalFloatVal floorDamageAlphaMul;
   DecalFloatVal floorDamagePlayer; // default is true
   DecalFloatVal floorDamageMonsters; // default is false
   DecalFloatVal floorDamageSuitLeak; // default is 5
@@ -179,7 +180,7 @@ public:
     , boottime(4.0f, 8.0f), bootanimator(NAME_None)
     , bootshade(-2), boottranslation(-2), bootalpha(-1.0f)
     , bootprint(nullptr)
-    , hasFloorDamage(false), floorDamagePlayer(1.0f), floorDamageMonsters(0.0f), floorDamageSuitLeak(5.0f)
+    , hasFloorDamage(false), floorDamageAlphaMul(0.0f), floorDamagePlayer(1.0f), floorDamageMonsters(0.0f), floorDamageSuitLeak(5.0f)
     , floorDamageType(NAME_None), floorDamage(0.0f), floorDamageTick(0.0f)
     , useCommonScale(false), scaleSpecial(Scale_No_Special), scaleMultiply(1.0f)
     {}
