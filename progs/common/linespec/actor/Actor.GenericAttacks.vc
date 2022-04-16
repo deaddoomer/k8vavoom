@@ -299,10 +299,12 @@ final void FireSuperBullet () {
   }
 
   AngleVector(Ang, out Dir);
-  int Col1 = (Color1 && stricmp(Color1, "none") != 0 ? ParseColor(Color1) : 0);
-  int Col2 = (Color2 && stricmp(Color2, "none") != 0 ? ParseColor(Color2) : 0);
+  Color1 = Color1.xstrip();
+  Color2 = Color2.xstrip();
+  int Col1 = (Color1 && Color1 != "0" && stricmp(Color1, "none") ? ParseColor(Color1) : 0);
+  int Col2 = (Color2 && Color2 != "0" && stricmp(Color2, "none") ? ParseColor(Color2) : 0);
   RailAttack(Dir, Offset, RailDamage, Col1, Col2, MaxDiff, PuffType, !!(Flags&1), !!(Flags&2),
-    distance:range!optional, spawnofs_z:spawnofs_z!optional, pierceLimit:limit!optional);
+             distance:range!optional, spawnofs_z:spawnofs_z!optional, pierceLimit:limit!optional);
 }
 
 

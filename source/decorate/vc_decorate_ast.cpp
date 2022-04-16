@@ -428,7 +428,12 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
       // integer zero?
       if (IsIntConst() && GetIntConst() == 0) {
         // "false" or "0" means "empty"
-        ParseWarningAsError((aloc ? *aloc : Loc), "`%s` argument #%d should be a string (replaced `0` with empty string); PLEASE, FIX THE CODE!", funcName, argnum);
+        // don't warn for `A_CustomRailgun()`, number `0` seems to be a valid value there
+        if ((argnum == 3 || argnum == 4) && VStr::strEquCI(funcName, "A_CustomRailgun")) {
+          // do nothing
+        } else {
+          ParseWarningAsError((aloc ? *aloc : Loc), "`%s` argument #%d should be a string (replaced `0` with empty string); PLEASE, FIX THE CODE!", funcName, argnum);
+        }
         VExpression *enew = new VStringLiteral(VStr(), ec.Package->FindString(""), Loc);
         delete this;
         return enew;

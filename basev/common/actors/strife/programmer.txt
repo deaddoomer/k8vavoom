@@ -50,7 +50,7 @@ actor Programmer 71
     PRGR E 2 A_SentinelBob
     PRGR F 3 A_SentinelBob
     PRGR E 3 A_FaceTarget
-    PRGR F 4 A_CustomMeleeAttack(Random(1, 10) * 6, "programmer/clank")
+    PRGR F 4 A_ProgrammerMelee //A_CustomMeleeAttack(Random(1, 10) * 6, "programmer/clank")
     Goto See+4
   Missile:
     PRGR G 5 A_FaceTarget
