@@ -184,7 +184,9 @@ bool bSpawnCeiling; // hang from ceiling instead of floor
 bool bPickUp; // for players to pick up items
 bool bDropped; // dropped by a demon, not level spawned
 bool bNoBlood; // don't bleed when shot (use puff)
-bool bNoBloodDecals; // don't spawn blood decals (k8:FIXME: dunno)
+//bool bNoBloodDecals; // don't spawn blood decals (k8:FIXME: dunno)
+bool bPuffNoDecals; // don't spawn puff decals
+bool bPuffForceDecals; // use puff decal instead of weapon decal (not implemented yet)
 bool bInFloat; // floating to a height for a move, don't auto float to target's height
 bool bSkullFly; // skull in flight
 bool bCountKill; // count towards intermission kill total

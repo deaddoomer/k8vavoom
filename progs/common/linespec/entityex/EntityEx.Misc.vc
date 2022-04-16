@@ -2919,52 +2919,8 @@ final EntityEx SpawnPuff (TVec Org, float Range, class!EntityEx PuffType,
   EntityEx puff;
   if (!Level.Game.IsAuthority) return none;
 
-  if (PuffType && PuffType.default.bPuffParticles && GetCvarB('r_particle_puffs')) {
-    int c = P_Random()>>1;
-    foreach (int i; 0..MAXPLAYERS) {
-      if (!Level.Game.Players[i]) continue;
-      if (!Level.Game.Players[i].bSpawned) continue;
-      PlayerEx(Level.Game.Players[i]).ParticleEffect(20, LineSpecialLevelInfo::pt_static,
-               LineSpecialLevelInfo::pt_explode2, Org, 0.0, vector(32.0, 32.0, 32.0),
-               0.5, 10.0, 40.0, RGB(c, c, c), 0.8, 0.0);
-    }
-  }
-
-  if (!decalType && PuffType) decalType = PuffType.default.DecalName;
-  if (nameicmp(decalType, 'none') == 0) decalType = ''; // prevent error spam
-  /*
-  if (specified_decalType) {
-    if (!decalType) doDecal = false;
-  } else {
-    if (!PuffType || !PuffType.default.DecalName) doDecal = false;
-  }*/
-
-  //print("SpawnPuff: Range=%s; PuffType=%C; decalType=%s(%B); puffdecal=%s; doDecal=%B", Range, PuffType, decalType, specified_decalType, (PuffType ? PuffType.default.DecalName : '<none>'), doDecal);
-
-  if (decalType) {
-    name flatDName = (specified_decalType && decalType ? decalType : PuffType.default.bSeparateFlatDecal ? PuffType.default.FlatDecalName : PuffType.default.DecalName);
-    if (flatDName && !nameEquCI(flatDName, 'none')) {
-      if (!specified_realOrg) realOrg = Org;
-      float fdrange = fmax(1.0, fabs(Height)*0.5);
-      TVec forg = realOrg;
-      forg.z += fdrange;
-      //FIXME: caller should check if we are on the line?
-      if (sec && li) {
-        // check it here, because spawning exactly on the line may leak throug the closed door
-        if (fabs(li.PointDistance(forg)) < 1.0) {
-          forg -= li->normal*1.6; // move away slightly
-        }
-      }
-      SpawnFlatDecal(forg, flatDName, fdrange+2.0);
-    }
-  }
-
-  if (decalType && sec && li) {
-    //k8:TODO: this should be strictly client-side
-    if (!specified_realOrg) realOrg = Org;
-    name dcname = (specified_decalType && decalType ? decalType : PuffType.default.DecalName);
-    SpawnDecal(realOrg, dcname, (sec == li->frontsector ? 0 : 1), li);
-  }
+  // k8: ZDoom spawns decals (and particles, i guess) only if puff exists for at least one tick
+  // k8: so i moved the corresponding code down
 
   if (PuffType) {
     if (!disableRandomZ) Org.z += (Random()-Random())*4.0;
@@ -3011,10 +2967,70 @@ final EntityEx SpawnPuff (TVec Org, float Range, class!EntityEx PuffType,
     if (puff.ExplodeEffect) SendExplosion(ExplodeEffect, DLightRadius, Org);
     LineSpecialLevelInfo(Level).bPuffSpawned = true;
 
-    return puff;
+    //return puff;
   }
 
-  return none;
+  if (puff && !puff.IsDestroyed) {
+    printdebug("%C: puff `%C`; decal=%s; passed_decal:(%B)=%s", self, puff, puff.DecalName, specified_decalType, decalType);
+
+    if (puff.bPuffParticles && GetCvarB('r_particle_puffs')) {
+      int c = P_Random()>>1;
+      foreach (int i; 0..MAXPLAYERS) {
+        if (!Level.Game.Players[i]) continue;
+        if (!Level.Game.Players[i].bSpawned) continue;
+        PlayerEx(Level.Game.Players[i]).ParticleEffect(20, LineSpecialLevelInfo::pt_static,
+                 LineSpecialLevelInfo::pt_explode2, Org, 0.0, vector(32.0, 32.0, 32.0),
+                 0.5, 10.0, 40.0, RGB(c, c, c), 0.8, 0.0);
+      }
+    }
+
+    if (puff.bPuffNoDecals) {
+      decalType = '';
+    } else {
+      if (puff.bPuffForceDecals) {
+        decalType = puff.DecalName; // override it
+      } else if (!specified_decalType || !decalType) {
+        // empty `decalType` is passed from line attacks, if weapon has no decal
+        decalType = puff.DecalName;
+      }
+      if (nameicmp(decalType, 'none') == 0) decalType = ''; // prevent error spam
+    }
+    /*
+    if (specified_decalType) {
+      if (!decalType) doDecal = false;
+    } else {
+      if (!PuffType || !puff.DecalName) doDecal = false;
+    }*/
+
+    //print("SpawnPuff: Range=%s; PuffType=%C; decalType=%s(%B); puffdecal=%s; doDecal=%B", Range, PuffType, decalType, specified_decalType, (PuffType ? puff.DecalName : '<none>'), doDecal);
+
+    if (decalType) {
+      name flatDName = (specified_decalType && decalType ? decalType : puff.bSeparateFlatDecal ? puff.FlatDecalName : puff.DecalName);
+      if (flatDName && !nameEquCI(flatDName, 'none')) {
+        if (!specified_realOrg) realOrg = Org;
+        float fdrange = fmax(1.0, fabs(Height)*0.5);
+        TVec forg = realOrg;
+        forg.z += fdrange;
+        //FIXME: caller should check if we are on the line?
+        if (sec && li) {
+          // check it here, because spawning exactly on the line may leak throug the closed door
+          if (fabs(li.PointDistance(forg)) < 1.0) {
+            forg -= li->normal*1.6; // move away slightly
+          }
+        }
+        SpawnFlatDecal(forg, flatDName, fdrange+2.0);
+      }
+    }
+
+    if (decalType && sec && li) {
+      //k8:TODO: this should be strictly client-side
+      if (!specified_realOrg) realOrg = Org;
+      name dcname = (specified_decalType && decalType ? decalType : puff.DecalName);
+      SpawnDecal(realOrg, dcname, (sec == li->frontsector ? 0 : 1), li);
+    }
+  }
+
+  return puff;
 }
 
 
@@ -4819,7 +4835,9 @@ void RespawnResetFlags () {
   bPickUp = default.bPickUp;
   bDropped = default.bDropped;
   bNoBlood = default.bNoBlood;
-  bNoBloodDecals = default.bNoBloodDecals; //k8:???
+  //bNoBloodDecals = default.bNoBloodDecals; //k8:???
+  bPuffNoDecals = default.bPuffNoDecals; //k8:???
+  bPuffForceDecals = default.bPuffForceDecals; //k8:???
   bInFloat = default.bInFloat;
   bSkullFly = default.bSkullFly;
   bCountKill = default.bCountKill;
@@ -4855,6 +4873,8 @@ void RespawnResetFlags () {
   bBounceOnAllActors = default.bBounceOnAllActors; //k8:???
   bBounceAutoOff = default.bBounceAutoOff; //k8:???
   bBounceLikeHeretic = default.bBounceLikeHeretic; //k8:???
+  bDontBounceShootables = default.bDontBounceShootables; //k8:???
+  bBounceUseState = default.bBounceUseState; //k8:???
   bSlide = default.bSlide;
   bReflective = default.bReflective;
   bSeekerMissile = default.bSeekerMissile;

@@ -212,7 +212,7 @@
     <flag name="Invisible" property="bInvisible" relinktoworld="true" />
     <flag name="Shadow" property="bShadow" />
     <flag name="NoBlood" property="bNoBlood" />
-    <flag name="NoBloodDecals" property="bNoBloodDecals" />
+    <!-- flag name="NoBloodDecals" property="bNoBloodDecals" -- this did nothing anyway  -->
     <flag name="Stealth" property="bStealth" />
     <flag name="FloorClip" property="bFloorClip" relinktoworld="true" />
     <flag name="SpawnFloat" property="bSpawnFloat" relinktoworld="true" />
@@ -299,6 +299,8 @@
     <flag name="AllowParticles" property="bPuffParticles" />
     <flag name="AlwaysPuff" property="bAlwaysPuff" />
     <flag name="PuffGetsOwner" property="bPuffGetsOwner" />
+    <flag name="NoDecal" property="bPuffNoDecals" />
+    <flag name="ForceDecal" property="bPuffForceDecals" />
     <flag name="Synchronized" property="bSynchronised" />
     <flag name="Faster" property="bFaster" />
     <flag name="AlwaysFast" property="bAlwaysFast" />
