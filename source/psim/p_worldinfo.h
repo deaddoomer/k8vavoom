@@ -51,11 +51,12 @@ class VWorldInfo : public VGameObject {
   float SkillMonsterHealth;
 
   enum {
-    WIF_SkillFastMonsters  = 0x00000001,
-    WIF_SkillDisableCheats = 0x00000002,
-    WIF_SkillEasyBossBrain = 0x00000004,
-    WIF_SkillAutoUseHealth = 0x00000008,
-    WIF_SkillSlowMonsters  = 0x00000010,
+    WIF_SkillFastMonsters  = 0x00000001u,
+    WIF_SkillDisableCheats = 0x00000002u,
+    WIF_SkillEasyBossBrain = 0x00000004u,
+    WIF_SkillAutoUseHealth = 0x00000008u,
+    WIF_SkillSlowMonsters  = 0x00000010u,
+    WIF_SkillSpawnMulti    = 0x00000020u,
   };
   vuint32 Flags;
 

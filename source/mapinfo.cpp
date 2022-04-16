@@ -2407,6 +2407,8 @@ static void ParseSkillDef (VScriptParser *sc) {
       sdef->Flags |= SKILLF_FastMonsters;
     } else if (sc->Check("SlowMonsters")) {
       sdef->Flags |= SKILLF_SlowMonsters;
+    } else if (sc->Check("SpawnMulti")) {
+      sdef->Flags |= SKILLF_SpawnMulti;
     } else if (sc->Check("DisableCheats")) {
       //k8: no, really?
       //sdef->Flags |= SKILLF_DisableCheats;

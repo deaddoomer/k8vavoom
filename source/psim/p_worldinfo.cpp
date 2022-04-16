@@ -85,6 +85,8 @@ void VWorldInfo::SetSkill (int ASkill) {
 
   const VSkillDef *SDef = P_GetSkillDef(GameSkill);
 
+  //GCon->Logf(NAME_Debug, "SetSkill: idx=%d; name=%s", GameSkill, *SDef->Name);
+
   SkillAmmoFactor = SDef->AmmoFactor;
   SkillDoubleAmmoFactor = SDef->DoubleAmmoFactor;
   SkillDamageFactor = SDef->DamageFactor;
@@ -95,8 +97,9 @@ void VWorldInfo::SetSkill (int ASkill) {
   SkillAcsReturn = SDef->AcsReturn;
   SkillMonsterHealth = SDef->MonsterHealth;
   SkillHealthFactor = SDef->HealthFactor;
-  Flags = (Flags & 0xffffff00) | (SDef->Flags & 0x0000000f);
+  Flags = (Flags&0xffffff00u)|(SDef->Flags&0x0000000f);
   if (SDef->Flags&SKILLF_SlowMonsters) Flags |= WIF_SkillSlowMonsters;
+  if (SDef->Flags&SKILLF_SpawnMulti) Flags |= WIF_SkillSpawnMulti;
 
   // copy replacements
   SkillReplacements.reset();

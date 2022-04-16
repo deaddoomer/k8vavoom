@@ -166,11 +166,14 @@ VCvarI fastparm("g_fast_monsters", "0", "Fast(1), slow(2), normal(0) monsters?",
 static VCvarI g_fastmon_override("g_fast_monsters_override", "0", "Fast(1), slow(2), normal(0) monsters?", CVAR_PreInit|CVAR_Archive);
 static VCvarI g_respawn_override("g_monsters_respawn_override", "0", "Override monster respawn (time in seconds).", CVAR_PreInit|CVAR_Archive);
 static VCvarI g_spawn_filter_override("g_skill_spawn_filter_override", "0", "Override spawn flags.", CVAR_PreInit);
+static VCvarI g_spawn_multi_override("g_skill_spawn_multi_override", "0", "Override \"spawn multi\" flag.", CVAR_PreInit);
 static VCvarI g_spawn_limit_override("g_skill_respawn_limit_override", "0", "Override spawn limit.", CVAR_PreInit|CVAR_Archive);
 static VCvarF g_ammo_factor_override("g_skill_ammo_factor_override", "0", "Override ammo multiplier.", CVAR_PreInit|CVAR_Archive);
 static VCvarF g_damage_factor_override("g_skill_damage_factor_override", "0", "Override damage multiplier.", CVAR_PreInit|CVAR_Archive);
 static VCvarF g_aggressiveness_override("g_skill_aggressiveness_override", "0", "Override monster aggresiveness.", CVAR_PreInit|CVAR_Archive);
 static VCvarI g_switch_range_check_override("g_switch_range_check_override", "0", "Override switch range checking (0: default; 1: never; 2: always).", CVAR_PreInit|CVAR_Archive);
+
+static VCvarI g_spawnmulti_mask("g_spawnmulti_mask", "0", "0:coop+dm; 1:dm; 2:coop; 3::coop+dm", CVAR_PreInit|CVAR_Archive);
 
 
 static VCvarB show_time("dbg_show_times", false, "Show some debug times?", CVAR_PreInit|CVAR_NoShadow);

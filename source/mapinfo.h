@@ -138,6 +138,7 @@ enum {
   SKILLF_MenuNameIsPic = 0x00000010,
   SKILLF_MustConfirm   = 0x00000020,
   SKILLF_SlowMonsters  = 0x00000040,
+  SKILLF_SpawnMulti    = 0x00000080,
 };
 
 struct VSkillPlayerClassName {

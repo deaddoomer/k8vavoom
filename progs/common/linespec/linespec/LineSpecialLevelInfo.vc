@@ -5819,6 +5819,16 @@ override void SpawnMapThing (mthing_t *mthing) {
     else if (Game.deathmatch) spawnMask = MTF_GDEATHMATCH;
     else spawnMask = MTF_GCOOP;
 
+    if (World.GetSpawnMulti()) {
+      int mask = GetCvarI('g_spawnmulti_mask');
+      if (!(mask&3)) {
+        spawnMask |= MTF_GCOOP|MTF_GDEATHMATCH;
+      } else {
+        if (mask&1) spawnMask |= MTF_GCOOP;
+        if (mask&2) spawnMask |= MTF_GDEATHMATCH;
+      }
+    }
+
     if (!(mthing.options&spawnMask)) return;
 
     // check current skill with spawn flags

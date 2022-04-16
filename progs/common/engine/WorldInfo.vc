@@ -44,6 +44,7 @@ readonly bool bSkillDisableCheats;
 readonly bool bSkillEasyBossBrain;
 readonly bool bSkillAutoUseHealth;
 readonly bool bSkillSlowMonsters;
+readonly bool bSkillSpawnMulti;
 
 array!SkillMonsterReplacement SkillReplacements;
 
@@ -68,6 +69,7 @@ final float GetDamageFactor () { float v = GetCvarF('g_skill_damage_factor_overr
 final int GetRespawnLimit () { int v = GetCvarI('g_skill_respawn_limit_override'); return (v > 0 ? v : v < 0 ? 0 : SkillRespawnLimit); }
 final float GetAggressiveness () { float v = GetCvarF('g_skill_aggressiveness_override'); return (v > 0 ? v : SkillAggressiveness); }
 final int GetSpawnFilter () { int v = GetCvarI('g_skill_spawn_filter_override'); return (v > 0 ? v : v < 0 ? 0 : SkillSpawnFilter); }
+final bool GetSpawnMulti () { int v = GetCvarI('g_skill_spawn_multi_override'); return (v > 0 ? true : v < 0 ? false : bSkillSpawnMulti); }
 final float GetHealthFactor () { return SkillHealthFactor; }
 final float GetMonsterHealth () { return SkillMonsterHealth; }
 
