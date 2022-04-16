@@ -487,34 +487,30 @@
 }
 
 
+//==========================================================================
+//
+//  decorate_A_CheckFlag
+//
+//==========================================================================
+[decorate] final void decorate_A_CheckFlag (string flagname, state label, optional int aptr) {
+  KeepChainResult();
+  EntityEx tgt = EntityEx(DecorDoAAPtr('A_CheckFlag', aptr!optional));
+  if (!tgt) return;
+  //if (!decoDoCheckFlag(flagname, tgt)) return;
+  if (!tgt.GetDecorateFlag(flagname)) return;
+  DoJump(label);
+}
+
+
 //============================================================================
 //
 //  A_ChangeFlag
 //
 //============================================================================
-[decorate] final void A_ChangeFlag (string Name, bool Value) {
-  bool CountKillBefore = CountsAsKill();
-  bool CountItemBefore = bCountItem;
-  SetDecorateFlag(Name, Value);
-  // check if count as kill status changed
-  bool cak = CountsAsKill();
-  if (cak != CountKillBefore) {
-    if (cak) {
-      // it now counts as kill
-      ++Level.TotalKills;
-    } else {
-      // it no longer counts as kill
-      --Level.TotalKills;
-    }
-  }
-  // the same for items
-  if (CountItemBefore != bCountItem) {
-    if (bCountItem) {
-      ++Level.TotalItems;
-    } else {
-      --Level.TotalItems;
-    }
-  }
+[decorate] final void A_ChangeFlag (string Name, bool Value, optional int aptr) {
+  EntityEx tgt = EntityEx(DecorDoAAPtr('A_ChangeFlag', aptr!optional));
+  if (!tgt) return;
+  decorate_ChangeActorFlag(tgt, Name, Value);
 }
 
 

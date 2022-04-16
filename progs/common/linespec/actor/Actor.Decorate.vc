@@ -773,7 +773,8 @@ private final float clampPitch (float newpitch) {
 //==========================================================================
 //float GetDistance (bool checkz [, int ptr_select])
 [decorate] final float decorate_GetDistance (bool checkz, optional int aptr) {
-  Entity tgt = DecorDoAAPtr('decorate_GetDistance', aptr!optional);
+  if (!specified_aptr || aptr == AAPTR_DEFAULT) aptr = AAPTR_TARGET;
+  Entity tgt = DecorDoAAPtr('decorate_GetDistance', aptr);
   if (!tgt) return 0;
   if (tgt == self) return 0;
   return (checkz ? DistTo(tgt) : DistTo2(tgt));
@@ -819,20 +820,20 @@ private final float clampPitch (float newpitch) {
 //  A_SpawnProjectile
 //
 //==========================================================================
-[decorate] final void A_SpawnProjectile (name MissileTypeName, optional float SpawnHeight, optional float SpawnXYOffset,
-                                         optional float Angle, optional int AimMode, optional float Pitch, optional int aptr)
+[decorate] final EntityEx A_SpawnProjectile (name MissileTypeName, optional float SpawnHeight, optional float SpawnXYOffset,
+                                             optional float Angle, optional int AimMode, optional float Pitch, optional int aptr)
 {
-  if (!MissileTypeName) return;
+  if (!MissileTypeName) return none;
   EntityEx tgt = EntityEx(DecorDoAAPtr('A_SpawnProjectile', aptr!optional));
-  if (!tgt) return;
+  if (!tgt) return none;
 
   int Flags = AimMode&~3;
   AimMode &= 3;
 
   class!EntityEx clsMissileType = class!EntityEx(FindClassNoCase(MissileTypeName));
-  if (!clsMissileType) return;
+  if (!clsMissileType) return none;
   clsMissileType = class!EntityEx(GetClassReplacement(clsMissileType));
-  if (!clsMissileType) return;
+  if (!clsMissileType) return none;
   //if (Level.Game.nomonsters && clsMissileType.default.bMonster) return;
 
   if (tgt.Target || AimMode == 2) {
@@ -871,10 +872,14 @@ private final float clampPitch (float newpitch) {
           A.Tracer = tgt.Target;
         }
       }
+
+      return A;
     }
   } else if (Flags&8) {
     if (tgt.SeeState) tgt.SetState(tgt.SeeState);
   }
+
+  return none;
 }
 
 
@@ -941,37 +946,6 @@ private final float clampPitch (float newpitch) {
   }
   return false;
 }
-
-
-//==========================================================================
-//
-//  decorate_A_CheckFlag
-//
-//==========================================================================
-[decorate] final void decorate_A_CheckFlag (string flagname, state label, optional int aptr) {
-  KeepChainResult();
-  EntityEx tgt = EntityEx(DecorDoAAPtr('A_CheckFlag', aptr!optional));
-  if (!tgt) return;
-  //if (!decoDoCheckFlag(flagname, tgt)) return;
-  if (!tgt.GetDecorateFlag(flagname)) return;
-  DoJump(label);
-}
-
-
-//==========================================================================
-//
-//  decorate_A_ChangeFlag
-//
-//==========================================================================
-/*
-[decorate] final void decorate_A_ChangeFlag (string flagname, int value) {
-  //decoDoFlagAction(flagname, self, !!value);
-  print("A_ChangeFlag: name=<%s>; value=%s", flagname, value);
-  //print("  nopain0=%s", bNoPain);
-  decoDoSetFlag(flagname, self, !!value);
-  //print("  nopain1=%s", bNoPain);
-}
-*/
 
 
 //==========================================================================

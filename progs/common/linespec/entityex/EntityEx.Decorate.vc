@@ -333,9 +333,17 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
 [decorate] final TVec decorate_FVectorSetY (TVec fv, float v) { fv.y = v; return fv; }
 [decorate] final TVec decorate_FVectorSetZ (TVec fv, float v) { fv.z = v; return fv; }
 
+[decorate] final float decorate_FVectorGetX (TVec fv) { return fv.x; }
+[decorate] final float decorate_FVectorGetY (TVec fv) { return fv.y; }
+[decorate] final float decorate_FVectorGetZ (TVec fv) { return fv.z; }
+
 [decorate] final TAVec decorate_AVectorSetRoll (TAVec a, float v) { a.roll = v; return a; }
 [decorate] final TAVec decorate_AVectorSetPitch (TAVec a, float v) { a.pitch = v; return a; }
 [decorate] final TAVec decorate_AVectorSetYaw (TAVec a, float v) { a.yaw = v; return a; }
+
+[decorate] final float decorate_AVectorGetRoll (TAVec a) { return a.roll; }
+[decorate] final float decorate_AVectorGetPitch (TAVec a) { return a.pitch; }
+[decorate] final float decorate_AVectorGetYaw (TAVec a) { return a.yaw; }
 
 [decorate] final TVec decorate_YawVector (float yaw) { return AngleYawVector(yaw); }
 [decorate] final TVec decorate_PitchVector (float pitch) { return AnglePitchVector(pitch); }
@@ -348,6 +356,9 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
   return res;
 }
 
+[decorate] final float decorate_VecDistance2D (TVec v0, TVec v1) { return (v1-v0).length2D; }
+[decorate] final float decorate_VecDistance3D (TVec v0, TVec v1) { return (v1-v0).length; }
+
 
 private final EntityEx dccDoAPtr (optional int aptr0) {
   if (!specified_aptr0) aptr0 = AAPTR_DEFAULT;
@@ -356,14 +367,36 @@ private final EntityEx dccDoAPtr (optional int aptr0) {
   return sex;
 }
 
+[decorate] final float decorate_GetStateTime () { return StateTime; }
+
 [decorate] final Actor decorate_GetTarget (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? Actor(sex.Target) : none); }
 [decorate] final Actor decorate_GetTracer (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? Actor(sex.Tracer) : none); }
 [decorate] final Actor decorate_GetMaster (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? Actor(sex.Master) : none); }
 [decorate] final Actor decorate_GetOwner (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? Actor(sex.Owner) : none); }
-[decorate] final float decorate_GetStateTime () { return StateTime; }
+
 [decorate] final int decorate_GetHealth (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? sex.Health : 0); }
 [decorate] final float decorate_GetHeight (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? sex.Height : 0); }
 [decorate] final float decorate_GetDefaultHeight (optional int aptr0) { EntityEx sex = dccDoAPtr(aptr0!optional); return (sex ? sex.default.Height : 0); }
+
+[decorate] final TVec decorate_GetActorOrigin (EntityEx sex) { return (sex ? sex.Origin : vector()); }
+[decorate] final TVec decorate_GetActorVelocity (EntityEx sex) { return (sex ? sex.Velocity : vector()); }
+[decorate] final TAVec decorate_GetActorAngles (EntityEx sex) { return (sex ? sex.Angles : vector()); }
+[decorate] final int decorate_GetActorHealth (EntityEx sex) { return (sex ? sex.Health : 0); }
+[decorate] final float decorate_GetActorHeight (EntityEx sex) { return (sex ? sex.Height : 0); }
+[decorate] final float decorate_GetActorDefaultHeight (EntityEx sex) { return (sex ? sex.default.Height : 0); }
+[decorate] final float decorate_GetActorRadius (EntityEx sex) { return (sex ? sex.Radius : 0); }
+[decorate] final float decorate_GetActorSpeed (EntityEx sex) { return (sex ? sex.Speed : 0); }
+
+[decorate] final int decorate_GetActorSpawnHealth (EntityEx sex) {
+  if (!sex) return 0;
+  if (PlayerPawn(sex)) return PlayerPawn(sex).MaxHealth;
+  return sex.InitialHealth;
+}
+
+[decorate] final void decorate_SetActorSpeed (EntityEx sex, float v) { if (sex) sex.Speed = v; }
+[decorate] final void decorate_SetActorGravity (EntityEx sex, float v) { if (sex) sex.Gravity = v; }
+[decorate] final void decorate_SetActorVelocity (EntityEx sex, TVec v) { if (sex) sex.Velocity = v; }
+
 
 [decorate] final int decorate_GetSpawnHealth (optional int aptr0) {
   EntityEx sex = dccDoAPtr(aptr0!optional);
@@ -448,4 +481,47 @@ private final EntityEx dccDoAPtr (optional int aptr0) {
 //==========================================================================
 [decorate] final int decorate_IsWallDecalsAllowed () {
   return (GetCvarB('r_decals') && GetCvarB('r_decals_wall'));
+}
+
+
+//==========================================================================
+//
+//  decorate_TestActorFlag
+//
+//==========================================================================
+[decorate] final bool decorate_TestActorFlag (EntityEx tgt, string flagname) {
+  if (!tgt) return false;
+  return tgt.GetDecorateFlag(flagname);
+}
+
+
+//============================================================================
+//
+//  decorate_ChangeActorFlag
+//
+//============================================================================
+[decorate] final void decorate_ChangeActorFlag (EntityEx tgt, string Name, bool Value) {
+  if (!tgt) return;
+  bool CountKillBefore = tgt.CountsAsKill();
+  bool CountItemBefore = tgt.bCountItem;
+  tgt.SetDecorateFlag(Name, Value);
+  // check if count as kill status changed
+  bool cak = tgt.CountsAsKill();
+  if (cak != CountKillBefore) {
+    if (cak) {
+      // it now counts as kill
+      ++Level.TotalKills;
+    } else {
+      // it no longer counts as kill
+      --Level.TotalKills;
+    }
+  }
+  // the same for items
+  if (CountItemBefore != tgt.bCountItem) {
+    if (tgt.bCountItem) {
+      ++Level.TotalItems;
+    } else {
+      --Level.TotalItems;
+    }
+  }
 }
