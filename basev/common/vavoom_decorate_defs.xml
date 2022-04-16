@@ -525,6 +525,7 @@
     <flag name="Alt_Ammo_Optional" property="bAltAmmoOptional" />
     <flag name="Ammo_CheckBoth" property="bCheckAnyAmmo" />
     <flag name="Primary_Uses_Both" property="bPrimaryUsesBoth" />
+    <flag name="Alt_Uses_Both" property="bAltUsesBoth" />
     <flag name="Wimpy_Weapon" property="bWimpyWeapon" />
     <flag name="Powered_Up" property="bPoweredUp" />
     <flag name="Staff2_Kickback" property="bStaff2Kickback" />
