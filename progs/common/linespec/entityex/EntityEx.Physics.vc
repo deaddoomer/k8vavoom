@@ -974,9 +974,10 @@ final void HitLine (ref tmtrace_t tmtrace, float DeltaTime, float StepVelScale, 
         }
 
         BounceWall(DeltaTime, tmtrace.BlockingLine, BOUNCE_VAL, WallBounceFactor);
-        if (!bNoBounceSound && !bNoWallBounceSnd && (BounceSound || SightSound)) {
-          PlaySound((BounceSound ? BounceSound : SightSound), CHAN_VOICE);
+        if (!bNoBounceSound && !bNoWallBounceSnd && (WallBounceSound || BounceSound || SightSound)) {
+          PlaySound((WallBounceSound ? WallBounceSound : BounceSound ? BounceSound : SightSound), CHAN_VOICE);
         }
+        if (bBounceUseState) SetWallBounceState();
         // wall bouncing never changes `Velocity.z`, so there is no need to check for stop here
         return;
       }
@@ -1058,6 +1059,11 @@ final void HitMobj (Entity Other, float ptryx, float ptryy) {
         return;
       }
 
+      if (bDontBounceShootables && otherEnt.bShootable) {
+        ExplodeMissile(otherEnt);
+        return;
+      }
+
       // bounce against walls and non-killable objects
       //if ((bBounceOnActors || otherEnt.bReflective || (!Other.bIsPlayer && !otherEnt.bMonster) || !otherEnt.IsSentient()) ||
       //    otherEnt.bBounceOnAllActors)
@@ -1077,8 +1083,9 @@ final void HitMobj (Entity Other, float ptryx, float ptryy) {
         Velocity.x = bncspeed*cosa;
         Velocity.y = bncspeed*sina;
         if (!bNoBounceSound && (BounceSound || SightSound)) {
-          PlaySound(BounceSound ? BounceSound : SightSound, CHAN_VOICE);
+          PlaySound((BounceSound ? BounceSound : SightSound), CHAN_VOICE);
         }
+        if (bBounceUseState) SetActorBounceState(otherEnt);
       } else {
         // struck a player/creature
         //printwarn("%C: EXPLODE!", self);
@@ -1292,6 +1299,46 @@ void TurnOffAllBouncingFlags () {
 
 //==========================================================================
 //
+//  SetWallBounceState
+//
+//==========================================================================
+void SetWallBounceState () {
+  state bst = FindState('Bounce', 'Wall');
+  if (!bst) bst = FindState('Bounce');
+  if (bst) SetState(bst);
+}
+
+
+//==========================================================================
+//
+//  SetActorBounceState
+//
+//==========================================================================
+void SetActorBounceState (EntityEx other) {
+  state bst = none;
+  if (other) {
+    if (other.bShootable && !other.bNoBlood) bst = FindState('Bounce', 'Actor.Creature');
+    if (!bst) bst = FindState('Bounce', 'Actor');
+  }
+  if (!bst) bst = FindState('Bounce');
+  if (bst) SetState(bst);
+}
+
+
+//==========================================================================
+//
+//  SetFloorCeilingBounceState
+//
+//==========================================================================
+void SetFloorCeilingBounceState (float normz) {
+  state bst = FindState('Bounce', (normz >= 0.0f ? 'Floor' : 'Ceiling'));
+  if (!bst) bst = FindState('Bounce');
+  if (bst) SetState(bst);
+}
+
+
+//==========================================================================
+//
 //  FlatBounceMissile
 //
 //  common missile bounce code for floors and ceilings
@@ -1329,7 +1376,7 @@ void FlatBounceMissile (TVec norm) {
 
   // play bounce sound
   if (!bNoBounceSound && (BounceSound || SightSound)) {
-    PlaySound(BounceSound ? BounceSound : SightSound, CHAN_VOICE);
+    PlaySound((BounceSound ? BounceSound : SightSound), CHAN_VOICE);
   }
 
   if (fsign(Velocity.z) != fsign(norm.z)) Velocity.z = -Velocity.z; // ensure that it is bounced in the right direction
@@ -1349,6 +1396,8 @@ void FlatBounceMissile (TVec norm) {
     }
   }
   //if (self isa 'CryBallMini') printdebug("%C:%s: FlatBounceMissile:002: vel=%s : org=%s : norm=%s : vdot=%s", self, UniqueId, Velocity, Origin, norm, vdot);
+
+  if (bBounceUseState) SetFloorCeilingBounceState(norm.z);
 }
 
 

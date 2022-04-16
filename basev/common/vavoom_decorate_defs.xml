@@ -43,6 +43,7 @@
     <prop_float_clamped name="WallBounceFactor" property="WallBounceFactor" min="0" max="1" />
     <prop_int name="BounceCount" property="BounceCount" />
     <prop_name name="BounceSound" property="BounceSound" />
+    <prop_name name="WallBounceSound" property="WallBounceSound" />
     <prop_float name="ProjectileKickback" property="ProjectileKickback" />
     <prop_int_unsupported name="WeaveIndexXY" warning="true" />
     <prop_int_unsupported name="WeaveIndexZ" warning="true" />
@@ -281,7 +282,10 @@
     <flag name="NoBounceSound" property="bNoBounceSound" />
     <flag name="ExplodeOnWater" property="bExplodeOnWater" />
     <flag name="CanBounceOnWater" property="bCanBounceWater" />
-    <flag_unsupported name="MBFBouncer" warning="true" />
+    <flag name="UseBounceState" property="bBounceUseState" />
+    <flag_inverted name="DontBounceOnSky" property="bBounceSky" />
+    <flag name="DontBounceOnShootables" property="bDontBounceShootables" />
+    <flag name="MBFBouncer" property="bMBFBounce" />
     <!-- Miscellaneous -->
     <flag name="Dropped" property="bDropped" relinktoworld="true" />
     <flag name="IsMonster" property="bMonster" />
