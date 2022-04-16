@@ -166,6 +166,10 @@ transient TVec LastPosBuffer[SAVED_POS_MAX];
 transient int LastPosBufferPos; // latest saved position
 transient int LastPosBufferTic; // latest tic on which save was done
 
+// there is no need to save face prefix, because
+// there is no way to change it from DECORATE yet
+transient string SBFacePrefix; // must be lowercased!
+
 
 replication {
   reliable if (Role == ROLE_Authority)
@@ -1166,4 +1170,5 @@ defaultproperties {
   bNoBlockMonst = true;
   k8hsCount = 0;
   secondaryBloodCount = 0;
+  SBFacePrefix = "stf";
 }

@@ -560,6 +560,7 @@
     <prop_string_unsupported name="Player.CrouchSprite" />
     <prop_damage_screen_color name="Player.DamageScreenColor" />
     <prop_string name="Player.DisplayName" property="DisplayName" />
+    <prop_string name="Player.Face" property="SBFacePrefix" />
     <prop_float_optional_2 name="Player.ForwardMove" property="ForwardMove1" property2="ForwardMove2" />
     <prop_name name="Player.HealRadiusType" property="HealRadiusType" />
     <prop_hexen_armor name="Player.HexenArmor" />

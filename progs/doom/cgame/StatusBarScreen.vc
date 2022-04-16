@@ -142,6 +142,7 @@ int pic_minus;
 int pic_percent;
 int pic_faceback;
 int pic_faces[ST_NUMFACES];
+string pic_facepfx; // last seen face prefix; empty means "load faces"
 int pic_keys[6];
 int pic_pause;
 //For Icons in Fullscreen HUD
@@ -210,6 +211,53 @@ final bool checkForDoom2 () {
 
 //==========================================================================
 //
+//  loadFacePic
+//
+//==========================================================================
+private final int loadFacePic (string pfx, string sprname) {
+  int h = R_RegisterPic(name(va("%s%s", pfx, sprname)));
+  if (h < 0 && pfx != "stf") h = R_RegisterPic(name(va("%s%s", "stf", sprname)));
+  return h;
+}
+
+
+//==========================================================================
+//
+//  loadFaces
+//
+//==========================================================================
+private final void loadFaces (string pfx) {
+  foreach (auto i; 0..ST_NUMPAINFACES) {
+    pic_faces[i*ST_FACESTRIDE+0] = loadFacePic(pfx, va("st%d0", i));
+    pic_faces[i*ST_FACESTRIDE+1] = loadFacePic(pfx, va("st%d1", i));
+    pic_faces[i*ST_FACESTRIDE+2] = loadFacePic(pfx, va("st%d2", i));
+    pic_faces[i*ST_FACESTRIDE+3] = loadFacePic(pfx, va("tr%d0", i));
+    pic_faces[i*ST_FACESTRIDE+4] = loadFacePic(pfx, va("tl%d0", i));
+    pic_faces[i*ST_FACESTRIDE+5] = loadFacePic(pfx, va("ouch%d", i));
+    pic_faces[i*ST_FACESTRIDE+6] = loadFacePic(pfx, va("evl%d", i));
+    pic_faces[i*ST_FACESTRIDE+7] = loadFacePic(pfx, va("kill%d", i));
+  }
+  pic_faces[ST_GODFACE] = loadFacePic(pfx, "god0");
+  pic_faces[ST_DEADFACE] = loadFacePic(pfx, "dead0");
+  pic_facepfx = pfx;
+}
+
+
+//==========================================================================
+//
+//  refreshFaces
+//
+//==========================================================================
+final void refreshFaces (string newpfx) {
+  if (!newpfx) newpfx = "stf"; else if (newpfx.length > 3) newpfx = newpfx[0..3];
+  if (newpfx.strEquCI(pic_facepfx)) return;
+  //printdebug("*** LOADING STATUS BAR FACE '%s'", newpfx);
+  loadFaces(newpfx.toLowerCase());
+}
+
+
+//==========================================================================
+//
 //  StartMap
 //
 //==========================================================================
@@ -231,6 +279,9 @@ override void StartMap () {
 
   foreach (auto i; 0..6) pic_keys[i] = R_RegisterPic(name(va("stkeys%d", i)));
 
+  loadFaces("stf");
+  /*
+  pic_facepfx = "stf";
   foreach (auto i; 0..ST_NUMPAINFACES) {
     pic_faces[i*ST_FACESTRIDE+0] = R_RegisterPic(name(va("stfst%d0", i)));
     pic_faces[i*ST_FACESTRIDE+1] = R_RegisterPic(name(va("stfst%d1", i)));
@@ -243,6 +294,7 @@ override void StartMap () {
   }
   pic_faces[ST_GODFACE] = R_RegisterPic('stfgod0');
   pic_faces[ST_DEADFACE] = R_RegisterPic('stfdead0');
+  */
 
   pic_pause = R_RegisterPic('m_pause');
 
@@ -381,6 +433,8 @@ override void SB_FillMainBar (bool inAutomap) {
 //==========================================================================
 override void SB_DrawMainBar (bool inAutomap) {
   if (!cl || !cl.MO) return;
+
+  if (PlayerPawn(cl.MO)) refreshFaces(PlayerPawn(cl.MO).SBFacePrefix);
 
   // background
   DrawPic(ST_BGX, ST_BGY, pic_bar);
@@ -661,6 +715,8 @@ private final Ammo GetWeaponAmmo (Weapon wpn) {
 //==========================================================================
 override void SB_DrawFullscreenStats () {
   if (!cl || !cl.MO) return;
+
+  if (PlayerPawn(cl.MO)) refreshFaces(PlayerPawn(cl.MO).SBFacePrefix);
 
   if (R_GetScreenBlocks() == R_SCREEN_BLOCKS_FS_STATUSBAR) {
     SB_DrawMainBarCorrected(inAutomap:false, doFill:false);
@@ -1007,6 +1063,7 @@ override void SB_Drawer (int sb_view) {
   if (!cl || !cl.MO) return;
   if (GetCvarB('r_statusbar_advdamage')) SB_DrawAdvancedDamage(cl);
   if (!GetCvarB('r_statusbar_draw')) return;
+  if (PlayerPawn(cl.MO)) refreshFaces(PlayerPawn(cl.MO).SBFacePrefix);
   SB_DrawMainPart(sb_view);
   SB_DrawPause();
 }
