@@ -25,6 +25,7 @@
 //**************************************************************************
 class CWeapWraithverge : ClericWeapon;
 
+// not a color, but index
 int CShift;
 
 
@@ -34,7 +35,27 @@ int CShift;
 //
 //==========================================================================
 override int GetBlend () {
-  return CShift;
+  switch (CShift%3) {
+    case 1: return RGBA(255, 255, 255, 51);
+    case 2: return RGBA(255, 255, 255, 36);
+  }
+  return 0;
+}
+
+
+//============================================================================
+//
+//  A_CHolyPalette
+//
+//  used by ZDoom mods
+//
+//============================================================================
+[decorate] final void A_CHolyPalette () self(Actor) {
+  if (!bIsPlayer) return;
+  CWeapWraithverge Wpn = CWeapWraithverge(PlayerEx(Player).ReadyWeapon);
+  if (Wpn) {
+    if (++Wpn.CShift > 2) Wpn.CShift = 0;
+  }
 }
 
 
@@ -45,8 +66,8 @@ override int GetBlend () {
 //============================================================================
 [decorate] final void A_CHolyPalette1 () self(Actor) {
   if (!bIsPlayer) return;
-  Weapon Wpn = PlayerEx(Player).ReadyWeapon;
-  if (Wpn) CWeapWraithverge(Wpn).CShift = RGBA(255, 255, 255, 51);
+  CWeapWraithverge Wpn = CWeapWraithverge(PlayerEx(Player).ReadyWeapon);
+  if (Wpn) Wpn.CShift = 1;
 }
 
 
@@ -57,8 +78,8 @@ override int GetBlend () {
 //============================================================================
 [decorate] final void A_CHolyPalette2 () self(Actor) {
   if (!bIsPlayer) return;
-  Weapon Wpn = PlayerEx(Player).ReadyWeapon;
-  if (Wpn) CWeapWraithverge(Wpn).CShift = RGBA(255, 255, 255, 36);
+  CWeapWraithverge Wpn = CWeapWraithverge(PlayerEx(Player).ReadyWeapon);
+  if (Wpn) Wpn.CShift = 2;
 }
 
 
@@ -69,9 +90,9 @@ override int GetBlend () {
 //============================================================================
 [decorate] final void A_CHolyPalette3 () self(Actor) {
   if (!bIsPlayer) return;
-  Weapon Wpn = PlayerEx(Player).ReadyWeapon;
+  CWeapWraithverge Wpn = CWeapWraithverge(PlayerEx(Player).ReadyWeapon);
   // reset back to original playpal
-  if (Wpn) CWeapWraithverge(Wpn).CShift = 0;
+  if (Wpn) Wpn.CShift = 0;
 }
 
 
