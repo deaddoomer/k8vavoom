@@ -1285,7 +1285,7 @@ void VoxelMesh::quadCalcNormal (VoxQuad &vq) {
     case 0x08: qidx = 3; break;
     case 0x10: qidx = 4; break;
     case 0x20: qidx = 5; break;
-    default: __builtin_trap();
+    default: vassert(0);
   }
   vq.normal.x = vq.normal.dx = quadNormals[qidx][0];
   vq.normal.y = vq.normal.dy = quadNormals[qidx][1];
@@ -1336,7 +1336,7 @@ void VoxelMesh::addSlabFace (uint8_t cull, uint8_t dmv,
     case 0x08: qidx = 3; break;
     case 0x10: qidx = 4; break;
     case 0x20: qidx = 5; break;
-    default: __builtin_trap();
+    default: vassert(0);
   }
   VoxQuad vq;
   for (uint32_t vidx = 0; vidx < 4; ++vidx) {
@@ -1401,7 +1401,7 @@ void VoxelMesh::addQuad (uint8_t cull,
     case 0x08: qidx = 3; break;
     case 0x10: qidx = 4; break;
     case 0x20: qidx = 5; break;
-    default: __builtin_trap();
+    default: vassert(0);
   }
 
   VoxQuad vq;
