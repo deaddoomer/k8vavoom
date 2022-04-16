@@ -243,14 +243,14 @@ final bool LookForMonsters2 (float fov, float minseedist, float maxseedist) {
     maxseedist = (FriendlySeeBlocks <= 0 ? 1280 : FriendlySeeBlocks*128);
   }
 
-  minseedist = fmax(0, minseedist);
-  maxseedist = fmax(0, maxseedist);
-  float minseedistSq = minseedist*minseedist;
-  float maxseedistSq = maxseedist*maxseedist;
+  minseedist = fmax(0.0f, minseedist);
+  maxseedist = fmax(0.0f, maxseedist);
 
-  if (maxseedist > 0 && (minseedist <= 0 || minseedist < maxseedist)) {
+  if (maxseedist && minseedist < maxseedist) {
     if (!fov) fov = 180;
     bool allaround = (fabs(fov) >= 360);
+    float minseedistSq = minseedist*minseedist;
+    float maxseedistSq = maxseedist*maxseedist;
 
     Entity ee;
     foreach RadiusThings(out ee, Origin, maxseedist) {
@@ -265,6 +265,7 @@ final bool LookForMonsters2 (float fov, float minseedist, float maxseedist) {
       // distance check
       float distSq = DistToSquared(mo);
       if (distSq > maxseedistSq) continue;
+      // `minseedist` is rarely specified, so it is slightly faster for the common case
       if (minseedistSq && distSq < minseedistSq) continue;
 
       if (!CanSee(mo)) continue; // out of sight
@@ -349,8 +350,8 @@ final bool LookForPlayers (float fov, optional float minseedist, optional float 
   bool allaround = (fabs(fov) >= 360);
 
   if (!maxseedist) maxseedist = 4096;
-  minseedist = fmax(0, minseedist);
-  maxseedist = fmax(0, maxseedist);
+  minseedist = fmax(0.0f, minseedist);
+  maxseedist = fmax(0.0f, maxseedist);
   if (!maxseedist || minseedist >= maxseedist) return false; // cannot see anything
   float minseedistSq = minseedist*minseedist;
   float maxseedistSq = maxseedist*maxseedist;
@@ -388,7 +389,25 @@ final bool LookForPlayers (float fov, optional float minseedist, optional float 
     // distance check
     float distSq = DistToSquared(P.MO);
     if (distSq > maxseedistSq) continue;
+    // `minseedist` is rarely specified, so it is slightly faster for the common case
     if (minseedistSq && distSq < minseedistSq) continue;
+
+    // check for invisibility here, to skip costly LOS check
+    if ((EntityEx(P.MO).bShadow && !Level.CompatInvisibility) || EntityEx(P.MO).bGhost) {
+      // player is invisible
+      if (DistTo(P.MO) > 2.0*DEFAULT_MELEERANGE && Length(P.MO.Velocity) < 5.0*35.0) {
+        // player is sneaking - can't detect
+        //return false;
+        continue;
+      }
+      if (P_Random() < 225) {
+        // player isn't sneaking, but still didn't detect
+        //return false;
+        continue;
+      }
+    }
+
+    if (IsMaster(EntityEx(P.MO))) continue; // don't target master
 
     if (!CanSee(P.MO)) continue; // out of sight
 
@@ -407,22 +426,6 @@ final bool LookForPlayers (float fov, optional float minseedist, optional float 
         if (distSq > DEFAULT_MELEERANGE*DEFAULT_MELEERANGE) continue; // behind back
       }
     }
-
-    if ((EntityEx(P.MO).bShadow && !Level.CompatInvisibility) || EntityEx(P.MO).bGhost) {
-      // player is invisible
-      if (DistTo(P.MO) > 2.0*DEFAULT_MELEERANGE && Length(P.MO.Velocity) < 5.0*35.0) {
-        // player is sneaking - can't detect
-        //return false;
-        continue;
-      }
-      if (P_Random() < 225) {
-        // player isn't sneaking, but still didn't detect
-        //return false;
-        continue;
-      }
-    }
-
-    if (IsMaster(EntityEx(P.MO))) continue; // don't target master
 
     // need to be sure the reactiontime is 0 if the monster is leaving
     // its goal to go after a player
