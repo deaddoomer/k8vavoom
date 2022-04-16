@@ -2925,14 +2925,14 @@ void PaletteFlash () {
     }
   }
 
-  // item effects
-  for (Inventory Item = EntityEx(MO).Inventory; Item; Item = Item.Inventory) {
-    int Blend = Item.GetBlend();
-    if (Blend) AddBlend(r, g, b, a, Blend);
-  }
-
-  // Health Accumulation Device effect
+  // Health Accumulation Device effect, and palette flash
   if (MO && MO.XLevel) {
+    // item effects
+    for (Inventory Item = EntityEx(MO).Inventory; Item; Item = Item.Inventory) {
+      int Blend = Item.GetBlend();
+      if (Blend) AddBlend(r, g, b, a, Blend);
+    }
+
     float lvtime = MO.XLevel.Time;
     //print("lvtime=%f; k8HealthAccum_LastBoostTime=%f; k8HealthAccum_LastRegenTime=%f", lvtime, k8HealthAccum_LastBoostTime, k8HealthAccum_LastRegenTime);
     bool doRegen = true;
