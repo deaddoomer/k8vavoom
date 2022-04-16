@@ -98,8 +98,27 @@ bool VEntity::CheckPosition (TVec Pos) {
     for (int bx = xl; bx <= xh; ++bx) {
       for (int by = yl; by <= yh; ++by) {
         for (auto &&it : XLevel->allBlockThings(bx, by)) {
-          if (!CheckThing(cptrace, it.entity())) {
-            //GCon->Logf("%s: collided with thing `%s`", GetClass()->GetName(), (*It)->GetClass()->GetName());
+          VEntity *e = it.entity();
+          if (!CheckThing(cptrace, e)) {
+            #if 0
+            GCon->Logf(NAME_Debug, "%s: collided with thing `%s`", GetClass()->GetName(), e->GetClass()->GetName());
+            GCon->Logf(NAME_Debug, "  e-step: %g %g", e->Origin.z+e->Height-Origin.z, MaxStepHeight);
+            GCon->Logf(NAME_Debug, "  x-step: %g %g", Origin.z+Height-e->Origin.z, MaxStepHeight);
+            #endif
+
+            // check if can overlap
+            if ((EntityFlags&e->EntityFlags)&EF_DontOverlap) return false; // cannot overlap
+
+            if (EntityFlags&EF_Missile) return false; // missiles cannot overlap
+
+            if (Level->GetNoPassOver()) {
+              // compat mode, can't overlap if not explicitly allowed and not on a bridge
+              if (!((EntityFlags&EF_PassMobj)|(e->EntityFlags&EF_ActLikeBridge))) return false;
+            }
+
+            // can overlap
+            if (e->Origin.z+e->Height-Origin.z <= MaxStepHeight) continue;
+
             return false;
           }
         }
