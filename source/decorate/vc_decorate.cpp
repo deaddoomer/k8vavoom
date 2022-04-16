@@ -1149,7 +1149,7 @@ static TArray<VDamageColorType> &GetClassDamageColors (VClass *Class) {
 //==========================================================================
 static void AddClassFixup (VClass *Class, VName FieldName, VStr ClassName, TArray<VClassFixup> &ClassFixups, VStr powerpfx=VStr()) {
   VField *F = Class->FindFieldChecked(FieldName);
-  //fprintf(stderr, "AddClassFixup0: Class=<%s>; FieldName=<%s>, ClassName=<%s>\n", (Class ? *Class->GetFullName() : "None"), *FieldName, *ClassName);
+  //GCon->Logf(NAME_Debug, "AddClassFixup0: Class=<%s>; FieldName=<%s>, ClassName=<%s>", (Class ? *Class->GetFullName() : "None"), *FieldName, *ClassName);
   VClassFixup &CF = ClassFixups.Alloc();
   CF.Offset = F->Ofs;
   CF.Name = ClassName;
@@ -3071,12 +3071,16 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
           pdef->Field2->SetInt(DefObj, R_ParseDecorateTranslation(sc, (GameFilter&GAME_Strife ? 7 : 3))); // set translation
           break;
         case PROP_BloodType:
-          sc->ExpectString();
-          AddClassFixup(Class, pdef->Field, sc->String, ClassFixups);
-          if (sc->Check(",")) sc->ExpectString();
-          AddClassFixup(Class, pdef->Field2, sc->String, ClassFixups);
-          if (sc->Check(",")) sc->ExpectString();
-          AddClassFixup(Class, "AxeBloodType", sc->String, ClassFixups);
+          {
+            sc->ExpectString();
+            VStr btype = sc->String;
+            AddClassFixup(Class, pdef->Field, btype, ClassFixups);
+            if (sc->Check(",")) { sc->ExpectString(); btype = sc->String; }
+            AddClassFixup(Class, pdef->Field2, btype, ClassFixups);
+            if (sc->Check(",")) { sc->ExpectString(); btype = sc->String; }
+            // named, because `pdef` can hold only two fields
+            AddClassFixup(Class, "AxeBloodType", btype, ClassFixups);
+          }
           break;
         case PROP_StencilColor:
           {
