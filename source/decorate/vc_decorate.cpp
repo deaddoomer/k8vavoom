@@ -3051,7 +3051,15 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
           pdef->Field->SetInt(DefObj, R_ParseDecorateTranslation(sc, (GameFilter&GAME_Strife ? 7 : 3)));
           break;
         case PROP_BloodColor:
-          bloodColor = sc->ExpectColor();
+          // tint named colors a little, to avoid "acid look"
+               if (sc->Check("green")) bloodColor = 0xff004000;
+          else if (sc->Check("blue")) bloodColor = 0xff000040;
+          else if (sc->Check("red")) bloodColor = 0xff000050;
+          else if (sc->Check("yellow")) bloodColor = 0xff404000;
+          else if (sc->Check("white")) bloodColor = 0xff505050;
+          else if (sc->Check("cyan")) bloodColor = 0xff004040;
+          else if (sc->Check("magenta")) bloodColor = 0xff400040;
+          else { sc->UnGet(); bloodColor = sc->ExpectColor(); }
           pdef->Field->SetInt(DefObj, bloodColor);
           if (!bloodTranslationSet) pdef->Field2->SetInt(DefObj, R_GetBloodTranslation(bloodColor, true));
           break;

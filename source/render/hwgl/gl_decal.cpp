@@ -521,6 +521,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         sr = ((currBloodTrans>>16)&255)/255.0f;
         sg = ((currBloodTrans>>8)&255)/255.0f;
         sb = (currBloodTrans&255)/255.0f;
+        //GCon->Logf(NAME_Debug, "DECAL BLOOD SHADE: 0x%08x; sr=%g; sg=%g; sb=%g", (unsigned)currBloodTrans, sr, sg, sb);
       } else if (dc->shadeclr != -1) {
         smode = 1.0f;
         sr = ((dc->shadeclr>>16)&255)/255.0f;
