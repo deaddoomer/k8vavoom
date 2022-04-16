@@ -318,6 +318,7 @@
     <flag name="JustAttacked" property="bJustAttacked" />
     <flag name="Teleport" property="bTeleport" relinktoworld="true" />
     <flag name="Blasted" property="bBlasted" />
+    <flag name="SpecialFireDamage" property="bConditionalFireDamage" />
     <!--flag name="NeverRespawn" property="bNeverRespawn" already defined /-->
     <flag name="ExploCount" property="bExploCount" />
     <!-- Deprecated Flags -->
