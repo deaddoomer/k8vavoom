@@ -2971,7 +2971,7 @@ final EntityEx SpawnPuff (TVec Org, float Range, class!EntityEx PuffType,
   }
 
   if (puff && !puff.IsDestroyed) {
-    printdebug("%C: puff `%C`; decal=%s; passed_decal:(%B)=%s", self, puff, puff.DecalName, specified_decalType, decalType);
+    //printdebug("%C: puff `%C`; decal=%s; passed_decal:(%B)=%s", self, puff, puff.DecalName, specified_decalType, decalType);
 
     if (puff.bPuffParticles && GetCvarB('r_particle_puffs')) {
       int c = P_Random()>>1;
