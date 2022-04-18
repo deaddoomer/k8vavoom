@@ -3231,7 +3231,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
           break;
         case PROP_PowerupColor:
           {
-            bool fuckfloat = true;
+            bool skipalpha = true;
                  if (sc->Check("InverseMap")) pdef->Field->SetInt(DefObj, INVERSECOLOR);
             else if (sc->Check("GoldMap")) pdef->Field->SetInt(DefObj, GOLDCOLOR);
             else if (sc->Check("RedMap")) pdef->Field->SetInt(DefObj, REDCOLOR);
@@ -3242,39 +3242,33 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
             else if (sc->Check("BlueMap")) pdef->Field->SetInt(DefObj, BLUECOLOR);
             else if (sc->Check("TransparentMap")) pdef->Field->SetInt(DefObj, TRANSNOCOLOR);
             else {
-              fuckfloat = false;
               vuint32 Col = sc->ExpectColor();
               int r = (Col>>16)&255;
               int g = (Col>>8)&255;
               int b = Col&255;
               int a = 88; // default alpha, around 0.(3)
-              sc->Check(",");
-              // alpha may be missing
-              if (!sc->Crossed) {
+              if (sc->Check(",")) {
+                skipalpha = false;
                 sc->ExpectFloat();
-                     if (sc->Float <= 0) a = 1;
-                else if (sc->Float >= 1) a = 255;
-                else a = clampToByte((int)(sc->Float*255));
+              } else {
+                skipalpha = !sc->CheckFloat();
+              }
+              if (!skipalpha) {
+                     if (sc->Float <= 0.0f) a = 1;
+                else if (sc->Float >= 1.0f) a = 255;
+                else a = clampToByte((int)(sc->Float*255.0f));
                 if (a > 250) a = 250;
                 if (a < 1) a = 1;
               }
+              skipalpha = false;
               pdef->Field->SetInt(DefObj, (r<<16)|(g<<8)|b|(a<<24));
             }
-            if (fuckfloat) {
+            if (skipalpha) {
               if (sc->Check(",")) {
                 sc->ExpectFloat();
-              } else if (sc->GetString()) {
-                if (sc->Crossed || sc->String == "}") {
-                  sc->UnGet();
-                } else {
-                  sc->UnGet();
-                  sc->ExpectFloat();
-                }
+              } else {
+                sc->CheckFloat();
               }
-              /*
-              sc->Check(",");
-              if (!sc->Crossed) sc->ExpectFloat();
-              */
             }
           }
           break;
