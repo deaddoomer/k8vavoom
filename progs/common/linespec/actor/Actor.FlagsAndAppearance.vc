@@ -529,3 +529,21 @@
   Args[3] = aarg3;
   Args[4] = aarg4;
 }
+
+
+//============================================================================
+//
+//  A_SetHealth
+//
+//============================================================================
+[decorate] final void A_SetHealth (int newhealth, optional int aptr) {
+  EntityEx tgt = EntityEx(DecorDoAAPtr('A_SetHealth', aptr!optional));
+  if (!tgt) return;
+  if (newhealth < 1) newhealth = 1;
+  if (newhealth > int.max/4) newhealth = int.max/4; //k8: arbitrary limit
+  if (tgt.bIsPlayer) {
+    if (tgt.Player.PlayerState == PST_DEAD) return; // nope, cannot resurrect the player
+    if (tgt.Player.MO == tgt) tgt.Player.Health = newhealth;
+  }
+  tgt.Health = newhealth;
+}
