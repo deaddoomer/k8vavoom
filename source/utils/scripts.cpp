@@ -1249,9 +1249,11 @@ void VScriptParser::ExpectIdentifier () {
 //
 //==========================================================================
 static VStr NormalizeFuckedGozzoNumber (VStr String) noexcept {
-  VStr str = String;
-  while (str.length() && (vuint8)str[0] <= ' ') str.chopLeft(1);
-  if (str.length() && strchr("lfLF", str[str.length()-1])) str.chopRight(1);
+  VStr str = String.xstrip();
+  if (str.length() && strchr("lfLF", str[str.length()-1])) {
+    str.chopRight(1);
+    str = String.xstrip();
+  }
   return str;
 }
 
@@ -1353,22 +1355,117 @@ void VScriptParser::ExpectNumberWithSign () {
 
 //==========================================================================
 //
+//  VScriptParser::parseFloat
+//
+//  uses `String`
+//
+//==========================================================================
+float VScriptParser::parseFloat (bool silent, bool *error) {
+  bool etmp = false;
+  if (!error) error = &etmp;
+  *error = false;
+
+  VStr str = NormalizeFuckedGozzoNumber(String);
+  if (str.length() == 0) {
+    *error = true;
+    if (!silent) Error("Float expected");
+    return 0.0f;
+  }
+
+  //FIXME: detect when we want to use a really big number
+  VStr sl = str.toLowerCase();
+  if (sl.StartsWith("0x") || sl.StartsWith("-0x") || sl.StartsWith("+0x")) {
+    const char *s = *str;
+    bool neg = false;
+    switch (*s) {
+      case '-':
+        neg = true;
+        /* fallthrough */
+      case '+':
+        ++s;
+        break;
+    }
+    s += 2; // skip "0x"
+
+    float val = 0.0f;
+    bool skip = false;
+    while (*s) {
+      int dg = VStr::digitInBase(*s++, 16);
+      if (dg < 0) {
+        *error = true;
+        if (!silent) Error(va("Bad floating point constant \"%s\"", *String));
+        return 0.0f;
+      }
+      if (!skip) {
+        val = val*16.0f+(float)dg;
+        if (val > 1.0e12f) {
+          if (!silent) GLog.Logf(NAME_Warning, "%s: DON'T BE IDIOTS, THIS IS TOO MUCH FOR A FLOAT: '%s'", *GetLoc().toStringNoCol(), *String);
+          skip = true;
+        }
+      }
+    }
+    if (!silent) GLog.Logf(NAME_Warning, "%s: hex value '%s' for floating constant", *GetLoc().toStringNoCol(), *String);
+    if (neg) val = -val;
+    return val;
+  } else {
+    float ff = 0.0f;
+    if (!str.convertFloat(&ff)) {
+      // mo...dders from LCA loves numbers like "90000000000000000000000000000000000000000000000000"
+      const char *s = *str;
+      bool neg = false;
+      switch (*s) {
+        case '-':
+          neg = true;
+          /* fallthrough */
+        case '+':
+          ++s;
+          break;
+      }
+      while (*s >= '0' && *s <= '9') ++s;
+      if (*s) {
+        *error = true;
+        if (!silent) Error(va("Bad floating point constant \"%s\".", *String));
+        return 0.0f;
+      }
+      if (!silent) GLog.Logf(NAME_Warning, "%s: DON'T BE IDIOTS, THIS IS TOO MUCH FOR A FLOAT: '%s'", *GetLoc().toStringNoCol(), *String);
+      ff = 1.0e12f;
+      if (neg) ff = -ff;
+    } else {
+      if (isNaNF(ff)) {
+        *error = true;
+        if (!silent) Error(va("Bad floating point constant \"%s\".", *String));
+        return 0.0f;
+      }
+      if (isInfF(ff)) {
+        if (!silent) GLog.Logf(NAME_Warning, "%s: WUTAFUCK IS THIS SO-CALLED FLOAT!? -- '%s'", *GetLoc().toStringNoCol(), *String);
+        ff = (isPositiveF(ff) ? 1.0e12f : -1.0e12f);
+      } else if (ff < -1.0e12f || ff > +1.0e12f) {
+        if (!silent) GLog.Logf(NAME_Warning, "%s: DON'T BE IDIOTS, THIS IS TOO MUCH FOR A FLOAT: '%s'", *GetLoc().toStringNoCol(), *String);
+        if (ff < -1.0e12f) ff = -1.0e12f; else ff = 1.0e12f;
+      }
+    }
+    return ff;
+  }
+}
+
+
+//==========================================================================
+//
 //  VScriptParser::CheckFloat
 //
 //==========================================================================
 bool VScriptParser::CheckFloat () noexcept {
-  if (GetString()) {
-    VStr str = NormalizeFuckedGozzoNumber(String);
-    if (str.length() > 0) {
-      float ff = 0;
-      if (str.convertFloat(&ff)) {
-        Float = ff;
-        return true;
-      }
+  if (!GetString()) return false;
+  if (!CMode || !AllowNumSign) {
+    if (String.length() && (String[0] == '+' || String[0] == '-')) {
+      UnGet();
+      return false;
     }
-    UnGet();
   }
-  return false;
+  bool error = false;
+  const float ff = parseFloat(true, &error);
+  if (error) UnGet(); else Float = ff;
+  return !error;
 }
 
 
@@ -1378,58 +1475,11 @@ bool VScriptParser::CheckFloat () noexcept {
 //
 //==========================================================================
 void VScriptParser::ExpectFloat () {
-  if (!GetString()) {
-    Error("Float expected");
-  } else {
-    VStr str = NormalizeFuckedGozzoNumber(String);
-    if (str.length() > 0) {
-      //FIXME: detect when we want to use a really big number
-      VStr sl = str.ToLower();
-      if (sl.StartsWith("0x7f") || sl.StartsWith("0xff")) {
-        Float = 99999.0f;
-      } else if (sl.StartsWith("0x")) {
-        int val = 0;
-        // loose
-        if (!VStr::convertInt(*str, &val, true)) Error(va("Bad floating point constant \"%s\".", *String));
-        Float = val;
-        GLog.Logf(NAME_Warning, "%s: hex value '%s' for floating constant", *GetLoc().toStringNoCol(), *String);
-      } else {
-        float ff = 0.0f;
-        if (!str.convertFloat(&ff)) {
-          // mo...dders from LCA loves numbers like "90000000000000000000000000000000000000000000000000"
-          const char *s = *str;
-          while (*s && *(const vuint8 *)s <= ' ') ++s;
-          bool neg = false;
-          switch (*s) {
-            case '-':
-              neg = true;
-              /* fallthrough */
-            case '+':
-              ++s;
-              break;
-          }
-          while (*s >= '0' && *s <= '9') ++s;
-          while (*s && *(const vuint8 *)s <= ' ') ++s;
-          if (*s) Error(va("Bad floating point constant \"%s\".", *String));
-          GLog.Logf(NAME_Warning, "%s: DON'T BE IDIOTS, THIS IS TOO MUCH FOR A FLOAT: '%s'", *GetLoc().toStringNoCol(), *String);
-          ff = 1.0e12f;
-          if (neg) ff = -ff;
-        } else {
-          if (isNaNF(ff)) Error(va("Bad floating point constant \"%s\".", *String));
-          if (isInfF(ff)) {
-            GLog.Logf(NAME_Warning, "%s: WUTAFUCK IS THIS SO-CALLED FLOAT!? -- '%s'", *GetLoc().toStringNoCol(), *String);
-            ff = (isPositiveF(ff) ? 1.0e12f : -1.0e12f);
-          } else if (ff < -1.0e12f || ff > +1.0e12f) {
-            GLog.Logf(NAME_Warning, "%s: DON'T BE IDIOTS, THIS IS TOO MUCH FOR A FLOAT: '%s'", *GetLoc().toStringNoCol(), *String);
-            if (ff < -1.0e12f) ff = -1.0e12f; else ff = 1.0e12f;
-          }
-        }
-        Float = ff;
-      }
-    } else {
-      Error("Float expected");
-    }
-  }
+  if (!GetString()) Error("Float expected");
+  bool error = false;
+  const float ff = parseFloat(false, &error);
+  if (error) Error("Float expected");
+  Float = ff;
 }
 
 
@@ -1468,6 +1518,7 @@ void VScriptParser::ExpectFloatWithSign () {
     ExpectFloat();
     Float = -Float;
   } else {
+    Check("+");
     ExpectFloat();
   }
 }

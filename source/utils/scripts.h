@@ -145,6 +145,9 @@ private:
   void ParseCMode () noexcept;
   void ParseNonCMode () noexcept;
 
+  // uses `String`
+  float parseFloat (bool silent, bool *error);
+
 public:
   // it also saves current modes
   inline VScriptSavedPos SavePos () const noexcept { return VScriptSavedPos(*this); }
