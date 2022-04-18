@@ -394,9 +394,20 @@ final void SpawnBloodSprayHead (int damage, optional bool notDead, optional bool
   if (GetCvarI('k8GoreOpt_Enabled_Override') < 0) return;
   if (!GetCvarB('k8GoreOpt_Enabled') && GetCvarI('k8GoreOpt_Enabled_Override') <= 0) return;
 
+  class!Actor blc = class!Actor(GetClassReplacement(BloodType));
+  if (!blc) return;
+
+  // check this after spawn, because "known blood" replacer can replace it
+  //TODO: crate API for replacement checks
   if (BloodType.Name != 'Blood' && GetCvarI('k8GoreOpt_Enabled_Override') <= 0) {
-    printdebug("%C: SpawnBloodSprayHead: non-standard blood, skipping", self);
-    return;
+    EntityEx ee = EntityEx(Level.Spawn(blc, Origin)); // optional TAVec AAngles, optional mthing_t *mthing, optional bool AllowReplace
+    if (!ee || !nameStartsWith(ee.Class.Name, 'K8Gore_')) {
+      if (ee) ee.Destroy();
+      printdebug("%C: SpawnBloodSprayHead: non-standard blood (%s), skipping", self, BloodType.Name);
+      return;
+    } else {
+      if (ee) ee.Destroy();
+    }
   }
 
   #if 0

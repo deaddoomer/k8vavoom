@@ -49,6 +49,8 @@ VCvarB dbg_vm_show_tick_stats("dbg_vm_show_tick_stats", false, "Show some debug 
 static VCvarB dbg_limiter_counters("dbg_limiter_counters", false, "Show limiter counters?", CVAR_PreInit|CVAR_NoShadow);
 static VCvarB dbg_limiter_remove_messages("dbg_limiter_remove_messages", false, "Show limiter remove messages?", CVAR_PreInit|CVAR_NoShadow);
 
+static VCvarB dbg_force_replacements("dbg_force_replacements", false, "Dumb force replacements?", CVAR_PreInit|CVAR_NoShadow);
+
 static VCvarI gm_corpse_limit("gm_corpse_limit", "-1", "Limit number of corpses per map (-1: no limit)?", CVAR_Archive);
 
 double worldThinkTimeVM = -1.0;
@@ -735,8 +737,12 @@ VThinker *VLevel::SpawnThinker (VClass *AClass, const TVec &AOrigin,
   if (repclspp) {
     VClass *ocls = Class;
     Class = *repclspp;
-    Class = Class->GetReplacement();
-    if (Class != ocls) GCon->Logf(NAME_Debug, "force-replaced spawning of `%s` with `%s`", ocls->GetName(), Class->GetName());
+    if (AllowReplace) Class = Class->GetReplacement();
+    if (Class != ocls) {
+      if (dbg_force_replacements) GCon->Logf(NAME_Debug, "force-replaced spawning of `%s` with `%s`", ocls->GetName(), Class->GetName());
+      //GCon->Logf(NAME_Debug, "canReplaceBlood=%d; isGoreEnabled()=%d", (int)canReplaceBlood, (int)isGoreEnabled());
+      AClass = Class;
+    }
   }
 
   // check for gore blood replacements
@@ -754,8 +760,10 @@ VThinker *VLevel::SpawnThinker (VClass *AClass, const TVec &AOrigin,
       else if (AClass == clsGoreBloodAxe) brepl = clsGoreBloodAxe;
     #endif
     if (brepl) {
+      //GCon->Logf(NAME_Debug, "GORE: `%s` with `%s`", Class->GetName(), brepl->GetName());
       Class = brepl; // it is guaranteed to be a VEntity
       if (AllowReplace) Class = Class->GetReplacement();
+      //GCon->Logf(NAME_Debug, "GORE: rpl: `%s`", Class->GetName());
     }
   }
 

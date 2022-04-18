@@ -26,15 +26,24 @@ known_blood {
   match = "IRBlood*";
 }
 
-known_blood {
-  name = "D4V";
-  match = "DH_Blood";
-}
-
 
 known_blood {
   name = "Samsara";
   match = "SamsaraBloodyHellBlood*";
+}
+
+
+known_blood {
+  name = "Doom Gaiden";
+  //matchany = ["SZ_*Blood", "SZ_*Blood2"];
+  //blockspawn = false; // block is the default one, but it should be false in order to properly replace blood
+  replace "SZ_*Blood" with "Blood";
+  replace "SZ_*Blood2" with "Blood";
+}
+
+known_blood {
+  name = "Doom Gaiden";
+  matchany = "SZ_Flying*Blood*";
 }
 
 

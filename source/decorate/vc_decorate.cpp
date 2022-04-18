@@ -3557,7 +3557,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
 
   // check for forced replamenet
   if (cli_GoreMod && !enableKnownBlood && !ForceReplacements.has(Class->Name) && !BlockedSpawnSet.has(Class->Name)) {
-    VClass *rep = FindKnowBloodForcedReplacement(Class);
+    VClass *rep = FindKnownBloodForcedReplacement(Class);
     if (rep) {
       GLog.Logf(NAME_Warning, "%s: forced known blood class '%s' replacement (%s)", *Class->Loc.toStringNoCol(), Class->GetName(), rep->GetName());
       ForceReplacements.put(Class->Name, rep);

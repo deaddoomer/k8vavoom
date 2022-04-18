@@ -118,10 +118,10 @@ static bool IsAnyBloodClass (VClass *c) {
 
 //==========================================================================
 //
-//  FindKnowBloodForcedReplacement
+//  FindKnownBloodForcedReplacement
 //
 //==========================================================================
-static VClass *FindKnowBloodForcedReplacement (VClass *c) {
+static VClass *FindKnownBloodForcedReplacement (VClass *c) {
   if (!c) return nullptr;
   for (auto &&kb : knownBlood) {
     VClass *rep = kb.findReplace(c);
@@ -214,7 +214,7 @@ static void ParseKnownBloodSection (VScriptParser *sc) {
       kblood.appendReplace(src, dest);
       continue;
     }
-    sc->Error(va("unknown `know_blood` property '%s'", *sc->String));
+    sc->Error(va("unknown `known_blood` property '%s'", *sc->String));
   }
   if (kblood.name.isEmpty()) sc->Error("nameless `known_blood`");
   if (kblood.matches.length() == 0 && kblood.anymatches.length() == 0 && kblood.replaces.length() == 0) return; // will never match anyway
