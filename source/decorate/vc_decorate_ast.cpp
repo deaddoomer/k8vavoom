@@ -444,6 +444,13 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
         delete this;
         return enew;
       }
+      // `A_CustomRailgun()` hex colors
+      if (IsIntConst() && (argnum == 3 || argnum == 4) && VStr::strEquCI(funcName, "A_CustomRailgun")) {
+        VStr s = va("#%06x", GetIntConst()&0xffffff);
+        VExpression *enew = new VStringLiteral(s, ec.Package->FindString(*s), Loc);
+        delete this;
+        return enew;
+      }
       break;
 
     case TYPE_Class:

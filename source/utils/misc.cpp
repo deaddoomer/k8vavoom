@@ -339,7 +339,7 @@ vuint32 M_ParseColor (const char *Name, bool retZeroIfInvalid, bool showError) {
   vuint8 Col[3];
   if (Name[0] == '#') {
     const size_t nlen = strlen(Name);
-    // looks like an HTML-style colur
+    // looks like an HTML-style color
     if (nlen == 7) {
       // #rrggbb format color
       for (int i = 0; i < 3; ++i) {
