@@ -269,6 +269,8 @@ override void Init () {
 
   CreateCvarFloat('gm_monster_proj_speed_mult', 1.0, "Monster projectiles speed multiplier.", CVAR_ARCHIVE);
 
+  CreateCvarBool('dbg_randomspawner_verbose', false, "Verbose randomspawner?", 0);
+
   // debug headshots?
   CreateCvarBool('k8HSDebug', false, "Show headshots debug messages?", 0);
   CreateCvarBool('k8HSDebug_ShowFailedDamageType', false, "Show skipped damage types?", 0);

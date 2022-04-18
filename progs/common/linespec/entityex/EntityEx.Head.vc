@@ -1298,6 +1298,8 @@ final float FindPainChance (name DmgType, float defaultChance) {
 //
 //  can return `none`
 //
+//  decorate parser removes all invalid classes; no reason to re-check
+//
 //==========================================================================
 static final class!EntityEx ChooseFromDropItemList (class!EntityEx origSpc, optional bool AllowReplace/*=true*/,
                                                     optional out bool error,
@@ -1330,13 +1332,12 @@ static final class!EntityEx ChooseFromDropItemList (class!EntityEx origSpc, opti
 
       int n = 0;
       foreach (const ref DropItemInfo di; spc.default.DropItemList) {
-        //if (!di.Type) continue;
         int amn = di.Amount;
         if (amn <= 0) amn = 1;
         // this is how we can weight the list
         n += amn;
       }
-      assert(n > 0);
+      if (!n) return none; // no known items at all
 
       // then we reset the iterator to the start position...
       i = 0;
@@ -1344,6 +1345,7 @@ static final class!EntityEx ChooseFromDropItemList (class!EntityEx origSpc, opti
       n = GenRandomU31()%n;
       // ...and iterate in the array up to the random number chosen
       while (n > -1 && i < len) {
+        // skip unknown items
         int amn = spc.default.DropItemList[i].Amount;
         if (amn <= 0) amn = 1;
         n -= amn;
@@ -1362,16 +1364,22 @@ static final class!EntityEx ChooseFromDropItemList (class!EntityEx origSpc, opti
     }
 
     // if we hit an invalid (empty) class, do nothing
+    // this should not happen
+    /*
     if (!spc.default.DropItemList[i].Type) {
-      if (!spc.default.DropItemList[i].TypeName) return none;
-      printwarn("RandomSpawn in class `%C` hit unknown class `%s`", origSpc, spc.default.DropItemList[i].TypeName);
-      // something we don't know about
-      //return class!Unknown;
-      continue;
+      if (spc.default.DropItemList[i].TypeName) {
+        printwarn("RandomSpawn in class `%C` hit unknown class `%s`", origSpc, spc.default.DropItemList[i].TypeName);
+        // something we don't know about, so skip it
+        //return class!Unknown;
+        continue;
+      }
     }
+    */
 
     // ...and we can coose the item...
     if (Random() > spc.default.DropItemList[i].Chance) return none;
+
+    if (!spc.default.DropItemList[i].Type) return none;
 
     spc = class!EntityEx(spc.default.DropItemList[i].Type);
     assert(spc);

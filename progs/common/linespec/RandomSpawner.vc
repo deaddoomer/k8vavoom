@@ -45,111 +45,115 @@ override void BeginPlay () {
 
   ::BeginPlay();
 
-  if (DropItemList.length) {
-    bool error;
+  if (!DropItemList.length) {
+    Destroy();
+    return;
+  }
 
-    class!EntityEx spwcls = ChooseFromDropItemList(/*Actor, */class!EntityEx(self.Class), AllowReplace:true, out error:error, Chooser);
-    // skip unknowns (this is done in `ChooseFromDropItemList()` now)
-    /+
-    foreach (; 0..32) {
-      if (!spwcls) break;
-      if (GetClassName(spwcls) != 'Unknown') break;
-      spwcls = ChooseFromDropItemList(/*Actor, */class!EntityEx(self.Class), AllowReplace:true, out error:error, Chooser);
+  bool error;
+
+  class!EntityEx spwcls = ChooseFromDropItemList(/*Actor, */class!EntityEx(self.Class), AllowReplace:true, out error:error, Chooser);
+  // skip unknowns (this is done in `ChooseFromDropItemList()` now)
+  /+
+  foreach (; 0..32) {
+    if (!spwcls) break;
+    if (GetClassName(spwcls) != 'Unknown') break;
+    spwcls = ChooseFromDropItemList(/*Actor, */class!EntityEx(self.Class), AllowReplace:true, out error:error, Chooser);
+  }
+  +/
+
+  if (spwcls) {
+    spwcls = class!Actor(spwcls);
+    if (!spwcls) error = true;
+  }
+
+  if (error) {
+    printwarn("RandomSpawner `%C` replaced with error object", self);
+    // show that there's a problem
+    BeginPlayResult = Spawn(Unknown, Origin, default, default/*, false*/, AllowReplace:false); // override `Thinker.Spawn()` result
+    Destroy();
+    return;
+  }
+
+  if (spwcls) {
+    if (GetCvarB('dbg_randomspawner_verbose')) printdebug("RandomSpawner `%C` choose `%C`", self, spwcls);
+  } else {
+    if (GetCvarB('dbg_randomspawner_verbose')) printdebug("RandomSpawner `%C` choose `none`", self);
+    Destroy();
+    return;
+  }
+
+  EntityEx NewEntity;
+
+  if (bMissile && Target && Target.Target) {
+    // attempting to spawn a missile
+    if (!Tracer && bSeekerMissile) Tracer = Target;
+    NewEntity = SpawnMissileXYZ(Origin, Target, spwcls);
+  } else {
+    NewEntity = Spawn(spwcls, Origin, default, default, AllowReplace:false); // no need to replace, we already did it
+  }
+
+  if (NewEntity) {
+    BeginPlayResult = NewEntity; // override `Thinker.Spawn()` result
+    // copy everything that is relevant
+    NewEntity.Angles = Angles;
+    NewEntity.Origin = Origin;
+    NewEntity.Special = Special;
+    NewEntity.Args[0] = Args[0];
+    NewEntity.Args[1] = Args[1];
+    NewEntity.Args[2] = Args[2];
+    NewEntity.Args[3] = Args[3];
+    NewEntity.Args[4] = Args[4];
+    NewEntity.Special1 = Special1;
+    NewEntity.Special2 = Special2;
+    NewEntity.SetTID(TID);
+    NewEntity.Master = Master;
+    NewEntity.Target = Target;
+    NewEntity.Tracer = Tracer;
+    NewEntity.Species = Species;
+    NewEntity.CopyFriendliness(self, false);
+
+    // copy map spawn flags
+    NewEntity.bAmbush = bAmbush;
+    NewEntity.bStanding = bStanding;
+    if (bDormant) NewEntity.Deactivate(none);
+    if (bShadow && RenderStyle == STYLE_Translucent && Alpha == 0.25) {
+      NewEntity.bShadow = true;
+      NewEntity.RenderStyle = STYLE_Translucent;
+      NewEntity.Alpha = 0.25;
     }
-    +/
+    if (RenderStyle == STYLE_None) NewEntity.RenderStyle = STYLE_None;
 
-    if (spwcls) {
-      spwcls = class!Actor(spwcls);
-      if (!spwcls) error = true;
-    }
+    // copy translations too, why not?
+    // because spawned entities have their own translations, you know
+    // ketmar is a moron
+    //NewEntity.CopyTranslations(self);
 
-    if (error) {
-      printwarn("RandomSpawner `%C` replaced with error object", self);
-      // show that there's a problem
-      BeginPlayResult = Spawn(Unknown, Origin, default, default/*, false*/, AllowReplace:false); // override `Thinker.Spawn()` result
-      Destroy();
-      return;
-    }
-
-    if (spwcls) {
-      printdebug("RandomSpawner `%C` choose `%C`", self, spwcls);
+    // this handles things such as projectiles with the MF4_SPECTRAL flag that have
+    // a health set to -2 after spawning, for internal reasons
+    if (Health != default.Health) NewEntity.Health = Health;
+    if (NewEntity.IsA('Inventory')) {
+      NewEntity.bDropped = bDropped;
     } else {
-      printdebug("RandomSpawner `%C` choose `none`", self);
+      NewEntity.bDropped = false;
     }
+    // handle special altitude flags
+         if (NewEntity.bSpawnCeiling) NewEntity.Origin.z = NewEntity.CeilingZ-NewEntity.Height;
+    else if (NewEntity.bSpawnFloat) NewEntity.Origin.z = FLOATRANDZ;
+    if (NewEntity.bMissile) NewEntity.CheckMissileSpawn();
 
-    EntityEx NewEntity;
-    if (spwcls) {
-      if (bMissile && Target && Target.Target) {
-        // attempting to spawn a missile
-        if (!Tracer && bSeekerMissile) Tracer = Target;
-        NewEntity = SpawnMissileXYZ(Origin, Target, spwcls);
-      } else {
-        NewEntity = Spawn(spwcls, Origin, default, default, AllowReplace:false); // no need to replace, we already did it
-      }
+    // bouncecount is used to count how many recursions we're in
+    //if (NewEntity.IsA('RandomSpawner')) RandomSpawner(NewEntity).BounceCount = ++BounceCount;
 
-      if (NewEntity) {
-        BeginPlayResult = NewEntity; // override `Thinker.Spawn()` result
-        // copy everything that is relevant
-        NewEntity.Angles = Angles;
-        NewEntity.Origin = Origin;
-        NewEntity.Special = Special;
-        NewEntity.Args[0] = Args[0];
-        NewEntity.Args[1] = Args[1];
-        NewEntity.Args[2] = Args[2];
-        NewEntity.Args[3] = Args[3];
-        NewEntity.Args[4] = Args[4];
-        NewEntity.Special1 = Special1;
-        NewEntity.Special2 = Special2;
-        NewEntity.SetTID(TID);
-        NewEntity.Master = Master;
-        NewEntity.Target = Target;
-        NewEntity.Tracer = Tracer;
-        NewEntity.Species = Species;
-        NewEntity.CopyFriendliness(self, false);
+    // if the spawned actor has either of those flags, it's a boss
+    if (NewEntity.bBossDeath || NewEntity.bBoss) IsBoss = true;
+  }
 
-        // copy map spawn flags
-        NewEntity.bAmbush = bAmbush;
-        NewEntity.bStanding = bStanding;
-        if (bDormant) NewEntity.Deactivate(none);
-        if (bShadow && RenderStyle == STYLE_Translucent && Alpha == 0.25) {
-          NewEntity.bShadow = true;
-          NewEntity.RenderStyle = STYLE_Translucent;
-          NewEntity.Alpha = 0.25;
-        }
-        if (RenderStyle == STYLE_None) NewEntity.RenderStyle = STYLE_None;
-
-        // copy translations too, why not?
-        // because spawned entities have their own translations, you know
-        // ketmar is a moron
-        //NewEntity.CopyTranslations(self);
-
-        // this handles things such as projectiles with the MF4_SPECTRAL flag that have
-        // a health set to -2 after spawning, for internal reasons
-        if (Health != default.Health) NewEntity.Health = Health;
-        if (NewEntity.IsA('Inventory')) {
-          NewEntity.bDropped = bDropped;
-        } else {
-          NewEntity.bDropped = false;
-        }
-        // handle special altitude flags
-             if (NewEntity.bSpawnCeiling) NewEntity.Origin.z = NewEntity.CeilingZ-NewEntity.Height;
-        else if (NewEntity.bSpawnFloat) NewEntity.Origin.z = FLOATRANDZ;
-        if (NewEntity.bMissile) NewEntity.CheckMissileSpawn();
-
-        // bouncecount is used to count how many recursions we're in
-        //if (NewEntity.IsA('RandomSpawner')) RandomSpawner(NewEntity).BounceCount = ++BounceCount;
-
-        // if the spawned actor has either of those flags, it's a boss
-        if (NewEntity.bBossDeath || NewEntity.bBoss) IsBoss = true;
-      }
-    }
-
-    if (NewEntity && IsBoss) {
-      Tracer = NewEntity;
-    } else {
-      // "else" because a boss-replacing spawner must wait until it can call A_BossDeath.
-      Destroy();
-    }
+  if (NewEntity && IsBoss) {
+    Tracer = NewEntity;
+  } else {
+    // "else" because a boss-replacing spawner must wait until it can call A_BossDeath.
+    Destroy();
   }
 }
 

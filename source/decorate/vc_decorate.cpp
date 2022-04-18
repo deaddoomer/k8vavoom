@@ -3179,7 +3179,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
               HaveChance = sc->CheckNumber();
             }
             if (HaveChance) {
-              DI.Chance = float(sc->Number)/255.0f;
+              DI.Chance = clampval(float(sc->Number)/255.0f, 0.0f, 1.0f);
               if (sc->Check(",")) {
                 sc->ExpectNumberWithSign();
                 DI.Amount = max2(0, sc->Number);
@@ -4564,20 +4564,34 @@ void ProcessDecorateScripts () {
     }
   }
 
+  // setup drop item classes
   VField *DropItemListField = ActorClass->FindFieldChecked("DropItemList");
   for (int i = 0; i < DecPkg->ParsedClasses.length(); ++i) {
     TArray<VDropItemInfo> &List = *(TArray<VDropItemInfo>*)DropItemListField->GetFieldPtr((VObject *)DecPkg->ParsedClasses[i]->Defaults);
-    for (auto &&DI : List) {
-      //VDropItemInfo &DI = List[j];
-      if (DI.TypeName == NAME_None) { DI.Type = nullptr; continue; }
+    for (int f = 0; f < List.length(); ++f) {
+      VDropItemInfo &DI = List[f];
+      if (DI.TypeName == NAME_None || VStr::strEquCI(*DI.TypeName, "none")) {
+        DI.Type = nullptr;
+        continue;
+      }
       VClass *C = VClass::FindClassNoCase(*DI.TypeName);
       if (!C) {
-        if (!vcWarningsSilenced && cli_ShowDropItemMissingClasses > 0) GLog.Logf(NAME_Warning, "No such class `%s` (DropItemList for `%s`)", *DI.TypeName, *DecPkg->ParsedClasses[i]->GetFullName());
+        if (!vcWarningsSilenced && cli_ShowDropItemMissingClasses > 0) {
+          GLog.Logf(NAME_Warning, "No such class `%s` (DropItemList for `%s`)", *DI.TypeName, *DecPkg->ParsedClasses[i]->GetFullName());
+        }
       } else if (!C->IsChildOf(ActorClass)) {
-        if (!vcWarningsSilenced) GLog.Logf(NAME_Warning, "Class `%s` is not an actor class (DropItemList for `%s`)", *DI.TypeName, *DecPkg->ParsedClasses[i]->GetFullName());
+        if (!vcWarningsSilenced) {
+          GLog.Logf(NAME_Warning, "Class `%s` is not an actor class (DropItemList for `%s`)", *DI.TypeName, *DecPkg->ParsedClasses[i]->GetFullName());
+        }
         C = nullptr;
       }
-      DI.Type = C;
+      if (!C) {
+        // just remove the record
+        List.removeAt(f);
+        --f;
+      } else {
+        DI.Type = C;
+      }
     }
   }
 
