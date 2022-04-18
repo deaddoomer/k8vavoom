@@ -43,15 +43,17 @@ actor FireDemon 10060
     FDMN F 7 Bright A_FiredRocks
     FDMN HI 5 Bright
     FDMN J 5 Bright A_UnSetInvulnerable
+  Chase:
     FDMN ABC 5 Bright A_FiredChase
-    Goto See+9
+    Loop
   Pain:
+    FDMN D 0 Bright A_UnSetInvulnerable;
     FDMN D 6 Bright A_Pain
-    Goto See+9
+    Goto Chase
   Missile:
     FDMN K 3 Bright A_FaceTarget
     FDMN KKK 5 Bright A_FiredAttack
-    Goto See+9
+    Goto Chase
   Death:
     FDMN D 4 Bright A_FaceTarget
     FDMN L 4 Bright A_Scream
