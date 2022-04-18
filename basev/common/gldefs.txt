@@ -356,3 +356,21 @@ flickerlight TRACER_X3 {
   chance 0.25
   attenuate 1
 }
+
+
+// Bullet puff
+flickerlight BPUFF1 {
+  color 0.5 0.5 0.0
+  size 9
+  secondarySize 12
+  chance 0.8
+ attenuate 1
+}
+
+flickerlight BPUFF2 {
+  color 0.5 0.5 0.0
+  size 4
+  secondarySize 6
+  chance 0.8
+  attenuate 1
+}
