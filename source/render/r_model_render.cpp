@@ -372,7 +372,7 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
     int Md2SkinIdx = 0;
     if (F.SkinIndex >= 0) {
       Md2SkinIdx = F.SkinIndex;
-    } else if (SubMdl.SkinAnimSpeed) {
+    } else if (SubMdl.SkinAnimSpeed && SubMdl.SkinAnimRange > 1) {
       Md2SkinIdx = int((nfo.Level ? nfo.Level->Time : 0)*SubMdl.SkinAnimSpeed)%SubMdl.SkinAnimRange;
     }
     if (Md2SkinIdx < 0) Md2SkinIdx = 0; // just in case

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<vavoom_model_definition>
+<vavoom_model_definition noshadow="true">
   <model name="k8debuglightbulb">
-    <md2 file="models/k8lightbulb/lbulb.md2" scale_x="1.0" scale_y="1.0" scale_z="1.0">
+    <md2 file="lbulb.md2" scale_x="1.0" scale_y="1.0" scale_z="1.0">
       <skin file="lbulb.tga" />
       <frame index="0" />
     </md2>

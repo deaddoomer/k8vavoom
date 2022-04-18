@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<vavoom_model_definition>
+<vavoom_model_definition noshadow="true">
   <model name="k8hstracer">
-    <md3 file="models/k8tracer/k8hstracer.md3" scale_x="4.5" scale_y="4.5" scale_z="1.5">
+    <md3 file="k8hstracer.md3" scale_x="4.5" scale_y="4.5" scale_z="1.5" allowtransparency="true">
       <skin file="k8hstracer1.tga" />
       <frame index="0" />
     </md3>
   </model>
   <class name="K8HSHitscanTracer">
-    <state sprite="KKZZ" model="k8hstracer" sprite_frame="A" usepitch="momentum"/>
+    <!--state sprite="KKZZ" model="k8hstracer" sprite_frame="A" usepitch="momentum" /-->
+    <state index="-1" model="k8hstracer" frame_index="0" usepitch="momentum" />
   </class>
 </vavoom_model_definition>
