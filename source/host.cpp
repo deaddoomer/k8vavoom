@@ -306,7 +306,9 @@ void Host_CollectGarbage (bool forced, bool resetUniqueId) {
     VObject::MinimiseUniqueId();
     const vuint32 newuid = VObject::GetCurrentUniqueId();
     vassert(newuid <= olduid);
-    if (resetUniqueId && newuid < olduid) GCon->Logf(NAME_Debug, "new unique id is %u (shrinked by %u); don't worry, this is normal garbage collection cycle.", newuid, (unsigned)(olduid-newuid));
+    if (resetUniqueId && newuid < olduid) {
+      GCon->Logf(NAME_Debug, "new unique id is %u (shrunk by %u); don't worry, this is normal garbage collection cycle.", newuid, (unsigned)(olduid-newuid));
+    }
   }
 }
 

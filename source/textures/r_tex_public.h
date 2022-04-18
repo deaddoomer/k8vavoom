@@ -699,7 +699,7 @@ public:
         if (idx < 0) break;
         if (tman->getTxByIndex(idx)->Name == name) return true;
       }
-      // here we can restart iteration with shrinked name, if it is longer than 8 chars
+      // here we can restart iteration with shrunk name, if it is longer than 8 chars
       if (allowShrink && VStr::length(*name) > 8) {
         allowShrink = false;
         name = name.GetLower8NoCreate();
