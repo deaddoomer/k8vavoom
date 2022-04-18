@@ -657,8 +657,12 @@ static final float AngleDiff (float afrom, float ato) {
 final float AngleTo (TVec dest) {
   TAVec ang;
   TVec dir = dest-botmo.Origin;
+  #if 0
   VectorAngles(dir, out ang);
   return ang.yaw;
+  #else
+  return VectorAngleYaw(dir);
+  #endif
 }
 
 

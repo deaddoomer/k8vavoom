@@ -615,3 +615,9 @@ enum [decorate] /*T_Flags*/ {
   TF_KEEPORIENTATION = TF_KEEPVELOCITY|TF_KEEPANGLE,
   TF_NOFOG = TF_NOSRCFOG|TF_NODESTFOG,
 };
+
+// Flags for A_WolfAttack
+enum [decorate] /*EWolfAttackFlags*/ {
+  WAF_NORANDOM = 1,
+  WAF_USEPUFF = 2,
+};

@@ -1029,3 +1029,86 @@ final void BrainishExplosion (TVec org) {
 
   if (!Target || Target.Health <= 0 || !CanSee(Target, disableBetterSight:true) || P_Random() < 40) SetState(SeeState);
 }
+
+
+//==========================================================================
+//
+//  A_WolfAttack
+//
+//==========================================================================
+[decorate] final void A_WolfAttack (int flags, optional name whattoplay, optional float snipe,
+                                    optional int maxdamage, optional int blocksize,
+                                    optional int pointblank, optional int longrange,
+                                    optional float runspeed, optional class!Actor puffType)
+{
+  if (!Target) return;
+
+  // can we see a target?
+  if (!CanSee(Target, disableBetterSight:true)) return;
+
+  if (!specified_whattoplay) whattoplay = 'weapons/pistol';
+  if (!specified_snipe) snipe = 1.0f;
+  if (!specified_maxdamage) maxdamage = 64;
+  if (!specified_blocksize || blocksize < 1) blocksize = 128;
+  if (!specified_pointblank) pointblank = 2;
+  if (!specified_longrange) longrange = 4;
+  if (!specified_runspeed) runspeed = 160.0f;
+  if (!specified_puffType) puffType = BulletPuff;
+
+  A_FaceTarget();
+
+  // Target can dodge if it can see enemy
+  float angle = AngleDelta(Target.Angles.yaw, Target.AngleTo(self));
+  bool dodge = (angle < 30.0*256.0/360.0 && Target.CanSee(self));
+
+  // distance check is simplistic
+  TVec dv = Origin-Target.Origin;
+  float dist = fmax(fabs(dv.x), fabs(dv.y));
+
+  // some enemies are more precise
+  dist *= snipe;
+
+  // convert distance into integer number of blocks
+  int idist = cast(int)(dist/blocksize);
+
+  // now for the speed accuracy thingie
+  float speed = Target.Velocity.LengthSquared();
+  int hitchance = (speed < runspeed*35.0 ? 256 : 160);
+
+  // distance accuracy (factoring dodge)
+  hitchance -= idist * (dodge ? 16 : 8);
+
+  // while we're here, we may as well do something for this:
+  if (Target.bShadow) hitchance >>= 2;
+
+  // the attack itself
+  if (P_Random() < hitchance) {
+    // compute position for spawning blood/puff
+    angle = Target.AngleTo(self);
+    float s, c;
+    sincos(angle, out s, out c);
+    TVec bloodPos = Target.Origin+vector(Target.Radius*c, Target.Radius*s, Target.Height*0.5f);
+
+    int damage = (flags&WAF_NORANDOM ? maxdamage : maxdamage > 1 ? (1+(P_Random()%maxdamage)) : 1);
+    if (dist >= pointblank) damage >>= 1;
+    if (dist >= longrange) damage >>= 1;
+    name dmgType = 'Bullet';
+
+    if ((flags&WAF_USEPUFF) && puffType) {
+      class!Actor rpl = GetCompatibleClassReplacement(Actor, puffType);
+      if (rpl) puffType = rpl;
+
+      if (puffType.default.DamageType) dmgType = puffType.default.DamageType;
+      if (puffType.default.bThruGhost && Target.bGhost) damage = 0;
+      SpawnPuff(bloodPos, DEFAULT_MELEERANGE+1, puffType, Target);
+
+    } else {
+      if (Target.bGhost) damage >>= 2;
+    }
+
+    if (damage) Target.Damage(self, self, damage, dmgType, spawnBlood:true);
+  }
+
+  // and finally, let's play the sound
+  if (whattoplay) A_PlaySound(whattoplay, CHAN_WEAPON);
+}
