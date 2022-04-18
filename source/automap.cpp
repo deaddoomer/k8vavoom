@@ -262,6 +262,7 @@ static VCvarB draw_map_stats_secrets("draw_map_stats_secrets", false, "Draw map 
 
 static VCvarB minimap_active("minimap_active", false, "Is minimap active?", CVAR_Archive|CVAR_NoShadow);
 static VCvarB minimap_rotate("minimap_rotate", false, "Rotate minimap?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB minimap_draw_keys("minimap_draw_keys", true, "Draw seen keys on minimap?", CVAR_Archive|CVAR_NoShadow);
 static VCvarB minimap_draw_player("minimap_draw_player", true, "Draw player arrow on minimap?", CVAR_Archive|CVAR_NoShadow);
 static VCvarB minimap_draw_border("minimap_draw_border", false, "Draw minimap border rectangle?", CVAR_Archive|CVAR_NoShadow);
 static VCvarF minimap_scale("minimap_scale", "8", "Minimap scale (inverted).", CVAR_Archive|CVAR_NoShadow);
@@ -403,7 +404,7 @@ static float min_y;
 static float max_x;
 static float max_y;
 
-static float max_w; // max_x-min_x,
+static float max_w; // max_x-min_x
 static float max_h; // max_y-min_y
 
 // based on player size
@@ -1036,9 +1037,11 @@ static void AM_changeWindowScale () {
 //  Rotation in 2D. Used to rotate player arrow line character.
 //
 //==========================================================================
-static void AM_rotate (float *x, float *y, float a) {
-  float tmpx = *x*mcos(a)-*y*msin(a);
-  *y = *x*msin(a)+*y*mcos(a);
+static inline void AM_rotate (float *x, float *y, float a) {
+  float s, c;
+  msincos(a, &s, &c);
+  const float tmpx = *x*c-*y*s;
+  *y = *x*s+*y*c;
   *x = tmpx;
 }
 
@@ -1049,11 +1052,13 @@ static void AM_rotate (float *x, float *y, float a) {
 //
 //==========================================================================
 void AM_rotatePoint (float *x, float *y) {
-  *x -= FTOM(MTOF(cl->ViewOrg.x));
-  *y -= FTOM(MTOF(cl->ViewOrg.y));
+  const float cx = FTOM(MTOF(cl->ViewOrg.x));
+  const float cy = FTOM(MTOF(cl->ViewOrg.y));
+  *x -= cx;
+  *y -= cy;
   AM_rotate(x, y, 90.0f-cl->ViewAngles.yaw);
-  *x += FTOM(MTOF(cl->ViewOrg.x));
-  *y += FTOM(MTOF(cl->ViewOrg.y));
+  *x += cx;
+  *y += cy;
 }
 
 
@@ -1274,6 +1279,7 @@ static void AM_drawMline (mline_t *ml, vuint32 color) {
   fline_t fl;
   if (AM_clipMline(ml, &fl)) AM_drawFline(&fl, color); // draws it on frame buffer using fb coords
 #else
+  // do not send the line to GPU if it is not visible
   Drawer->DrawLineAM(CXMTOFF(ml->a.x), CYMTOFF(ml->a.y), color, CXMTOFF(ml->b.x), CYMTOFF(ml->b.y), color);
 #endif
 }
@@ -1490,12 +1496,77 @@ static void AM_UpdateSeen () {
 
 //==========================================================================
 //
-//  AM_drawWalls
+//  AM_CalcBM
+//
+//  calculate blockmap rect
+//
+//==========================================================================
+static bool AM_CalcBM (int *bx0, int *by0, int *bx1, int *by1) {
+  float lx1o = m_x;
+  float ly1o = m_y;
+  float lx2o = m_x2;
+  float ly2o = m_y2;
+
+  // rotate: not yet
+  if (am_rotate) {
+    const float angle = /*90.0f-*/cl->ViewAngles.yaw;
+
+    float s, c;
+    msincos(angle, &s, &c);
+
+    lx1o -= cl->ViewOrg.x;
+    ly1o -= cl->ViewOrg.y;
+    lx2o -= cl->ViewOrg.x;
+    ly2o -= cl->ViewOrg.y;
+
+    float rx1 = lx1o*c-ly1o*s;
+    float ry1 = ly1o*c+lx1o*s;
+    float rx2 = lx2o*c-ly2o*s;
+    float ry2 = ly2o*c+lx2o*s;
+
+    rx1 += cl->ViewOrg.x;
+    ry1 += cl->ViewOrg.y;
+    rx2 += cl->ViewOrg.x;
+    ry2 += cl->ViewOrg.y;
+
+    lx1o += cl->ViewOrg.x;
+    ly1o += cl->ViewOrg.y;
+    lx2o += cl->ViewOrg.x;
+    ly2o += cl->ViewOrg.y;
+
+    lx1o = min2(lx1o, min2(rx1, rx2));
+    lx2o = max2(lx2o, max2(rx1, rx2));
+
+    ly1o = min2(ly1o, min2(ry1, ry2));
+    ly2o = max2(ly2o, max2(ry1, ry2));
+  }
+
+  int xl = MapBlock(lx1o-GClLevel->BlockMapOrgX);
+  int xh = MapBlock(lx2o-GClLevel->BlockMapOrgX);
+  int yl = MapBlock(ly1o-GClLevel->BlockMapOrgY);
+  int yh = MapBlock(ly2o-GClLevel->BlockMapOrgY);
+
+  if (xh < 0 || yh < 0) return false;
+  if (xl >= GClLevel->BlockMapWidth || yl >= GClLevel->BlockMapHeight) return false;
+
+  *bx0 = min2(max2(0, xl), GClLevel->BlockMapWidth-1);
+  *by0 = min2(max2(0, yl), GClLevel->BlockMapHeight-1);
+  *bx1 = min2(max2(0, xh), GClLevel->BlockMapWidth-1);
+  *by1 = min2(max2(0, yh), GClLevel->BlockMapHeight-1);
+
+  return true;
+}
+
+
+#if 0
+//==========================================================================
+//
+//  AM_drawWallsOld
 //
 //  Determines visible lines, draws them.
 //
 //==========================================================================
-static void AM_drawWalls () {
+static void AM_drawWallsOld () {
   const bool debugPObj = (am_pobj_debug.asInt()&0x01);
   TArrayNC<polyobj_t *> pobjs;
 
@@ -1555,6 +1626,116 @@ static void AM_drawWalls () {
         }
 
         AM_drawMline(&l, clr);
+      }
+    }
+  }
+
+  if (pobjs.length()) {
+    const vuint32 aclrs[2] = { 0x60c09000, 0x600090c0 };
+    for (int pn = 0; pn < pobjs.length(); ++pn) {
+      const polyobj_t *pobj = pobjs[pn];
+      unsigned aidx = 0u;
+      for (auto &&it : pobj->SubFirst()) {
+        for (auto &&sit : it.part()->SegFirst()) {
+          const seg_t *seg = sit.seg();
+
+          mline_t l;
+          l.a.x = seg->v1->x;
+          l.a.y = seg->v1->y;
+          l.b.x = seg->v2->x;
+          l.b.y = seg->v2->y;
+
+          if (am_rotate) {
+            AM_rotatePoint(&l.a.x, &l.a.y);
+            AM_rotatePoint(&l.b.x, &l.b.y);
+          }
+
+          AM_drawMline(&l, aclrs[aidx]);
+        }
+        aidx ^= 1u;
+      }
+    }
+  }
+}
+#endif
+
+
+//==========================================================================
+//
+//  AM_drawWalls
+//
+//  Determines visible lines, draws them.
+//
+//==========================================================================
+static void AM_drawWalls () {
+  const bool debugPObj = (am_pobj_debug.asInt()&0x01);
+  TArrayNC<polyobj_t *> pobjs;
+
+  int bx0, by0, bx1, by1;
+  if (!AM_CalcBM(&bx0, &by0, &bx1, &by1)) return;
+  GClLevel->IncrementValidCount();
+  for (int bx = bx0; bx <= bx1; ++bx) {
+    for (int by = by0; by <= by1; ++by) {
+      for (auto &&it : GClLevel->allBlockLines(bx, by)) {
+        const line_t &line = *it.line();
+
+        if (!line.firstseg) continue; // just in case
+        // do not send the line to GPU if it is not visible
+        // simplified check with line bounding box
+        //if (!AM_isBBox2DVisible(line.bbox2d)) continue;
+
+        if (!am_cheating) {
+          if (line.flags&ML_DONTDRAW) continue;
+          if (!(line.flags&ML_MAPPED) && !(line.exFlags&(ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED))) {
+            if (!(cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed)) continue;
+          }
+        }
+
+        bool cheatOnly = false;
+        vuint32 clr = AM_getLineColor(&line, &cheatOnly);
+        if (cheatOnly && !am_cheating) continue; //FIXME: should we draw these lines if automap powerup is active?
+
+        // special rendering for polyobject
+        if (debugPObj && line.pobj()) {
+          bool found = false;
+          for (int f = 0; f < pobjs.length(); ++f) if (pobjs[f] == line.pobj()) { found = true; break; }
+          if (!found) pobjs.append(line.pobj());
+          continue;
+        }
+
+        // fully mapped or automap revealed?
+        if (am_full_lines || am_cheating || (line.flags&ML_MAPPED) || (cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed)) {
+          mline_t l;
+          l.a.x = line.v1->x;
+          l.a.y = line.v1->y;
+          l.b.x = line.v2->x;
+          l.b.y = line.v2->y;
+
+          if (am_rotate) {
+            AM_rotatePoint(&l.a.x, &l.a.y);
+            AM_rotatePoint(&l.b.x, &l.b.y);
+          }
+
+          AM_drawMline(&l, clr);
+        } else {
+          // render segments
+          for (const seg_t *seg = line.firstseg; seg; seg = seg->lsnext) {
+            if (!seg->drawsegs || !(seg->flags&SF_MAPPED)) continue;
+
+            mline_t l;
+            l.a.x = seg->v1->x;
+            l.a.y = seg->v1->y;
+            l.b.x = seg->v2->x;
+            l.b.y = seg->v2->y;
+
+            if (am_rotate) {
+              AM_rotatePoint(&l.a.x, &l.a.y);
+              AM_rotatePoint(&l.b.x, &l.b.y);
+            }
+
+            AM_drawMline(&l, clr);
+          }
+        }
       }
     }
   }
@@ -1855,64 +2036,127 @@ static void AM_drawPlayers () {
 
 //==========================================================================
 //
+//  AM_drawOneThing
+//
+//==========================================================================
+static void AM_drawOneThing (VEntity *mobj, bool &inSpriteMode) {
+  if (!mobj) return;
+  if (!mobj->State || mobj->IsGoingToDie()) return;
+
+  bool invisible = ((mobj->EntityFlags&(VEntity::EF_NoSector|VEntity::EF_Invisible|VEntity::EF_NoBlockmap)) || mobj->RenderStyle == STYLE_None);
+  if (invisible && am_cheating != 3) {
+    if (!mobj->IsMissile()) return;
+    if (am_cheating < 3) return;
+  }
+  //if (!(mobj->FlagsEx&VEntity::EFEX_Rendered)) return;
+
+  vuint32 color;
+       if (invisible) color = InvisibleThingColor;
+  else if (mobj->EntityFlags&VEntity::EF_Corpse) color = DeadColor;
+  else if (mobj->FlagsEx&VEntity::EFEX_Monster) color = MonsterColor;
+  else if (mobj->EntityFlags&VEntity::EF_Missile) color = MissileColor;
+  else if (mobj->EntityFlags&VEntity::EF_Solid) color = SolidThingColor;
+  else color = ThingColor;
+
+  int sprIdx = (am_render_thing_sprites ? getSpriteIndex(mobj->GetClass()) : -1);
+
+  TVec morg = mobj->GetDrawOrigin();
+
+  if (sprIdx > 0) {
+    float x = morg.x;
+    float y = morg.y;
+    if (am_rotate) AM_rotatePoint(&x, &y);
+    if (!inSpriteMode) { inSpriteMode = true; Drawer->EndAutomap(); }
+    R_DrawSpritePatch(CXMTOFF(x), CYMTOFF(y), sprIdx, 0, 0, 0, 0, 0, scale_mtof, true); // draw, ignore vscr
+  } else {
+    if (inSpriteMode) { inSpriteMode = false; Drawer->StartAutomap(am_overlay); }
+
+    float x = FTOM(MTOF(morg.x));
+    float y = FTOM(MTOF(morg.y));
+    float angle = mobj->/*Angles*/GetInterpolatedDrawAngles().yaw; // anyway
+
+    if (am_rotate) {
+      AM_rotatePoint(&x, &y);
+      angle += 90.0f-cl->ViewAngles.yaw;
+    }
+    AM_drawLineCharacter(thintriangle_guy, NUMTHINTRIANGLEGUYLINES, 16.0f, angle, color, x, y);
+  }
+
+  // draw object box
+  if (am_cheating == 3 || am_cheating == 5) {
+    if (inSpriteMode) { inSpriteMode = false; Drawer->StartAutomap(am_overlay); }
+    //AM_DrawBox(mobj->Origin.x-mobj->Radius, mobj->Origin.y-mobj->Radius, mobj->Origin.x+mobj->Radius, mobj->Origin.y+mobj->Radius, color);
+    const float rad = mobj->GetMoveRadius();
+    AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, color);
+  }
+}
+
+
+//==========================================================================
+//
 //  AM_drawThings
 //
 //==========================================================================
 static void AM_drawThings () {
   bool inSpriteMode = false;
-  bool invisible = false;
-  for (TThinkerIterator<VEntity> Ent(GClLevel); Ent; ++Ent) {
-    VEntity *mobj = *Ent;
-    if (!mobj->State || mobj->IsGoingToDie()) continue;
-    invisible = ((mobj->EntityFlags&(VEntity::EF_NoSector|VEntity::EF_Invisible|VEntity::EF_NoBlockmap)) || mobj->RenderStyle == STYLE_None);
-    if (invisible && am_cheating != 3) {
-      if (!mobj->IsMissile()) continue;
-      if (am_cheating < 3) continue;
+
+  if (am_cheating >= 3 /*|| am_rotate*/) {
+    for (TThinkerIterator<VEntity> Ent(GClLevel); Ent; ++Ent) {
+      VEntity *mobj = *Ent;
+      AM_drawOneThing(mobj, inSpriteMode);
     }
-    //if (!(mobj->FlagsEx&VEntity::EFEX_Rendered)) continue;
-
-    vuint32 color;
-         if (invisible) color = InvisibleThingColor;
-    else if (mobj->EntityFlags&VEntity::EF_Corpse) color = DeadColor;
-    else if (mobj->FlagsEx&VEntity::EFEX_Monster) color = MonsterColor;
-    else if (mobj->EntityFlags&VEntity::EF_Missile) color = MissileColor;
-    else if (mobj->EntityFlags&VEntity::EF_Solid) color = SolidThingColor;
-    else color = ThingColor;
-
-    int sprIdx = (am_render_thing_sprites ? getSpriteIndex(mobj->GetClass()) : -1);
-
-    TVec morg = mobj->GetDrawOrigin();
-
-    if (sprIdx > 0) {
-      float x = morg.x;
-      float y = morg.y;
-      if (am_rotate) AM_rotatePoint(&x, &y);
-      if (!inSpriteMode) { inSpriteMode = true; Drawer->EndAutomap(); }
-      R_DrawSpritePatch(CXMTOFF(x), CYMTOFF(y), sprIdx, 0, 0, 0, 0, 0, scale_mtof, true); // draw, ignore vscr
-    } else {
-      if (inSpriteMode) { inSpriteMode = false; Drawer->StartAutomap(am_overlay); }
-
-      float x = FTOM(MTOF(morg.x));
-      float y = FTOM(MTOF(morg.y));
-      float angle = mobj->/*Angles*/GetInterpolatedDrawAngles().yaw; // anyway
-
-      if (am_rotate) {
-        AM_rotatePoint(&x, &y);
-        angle += 90.0f-cl->ViewAngles.yaw;
+  } else {
+    int bx0, by0, bx1, by1;
+    if (!AM_CalcBM(&bx0, &by0, &bx1, &by1)) return;
+    GClLevel->IncrementValidCount();
+    for (int bx = bx0; bx <= bx1; ++bx) {
+      for (int by = by0; by <= by1; ++by) {
+        for (auto &&it : GClLevel->allBlockThings(bx, by)) {
+          AM_drawOneThing(it.entity(), inSpriteMode);
+        }
       }
-      AM_drawLineCharacter(thintriangle_guy, NUMTHINTRIANGLEGUYLINES, 16.0f, angle, color, x, y);
-    }
-    // draw object box
-    if (am_cheating == 3 || am_cheating == 5) {
-      if (inSpriteMode) { inSpriteMode = false; Drawer->StartAutomap(am_overlay); }
-      //AM_DrawBox(mobj->Origin.x-mobj->Radius, mobj->Origin.y-mobj->Radius, mobj->Origin.x+mobj->Radius, mobj->Origin.y+mobj->Radius, color);
-      const float rad = mobj->GetMoveRadius();
-      AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, color);
     }
   }
 
   // restore automap rendering mode
   if (inSpriteMode) Drawer->StartAutomap(am_overlay);
+}
+
+
+//==========================================================================
+//
+//  AM_drawOneKey
+//
+//==========================================================================
+static void AM_drawOneKey (VEntity *mobj, bool &inSpriteMode, bool allKeys) {
+  if (!mobj) return;
+  if (!mobj->State || mobj->IsGoingToDie()) return;
+  if (mobj->RenderStyle == STYLE_None) return;
+  if ((mobj->EntityFlags&(VEntity::EF_NoSector|VEntity::EF_Invisible|VEntity::EF_NoBlockmap)) != 0) return;
+
+  // check for seen subsector
+  if (!mobj->SubSector) return;
+  if (!allKeys && !(mobj->SubSector->miscFlags&subsector_t::SSMF_Rendered)) return;
+  //if (!(mobj->FlagsEx&VEntity::EFEX_Rendered)) return;
+
+  // check if this is a key
+  VClass *cls = mobj->GetClass();
+  if (!cls->IsChildOf(keyClass)) return;
+
+  // check if it has a spawn sprite
+  int sprIdx = getSpriteIndex(cls);
+  if (sprIdx < 0) return;
+
+  // ok, this looks like a valid key, render it
+  TVec morg = mobj->GetDrawOrigin();
+  float x = morg.x;
+  float y = morg.y;
+  if (am_rotate) AM_rotatePoint(&x, &y);
+  if (!inSpriteMode) {
+    inSpriteMode = true;
+    Drawer->EndAutomap();
+  }
+  R_DrawSpritePatch(CXMTOFF(x), CYMTOFF(y), sprIdx, 0, 0, 0, 0, 0, scale_mtof, true); // draw, ignore vscr
 }
 
 
@@ -1934,35 +2178,25 @@ static void AM_drawKeys () {
 
   const bool allKeys = (am_show_keys_cheat.asBool() || am_cheating.asInt() > 1);
   bool inSpriteMode = false;
-  for (TThinkerIterator<VEntity> Ent(GClLevel); Ent; ++Ent) {
-    VEntity *mobj = *Ent;
-    if (!mobj->State || mobj->IsGoingToDie()) continue;
-    if (mobj->RenderStyle == STYLE_None) continue;
-    if ((mobj->EntityFlags&(VEntity::EF_NoSector|VEntity::EF_Invisible|VEntity::EF_NoBlockmap)) != 0) continue;
 
-    // check for seen subsector
-    if (!mobj->SubSector) continue;
-    if (!allKeys && !(mobj->SubSector->miscFlags&subsector_t::SSMF_Rendered)) continue;
-    //if (!(mobj->FlagsEx&VEntity::EFEX_Rendered)) continue;
-
-    // check if this is a key
-    VClass *cls = mobj->GetClass();
-    if (!cls->IsChildOf(keyClass)) continue;
-
-    // check if it has a spawn sprite
-    int sprIdx = getSpriteIndex(cls);
-    if (sprIdx < 0) continue;
-
-    // ok, this looks like a valid key, render it
-    TVec morg = mobj->GetDrawOrigin();
-    float x = morg.x;
-    float y = morg.y;
-    if (am_rotate) AM_rotatePoint(&x, &y);
-    if (!inSpriteMode) {
-      inSpriteMode = true;
-      Drawer->EndAutomap();
+  /*
+  if (am_rotate) {
+    for (TThinkerIterator<VEntity> Ent(GClLevel); Ent; ++Ent) {
+      AM_drawOneKey(*Ent, inSpriteMode, allKeys);
     }
-    R_DrawSpritePatch(CXMTOFF(x), CYMTOFF(y), sprIdx, 0, 0, 0, 0, 0, scale_mtof, true); // draw, ignore vscr
+  } else
+  */
+  {
+    int bx0, by0, bx1, by1;
+    if (!AM_CalcBM(&bx0, &by0, &bx1, &by1)) return;
+    GClLevel->IncrementValidCount();
+    for (int bx = bx0; bx <= bx1; ++bx) {
+      for (int by = by0; by <= by1; ++by) {
+        for (auto &&it : GClLevel->allBlockThings(bx, by)) {
+          AM_drawOneKey(it.entity(), inSpriteMode, allKeys);
+        }
+      }
+    }
   }
 
   // restore automap rendering mode
@@ -2439,16 +2673,87 @@ static void AM_Minimap_DrawMarks (VWidget *w, float xc, float yc, float scale, f
 
 //==========================================================================
 //
+//  AM_MiniMap_CalcBM
+//
+//  calculate blockmap rect
+//
+//==========================================================================
+static bool AM_MiniMap_CalcBM (VWidget *w, float xc, float yc, float scale, float angle,
+                               int *bx0, int *by0, int *bx1, int *by1)
+{
+  const float halfwdt = w->GetWidth()*0.5f;
+  const float halfhgt = w->GetHeight()*0.5f;
+
+  // convert widget coords to map coords
+  float lx1o = -halfwdt/scale;
+  float ly1o = -halfhgt/scale;
+  float lx2o = +halfwdt/scale;
+  float ly2o = +halfhgt/scale;
+
+  // rotate
+  if (angle) {
+    float s, c;
+    msincos(angle+90.0f, &s, &c);
+
+    float rx1 = lx1o*c-ly1o*s;
+    float ry1 = ly1o*c+lx1o*s;
+    float rx2 = lx2o*c-ly2o*s;
+    float ry2 = ly2o*c+lx2o*s;
+
+    lx1o = min2(lx1o, min2(rx1, rx2));
+    lx2o = max2(lx2o, max2(rx1, rx2));
+
+    ly1o = min2(ly1o, min2(ry1, ry2));
+    ly2o = max2(ly2o, max2(ry1, ry2));
+  }
+
+  lx1o += xc;
+  ly1o += yc;
+  lx2o += xc;
+  ly2o += yc;
+
+  #if 0
+  GCon->Logf(NAME_Debug, "*** xc=%g; yc=%g; scale=%g; angle=%g, (%g,%g)-(%g,%g)", xc, yc, scale, angle, lx1o, ly1o, lx2o, ly2o);
+  GCon->Logf(NAME_Debug, "*** bmorg=(%g,%g); bmsize=(%d,%d)", GClLevel->BlockMapOrgX, GClLevel->BlockMapOrgY,
+             GClLevel->BlockMapWidth, GClLevel->BlockMapHeight);
+  #endif
+
+  int xl = MapBlock(lx1o-GClLevel->BlockMapOrgX);
+  int xh = MapBlock(lx2o-GClLevel->BlockMapOrgX);
+  int yl = MapBlock(ly1o-GClLevel->BlockMapOrgY);
+  int yh = MapBlock(ly2o-GClLevel->BlockMapOrgY);
+
+  #if 0
+  GCon->Logf(NAME_Debug, "  (%d,%d)-(%d,%d)", xl, yl, xh, yh);
+  #endif
+
+  if (xh < 0 || yh < 0) return false;
+  if (xl >= GClLevel->BlockMapWidth || yl >= GClLevel->BlockMapHeight) return false;
+
+  *bx0 = max2(0, xl);
+  *by0 = max2(0, yl);
+  *bx1 = max2(0, xh);
+  *by1 = max2(0, yh);
+
+  return true;
+}
+
+
+//==========================================================================
+//
 //  AM_Minimap_DrawWalls
 //
 //==========================================================================
-void AM_Minimap_DrawWalls (VWidget *w, float xc, float yc, float scale, float angle, float alpha) {
+static void AM_Minimap_DrawWalls (VWidget *w, float xc, float yc, float scale, float angle, float alpha) {
+  if (scale == 0.0f) return;
+
   float s, c;
   msincos(angle, &s, &c);
 
   const float halfwdt = w->GetWidth()*0.5f;
   const float halfhgt = w->GetHeight()*0.5f;
 
+  #if 0
   // draw walls
   for (auto &&line : GClLevel->allLines()) {
     if (!line.firstseg) continue; // just in case
@@ -2486,6 +2791,53 @@ void AM_Minimap_DrawWalls (VWidget *w, float xc, float yc, float scale, float an
       w->DrawLineF(lx1, ly1, lx2, ly2, clr, alpha);
     }
   }
+  #else
+  // use blockmap
+  int bx0, by0, bx1, by1;
+  if (!AM_MiniMap_CalcBM(w, xc, yc, scale, angle, &bx0, &by0, &bx1, &by1)) return;
+  GClLevel->IncrementValidCount();
+  for (int bx = bx0; bx <= bx1; ++bx) {
+    for (int by = by0; by <= by1; ++by) {
+      for (auto &&it : GClLevel->allBlockLines(bx, by)) {
+        const line_t &line = *it.line();
+        if (!line.firstseg) continue; // just in case
+
+        if (!am_cheating) {
+          if (line.flags&ML_DONTDRAW) continue;
+          if (!(line.flags&ML_MAPPED) && !(line.exFlags&(ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED))) {
+            if (!(cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed)) continue;
+          }
+        }
+
+        // convert line coordinates
+        const float lx1o = (line.v1->x-xc)*scale;
+        const float ly1o = -(line.v1->y-yc)*scale;
+        const float lx2o = (line.v2->x-xc)*scale;
+        const float ly2o = -(line.v2->y-yc)*scale;
+
+        WidgetTranslateXY(lx1, ly1, lx1o, ly1o);
+        WidgetTranslateXY(lx2, ly2, lx2o, ly2o);
+
+        // do not send the line to GPU if it is not visible
+        if (max2(lx1, lx2) < 0 || max2(ly1, ly2) < 0 ||
+            min2(lx1, lx2) >= w->GetWidth() || min2(ly1, ly2) >= w->GetHeight())
+        {
+          continue;
+        }
+
+        bool cheatOnly = false;
+        vuint32 clr = AM_getLineColor(&line, &cheatOnly);
+        if (cheatOnly && !am_cheating) continue; //FIXME: should we draw these lines if automap powerup is active?
+        clr |= 0xff000000u;
+
+        // fully mapped or automap revealed?
+        /*if (am_full_lines || (line.flags&ML_MAPPED) || (cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed))*/ {
+          w->DrawLineF(lx1, ly1, lx2, ly2, clr, alpha);
+        }
+      }
+    }
+  }
+  #endif
 }
 
 
@@ -2494,7 +2846,7 @@ void AM_Minimap_DrawWalls (VWidget *w, float xc, float yc, float scale, float an
 //  AM_Minimap_DrawPlayer
 //
 //==========================================================================
-void AM_Minimap_DrawPlayer (VWidget *w, float /*xc*/, float /*yc*/, float scale, float plrangle, float alpha) {
+static void AM_Minimap_DrawPlayer (VWidget *w, float /*xc*/, float /*yc*/, float scale, float plrangle, float alpha) {
   if (!minimap_draw_player) return;
   float s, c;
   const mline_t *player_arrow;
@@ -2537,105 +2889,126 @@ void AM_Minimap_DrawPlayer (VWidget *w, float /*xc*/, float /*yc*/, float scale,
 
 //==========================================================================
 //
+//  AM_Minimap_DrawOneThing
+//
+//==========================================================================
+static void AM_Minimap_DrawOneThing (VWidget *w, VEntity *mobj, float xc, float yc, float scale, float angle, float alpha) {
+  if (!mobj) return;
+  if (!mobj->State || mobj->IsGoingToDie()) return;
+  bool invisible = ((mobj->EntityFlags&(VEntity::EF_NoSector|VEntity::EF_Invisible|VEntity::EF_NoBlockmap)) || mobj->RenderStyle == STYLE_None);
+  if (invisible && am_cheating != 3) {
+    if (!mobj->IsMissile()) return;
+    if (am_cheating < 3) return;
+  }
+  //if (!(mobj->FlagsEx&VEntity::EFEX_Rendered)) return;
+
+  vuint32 color;
+       if (invisible) color = InvisibleThingColor;
+  else if (mobj->EntityFlags&VEntity::EF_Corpse) color = DeadColor;
+  else if (mobj->FlagsEx&VEntity::EFEX_Monster) color = MonsterColor;
+  else if (mobj->EntityFlags&VEntity::EF_Missile) color = MissileColor;
+  else if (mobj->EntityFlags&VEntity::EF_Solid) color = SolidThingColor;
+  else color = ThingColor;
+  color |= 0xff000000u;
+
+  //int sprIdx = (am_render_thing_sprites ? getSpriteIndex(mobj->GetClass()) : -1);
+
+  const TVec morg = mobj->GetDrawOrigin();
+
+  const float halfwdt = w->GetWidth()*0.5f;
+  const float halfhgt = w->GetHeight()*0.5f;
+
+  /*
+  if (sprIdx > 0) {
+    float x = morg.x;
+    float y = morg.y;
+    if (am_rotate) AM_rotatePoint(&x, &y);
+    if (!inSpriteMode) { inSpriteMode = true; Drawer->EndAutomap(); }
+    R_DrawSpritePatch(CXMTOFF(x), CYMTOFF(y), sprIdx, 0, 0, 0, 0, 0, scale_mtof, true); // draw, ignore vscr
+  } else
+  */
+  {
+    float s, c;
+    msincos(angle, &s, &c);
+
+    const float morgx = (morg.x-xc)*scale;
+    const float morgy = -(morg.y-yc)*scale;
+
+    const float mcx = (morgx*c-morgy*s)+halfwdt;
+    const float mcy = (morgy*c+morgx*s)+halfhgt;
+
+    const float rad = max2(1.0f, mobj->GetMoveRadius()*scale);
+    if (mcx+rad <= 0.0 || mcy+rad <= 0.0f || mcx-rad >= w->GetWidth() || mcy-rad >= w->GetHeight()) return;
+
+    const float sprangle = AngleMod(mobj->/*Angles*/GetInterpolatedDrawAngles().yaw-90.0f+angle); // anyway
+    msincos(sprangle, &s, &c);
+
+    const float triscale = 12.0f;
+    for (size_t i = 0; i < NUMTHINTRIANGLEGUYLINES; ++i) {
+      const mline_t &l = thintriangle_guy[i];
+
+      const float lx1o = (l.a.x*triscale)*scale;
+      const float ly1o = -(l.a.y*triscale)*scale;
+      const float lx2o = (l.b.x*triscale)*scale;
+      const float ly2o = -(l.b.y*triscale)*scale;
+
+      WidgetRotateXYAdd(lx1, ly1, lx1o, ly1o, mcx, mcy);
+      WidgetRotateXYAdd(lx2, ly2, lx2o, ly2o, mcx, mcy);
+
+      w->DrawLineF(lx1, ly1, lx2, ly2, color, alpha);
+    }
+
+    // draw object box
+    if (am_cheating == 3 || am_cheating == 5) {
+      #if 0
+      const int x0 = (int)roundf(mcx);
+      const int y0 = (int)roundf(mcy);
+      const int sz = (int)roundf(max2(1.0f, mobj->GetMoveRadius()*scale));
+      w->DrawRect(x0-sz, y0-sz, sz*2, sz*2, color, alpha);
+      #else
+      //FIXME: rotate rect too
+      const float sz = max2(1.0f, mobj->GetMoveRadius()*scale);
+      w->DrawRectF(mcx-sz, mcy-sz, sz*2, sz*2, color, alpha);
+      #endif
+    }
+  }
+}
+
+
+//==========================================================================
+//
 //  AM_Minimap_DrawThings
 //
 //==========================================================================
 static void AM_Minimap_DrawThings (VWidget *w, float xc, float yc, float scale, float angle, float alpha) {
   if (am_cheating < 2 && (cl->PlayerFlags&VBasePlayer::PF_AutomapShowThings) == 0) return;
 
-  const float halfwdt = w->GetWidth()*0.5f;
-  const float halfhgt = w->GetHeight()*0.5f;
-
-  bool invisible = false;
-  for (TThinkerIterator<VEntity> Ent(GClLevel); Ent; ++Ent) {
-    VEntity *mobj = *Ent;
-    if (!mobj->State || mobj->IsGoingToDie()) continue;
-    invisible = ((mobj->EntityFlags&(VEntity::EF_NoSector|VEntity::EF_Invisible|VEntity::EF_NoBlockmap)) || mobj->RenderStyle == STYLE_None);
-    if (invisible && am_cheating != 3) {
-      if (!mobj->IsMissile()) continue;
-      if (am_cheating < 3) continue;
+  if (am_cheating >= 3) {
+    for (TThinkerIterator<VEntity> Ent(GClLevel); Ent; ++Ent) {
+      AM_Minimap_DrawOneThing(w, *Ent, xc, yc, scale, angle, alpha);
     }
-    //if (!(mobj->FlagsEx&VEntity::EFEX_Rendered)) continue;
-
-    vuint32 color;
-         if (invisible) color = InvisibleThingColor;
-    else if (mobj->EntityFlags&VEntity::EF_Corpse) color = DeadColor;
-    else if (mobj->FlagsEx&VEntity::EFEX_Monster) color = MonsterColor;
-    else if (mobj->EntityFlags&VEntity::EF_Missile) color = MissileColor;
-    else if (mobj->EntityFlags&VEntity::EF_Solid) color = SolidThingColor;
-    else color = ThingColor;
-    color |= 0xff000000u;
-
-    //int sprIdx = (am_render_thing_sprites ? getSpriteIndex(mobj->GetClass()) : -1);
-
-    const TVec morg = mobj->GetDrawOrigin();
-
-    /*
-    if (sprIdx > 0) {
-      float x = morg.x;
-      float y = morg.y;
-      if (am_rotate) AM_rotatePoint(&x, &y);
-      if (!inSpriteMode) { inSpriteMode = true; Drawer->EndAutomap(); }
-      R_DrawSpritePatch(CXMTOFF(x), CYMTOFF(y), sprIdx, 0, 0, 0, 0, 0, scale_mtof, true); // draw, ignore vscr
-    } else
-    */
-    {
-      float s, c;
-      msincos(angle, &s, &c);
-
-      const float morgx = (morg.x-xc)*scale;
-      const float morgy = -(morg.y-yc)*scale;
-
-      const float mcx = (morgx*c-morgy*s)+halfwdt;
-      const float mcy = (morgy*c+morgx*s)+halfhgt;
-
-      const float rad = max2(1.0f, mobj->GetMoveRadius()*scale);
-      if (mcx+rad <= 0.0 || mcy+rad <= 0.0f || mcx-rad >= w->GetWidth() || mcy-rad >= w->GetHeight()) continue;
-
-      const float sprangle = AngleMod(mobj->/*Angles*/GetInterpolatedDrawAngles().yaw-90.0f+angle); // anyway
-      msincos(sprangle, &s, &c);
-
-      const float triscale = 12.0f;
-      for (size_t i = 0; i < NUMTHINTRIANGLEGUYLINES; ++i) {
-        const mline_t &l = thintriangle_guy[i];
-
-        const float lx1o = (l.a.x*triscale)*scale;
-        const float ly1o = -(l.a.y*triscale)*scale;
-        const float lx2o = (l.b.x*triscale)*scale;
-        const float ly2o = -(l.b.y*triscale)*scale;
-
-        WidgetRotateXYAdd(lx1, ly1, lx1o, ly1o, mcx, mcy);
-        WidgetRotateXYAdd(lx2, ly2, lx2o, ly2o, mcx, mcy);
-
-        w->DrawLineF(lx1, ly1, lx2, ly2, color, alpha);
-      }
-
-      // draw object box
-      if (am_cheating == 3 || am_cheating == 5) {
-        #if 0
-        const int x0 = (int)roundf(mcx);
-        const int y0 = (int)roundf(mcy);
-        const int sz = (int)roundf(max2(1.0f, mobj->GetMoveRadius()*scale));
-        w->DrawRect(x0-sz, y0-sz, sz*2, sz*2, color, alpha);
-        #else
-        //FIXME: rotate rect too
-        const float sz = max2(1.0f, mobj->GetMoveRadius()*scale);
-        w->DrawRectF(mcx-sz, mcy-sz, sz*2, sz*2, color, alpha);
-        #endif
+  } else {
+    int bx0, by0, bx1, by1;
+    if (!AM_MiniMap_CalcBM(w, xc, yc, scale, angle, &bx0, &by0, &bx1, &by1)) return;
+    GClLevel->IncrementValidCount();
+    for (int bx = bx0; bx <= bx1; ++bx) {
+      for (int by = by0; by <= by1; ++by) {
+        for (auto &&it : GClLevel->allBlockThings(bx, by)) {
+          AM_Minimap_DrawOneThing(w, it.entity(), xc, yc, scale, angle, alpha);
+        }
       }
     }
   }
 }
 
 
-#if 0
 //==========================================================================
 //
 //  AM_Minimap_DrawKeys
 //
 //==========================================================================
 static void AM_Minimap_DrawKeys (VWidget *w, float xc, float yc, float scale, float angle, float alpha) {
-  if (!keyClass) return;
+  if (!keyClass || !minimap_draw_keys) return;
   if (am_cheating >= 2 || (cl->PlayerFlags&VBasePlayer::PF_AutomapShowThings)) return;
 
   const float halfwdt = w->GetWidth()*0.5f;
@@ -2650,47 +3023,55 @@ static void AM_Minimap_DrawKeys (VWidget *w, float xc, float yc, float scale, fl
   }
 
   const bool allKeys = (am_show_keys_cheat.asBool() || am_cheating.asInt() > 1);
-  for (TThinkerIterator<VEntity> Ent(GClLevel); Ent; ++Ent) {
-    VEntity *mobj = *Ent;
-    if (!mobj->State || mobj->IsGoingToDie()) continue;
-    if (mobj->RenderStyle == STYLE_None) continue;
-    if ((mobj->EntityFlags&(VEntity::EF_NoSector|VEntity::EF_Invisible|VEntity::EF_NoBlockmap)) != 0) continue;
 
-    // check for seen subsector
-    if (!mobj->SubSector) continue;
-    if (!allKeys && !(mobj->SubSector->miscFlags&subsector_t::SSMF_Rendered)) continue;
-    //if (!(mobj->FlagsEx&VEntity::EFEX_Rendered)) continue;
+  int bx0, by0, bx1, by1;
+  if (!AM_MiniMap_CalcBM(w, xc, yc, scale, angle, &bx0, &by0, &bx1, &by1)) return;
+  GClLevel->IncrementValidCount();
+  for (int bx = bx0; bx <= bx1; ++bx) {
+    for (int by = by0; by <= by1; ++by) {
+      for (auto &&it : GClLevel->allBlockThings(bx, by)) {
+        VEntity *mobj = it.entity();
+        if (!mobj->State || mobj->IsGoingToDie()) continue;
+        if (mobj->RenderStyle == STYLE_None) continue;
+        if ((mobj->EntityFlags&(VEntity::EF_NoSector|VEntity::EF_Invisible|VEntity::EF_NoBlockmap)) != 0) continue;
 
-    // check if this is a key
-    VClass *cls = mobj->GetClass();
-    if (!cls->IsChildOf(keyClass)) continue;
+        // check for seen subsector
+        if (!mobj->SubSector) continue;
+        if (!allKeys && !(mobj->SubSector->miscFlags&subsector_t::SSMF_Rendered)) continue;
+        //if (!(mobj->FlagsEx&VEntity::EFEX_Rendered)) continue;
 
-    // check if it has a spawn sprite
-    int sprIdx = getSpriteIndex(cls);
-    if (sprIdx < 0) continue;
+        // check if this is a key
+        VClass *cls = mobj->GetClass();
+        if (!cls->IsChildOf(keyClass)) continue;
 
-    // ok, this looks like a valid key, render it
-    const TVec morg = mobj->GetDrawOrigin();
+        // check if it has a spawn sprite
+        int sprIdx = getSpriteIndex(cls);
+        if (sprIdx < 0) continue;
 
-    float s, c;
-    msincos(angle, &s, &c);
+        // ok, this looks like a valid key, render it
+        const TVec morg = mobj->GetDrawOrigin();
 
-    const float morgx = (morg.x-xc)*scale;
-    const float morgy = -(morg.y-yc)*scale;
+        float s, c;
+        msincos(angle, &s, &c);
 
-    const float mcx = (morgx*c-morgy*s)+halfwdt;
-    const float mcy = (morgy*c+morgx*s)+halfhgt;
+        const float morgx = (morg.x-xc)*scale;
+        const float morgy = -(morg.y-yc)*scale;
 
-    //const float rad = max2(1.0f, mobj->GetMoveRadius()*scale);
-    //if (mcx+rad <= 0.0 || mcy+rad <= 0.0f || mcx-rad >= w->GetWidth() || mcy-rad >= w->GetHeight()) continue;
+        const float mcx = (morgx*c-morgy*s)+halfwdt;
+        const float mcy = (morgy*c+morgx*s)+halfhgt;
 
-    vint32 color = 0xffffffff; //temp
+        //const float rad = max2(1.0f, mobj->GetMoveRadius()*scale);
+        //if (mcx+rad <= 0.0 || mcy+rad <= 0.0f || mcx-rad >= w->GetWidth() || mcy-rad >= w->GetHeight()) continue;
 
-    w->DrawRectF(mcx-1.0f, mcy-1.0f, 2.0f, 2.0f, color, alpha);
-    w->DrawRectF(mcx-2.0f, mcy-2.0f, 4.0f, 4.0f, color, alpha);
+        vint32 color = 0xffffff50; //temp
+
+        w->DrawRectF(mcx-0.5f, mcy-0.5f, 1.0f, 1.0f, color, alpha);
+        w->DrawRectF(mcx-1.0f, mcy-1.0f, 2.0f, 2.0f, color, alpha);
+        //w->DrawRectF(mcx-2.0f, mcy-2.0f, 4.0f, 4.0f, color, alpha);
+      }
+    }
   }
 }
-#endif
 
 
 //==========================================================================
@@ -2709,7 +3090,7 @@ void AM_DrawAtWidget (VWidget *w, float xc, float yc, float scale, float angle, 
   AM_Minimap_DrawWalls(w, xc, yc, scale, angle, alpha);
   AM_Minimap_DrawThings(w, xc, yc, scale, angle, alpha);
   AM_Minimap_DrawMarks(w, xc, yc, scale, angle, alpha);
-  //AM_Minimap_DrawKeys(w, xc, yc, scale, angle, alpha); // rendering keys is not working right yet, and it is VERY SLOW
+  AM_Minimap_DrawKeys(w, xc, yc, scale, angle, alpha); // rendering keys is not working right yet, and it is VERY SLOW
   AM_Minimap_DrawPlayer(w, xc, yc, scale, plrangle, alpha);
 
   if (minimap_draw_border) {

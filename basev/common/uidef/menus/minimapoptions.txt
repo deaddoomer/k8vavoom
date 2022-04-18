@@ -22,6 +22,12 @@ menudef MinimapOptions {
   }
 
   option bool {
+    title = "Draw Keys";
+    cvar = minimap_draw_keys;
+    help = "Draw seen keys on the minimap?";
+  }
+
+  option bool {
     title = "Draw Border Rectangle";
     cvar = minimap_draw_border;
     help = "Draw minimap border rectangle?";

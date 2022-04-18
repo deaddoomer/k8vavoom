@@ -704,7 +704,7 @@ IMPLEMENT_FREE_FUNCTION(VObject, AM_GetPlayerPos) {
   vobjGetParam(xc, yc, angle);
 #ifdef CLIENT
   if (GGameInfo->NetMode != NM_TitleMap) {
-    if (cl && cl->MO && cl->MO == cl->Camera) {
+    if (cl && cl->MO /*&& cl->MO == cl->Camera*/) {
       *xc = cl->MO->Origin.x;
       *yc = cl->MO->Origin.y;
       *angle = AngleMod(cl->MO->Angles.yaw-90.0f);
