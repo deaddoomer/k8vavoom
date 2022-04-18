@@ -4835,7 +4835,7 @@ void RespawnResetFlags () {
   bPickUp = default.bPickUp;
   bDropped = default.bDropped;
   bNoBlood = default.bNoBlood;
-  //bNoBloodDecals = default.bNoBloodDecals; //k8:???
+  bNoBloodDecals = default.bNoBloodDecals; //k8:???
   bPuffNoDecals = default.bPuffNoDecals; //k8:???
   bPuffForceDecals = default.bPuffForceDecals; //k8:???
   bInFloat = default.bInFloat;

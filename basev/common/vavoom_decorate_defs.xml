@@ -212,7 +212,7 @@
     <flag name="Invisible" property="bInvisible" relinktoworld="true" />
     <flag name="Shadow" property="bShadow" />
     <flag name="NoBlood" property="bNoBlood" />
-    <!-- flag name="NoBloodDecals" property="bNoBloodDecals" -- this did nothing anyway  -->
+    <flag name="NoBloodDecals" property="bNoBloodDecals" />
     <flag name="Stealth" property="bStealth" />
     <flag name="FloorClip" property="bFloorClip" relinktoworld="true" />
     <flag name="SpawnFloat" property="bSpawnFloat" relinktoworld="true" />
