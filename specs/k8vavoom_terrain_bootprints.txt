@@ -193,7 +193,7 @@ shade fromdecal
   currently no extended options are available.
   this is default if no shade was specified.
 
-translucency <float>
+translucent <float>
   set decal translucency
 
 solid
@@ -262,7 +262,7 @@ Player.BaseBootPrintDecal <name>
 Player.BootPrintDelayTime0 <float>
 Player.BootPrintDelayTime1 <float>
   delay between bootprints, in seconds.
-  this specifies the interval, the actual time will something inside that
+  this specifies the interval, the actual time will be something in that
   interval (choosen by random). always specify both values.
   default is: 0.12 to 0.16
 
@@ -284,10 +284,9 @@ Player.BootPrintRandomOfs1 <float>
 new `PlayerPawn` flags
 ======================
 
-+Player.BootPrintFlip
--Player.BootPrintFlip
-  enable or disable bootprint decal flipping.
-  default: enabled
+Player.BootPrintEnabled
+  are bootprints enabled for this pawn?
+  default: true
 
 Player.BootPrintFlip
   should the engine flip bootprint decal for the left foot?
@@ -295,8 +294,4 @@ Player.BootPrintFlip
 
 Player.BootPrintFlipOffset
   should the engine flip bootprint decal offset for the left foot?
-  default: true
-
-Player.BootPrintEnabled
-  are bootprints enabled for this pawn?
   default: true
