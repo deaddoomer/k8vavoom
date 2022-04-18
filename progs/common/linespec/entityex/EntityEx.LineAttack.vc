@@ -673,7 +673,7 @@ final void RailAttack (TVec dir, float Offset, int RailDamage,
     if (th.bNoBlood || th.bInvulnerable || th.bDormant) {
       if (PuffType) SpawnPuff(hitPoint, distance, PuffType, th);
     } else {
-      doBlood =(!PuffType || !PuffType.default.bBloodlessImpact);
+      doBlood = (!PuffType || !PuffType.default.bBloodlessImpact);
     }
 
     int dmg = th.Damage(self, self, RailDamage, DmgType);
