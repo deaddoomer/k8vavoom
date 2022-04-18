@@ -53,6 +53,17 @@ subclassed in each game, and named differently. To do this, you can use:
 
   class Foo : replaces(lastchild of Boo);
 
+There is also a way to "hard replace" some class, forcing all subclasses
+of it to become subclasses of your replacement:
+
+  class Foo : replaces(Boo, forceparents);
+
+To complement this, there is also "weak"/"decorate" option (the default
+one):
+
+  class Foo : replaces(Boo, weak);
+  class Foo : replaces(Boo, decorate); // exactly the same
+
 
 
 Default field values
@@ -93,6 +104,7 @@ there: restrict yourself to calculating some tables and such.
 You can access default values with `default.name` syntax. Most of the
 time things like `ClassName.default.field` and `obj.default.field` are
 working as you may expect.
+
 
 
 Field and method protection
