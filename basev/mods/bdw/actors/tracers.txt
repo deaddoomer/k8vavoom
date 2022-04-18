@@ -29,7 +29,7 @@ Actor BDW_Tracer : FastProjectile {
   States {
     Spawn:
       TRAC A 0 Bright
-      TRAC A 0 A_JumpIfCVarFalse("r_models", "Death") // no models -- die immediately
+      TRAC A 0 A_JumpIf(!GetCVarB("r_models"), "Death") // no models -- die immediately
 
     MainLoop:
       TRAC A 100 Bright
