@@ -1048,6 +1048,21 @@ static inline void AM_rotate (float *x, float *y, float a) {
 
 //==========================================================================
 //
+//  AM_rotateAround
+//
+//==========================================================================
+static inline void AM_rotateAround (float *x, float *y, float a, float cx, float cy) {
+  float s, c;
+  msincos(a, &s, &c);
+  const float x0 = (*x)-cx;
+  const float y0 = (*y)-cy;
+  *x = (x0*c-y0*s)+cx;
+  *y = (x0*s+y0*c)+cy;
+}
+
+
+//==========================================================================
+//
 //  AM_rotatePoint
 //
 //==========================================================================
@@ -1509,30 +1524,15 @@ static bool AM_CalcBM (int *bx0, int *by0, int *bx1, int *by1) {
 
   // rotate: not yet
   if (am_rotate) {
-    const float angle = /*90.0f-*/cl->ViewAngles.yaw;
+    const float angle = cl->ViewAngles.yaw;
 
-    float s, c;
-    msincos(angle, &s, &c);
+    float rx1 = lx1o;
+    float ry1 = ly1o;
+    float rx2 = lx2o;
+    float ry2 = ly2o;
 
-    lx1o -= cl->ViewOrg.x;
-    ly1o -= cl->ViewOrg.y;
-    lx2o -= cl->ViewOrg.x;
-    ly2o -= cl->ViewOrg.y;
-
-    float rx1 = lx1o*c-ly1o*s;
-    float ry1 = ly1o*c+lx1o*s;
-    float rx2 = lx2o*c-ly2o*s;
-    float ry2 = ly2o*c+lx2o*s;
-
-    rx1 += cl->ViewOrg.x;
-    ry1 += cl->ViewOrg.y;
-    rx2 += cl->ViewOrg.x;
-    ry2 += cl->ViewOrg.y;
-
-    lx1o += cl->ViewOrg.x;
-    ly1o += cl->ViewOrg.y;
-    lx2o += cl->ViewOrg.x;
-    ly2o += cl->ViewOrg.y;
+    AM_rotateAround(&rx1, &ry1, angle, cl->ViewOrg.x, cl->ViewOrg.y);
+    AM_rotateAround(&rx2, &ry2, angle, cl->ViewOrg.x, cl->ViewOrg.y);
 
     lx1o = min2(lx1o, min2(rx1, rx2));
     lx2o = max2(lx2o, max2(rx1, rx2));
@@ -1662,6 +1662,72 @@ static void AM_drawWallsOld () {
 
 //==========================================================================
 //
+//  AM_drawOneWall
+//
+//==========================================================================
+static void AM_drawOneWall (const line_t &line, const bool debugPObj, TArrayNC<polyobj_t *> &pobjs) {
+  if (!line.firstseg) return; // just in case
+  // do not send the line to GPU if it is not visible
+  // simplified check with line bounding box
+  //if (!AM_isBBox2DVisible(line.bbox2d)) return;
+
+  if (!am_cheating) {
+    if (line.flags&ML_DONTDRAW) return;
+    if (!(line.flags&ML_MAPPED) && !(line.exFlags&(ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED))) {
+      if (!(cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed)) return;
+    }
+  }
+
+  bool cheatOnly = false;
+  vuint32 clr = AM_getLineColor(&line, &cheatOnly);
+  if (cheatOnly && !am_cheating) return; //FIXME: should we draw these lines if automap powerup is active?
+
+  // special rendering for polyobject
+  if (debugPObj && line.pobj()) {
+    bool found = false;
+    for (int f = 0; f < pobjs.length(); ++f) if (pobjs[f] == line.pobj()) { found = true; break; }
+    if (!found) pobjs.append(line.pobj());
+    return;
+  }
+
+  // fully mapped or automap revealed?
+  if (am_full_lines || am_cheating || (line.flags&ML_MAPPED) || (cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed)) {
+    mline_t l;
+    l.a.x = line.v1->x;
+    l.a.y = line.v1->y;
+    l.b.x = line.v2->x;
+    l.b.y = line.v2->y;
+
+    if (am_rotate) {
+      AM_rotatePoint(&l.a.x, &l.a.y);
+      AM_rotatePoint(&l.b.x, &l.b.y);
+    }
+
+    AM_drawMline(&l, clr);
+  } else {
+    // render segments
+    for (const seg_t *seg = line.firstseg; seg; seg = seg->lsnext) {
+      if (!seg->drawsegs || !(seg->flags&SF_MAPPED)) continue;
+
+      mline_t l;
+      l.a.x = seg->v1->x;
+      l.a.y = seg->v1->y;
+      l.b.x = seg->v2->x;
+      l.b.y = seg->v2->y;
+
+      if (am_rotate) {
+        AM_rotatePoint(&l.a.x, &l.a.y);
+        AM_rotatePoint(&l.b.x, &l.b.y);
+      }
+
+      AM_drawMline(&l, clr);
+    }
+  }
+}
+
+
+//==========================================================================
+//
 //  AM_drawWalls
 //
 //  Determines visible lines, draws them.
@@ -1671,72 +1737,21 @@ static void AM_drawWalls () {
   const bool debugPObj = (am_pobj_debug.asInt()&0x01);
   TArrayNC<polyobj_t *> pobjs;
 
-  int bx0, by0, bx1, by1;
-  if (!AM_CalcBM(&bx0, &by0, &bx1, &by1)) return;
-  GClLevel->IncrementValidCount();
-  for (int bx = bx0; bx <= bx1; ++bx) {
-    for (int by = by0; by <= by1; ++by) {
-      for (auto &&it : GClLevel->allBlockLines(bx, by)) {
-        const line_t &line = *it.line();
-
-        if (!line.firstseg) continue; // just in case
-        // do not send the line to GPU if it is not visible
-        // simplified check with line bounding box
-        //if (!AM_isBBox2DVisible(line.bbox2d)) continue;
-
-        if (!am_cheating) {
-          if (line.flags&ML_DONTDRAW) continue;
-          if (!(line.flags&ML_MAPPED) && !(line.exFlags&(ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED))) {
-            if (!(cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed)) continue;
-          }
-        }
-
-        bool cheatOnly = false;
-        vuint32 clr = AM_getLineColor(&line, &cheatOnly);
-        if (cheatOnly && !am_cheating) continue; //FIXME: should we draw these lines if automap powerup is active?
-
-        // special rendering for polyobject
-        if (debugPObj && line.pobj()) {
-          bool found = false;
-          for (int f = 0; f < pobjs.length(); ++f) if (pobjs[f] == line.pobj()) { found = true; break; }
-          if (!found) pobjs.append(line.pobj());
-          continue;
-        }
-
-        // fully mapped or automap revealed?
-        if (am_full_lines || am_cheating || (line.flags&ML_MAPPED) || (cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed)) {
-          mline_t l;
-          l.a.x = line.v1->x;
-          l.a.y = line.v1->y;
-          l.b.x = line.v2->x;
-          l.b.y = line.v2->y;
-
-          if (am_rotate) {
-            AM_rotatePoint(&l.a.x, &l.a.y);
-            AM_rotatePoint(&l.b.x, &l.b.y);
-          }
-
-          AM_drawMline(&l, clr);
-        } else {
-          // render segments
-          for (const seg_t *seg = line.firstseg; seg; seg = seg->lsnext) {
-            if (!seg->drawsegs || !(seg->flags&SF_MAPPED)) continue;
-
-            mline_t l;
-            l.a.x = seg->v1->x;
-            l.a.y = seg->v1->y;
-            l.b.x = seg->v2->x;
-            l.b.y = seg->v2->y;
-
-            if (am_rotate) {
-              AM_rotatePoint(&l.a.x, &l.a.y);
-              AM_rotatePoint(&l.b.x, &l.b.y);
-            }
-
-            AM_drawMline(&l, clr);
-          }
+  if (am_follow_player) {
+    AM_doFollowPlayer();
+    int bx0, by0, bx1, by1;
+    if (!AM_CalcBM(&bx0, &by0, &bx1, &by1)) return;
+    GClLevel->IncrementValidCount();
+    for (int bx = bx0; bx <= bx1; ++bx) {
+      for (int by = by0; by <= by1; ++by) {
+        for (auto &&it : GClLevel->allBlockLines(bx, by)) {
+          AM_drawOneWall(*it.line(), debugPObj, pobjs);
         }
       }
+    }
+  } else {
+    for (auto &&line : GClLevel->allLines()) {
+      AM_drawOneWall(line, debugPObj, pobjs);
     }
   }
 
@@ -2100,7 +2115,7 @@ static void AM_drawOneThing (VEntity *mobj, bool &inSpriteMode) {
 static void AM_drawThings () {
   bool inSpriteMode = false;
 
-  if (am_cheating >= 3 /*|| am_rotate*/) {
+  if (am_cheating >= 3 || !am_follow_player) {
     for (TThinkerIterator<VEntity> Ent(GClLevel); Ent; ++Ent) {
       VEntity *mobj = *Ent;
       AM_drawOneThing(mobj, inSpriteMode);
@@ -2179,14 +2194,11 @@ static void AM_drawKeys () {
   const bool allKeys = (am_show_keys_cheat.asBool() || am_cheating.asInt() > 1);
   bool inSpriteMode = false;
 
-  /*
-  if (am_rotate) {
+  if (!am_follow_player) {
     for (TThinkerIterator<VEntity> Ent(GClLevel); Ent; ++Ent) {
       AM_drawOneKey(*Ent, inSpriteMode, allKeys);
     }
-  } else
-  */
-  {
+  } else {
     int bx0, by0, bx1, by1;
     if (!AM_CalcBM(&bx0, &by0, &bx1, &by1)) return;
     GClLevel->IncrementValidCount();
@@ -2684,33 +2696,46 @@ static bool AM_MiniMap_CalcBM (VWidget *w, float xc, float yc, float scale, floa
   const float halfwdt = w->GetWidth()*0.5f;
   const float halfhgt = w->GetHeight()*0.5f;
 
+  const float wscale = halfwdt/scale;
+  const float hscale = halfhgt/scale;
+
   // convert widget coords to map coords
-  float lx1o = -halfwdt/scale;
-  float ly1o = -halfhgt/scale;
-  float lx2o = +halfwdt/scale;
-  float ly2o = +halfhgt/scale;
+  float lx1o = xc-wscale;
+  float ly1o = yc-hscale;
+  float lx2o = xc+wscale;
+  float ly2o = yc+hscale;
 
   // rotate
   if (angle) {
-    float s, c;
-    msincos(angle+90.0f, &s, &c);
+    float rx1 = lx1o;
+    float ry1 = ly1o;
+    float rx2 = lx2o;
+    float ry2 = ly2o;
 
-    float rx1 = lx1o*c-ly1o*s;
-    float ry1 = ly1o*c+lx1o*s;
-    float rx2 = lx2o*c-ly2o*s;
-    float ry2 = ly2o*c+lx2o*s;
+    AM_rotateAround(&rx1, &ry1, angle, xc, yc);
+    AM_rotateAround(&rx2, &ry2, angle, xc, yc);
 
     lx1o = min2(lx1o, min2(rx1, rx2));
     lx2o = max2(lx2o, max2(rx1, rx2));
 
     ly1o = min2(ly1o, min2(ry1, ry2));
     ly2o = max2(ly2o, max2(ry1, ry2));
-  }
 
-  lx1o += xc;
-  ly1o += yc;
-  lx2o += xc;
-  ly2o += yc;
+    #if 0
+    // this gets more blockmap cells than necessary, but meh...
+    rx1 = (xc+wscale)-(rx1-(xc-wscale));
+    rx2 = (xc+wscale)-(rx2-(xc-wscale));
+
+    ry1 = (yc+hscale)-(ry1-(yc-hscale));
+    ry2 = (yc+hscale)-(ry2-(yc-hscale));
+
+    lx1o = min2(lx1o, min2(rx1, rx2));
+    lx2o = max2(lx2o, max2(rx1, rx2));
+
+    ly1o = min2(ly1o, min2(ry1, ry2));
+    ly2o = max2(ly2o, max2(ry1, ry2));
+    #endif
+  }
 
   #if 0
   GCon->Logf(NAME_Debug, "*** xc=%g; yc=%g; scale=%g; angle=%g, (%g,%g)-(%g,%g)", xc, yc, scale, angle, lx1o, ly1o, lx2o, ly2o);
@@ -2819,11 +2844,13 @@ static void AM_Minimap_DrawWalls (VWidget *w, float xc, float yc, float scale, f
         WidgetTranslateXY(lx2, ly2, lx2o, ly2o);
 
         // do not send the line to GPU if it is not visible
+        /*
         if (max2(lx1, lx2) < 0 || max2(ly1, ly2) < 0 ||
             min2(lx1, lx2) >= w->GetWidth() || min2(ly1, ly2) >= w->GetHeight())
         {
           continue;
         }
+        */
 
         bool cheatOnly = false;
         vuint32 clr = AM_getLineColor(&line, &cheatOnly);
