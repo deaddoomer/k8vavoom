@@ -162,6 +162,7 @@ native final iterator PathTraverse (out intercept_t In, TVec p0, TVec p1, int fl
                                     optional int lineflags/*=ML_BLOCKEVERYTHING|ML_BLOCKHITSCAN*/);
 native final iterator RadiusThings (out Entity Ent, TVec Org, float Radius);
 
+// WARNING! even with a radius, this loops over ALL monsters on the map!
 native final iterator AllMonsters (class!Actor Class, out Actor Thinker,
                                    optional bool onlyVisible, optional bool allowPlayers,
                                    optional bool allowSelf, optional float radius);

@@ -148,6 +148,8 @@
   if (!tag) tag = 666;
 
   // scan the remaining thinkers to see if all Keens are dead
+  // this cast doesn't change the class, it is just a runtime check
+  // it is required, because `AllThinkers()` wants a `Thinker`
   foreach AllThinkers(class!EntityEx(Class), Other) {
     if (Other != self && Other.Health > 0) {
       // other mobj of the same Class not dead
