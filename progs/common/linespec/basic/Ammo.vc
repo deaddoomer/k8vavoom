@@ -130,8 +130,16 @@ int k8GetAmmoKingMax () {
 
   int res;
   switch (at) {
-    case AmmoKingType.Shells: res = GetCvarI(GetCvarB('k8HSEnabled') ? 'k8AmmoKing_MaxShells_HS' : 'k8AmmoKing_MaxShells_Normal'); break;
-    case AmmoKingType.Bullets: res = GetCvarI(GetCvarB('k8HSEnabled') ? 'k8AmmoKing_MaxBullets_HS' : 'k8AmmoKing_MaxBullets_Normal'); break;
+    case AmmoKingType.Shells:
+      //res = GetCvarI(GetCvarB('k8HSEnabled') ? 'k8AmmoKing_MaxShells_HS' : 'k8AmmoKing_MaxShells_Normal');
+      // this is faster
+      res = (GetCvarB('k8HSEnabled') ? GetCvarI('k8AmmoKing_MaxShells_HS') : GetCvarI('k8AmmoKing_MaxShells_Normal'));
+      break;
+    case AmmoKingType.Bullets:
+      //res = GetCvarI(GetCvarB('k8HSEnabled') ? 'k8AmmoKing_MaxBullets_HS' : 'k8AmmoKing_MaxBullets_Normal');
+      // this is faster
+      res = (GetCvarB('k8HSEnabled') ? GetCvarI('k8AmmoKing_MaxBullets_HS') : GetCvarI('k8AmmoKing_MaxBullets_Normal'));
+      break;
     case AmmoKingType.Rockets: res = GetCvarI('k8AmmoKing_MaxRockets'); break;
     case AmmoKingType.Cells: res = GetCvarI('k8AmmoKing_MaxCells'); break;
     case AmmoKingType.Other: res = GetCvarI('k8AmmoKing_MaxOther'); break;
