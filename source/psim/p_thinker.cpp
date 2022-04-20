@@ -585,7 +585,7 @@ public:
     , Radius(ARadius*ARadius)
   {
          if (!AClass->IsChildOf(actorCls)) Class = nullptr;
-    else if (!ASelf->IsA(VEntity::StaticClass())) Class = nullptr;
+    else if (!ASelf->IsA(VThinker::StaticClass())) Class = nullptr;
     else Self = (VEntity *)ASelf;
     Flags =
      (AOnlyVisible ? FlagOnlyVisible : FlagNone)|
