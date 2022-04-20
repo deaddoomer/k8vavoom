@@ -546,6 +546,7 @@ bool CCommGetPropStr (name ns, name propname, out string val) { return false; }
 bool CCommGetPropInt (name ns, name propname, out int val) { return false; }
 bool CCommGetPropFloat (name ns, name propname, out float val) { return false; }
 bool CCommGetPropBool (name ns, name propname, out bool val) { return false; }
+bool CCommGetPropObject (name ns, name propname, out Object val) { return false; }
 
 // this is to allow client game and level descendants to communicate
 // returns `true` if property was recognized (the value may be ignored, tho)
@@ -555,6 +556,7 @@ bool CCommSetPropStr (name ns, name propname, string val) { return false; }
 bool CCommSetPropInt (name ns, name propname, int val) { return false; }
 bool CCommSetPropFloat (name ns, name propname, float val) { return false; }
 bool CCommSetPropBool (name ns, name propname, bool val) { return false; }
+bool CCommSetPropObject (name ns, name propname, Object val) { return false; }
 
 
 //==========================================================================

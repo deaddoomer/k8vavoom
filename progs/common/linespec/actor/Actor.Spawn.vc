@@ -250,7 +250,7 @@ final void InitSpawnedItem (EntityEx A, bool TransTransl, bool SetMaster,
 //
 //==========================================================================
 [decorate] final bool A_SpawnItemEx (class!Actor ItemType,
-                          optional float XOffs, optional float YOffs, optional float ZOffs,
+                          optional float XOfs, optional float YOfs, optional float ZOfs,
                           optional float XVel, optional float YVel, optional float ZVel,
                           optional float Angle, optional int Flags, optional int Chance,
                           optional int newtid)
@@ -268,7 +268,7 @@ final void InitSpawnedItem (EntityEx A, bool TransTransl, bool SetMaster,
 
   if (!(Flags&SXF_ABSOLUTEANGLE)) Angle += Angles.yaw;
 
-  TVec Org = vector(XOffs, YOffs, ZOffs-FloorClip);
+  TVec Org = vector(XOfs, YOfs, ZOfs-FloorClip);
   if (!(Flags&SXF_ABSOLUTEPOSITION)) {
     // in relative mode negative y values mean 'left' and positive ones
     // mean 'right'. This is the inverse orientation of the absolute mode!
