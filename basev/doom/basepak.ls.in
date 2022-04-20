@@ -6,6 +6,9 @@ sounds/dssecret.opus  @CMAKE_CURRENT_SOURCE_DIR@/sounds/dssecret.opus
 // additional gfx
 $recursedir graphics/  @CMAKE_CURRENT_SOURCE_DIR@/graphics/
 
+// additional sprites
+$recursedir sprites/  @CMAKE_CURRENT_SOURCE_DIR@/sprites/
+
 // automap background
 //graphics/autopage.lmp  @CMAKE_CURRENT_SOURCE_DIR@/graphics/autopage.lmp
 

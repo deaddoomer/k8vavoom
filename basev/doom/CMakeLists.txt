@@ -3,6 +3,9 @@ configure_file(basepak.ls.in ${CMAKE_CURRENT_BINARY_DIR}/basepak.ls)
 file(GLOB doom_pak_SRC CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/croshai*.*
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/croshai*
+  ${CMAKE_CURRENT_SOURCE_DIR}/graphics/*.lmp
+  ${CMAKE_CURRENT_SOURCE_DIR}/graphics/*.imgz
+  ${CMAKE_CURRENT_SOURCE_DIR}/sprites/*.png
   ${CMAKE_CURRENT_SOURCE_DIR}/*.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/k8vavoom/linedefs/*.rc
   ${CMAKE_SOURCE_DIR}/progs/doom/cgame/*.vc
@@ -12,7 +15,6 @@ file(GLOB doom_pak_SRC CONFIGURE_DEPENDS
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3
   COMMAND ${WINERUN} $<TARGET_FILE:vlumpy> ARGS basepak.ls
   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/basepak.ls vlumpy
-    graphics/autopage.lmp
     basepak.ls.in
     bigfont.pcx
     #animated.lmp
