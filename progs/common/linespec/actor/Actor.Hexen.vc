@@ -1503,7 +1503,8 @@ final void CHolyTailRemove () {
   if (CheckMeleeRange() && P_Random() < 220) {
     int amount = HITDICE(2);
     Target.Damage(self, self, amount, DmgType:'Melee', spawnBlood:true);
-    Health += amount;
+    //Health += amount;
+    GiveBody(amount, asHealthBonus:true);
   }
 }
 
