@@ -474,6 +474,13 @@ actor BFG9000 : DoomWeapon 2006
   Spawn:
     BFUG A -1
     Stop
+  OldFire:
+    BFGG A 9 A_BFGsound
+    BFGG A 1 { A_BFGsound(); A_GunFlash(); }
+    BFGG BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB 1 A_FireOldBFG
+    BFGG B 0 A_Light0
+    BFGG B 20 A_ReFire
+    Goto Ready
   }
 }
 
