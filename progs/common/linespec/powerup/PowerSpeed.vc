@@ -31,8 +31,9 @@ class PowerSpeed : Powerup;
 //  GetSpeedFactor
 //
 //==========================================================================
-override float GetSpeedFactor () {
-  return Speed*(Inventory ? Inventory.GetSpeedFactor() : 1.0);
+override float GetSpeedFactor (float currFactor) {
+  //return Speed*(Inventory ? Inventory.GetSpeedFactor() : 1.0);
+  return Speed*currFactor;
 }
 
 

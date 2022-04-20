@@ -577,7 +577,6 @@ bool OkayToSwitchTarget (EntityEx source) {
 //
 //==========================================================================
 void Died (EntityEx source, EntityEx inflictor) {
-  Inventory Item;
   if (!Level.Game.IsAuthority) return;
 
   //printdebug("%C: DIED!", self);
@@ -627,7 +626,7 @@ void Died (EntityEx source, EntityEx inflictor) {
   }
 
   // notify actor's items
-  for (Item = Inventory; Item; ) {
+  for (Inventory Item = Inventory; Item; ) {
     Inventory invNext = Item.Inventory;
     Item.OwnerDied();
     Item = invNext;

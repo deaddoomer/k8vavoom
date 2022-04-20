@@ -205,11 +205,20 @@ override void Tick (float DeltaTime) {
 //
 //==========================================================================
 bool IsAutoaimDisabled (optional int forceType) {
+  int aatype;
+  /*
   name cvname;
        if (forceType > 0) cvname = 'k8HitscanAutoAim';
   else if (forceType < 0) cvname = 'k8ProjectileAutoAim';
   else cvname = (bIsHitscanWeapon ? 'k8HitscanAutoAim' : 'k8ProjectileAutoAim');
   int aatype = GetCvar(cvname);
+  */
+  // this is faster
+       if (forceType > 0) aatype = GetCvar('k8HitscanAutoAim');
+  else if (forceType < 0) aatype = GetCvar('k8ProjectileAutoAim');
+  else if (bIsHitscanWeapon) aatype = GetCvar('k8HitscanAutoAim');
+  else aatype = GetCvar('k8ProjectileAutoAim');
+
   if (aatype == 2) return false;
   if (bNoAutoaim) return true;
   return !aatype;
@@ -814,6 +823,11 @@ bool Use (bool Pickup) {
 //
 //  DoEffect
 //
+//  called on each tick for any entity
+//  used for various visual effects from powerup
+//
+//  it is safe to call `Destroy()` here
+//
 //==========================================================================
 void DoEffect () {
 }
@@ -822,6 +836,10 @@ void DoEffect () {
 //==========================================================================
 //
 //  GetBlend
+//
+//  called by player to get
+//
+//  WARNING! it is NOT safe to call `Destroy()` here
 //
 //==========================================================================
 int GetBlend () {
@@ -896,6 +914,8 @@ int ModifyDamage (EntityEx source, EntityEx inflictor, int damage, name DmgType,
 //
 //  OwnerDied
 //
+//  it is safe to call `Destroy()` here
+//
 //==========================================================================
 void OwnerDied () {
 }
@@ -905,7 +925,9 @@ void OwnerDied () {
 //
 //  GetSpeedFactor
 //
+//  called by player pawn, if not morphed
+//
 //==========================================================================
-float GetSpeedFactor () {
-  return (Inventory ? Inventory.GetSpeedFactor() : 1.0);
+float GetSpeedFactor (float currFactor) {
+  return currFactor;
 }

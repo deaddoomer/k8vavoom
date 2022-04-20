@@ -2148,9 +2148,18 @@ final void EntityPreTick (float deltaTime) {
     //Player.ExtraLight = 0; // nope, this could be changed by decorate actions
     Player.CShift = 0;
   }
+
   // handle powerup effects
+  /*
   for (Inventory Item = Inventory; Item && Item.Owner == self; Item = Item.Inventory) {
     Item.DoEffect();
+  }
+  */
+
+  for (Inventory Item = Inventory; Item; ) {
+    Inventory invNext = Item.Inventory;
+    if (Item.Owner == self) Item.DoEffect();
+    Item = invNext;
   }
 
   if (bVisibilityPulse) {
