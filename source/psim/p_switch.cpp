@@ -257,7 +257,7 @@ bool VLevelInfo::StartButton (line_t *line, VEntity *activator, int sidenum, vui
     TVec sndorg;
     if (CalcSoundOrigin(&sndorg, line, activator, XLevel->Sides[sidenum].Sector)) {
       But->Flags = VThinkButton::Flag_SoundOrgSet;
-      #if 1
+      #if 0
       GCon->Logf(NAME_Debug, "%s: sndorg=(%g,%g,%g); sectorsndorg=(%g,%g,%g)",
         (activator ? activator->GetClass()->GetName() : "<none>"),
         sndorg.x, sndorg.y, sndorg.z,
