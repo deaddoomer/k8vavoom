@@ -103,7 +103,6 @@ native transient readonly bool bExtended; // true if level was in Hexen format (
 native transient readonly bool bTextMap; // UDMF format map
 // used in map fixer
 native transient bool bForceUseZDBSP; // force ZDBSP (it works better with some ancient tricky maps)
-native transient bool bForceAllowSeveralPObjInSubsector; // this is not used anymore, but kept for compatibility
 native transient bool bForceNoTexturePrecache;
 native transient bool bForceNoPrecalcStaticLights;
 native transient bool bForceNoDeepwaterFix;
@@ -113,10 +112,11 @@ native transient bool bForceNoCeilingFloodfillFix;
 native transient bool bConvertSectorLightsToStatic;
 // set by pobj spawner
 native transient readonly bool bHas3DPolyObjects;
-// set by loader
-native transient readonly bool bHasFullSegs;
 // BadApple.wad ;-)
 native transient readonly bool bIsBadApple;
+// set this to `true` in `defaultproperties` if necessary
+// note that it is transient (i.e. not saved in a savegame)
+native transient bool bCallOnMissileSpawned;
 
 native transient name UDMFNamespace; // locased
 
@@ -267,7 +267,6 @@ private native transient void *SoundIDMap;
 
 private native transient /*VDecalList*/void *subsectorDecalList;
 
-//bool bCallOnMissileSpawned = false; // set this to `true` in `defaultproperties` if necessary
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -528,8 +527,10 @@ void OnEntitySpawned (Entity ent) {}
 void OnEntityDying (Entity ent) {}
 
 // called after missile was spawned, `ent` is never `none`
+// i.e. this is called after all missile checks are done, Target set, and so on
+// called from `CheckMissileSpawn()`
 // WARNING! THIS API MAY BE CHANGED LATER!
-//void OnMissileSpawned (Entity ent) {}
+void OnMissileSpawned (Entity ent) {}
 
 
 //==========================================================================

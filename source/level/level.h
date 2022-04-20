@@ -375,21 +375,19 @@ class VLevel : public VGameObject {
     LF_TextMap   = 1u<<2, // UDMF format map
     // used in map fixer
     LF_ForceUseZDBSP                    = 1u<<3, // force ZDBSP (it works better with some ancient tricky maps)
-    LF_ForceAllowSeveralPObjInSubsector = 1u<<4, // this is not used anymore, but kept for compatibility
-    LF_ForceNoTexturePrecache           = 1u<<5,
-    LF_ForceNoPrecalcStaticLights       = 1u<<6,
-    LF_ForceNoDeepwaterFix              = 1u<<7,
-    LF_ForceNoFloorFloodfillFix         = 1u<<8,
-    LF_ForceNoCeilingFloodfillFix       = 1u<<9,
+    LF_ForceNoTexturePrecache           = 1u<<4,
+    LF_ForceNoPrecalcStaticLights       = 1u<<5,
+    LF_ForceNoDeepwaterFix              = 1u<<6,
+    LF_ForceNoFloorFloodfillFix         = 1u<<7,
+    LF_ForceNoCeilingFloodfillFix       = 1u<<8,
     // used only in VavoomC
-    LF_ConvertSectorLightsToStatic      = 1u<<10,
+    LF_ConvertSectorLightsToStatic      = 1u<<9,
     // set by pobj spawner
-    LF_Has3DPolyObjects                 = 1u<<11,
-    // set by loader
-    // DO NOT REMOVE!
-    //LF_HasFullSegs                      = 1u<<12,
+    LF_Has3DPolyObjects                 = 1u<<10,
     // BadApple.wad ;-)
-    LF_IsBadApple                       = 1u<<13,
+    LF_IsBadApple                       = 1u<<11,
+    // should `CheckMissileSpawn()` call `OnMissileSpawned()` handler?
+    LF_CallOnMissileSpawned             = 1u<<12,
   };
   vuint32 LevelFlags;
 
@@ -876,8 +874,6 @@ public:
 
   // modifies `plane`
   void CalcSecPlaneMinMax (sector_t *sector, TSecPlaneRef &plane);
-
-  //inline bool VVA_CHECKRESULT HasFullSegs () const noexcept { return (LevelFlags&LF_HasFullSegs); }
 
 private:
   static bool canReplaceBlood;
