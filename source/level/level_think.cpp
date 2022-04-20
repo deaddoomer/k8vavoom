@@ -542,7 +542,10 @@ void VLevel::TickWorld (float DeltaTime) {
         // if it is just destroyed, call level notifier
         if (!c->IsDestroyed() && c->IsA(VEntity::StaticClass())) {
           //HACK! do not call it for `VLevel`, as it is empty anyway
-          if (GetClass() != VLevel::StaticClass()) eventEntityDying((VEntity *)c);
+          if (GetClass() != VLevel::StaticClass()) {
+            VEntity *ee = (VEntity *)c;
+            if (!(ee->FlagsEx&VEntity::EFEX_GoreModEntity)) eventEntityDying(ee);
+          }
         }
         c->ConditionalDestroy();
       } else {
@@ -592,7 +595,10 @@ void VLevel::TickWorld (float DeltaTime) {
           // if it is just destroyed, call level notifier
           if (!c->IsDestroyed() && c->IsA(VEntity::StaticClass())) {
             //HACK! do not call it for `VLevel`, as it is empty anyway
-            if (GetClass() != VLevel::StaticClass()) eventEntityDying((VEntity *)c);
+            if (GetClass() != VLevel::StaticClass()) {
+              VEntity *ee = (VEntity *)c;
+              if (!(ee->FlagsEx&VEntity::EFEX_GoreModEntity)) eventEntityDying(ee);
+            }
           }
           c->ConditionalDestroy();
         } else if (c->IsA(SSClass)) {
@@ -827,6 +833,24 @@ VThinker *VLevel::SpawnThinker (VClass *AClass, const TVec &AOrigin,
     return nullptr;
   }
 
+  // set "gore mod" flag
+  const bool isVEntity = Class->IsChildOf(VEntity::StaticClass());
+
+  if (isVEntity) {
+    const char *cnm = Ret->GetClass()->GetName();
+    if (cnm[0] == 'K' &&
+        cnm[1] == '8' &&
+        cnm[2] == 'G' &&
+        cnm[3] == 'o' &&
+        cnm[4] == 'r' &&
+        cnm[5] == 'e' &&
+        cnm[6] == '_')
+    {
+      // it is guaranteed to be `VEntity`
+      ((VEntity *)Ret)->FlagsEx |= VEntity::EFEX_GoreModEntity;
+    }
+  }
+
   // setup spawn time, add thinker
   Ret->SpawnTime = Time;
   Ret->ServerUId = (srvUId ? srvUId : Ret->GetUniqueId());
@@ -846,7 +870,7 @@ VThinker *VLevel::SpawnThinker (VClass *AClass, const TVec &AOrigin,
     // this is harmless for non-authorithy entities
     if (GGameInfo && GGameInfo->NetMode == NM_Client) Ret->ThinkerFlags |= VThinker::TF_DetachComplete;
     #endif
-    if (Class->IsChildOf(VEntity::StaticClass())) {
+    if (isVEntity) {
       VEntity *e = (VEntity *)Ret;
       e->Origin = AOrigin;
       e->Angles = AAngles;
@@ -874,7 +898,9 @@ VThinker *VLevel::SpawnThinker (VClass *AClass, const TVec &AOrigin,
         // force colored blood for some entities
         e->CheckForceColoredBlood();
         //HACK! do not call it for `VLevel`, as it is empty anyway
-        if (GetClass() != VLevel::StaticClass()) eventEntitySpawned(e);
+        if (GetClass() != VLevel::StaticClass() && !(e->FlagsEx&VEntity::EFEX_GoreModEntity)) {
+          eventEntitySpawned(e);
+        }
       }
     }
   }

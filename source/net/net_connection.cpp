@@ -1819,7 +1819,7 @@ void VNetConnection::UpdateThinkers () {
     VThinkerChannel *chan = ThinkerChannels.findptr(*th);
     if (!chan) {
       //HACK! add gore entities as last ones
-      if (VStr::startsWith(th->GetClass()->GetName(), "K8Gore")) {
+      if (VStr::startsWith(th->GetClass()->GetName(), "K8Gore_")) {
         vassert(th->IsA(VEntity::StaticClass()));
         // if we are starving on channels, don't try to add entities behind our back
         if (starvingOnChannels) {
@@ -1871,7 +1871,7 @@ void VNetConnection::UpdateThinkers () {
       }
       if (tc->Closing) ++closedChanCount;
       // remember alive gore entities
-      if (!tc->Closing && tc->GetThinker() && VStr::startsWith(tc->GetThinker()->GetClass()->GetName(), "K8Gore")) {
+      if (!tc->Closing && tc->GetThinker() && VStr::startsWith(tc->GetThinker()->GetClass()->GetName(), "K8Gore_")) {
         AliveGoreChans.append(chan->Index);
       }
     }

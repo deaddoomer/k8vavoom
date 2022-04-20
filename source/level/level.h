@@ -1586,7 +1586,7 @@ private:
     VMT_RET_VOID(method);
   }
 
-  void eventEntitySpawned (VEntity *e) {
+  inline void eventEntitySpawned (VEntity *e) {
     if (e) {
       static VMethodProxy method("OnEntitySpawned");
       vobjPutParamSelf(e);
@@ -1594,7 +1594,7 @@ private:
     }
   }
 
-  void eventEntityDying (VEntity *e) {
+  inline void eventEntityDying (VEntity *e) {
     if (e) {
       static VMethodProxy method("OnEntityDying");
       vobjPutParamSelf(e);

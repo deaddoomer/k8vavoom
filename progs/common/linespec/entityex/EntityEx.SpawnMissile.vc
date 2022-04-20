@@ -84,7 +84,7 @@ final bool CheckMissileSpawn () {
     }
   }
 
-  if (XLevel.bCallOnMissileSpawned) XLevel.OnMissileSpawned(self);
+  if (!bGoreModEntity && !bMissileHitscan && XLevel.bCallOnMissileSpawned) XLevel.OnMissileSpawned(self);
   return true;
 }
 

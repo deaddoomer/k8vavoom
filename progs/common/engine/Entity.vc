@@ -326,7 +326,6 @@ int InitialHealth;
 
 // extra flags
 bool bMonster; // moved from `EntityEx`
-bool bWasRendered; // used in automap
 transient bool bNetDetach; // server is using this flag for some replication conditions
 bool bNoInteraction; // thing is completely excluded from any gameplay related checks (moved from EntityEx)
 bool bNoTickGrav; // do not call `Tick()` (but process gravity) (processed in C++ code)
@@ -353,6 +352,8 @@ bool bMissileHitscan; // this is hitscan emulation, should be affected by hitsca
 // any height-changing sector will set this flag (it is cheap)
 // physics code can use this flag to check if dead bodies should slide away
 transient bool bSomeSectorMoved;
+// game loader will fix this, no need to save it
+transient bool bGoreModEntity;
 
 // 0: none
 // 1: switches object to "k8vavoomInternalNoTickGrav" when it enters idle state (the one with negative duration)

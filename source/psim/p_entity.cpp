@@ -360,6 +360,12 @@ void VEntity::SerialiseOther (VStream &Strm) {
       if (DispSpriteName != NAME_None) sidx = VClass::FindAddSprite(DispSpriteName);
       DispSpriteFrame = (DispSpriteFrame&~0x00ffffff)|(sidx&0x00ffffff);
     }
+    // restore "gore mod" flag
+    if (VStr::startsWith(GetClass()->GetName(), "K8Gore_")) {
+      FlagsEx |= EFEX_GoreModEntity;
+    } else {
+      FlagsEx &= ~EFEX_GoreModEntity;
+    }
     #ifdef EXTRA_DATA_SIGNATURE
     // has other data?
     auto opos = Strm.Tell();

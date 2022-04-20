@@ -520,16 +520,19 @@ void AfterWorldTick (float DeltaTime) { /*print("AFTER: %s", DeltaTime);*/ }
 
 // called after `OnMapSpawn()`, `ent` is never `none`
 // WARNING! do not put any code right here, the engine will not call it for `VLevel`!
+// WARNING! not called for Gore Mod blood entities
 void OnEntitySpawned (Entity ent) {}
 
 // called after entity was removed from lists, and marked for deletion; `ent` is never `none`
 // WARNING! do not put any code right here, the engine will not call it for `VLevel`!
+// WARNING! not called for Gore Mod blood entities
 void OnEntityDying (Entity ent) {}
 
 // called after missile was spawned, `ent` is never `none`
 // i.e. this is called after all missile checks are done, Target set, and so on
 // called from `CheckMissileSpawn()`
 // WARNING! THIS API MAY BE CHANGED LATER!
+// WARNING! not called for Gore Mod blood entities, and for "hitscan projectiles"
 void OnMissileSpawned (Entity ent) {}
 
 

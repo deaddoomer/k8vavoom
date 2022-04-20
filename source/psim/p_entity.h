@@ -265,31 +265,34 @@ class VEntity : public VThinker {
   // extra flags
   enum {
     EFEX_Monster          = 1u<<0u, // is this a monster?
-    EFEX_Rendered         = 1u<<1u, // was this thing rendered? (unused, not set ever)
-    EFEX_NetDetach        = 1u<<2u, // server is using this flag for some replication conditions
-    EFEX_NoInteraction    = 1u<<3u, // moved from EntityEx
-    EFEX_NoTickGrav       = 1u<<4u, // do not call `Tick()` (but process gravity)
-    EFEX_PseudoCorpse     = 1u<<5u, // for sprite fixer
-    EFEX_FloatBob         = 1u<<6u, // use float bobbing z movement
-    EFEX_NoTickGravLT     = 1u<<7u, // if `EFEX_NoTickGrav` set, perform lifetime logic
-    EFEX_StickToFloor     = 1u<<8u,
-    EFEX_StickToCeiling   = 1u<<9u,
-    EFEX_DetachFromServer = 1u<<10u, // set this flag to detach the entity from the server in network game
-    EFEX_CorpseFlipped    = 1u<<11u, // this flag is set when monster died, and need its corpse flipped
-    EFEX_AlwaysTick       = 1u<<12u, // cannot optimise physics for this entity
+    //EFEX_Rendered         = 1u<<1u, // was this thing rendered? (unused, not set ever)
+    EFEX_NetDetach        = 1u<<1u, // server is using this flag for some replication conditions
+    EFEX_NoInteraction    = 1u<<2u, // moved from EntityEx
+    EFEX_NoTickGrav       = 1u<<3u, // do not call `Tick()` (but process gravity)
+    EFEX_PseudoCorpse     = 1u<<4u, // for sprite fixer
+    EFEX_FloatBob         = 1u<<5u, // use float bobbing z movement
+    EFEX_NoTickGravLT     = 1u<<6u, // if `EFEX_NoTickGrav` set, perform lifetime logic
+    EFEX_StickToFloor     = 1u<<7u,
+    EFEX_StickToCeiling   = 1u<<8u,
+    EFEX_DetachFromServer = 1u<<9u, // set this flag to detach the entity from the server in network game
+    EFEX_CorpseFlipped    = 1u<<10u, // this flag is set when monster died, and need its corpse flipped
+    EFEX_AlwaysTick       = 1u<<11u, // cannot optimise physics for this entity
     // two flags to avoid calling `IsChildOf()` each time
     // set in postctor, refreshed in serializer (to avoid serializing them)
-    EFEX_IsEntityEx       = 1u<<13u, // cannot optimise physics for this entity
-    EFEX_IsActor          = 1u<<14u, // cannot optimise physics for this entity
-    EFEX_AllowSimpleTick  = 1u<<15u, // do not fallback to full physics code even for states with action method calls
+    EFEX_IsEntityEx       = 1u<<12u, // cannot optimise physics for this entity
+    EFEX_IsActor          = 1u<<13u, // cannot optimise physics for this entity
+    EFEX_AllowSimpleTick  = 1u<<14u, // do not fallback to full physics code even for states with action method calls
     // put here for no real reason (it belongs to EntityEx)
-    EFEX_SeparateFlatDecal = 1u<<16u, // use `FlatDecalName` for flat decals
+    EFEX_SeparateFlatDecal = 1u<<15u, // use `FlatDecalName` for flat decals
     // this belongs to `EntityEx`, but i need it here for faster checks
-    EFEX_MissileHitscan    = 1u<<17u, // this is hitscan emulation, should be affected by hitscan blocking flags; `bMissile` should still be set
+    EFEX_MissileHitscan    = 1u<<16u, // this is hitscan emulation, should be affected by hitscan blocking flags; `bMissile` should still be set
     // no need to save this, physics engine will set it if necessary
     // any height-changing sector will set this flag (it is cheap)
     // physics code can use this flag to check if dead bodies should slide away
-    EFEX_SomeSectorMoved   = 1u<<18u,
+    EFEX_SomeSectorMoved   = 1u<<17u,
+    // is this a "gore mod" entity (blood, etc)?
+    // WARNING! this is not saved, so it should be restored in `SerialiseOther()`
+    EFEX_GoreModEntity     = 1u<<18u,
   };
   vuint32 FlagsEx;
 
