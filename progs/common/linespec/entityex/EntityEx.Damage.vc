@@ -373,6 +373,29 @@ int Damage (EntityEx inflictor, EntityEx source, int damage,
   // do the damage
   Health -= damage;
 
+  // call power drain
+  if (damage > 0 && source && source.Inventory) {
+    float bdrval = 0.0f;
+    PowerDrain bestDrain = none, dtmp = none;
+    for (ppcurr = source.Inventory; ppcurr; ppcurr = ppcurr.Inventory) {
+      dtmp = PowerDrain(ppcurr);
+      if (dtmp) {
+        // select best one
+        float dval = dtmp.Strength;
+        if (dval > bdrval) {
+          bestDrain = dtmp;
+          bdrval = dval;
+        }
+      }
+    }
+    if (bestDrain) {
+      int hp = PowerDrain(bestDrain).CalculateDrain(self, inflictor, damage, DmgType, origDamage);
+      if (hp > 0 && source.GiveBody(hp)) {
+        if (bIsPlayer) PlaySound('*drainhealth', CHAN_ITEM);
+      }
+    }
+  }
+
   // fix internal player object damage, and apply "buddha"
   if (bIsPlayer) {
     if (Health < 1 && isBuddha) Health = 1; // "buddha" cheat

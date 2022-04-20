@@ -25,11 +25,31 @@
 //**************************************************************************
 // this does absolutely fuckin' nothing, nobody cares
 class PowerDrain : Powerup;
+
+
+//==========================================================================
+//
+//  CalculateDrain
+//
+//  returns HP to add
+//
+//  hack: for multiple drains, one with the greatest `Strength` is selected
+//
+//==========================================================================
+int CalculateDrain (EntityEx atarget, EntityEx inflictor, int damage, name DmgType, int origDamage) {
+  if (damage <= 0) return 0;
+  return max(0, cast(int)(damage*Strength+0.5));
+}
+
 defaultproperties {
   EffectTime = 60.0;
   Strength = 0.5;
+  bShowTimer = true;
+  PowerupTimerName = "Vampirism";
 }
 
+
+// this does absolutely fuckin' nothing, nobody cares
 class PowerSpread : Powerup;
 defaultproperties {
   EffectTime = 60.0;
