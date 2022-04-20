@@ -911,7 +911,7 @@ static void SV_Ticker () {
         runClientsCalled = true;
         SV_RunClients(frameSkipped); // have to make a full run, for demos/network (k8: is it really necessary?)
       }
-      GLevel->TickWorld(host_frametime);
+      GLevel->TickWorld(host_frametime, /*allowVCPause*/true);
       //GCon->Logf("%d: ft=%f; ftleft=%f; Time=%f; tics=%d", (int)frameSkipped, host_frametime, oldft-GGameInfo->frametime, GLevel->Time, (int)GLevel->TicTime);
       // level timer
       if (TimerGame > 0) {
@@ -1663,8 +1663,8 @@ void SV_SpawnServer (const char *mapname, bool spawn_thinkers, bool titlemap) {
     Host_ResetSkipFrames();
 
     if (GGameInfo->NetMode != NM_TitleMap && GGameInfo->NetMode != NM_Standalone) {
-      GLevel->TickWorld(FrameTime);
-      GLevel->TickWorld(FrameTime);
+      GLevel->TickWorld(FrameTime, /*allowVCPause*/false);
+      GLevel->TickWorld(FrameTime, /*allowVCPause*/false);
       // start open scripts
       GLevel->Acs->StartTypedACScripts(SCRIPT_Open, 0, 0, 0, nullptr, false, false);
     }

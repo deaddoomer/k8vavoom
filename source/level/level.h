@@ -945,7 +945,9 @@ public:
   void UpdateThinkersLevelInfo ();
 
   void TickDecals (float DeltaTime); // this should be called in `CL_UpdateMobjs()`
-  void TickWorld (float DeltaTime);
+  // if `allowVCPause` set, and `IsWorldTickAllowed()` returned `false`, skip tickers
+  // this can be used to show various mod UIs, while the game is paused
+  void TickWorld (float DeltaTime, bool allowVCPause);
 
   // polyobjects
   void SpawnPolyobj (mthing_t *thing, float x, float y, float height, int tag, bool crush, bool hurt);
@@ -1568,6 +1570,12 @@ private:
     static VMethodProxy method("UpdateCachedCVars");
     vobjPutParamSelf();
     VMT_RET_VOID(method);
+  }
+
+  bool eventIsWorldTickAllowed () {
+    static VMethodProxy method("IsWorldTickAllowed");
+    vobjPutParamSelf();
+    VMT_RET_BOOL(method);
   }
 
   void eventBeforeWorldTick (float deltaTime) {

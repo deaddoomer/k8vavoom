@@ -512,6 +512,10 @@ void UpdateCachedCVars () {
 // called after level was loaded (no entities spawned yet)
 void AfterLevelLoaded () {}
 
+// called before world ticker
+bool IsWorldTickAllowed () { return true; }
+
+// called only if world ticking is allowed
 void BeforeWorldTick (float DeltaTime) { /*print("BEFORE: %s", DeltaTime);*/ }
 void AfterWorldTick (float DeltaTime) { /*print("AFTER: %s", DeltaTime);*/ }
 

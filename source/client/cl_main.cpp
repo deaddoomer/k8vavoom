@@ -418,11 +418,11 @@ void CL_SetupStandaloneClient () {
   // if wipe is enabled, tick the world once, so spawned things will fix themselves
   if (r_wipe_enabled) {
     if (developer) GCon->Log(NAME_Debug, "****** WIPE TICK ******");
-    GLevel->TickWorld(SV_GetFrameTimeConstant());
+    GLevel->TickWorld(SV_GetFrameTimeConstant(), /*allowVCPause*/false);
     if (CL_IntermissionPhase()) serverStartRenderFramesTic = -1;
     while (GLevel->TicTime < serverStartRenderFramesTic) {
       if (developer) GCon->Logf(NAME_Debug, "****** WIPE EXTRA TICK (%d : %d) ******", GLevel->TicTime, serverStartRenderFramesTic);
-      GLevel->TickWorld(SV_GetFrameTimeConstant());
+      GLevel->TickWorld(SV_GetFrameTimeConstant(), /*allowVCPause*/false);
     }
   }
 
@@ -1124,3 +1124,30 @@ COMMAND(VidRendererRestart) {
   Host_ResetSkipFrames();
 }
 #endif
+
+
+//native final bool IsSignedOn ();
+IMPLEMENT_FUNCTION(VClientGameBase, IsSignedOn) {
+  vobjGetParamSelf();
+  RET_BOOL(Self->cl && cls.signon);
+}
+
+//native final bool IsPlayerMObjReady ();
+IMPLEMENT_FUNCTION(VClientGameBase, IsPlayerMObjReady) {
+  vobjGetParamSelf();
+  RET_BOOL(Self->cl && cls.signon && Self->cl->MO);
+}
+
+//native final bool IsRecordingDemo ();
+IMPLEMENT_FUNCTION(VClientGameBase, IsRecordingDemo) {
+  vobjGetParamSelf();
+  (void)Self;
+  RET_BOOL(cls.demorecording);
+}
+
+//native final bool IsPlayingDemo ();
+IMPLEMENT_FUNCTION(VClientGameBase, IsPlayingDemo) {
+  vobjGetParamSelf();
+  (void)Self;
+  RET_BOOL(cls.demoplayback);
+}

@@ -163,6 +163,8 @@ public:
   void eventStatusBarStartMap () { static VMethodProxy method("StatusBarStartMap"); vobjPutParamSelf(); VMT_RET_VOID(method); }
   void eventStatusBarDrawer (int sb_type) { static VMethodProxy method("StatusBarDrawer"); vobjPutParamSelf(sb_type); VMT_RET_VOID(method); }
   void eventStatusBarUpdateWidgets (float DeltaTime) { if (DeltaTime <= 0.0f) return; static VMethodProxy method("StatusBarUpdateWidgets"); vobjPutParamSelf(DeltaTime); VMT_RET_VOID(method); }
+  void eventStatusBarUpdateWidgetsNotInGame (float DeltaTime) { if (DeltaTime <= 0.0f) return; static VMethodProxy method("StatusBarUpdateWidgetsNotInGame"); vobjPutParamSelf(DeltaTime); VMT_RET_VOID(method); }
+  bool eventStatusBarResponder (event_t *event) { static VMethodProxy method("StatusBarResponder"); vobjPutParamSelf(event); VMT_RET_BOOL(method); }
   bool eventFinaleResponder (event_t *event) { static VMethodProxy method("FinaleResponder"); vobjPutParamSelf(event); VMT_RET_BOOL(method); }
   void eventDeactivateMenu () { static VMethodProxy method("DeactivateMenu"); vobjPutParamSelf(); VMT_RET_VOID(method); }
   bool eventMenuResponder (event_t *event) { static VMethodProxy method("MenuResponder"); vobjPutParamSelf(event); VMT_RET_BOOL(method); }
@@ -189,6 +191,11 @@ public:
     vobjPutParamSelf(Message, Font, Type, Id, Color, ColorName, x, y, HudWidth, HudHeight, HoldTime, Time1, Time2, Alpha);
     VMT_RET_VOID(method);
   }
+
+  DECLARE_FUNCTION(IsSignedOn)
+  DECLARE_FUNCTION(IsPlayerMObjReady)
+  DECLARE_FUNCTION(IsRecordingDemo)
+  DECLARE_FUNCTION(IsPlayingDemo)
 };
 
 

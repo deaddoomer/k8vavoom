@@ -447,13 +447,23 @@ static VVA_OKUNUSED int cmpLimInstance (const void *aa, const void *bb, void *) 
 //
 //  VLevel::TickWorld
 //
+//  if `allowVCPause` set, and `IsWorldTickAllowed()`
+//  returned `false`, skip tickers
+//
+//  this can be used to show various mod UIs, while the game is paused
+//
 //==========================================================================
-void VLevel::TickWorld (float DeltaTime) {
+void VLevel::TickWorld (float DeltaTime, bool allowVCPause) {
   if (DeltaTime <= 0.0f) return;
 
   CheckAndRecalcWorldBBoxes();
   //if (pathInterceptsUsed) GCon->Logf(NAME_Debug, "unbalanced path iterators; used=%d", pathInterceptsUsed);
   ResetAllPathIntercepts();
+
+  // paused for VC UI?
+  if (allowVCPause && !eventIsWorldTickAllowed()) {
+    return; // nothing to do here
+  }
 
   double stimet = 0.0;
 

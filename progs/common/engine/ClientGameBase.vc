@@ -54,6 +54,17 @@ enum IM_Phase {
 IM_Phase intermissionPhase;
 
 
+// returns true if client is signed on (i.e. level info received in MP)
+// note that it doesn't mean that player MO is ready!
+native final bool IsSignedOn ();
+
+// signed on, and have player MObj?
+native final bool IsPlayerMObjReady ();
+
+native final bool IsRecordingDemo ();
+native final bool IsPlayingDemo ();
+
+
 //==========================================================================
 //
 //  RootWindowCreated
@@ -137,10 +148,35 @@ void StatusBarDrawer (int sb_view) {
 
 //==========================================================================
 //
+//  StatusBarResponder
+//
+//  can be used to drive some mod UI
+//  won't be called if not in game, no player MO, or in demo
+//
+//==========================================================================
+bool StatusBarResponder (event_t *evt) {
+  return false;
+}
+
+
+//==========================================================================
+//
 //  StatusBarUpdateWidgets
 //
 //==========================================================================
 void StatusBarUpdateWidgets (float DeltaTime) {
+}
+
+
+//==========================================================================
+//
+//  StatusBarUpdateWidgetsNotInGame
+//
+//  called when not in game
+//  DON'T do any UI work here, this should be used to deactivate some flags!
+//
+//==========================================================================
+void StatusBarUpdateWidgetsNotInGame (float DeltaTime) {
 }
 
 

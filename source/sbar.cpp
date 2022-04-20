@@ -131,7 +131,11 @@ void SB_Init () {
 //
 //==========================================================================
 void SB_Ticker () {
-  if (cl && cls.signon && cl->MO) GClGame->eventStatusBarUpdateWidgets(host_frametime);
+  if (cl && cls.signon && cl->MO) {
+    GClGame->eventStatusBarUpdateWidgets(host_frametime);
+  } else if (GClGame) {
+    GClGame->eventStatusBarUpdateWidgetsNotInGame(host_frametime);
+  }
 }
 
 
@@ -140,8 +144,11 @@ void SB_Ticker () {
 //  SB_Responder
 //
 //==========================================================================
-bool SB_Responder (event_t *) {
-  return false;
+bool SB_Responder (event_t *ev) {
+  //return false;
+  if (!GClGame) return false;
+  if (!cl || !cls.signon || !cl->MO || cls.demoplayback) return false;
+  return GClGame->eventStatusBarResponder(ev);
 }
 
 
