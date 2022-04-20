@@ -1181,9 +1181,30 @@ VClass *VClass::FindBestLatestChild (VName ignoreThis) {
       }
       if (c) {
         // found child
-        if (bestChainLen < chainLen) {
+        vdrlogf("bestChainLen: %d; chainLen: %d; c->name:'%s'; m->name:'%s'", bestChainLen, chainLen, *c->Name, *m->Name);
+        if (bestChainLen <= chainLen) {
           bestChainLen = chainLen;
           bestClass = (VClass *)m;
+        }
+        if (VObject::cliShowReplacementMessages) {
+          chainLen = 0;
+          c = (VClass *)m;
+          while (c) {
+            if (compareNames(c->Name, ignoreThis)) {
+              vdrlogf("  chainLen: %d; c->name:'%s'; m->name:'%s'; BAD CHAIN", chainLen, *c->Name, *m->Name);
+              break;
+            }
+            if (compareNames(c->Name, Name)) {
+              vdrlogf("  chainLen: %d; c->name:'%s'; m->name:'%s'; STOPPED", chainLen, *c->Name, *m->Name);
+              break;
+            }
+            if (c->ParentClassName == NAME_None) {
+              vdrlogf("  chainLen: %d; c->name:'%s'; m->name:'%s'; EMPTY NAME", chainLen, *c->Name, *m->Name);
+            }
+            vdrlogf("  chainLen: %d; c->name:'%s'; m->name:'%s'; parent:'%s'", chainLen, *c->Name, *m->Name, *c->ParentClassName);
+            ++chainLen;
+            c = StaticFindClass(c->ParentClassName);
+          }
         }
       }
     }
@@ -1238,8 +1259,18 @@ bool VClass::Define () {
       VClass *origParent = ParentClass;
       if (DoesLastChildReplacement()) {
         vdrlogf("VClass::Define: class `%s` tries to replace latest child of class `%s` (actual is `%s`)", GetName(), *ParentClassName, ParentClass->GetName());
+        VClass *xrpl = ParentClass->GetReplacement();
+        if (xrpl != ParentClass) {
+          vdrlogf("VClass::Define:  switched to replacement of `%s` --> `%s`", ParentClass->GetName(), xrpl->GetName());
+          if (!xrpl->IsChildOf(ParentClass)) xrpl = ParentClass; else ParentClass = xrpl;
+        }
         ParentClass = ParentClass->FindBestLatestChild(Name);
         vdrlogf("VClass::Define:   latest child is `%s`", ParentClass->GetName());
+        xrpl = ParentClass->GetReplacement();
+        if (xrpl != ParentClass) {
+          vdrlogf("VClass::Define:  switched to final replacement of `%s` --> `%s`", ParentClass->GetName(), xrpl->GetName());
+          if (!xrpl->IsChildOf(ParentClass)) xrpl = ParentClass; else ParentClass = xrpl;
+        }
       } else {
         if (!VObject::standaloneExecutor) {
           //k8: should we do this?
@@ -1247,6 +1278,8 @@ bool VClass::Define () {
         }
       }
       if (!ParentClass) VCFatalError("VC Internal Error: VClass::Define: cannot find replacement");
+      // fix parent class name (neede for lastchild searching)
+      ParentClassName = ParentClass->Name;
       //fprintf(stderr, "VClass::Define: requested parent is `%s`, actual parent is `%s`\n", *ParentClassName, ParentClass->GetName());
       if (!ParentClass->Defined) {
         bool xdres = ParentClass->Define();
@@ -1267,6 +1300,8 @@ bool VClass::Define () {
           if (c->ParentClass == origParent) {
             vdrlogf("VClass::Define (%s): parent `%s` for class `%s` replaced with self", GetName(), c->ParentClass->GetName(), c->GetName());
             c->ParentClass = this;
+            // fix parent class name (neede for lastchild searching)
+            c->ParentClassName = Name;
           }
         }
       }
