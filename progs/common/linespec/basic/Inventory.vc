@@ -835,11 +835,17 @@ int GetBlend () {
 //
 //  absorb damage taken
 //
+//  called only for players, and only if armor is allowed
+//  can decrease damage too
+//
+//  `damage` is the current damage (may be already modified)
+//  `origDamage` is the original damage
+//
+//  returns new damage
+//
 //==========================================================================
-void AbsorbDamage (EntityEx inflictor, int damage, name DmgType, ref int NewDamage) {
-  if (Inventory) {
-    Inventory.AbsorbDamage(inflictor, damage, DmgType, NewDamage);
-  }
+int AbsorbDamage (EntityEx source, EntityEx inflictor, int damage, name DmgType, int origDamage) {
+  return damage;
 }
 
 
@@ -847,13 +853,42 @@ void AbsorbDamage (EntityEx inflictor, int damage, name DmgType, ref int NewDama
 //
 //  AmplifyDamage
 //
-//  amplify damage dealt
+//  amplify damage dealt by the *source* (NOT inflictor!)
+//  can be owned by non-players
+//
+//  `atarget` is a target player
+//  can decrease damage too
+//
+//  `damage` is the current damage (may be already modified)
+//  `origDamage` is the original damage
+//
+//  returns new damage
+//  return -666 to prevent all damage dealt, and don't awake monster
 //
 //==========================================================================
-void AmplifyDamage (EntityEx atarget, int damage, name DmgType, ref int NewDamage) {
-  if (Inventory) {
-    Inventory.AmplifyDamage(atarget, damage, DmgType, NewDamage);
-  }
+int AmplifyDamage (EntityEx atarget, EntityEx inflictor, int damage, name DmgType, int origDamage) {
+  return damage;
+}
+
+
+//==========================================================================
+//
+//  ModifyDamage
+//
+//  modify damage dealt by the *source* (NOT inflictor!)
+//  can be owned by non-players
+//
+//  called for ANY damaged entity
+//
+//  `damage` is the current damage (may be already modified)
+//  `origDamage` is the original damage
+//
+//  returns new damage
+//  return -666 to prevent all damage dealt, and don't awake monster
+//
+//==========================================================================
+int ModifyDamage (EntityEx source, EntityEx inflictor, int damage, name DmgType, int origDamage) {
+  return damage;
 }
 
 

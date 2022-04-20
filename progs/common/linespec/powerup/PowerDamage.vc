@@ -31,13 +31,13 @@ class PowerDamage : Powerup;
 //  AmplifyDamage
 //
 //==========================================================================
-override void AmplifyDamage (EntityEx atarget, int damage, name DmgType, ref int NewDamage) {
+override int AmplifyDamage (EntityEx atarget, EntityEx inflictor, int damage, name DmgType, int origDamage) {
   if (damage > 0) {
     bool dummy0, dummy1;
     float dmgFactor = 2.0; // default is twice
     if (DamageFactors.length) dmgFactor = FindDamageFactor(DmgType, 1.0, out dummy0, out dummy1);
 
-    NewDamage = max(0, int(float(damage)*dmgFactor));
+    int NewDamage = max(0, int(float(damage)*dmgFactor));
 
     if (NewDamage != damage) {
       damage = max(1, NewDamage); // so others can work too
@@ -45,7 +45,7 @@ override void AmplifyDamage (EntityEx atarget, int damage, name DmgType, ref int
     }
   }
 
-  ::AmplifyDamage(atarget, damage, DmgType, NewDamage);
+  return damage;
 }
 
 

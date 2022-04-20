@@ -99,7 +99,7 @@ bool AddArmorToSlot (EntityEx Toucher, int armortype, int aamount) {
 //  AbsorbDamage
 //
 //==========================================================================
-override void AbsorbDamage (EntityEx inflictor, int damage, name DmgType, ref int NewDamage) {
+override int AbsorbDamage (EntityEx source, EntityEx inflictor, int damage, name DmgType, int origDamage) {
   if (nameicmp(DmgType, 'Drowning') != 0) {
     float savedPercent = Slots[0]+Slots[1]+Slots[2]+Slots[3]+Slots[4];
     if (savedPercent) {
@@ -113,12 +113,11 @@ override void AbsorbDamage (EntityEx inflictor, int damage, name DmgType, ref in
       }
       float saved = float(damage)*savedPercent/100.0;
       if (saved > savedPercent*2.0) saved = savedPercent*2.0;
-      NewDamage -= int(saved);
-      damage = NewDamage;
+      damage = max(0, damage-int(saved));
     }
   }
 
-  if (Inventory) Inventory.AbsorbDamage(inflictor, damage, DmgType, NewDamage);
+  return damage;
 }
 
 

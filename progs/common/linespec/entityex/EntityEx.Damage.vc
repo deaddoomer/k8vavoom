@@ -122,11 +122,36 @@ int Damage (EntityEx inflictor, EntityEx source, int damage,
     if (damage <= 0) return 0;
   }
 
+  Inventory ppcurr, ppnext;
+  int origDamage = damage;
+
   // amplify damage with powerups
-  if (source && source.bIsPlayer && damage > 0 && source.Inventory) {
+  if (source && /*source.bIsPlayer &&*/ damage > 0 && source.Inventory) {
+    /*
     int NewDmg = damage;
     source.Inventory.AmplifyDamage(self, damage, DmgType, NewDmg);
     damage = NewDmg;
+    */
+    ppnext = source.Inventory;
+    while (ppnext) {
+      ppcurr = ppnext;
+      ppnext = ppnext.Inventory;
+      damage = ppcurr.AmplifyDamage(self, inflictor, damage, DmgType, origDamage);
+    }
+    // don't return here yet, we may need to awake monster (but use special return code)
+    if (damage == -666) return -1;
+  }
+
+  // modify damage with special inventory items
+  if (self.Inventory) {
+    ppnext = self.Inventory;
+    while (ppnext) {
+      ppcurr = ppnext;
+      ppnext = ppnext.Inventory;
+      damage = ppcurr.ModifyDamage(source, inflictor, damage, DmgType, origDamage);
+    }
+    // don't return here yet, we may need to awake monster (but use special return code)
+    if (damage == -666) return -1;
   }
 
   // forced blood?
@@ -303,9 +328,18 @@ int Damage (EntityEx inflictor, EntityEx source, int damage,
     }
 
     if (!NoArmor && !ignorePowerups && Inventory) {
+      /*
       int NewDmg = damage;
       Inventory.AbsorbDamage(source, damage, DmgType, NewDmg);
       damage = NewDmg;
+      if (damage <= 0) return -1;
+      */
+      ppnext = self.Inventory;
+      while (ppnext) {
+        ppcurr = ppnext;
+        ppnext = ppnext.Inventory;
+        damage = ppcurr.AbsorbDamage(source, inflictor, damage, DmgType, origDamage);
+      }
       if (damage <= 0) return -1;
     }
 

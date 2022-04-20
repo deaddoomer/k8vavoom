@@ -31,12 +31,11 @@ class PowerIronFeet : Powerup;
 //  AbsorbDamage
 //
 //==========================================================================
-override void AbsorbDamage (EntityEx inflictor, int damage, name DmgType, ref int NewDamage) {
+override int AbsorbDamage (EntityEx source, EntityEx inflictor, int damage, name DmgType, int origDamage) {
   if (nameicmp(DmgType, 'Drowning') == 0) {
-    NewDamage = 0;
-  } else {
-    ::AbsorbDamage(inflictor, damage, DmgType, NewDamage);
+    return 0;
   }
+  return damage;
 }
 
 

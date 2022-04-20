@@ -31,14 +31,14 @@ class PowerProtection : Powerup;
 //  AbsorbDamage
 //
 //==========================================================================
-override void AbsorbDamage (EntityEx inflictor, int damage, name DmgType, ref int NewDamage) {
+override int AbsorbDamage (EntityEx source, EntityEx inflictor, int damage, name DmgType, int origDamage) {
   if (damage > 0) {
     bool dummy0, dummy1;
     float dmgFactor = 0.25; // default is damage/4
     if (DamageFactors.length) dmgFactor = FindDamageFactor(DmgType, 1.0, out dummy0, dummy1);
 
     // GZDoom allows zero damage; we weren't, but why?
-    NewDamage = max(0, int(float(damage)*dmgFactor)); // (-don't) allow zero damage as result of an underflow
+    int NewDamage = max(0, int(float(damage)*dmgFactor)); // (-don't) allow zero damage as result of an underflow
 
     if (NewDamage < damage) {
       damage = max(1, NewDamage); // so others can work too
@@ -46,7 +46,7 @@ override void AbsorbDamage (EntityEx inflictor, int damage, name DmgType, ref in
     }
   }
 
-  ::AbsorbDamage(inflictor, damage, DmgType, NewDamage);
+  return damage;
 }
 
 
