@@ -386,8 +386,6 @@ class VLevel : public VGameObject {
     LF_Has3DPolyObjects                 = 1u<<10,
     // BadApple.wad ;-)
     LF_IsBadApple                       = 1u<<11,
-    // should `CheckMissileSpawn()` call `OnMissileSpawned()` handler?
-    LF_CallOnMissileSpawned             = 1u<<12,
   };
   vuint32 LevelFlags;
 

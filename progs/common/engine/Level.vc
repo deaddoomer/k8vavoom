@@ -114,9 +114,6 @@ native transient bool bConvertSectorLightsToStatic;
 native transient readonly bool bHas3DPolyObjects;
 // BadApple.wad ;-)
 native transient readonly bool bIsBadApple;
-// set this to `true` in `defaultproperties` if necessary
-// note that it is transient (i.e. not saved in a savegame)
-native transient bool bCallOnMissileSpawned;
 
 native transient name UDMFNamespace; // locased
 
@@ -533,6 +530,7 @@ void OnEntityDying (Entity ent) {}
 // called from `CheckMissileSpawn()`
 // WARNING! THIS API MAY BE CHANGED LATER!
 // WARNING! not called for Gore Mod blood entities, and for "hitscan projectiles"
+// WARNING! note that is may be called for entities without `bMissile` flag set!
 void OnMissileSpawned (Entity ent) {}
 
 
