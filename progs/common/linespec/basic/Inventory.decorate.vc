@@ -905,6 +905,45 @@
 }
 
 
+//===========================================================================
+//
+//  A_FireOldBFG
+//
+//  This function emulates Doom's Pre-Beta BFG
+//  By Lee Killough 6/6/98, 7/11/98, 7/19/98, 8/20/98
+//
+//  This code may not be used in other mods without appropriate credit given.
+//  Code leeches will be telefragged.
+//
+//===========================================================================
+[decorate] final void A_FireOldBFG () self(Actor) {
+  if (!bIsPlayer) return;
+
+  Weapon Wpn = PlayerEx(Player).ReadyWeapon;
+  name decal = ''; // default
+
+  if (Wpn) {
+    if (!Wpn.DepleteAmmo(Wpn.FireMode, default, BFG9000.default.AmmoUse1)) return;
+    decal = Wpn.DecalName;
+  }
+  //Player.ExtraLight = 2;
+
+  // Save values temporarily
+  float savedPlayerAngle = Angles.yaw;
+  float savedPlayerPitch = Angles.pitch;
+  // spawn two plasma balls in sequence
+  foreach (int f; 0..2) {
+    Angles.yaw += IRandomBetween(-64, 63)*(90.0/768);
+    Angles.pitch += IRandomBetween(-64, 63)*(90.0/640);
+    SpawnPlayerMissile((f ? class!EntityEx(PlasmaBall2) : class!EntityEx(PlasmaBall1)), decal, noAutoAim:true);
+    // restore saved values
+    Angles.yaw = savedPlayerAngle;
+    Angles.pitch = savedPlayerPitch;
+  }
+}
+
+
+
 //**************************************************************************
 //
 //**************************************************************************
