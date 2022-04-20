@@ -1272,9 +1272,17 @@ bool VClass::Define () {
           if (!xrpl->IsChildOf(ParentClass)) xrpl = ParentClass; else ParentClass = xrpl;
         }
       } else {
+        // simple `replaces(ClassName)`
         if (!VObject::standaloneExecutor) {
-          //k8: should we do this?
-          ParentClass = ParentClass->GetReplacement();
+          VClass *xrpl = ParentClass->GetReplacement();
+          if (xrpl != ParentClass) {
+            vdrlogf("VClass::Define:  switched to simple replacement of `%s` --> `%s`", ParentClass->GetName(), xrpl->GetName());
+            if (!xrpl->IsChildOf(ParentClass)) {
+              ParseError(ParentClassLoc, "Cannot replace class `%s:%s`", *ParentClassName, xrpl->GetName());
+            } else {
+              ParentClass = xrpl;
+            }
+          }
         }
       }
       if (!ParentClass) VCFatalError("VC Internal Error: VClass::Define: cannot find replacement");
