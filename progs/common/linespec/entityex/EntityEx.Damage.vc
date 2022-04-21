@@ -664,6 +664,7 @@ void Died (EntityEx source, EntityEx inflictor) {
   if (source && source.bIsPlayer && PlayerEx(source.Player).IsWeaponAlwaysExtremeDeath()) {
     // always extreme death
     Health = -5000;
+    GHealth = -1000;
   }
 
   if (bIsPlayer && Level.bDeathSlideShow) {

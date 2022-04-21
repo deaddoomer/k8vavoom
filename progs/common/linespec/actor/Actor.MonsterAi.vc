@@ -1280,22 +1280,22 @@ final void doKillXXX (EntityEx dest, name adamagetype, int flags, optional name 
   Velocity = vector(0.0, 0.0, 0.0);
   Height = default.Height;
 
-  //  Calculate number of chunks based on the size of the thing.
-  int NumChunks = int(Radius*Height)/32;
-  if (NumChunks < 4) NumChunks = 4;
+  // calculate number of chunks based on the size of the thing
+  int NumChunks = max(4, int(Radius*Height)/32);
 
-  int i = NumChunks+((P_Random()-P_Random())%(NumChunks/4));
-  if (i < 24) i = 24;
-  for (; i >= 0; --i) {
+  //int i = NumChunks+((P_Random()-P_Random())%(NumChunks/4));
+  //if (i < 24) i = 24;
+  //for (; i >= 0; --i)
+  foreach (; 0..max(24, NumChunks+((P_Random()-P_Random())%(NumChunks/4))))
+  {
     Actor A = SpawnEntityChecked(class!Actor, ChunkType, Origin+vector((Random()-0.5)*2.0*Radius, (Random()-0.5)*2.0*Radius, Random()*Height));
-    if (A) {
-      A.Velocity.z = (A.Origin.z-Origin.z)/Height*4.0*35.0;
-      A.Velocity.x = (Random()-Random())*2.0*35.0;
-      A.Velocity.y = (Random()-Random())*2.0*35.0;
-      A.RenderStyle = RenderStyle;
-      A.Alpha = Alpha;
-      A.CopyFriendliness(self, true);
-    }
+    if (!A) continue;
+    A.Velocity.z = (A.Origin.z-Origin.z)/Height*4.0*35.0;
+    A.Velocity.x = (Random()-Random())*2.0*35.0;
+    A.Velocity.y = (Random()-Random())*2.0*35.0;
+    A.RenderStyle = RenderStyle;
+    A.Alpha = Alpha;
+    A.CopyFriendliness(self, true);
   }
 
   // if it's a boss, execute special boss death actions
