@@ -254,6 +254,7 @@ private native transient int *processedBMCells; // used in thing collector, cont
 private native transient int processedBMCellsSize;
 
 // common path interception pool, managed by C++ code
+// note that traced path infos will not survive a world tick!
 private native transient intercept_t *pathIntercepts;
 private native transient int pathInterceptsAlloted;
 private native transient int pathInterceptsUsed;
@@ -468,11 +469,12 @@ native final static iterator AllActivePlayers (out BasePlayer Player);
 // this moved to C++ code to make sound propagation on huge maps faster
 native void doRecursiveSound (ref array!Entity elist, sector_t *sec, Entity soundtarget, float maxdist, const TVec sndorigin);
 
+
 //==========================================================================
 //
 //  calcSecIdx
 //
-//  debug
+//  debug leftover
 //
 //==========================================================================
 final int calcSecIdx (sector_t *sec) {
@@ -521,8 +523,8 @@ void AfterLevelLoaded () {}
 bool IsWorldTickAllowed () { return true; }
 
 // called only if world ticking is allowed
-void BeforeWorldTick (float DeltaTime) { /*print("BEFORE: %s", DeltaTime);*/ }
-void AfterWorldTick (float DeltaTime) { /*print("AFTER: %s", DeltaTime);*/ }
+void BeforeWorldTick (float DeltaTime) {}
+void AfterWorldTick (float DeltaTime) {}
 
 // called after `OnMapSpawn()`, `ent` is never `none`
 // WARNING! do not put any code right here, the engine will not call it for `VLevel`!
@@ -539,7 +541,7 @@ void OnEntityDying (Entity ent) {}
 // called from `CheckMissileSpawn()`
 // WARNING! THIS API MAY BE CHANGED LATER!
 // WARNING! not called for Gore Mod blood entities, and for "hitscan projectiles"
-// WARNING! note that is may be called for entities without `bMissile` flag set!
+// WARNING! note that this may be called for entities without `bMissile` flag set!
 void OnMissileSpawned (Entity ent) {}
 
 

@@ -24,7 +24,6 @@
 //**
 //**************************************************************************
 // first spawned level thinker
-// you can either subclass it
 // this class is subclassed with `LineSpecialLevelInfo`, and
 // then "LSLI" is subclassed again with `<GameName>LevelInfo`
 // if you need to create your own in your VavoomC mod, do it like this:
