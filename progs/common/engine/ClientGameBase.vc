@@ -23,6 +23,12 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+// clientgame object is global, and created on client start
+// this class is subclassed for each game, with `ClientGame` name
+// if you need to create your own in your VavoomC mod, do it like this:
+//   class MyMod_ClientGame : replaces(lastchild of ClientGameBase);
+// this way it will be compatible with other VavoomC mods
+//
 class ClientGameBase : Object abstract native;
 
 bool bLocalServer;

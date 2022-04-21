@@ -23,10 +23,12 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+// extended player object info
+// this is subclassed with `PlayerEx`, and then with `K8VPlayer` in each game.
+// if you need to create your own in your VavoomC mod, do it like this:
+//   class MyMod_MyPlayer : replaces(lastchild of K8VPlayer);
+// this way it will be compatible with other VavoomC mods
 //
-//  Extended player object info
-//
-//**************************************************************************
 class BasePlayer : GameObject native abstract;
 
 // constants for FixedColormap

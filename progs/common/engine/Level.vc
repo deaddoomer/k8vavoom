@@ -23,6 +23,11 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+// this is main class for map data (level)
+// if you need to create your own in your VavoomC mod, do it like this:
+//   class MyMod_MyVLevel : replaces(lastchild of VLevel);
+// this way it will be compatible with other VavoomC mods
+//
 class VLevel : GameObject native;
 
 const int MAX_LEVEL_TRANSLATIONS = 0xffff;

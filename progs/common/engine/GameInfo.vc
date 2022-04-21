@@ -23,6 +23,13 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+// gameinfo object is global, and created on server start
+// this class is subclassed with `LineSpecialGameInfo`, and
+// then "LSGI" subclassed for each game with `MainGameInfo`
+// if you need to create your own in your VavoomC mod, do it like this:
+//   class MyMod_GameInfo : replaces(lastchild of GameInfo);
+// this way it will be compatible with other VavoomC mods
+//
 class GameInfo : GameObject native abstract;
 
 // network mode
@@ -208,6 +215,10 @@ void ParseCVarInfo () {
 //
 //  Init
 //
+//  called right after creation of this object
+//  no decorate loaded yet, no sprites loaded, basically nothing is ready yet
+//  use this to register you cvars and such
+//
 //==========================================================================
 void Init () {
   ParseCVarInfo();
@@ -217,6 +228,10 @@ void Init () {
 //==========================================================================
 //
 //  PostDecorateInit
+//
+//  this is called after parsing and compiling DECORATE code
+//  at this stage, all known classes (actors and others) are loaded and ready
+//  MAPINFO is not parsed yet, gfx and other things aren't loaded too
 //
 //==========================================================================
 void PostDecorateInit () {
@@ -235,6 +250,10 @@ void PostDecorateInit () {
 //
 //  PostPlayerClassInit
 //
+//  this is called after almost everything is loaded
+//  MAPINFO already parsed, player classes are set, gfx is loaded
+//  i.e. the engine is ready to go
+//
 //==========================================================================
 void PostPlayerClassInit () {
 }
@@ -242,20 +261,29 @@ void PostPlayerClassInit () {
 
 //==========================================================================
 //
-//  InitNewGame
+//  CreateWorldInfo
+//
+//  this is called to create `WorldInfo` object on server spawn
+//  ("server spawn" roughly means "loading a new map")
+//  overriden in `LineSpecialGameInfo`
+//  you usually don't need to override this
 //
 //==========================================================================
-void InitNewGame (int skill) {
+WorldInfo CreateWorldInfo () {
+  return none;
 }
 
 
 //==========================================================================
 //
-//  CreateWorldInfo
+//  InitNewGame
+//
+//  this is called after `WorldInfo.SetSkill()` is called
+//  the argument is taken from WorldInfo object
+//  (i.e. it can modify the skill)
 //
 //==========================================================================
-WorldInfo CreateWorldInfo () {
-  return none;
+void InitNewGame (int skill) {
 }
 
 
@@ -316,6 +344,8 @@ void TranslateSpecialActions (VLevel InLevel, LevelInfo Level) {
 //
 //  TranslateLevel
 //
+//  called before `SpawnWorld()`
+//
 //==========================================================================
 void TranslateLevel (VLevel InLevel) {
   foreach (auto i; 0..InLevel.Lines.length) TranslateLine(InLevel, &InLevel.Lines[i]);
@@ -327,6 +357,11 @@ void TranslateLevel (VLevel InLevel) {
 //==========================================================================
 //
 //  SpawnWorld
+//
+//  called after loading the map and performing translation, but
+//  before any working map data is set
+//  i.e. only barebones lines/sector info is ready, no lists are built
+//  (lines for sectors, tags, etc.)
 //
 //==========================================================================
 void SpawnWorld (VLevel InLevel) {

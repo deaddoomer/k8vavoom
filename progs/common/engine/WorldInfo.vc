@@ -23,6 +23,12 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+// worldinfo object is spawned for each map, and created on server start
+// this class is subclassed with `WorldInfoEx`
+// if you need to create your own in your VavoomC mod, do it like this:
+//   class MyMod_WorldInfo : replaces(lastchild of WorldInfo);
+// this way it will be compatible with other VavoomC mods
+//
 class WorldInfo : GameObject native abstract;
 
 native private readonly void *Acs; // VAcsGlobal
@@ -72,6 +78,7 @@ final int GetSpawnFilter () { int v = GetCvarI('g_skill_spawn_filter_override');
 final bool GetSpawnMulti () { int v = GetCvarI('g_skill_spawn_multi_override'); return (v > 0 ? true : v < 0 ? false : bSkillSpawnMulti); }
 final float GetHealthFactor () { return SkillHealthFactor; }
 final float GetMonsterHealth () { return SkillMonsterHealth; }
+
 
 defaultproperties {
 }

@@ -23,6 +23,14 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+// first spawned level thinker
+// you can either subclass it
+// this class is subclassed with `LineSpecialLevelInfo`, and
+// then "LSLI" is subclassed again with `<GameName>LevelInfo`
+// if you need to create your own in your VavoomC mod, do it like this:
+//   class MyMod_LevelInfo : replaces(lastchild of LevelInfo);
+// this way it will be compatible with other VavoomC mods
+//
 class LevelInfo : Thinker native abstract;
 
 const int TID_HASH_SIZE = 128;

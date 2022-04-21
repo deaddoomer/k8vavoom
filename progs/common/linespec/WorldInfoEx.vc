@@ -23,6 +23,8 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+// currently this doesn't add anything to `WorldInfo`
+// but DON'T REMOVE THIS OBJECT, IT IS IMPOSSIBLE TO SPAWN NATIVE OBJ!
 class WorldInfoEx : WorldInfo;
 
 
