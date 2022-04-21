@@ -509,7 +509,10 @@ public:
         // has something to print
         if (lastWasNL || Event != lastEvent) {
           // force new event
-          if (!lastWasNL) xprintStr("\n", outfile());
+          if (!lastWasNL) {
+            xprintStr("\n", outfile());
+            if (Event == NAME_Error) fflush(outfile());
+          }
           printEvent(Event);
           if (!GLogSkipLogTypeName) xprintStr(" ", outfile());
         }
@@ -520,7 +523,10 @@ public:
       if (!eol[0]) break; // no more
       // new line
       vassert(eol[0] == '\r' || eol[0] == '\n');
-      if (!lastWasNL) xprintStr("\n", outfile());
+      if (!lastWasNL) {
+        xprintStr("\n", outfile());
+        if (Event == NAME_Error) fflush(outfile());
+      }
       lastWasNL = true;
       Text = eol+1;
     }
