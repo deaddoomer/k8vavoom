@@ -95,6 +95,8 @@ protected:
 //
 //  VDoubleName
 //
+//  `a::b`
+//
 //==========================================================================
 class VDoubleName : public VExpression {
 public:
@@ -198,6 +200,9 @@ protected:
 //  VCommaExprRetOp0
 //
 //  this executes op0, then op1, and drops result of op1
+//
+//  not used by the main compiler, but used by DECORATE codegen
+//  in DECORATE, it is used to implement prefix `++` and `--`
 //
 //==========================================================================
 class VCommaExprRetOp0 : public VExpression {

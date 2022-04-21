@@ -572,6 +572,7 @@ VDoubleName::VDoubleName (VName AName1, VName AName2, const TLocation &ALoc)
 {
 }
 
+
 //==========================================================================
 //
 //  VDoubleName::SyntaxCopy
