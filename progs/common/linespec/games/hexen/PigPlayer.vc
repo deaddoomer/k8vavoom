@@ -103,4 +103,6 @@ defaultproperties {
   DropItemList.length = 1;
   DropItemList[0].Type = Snout;
   DropItemList[0].Amount = 1;
+  // chance is zero, so it won't drop anything; wtf?!
+  // this is supposed to drop a pig weapon, lol; nope, don't do that
 }

@@ -2127,15 +2127,6 @@ EntityEx DropItem (class!EntityEx type, int amount, float chance,
 
 //==========================================================================
 //
-//  NoBlockingSet
-//
-//==========================================================================
-void NoBlockingSet () {
-}
-
-
-//==========================================================================
-//
 //  EntityPreTick
 //
 //  made `final` for speed
@@ -3411,6 +3402,41 @@ final bool SetPlayerProperty (int Prop, int Set) {
 bool ShouldDropItems () {
   if (!Level.Game.IsAuthority) return false;
   return true;
+}
+
+
+//==========================================================================
+//
+//  DropAllItems
+//
+//  called in `A_NoBlocking()`, to drop itemd from DropItemList
+//  can be disabled with a flag in `A_NoBlocking()`
+//  also, won't be called if `ShouldDropItems()` returned `false`
+//
+//  can be overriden
+//
+//==========================================================================
+void DropAllItems () {
+  // check for monsters dropping things
+  foreach (auto ref it; DropItemList) {
+    if (it.Type) DropItem(class!EntityEx(it.Type), it.Amount, it.Chance);
+  }
+}
+
+
+//==========================================================================
+//
+//  NoBlockingSet
+//
+//  called in `A_NoBlocking()`, immediately before exiting
+//
+//  `dropEnabled` is `A_NoBlocking()` argument
+//  (`A_Fall()` passes `false` here, for example)
+//
+//  can be overriden
+//
+//==========================================================================
+void NoBlockingSet (bool dropEnabled) {
 }
 
 

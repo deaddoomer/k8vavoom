@@ -237,17 +237,9 @@
   }
 
   // check for monsters dropping things
-  if (drop && ShouldDropItems()) {
-    if (DropItemList) {
-      foreach (auto i; 0..DropItemList.length) {
-        if (DropItemList[i].Type) {
-          DropItem(class!EntityEx(DropItemList[i].Type), DropItemList[i].Amount, DropItemList[i].Chance);
-        }
-      }
-    } else {
-      NoBlockingSet();
-    }
-  }
+  if (drop && ShouldDropItems()) DropAllItems();
+
+  NoBlockingSet(drop);
 }
 
 
