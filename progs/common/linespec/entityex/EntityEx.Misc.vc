@@ -2105,7 +2105,10 @@ EntityEx DropItem (class!EntityEx type, int amount, float chance,
         if (wpn.AmmoGive2 < 1) wpn.AmmoGive2 = 1;
       }
     }
-    if (Item.SpecialDropAction(self)) return none;
+    if (Item.SpecialDropAction(self)) {
+      if (Item) Item.Destroy();
+      return none;
+    }
   }
 
   if (!Level.CompatNoTossDrops) {

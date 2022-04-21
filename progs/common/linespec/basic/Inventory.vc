@@ -771,6 +771,10 @@ override bool DoRespawn () {
 //
 //  SpecialDropAction
 //
+//  called from `DropItem()`
+//  returns `true` if some special action was done
+//  in this case, inventory item will be silently destroyed
+//
 //==========================================================================
 bool SpecialDropAction (EntityEx Source) {
   return false;

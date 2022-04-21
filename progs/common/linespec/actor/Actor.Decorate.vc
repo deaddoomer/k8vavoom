@@ -592,6 +592,7 @@ private final float clampPitch (float newpitch) {
 //
 //==========================================================================
 [decorate] final bool ACS_Execute (int script, optional int map, optional int s_arg1, optional int s_arg2, optional int s_arg3, optional int s_arg4) {
+  KeepChainResult();
   return XLevel.RunACS(self, script, map, s_arg1, s_arg2, s_arg3, s_arg4);
 }
 
@@ -602,6 +603,7 @@ private final float clampPitch (float newpitch) {
 //
 //==========================================================================
 [decorate] final bool ACS_ExecuteAlways (int script, optional int map, optional int s_arg1, optional int s_arg2, optional int s_arg3, optional int s_arg4) {
+  KeepChainResult();
   return XLevel.RunACSAlways(self, script, map, s_arg1, s_arg2, s_arg3, s_arg4);
 }
 
@@ -612,7 +614,9 @@ private final float clampPitch (float newpitch) {
 //
 //==========================================================================
 [decorate] final int ACS_ExecuteWithResult (int script, optional int s_arg1, optional int s_arg2, optional int s_arg3, optional int s_arg4) {
-  return XLevel.RunACSWithResult(self, script, s_arg1, s_arg2, s_arg3, s_arg4);
+  int res = XLevel.RunACSWithResult(self, script, s_arg1, s_arg2, s_arg3, s_arg4);
+  if (res) SuccessChainResult(); else KeepChainResult();
+  return res;
 }
 
 
@@ -622,6 +626,7 @@ private final float clampPitch (float newpitch) {
 //
 //==========================================================================
 [decorate] final bool ACS_NamedExecute (string script, optional int map, optional int s_arg1, optional int s_arg2, optional int s_arg3, optional int s_arg4) {
+  KeepChainResult();
   return XLevel.RunNamedACS(self, script, map, s_arg1, s_arg2, s_arg3, s_arg4);
 }
 
@@ -633,6 +638,7 @@ private final float clampPitch (float newpitch) {
 //==========================================================================
 [decorate] final bool ACS_NamedExecuteAlways (string script, optional int map, optional int s_arg1, optional int s_arg2, optional int s_arg3, optional int s_arg4) {
   //print("ACS_NamedExecuteAlways: script=%s; map=%d; args=(%d,%d,%d,%d)", script, map, s_arg1, s_arg2, s_arg3, s_arg4);
+  KeepChainResult();
   return XLevel.RunNamedACSAlways(self, script, map, s_arg1, s_arg2, s_arg3, s_arg4);
 }
 
@@ -643,7 +649,9 @@ private final float clampPitch (float newpitch) {
 //
 //==========================================================================
 [decorate] final int ACS_NamedExecuteWithResult (string script, optional int s_arg1, optional int s_arg2, optional int s_arg3, optional int s_arg4) {
-  return XLevel.RunNamedACSWithResult(self, script, s_arg1, s_arg2, s_arg3, s_arg4);
+  int res = XLevel.RunNamedACSWithResult(self, script, s_arg1, s_arg2, s_arg3, s_arg4);
+  if (res) SuccessChainResult(); else KeepChainResult();
+  return res;
 }
 
 
@@ -653,7 +661,9 @@ private final float clampPitch (float newpitch) {
 //
 //==========================================================================
 [decorate] final int CallACS (string script, optional int s_arg1, optional int s_arg2, optional int s_arg3, optional int s_arg4) {
-  return XLevel.RunNamedACSWithResult(self, script, s_arg1, s_arg2, s_arg3, s_arg4);
+  int res = XLevel.RunNamedACSWithResult(self, script, s_arg1, s_arg2, s_arg3, s_arg4);
+  if (res) SuccessChainResult(); else KeepChainResult();
+  return res;
 }
 
 
