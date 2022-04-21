@@ -331,7 +331,7 @@ final void SetSeeOrWanderState () {
 //
 //==========================================================================
 [decorate] final void A_Wander () {
-  decorate_A_Wander();
+  doWander();
 }
 
 
@@ -341,6 +341,16 @@ final void SetSeeOrWanderState () {
 //
 //==========================================================================
 [decorate] final void decorate_A_Wander (optional int flags) {
+  doWander(flags!optional);
+}
+
+
+//==========================================================================
+//
+//  doWander
+//
+//==========================================================================
+void doWander (optional int flags) {
   bInCombat = false;
   if (bStanding) {
     if (!(Level.PerfectHatredMode&LevelInfo::PHM_WANDER)) return;
@@ -636,7 +646,7 @@ void DoChase (bool FastChase, state AMeleeState, state AMissileState,
 //  Check for ressurecting a body.
 //
 //==========================================================================
-final bool CheckForResurrect (bool UseVileStates) {
+bool CheckForResurrect (bool UseVileStates) {
   float viletryx;
   float viletryy;
   Entity Other;
