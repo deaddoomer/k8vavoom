@@ -494,17 +494,20 @@ bool PickupForAmmo (Weapon ExistingWeapon) {
   // call `PickupWeapon` state, with player pawn as toucher
   // you cannot `Fail` it (it has no effect)
   // works for Voodoo Dolls too
-  if (Owner.Player && PlayerPawn(Owner)) {
-    if (bAllowTryPickupWeaponForAmmoState) {
-      pst = FindState('TryPickupWeaponForAmmo', Exact:true);
-      if (pst) {
-        if (!CallStateChain(Owner, pst)) return false;
+  if (bAllowTryPickupWeaponForAmmoState || bAllowPickupWeaponForAmmoState) {
+    PlayerPawn pwn = PlayerPawn(ExistingWeapon.Owner);
+    if (pwn && pwn.Player) {
+      if (bAllowTryPickupWeaponForAmmoState) {
+        pst = FindState('TryPickupWeaponForAmmo', Exact:true);
+        if (pst) {
+          if (!CallStateChain(pwn, pst)) return false;
+        }
       }
-    }
-    if (bAllowPickupWeaponForAmmoState) {
-      pst = FindState('PickupWeaponForAmmo', Exact:true);
-      if (pst) {
-        if (!CallStateChain(Owner, pst)) return true;
+      if (bAllowPickupWeaponForAmmoState) {
+        pst = FindState('PickupWeaponForAmmo', Exact:true);
+        if (pst) {
+          if (!CallStateChain(pwn, pst)) return true;
+        }
       }
     }
   }
