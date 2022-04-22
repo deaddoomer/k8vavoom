@@ -540,6 +540,11 @@
     <flag name="NoAutoAim" property="bNoAutoaim" />
     <flag name="HitscanWeapon" property="bIsHitscanWeapon" />
 
+    <flag name="k8AllowTryPickupState" property="bAllowTryPickupWeaponState" />
+    <flag name="k8AllowPickupState" property="bAllowPickupWeaponState" />
+    <flag name="k8AllowTryPickupForAmmoState" property="bAllowTryPickupWeaponForAmmoState" />
+    <flag name="k8AllowPickupForAmmoState" property="bAllowPickupWeaponForAmmoState" />
+
     <prop_string_unsupported name="Weapon.BobStyle" />
     <prop_float_unsupported name="Weapon.BobRangeX" />
     <prop_float_unsupported name="Weapon.BobRangeY" />

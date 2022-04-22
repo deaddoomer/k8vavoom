@@ -1731,6 +1731,7 @@ public:
 struct VStateCall {
   VEntity *Item;
   VState *State;
+  vint32 WasFunCall; // internal flag
   vuint8 Result; // `0` means "don't change"; non-zero means "succeed"
 };
 

@@ -55,6 +55,7 @@ const int
 struct StateCall {
   Entity Item;
   state State;
+  int WasFunCall; // internal flag
   ubyte Result; // `0` means "don't change"; non-zero means "succeed"
 };
 

@@ -1,0 +1,30 @@
+you can control weapon pickup a-la CustomInventory, with "TryPickupWeapon" state chain.
+fail it to skip picking up weapon completely.
+called in the context of the toucher (PlayerPawn).
+called ONLY for players.
+to turn this on, use "+Weapon.k8AllowTryPickupState" flag.
+note that this is called only when the player is obtaining the weapon they didn't have yet.
+
+when the weapon is picked up, "PickupWeapon" state chain will be called.
+the result of this call doesn't matter.
+called in the context of the weapon owner (PlayerPawn).
+called ONLY for players.
+to turn this on, use "+Weapon.k8AllowPickupState" flag.
+note that this is called only when the player is obtaining the weapon they didn't have yet.
+
+
+you can control weapon pickup for ammo, with "TryPickupWeaponForAmmo" state chain.
+fail it to skip picking up weapon completely.
+called in the context of the toucher (PlayerPawn).
+called ONLY for players.
+to turn this on, use "+Weapon.k8AllowTryPickupForAmmoState" flag.
+note that this is called only when the player is obtaining the weapon they already have.
+
+when the weapon is picked up, "PickupWeaponForAmmo" state chain will be called.
+if this call succeeds, normal ammo scavenging code is executed.
+if this call fails, no ammo scavenging code will be called, and the weapon will be "picked up".
+i.e. to control ammo added, give it to the player explicitly, and then fail this chain.
+called in the context of the weapon owner (PlayerPawn).
+called ONLY for players.
+to turn this on, use "+Weapon.k8AllowPickupForAmmoState" flag.
+note that this is called only when the player is obtaining the weapon they already have.

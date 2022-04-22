@@ -1152,6 +1152,7 @@ bool VEntity::CallStateChain (VEntity *Actor, VState *AState) {
   Call.Item = this;
   Call.State = AState;
   Call.Result = 1;
+  Call.WasFunCall = 0;
   XLevel->StateCall = &Call;
 
   int RunAway = 0;
@@ -1172,11 +1173,12 @@ bool VEntity::CallStateChain (VEntity *Actor, VState *AState) {
     Call.State = S;
     // call action function
     if (S->Function) {
+      Call.WasFunCall = 1;
       XLevel->CallingState = S;
       // assume success by default
       Call.Result = 1;
       VObject::ExecuteFunctionNoArgs(Actor, S->Function); //k8: allow VMT lookups (k8:why?)
-      // at least one success means overal success (do it later)
+      // at least one success means overal success (see below)
       //res |= Call.Result;
     } else {
       Call.Result = 0; // don't modify
@@ -1185,7 +1187,7 @@ bool VEntity::CallStateChain (VEntity *Actor, VState *AState) {
     if (Call.State == S) {
       // abort immediately if next state loops to itself
       // in this case the overal result is always false
-      if (S->NextState == S) { res = 0; break; }
+      if (S->NextState == S) { Call.WasFunCall = 1;/*don't overwrite res*/ res = 0; break; }
       // advance to the next state
       S = S->NextState;
       // at least one success means overal success
@@ -1195,6 +1197,9 @@ bool VEntity::CallStateChain (VEntity *Actor, VState *AState) {
       S = Call.State;
     }
   }
+
+  // if there was no function calls, and we are stopped with "stop", assume success
+  if (!S && !Call.WasFunCall) res = 1;
 
   //if (dbg) GCon->Logf(NAME_Debug, "*** %u:%s(%s):%s:  CallStateChain EXIT", GetUniqueId(), GetClass()->GetName(), Actor->GetClass()->GetName(), (S ? *S->Loc.toStringShort() : "<none>"));
   return !!res;

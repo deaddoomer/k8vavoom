@@ -94,6 +94,11 @@ bool bBotFastShoot; // this is something like Plasma Gun, do not release trigger
 
 bool bBobDisabled; // set in `A_WeaponReady()`
 
+bool bAllowTryPickupWeaponState;
+bool bAllowPickupWeaponState;
+bool bAllowTryPickupWeaponForAmmoState;
+bool bAllowPickupWeaponForAmmoState;
+
 // this is used to freeze bobbing when firing
 // no need to save this
 transient bool bBobFrozen;
@@ -245,7 +250,7 @@ override bool TryPickup (EntityEx Toucher) {
     // call `TryPickupWeapon` state, with player pawn as toucher
     // you can `Fail` it
     // works for Voodoo Dolls too
-    if (Toucher.Player && PlayerPawn(Toucher)) {
+    if (bAllowTryPickupWeaponState && Toucher.Player && PlayerPawn(Toucher)) {
       state pst = FindState('TryPickupWeapon', Exact:true);
       if (pst) {
         if (!CallStateChain(Toucher, pst)) {
@@ -335,7 +340,7 @@ override void AttachToOwner (EntityEx NewOwner, optional Inventory oldInv) {
   // call `PickupWeapon` state, with player pawn as toucher
   // you cannot `Fail` it (it has no effect)
   // works for Voodoo Dolls too
-  if (Owner.Player && PlayerPawn(Owner)) {
+  if (bAllowPickupWeaponState && Owner.Player && PlayerPawn(Owner)) {
     state pst = FindState('PickupWeapon', Exact:true);
     if (pst) CallStateChain(Owner, pst);
   }
@@ -485,6 +490,24 @@ bool PickupForAmmo (Weapon ExistingWeapon) {
   // leave placed weapons forever on net games
   if (!bDropped && ShouldStay()) return false;
   bool gaveammo = false;
+  state pst;
+  // call `PickupWeapon` state, with player pawn as toucher
+  // you cannot `Fail` it (it has no effect)
+  // works for Voodoo Dolls too
+  if (Owner.Player && PlayerPawn(Owner)) {
+    if (bAllowTryPickupWeaponForAmmoState) {
+      pst = FindState('TryPickupWeaponForAmmo', Exact:true);
+      if (pst) {
+        if (!CallStateChain(Owner, pst)) return false;
+      }
+    }
+    if (bAllowPickupWeaponForAmmoState) {
+      pst = FindState('PickupWeaponForAmmo', Exact:true);
+      if (pst) {
+        if (!CallStateChain(Owner, pst)) return true;
+      }
+    }
+  }
   if (AddExistingAmmo(ExistingWeapon.Ammo1, AmmoGive1)) gaveammo = true;
   if (AddExistingAmmo(ExistingWeapon.Ammo2, AmmoGive2)) gaveammo = true;
   return gaveammo;
