@@ -153,6 +153,30 @@ static void ParseKnownClassIgnoreSection (VScriptParser *sc) {
 
 //==========================================================================
 //
+//  ParseKnownClassIgnoreMissingOnLoad
+//
+//==========================================================================
+static void ParseKnownClassIgnoreMissingOnLoad (VScriptParser *sc) {
+  sc->Expect("{");
+  if (sc->Check("}")) return;
+  for (;;) {
+    // type
+    sc->ExpectString();
+    if (!sc->QuotedString && sc->String == "}") return;
+    if (sc->String.length() != 0) {
+      VName nm = VName(*sc->String);
+      ListLoaderCanSkipClass.put(nm, true);
+    }
+    if (!sc->Check(",")) {
+      sc->Expect("}");
+      return;
+    }
+  }
+}
+
+
+//==========================================================================
+//
 //  ParseKnownClassIgnoreFile
 //
 //==========================================================================
@@ -162,6 +186,10 @@ static void ParseKnownClassIgnoreFile (VScriptParser *sc) {
   for (;;) {
     if (sc->Check("class_ignore")) {
       ParseKnownClassIgnoreSection(sc);
+      continue;
+    }
+    if (sc->Check("classes_ignore_missing_in_saves")) {
+      ParseKnownClassIgnoreMissingOnLoad(sc);
       continue;
     }
     if (!sc->GetString()) break;

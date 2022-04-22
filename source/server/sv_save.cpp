@@ -41,6 +41,7 @@
 # include "../sound/sound.h"
 #endif
 #include "../utils/qs_data.h"
+#include "../decorate/vc_decorate.h" /* ListLoaderCanSkipClass */
 #include "server.h"
 #include "sv_local.h"
 #include "sv_save.h"
@@ -57,7 +58,7 @@ static inline struct tm *localtime_r (const time_t *_Time, struct tm *_Tm) {
 #endif
 
 
-//#define VAVOOM_LOADER_CAN_SKIP_CLASSES
+#define VAVOOM_LOADER_CAN_SKIP_CLASSES
 
 enum { NUM_AUTOSAVES = 9 };
 
@@ -480,6 +481,7 @@ public:
 };
 
 
+// because dedicated server cannot save games yet
 #ifdef CLIENT
 static bool skipCallbackInited = false;
 static VName oldPlrClassName = NAME_None;
@@ -516,6 +518,8 @@ static bool checkSkipClassCB (VObject *self, VName clsname) {
       //if (VStr::strEqu(cls->GetName(), "K8Gore_BloodBase")) return true;
     }
   }
+
+  if (ListLoaderCanSkipClass.has(clsname)) return true;
 
   return false;
 }
@@ -1578,9 +1582,10 @@ static void UnarchiveThinkers (VSaveLoaderStream *Loader) {
   }
 
   TArray<VEntity *> elist;
-#ifdef VAVOOM_LOADER_CAN_SKIP_CLASSES
+  #ifdef VAVOOM_LOADER_CAN_SKIP_CLASSES
   TMapNC<VObject *, bool> deadThinkers;
-#endif
+  TMapNC<VName, bool> deadThinkersWarned;
+  #endif
 
   bool hasSomethingToRemove = false;
 
@@ -1594,12 +1599,18 @@ static void UnarchiveThinkers (VSaveLoaderStream *Loader) {
     VClass *Class = VClass::FindClass(*CName);
     if (!Class) {
       #ifdef VAVOOM_LOADER_CAN_SKIP_CLASSES
-      GCon->Logf("I/O WARNING: No such class '%s'", *CName);
-      //Loader->Exports.Append(nullptr);
-      Class = VThinker::StaticClass();
-      Obj = VObject::StaticSpawnNoReplace(Class);
-      //deadThinkers.append((VThinker *)Obj);
-      deadThinkers.put(Obj, false);
+      if (ListLoaderCanSkipClass.has(CName)) {
+        if (!deadThinkersWarned.put(CName, true)) {
+          GCon->Logf("I/O WARNING: No such class '%s'", *CName);
+        }
+        //Loader->Exports.Append(nullptr);
+        Class = VThinker::StaticClass();
+        Obj = VObject::StaticSpawnNoReplace(Class);
+        //deadThinkers.append((VThinker *)Obj);
+        deadThinkers.put(Obj, false);
+      } else {
+        Sys_Error("I/O ERROR: No such class '%s'", *CName);
+      }
       #else
       Sys_Error("I/O ERROR: No such class '%s'", *CName);
       #endif
@@ -1630,21 +1641,22 @@ static void UnarchiveThinkers (VSaveLoaderStream *Loader) {
 
   for (int i = 0; i < Loader->Exports.length(); ++i) {
     vassert(Loader->Exports[i]);
-#ifdef VAVOOM_LOADER_CAN_SKIP_CLASSES
+    #ifdef VAVOOM_LOADER_CAN_SKIP_CLASSES
     auto dpp = deadThinkers.get(Loader->Exports[i]);
     if (dpp) {
-      //GCon->Logf("!!! %d: %s", i, Loader->Exports[i]->GetClass()->GetName());
+      //GCon->Logf(NAME_Debug, "!!! %d: %s", i, Loader->Exports[i]->GetClass()->GetName());
       Loader->Exports[i]->Serialise(*Loader);
     } else
-#endif
+    #endif
     {
       Loader->Exports[i]->Serialise(*Loader);
     }
   }
-#ifdef VAVOOM_LOADER_CAN_SKIP_CLASSES
-  //for (int i = 0; i < deadThinkers.length(); ++i) deadThinkers[i]->DestroyThinker();
-  for (auto it = deadThinkers.first(); it; ++it) ((VThinker *)it.getValue())->DestroyThinker();
-#endif
+  #ifdef VAVOOM_LOADER_CAN_SKIP_CLASSES
+  for (auto it = deadThinkers.first(); it; ++it) {
+    ((VThinker *)it.getKey())->DestroyThinker();
+  }
+  #endif
 
   // unserialise acs script
   GLevel->Acs->Serialise(*Loader);

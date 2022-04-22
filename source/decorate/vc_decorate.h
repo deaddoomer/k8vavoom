@@ -70,6 +70,8 @@ extern TArray<VDamageFactor> CustomDamageFactors;
 extern TMapNC<VName, bool> BlockedSpawnSet;
 // forced replacements
 extern TMapNC<VName, VClass *> ForceReplacements;
+// classes the loader can skip
+extern TMapNC<VName, bool> ListLoaderCanSkipClass;
 
 extern bool decoIgnorePlayerSpeed;
 extern bool decorateSkipBDWClasses;

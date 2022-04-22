@@ -108,3 +108,12 @@ class_ignore "Unimplemented" {
   type = Unknown;
 }
 
+
+// ////////////////////////////////////////////////////////////////////////// //
+// the following missing classes will be silently ignored in savegames
+// note that this is a list
+// CASE SENSITIVE!
+// ////////////////////////////////////////////////////////////////////////// //
+classes_ignore_missing_in_saves {
+  LudoGib_JumpingGib,
+}

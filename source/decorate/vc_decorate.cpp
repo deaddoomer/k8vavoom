@@ -59,6 +59,7 @@ static TMap<VStrCI, bool> NoOverrideNames;
 bool decoIgnorePlayerSpeed = false;
 TMapNC<VName, bool> BlockedSpawnSet;
 TMapNC<VName, VClass *> ForceReplacements;
+TMapNC<VName, bool> ListLoaderCanSkipClass;
 
 
 //WARNING! keep this in sync with "Inventory.vc"
