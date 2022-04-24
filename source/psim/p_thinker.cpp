@@ -187,13 +187,13 @@ void VThinker::RemovedFromLevel () {
 //==========================================================================
 void VThinker::StartSound (const TVec &origin, vint32 origin_id,
                            vint32 sound_id, vint32 channel, float volume, float Attenuation,
-                           bool Loop)
+                           bool Loop, float Pitch)
 {
   if (!Level || !Level->Game) return; //FIXME! for client-side entities (this should be fixed, client-side entities can emit sounds)
   for (int i = 0; i < MAXPLAYERS; ++i) {
     if (!Level->Game->Players[i]) continue;
     if (!(Level->Game->Players[i]->PlayerFlags&VBasePlayer::PF_Spawned)) continue;
-    Level->Game->Players[i]->eventClientStartSound(sound_id, origin, origin_id, channel, volume, Attenuation, Loop);
+    Level->Game->Players[i]->eventClientStartSound(sound_id, origin, origin_id, channel, volume, Attenuation, Loop, Pitch);
   }
 }
 

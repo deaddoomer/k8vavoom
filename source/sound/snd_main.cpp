@@ -95,8 +95,10 @@ public:
   virtual void Shutdown () override;
 
   // playback of sound effects
+  // to disable random pitch, use negative pitch; zero pitch means "use default"
   virtual void PlaySound (int InSoundId, const TVec &origin, const TVec &velocity,
-                          int origin_id, int channel, float volume, float Attenuation, bool Loop) override;
+                          int origin_id, int channel, float volume, float Attenuation,
+                          bool Loop, float ForcePitch=0.0f) override;
   virtual void StopSound (int origin_id, int channel) override;
   virtual void StopAllSound (bool keepLastSwitch=false) override;
   virtual bool IsSoundPlaying (int origin_id, int InSoundId) override;
@@ -687,9 +689,12 @@ float VAudio::CalcSoundPriority (int sound_id, float dist) noexcept {
 //
 //  if `origin_id` is `-666`, this is local player sound
 //
+//  to disable random pitch, use negative pitch; zero pitch means "use default"
+//
 //==========================================================================
 void VAudio::PlaySound (int InSoundId, const TVec &origin, const TVec &velocity,
-                        int origin_id, int channel, float volume, float Attenuation, bool Loop)
+                        int origin_id, int channel, float volume, float Attenuation,
+                        bool Loop, float ForcePitch)
 {
   if (!AreSfxEnabled() || !InSoundId || !MaxVolume || volume <= 0.0f || NumChannels < 1) return;
 
@@ -741,19 +746,32 @@ void VAudio::PlaySound (int InSoundId, const TVec &origin, const TVec &velocity,
   if (cli_DebugSound > 0) GCon->Logf(NAME_Debug, "PlaySound: sound(%d)='%s'; origin_id=%d; channel=%d; chan=%d; loop=%d", sound_id, *GSoundManager->S_sfx[sound_id].TagName, origin_id, channel, chan, (int)Loop);
 
   float pitch = 1.0f;
-  if (snd_random_pitch_enabled) {
+  if (ForcePitch > 0.0f) {
+    pitch = ForcePitch;
+  } else /*if (snd_random_pitch_enabled)*/ {
     float sndcp = GSoundManager->S_sfx[sound_id].ChangePitch;
+    float rboost = 1.0f;
     // apply default pitch?
     if (sndcp < 0.0f) {
       const char *tagstr = *GSoundManager->S_sfx[sound_id].TagName;
       //hack!
-      if (LocalPlayerSound || VStr::startsWithCI(tagstr, "menu/") || VStr::startsWithCI(tagstr, "misc/")) sndcp = 0.0f;
-      else sndcp = clampval(snd_random_pitch_default.asFloat(), 0.0f, 1.0f);
+      sndcp = 0.0f;
+      if (!LocalPlayerSound &&
+          !VStr::startsWithCI(tagstr, "menu/") &&
+          !VStr::startsWithCI(tagstr, "misc/"))
+      {
+        // randomize pitch for various sounds
+        if (snd_random_pitch_enabled && ForcePitch == 0.0f) {
+          sndcp = clampval(snd_random_pitch_default.asFloat(), 0.0f, 1.0f);
+          rboost = snd_random_pitch_boost.asFloat();
+        }
+      }
     }
     // apply pitch
     if (sndcp) {
-      pitch += (FRandomFull()-FRandomFull())*(sndcp*snd_random_pitch_boost.asFloat());
-      //GCon->Logf(NAME_Debug, "applied random pitch to sound '%s' (ccp=%g; sndcp=%g); pitch=%g", *GSoundManager->S_sfx[sound_id].TagName, GSoundManager->S_sfx[sound_id].ChangePitch, sndcp, pitch);
+      pitch += (FRandomFull()-FRandomFull())*(sndcp*rboost/*snd_random_pitch_boost.asFloat()*/);
+      if (pitch <= 0.0f) pitch = 1.0f; // just in case
+      //GCon->Logf(NAME_Debug, "applied random pitch to sound '%s' (ccp=%g; sndcp=%g; boost=%g); pitch=%g", *GSoundManager->S_sfx[sound_id].TagName, GSoundManager->S_sfx[sound_id].ChangePitch, sndcp, rboost, pitch);
     }
   }
 

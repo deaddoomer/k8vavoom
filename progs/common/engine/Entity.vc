@@ -527,7 +527,8 @@ native final bool CallStateChain (Entity Actor, state State);
 
 // sound functions
 native final void PlaySound (name SoundName, int Channel, optional float Volume,
-                             optional float Atenuation, optional bool Loop);
+                             optional float Atenuation, optional bool Loop,
+                             optional float Pitch);
 native final void StopSound (int Channel);
 native final bool AreSoundsEquivalent (name Sound1, name Sound2);
 native final bool IsSoundPresent (name Sound);

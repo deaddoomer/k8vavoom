@@ -1211,13 +1211,15 @@ bool VEntity::CallStateChain (VEntity *Actor, VState *AState) {
 //  VEntity::StartSound
 //
 //==========================================================================
-void VEntity::StartSound (VName Sound, vint32 Channel, float Volume, float Attenuation, bool Loop) {
+void VEntity::StartSound (VName Sound, vint32 Channel, float Volume, float Attenuation, bool Loop,
+                          float Pitch)
+{
   if (!Sector) return;
   if (Sector->SectorFlags&sector_t::SF_Silent) return;
   //if (IsPlayer()) GCon->Logf(NAME_Debug, "player sound '%s' (sound class '%s', gender '%s')", *Sound, *SoundClass, *SoundGender);
   Super::StartSound(Origin, SoundOriginID,
     GSoundManager->ResolveEntitySound(SoundClass, SoundGender, Sound),
-    Channel, Volume, Attenuation, Loop);
+    Channel, Volume, Attenuation, Loop, Pitch);
 }
 
 
@@ -1226,12 +1228,12 @@ void VEntity::StartSound (VName Sound, vint32 Channel, float Volume, float Atten
 //  VEntity::StartLocalSound
 //
 //==========================================================================
-void VEntity::StartLocalSound (VName Sound, vint32 Channel, float Volume, float Attenuation) {
+void VEntity::StartLocalSound (VName Sound, vint32 Channel, float Volume, float Attenuation, float ForcePitch) {
   if (Sector->SectorFlags&sector_t::SF_Silent) return;
   if (Player) {
     Player->eventClientStartSound(
       GSoundManager->ResolveEntitySound(SoundClass, SoundGender, Sound),
-      TVec(0, 0, 0), /*0*/-666, Channel, Volume, Attenuation, false);
+      TVec(0, 0, 0), /*0*/-666, Channel, Volume, Attenuation, false, ForcePitch);
   }
 }
 
@@ -1551,17 +1553,19 @@ IMPLEMENT_FUNCTION(VEntity, CallStateChain) {
 }
 
 //native final void PlaySound (name SoundName, int Channel, optional float Volume,
-//                             optional float Atenuation, optional bool Loop);
+//                             optional float Atenuation, optional bool Loop,
+//                             optional float Pitch);
 IMPLEMENT_FUNCTION(VEntity, PlaySound) {
   VName SoundName;
   int Channel;
   VOptParamFloat Volume(1.0f);
   VOptParamFloat Attenuation(1.0f);
   VOptParamBool Loop(false);
-  vobjGetParamSelf(SoundName, Channel, Volume, Attenuation, Loop);
+  VOptParamFloat Pitch(0.0f); // "use default"; negative means "disable forced pitch"
+  vobjGetParamSelf(SoundName, Channel, Volume, Attenuation, Loop, Pitch);
   if (Channel&256) Loop = true; // sorry for this magic number
   Channel &= 7; // other bits are flags
-  Self->StartSound(SoundName, Channel, Volume, Attenuation, Loop);
+  Self->StartSound(SoundName, Channel, Volume, Attenuation, Loop, Pitch);
 }
 
 IMPLEMENT_FUNCTION(VEntity, StopSound) {

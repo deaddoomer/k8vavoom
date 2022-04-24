@@ -528,11 +528,12 @@ void VBasePlayer::ReadFromUserInfo () {
 //
 //==========================================================================
 void VBasePlayer::DoClientStartSound (int SoundId, TVec Org, int OriginId,
-  int Channel, float Volume, float Attenuation, bool Loop)
+                                      int Channel, float Volume, float Attenuation,
+                                      bool Loop, float ForcePitch)
 {
 #ifdef CLIENT
   //if (MO && OriginId == MO->SoundOriginID) GCon->Logf(NAME_Debug, "PLR PLAY (%d) at (%g,%g,%g) (%g,%g,%g)", OriginId, Org.x, Org.y, Org.z, MO->Origin.x, MO->Origin.y, MO->Origin.z);
-  GAudio->PlaySound(SoundId, Org, TVec(0.0f, 0.0f, 0.0f), OriginId, Channel, Volume, Attenuation, Loop);
+  GAudio->PlaySound(SoundId, Org, TVec(0.0f, 0.0f, 0.0f), OriginId, Channel, Volume, Attenuation, Loop, ForcePitch);
 #endif
 }
 
@@ -1150,8 +1151,9 @@ IMPLEMENT_FUNCTION(VBasePlayer, ClientStartSound) {
   int OriginId, Channel;
   float Volume, Attenuation;
   bool Loop;
-  vobjGetParamSelf(SoundId, Org, OriginId, Channel, Volume, Attenuation, Loop);
-  Self->DoClientStartSound(SoundId, Org, OriginId, Channel, Volume, Attenuation, Loop);
+  float ForcePitch;
+  vobjGetParamSelf(SoundId, Org, OriginId, Channel, Volume, Attenuation, Loop, ForcePitch);
+  Self->DoClientStartSound(SoundId, Org, OriginId, Channel, Volume, Attenuation, Loop, ForcePitch);
 }
 
 IMPLEMENT_FUNCTION(VBasePlayer, ClientStopSound) {

@@ -124,8 +124,9 @@ public:
   virtual void AddedToLevel ();
   virtual void RemovedFromLevel ();
 
+  // to disable random pitch, use negative pitch; zero pitch means "use default"
   void StartSound (const TVec &origin, vint32 origin_id, vint32 sound_id, vint32 channel,
-                   float volume, float Attenuation, bool Loop);
+                   float volume, float Attenuation, bool Loop, float Pitch=0.0f);
   // oid 0 means "do nothing" (there is another way to stop all local sounds)
   // channel 0 means "all channels for this origin id"
   void StopSound (vint32 origin_id, vint32 channel);

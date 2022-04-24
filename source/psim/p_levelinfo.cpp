@@ -171,9 +171,11 @@ void VLevelInfo::SectorStartSound (const sector_t *Sector, int SoundId,
     }
     */
     if (Attenuation <= 0.0f) Attenuation = 1.0f; //WARNING! zero attenuation means "local sound"
-    StartSound(sorg, oid, SoundId, Channel, Volume, Attenuation, false);
+    // disable random pitch
+    StartSound(sorg, oid, SoundId, Channel, Volume, Attenuation, false, 0.0f);
   } else {
-    StartSound((org ? *org : TVec(0.0f, 0.0f, 0.0f)), 0, SoundId, Channel, Volume, Attenuation, false);
+    // disable random pitch
+    StartSound((org ? *org : TVec(0.0f, 0.0f, 0.0f)), 0, SoundId, Channel, Volume, Attenuation, false, 0.0f);
   }
 }
 

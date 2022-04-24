@@ -41,16 +41,16 @@
   // use `auto` channel, not body here
   // "body" is default "for historical reasons", but meh
   if (!specified_ChannelNameOrNumber) ChannelNameOrNumber = CHAN_AUTO;
-  // `pitch` is ignored for now
   // also, i don't get how `local` should work
   // it seems that `local` means "play only if client camera is at the current actor
+  // decorate uses "0" as "default", but we are using "0" as "disable random pitch"
+  if (!specified_pitch || pitch == 0.0f) pitch = -1.0f;
   if (local) {
     EntityEx se = GetLocalSoundEntity();
-    if (se) se.PlaySound(Sound, ChannelNameOrNumber, volume!optional, attenuation!optional, looping!optional);
+    if (se) se.PlaySound(Sound, ChannelNameOrNumber, volume!optional, attenuation!optional, looping!optional, pitch!optional);
   } else {
-    PlaySound(Sound, ChannelNameOrNumber, volume!optional, attenuation!optional, looping!optional);
+    PlaySound(Sound, ChannelNameOrNumber, volume!optional, attenuation!optional, looping!optional, pitch!optional);
   }
-  //PlaySound(Sound, ChannelNameOrNumber, volume!optional, attenuation!optional, looping!optional, local!optional);
 }
 
 
@@ -61,7 +61,7 @@
 //==========================================================================
 [decorate] final void A_PlaySound_NoNet (optional name Sound, optional [soundchannel] int ChannelNameOrNumber,
                                          optional float volume, optional bool looping, optional float attenuation,
-                                         optional bool local)
+                                         optional bool local, optional float pitch)
 {
   // if we're server, don't do anything here
   if (Level.Game.IsNetServer) {
@@ -69,7 +69,7 @@
     return;
   }
   A_PlaySound(Sound, ChannelNameOrNumber!optional, volume!optional, looping!optional,
-              attenuation!optional, local!optional);
+              attenuation!optional, local!optional, pitch!optional);
 }
 
 

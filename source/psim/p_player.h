@@ -342,7 +342,10 @@ public:
   int AcsGetInput(int);
 
   //  Implementation of server to client events.
-  void DoClientStartSound(int, TVec, int, int, float, float, bool);
+  // to disable random pitch, use negative pitch; zero pitch means "use default"
+  void DoClientStartSound (int SoundId, TVec Org, int OriginId,
+                           int Channel, float Volume, float Attenuation,
+                           bool Loop, float ForcePitch);
   void DoClientStopSound(int, int);
   void DoClientStartSequence(TVec, int, VName, int);
   void DoClientAddSequenceChoice(int, VName);
@@ -479,10 +482,11 @@ public:
 
   // server to client events
   void eventClientStartSound (int SoundId, TVec Org, int OriginId,
-                              int Channel, float Volume, float Attenuation, bool Loop)
+                              int Channel, float Volume, float Attenuation, bool Loop,
+                              float ForcePitch)
   {
     static VMethodProxy method("ClientStartSound");
-    vobjPutParamSelf(SoundId, Org, OriginId, Channel, Volume, Attenuation, Loop);
+    vobjPutParamSelf(SoundId, Org, OriginId, Channel, Volume, Attenuation, Loop, ForcePitch);
     VMT_RET_VOID(method);
   }
   void eventClientStopSound (int OriginId, int Channel) {

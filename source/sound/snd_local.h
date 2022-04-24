@@ -275,6 +275,7 @@ public:
   bool Init();
   int SetChannels (int);
   void Shutdown ();
+  // to disable random pitch, use zero pitch; negative pitch means "use default"
   int PlaySound (int sound_id, float volume, float pitch, bool Loop, float atten);
   int PlaySound3D (int sound_id, const TVec &clorig, const TVec &origin, const TVec &velocity,
                    float volume, float pitch, bool Loop, float atten);

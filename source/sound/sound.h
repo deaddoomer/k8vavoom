@@ -206,7 +206,9 @@ public:
   virtual void Shutdown () = 0;
 
   // playback of sound effects
-  virtual void PlaySound (int InSoundId, const TVec &origin, const TVec &velocity, int origin_id, int channel, float volume, float Attenuation, bool Loop) = 0;
+  // to disable random pitch, use negative pitch; zero pitch means "use default"
+  virtual void PlaySound (int InSoundId, const TVec &origin, const TVec &velocity, int origin_id, int channel,
+                          float volume, float Attenuation, bool Loop, float ForcePitch=0.0f) = 0;
   virtual void StopSound (int origin_id, int channel) = 0;
   virtual void StopAllSound (bool keepLastSwitch=false) = 0;
   virtual bool IsSoundPlaying (int, int) = 0;

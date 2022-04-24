@@ -958,8 +958,10 @@ public:
   bool CanSee (VEntity *Ent, bool forShooting=false, bool alwaysBetter=false);
   inline bool CanShoot (VEntity *Ent) { return CanSee(Ent, true); }
 
-  void StartSound (VName Sound, vint32 Channel, float Volume, float Attenuation, bool Loop);
-  void StartLocalSound (VName Sound, vint32 Channel, float Volume, float Attenuation);
+  // to disable random pitch, use negative pitch; zero pitch means "use default"
+  void StartSound (VName Sound, vint32 Channel, float Volume, float Attenuation, bool Loop,
+                   float Pitch=0.0f);
+  void StartLocalSound (VName Sound, vint32 Channel, float Volume, float Attenuation, float ForcePitch=0.0f);
   void StopSound (vint32 Channel); // channel 0 means "all channels"
   void StartSoundSequence (VName, vint32 Channel);
   void AddSoundSequenceChoice (VName);

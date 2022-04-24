@@ -2334,7 +2334,8 @@ COMMAND(Say) {
   Text = Text.xstrip();
   if (Text.isEmpty()) return;
   GLevelInfo->BroadcastChatPrint(Player->PlayerName, Text);
-  GLevelInfo->StartSound(TVec(0, 0, 0), 0, GSoundManager->GetSoundID("misc/chat"), 0, 1.0f, 0.0f/*attenuation*/, false);
+  GLevelInfo->StartSound(TVec(0, 0, 0), 0, GSoundManager->GetSoundID("misc/chat"), 0, 1.0f, 0.0f/*attenuation*/, false,
+                         1.0f); /* force pitch */
   #ifndef CLIENT
   Text = VStr("[")+Player->PlayerName.RemoveColors().xstrip()+"]:";
   for (int i = 1; i < Args.length(); ++i) {

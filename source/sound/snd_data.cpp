@@ -353,7 +353,7 @@ void VSoundManager::Init () {
     char SndName[256];
     snprintf(SndName, sizeof(SndName), "svox/%s", *W_LumpName(Lump));
     int id = AddSoundLump(SndName, Lump);
-    S_sfx[id].ChangePitch = 0;
+    S_sfx[id].ChangePitch = 0.0f;
     S_sfx[id].VolumeAmp = 1.0f;
   }
 
@@ -363,10 +363,10 @@ void VSoundManager::Init () {
     GCon->Logf(NAME_Init, "loading SNDINFO from '%s'", *W_FullLumpName(Lump));
     // reset current pitch change for each sndinfo file
     // `-1` means "apply default pitch"
-    CurrentChangePitch = -1;
+    CurrentChangePitch = -1.0f;
     ParseSndinfo(VScriptParser::NewWithLump(Lump), W_LumpFile(Lump));
     // and reset it afterwards
-    CurrentChangePitch = -1;
+    CurrentChangePitch = -1.0f;
   }
 
   S_sfx.Condense();

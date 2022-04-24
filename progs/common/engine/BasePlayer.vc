@@ -282,7 +282,8 @@ native final void DisconnectBot ();
 // for networking
 // OriginId==-666: local (use player's SoundOriginID)
 native void ClientStartSound (int SoundId, TVec Org, int OriginId,
-                              int Channel, float Volume, float Attenuation, bool Loop);
+                              int Channel, float Volume, float Attenuation, bool Loop,
+                              float ForcePitch);
 native void ClientStopSound (int OriginId, int Channel);
 native void ClientStartSequence (TVec Origin, int OriginId, name Name, int ModeNum);
 native void ClientAddSequenceChoice (int OriginId, name Choice);
