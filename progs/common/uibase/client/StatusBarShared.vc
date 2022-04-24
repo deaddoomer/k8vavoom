@@ -23,6 +23,8 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
+// base Status Bar class (including fullscreen)
+// it also manages various in-game messages (like "you picked up XXX")
 class StatusBarShared : Widget;
 
 protected ClientGameBase ClGame;
@@ -51,6 +53,7 @@ array!SplitLine CenterMessageLines;
 int CenterMessageHeight;
 float CenterTime;
 
+// main widget for HUD messages (like the ones from ACS)
 HUDMessageContainer HudMsgWin;
 
 bool lastWasFullscreen;
@@ -77,6 +80,7 @@ const int SB_DMG_DOWN_FLAG = 2;
 const float SB_DMG_TIMEOUT = 0.8;
 const float SB_DMG_ALPHA = 0.8;
 
+// the size of the widget is 640x512
 // 640x512
 // ofs is from the center
 const float SB_DMG_XOFS = 0.05;
@@ -116,6 +120,8 @@ override void OnCreate () {
 //
 //  SetClGame
 //
+//  called from `ClientGame.RootWindowCreated()`
+//
 //==========================================================================
 void SetClGame (ClientGameBase aclgame) {
   ClGame = aclgame;
@@ -138,6 +144,7 @@ ClientGameBase GetClGame () {
 //  StartMap
 //
 //  WARNING! this can be called several times for one map! (k8:FIXME!)
+//  called from `ClientGame.StatusBarStartMap()`
 //
 //==========================================================================
 void StartMap () {
@@ -522,8 +529,13 @@ void AddHudMessage (string Message, name aFont, int Type, int Id, int Color,
 }
 
 
+
+//**************************************************************************
+//  StatusBar
+//**************************************************************************
+
 // fullscreen statusbar
- // the screen is not 640x480
+// the screen is not 640x480
 void SB_DrawFullscreenStats () {}
 
 // normal statusbar, called in order
@@ -539,10 +551,25 @@ struct SB_SavedVScreenState {
 }
 
 
-final void SB_SetCorrected640x480 (out SB_SavedVScreenState sss) {
+//==========================================================================
+//
+//  SB_SaveVScreen
+//
+//==========================================================================
+final void SB_SaveVScreen (out SB_SavedVScreenState sss) {
   sss.width = GetVirtualWidth();
   sss.height = GetVirtualHeight();
   sss.scaleY = ScaleY;
+}
+
+
+//==========================================================================
+//
+//  SB_SetCorrected640x480
+//
+//==========================================================================
+final void SB_SetCorrected640x480 (out SB_SavedVScreenState sss) {
+  SB_SaveVScreen(out sss);
   SetVirtualScreen(640, 480);
   if (Width != 640 || Height != 480) SetSize(640, 480);
   ScaleY = ScaleY*R_GetAspectRatio();
@@ -550,14 +577,24 @@ final void SB_SetCorrected640x480 (out SB_SavedVScreenState sss) {
 }
 
 
+//==========================================================================
+//
+//  SB_RestoreVScreen
+//
+//==========================================================================
 final void SB_RestoreVScreen (const ref SB_SavedVScreenState sss) {
-  ScaleY = sss.scaleY;
-  Y = 0;
   SetVirtualScreen(sss.width, sss.height);
   if (Width != sss.width || Height != sss.height) SetSize(sss.width, sss.height);
+  ScaleY = sss.scaleY;
+  if (X || Y) SetOrigin(0, 0);
 }
 
 
+//==========================================================================
+//
+//  SB_DrawMainBarCorrected
+//
+//==========================================================================
 void SB_DrawMainBarCorrected (bool inAutomap, bool doFill) {
   SB_SavedVScreenState sss;
   SB_SetCorrected640x480(out sss);
@@ -567,7 +604,13 @@ void SB_DrawMainBarCorrected (bool inAutomap, bool doFill) {
 }
 
 
-// this is common code for all games
+//==========================================================================
+//
+//  SB_DrawMainPart
+//
+//  this is common code for all games
+//
+//==========================================================================
 void SB_DrawMainPart (int sb_view) {
   int sblocks = R_GetScreenBlocks();
   if (sblocks >= R_SCREEN_BLOCKS_NO_STATUSBAR) return;
@@ -585,6 +628,7 @@ void SB_DrawMainPart (int sb_view) {
 }
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 // global locations
 const int WI_SPACINGY = 33;
 
@@ -637,6 +681,7 @@ void SB_DrawDeathmatchStats () {
 }
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 // net game stuff
 const int NG_STATSY = 210;
 const int NG_STATSX = (172+32/2);
@@ -697,6 +742,8 @@ void SB_DrawCoopStats () {
 //
 //  SB_DrawNetworkStats
 //
+//  called from `ClientGame.StatusBarDrawer()`
+//
 //==========================================================================
 void SB_DrawNetworkStats () {
   if (!ClGame) return;
@@ -713,13 +760,44 @@ void SB_DrawNetworkStats () {
 
 //==========================================================================
 //
-//  SB_DrawNetworkStats
+//  SB_Drawer
+//
+//  called from `ClientGame.StatusBarDrawer()`
 //
 //==========================================================================
 void SB_Drawer (int sb_view) {
   SB_Housekeeping(sb_view);
 }
 
+
+
+//==========================================================================
+//
+//  SB_UpdateWidgets
+//
+//  called from `ClientGame.StatusBarUpdateWidgets()`
+//
+//==========================================================================
+void SB_UpdateWidgets () {
+}
+
+
+//==========================================================================
+//
+//  SB_Housekeeping
+//
+//  called from `SB_Drawer()`
+//
+//==========================================================================
+void SB_Housekeeping (int sb_view) {
+  bool fs = (sb_view == SB_VIEW_FULLSCREEN);
+  lastWasFullscreen = fs;
+}
+
+
+//**************************************************************************
+//  advanced damage indicator
+//**************************************************************************
 
 //==========================================================================
 //
@@ -961,26 +1039,6 @@ void SB_DrawAdvancedDamage (PlayerEx cl) {
 
     SB_DrawDamageIndicator(dir, clr, alpha, dmgUpDownFlag[dir]);
   }
-}
-
-
-//==========================================================================
-//
-//  SB_UpdateWidgets
-//
-//==========================================================================
-void SB_UpdateWidgets () {
-}
-
-
-//==========================================================================
-//
-//  SB_Housekeeping
-//
-//==========================================================================
-void SB_Housekeeping (int sb_view) {
-  bool fs = (sb_view == SB_VIEW_FULLSCREEN);
-  lastWasFullscreen = fs;
 }
 
 

@@ -130,7 +130,7 @@ const int ST_MUCHPAIN = 20;
 
 const float ST_FULLSCREEN_ALPHA = 0.65;
 
-PlayerEx cl;
+PlayerEx cl; //FIXME: directly updated from `ClientGame.StatusBarStartMap()`
 
 // pics
 int pic_bar;
@@ -683,7 +683,7 @@ static final string Seconds2Str (float secs) {
 //  GetWeaponAmmo
 //
 //==========================================================================
-private final Ammo GetWeaponAmmo (Weapon wpn) {
+Ammo GetWeaponAmmo (Weapon wpn) {
   if (!wpn) return none;
 
   Ammo a1 = wpn.Ammo1;
@@ -705,6 +705,52 @@ private final Ammo GetWeaponAmmo (Weapon wpn) {
   }
 
   return a1;
+}
+
+
+//==========================================================================
+//
+//  SB_DrawFullscreenStats
+//
+//==========================================================================
+int GetEntityIconHandle (EntityEx ent, optional bool noIcon, optional bool noSpawn, optional bool noReady) {
+  if (!ent) return 0;
+  int imgH;
+  // get sprite for spawn, and then ready states
+  name spr = '';
+
+  if (!noIcon && Inventory(ent)) {
+    spr = Inventory(ent).IconName;
+    if (spr) {
+      imgH = R_RegisterPic(spr);
+      if (imgH > 0) return imgH;
+    }
+  }
+
+  state st;
+  if (!noSpawn) {
+    st = FindClassState(ent.Class, 'Spawn');
+    spr = (st ? GetStateSpriteName(st) : '');
+    if (spr && spr != 'tnt1') {
+      int frm = GetStateSpriteFrame(st);
+      spr = name(va("%s%c0", spr, 97+frm));
+      imgH = R_RegisterPic(spr);
+      if (imgH > 0) return imgH;
+    }
+  }
+
+  if (!noReady && Weapon(ent)) {
+    st = FindClassState(ent.Class, 'Ready');
+    spr = (st ? GetStateSpriteName(st) : '');
+    if (spr && spr != 'tnt1') {
+      int frm = GetStateSpriteFrame(st);
+      spr = name(va("%s%c0", spr, 97+frm));
+      imgH = R_RegisterPic(spr);
+      if (imgH > 0) return imgH;
+    }
+  }
+
+  return 0;
 }
 
 
@@ -924,7 +970,7 @@ override void SB_DrawFullscreenStats () {
           //SB_DrawTallNum(xpos, ypos, cl.ReadyWeapon.Ammo1.Amount, SB_GetTextColor(SBTextColor.Ammo), fsalpha, false);
           //DrawPic(ST_TDAMMOX-60, ST_TDAMMOY+15, R_RegisterPic(cl.ReadyWeapon.Ammo1.IconName), fsalpha);
           float alpha = fmin(1.0, fsalpha+(ai.active ? 0.4 : 0.05));
-          int ico = R_RegisterPic(ai.ammo.IconName);
+          int ico = GetEntityIconHandle(ai.ammo, noReady:true); //R_RegisterPic(ai.ammo.IconName);
           if (ico) {
             //R_GetPicInfo(ico, &pi);
             //DrawPic(xpos+(30-pi.width)/2, ypos, ico, alpha);
