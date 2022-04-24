@@ -1455,7 +1455,7 @@ final bool doRemoveSomethingCheck (EntityEx dest, int flags, optional name filte
 //  A_SpawnParticle
 //
 //==========================================================================
-[decorate] final void A_SpawnParticle (int/*string*/ color1, optional int flags, optional int lifetime,
+[decorate] final void A_SpawnParticle ([color] string color1, optional int flags, optional int lifetime,
                             optional float size, optional float angle,
                             optional float xoff, optional float yoff, optional float zoff,
                             optional float velx, optional float vely, optional float velz,

@@ -252,7 +252,8 @@ final void FireSuperBullet () {
 //
 //===========================================================================
 [decorate] final void A_CustomRailgun (int RailDamage, optional float Offset,
-                            optional string Color1, optional string Color2, optional int Flags,
+                            optional [color0] string Color1, optional [color0] string Color2,
+                            optional int Flags,
                             optional bool DoAim, optional float MaxDiff,
                             optional class!Actor PuffType,
                             optional float spread_xy, optional float spread_z, // not implemented

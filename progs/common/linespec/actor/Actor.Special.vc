@@ -268,7 +268,7 @@
 //  A_SetBlend
 //
 //============================================================================
-[decorate] final void A_SetBlend (string Col1, float A, int Tics, optional string Col2) {
+[decorate] final void A_SetBlend ([color] string Col1, float A, int Tics, optional [color] string Col2) {
   int C1 = ParseColor(Col1, retZeroIfInvalid:true);
   int C2 = ParseColor(Col2, retZeroIfInvalid:true);
   if (!C1 || !C2) return; // invalid colors
