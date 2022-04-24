@@ -252,7 +252,7 @@ const [decorate] int CHAN_SLOT_7 = 7;
 const [decorate] int CHAN_SLOT_8 = 0;
 const [decorate] int CHAN_SLOT_9 = 0;
 
-
+// modifier flags; they are here, but completely ignored
 const [decorate] int CHAN_LISTENERZ = 0; //(8): Sound is played from the listener's Z-height. (Needs verifying)
 const [decorate] int CHAN_MAYBE_LOCAL = 0; //(16): Sound is subject to compat_silentpickup and will not play if the sound is made by an actor other than the local player's camera when compatibility flag is enabled.
 const [decorate] int CHAN_UI = 0; //(32): Sound is considered an interface sound and is not recorded into savegames.
@@ -260,6 +260,21 @@ const [decorate] int CHAN_NOPAUSE = 0; //(64): Sound is not paused by menus and 
 const [decorate] int CHAN_AREA = 0; //(128): Sound plays from all around. Only valid with sector sounds.
 const [decorate] int CHAN_LOOP = 256; //(256): Sound loops.
 const [decorate] int CHAN_NOSTOP = 0; //(4096): Do not override the sound that is currently playing on the same channel with this one. This is only the case if both sounds are the same. If they are different, the playing sound is overridden regardless.
+const [decorate] int CHAN_PICKUP = (CHAN_ITEM|CHAN_MAYBE_LOCAL); // Do not use this with A_StartSound! It would not do what is expected.
+const [decorate] int CHAN_OVERLAP = 0; //(8192)
+
+// A_StartSound constants
+const [decorate] int CHANF_DEFAULT = 0; // just to make the code look better and avoid literal 0's.
+const [decorate] int CHANF_LISTENERZ = CHAN_LISTENERZ;
+const [decorate] int CHANF_MAYBE_LOCAL = CHAN_MAYBE_LOCAL;
+const [decorate] int CHANF_UI = CHAN_UI;
+const [decorate] int CHANF_NOPAUSE = CHAN_NOPAUSE;
+const [decorate] int CHANF_LOOP = CHAN_LOOP;
+const [decorate] int CHANF_NOSTOP = CHAN_NOSTOP;
+const [decorate] int CHANF_OVERLAP = CHAN_OVERLAP;
+const [decorate] int CHANF_LOCAL = 16384;
+const [decorate] int CHANF_LOOPING = CHANF_LOOP|CHANF_NOSTOP; // convenience value for replicating the old 'looping' boolean
+
 
 
 const [decorate] int XF_HURTSOURCE         = 0x01; // Hurts the source: if set, the source can be damaged by the explosion. Note that the source is not necessarily the calling actor. This flag is set by default.
