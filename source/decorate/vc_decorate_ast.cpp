@@ -249,6 +249,82 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
     }
   }
 
+  // flags
+  // note that `invokation` may be `nullptr` if we called from `VDecorateAJump()`, for example
+  if (invokation) {
+    for (auto &&FlagName : invokation->Func->Params[argnum-1].NamedFlags) {
+      // hack for idiotic mod authors (hello, LCA!)
+      // [soundchannel]
+      if (FlagName == "soundchannel") {
+        if (destType.Type == TYPE_Int) {
+          if (IsStrConst() || IsNameConst() || IsDecorateSingleName()) {
+            VStr s = (IsDecorateSingleName() ? *((VDecorateSingleName *)this)->Name : IsStrConst() ? GetStrConst(ec.Package) : VStr(GetNameConst()));
+            int v = 0;
+            if (!VStr::convertInt(*s, &v)) {
+              // convert digits
+              const char *str = *s;
+              v = 0;
+              while (*str && digitInBase(*str, 10) < 0) ++str;
+              if (*str) {
+                while (*str) {
+                  int d = digitInBase(*str, 10);
+                  if (d < 0) break;
+                  v = v*10+d;
+                  ++str;
+                }
+              } else {
+                VStr t = s;
+                while (t.length()) {
+                  if (t[0] == '_' || (vuint8)(t[0]) <= ' ') { t.chopLeft(1); continue; }
+                  if (t.startsWithNoCase("CHANNEL")) { t.chopLeft(7); continue; }
+                  if (t.startsWithNoCase("CHAN")) { t.chopLeft(4); continue; }
+                  if (t.startsWithNoCase("SoundSlot")) { t.chopLeft(9); continue; }
+                  if (t.startsWithNoCase("Slot")) { t.chopLeft(4); continue; }
+                  if (t.startsWithNoCase("Sound")) { t.chopLeft(5); continue; }
+                  break;
+                }
+                     if (t.ICmp("Auto") == 0) v = 0;
+                else if (t.ICmp("Voice") == 0) v = 1;
+                else if (t.ICmp("Weapon") == 0) v = 2;
+                else if (t.ICmp("Item") == 0) v = 3;
+                else if (t.ICmp("Body") == 0) v = 4;
+                else v = 0;
+              }
+            }
+            if (v < 0 || v > 127) v = 0;
+            //GLog.Logf(NAME_Debug, "*** FUNC:`%s`; arg #%d (%s): soundchannel! '%s' -> %d", *Func->GetFullName(), i+1, *Func->Params[i].Name, *s, v);
+            VExpression *enew = new VIntLiteral(v, Loc);
+            delete this;
+            return enew->MassageDecorateArg(ec, invokation, CallerState, funcName, argnum, destType, isOptional, aloc, massaged);
+          }
+        }
+        continue;
+      }
+      // [color] or [color0]
+      if (FlagName == "color0" || FlagName == "color") {
+        if (destType.Type == TYPE_String) {
+          // integer zero? pass empty string
+          if (IsIntConst()) {
+            if (GetIntConst() == 0 && FlagName == "color0") {
+              VExpression *enew = new VStringLiteral(VStr(), ec.Package->FindString(""), Loc);
+              delete this;
+              return enew->MassageDecorateArg(ec, invokation, CallerState, funcName, argnum, destType, isOptional, aloc, massaged);
+            } else {
+              // hex colors
+              VStr s = va("#%06x", GetIntConst()&0xffffff);
+              VExpression *enew = new VStringLiteral(s, ec.Package->FindString(*s), Loc);
+              delete this;
+              return enew->MassageDecorateArg(ec, invokation, CallerState, funcName, argnum, destType, isOptional, aloc, massaged);
+            }
+          }
+        }
+        continue;
+      }
+      // unknown flag
+      ParseWarningAsError(Loc, "function `%s`, argument #%d has unknown argument flag `%s`!", funcName, argnum, *FlagName);
+    }
+  }
+
   if (massaged) *massaged = true;
   switch (destType.Type) {
     case TYPE_Int:
@@ -429,9 +505,12 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
       if (IsIntConst() && GetIntConst() == 0) {
         // "false" or "0" means "empty"
         // don't warn for `A_CustomRailgun()`, number `0` seems to be a valid value there
+        /*
         if ((argnum == 3 || argnum == 4) && VStr::strEquCI(funcName, "A_CustomRailgun")) {
           // do nothing
-        } else {
+        } else
+        */
+        {
           ParseWarningAsError((aloc ? *aloc : Loc), "`%s` argument #%d should be a string (replaced `0` with empty string); PLEASE, FIX THE CODE!", funcName, argnum);
         }
         VExpression *enew = new VStringLiteral(VStr(), ec.Package->FindString(""), Loc);
@@ -445,12 +524,14 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
         return enew;
       }
       // `A_CustomRailgun()` hex colors
+      /*
       if (IsIntConst() && (argnum == 3 || argnum == 4) && VStr::strEquCI(funcName, "A_CustomRailgun")) {
         VStr s = va("#%06x", GetIntConst()&0xffffff);
         VExpression *enew = new VStringLiteral(s, ec.Package->FindString(*s), Loc);
         delete this;
         return enew;
       }
+      */
       break;
 
     case TYPE_Class:
