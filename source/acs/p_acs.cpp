@@ -709,9 +709,9 @@ private:
 
   void StartSound (const TVec &origin, vint32 origin_id,
                    vint32 sound_id, vint32 channel, float volume, float Attenuation,
-                   bool Loop, bool Local=false)
+                   bool Loop)
   {
-    Level->StartSound(origin, origin_id, sound_id, channel, volume, Attenuation, Loop, Local);
+    Level->StartSound(origin, origin_id, sound_id, channel, volume, Attenuation, Loop);
   }
 };
 

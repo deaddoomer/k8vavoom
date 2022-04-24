@@ -406,7 +406,7 @@ void SB_DrawSmallNum (int x, int y, int num, int color) {
 
 //==========================================================================
 //
-//  SB_DrawMainBar
+//  SB_FillMainBar
 //
 //  this fills the sides with the rock texture
 //

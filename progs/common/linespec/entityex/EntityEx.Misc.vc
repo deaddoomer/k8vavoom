@@ -5344,6 +5344,31 @@ bool CheckInventoryRestrictions (EntityEx Toucher) {
 
 //==========================================================================
 //
+//  GetLocalSoundEntity
+//
+//  called from `A_PlaySound()` to check if local sound should be played
+//  local sound always played at the player MO
+//  returns `none` or MO to play the sound at
+//
+//==========================================================================
+EntityEx GetLocalSoundEntity () {
+  if (bIsPlayer) {
+    // the easiest case
+    return (Player && Player.Camera == self ? self : none);
+  }
+  // check monster camera
+  foreach (auto playnum; 0..MAXPLAYERS) {
+    PlayerEx pl = PlayerEx(Level.Game.Players[playnum]);
+    if (!pl || !pl.bSpawned || !pl.MO) continue;
+    if (pl.Camera == self) return EntityEx(pl.MO); // play at this player MO
+  }
+  // not a local
+  return none;
+}
+
+
+//==========================================================================
+//
 //  checkIfTargetInLOS
 //
 //  workhorse for following decorate LOS checks

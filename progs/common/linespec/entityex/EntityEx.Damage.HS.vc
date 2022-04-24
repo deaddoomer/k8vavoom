@@ -549,7 +549,7 @@ int K8onBeforeDamage (EntityEx inflictor, TVec hitpos, int damage, name adamageT
         // play headkill sound
         if (dodmg >= Health && CvarExists('k8GoreOpt_HeadshotSound') && GetCvarB('k8GoreOpt_HeadshotSound')) {
           //printdebug("HEADBANG!");
-          PlaySound('k8gore/headbang', CHAN_AUTO/*CHAN_VOICE*/, Volume:default, ATTN_NORMAL, Loop:false, Local:false);
+          PlaySound('k8gore/headbang', CHAN_AUTO/*CHAN_VOICE*/, Volume:default, ATTN_NORMAL, Loop:false);
         }
       }
 

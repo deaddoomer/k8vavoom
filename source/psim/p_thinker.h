@@ -125,7 +125,7 @@ public:
   virtual void RemovedFromLevel ();
 
   void StartSound (const TVec &origin, vint32 origin_id, vint32 sound_id, vint32 channel,
-                   float volume, float Attenuation, bool Loop, bool Local=false);
+                   float volume, float Attenuation, bool Loop);
   // oid 0 means "do nothing" (there is another way to stop all local sounds)
   // channel 0 means "all channels for this origin id"
   void StopSound (vint32 origin_id, vint32 channel);

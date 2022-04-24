@@ -598,6 +598,13 @@ public:
     VMT_RET_REF(VEntity, method);
   }
 
+  VEntity *eventGetLocalSoundEntity () {
+    static VMethodProxy method("GetLocalSoundEntity");
+    vobjPutParamSelf();
+    VMT_RET_REF(VEntity, method);
+  }
+
+
   //override bool do_CheckProximity (name classname, float distance, optional int count, optional int flags, optional int aptr)
   bool doCheckProximity (VName classname, float dist,
                          bool specified_count, int count,
@@ -951,7 +958,7 @@ public:
   bool CanSee (VEntity *Ent, bool forShooting=false, bool alwaysBetter=false);
   inline bool CanShoot (VEntity *Ent) { return CanSee(Ent, true); }
 
-  void StartSound (VName Sound, vint32 Channel, float Volume, float Attenuation, bool Loop, bool Local=false);
+  void StartSound (VName Sound, vint32 Channel, float Volume, float Attenuation, bool Loop);
   void StartLocalSound (VName Sound, vint32 Channel, float Volume, float Attenuation);
   void StopSound (vint32 Channel); // channel 0 means "all channels"
   void StartSoundSequence (VName, vint32 Channel);

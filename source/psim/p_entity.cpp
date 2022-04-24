@@ -1211,13 +1211,13 @@ bool VEntity::CallStateChain (VEntity *Actor, VState *AState) {
 //  VEntity::StartSound
 //
 //==========================================================================
-void VEntity::StartSound (VName Sound, vint32 Channel, float Volume, float Attenuation, bool Loop, bool Local) {
+void VEntity::StartSound (VName Sound, vint32 Channel, float Volume, float Attenuation, bool Loop) {
   if (!Sector) return;
   if (Sector->SectorFlags&sector_t::SF_Silent) return;
   //if (IsPlayer()) GCon->Logf(NAME_Debug, "player sound '%s' (sound class '%s', gender '%s')", *Sound, *SoundClass, *SoundGender);
   Super::StartSound(Origin, SoundOriginID,
     GSoundManager->ResolveEntitySound(SoundClass, SoundGender, Sound),
-    Channel, Volume, Attenuation, Loop, Local);
+    Channel, Volume, Attenuation, Loop);
 }
 
 
@@ -1242,6 +1242,7 @@ void VEntity::StartLocalSound (VName Sound, vint32 Channel, float Volume, float 
 //
 //==========================================================================
 void VEntity::StopSound (vint32 channel) {
+  //if (IsPlayer()) GCon->Logf(NAME_Debug, "STOPSOUND: %s: chan=%d; sod=%d", GetClass()->GetName(), channel, SoundOriginID);
   if (SoundOriginID) Super::StopSound(SoundOriginID, channel);
 }
 
@@ -1550,38 +1551,38 @@ IMPLEMENT_FUNCTION(VEntity, CallStateChain) {
 }
 
 //native final void PlaySound (name SoundName, int Channel, optional float Volume,
-//                             optional float Atenuation, optional bool Loop, optional bool Local);
+//                             optional float Atenuation, optional bool Loop);
 IMPLEMENT_FUNCTION(VEntity, PlaySound) {
   VName SoundName;
   int Channel;
   VOptParamFloat Volume(1.0f);
   VOptParamFloat Attenuation(1.0f);
   VOptParamBool Loop(false);
-  VOptParamBool Local(false);
-  vobjGetParamSelf(SoundName, Channel, Volume, Attenuation, Loop, Local);
+  vobjGetParamSelf(SoundName, Channel, Volume, Attenuation, Loop);
   if (Channel&256) Loop = true; // sorry for this magic number
   Channel &= 7; // other bits are flags
-  Self->StartSound(SoundName, Channel, Volume, Attenuation, Loop, Local);
+  Self->StartSound(SoundName, Channel, Volume, Attenuation, Loop);
 }
 
 IMPLEMENT_FUNCTION(VEntity, StopSound) {
-  P_GET_INT(Channel);
-  P_GET_SELF;
+  int Channel;
+  vobjGetParamSelf(Channel);
+  //GCon->Logf(NAME_Debug, "%s: STOPSOUND: chan=%d", Self->GetClass()->GetName(), Channel);
   Self->StopSound(Channel);
 }
 
 IMPLEMENT_FUNCTION(VEntity, AreSoundsEquivalent) {
-  P_GET_NAME(Sound2);
-  P_GET_NAME(Sound1);
-  P_GET_SELF;
+  VName Sound1, Sound2;
+  vobjGetParamSelf(Sound1, Sound2);
+  if (Sound1 == Sound2) { RET_BOOL(true); return; }
   RET_BOOL(GSoundManager->ResolveEntitySound(Self->SoundClass,
     Self->SoundGender, Sound1) == GSoundManager->ResolveEntitySound(
     Self->SoundClass, Self->SoundGender, Sound2));
 }
 
 IMPLEMENT_FUNCTION(VEntity, IsSoundPresent) {
-  P_GET_NAME(Sound);
-  P_GET_SELF;
+  VName Sound;
+  vobjGetParamSelf(Sound);
   RET_BOOL(GSoundManager->IsSoundPresent(Self->SoundClass, Self->SoundGender, Sound));
 }
 

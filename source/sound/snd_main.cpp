@@ -757,6 +757,8 @@ void VAudio::PlaySound (int InSoundId, const TVec &origin, const TVec &velocity,
     }
   }
 
+  //GCon->Logf(NAME_Debug, "VAudio::PlaySound: sid=%d, chan=%d; sod=%d; local=%d; name='%s'", InSoundId, channel, origin_id, (int)LocalPlayerSound, *GSoundManager->S_sfx[sound_id].TagName);
+
   int handle;
   bool is3D;
   if (LocalPlayerSound) {
@@ -957,6 +959,7 @@ void VAudio::StopChannel (int cidx) {
 //
 //==========================================================================
 void VAudio::StopSound (int origin_id, int channel) {
+  //GCon->Logf(NAME_Debug, "VAudio::StopSound: chan=%d; sod=%d", channel, origin_id);
   FOR_EACH_CHANNEL(i) {
     if ((origin_id <= 0 || Channel[i].origin_id == origin_id) &&
         (!channel || Channel[i].channel == channel))

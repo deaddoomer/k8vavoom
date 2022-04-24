@@ -34,14 +34,23 @@
 //==========================================================================
 [decorate] final void A_PlaySound (optional name Sound, optional [soundchannel] int ChannelNameOrNumber,
                         optional float volume, optional bool looping, optional float attenuation,
-                        optional bool local)
+                        optional bool local, optional float pitch)
 {
   if (!specified_Sound) Sound = 'weapons/pistol';
   if (!Sound) return;
   // use `auto` channel, not body here
   // "body" is default "for historical reasons", but meh
   if (!specified_ChannelNameOrNumber) ChannelNameOrNumber = CHAN_AUTO;
-  PlaySound(Sound, ChannelNameOrNumber, volume!optional, attenuation!optional, looping!optional, local!optional);
+  // `pitch` is ignored for now
+  // also, i don't get how `local` should work
+  // it seems that `local` means "play only if client camera is at the current actor
+  if (local) {
+    EntityEx se = GetLocalSoundEntity();
+    if (se) se.PlaySound(Sound, ChannelNameOrNumber, volume!optional, attenuation!optional, looping!optional);
+  } else {
+    PlaySound(Sound, ChannelNameOrNumber, volume!optional, attenuation!optional, looping!optional);
+  }
+  //PlaySound(Sound, ChannelNameOrNumber, volume!optional, attenuation!optional, looping!optional, local!optional);
 }
 
 
@@ -59,12 +68,8 @@
     //printdebug("%C: ignored sound '%s'", self, Sound);
     return;
   }
-  if (!specified_Sound) Sound = 'weapons/pistol';
-  if (!Sound) return;
-  // use `auto` channel, not body here
-  // "body" is default "for historical reasons", but meh
-  if (!specified_ChannelNameOrNumber) ChannelNameOrNumber = CHAN_AUTO;
-  PlaySound(Sound, ChannelNameOrNumber, volume!optional, attenuation!optional, looping!optional, local!optional);
+  A_PlaySound(Sound, ChannelNameOrNumber!optional, volume!optional, looping!optional,
+              attenuation!optional, local!optional);
 }
 
 
