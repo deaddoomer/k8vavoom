@@ -1,54 +1,18 @@
-<html>
-<head>
 <title>3D Polyobject specification for k8vavoom engine, v0.99.2</title>
-<style>
-.content {
-  /*width: 42em;*/
-}
-.toc {
-  background: #aaa; /* sorry for this */
-  padding: 6px;
-  border: solid 1px black;
-  width: 50%;
-}
-hr {
-  margin: 12px;
-  padding: 0px;
-}
-h1 {
-  font-size: 160%;
-  text-align: center;
-  margin: 12px;
-  padding: 0px;
-}
-h2 {
-  font-size: 180%;
-  text-align: center;
-  margin: 12px;
-  padding: 0px;
-}
-pre {
-  background: #aaa; /* sorry for this */
-}
-</style>
-<body>
-<div class="content">
-<h2>3D Polyobject specification for k8vavoom engine, v0.99</h2>
-<p>
+
+<h1 align="center">3D Polyobject specification, v0.99.2</h1>
+
 This is description of k8vavoom 3d polyobjects: how to create them, how to
 use them, and, most important, how to NOT use them.
-</p>
 
-<p>
 Think of 3D polyobject as if it is a moving solid sector. Normal Doom
 sectors are empty inside, i.e. they have empty space between their floors
 and ceilings. 3D polyobject is the inverse of that: it has solid space
 between its floor and ceiling, and you can stand on its ceiling (which
 will look like platform floor for the player).
-</p>
 
-<b>TOC</b><br>
-<div class="toc">
+<h2 id="toc">TOC</h2>
+
 <a href="#watsnew">What's new since the previous version</a><br>
 <a href="#drawit">How to draw 3d polyobject</a><br>
 <a href="#spawnit">How to spawn 3d polyobject</a><br>
@@ -71,189 +35,150 @@ will look like platform floor for the player).
   <li><a href="#acs_POBJ_FLAG_SIDE_CRUSH">POBJ_FLAG_SIDE_CRUSH</a></li>
 </ul>
 <a href="#limitations">Current Limitations</a><br>
-</div>
 
 
-<hr>
-<a id="drawit"></a><h1>How to create 3d polyobject</h1>
-<p>
+<hr id="drawit"><h1 align="center">How to create 3d polyobject</h1>
+
 Drawing 3d polyobjects is very easy, it is not much different from
 drawing a standard polyobject. Please, refer to any polyobject
 documentation. I will only describe the differences here.
-</p>
 
-<p>
 Each 3d polyobject should consist of one sector, created with closed contours.
 The shape and the number of the contours can be arbitrary, as long as all contours
 are closed, and there are no self-intersections. All lines should point <b>outside</b>
 of that "inner" sector, and should be marked as "impassable". Of course, those lines
 should be two-sided. ;-)
-</p>
 
-<p>
 Please, note that breaking any requirement may lead to undefined result. I.e. your
 invalid 3d polyobject may work, and you may even get some fancy effects, but there are
 no guarantees that it will keep working in any following engine build.
+
 <center>
 <div style="font-size:140%;font-weight:bold;background:#c00;color:#ff0;width:70%;text-align:center;border:1px solid #ff0;padding:8px">
-<b>PLEASE, DON'T DO ANYTHING THAT IS NOT EXPLICITLY DESCRIBED AS ALLOWED IN THIS DOCUMENT!</b>
+PLEASE, DON'T DO ANYTHING THAT IS NOT EXPLICITLY DESCRIBED AS ALLOWED IN THIS DOCUMENT!
 </div>
 </center>
-</p>
 
-<p>
-Here is the picture for you.
-</p>
+Here is the picture for you.<br>
 <img src="fig1.png" />
 
-<p>
 There are two sectors on the picture. "Inner sector" is 3d polyobject sector. As you can see,
 its shape is not convex, but it is closed, and all lines points outside of it. The outer sector
 is just a "container" for polyobject. It will not be visible in-game.
-</p>
-<p>
+
 You can place normal polyobject anchor thing to mark the anchor point of your 3d polyobject.
 If you will not do it, the engine will select some point on its own. It will try to select a
 point close to polyobject center, but it is not guaranteed. The algorithm to calculate center
 point may change in the future, so you should <b>ALWAYS</b> use anchor things.
-</p>
-<p>
+
 Inner sector height will be used as 3d polyobject height. But please, note that maximum height is
 limited by middle texture height, if you won't set your middle texture as wrapping. Inner sector
 floor texture will be the bottom 3d polyobject texture, and ceiling texture will become the top one.
-</p>
-<p>
+
 To align floor and ceiling textures, just align your inner sector as you want to. The inner sector
 will be "cut out" as it is, and will retain its flat align no matter how you'll move it.
-</p>
-<p>
+
 You can set top and bottom textures for 3d polyobject lines. Top texture can be made impassable by
 setting "clip midtexture" line flag. Impassable top textures should be assigned to the both line
 sides, and should be of the same height, or the engine will refuse loading a map. Bottom texture
 is just a decoration and will not block movement.
-</p>
-<p>
+
 Note that top texture is always mapped from 3d polyobject ceiling up, and bottom texture is always
 mapped from 3d polyobject floor down.
-</p>
-<p>
+
 You can use "midtexture is wrapped" flag to tell the engine that middle texture should be wrapped.
 Note that all middle textures should be high enough (or wrapped) to fill the whole side.
 If this rule is violated, the engine will refuse loading a map.
-</p>
-<p>
+
 Line alpha and additivenes can be used to control top/bottom texture rendering. Middle texture is
 always non-alphablended. Do not assign translucent textures to midtex, or the engine will refuse
 loading a map.
-</p>
-<p>
+
 Currently you cannot assign "masked" middle texture (i.e. things like grates and such).
 This limitation may be removed in the future.
-</p>
-<p>
+
 3D polyobject light level is determined by the light level of its inner sector. Currently this is
 the only thing that controls 3d polyobject ambient lighting.
-</p>
-<p>
+
 3D polyobject sound sequence origin will move with the corresponding 3d polyobject anchor.
 I.e. for things like moving trains, engine sounds will move with them instead of staying at the
 starting spot. This is done only for 3d polyobjects, old-style polyobject sounds will not move.
-</p>
 
 
-<hr>
-<a id="spawnit"></a><h1>How to spawn 3d polyobject</h1>
-<p>
+<hr id="spawnit"><h1 align="center">How to spawn 3d polyobject</h1>
+
 To spawn your 3d polyobject, you should use new thing with editor number <b>9369</b>.
 It's height will specify initial z offset <b>from the inner sector</b>. NOT from the destination one!
 The angle is the polyobject tag, as in other polyobject spawners.<br>
-<b>arg1</b> is the sum of 3d pobj flags (see `<code>POBJ_FLAG_xxx</code>` below).<br>
+<b>arg1</b> is the sum of 3d pobj flags (see `<code>POBJ_FLAG_xxx</code>` below).
+
 <i>Note: if `<code>POBJ_FLAG_SIDE_CRUSH</code>` is set, entity will be destroyed if it was touched
 by a moving 3d pobj side. This is useful to create vertical crushers, because otherwise crushing
 3d pobj can try to push an entity away if it is close to the edge. Also, this flag does nothing if
-`<code>POBJ_FLAG_CRUSH</code>` is not set.</i><br>
+`<code>POBJ_FLAG_CRUSH</code>` is not set.</i>
+
 <b>WARNING! Other things args must be zero! They may be used later, and if you will not set them
 to zeroes, your map may break in the future!</b>
-</p>
 
 
-<hr>
-<a id="setheight"></a><h1>How to set 3d polyobject height</h1>
-<p>
+<hr id="setheight"><h1>How to set 3d polyobject height</h1>
+
 3D polyobject height is determined by two parameters: its inner sector, and middle texture of its
 first line (at the front side).
-</p>
-<p>
+
 First, 3d polyobject inner sector sets hard limits: 3d pobj cannot be higher than its inner sector.
-</p>
-<p>
+
 Second, if the middle texture of the 3d polyobject first line is not wrapped, then the height is clamped
 by that texture scaled height (i.e. UDMF Y scale value is in effect). if ML_DONTPEGBOTTOM flag is set,
 then the texture goes from inner sector floor up, otherwise it goes from inner sector ceiling down (i.e.
 that flag has the same meaning as for other two-sided lines).
-</p>
-<!--
-Third, if anchor thing height is not zero, then 3d polyobject height will never be greater than its absolute value.
-If the height is positive, then 3d polyobject floor will be raised, if necessary. And if the height is negative,
-then 3d polyobject ceiling will be lowered, if necessary.
--->
 
 
-<hr>
-<a id="linkit"></a><h1>Linked 3d polyobjects</h1>
-<p>
+<hr id="linkit"><h1>Linked 3d polyobjects</h1>
+
 There is a new feature you can use to create complex structures out of simple polyobjects: polyobject links.
 It is somewhat similar to linked sectors you could use to create complex lifts.
-</p>
-<p>
+
 Linked polyobjects will behave as one object, and all operations on the first polyojbect in the link will
 affect all linked "children". All operations on the link chain are atomic. I.e. if moving/rotating is failed,
 no objects in chain will be modified. Just think about the link chain as one big object.
-</p>
-<p>
+
 To link polyobjects, use things with editor id <b>9368</b>. Its first argument is the master polyobject id,
 its second argument is the secondary polyobject id. It will link the secondary polyobject to the master.
 Note that you cannot link two or more polyobject to one master, so to create complex structures you have
 to link all polyobjects one to another, creating a "link chain". Linking all polyobjects to a single master
 <b>will not work</b>.
-</p>
-<p><a id="thing9367"></a>
-There is a simplier way to create a link chain of sequential polyobjects, with thing <b>9367</b>.
+
+<a id="thing9367"></a>There is a simplier way to create a link chain of sequential polyobjects, with thing <b>9367</b>.
 Its first argument is the first polyobject id, and its second argument is the last polyobject id.
 The engine will link each polyobject to the next one (in backwards direction if the starting id is higher
 then the ending id). The sequence can have "holes" (i.e. you can setup link from 1 to 6, but only have
 polyobjects with ids 2 and 4, for example). The usual link chain restrictions still should be obeyed.
-</p>
 
 
-<hr>
-<a id="blockflags"></a><h1>Line blocking flags</h1>
-<p>
+<hr id="blockflags"><h1>Line blocking flags</h1>
+
 Each 3d polyobject line should have ML_BLOCKING flag set. This controls midtexture blocking, and cannot be
 changed (i.e. midtexture is always blocking).
-</p>
-<p>
-Other blocking flags controls entity blocking with top texture.<br>
-<b>ML_BLOCKEVERYTHING</b> will block... well, every entity.<br>
-<b>ML_BLOCKPLAYERS</b> will block players.<br>
-<b>ML_BLOCKMONSTERS</b> will block monsters.<br>
-<b>ML_BLOCKPROJECTILE</b> will block projectiles.<br>
-<b>ML_BLOCK_FLOATERS</b> will block floaters.<br>
-</p>
-<p>
-You can also block hitscan attacks with <b>ML_BLOCKHITSCAN</b>.<br>
-Note that ML_BLOCKEVERYTHING will not block hitscans.
-</p>
-<p>
-Blocking monster sight with <b>ML_BLOCKSIGHT</b> currently doesn't work, but this <b>WILL</b> be fixed.<br>
-<b>WARNING! Setting ML_BLOCKSIGHT flag currently may not work, but don't rely on that! This is a known bug, and it will be fixed!</b><br>
+
+Other blocking flags controls entity blocking with top texture.
+
+  *  ML_BLOCKEVERYTHING</b> will block... well, every entity.
+  *  ML_BLOCKPLAYERS</b> will block players.
+  *  ML_BLOCKMONSTERS</b> will block monsters.
+  *  ML_BLOCKPROJECTILE</b> will block projectiles.
+  *  ML_BLOCK_FLOATERS</b> will block floaters.
+
+You can also block hitscan attacks with <b>ML_BLOCKHITSCAN</b>. Note that ML_BLOCKEVERYTHING will not block hitscans.
+
+Blocking monster sight with <b>ML_BLOCKSIGHT</b> currently doesn't work, but this <b>WILL</b> be fixed.
+
+<b>WARNING! Setting ML_BLOCKSIGHT flag currently may not work, but don't rely on that! This is a known bug, and it will be fixed!</b>
 Note that ML_BLOCKEVERYTHING will not block sight.
-</p>
 
 
-<hr>
-<a id="movenote"></a><h1>Notes about movement</h1>
-<p>
+<hr id="movenote"><h1>Notes about movement</h1>
+
 You can move your 3d polyobject by all three axes, and it will carry all things standing on it. Currently
 it works like a platform in arcade games: it carries things, but doesn't modify their velocities.
 Yet jumping (and only jumping, not walking!) from moving 3d polyobject will add its velocity to the
@@ -261,61 +186,63 @@ player velocity. That velocity will be subtracted if the player will land on the
 This allows more-or-less proper jumping on moving platforms. Note that for chained 3d polyobjects,
 the velocity will be taken from the object you moved via ACS (i.e. most of the time this will properly
 work with chain links).
-<br/>
+
 Rotating 3d polyobjects will not add any rotation impulse, though.
-</p>
-<p>
+
 Rotating 3d polyobject is allowed too. As you may expect, all things standing on such 3d polyobject will be
 properly rotated. Floor and ceiling textures will be rotated too (around polyobject anchor point).
 You can rotate 3d pobj only around Z axis (i.e. the same way non-3d pobjs are rotated). This limitation
 won't be removed.
-</p>
-<p>
+
 Currently, you cannot stack several entities on top of each other and make them move with the 3d polyobject.
 I.e. some solid entity that is standing on some other solid entity will block the whole movement, and may
 be crushed (because it is considered as "blocking" one).
-</p>
 
 
-<hr>
-<a id="acsapi"></a><h1>New ACS API</h1>
-<p>Assuming that you are using ZDoom ACC compiler fork, paste the following into your "zspecial.acs".</p>
-</div>
-<pre>
-  // k8vavoom polyobjects
-  // note that angles are in degrees
-  // speed is in units per second
-  // bool Polyobj_MoveEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, int moveflags)
-  -800:Polyobj_MoveEx(7),
-  // bool Polyobj_MoveToEx (int po, int speed, int x, int y, int z, int moveflags)
-  -801:Polyobj_MoveToEx(6),
-  // bool Polyobj_MoveToSpotEx (int po, int speed, int targettid, int moveflags) -- this uses target height too
-  -802:Polyobj_MoveToSpotEx(4),
-  // fixed GetPolyobjZ (int po)
-  -803:GetPolyobjZ(1),
-  // int Polyobj_GetFlagsEx (int po) -- -1 means "no pobj"
-  -804:Polyobj_GetFlagsEx(1),
-  // int Polyobj_SetFlagsEx (int po, int flags, int oper) -- oper: 0 means "clear", 1 means "set", -1 means "replace"
-  -805:Polyobj_SetFlagsEx(3),
-  // int Polyobj_IsBusy (int po) -- returns -1 if there is no such pobj
-  -806:Polyobj_IsBusy(1),
+<hr id="acsapi"><h1>New ACS API</h1>
 
-  // fixed Polyobj_GetAngle (int po) -- returns current pobj yaw angle, in degrees
-  -807:Polyobj_GetAngle(1),
+Assuming that you are using ZDoom ACC compiler fork, paste the following into your "zspecial.acs".
+<blockquote><pre>
+// k8vavoom polyobjects
+// note that angles are in degrees
+// speed is in units per second
+// bool Polyobj_MoveEx (int po, int hspeed, int yawangle, int dist, int vspeed,
+//                      int vdist, int moveflags)
+-800:Polyobj_MoveEx(7),
+// bool Polyobj_MoveToEx (int po, int speed, int x, int y, int z, int moveflags)
+-801:Polyobj_MoveToEx(6),
+// bool Polyobj_MoveToSpotEx (int po, int speed, int targettid, int moveflags)
+// this uses target height too
+-802:Polyobj_MoveToSpotEx(4),
+// fixed GetPolyobjZ (int po)
+-803:GetPolyobjZ(1),
+// int Polyobj_GetFlagsEx (int po)
+// po: -1 means "no pobj"
+-804:Polyobj_GetFlagsEx(1),
+// int Polyobj_SetFlagsEx (int po, int flags, int oper)
+// oper: 0 means "clear", 1 means "set", -1 means "replace"
+-805:Polyobj_SetFlagsEx(3),
+// int Polyobj_IsBusy (int po) -- returns -1 if there is no such pobj
+-806:Polyobj_IsBusy(1),
 
-  // bool Polyobj_MoveRotateEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, fixed deltaangle, int moveflags)
-  -808:Polyobj_MoveRotateEx(8),
-  // bool Polyobj_MoveToRotateEx (int po, int speed, int x, int y, int z, fixed deltaangle, int moveflags)
-  -809:Polyobj_MoveToRotateEx(7),
-  // bool Polyobj_MoveToSpotRotateEx (int po, int speed, int targettid, fixed deltaangle, int moveflags) -- this uses target height too
-  -810:Polyobj_MoveToSpotRotateEx(5),
-  // bool Polyobj_RotateEx (int po, int speed, fixed deltaangle, int moveflags)
-  -811:Polyobj_RotateEx(4),
-</pre>
-<div class="content">
-<p>Assuming that you are using ZDoom ACC compiler fork, paste the following into your "zdefs.acs".</p>
-</div>
-<pre>
+// fixed Polyobj_GetAngle (int po) -- returns current pobj yaw angle, in degrees
+-807:Polyobj_GetAngle(1),
+
+// bool Polyobj_MoveRotateEx (int po, int hspeed, int yawangle, int dist, int vspeed,
+//                            int vdist, fixed deltaangle, int moveflags)
+-808:Polyobj_MoveRotateEx(8),
+// bool Polyobj_MoveToRotateEx (int po, int speed, int x, int y, int z, fixed deltaangle, int moveflags)
+-809:Polyobj_MoveToRotateEx(7),
+// bool Polyobj_MoveToSpotRotateEx (int po, int speed, int targettid, fixed deltaangle, int moveflags)
+// this uses target height too
+-810:Polyobj_MoveToSpotRotateEx(5),
+// bool Polyobj_RotateEx (int po, int speed, fixed deltaangle, int moveflags)
+-811:Polyobj_RotateEx(4),
+</pre></blockquote>
+
+Assuming that you are using ZDoom ACC compiler fork, paste the following into your "zdefs.acs".
+
+<blockquote><pre>
 // for Polyobj_GetFlagsEx and Polyobj_SetFlagsEx
 #define POBJ_FLAG_CRUSH            (1 << 0) /* 1 */
 #define POBJ_FLAG_HURT_ON_TOUCH    (1 << 1) /* 2 */
@@ -340,209 +267,178 @@ be crushed (because it is considered as "blocking" one).
 #define POBJ_MOVE_MIRRORED  (1 << 4)
 /* used only in `Polyobj_RotateEx()`, to create perpetual rotation */
 #define POBJ_MOVE_PERPETUAL (1 << 5)
-</pre>
-<div class="content">
+</pre></blockquote>
 
-<hr>
-<a id="acsapiexpl"></a><h1>ACS API Explanation</h1>
+
+<hr id="acsapiexpl"><h1>ACS API Explanation</h1>
 
 <a id="acs_Polyobj_MoveEx"><b><u>Polyobj_MoveEx</u></b></a>
-<p>
+
 <code>bool Polyobj_MoveEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, int moveflags);</code>
-</p>
-<p>
+
 This is extension of 3D movement function. Note that <code>`vdist`</code> should always be positive, the
 actual direction is specified by <code>`vspeed`</code> (positive is up, negative is down).
-</p>
-<p>The <code>`hspeed`</code> value should be positive. The direction is determined by the <code>`yawangle`</code>.</p>
-<p>Speed is in map units per 1/8 of second.</p>
 
-<br />
+The <code>`hspeed`</code> value should be positive. The direction is determined by the <code>`yawangle`</code>.
 
-<a id="acs_Polyobj_MoveToEx"><b><u>Polyobj_MoveToEx</u></b></a>
-<p>
+Speed is in map units per 1/8 of second.
+
+
+<hr><a id="acs_Polyobj_MoveToEx"><b><u>Polyobj_MoveToEx</u></b></a>
+
 <code>bool Polyobj_MoveToEx (int po, int speed, int x, int y, int z, int moveflags);</code>
-</p>
-<p>
+
 This moves the polyobject to the specified world coordinates.
-</p>
-<p>Speed is in map units per 1/8 of second.</p>
 
-<br />
+Speed is in map units per 1/8 of second.
 
-<a id="acs_Polyobj_MoveToSpotEx"><b><u>Polyobj_MoveToSpotEx</u></b></a>
-<p>
+
+<hr><a id="acs_Polyobj_MoveToSpotEx"><b><u>Polyobj_MoveToSpotEx</u></b></a>
+
 <code>bool Polyobj_MoveToSpotEx (int po, int speed, int targettid, int moveflags);</code>
-</p>
-<p>
+
 This is 3D extension of <code>`Polyobj_MoveToSpot()`</code>.
-</p>
-<p>Speed is in map units per 1/8 of second.</p>
 
-<br />
+Speed is in map units per 1/8 of second.
 
-<a id="acs_Polyobj_IsBusy"><b><u>Polyobj_IsBusy</u></b></a>
-<p>
+
+<hr><a id="acs_Polyobj_IsBusy"><b><u>Polyobj_IsBusy</u></b></a>
+
 <code>int Polyobj_IsBusy (int po);</code>
-</p>
-<p>
+
 This checks if polyobject is currently busy with movement or rotation. Contrary to <code>`PolyWait()`</code>,
-this call is not blocking.<br />
+this call is not blocking.
+
 Return values:
-<ul>
-  <li>-1: there is no polyobject with the given tag.</li>
-  <li>0: the polyobject is not busy.</li>
-  <li>1: the polyobject is busy.</li>
-</ul>
+
+  *  -1: there is no polyobject with the given tag.</li>
+  *  0: the polyobject is not busy.</li>
+  *  1: the polyobject is busy.</li>
+
 Basically, any negative value means "no such polyobject", and any positive value means "it is busy".
-</p>
 
-<br />
 
-<a id="acs_Polyobj_GetAngle"><b><u>Polyobj_GetAngle</u></b></a>
-<p>
+<hr><a id="acs_Polyobj_GetAngle"><b><u>Polyobj_GetAngle</u></b></a>
+
 <code>fixed Polyobj_GetAngle (int po);</code>
-</p>
-<p>
+
 This returns current polyobject yaw angle, in degrees, as fixed-point value (NOT INTEGER!).
 If <code>`po`</code> doesn't specify a valid polyobject, return value is negative.
-</p>
 
-<br />
 
-<a id="acs_Polyobj_MoveRotateEx"><b><u>Polyobj_MoveRotateEx</u></b></a>
-<p>
+<hr><a id="acs_Polyobj_MoveRotateEx"><b><u>Polyobj_MoveRotateEx</u></b></a>
+
 <code>bool Polyobj_MoveRotateEx (int po, int hspeed, int yawangle, int dist, int vspeed, int vdist, fixed deltaangle, int moveflags);</code>
-</p>
-<p>
+
 This is extension of 3D movement function. Note that <code>`vdist`</code> should always be positive, the
 actual direction is specified by <code>`vspeed`</code> (positive is up, negative is down).
-</p>
-<p>The <code>`hspeed`</code> value should be positive. The direction is determined by the <code>`yawangle`</code>.</p>
-<p>Speed is in map units per 1/8 of second.</p>
-<p><code>`deltaangle`</code> specifies the angle change, in degrees. Polyobject will slowly rotate while moving, and when it
+
+The <code>`hspeed`</code> value should be positive. The direction is determined by the <code>`yawangle`</code>.
+
+Speed is in map units per 1/8 of second.
+
+<code>`deltaangle`</code> specifies the angle change, in degrees. Polyobject will slowly rotate while moving, and when it
 will arrive at the destination point, it will be rotated by <code>`deltaangle`</code>. Positive value means "rotate right",
-negative value means "rotate left".</p>
+negative value means "rotate left".
 
-<br />
 
-<a id="acs_Polyobj_MoveToRotateEx"><b><u>Polyobj_MoveToRotateEx</u></b></a>
-<p>
+<hr><a id="acs_Polyobj_MoveToRotateEx"><b><u>Polyobj_MoveToRotateEx</u></b></a>
+
 <code>bool Polyobj_MoveToRotateEx (int po, int speed, int x, int y, int z, fixed deltaangle, int moveflags);</code>
-</p>
-<p>
+
 This moves the polyobject to the specified world coordinates.
-</p>
-<p>Speed is in map units per 1/8 of second.</p>
-<p><code>`deltaangle`</code> specifies the angle change, in degrees. Polyobject will slowly rotate while moving, and when it
+
+Speed is in map units per 1/8 of second.
+
+<code>`deltaangle`</code> specifies the angle change, in degrees. Polyobject will slowly rotate while moving, and when it
 will arrive at the destination point, it will be rotated by <code>`deltaangle`</code>. Positive value means "rotate right",
-negative value means "rotate left".</p>
+negative value means "rotate left".
 
-<br />
 
-<a id="acs_Polyobj_MoveToSpotEx"><b><u>Polyobj_MoveToSpotRotateEx</u></b></a>
-<p>
+<hr><a id="acs_Polyobj_MoveToSpotEx"><b><u>Polyobj_MoveToSpotRotateEx</u></b></a>
+
 <code>bool Polyobj_MoveToSpotRotateEx (int po, int speed, int targettid, fixed deltaangle, int moveflags);</code>
-</p>
-<p>
+
 This is 3D extension of <code>`Polyobj_MoveToSpot()`</code>.
-</p>
-<p>Speed is in map units per 1/8 of second.</p>
-<p><code>`deltaangle`</code> specifies the additional angle change, in degrees. Polyobject will slowly rotate while moving, and when it
+
+Speed is in map units per 1/8 of second.
+
+<code>`deltaangle`</code> specifies the additional angle change, in degrees. Polyobject will slowly rotate while moving, and when it
 will arrive at the destination point, it will be rotated by <code>`deltaangle`</code>. Positive value means "rotate right",
-negative value means "rotate left".</p>
-<p><b>PLEASE, NOTE</b> that polyobject will rotate to the spot thing angle <b>plus</b> <code>`deltaangle`</code>.
-Most of the time <code>`deltaangle`</code> will be zero.</p>
+negative value means "rotate left".
 
-<br />
+<b>PLEASE, NOTE</b> that polyobject will rotate to the spot thing angle <b>plus</b> <code>`deltaangle`</code>.
 
-<a id="acs_POBJ_FLAG_SIDE_CRUSH"><b><u>POBJ_FLAG_SIDE_CRUSH</u></b></a>
-<p>
+
+<hr><a id="acs_POBJ_FLAG_SIDE_CRUSH"><b><u>POBJ_FLAG_SIDE_CRUSH</u></b></a>
+
 This flag is required due to the way the movement of polyobjects is implemented.
 Basically, if entity is collided with polyobject linedef, it is impossible to
 determine if it is due to polyobject is "crushing" the entity from above, or due to
 side movement. So even crushing polyobjects may push entities away. With this flag set,
 <b>any</b> collision with moving polyobject is fatal.
-</p>
-<p>
+
 The one quirk here is that even if polyobject is horizontally moving, and touched some
 entity, that entity will be crushed. So use this flag with care. It is mostly useful for
 "crusher" polyobjects, not for platforms.
-</p>
-<p><b>NOTE</b>: In the future polyobject crushing detection may be improved, and new flag
+
+<b>NOTE</b>: In the future polyobject crushing detection may be improved, and new flag
 will be introduced for "proper" crushing platforms.
-</p>
 
-<br />
 
-<a id="acs_Polyobj_RotateEx"><b><u>Polyobj_RotateEx</u></b></a>
-<p>
+<hr><a id="acs_Polyobj_RotateEx"><b><u>Polyobj_RotateEx</u></b></a>
+
 <code>bool Polyobj_RotateEx (int po, int speed, fixed deltaangle, int moveflags);</code>
-</p>
-<p>
+
 This rotates the polyobject by the specified angle.
-</p>
-<p>Speed is in map units per 1/8 of second.</p>
-<p>It is possible to use <code>`POBJ_MOVE_MIRRORED`</code> flag here to rotate "mirror" polyobject
+
+Speed is in map units per 1/8 of second.
+
+It is possible to use <code>`POBJ_MOVE_MIRRORED`</code> flag here to rotate "mirror" polyobject
 with negative angle.
 
 
-<hr>
-<a id="limitations"></a><h1>Current Limitations</h1>
-<p>
+<hr id="limitations"><h1 align="center">Current Limitations</h1>
+
 Riding on the moving 3d polyobject is done by teleporting. It means that entities are not moved
 by velocities or proper box tracing, they simply teleported to their destination. If the destination
 is occupied, and it is impossible to make a valid step up (not a stair, or stairs are too high), the
 entity will be returned to its original place. If returned entity blocks the polyobject, either the
 polyobject will stop, or the entity will be squashed.
-</p>
-<p>
+
 Due to the tepelorting, vertical entity "stacking" is not supported. I.e. you cannot put one entity on top
 of another and make them both ride on a 3d polyobject: if an entity is moved to the place which is already
 occupied by another entity, it will be processed as a normal blocking (see above).
-</p>
-<p>
+
 Impassable top texture currently doesn't block sight, and may fail to block hitscan attacks. This will be
 improved in the future.
-</p>
-<p>
+
 Also, please, use <b>only</b> the flags that are defined in this spec on 3d polyobject linedefs. Other flags
 may or may not work properly, and nothing is guaranteed. Even if it seems to work now (or do nothing), the
 engine may refuse to load such maps in the future, or flag meaning may change.
-</p>
-<p>
+
 Currently you cannot assign "masked" or translucent middle texture (i.e. things like grates and such). This limitation
 may be removed in the future.
-</p>
-<p>
+
 Also, currently you cannot use "masked" or translucent floor/ceiling textures. This limitation may be removed in the future.
-</p>
-<p>
+
 All middle textures should cover the full side (i.e. be either wrapped, or high enough).
-</p>
-<p>
+
 Lightmapped lighting may glitch on 3d polyobjects. This will be fixed in the future.
-</p>
-<p>
+
 Ambient lighting of 3d polyobject is controlled only by its inner sector light level. Moving 3d polyobject will not
 "inherit" light level of the sector (or sectors) it is currently in. Dynamic light level change can be implemented
 in the future, but it will be opt-in (i.e. there will be a special flag to turn it on).
-</p>
 
 
-<hr>
-<a id="watsnew"></a><h1>What's new since the previous version</h1>
-<p><b>since v0.99.1</b></p>
+<hr id="watsnew"><h1 align="center">What's new since the previous version</h1>
 
-<p>
- <ul>
-  <li>Added the thing (<a href="#thing9367">9367</a>) to specify polyobject link sequences.</li>
-  <li>Jumping from the moving 3d pobj will try to retain 3d pobj velocity.</li>
- </ul>
-</p>
+<b>since v0.99.1</b>
+
+  *  Added the thing (<a href="#thing9367">9367</a>) to specify polyobject link sequences.</li>
+  *  Jumping from the moving 3d pobj will try to retain 3d pobj velocity.</li>
 
 
-</div>
-<!-- TODO: document moving and checking order, so other sourceports will be able to implement it in compatible way -->
-</body>
-<html>
+<hr id="watsnew"><h1 align="center">TODO</h1>
+
+  *  document moving and checking order, so other sourceports will be able to implement it in compatible way.

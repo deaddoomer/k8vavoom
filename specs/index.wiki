@@ -1,0 +1,8 @@
+<title>specs</title>
+Here you can find specs for k8vavoom-specific idTech extensions.
+
+  *  [./k8vavoom_decals.txt | Extended decals ]
+  *  [./k8vavoom_decorate.txt | DECORATE extensions ]
+  *  [./k8vavoom_pointlights.txt | Point Light Definitions ]
+  *  [./k8vavoom_terrain_bootprints.txt | Bootprint definitions ]
+  *  [./3dpobj/k8vavoom_3dpobj.wiki | 3D Polyobjects ]
