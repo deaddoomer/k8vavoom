@@ -201,12 +201,12 @@ struct MarkPoint {
   float y;
   bool active;
 
-  MarkPoint () : x(0), y(0), active(false) {}
+  inline MarkPoint () noexcept : x(0.0f), y(0.0f), active(false) {}
 
-  inline bool isActive () const { return active; }
-  inline void setActive (bool v) { active = v; }
-  inline void activate () { setActive(true); }
-  inline void deactivate () { setActive(false); }
+  inline bool isActive () const noexcept { return active; }
+  inline void setActive (bool v) noexcept { active = v; }
+  inline void activate () noexcept { setActive(true); }
+  inline void deactivate () noexcept { setActive(false); }
 };
 
 struct mline_t {
@@ -238,12 +238,12 @@ bool AM_IsFullscreen () { return (automapactive > 0); } // returns `false` if au
 #define AM_W  (640)
 #define AM_H  (480-sb_height)
 */
-static inline int getAMWidth () {
+static VVA_FORCEINLINE int getAMWidth () {
   if (VirtualWidth < 320) return 320;
   return VirtualWidth;
 }
 
-static inline int getAMHeight () {
+static VVA_FORCEINLINE int getAMHeight () {
   int res = VirtualWidth;
   if (res < 240) res = 240;
   if (screen_size < 11) res -= sb_height;
@@ -517,8 +517,8 @@ static TMapNC<VClass *, int> spawnSprIndex;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static VVA_OKUNUSED inline int VScrTransX640 (int x) { return (int)(x*VirtualWidth/640.0f); }
-static VVA_OKUNUSED inline int VScrTransY480 (int y) { return (int)(y*VirtualHeight/480.0f); }
+static VVA_OKUNUSED VVA_FORCEINLINE int VScrTransX640 (int x) { return (int)(x*VirtualWidth/640.0f); }
+static VVA_OKUNUSED VVA_FORCEINLINE int VScrTransY480 (int y) { return (int)(y*VirtualHeight/480.0f); }
 
 
 //==========================================================================
@@ -1037,7 +1037,7 @@ static void AM_changeWindowScale () {
 //  Rotation in 2D. Used to rotate player arrow line character.
 //
 //==========================================================================
-static inline void AM_rotate (float *x, float *y, float a) {
+static VVA_FORCEINLINE void AM_rotate (float *x, float *y, float a) {
   float s, c;
   msincos(a, &s, &c);
   const float tmpx = *x*c-*y*s;
@@ -1051,7 +1051,7 @@ static inline void AM_rotate (float *x, float *y, float a) {
 //  AM_rotateAround
 //
 //==========================================================================
-static inline void AM_rotateAround (float *x, float *y, float a, float cx, float cy) {
+static VVA_FORCEINLINE void AM_rotateAround (float *x, float *y, float a, float cx, float cy) {
   float s, c;
   msincos(a, &s, &c);
   const float x0 = (*x)-cx;
@@ -1066,7 +1066,7 @@ static inline void AM_rotateAround (float *x, float *y, float a, float cx, float
 //  AM_rotatePoint
 //
 //==========================================================================
-void AM_rotatePoint (float *x, float *y) {
+static VVA_FORCEINLINE void AM_rotatePoint (float *x, float *y) {
   const float cx = FTOM(MTOF(cl->ViewOrg.x));
   const float cy = FTOM(MTOF(cl->ViewOrg.y));
   *x -= cx;
@@ -1370,7 +1370,7 @@ static void AM_drawGrid (vuint32 color) {
 //  AM_isBBox2DVisible
 //
 //==========================================================================
-static inline bool AM_isBBox2DVisible (const float bbox2d[4]) {
+static VVA_FORCEINLINE bool AM_isBBox2DVisible (const float bbox2d[4]) {
   return
     m_x2 >= bbox2d[BOX2D_LEFT] && m_y2 >= bbox2d[BOX2D_BOTTOM] &&
     m_x <= bbox2d[BOX2D_RIGHT] && m_y <= bbox2d[BOX2D_TOP];
@@ -1384,8 +1384,28 @@ static inline bool AM_isBBox2DVisible (const float bbox2d[4]) {
 //  check bounding box
 //
 //==========================================================================
-static inline bool AM_isSubVisible (const subsector_t *sub) {
+static VVA_FORCEINLINE bool AM_isSubVisible (const subsector_t *sub) {
   return (sub && AM_isBBox2DVisible(sub->bbox2d));
+}
+
+
+//==========================================================================
+//
+//  AM_isLineMapped
+//
+//==========================================================================
+static VVA_FORCEINLINE vuint32 AM_isLineMapped (const line_t *line) {
+  return (line->flags&ML_MAPPED)|(line->exFlags&(ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED));
+}
+
+
+//==========================================================================
+//
+//  AM_isRevealed
+//
+//==========================================================================
+static VVA_FORCEINLINE vuint32 AM_isRevealed () {
+  return (cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed);
 }
 
 
@@ -1412,9 +1432,7 @@ static vuint32 AM_getLineColor (const line_t *line, bool *cheatOnly) {
     if (ld && ld->MapColor) return ld->MapColor;
   }
   // unseen automap walls
-  if (!am_cheating && !(line->flags&ML_MAPPED) && !(line->exFlags&ML_EX_PARTIALLY_MAPPED) &&
-      (cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed))
-  {
+  if (!am_cheating && !AM_isLineMapped(line) && AM_isRevealed()) {
     return PowerWallColor;
   }
   // normal wall
@@ -1558,108 +1576,6 @@ static bool AM_CalcBM (int *bx0, int *by0, int *bx1, int *by1) {
 }
 
 
-#if 0
-//==========================================================================
-//
-//  AM_drawWallsOld
-//
-//  Determines visible lines, draws them.
-//
-//==========================================================================
-static void AM_drawWallsOld () {
-  const bool debugPObj = (am_pobj_debug.asInt()&0x01);
-  TArrayNC<polyobj_t *> pobjs;
-
-  for (auto &&line : GClLevel->allLines()) {
-    if (!line.firstseg) continue; // just in case
-    // do not send the line to GPU if it is not visible
-    // simplified check with line bounding box
-    if (!AM_isBBox2DVisible(line.bbox2d)) continue;
-
-    if (!am_cheating) {
-      if (line.flags&ML_DONTDRAW) continue;
-      if (!(line.flags&ML_MAPPED) && !(line.exFlags&(ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED))) {
-        if (!(cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed)) continue;
-      }
-    }
-
-    bool cheatOnly = false;
-    vuint32 clr = AM_getLineColor(&line, &cheatOnly);
-    if (cheatOnly && !am_cheating) continue; //FIXME: should we draw these lines if automap powerup is active?
-
-    // special rendering for polyobject
-    if (debugPObj && line.pobj()) {
-      bool found = false;
-      for (int f = 0; f < pobjs.length(); ++f) if (pobjs[f] == line.pobj()) { found = true; break; }
-      if (!found) pobjs.append(line.pobj());
-      continue;
-    }
-
-    // fully mapped or automap revealed?
-    if (am_full_lines || am_cheating || (line.flags&ML_MAPPED) || (cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed)) {
-      mline_t l;
-      l.a.x = line.v1->x;
-      l.a.y = line.v1->y;
-      l.b.x = line.v2->x;
-      l.b.y = line.v2->y;
-
-      if (am_rotate) {
-        AM_rotatePoint(&l.a.x, &l.a.y);
-        AM_rotatePoint(&l.b.x, &l.b.y);
-      }
-
-      AM_drawMline(&l, clr);
-    } else {
-      // render segments
-      for (const seg_t *seg = line.firstseg; seg; seg = seg->lsnext) {
-        if (!seg->drawsegs || !(seg->flags&SF_MAPPED)) continue;
-
-        mline_t l;
-        l.a.x = seg->v1->x;
-        l.a.y = seg->v1->y;
-        l.b.x = seg->v2->x;
-        l.b.y = seg->v2->y;
-
-        if (am_rotate) {
-          AM_rotatePoint(&l.a.x, &l.a.y);
-          AM_rotatePoint(&l.b.x, &l.b.y);
-        }
-
-        AM_drawMline(&l, clr);
-      }
-    }
-  }
-
-  if (pobjs.length()) {
-    const vuint32 aclrs[2] = { 0x60c09000, 0x600090c0 };
-    for (int pn = 0; pn < pobjs.length(); ++pn) {
-      const polyobj_t *pobj = pobjs[pn];
-      unsigned aidx = 0u;
-      for (auto &&it : pobj->SubFirst()) {
-        for (auto &&sit : it.part()->SegFirst()) {
-          const seg_t *seg = sit.seg();
-
-          mline_t l;
-          l.a.x = seg->v1->x;
-          l.a.y = seg->v1->y;
-          l.b.x = seg->v2->x;
-          l.b.y = seg->v2->y;
-
-          if (am_rotate) {
-            AM_rotatePoint(&l.a.x, &l.a.y);
-            AM_rotatePoint(&l.b.x, &l.b.y);
-          }
-
-          AM_drawMline(&l, aclrs[aidx]);
-        }
-        aidx ^= 1u;
-      }
-    }
-  }
-}
-#endif
-
-
 //==========================================================================
 //
 //  AM_drawOneWall
@@ -1673,9 +1589,7 @@ static void AM_drawOneWall (const line_t &line, const bool debugPObj, TArrayNC<p
 
   if (!am_cheating) {
     if (line.flags&ML_DONTDRAW) return;
-    if (!(line.flags&ML_MAPPED) && !(line.exFlags&(ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED))) {
-      if (!(cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed)) return;
-    }
+    if (!(AM_isLineMapped(&line)|AM_isRevealed())) return;
   }
 
   bool cheatOnly = false;
@@ -1691,7 +1605,9 @@ static void AM_drawOneWall (const line_t &line, const bool debugPObj, TArrayNC<p
   }
 
   // fully mapped or automap revealed?
-  if (am_full_lines || am_cheating || (line.flags&ML_MAPPED) || (cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed)) {
+  if (am_full_lines || am_cheating || (line.flags&ML_MAPPED) ||
+      (cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed))
+  {
     mline_t l;
     l.a.x = line.v1->x;
     l.a.y = line.v1->y;
@@ -2778,45 +2694,6 @@ static void AM_Minimap_DrawWalls (VWidget *w, float xc, float yc, float scale, f
   const float halfwdt = w->GetWidth()*0.5f;
   const float halfhgt = w->GetHeight()*0.5f;
 
-  #if 0
-  // draw walls
-  for (auto &&line : GClLevel->allLines()) {
-    if (!line.firstseg) continue; // just in case
-
-    if (!am_cheating) {
-      if (line.flags&ML_DONTDRAW) continue;
-      if (!(line.flags&ML_MAPPED) && !(line.exFlags&(ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED))) {
-        if (!(cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed)) continue;
-      }
-    }
-
-    // convert line coordinates
-    const float lx1o = (line.v1->x-xc)*scale;
-    const float ly1o = -(line.v1->y-yc)*scale;
-    const float lx2o = (line.v2->x-xc)*scale;
-    const float ly2o = -(line.v2->y-yc)*scale;
-
-    WidgetTranslateXY(lx1, ly1, lx1o, ly1o);
-    WidgetTranslateXY(lx2, ly2, lx2o, ly2o);
-
-    // do not send the line to GPU if it is not visible
-    if (max2(lx1, lx2) < 0 || max2(ly1, ly2) < 0 ||
-        min2(lx1, lx2) >= w->GetWidth() || min2(ly1, ly2) >= w->GetHeight())
-    {
-      continue;
-    }
-
-    bool cheatOnly = false;
-    vuint32 clr = AM_getLineColor(&line, &cheatOnly);
-    if (cheatOnly && !am_cheating) continue; //FIXME: should we draw these lines if automap powerup is active?
-    clr |= 0xff000000u;
-
-    // fully mapped or automap revealed?
-    /*if (am_full_lines || (line.flags&ML_MAPPED) || (cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed))*/ {
-      w->DrawLineF(lx1, ly1, lx2, ly2, clr, alpha);
-    }
-  }
-  #else
   // use blockmap
   int bx0, by0, bx1, by1;
   if (!AM_MiniMap_CalcBM(w, xc, yc, scale, angle, &bx0, &by0, &bx1, &by1)) return;
@@ -2829,9 +2706,7 @@ static void AM_Minimap_DrawWalls (VWidget *w, float xc, float yc, float scale, f
 
         if (!am_cheating) {
           if (line.flags&ML_DONTDRAW) continue;
-          if (!(line.flags&ML_MAPPED) && !(line.exFlags&(ML_EX_PARTIALLY_MAPPED|ML_EX_CHECK_MAPPED))) {
-            if (!(cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed)) continue;
-          }
+          if (!(AM_isLineMapped(&line)|AM_isRevealed())) continue;
         }
 
         // convert line coordinates
@@ -2844,27 +2719,21 @@ static void AM_Minimap_DrawWalls (VWidget *w, float xc, float yc, float scale, f
         WidgetTranslateXY(lx2, ly2, lx2o, ly2o);
 
         // do not send the line to GPU if it is not visible
-        /*
-        if (max2(lx1, lx2) < 0 || max2(ly1, ly2) < 0 ||
+        if (max2(lx1, lx2) <= 0.0f || max2(ly1, ly2) <= 0.0f ||
             min2(lx1, lx2) >= w->GetWidth() || min2(ly1, ly2) >= w->GetHeight())
         {
           continue;
         }
-        */
 
         bool cheatOnly = false;
         vuint32 clr = AM_getLineColor(&line, &cheatOnly);
         if (cheatOnly && !am_cheating) continue; //FIXME: should we draw these lines if automap powerup is active?
         clr |= 0xff000000u;
 
-        // fully mapped or automap revealed?
-        /*if (am_full_lines || (line.flags&ML_MAPPED) || (cl->PlayerFlags&VBasePlayer::PF_AutomapRevealed))*/ {
-          w->DrawLineF(lx1, ly1, lx2, ly2, clr, alpha);
-        }
+        w->DrawLineF(lx1, ly1, lx2, ly2, clr, alpha);
       }
     }
   }
-  #endif
 }
 
 
