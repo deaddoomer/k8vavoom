@@ -497,7 +497,6 @@ public:
     if (Event == NAME_None) Event = NAME_Log;
     if (!GLogTTYLog) { lastEvent = NAME_None; return; }
     //printf("===(%s)\n%s\n===\n", *VName(Event), Text);
-    FILE *folog = outfile();
     while (*Text) {
       if (Text[0] == '\r' && Text[1] == '\n') ++Text;
       // find line terminator
@@ -508,6 +507,7 @@ public:
       //printf("===(%s)\n%s\n===\n", *VName(Event), Text);
       if (eol != Text) {
         // has something to print
+        FILE *folog = outfile();
         if (lastWasNL || Event != lastEvent) {
           // force new event
           if (!lastWasNL) {
@@ -515,6 +515,7 @@ public:
             if (folog && Event == NAME_Error) fflush(folog);
           }
           printEvent(Event);
+          folog = outfile();
           if (!GLogSkipLogTypeName) xprintStr(" ", folog);
         }
         lastWasNL = false;
@@ -525,6 +526,7 @@ public:
       // new line
       vassert(eol[0] == '\r' || eol[0] == '\n');
       if (!lastWasNL) {
+        FILE *folog = outfile();
         xprintStr("\n", folog);
         if (folog && Event == NAME_Error) fflush(folog);
       }
