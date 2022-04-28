@@ -1,0 +1,21 @@
+=== 000 ===
+tt: alive=false / dead=true / false (false / true / false)
+t2: alive=false / dead=true / false (false / true / false)
+=== 001 ===
+tt: alive=true / dead=false / true (true / false / true)
+t2: alive=false / dead=true / false (false / true / false)
+=== 002 ===
+tt: alive=true / dead=false / true (true / false / true)
+t2: alive=true / dead=false / true (true / false / true)
+=== 003 ===
+tt: alive=false / dead=true / true (false / true / true)
+t2: alive=true / dead=false / true (true / false / true)
+=== 004 ===
+tt: alive=false / dead=true / true (false / true / true)
+t2: alive=false / dead=true / true (false / true / true)
+=== 005 ===
+tt: alive=false / dead=true / false (false / true / false)
+t2: alive=false / dead=true / true (false / true / true)
+=== 006 ===
+tt: alive=false / dead=true / false (false / true / false)
+t2: alive=false / dead=true / false (false / true / false)

@@ -1,0 +1,44 @@
+class Test : Object;
+
+class Main : Object;
+
+Test tt;
+
+void main () {
+  GC_ImmediateDelete = false;
+
+  Test t2;
+  writeln("=== 000 ===");
+  print("tt: alive=%B / dead=%B / %B (false / true / false)", (self.tt)!alive, (self.tt)!dead, !!tt);
+  print("t2: alive=%B / dead=%B / %B (false / true / false)", (t2)!alive, (t2)!dead, !!t2);
+
+  writeln("=== 001 ===");
+  tt = SpawnObject(Test);
+  print("tt: alive=%B / dead=%B / %B (true / false / true)", (self.tt)!alive, (self.tt)!dead, !!tt);
+  print("t2: alive=%B / dead=%B / %B (false / true / false)", (t2)!alive, (t2)!dead, !!t2);
+
+  writeln("=== 002 ===");
+  t2 = SpawnObject(Test);
+  print("tt: alive=%B / dead=%B / %B (true / false / true)", (self.tt)!alive, (self.tt)!dead, !!tt);
+  print("t2: alive=%B / dead=%B / %B (true / false / true)", (t2)!alive, (t2)!dead, !!t2);
+
+  writeln("=== 003 ===");
+  tt.Destroy();
+  print("tt: alive=%B / dead=%B / %B (false / true / true)", (self.tt)!alive, (self.tt)!dead, !!tt);
+  print("t2: alive=%B / dead=%B / %B (true / false / true)", (t2)!alive, (t2)!dead, !!t2);
+
+  writeln("=== 004 ===");
+  t2.Destroy();
+  print("tt: alive=%B / dead=%B / %B (false / true / true)", (self.tt)!alive, (self.tt)!dead, !!tt);
+  print("t2: alive=%B / dead=%B / %B (false / true / true)", (t2)!alive, (t2)!dead, !!t2);
+
+  writeln("=== 005 ===");
+  delete tt;
+  print("tt: alive=%B / dead=%B / %B (false / true / false)", (self.tt)!alive, (self.tt)!dead, !!tt);
+  print("t2: alive=%B / dead=%B / %B (false / true / true)", (t2)!alive, (t2)!dead, !!t2);
+
+  writeln("=== 006 ===");
+  delete t2;
+  print("tt: alive=%B / dead=%B / %B (false / true / false)", (self.tt)!alive, (self.tt)!dead, !!tt);
+  print("t2: alive=%B / dead=%B / %B (false / true / false)", (t2)!alive, (t2)!dead, !!t2);
+}
