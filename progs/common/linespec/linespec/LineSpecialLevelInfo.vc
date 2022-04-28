@@ -3804,7 +3804,7 @@ override bool EV_ThingProjectile (int Arg1, int Arg2, int Arg3, int Arg4,
     if (newA.bSpecial) newA.bDropped = true; // Don't respawn
     if (agravity) {
       newA.bNoGravity = false;
-      //if (!(mobj->flags3 & MF3_ISMONSTER) && agravity == 1) // gozzo checks this, VaVoom did no checks
+      //if (!(mobj->flags3 & MF3_ISMONSTER) && agravity == 1) // GZDoom checks this, Vavoom did no checks
       if (agravity == 1 && !newA.bMonster) newA.Gravity = 0.125; // 1.0/8.0
     } else {
       newA.bNoGravity = true;

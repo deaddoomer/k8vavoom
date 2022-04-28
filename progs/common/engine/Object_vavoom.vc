@@ -24,7 +24,7 @@
 //**
 //**************************************************************************
 //
-//  VaVoom-specific things
+//  Vavoom-specific things
 //
 //==========================================================================
 native static final bool IsIWadClass (class C) [property(class) IWad];

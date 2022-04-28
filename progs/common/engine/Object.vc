@@ -31,7 +31,7 @@ class Object native abstract transient;
 
 //**************************************************************************
 //
-//  common Object things, shared between VaVoom and vccrun
+//  common Object things, shared between Vavoom and vccrun
 //
 //==========================================================================
 // [internal] fields won't be touched by initialization (and other object copying duties)
@@ -1444,7 +1444,7 @@ native static final iterator AllClassStates (class BaseClass, out state State);
 // misc
 
 // default `skipReplacement` is:
-//   `false` for VaVoom and VCC
+//   `false` for Vavoom and VCC
 //   `false` for vccrun
 native static final spawner Object SpawnObject (class cid, optional bool skipReplacement);
 
