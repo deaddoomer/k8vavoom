@@ -1536,25 +1536,28 @@ static void AM_UpdateSeen () {
 //
 //==========================================================================
 static bool AM_CalcBM_ByMapCoords (float x0, float y0, float x1, float y1,
-                                   int *bx0, int *by0, int *bx1, int *by1)
+                                   int *bx0, int *by0, int *bx1, int *by1,
+                                   bool doRotate)
 {
   int xl = (int)roundf((x0-GClLevel->BlockMapOrgX)/128.0f);
   int xh = (int)roundf((x1-GClLevel->BlockMapOrgX)/128.0f);
   int yl = (int)roundf((y0-GClLevel->BlockMapOrgY)/128.0f);
   int yh = (int)roundf((y1-GClLevel->BlockMapOrgY)/128.0f);
 
-  // calculate a minimum for how long the grid lines should be, so they
-  // cover the screen at any rotation
-  const float bw = (float)(xh-xl);
-  const float bh = (float)(yh-yl);
-  const float minlen = sqrtf(bw*bw+bh*bh);
-  const float extx = (minlen-bw)*0.5f;
-  const float exty = (minlen-bh)*0.5f;
+  if (doRotate) {
+    // calculate a minimum for how long the grid lines should be, so they
+    // cover the screen at any rotation
+    const float bw = (float)(xh-xl);
+    const float bh = (float)(yh-yl);
+    const float minlen = sqrtf(bw*bw+bh*bh);
+    const float extx = (minlen-bw)*0.5f;
+    const float exty = (minlen-bh)*0.5f;
 
-  xh = (int)roundf(xl+minlen-extx);
-  xl = (int)roundf(xl-extx);
-  yh = (int)roundf(yl+minlen-exty);
-  yl = (int)roundf(yl-exty);
+    xh = (int)roundf(xl+minlen-extx);
+    xl = (int)roundf(xl-extx);
+    yh = (int)roundf(yl+minlen-exty);
+    yl = (int)roundf(yl-exty);
+  }
 
   if (xh < 0 || yh < 0) return false;
   if (xl >= GClLevel->BlockMapWidth || yl >= GClLevel->BlockMapHeight) return false;
@@ -1576,7 +1579,7 @@ static bool AM_CalcBM_ByMapCoords (float x0, float y0, float x1, float y1,
 //
 //==========================================================================
 static inline bool AM_CalcBM (int *bx0, int *by0, int *bx1, int *by1) {
-  return AM_CalcBM_ByMapCoords(m_x, m_y, m_x2, m_y2, bx0, by0, bx1, by1);
+  return AM_CalcBM_ByMapCoords(m_x, m_y, m_x2, m_y2, bx0, by0, bx1, by1, am_rotate);
 }
 
 
@@ -2626,7 +2629,7 @@ static void AM_Minimap_DrawMarks (VWidget *w, float xc, float yc, float scale, f
 //
 //==========================================================================
 static inline bool AM_MiniMap_CalcBM (VWidget *w, float xc, float yc, float scale,
-                                      int *bx0, int *by0, int *bx1, int *by1)
+                                      bool doRotate, int *bx0, int *by0, int *bx1, int *by1)
 {
   const float halfwdt = w->GetWidth()*0.5f;
   const float halfhgt = w->GetHeight()*0.5f;
@@ -2640,7 +2643,7 @@ static inline bool AM_MiniMap_CalcBM (VWidget *w, float xc, float yc, float scal
   const float x1 = xc+wscale;
   const float y1 = yc+hscale;
 
-  return AM_CalcBM_ByMapCoords(x0, y0, x1, y1, bx0, by0, bx1, by1);
+  return AM_CalcBM_ByMapCoords(x0, y0, x1, y1, bx0, by0, bx1, by1, doRotate);
 }
 
 
@@ -2660,7 +2663,7 @@ static void AM_Minimap_DrawWalls (VWidget *w, float xc, float yc, float scale, f
 
   // use blockmap
   int bx0, by0, bx1, by1;
-  if (!AM_MiniMap_CalcBM(w, xc, yc, scale, &bx0, &by0, &bx1, &by1)) return;
+  if (!AM_MiniMap_CalcBM(w, xc, yc, scale, (angle != 0.0f), &bx0, &by0, &bx1, &by1)) return;
   GClLevel->IncrementValidCount();
   for (int bx = bx0; bx <= bx1; ++bx) {
     for (int by = by0; by <= by1; ++by) {
@@ -2849,7 +2852,7 @@ static void AM_Minimap_DrawThings (VWidget *w, float xc, float yc, float scale, 
     }
   } else {
     int bx0, by0, bx1, by1;
-    if (!AM_MiniMap_CalcBM(w, xc, yc, scale, &bx0, &by0, &bx1, &by1)) return;
+    if (!AM_MiniMap_CalcBM(w, xc, yc, scale, (angle != 0.0f), &bx0, &by0, &bx1, &by1)) return;
     GClLevel->IncrementValidCount();
     for (int bx = bx0; bx <= bx1; ++bx) {
       for (int by = by0; by <= by1; ++by) {
@@ -2885,7 +2888,7 @@ static void AM_Minimap_DrawKeys (VWidget *w, float xc, float yc, float scale, fl
   const bool allKeys = (am_show_keys_cheat.asBool() || am_cheating.asInt() > 1);
 
   int bx0, by0, bx1, by1;
-  if (!AM_MiniMap_CalcBM(w, xc, yc, scale, &bx0, &by0, &bx1, &by1)) return;
+  if (!AM_MiniMap_CalcBM(w, xc, yc, scale, (angle != 0.0f), &bx0, &by0, &bx1, &by1)) return;
   GClLevel->IncrementValidCount();
   for (int bx = bx0; bx <= bx1; ++bx) {
     for (int by = by0; by <= by1; ++by) {
