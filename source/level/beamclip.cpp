@@ -26,6 +26,10 @@
 #include "../gamedefs.h"
 #include "beamclip.h"
 
+// use seg coords for "is closed" check?
+// this seems to be wrong!
+//#define CLIPPER_USE_SEG_COORDS
+
 //#define XXX_CLIPPER_DUMP_ADDED_RANGES
 
 #ifdef VAVOOM_CLIPPER_USE_REAL_ANGLES
@@ -271,8 +275,13 @@ static bool IsPObjSegAClosedSomething (VLevel *level, const TFrustum *Frustum, p
 
   if (midTexType != VTextureManager::TCT_SOLID) return false;
 
+  #ifdef CLIPPER_USE_SEG_COORDS
   const TVec vv1 = *seg->v1;
   const TVec vv2 = *seg->v2;
+  #else
+  const TVec vv1 = *ldef->v1;
+  const TVec vv2 = *ldef->v2;
+  #endif
 
   // polyobject height
   float pocz1 = pobj->poceiling.GetPointZClamped(vv1);
@@ -430,9 +439,18 @@ static bool IsPObjSegAClosedSomethingServer (VLevel *level, const TFrustum *Frus
 } while (0)
 
 
-#define CLIPPER_CALC_FCHEIGHTS  \
+#ifdef CLIPPER_USE_SEG_COORDS
+#define CLIPPER_GET_VV1_VV2  \
   const TVec vv1 = *seg->v1; \
-  const TVec vv2 = *seg->v2; \
+  const TVec vv2 = *seg->v2;
+#else
+#define CLIPPER_GET_VV1_VV2  \
+  const TVec vv1 = *ldef->v1; \
+  const TVec vv2 = *ldef->v2;
+#endif
+
+#define CLIPPER_CALC_FCHEIGHTS  \
+  CLIPPER_GET_VV1_VV2 \
  \
   const float frontcz1 = fcplane.GetPointZ(vv1); \
   const float frontcz2 = fcplane.GetPointZ(vv2); \
