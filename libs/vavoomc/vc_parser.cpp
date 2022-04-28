@@ -593,7 +593,25 @@ VExpression *VParser::ParseExpressionPriority0 () {
         VExpression *op = ParseTernaryExpression();
         if (!op) ParseError(l, "Expression expected");
         Lex.Expect(TK_RParen, ERR_MISSING_RPAREN);
-        return new VExprParens(op, l);
+        VExpression *e = new VExprParens(op, l);
+        // `(a)!alive` -> `!((a).isDestroyed)`
+        // `(a)!dead` -> `(a).isDestroyed`
+        // done this way due to `!isa`
+        if (Lex.Token == TK_Not && Lex.peekTokenType(1) == TK_Identifier) {
+          Lex.Expect(TK_Not);
+          vassert(Lex.Token == TK_Identifier); // guaranteed
+          if (VStr::strEquCI(*Lex.Name, "alive") || VStr::strEquCI(*Lex.Name, "dead")) {
+            const bool doNot = VStr::strEquCI(*Lex.Name, "alive");
+            // create property getter
+            e = new VDotField(e, VName("isDestroyed"), Lex.Location);
+            Lex.NextToken(); // skip token
+            if (doNot) e = new VUnary(VUnary::Not, e, e->Loc);
+          } else {
+            ParseError(Lex.Location, "`!alive`, or `!dead` expected");
+            //break;
+          }
+        }
+        return e;
       }
     case TK_DColon:
       {
@@ -623,15 +641,27 @@ VExpression *VParser::ParseExpressionPriority0 () {
         if (bLocals && Lex.Token == TK_Asterisk) return ParseLocalVar(new VSingleName(Name, l));
 
         // `a!specified` -> `specified_a`
+        // `a!alive` -> `!(a.isDestroyed)`
+        // `a!dead` -> `a.isDestroyed`
         // done this way due to `!isa`
         if (Lex.Token == TK_Not && Lex.peekTokenType(1) == TK_Identifier) {
           Lex.Expect(TK_Not);
-          if (Lex.Token != TK_Identifier || !VStr::strEquCI(*Lex.Name, "specified")) {
-            ParseError(Lex.Location, "`!specified` expected");
+          vassert(Lex.Token == TK_Identifier); // guaranteed
+          if (VStr::strEquCI(*Lex.Name, "specified")) {
+            Lex.NextToken(); // skip token
+            Name = VName(va("specified_%s", *Name));
+          } else if (VStr::strEquCI(*Lex.Name, "alive") || VStr::strEquCI(*Lex.Name, "dead")) {
+            const bool doNot = VStr::strEquCI(*Lex.Name, "alive");
+            // create property getter
+            VExpression *e = new VSingleName(Name, l);
+            e = new VDotField(e, VName("isDestroyed"), Lex.Location);
+            Lex.NextToken(); // skip token
+            if (doNot) e = new VUnary(VUnary::Not, e, e->Loc);
+            return e;
+          } else {
+            ParseError(Lex.Location, "`!specified`, `!alive`, or `!dead` expected");
             break;
           }
-          Lex.NextToken(); // skip "specified"
-          Name = VName(va("specified_%s", *Name));
         }
 
         return new VSingleName(Name, l);
