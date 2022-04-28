@@ -612,6 +612,7 @@ VExpression *VParser::ParseExpressionPriority0 () {
         if (Lex.Check(TK_LParen)) return ParseMethodCallOrCast(Name, l);
 
         if (Lex.Check(TK_DColon)) {
+          // a::b -- access to type in another namespace
           if (Lex.Token != TK_Identifier) { ParseError(Lex.Location, "Identifier expected"); break; }
           VName Name2 = Lex.Name;
           Lex.NextToken();
@@ -620,6 +621,18 @@ VExpression *VParser::ParseExpressionPriority0 () {
         }
 
         if (bLocals && Lex.Token == TK_Asterisk) return ParseLocalVar(new VSingleName(Name, l));
+
+        // `a!specified` -> `specified_a`
+        // done this way due to `!isa`
+        if (Lex.Token == TK_Not && Lex.peekTokenType(1) == TK_Identifier) {
+          Lex.Expect(TK_Not);
+          if (Lex.Token != TK_Identifier || !VStr::strEquCI(*Lex.Name, "specified")) {
+            ParseError(Lex.Location, "`!specified` expected");
+            break;
+          }
+          Lex.NextToken(); // skip "specified"
+          Name = VName(va("specified_%s", *Name));
+        }
 
         return new VSingleName(Name, l);
       }
