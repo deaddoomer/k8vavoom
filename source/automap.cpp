@@ -394,6 +394,11 @@ static float m_y;
 static float m_x2; // UR x,y where the window is on the map (map coords)
 static float m_y2;
 
+// the rectangle that is guaranteed to cover the visible area (map coords)
+// calculated in drawer, if necessary
+static float mext_x0, mext_y0;
+static float mext_x1, mext_y1;
+
 // width/height of window on map (map coords)
 static float m_w;
 static float m_h;
@@ -1311,17 +1316,15 @@ static void AM_drawGrid (vuint32 color) {
   float x, y;
   float start, end;
   mline_t ml;
-  float minlen, extx, exty;
-  float minx, miny;
 
   // calculate a minimum for how long the grid lines should be, so they
   // cover the screen at any rotation
-  minlen = sqrtf(m_w*m_w+m_h*m_h);
-  extx = (minlen-m_w)/2;
-  exty = (minlen-m_h)/2;
+  const float minlen = sqrtf(m_w*m_w+m_h*m_h);
+  const float extx = (minlen-m_w)*0.5f;
+  const float exty = (minlen-m_h)*0.5f;
 
-  minx = m_x;
-  miny = m_y;
+  const float minx = m_x;
+  const float miny = m_y;
 
   // figure out start of vertical gridlines
   start = m_x-extx;
@@ -1372,8 +1375,8 @@ static void AM_drawGrid (vuint32 color) {
 //==========================================================================
 static VVA_FORCEINLINE bool AM_isBBox2DVisible (const float bbox2d[4]) {
   return
-    m_x2 >= bbox2d[BOX2D_LEFT] && m_y2 >= bbox2d[BOX2D_BOTTOM] &&
-    m_x <= bbox2d[BOX2D_RIGHT] && m_y <= bbox2d[BOX2D_TOP];
+    mext_x1 >= bbox2d[BOX2D_LEFT] && mext_y1 >= bbox2d[BOX2D_BOTTOM] &&
+    mext_x0 <= bbox2d[BOX2D_RIGHT] && mext_y0 <= bbox2d[BOX2D_TOP];
 }
 
 
@@ -1529,40 +1532,29 @@ static void AM_UpdateSeen () {
 
 //==========================================================================
 //
-//  AM_CalcBM
-//
-//  calculate blockmap rect
+//  AM_CalcBM_ByMapCoords
 //
 //==========================================================================
-static bool AM_CalcBM (int *bx0, int *by0, int *bx1, int *by1) {
-  float lx1o = m_x;
-  float ly1o = m_y;
-  float lx2o = m_x2;
-  float ly2o = m_y2;
+static bool AM_CalcBM_ByMapCoords (float x0, float y0, float x1, float y1,
+                                   int *bx0, int *by0, int *bx1, int *by1)
+{
+  int xl = (int)roundf((x0-GClLevel->BlockMapOrgX)/128.0f);
+  int xh = (int)roundf((x1-GClLevel->BlockMapOrgX)/128.0f);
+  int yl = (int)roundf((y0-GClLevel->BlockMapOrgY)/128.0f);
+  int yh = (int)roundf((y1-GClLevel->BlockMapOrgY)/128.0f);
 
-  // rotate: not yet
-  if (am_rotate) {
-    const float angle = cl->ViewAngles.yaw;
+  // calculate a minimum for how long the grid lines should be, so they
+  // cover the screen at any rotation
+  const float bw = (float)(xh-xl);
+  const float bh = (float)(yh-yl);
+  const float minlen = sqrtf(bw*bw+bh*bh);
+  const float extx = (minlen-bw)*0.5f;
+  const float exty = (minlen-bh)*0.5f;
 
-    float rx1 = lx1o;
-    float ry1 = ly1o;
-    float rx2 = lx2o;
-    float ry2 = ly2o;
-
-    AM_rotateAround(&rx1, &ry1, angle, cl->ViewOrg.x, cl->ViewOrg.y);
-    AM_rotateAround(&rx2, &ry2, angle, cl->ViewOrg.x, cl->ViewOrg.y);
-
-    lx1o = min2(lx1o, min2(rx1, rx2));
-    lx2o = max2(lx2o, max2(rx1, rx2));
-
-    ly1o = min2(ly1o, min2(ry1, ry2));
-    ly2o = max2(ly2o, max2(ry1, ry2));
-  }
-
-  int xl = MapBlock(lx1o-GClLevel->BlockMapOrgX);
-  int xh = MapBlock(lx2o-GClLevel->BlockMapOrgX);
-  int yl = MapBlock(ly1o-GClLevel->BlockMapOrgY);
-  int yh = MapBlock(ly2o-GClLevel->BlockMapOrgY);
+  xh = (int)roundf(xl+minlen-extx);
+  xl = (int)roundf(xl-extx);
+  yh = (int)roundf(yl+minlen-exty);
+  yl = (int)roundf(yl-exty);
 
   if (xh < 0 || yh < 0) return false;
   if (xl >= GClLevel->BlockMapWidth || yl >= GClLevel->BlockMapHeight) return false;
@@ -1573,6 +1565,18 @@ static bool AM_CalcBM (int *bx0, int *by0, int *bx1, int *by1) {
   *by1 = min2(max2(0, yh), GClLevel->BlockMapHeight-1);
 
   return true;
+}
+
+
+//==========================================================================
+//
+//  AM_CalcBM
+//
+//  calculate blockmap rect
+//
+//==========================================================================
+static inline bool AM_CalcBM (int *bx0, int *by0, int *bx1, int *by1) {
+  return AM_CalcBM_ByMapCoords(m_x, m_y, m_x2, m_y2, bx0, by0, bx1, by1);
 }
 
 
@@ -1756,7 +1760,10 @@ static void AM_drawFlats () {
   float alpha = (am_overlay ? clampval(am_texture_alpha.asFloat(), 0.0f, 1.0f) : 1.0f);
   if (alpha <= 0.0f) return;
   const bool amDoFloors = ((am_draw_type&3) == 1);
-  Drawer->RendLev->RenderTexturedAutomap(m_x, m_y, m_x2, m_y2, amDoFloors, alpha, &amShouldRenderTextured, &amIsHiddenSubsector, &AM_mapxy2fbxy);
+  //Drawer->RendLev->RenderTexturedAutomap(m_x, m_y, m_x2, m_y2, amDoFloors, alpha, &amShouldRenderTextured, &amIsHiddenSubsector, &AM_mapxy2fbxy);
+  Drawer->RendLev->RenderTexturedAutomap(mext_x0, mext_y0, mext_x1, mext_y1,
+                                         amDoFloors, alpha, &amShouldRenderTextured,
+                                         &amIsHiddenSubsector, &AM_mapxy2fbxy);
 }
 
 
@@ -2474,6 +2481,18 @@ void AM_Drawer () {
 
   AM_UpdateSeen();
 
+  // calculate a rectangle that should cover the whole screen, even if rotated
+  // (in world coords)
+  {
+    const float minlen = sqrtf(m_w*m_w+m_h*m_h);
+    const float extx = (minlen-m_w)*0.5f;
+    const float exty = (minlen-m_h)*0.5f;
+    mext_x0 = m_x-extx;
+    mext_y0 = m_y-exty;
+    mext_x1 = m_x+minlen-extx;
+    mext_y1 = m_y+minlen-exty;
+  }
+
   Drawer->StartAutomap(am_overlay);
   if (am_draw_grid) AM_drawGrid(GridColor);
   if (am_draw_type&3) {
@@ -2606,8 +2625,8 @@ static void AM_Minimap_DrawMarks (VWidget *w, float xc, float yc, float scale, f
 //  calculate blockmap rect
 //
 //==========================================================================
-static bool AM_MiniMap_CalcBM (VWidget *w, float xc, float yc, float scale, float angle,
-                               int *bx0, int *by0, int *bx1, int *by1)
+static inline bool AM_MiniMap_CalcBM (VWidget *w, float xc, float yc, float scale,
+                                      int *bx0, int *by0, int *bx1, int *by1)
 {
   const float halfwdt = w->GetWidth()*0.5f;
   const float halfhgt = w->GetHeight()*0.5f;
@@ -2616,67 +2635,12 @@ static bool AM_MiniMap_CalcBM (VWidget *w, float xc, float yc, float scale, floa
   const float hscale = halfhgt/scale;
 
   // convert widget coords to map coords
-  float lx1o = xc-wscale;
-  float ly1o = yc-hscale;
-  float lx2o = xc+wscale;
-  float ly2o = yc+hscale;
+  const float x0 = xc-wscale;
+  const float y0 = yc-hscale;
+  const float x1 = xc+wscale;
+  const float y1 = yc+hscale;
 
-  // rotate
-  if (angle) {
-    float rx1 = lx1o;
-    float ry1 = ly1o;
-    float rx2 = lx2o;
-    float ry2 = ly2o;
-
-    AM_rotateAround(&rx1, &ry1, angle, xc, yc);
-    AM_rotateAround(&rx2, &ry2, angle, xc, yc);
-
-    lx1o = min2(lx1o, min2(rx1, rx2));
-    lx2o = max2(lx2o, max2(rx1, rx2));
-
-    ly1o = min2(ly1o, min2(ry1, ry2));
-    ly2o = max2(ly2o, max2(ry1, ry2));
-
-    #if 0
-    // this gets more blockmap cells than necessary, but meh...
-    rx1 = (xc+wscale)-(rx1-(xc-wscale));
-    rx2 = (xc+wscale)-(rx2-(xc-wscale));
-
-    ry1 = (yc+hscale)-(ry1-(yc-hscale));
-    ry2 = (yc+hscale)-(ry2-(yc-hscale));
-
-    lx1o = min2(lx1o, min2(rx1, rx2));
-    lx2o = max2(lx2o, max2(rx1, rx2));
-
-    ly1o = min2(ly1o, min2(ry1, ry2));
-    ly2o = max2(ly2o, max2(ry1, ry2));
-    #endif
-  }
-
-  #if 0
-  GCon->Logf(NAME_Debug, "*** xc=%g; yc=%g; scale=%g; angle=%g, (%g,%g)-(%g,%g)", xc, yc, scale, angle, lx1o, ly1o, lx2o, ly2o);
-  GCon->Logf(NAME_Debug, "*** bmorg=(%g,%g); bmsize=(%d,%d)", GClLevel->BlockMapOrgX, GClLevel->BlockMapOrgY,
-             GClLevel->BlockMapWidth, GClLevel->BlockMapHeight);
-  #endif
-
-  int xl = MapBlock(lx1o-GClLevel->BlockMapOrgX);
-  int xh = MapBlock(lx2o-GClLevel->BlockMapOrgX);
-  int yl = MapBlock(ly1o-GClLevel->BlockMapOrgY);
-  int yh = MapBlock(ly2o-GClLevel->BlockMapOrgY);
-
-  #if 0
-  GCon->Logf(NAME_Debug, "  (%d,%d)-(%d,%d)", xl, yl, xh, yh);
-  #endif
-
-  if (xh < 0 || yh < 0) return false;
-  if (xl >= GClLevel->BlockMapWidth || yl >= GClLevel->BlockMapHeight) return false;
-
-  *bx0 = max2(0, xl);
-  *by0 = max2(0, yl);
-  *bx1 = max2(0, xh);
-  *by1 = max2(0, yh);
-
-  return true;
+  return AM_CalcBM_ByMapCoords(x0, y0, x1, y1, bx0, by0, bx1, by1);
 }
 
 
@@ -2696,7 +2660,7 @@ static void AM_Minimap_DrawWalls (VWidget *w, float xc, float yc, float scale, f
 
   // use blockmap
   int bx0, by0, bx1, by1;
-  if (!AM_MiniMap_CalcBM(w, xc, yc, scale, angle, &bx0, &by0, &bx1, &by1)) return;
+  if (!AM_MiniMap_CalcBM(w, xc, yc, scale, &bx0, &by0, &bx1, &by1)) return;
   GClLevel->IncrementValidCount();
   for (int bx = bx0; bx <= bx1; ++bx) {
     for (int by = by0; by <= by1; ++by) {
@@ -2885,7 +2849,7 @@ static void AM_Minimap_DrawThings (VWidget *w, float xc, float yc, float scale, 
     }
   } else {
     int bx0, by0, bx1, by1;
-    if (!AM_MiniMap_CalcBM(w, xc, yc, scale, angle, &bx0, &by0, &bx1, &by1)) return;
+    if (!AM_MiniMap_CalcBM(w, xc, yc, scale, &bx0, &by0, &bx1, &by1)) return;
     GClLevel->IncrementValidCount();
     for (int bx = bx0; bx <= bx1; ++bx) {
       for (int by = by0; by <= by1; ++by) {
@@ -2921,7 +2885,7 @@ static void AM_Minimap_DrawKeys (VWidget *w, float xc, float yc, float scale, fl
   const bool allKeys = (am_show_keys_cheat.asBool() || am_cheating.asInt() > 1);
 
   int bx0, by0, bx1, by1;
-  if (!AM_MiniMap_CalcBM(w, xc, yc, scale, angle, &bx0, &by0, &bx1, &by1)) return;
+  if (!AM_MiniMap_CalcBM(w, xc, yc, scale, &bx0, &by0, &bx1, &by1)) return;
   GClLevel->IncrementValidCount();
   for (int bx = bx0; bx <= bx1; ++bx) {
     for (int by = by0; by <= by1; ++by) {
