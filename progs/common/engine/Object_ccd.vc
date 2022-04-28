@@ -1,0 +1,257 @@
+//**************************************************************************
+//**
+//**    ##   ##    ##    ##   ##   ####     ####   ###     ###
+//**    ##   ##  ##  ##  ##   ##  ##  ##   ##  ##  ####   ####
+//**     ## ##  ##    ##  ## ##  ##    ## ##    ## ## ## ## ##
+//**     ## ##  ########  ## ##  ##    ## ##    ## ##  ###  ##
+//**      ###   ##    ##   ###    ##  ##   ##  ##  ##       ##
+//**       #    ##    ##    #      ####     ####   ##       ##
+//**
+//**  Copyright (C) 1999-2006 Jānis Legzdiņš
+//**  Copyright (C) 2018-2022 Ketmar Dark
+//**
+//**  This program is free software: you can redistribute it and/or modify
+//**  it under the terms of the GNU General Public License as published by
+//**  the Free Software Foundation, version 3 of the License ONLY.
+//**
+//**  This program is distributed in the hope that it will be useful,
+//**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**  GNU General Public License for more details.
+//**
+//**  You should have received a copy of the GNU General Public License
+//**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//**
+//**************************************************************************
+//
+//  CCD helpers, directly included from "Object.vc"
+//
+//**************************************************************************
+
+// returns number of planes created (0 for point)
+// max result is six planes: two for line, two+two axial bevels
+struct CD_LinePlanes {
+  TPlane[6] planes;
+  int count;
+  TVec lineA, lineB; // we'll need this later
+}
+
+#ifndef VC_COMPILER_TEST
+static final void CD_BuildLinePlanes (out CD_LinePlanes lpl, TVec a, TVec b) {
+  a.z = 0;
+  b.z = 0;
+  lpl.lineA = a;
+  lpl.lineB = b;
+  if (a == b) {
+    // point, create four axial planes to represent it as a box
+    lpl.planes[0].normal = vector( 0, -1); lpl.planes[0].dist = -a.y; // top
+    lpl.planes[1].normal = vector( 0,  1); lpl.planes[1].dist = a.y; // bottom
+    lpl.planes[2].normal = vector(-1,  0); lpl.planes[2].dist = -a.x; // left
+    lpl.planes[3].normal = vector( 1,  0); lpl.planes[3].dist = a.x; // right
+    lpl.count = 4; // four planes created
+    return;
+  }
+  // horizontal line?
+  if (a.y == b.y) {
+    if (a.x < b.x) {
+      lpl.planes[0].normal = vector( 0, -1); lpl.planes[0].dist = -a.y; // top
+      lpl.planes[1].normal = vector( 0,  1); lpl.planes[1].dist = a.y; // bottom
+    } else {
+      lpl.planes[1].normal = vector( 0, -1); lpl.planes[1].dist = -a.y; // top
+      lpl.planes[0].normal = vector( 0,  1); lpl.planes[0].dist = a.y; // bottom
+    }
+    lpl.planes[2].normal = vector(-1,  0); lpl.planes[2].dist = -fmin(a.x, b.x); // left
+    lpl.planes[3].normal = vector( 1,  0); lpl.planes[3].dist = fmax(a.x, b.x); // right
+    lpl.count = 4; // four planes created
+    return;
+  }
+  // vertical line?
+  if (a.x == b.x) {
+    if (a.y > b.y) {
+      lpl.planes[0].normal = vector(-1,  0); lpl.planes[0].dist = -a.x; // left
+      lpl.planes[1].normal = vector( 1,  0); lpl.planes[1].dist = a.x; // right
+    } else {
+      lpl.planes[1].normal = vector(-1,  0); lpl.planes[1].dist = -a.x; // left
+      lpl.planes[0].normal = vector( 1,  0); lpl.planes[0].dist = a.x; // right
+    }
+    lpl.planes[2].normal = vector( 0, -1); lpl.planes[2].dist = -fmin(a.y, b.y); // top
+    lpl.planes[3].normal = vector( 0,  1); lpl.planes[3].dist = fmax(a.y, b.y); // bottom
+    lpl.count = 4; // four planes created
+    return;
+  }
+  // ok, not an ortho-axis line, create line planes the old way
+  // two line planes
+  PlaneForLine(out lpl.planes[0], a, b);
+  //PlaneForLine(out lpl.planes[1], b, a);
+  lpl.planes[1].normal = -lpl.planes[0].normal;
+  lpl.planes[1].dist = -lpl.planes[0].dist;
+  // caps
+  lpl.planes[2].normal = vector(-1,  0); lpl.planes[2].dist = -fmin(a.x, b.x); // left
+  lpl.planes[3].normal = vector( 1,  0); lpl.planes[3].dist = fmax(a.x, b.x); // right
+  lpl.planes[4].normal = vector( 0, -1); lpl.planes[4].dist = -fmin(a.y, b.y); // top
+  lpl.planes[5].normal = vector( 0,  1); lpl.planes[5].dist = fmax(a.y, b.y); // bottom
+  lpl.count = 6; // six planes created
+}
+#endif
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// keep 1/8 unit away to avoid various numeric issues
+//const float CD_CLIP_EPSILON = 1.0f/8.0f;
+// keep 1/16 unit away to avoid various numeric issues
+const float CD_CLIP_EPSILON = 1.0f/16.0f;
+
+enum CD_HitType {
+  CD_HT_None,
+  CD_HT_Point,
+  // sides
+  CD_HT_Top,
+  CD_HT_Bottom,
+  CD_HT_Left,
+  CD_HT_Right,
+  // used in tracer
+  CD_HT_Floor,
+  CD_HT_Ceiling,
+}
+
+
+#ifndef VC_COMPILER_TEST
+static final float CD_SweepLineAABB (TVec lineA, TVec lineB, TVec vstart, TVec vend, TVec bmin, TVec bmax,
+                                     optional out TPlane hitPlane, optional out TVec contactPoint, optional out CD_HitType hitType)
+{
+  CD_LinePlanes linePlanes;
+  CD_BuildLinePlanes(out linePlanes, lineA, lineB);
+  return CD_SweepLineAABBlpl(ref linePlanes, vstart, vend, bmin, bmax, hitPlane!optional, contactPoint!optional, hitType!optional);
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// returns collision time, -1 if started inside, exactly 1 if no collision
+// in both such cases, `hitNormal` is undefined, as we have no hit plane
+// the moving thing is AABB
+// returns contact point in `contactPoint`
+// actually, `contactPoint` has little sense for non-point hits, and is somewhat arbitrary
+// `hitplanenum` indicates which line side we hit: front (0), back(1), or caps; can be -1
+static final float CD_SweepLineAABBlpl (const ref CD_LinePlanes linePlanes, TVec vstart, TVec vend, TVec bmin, TVec bmax,
+                                        optional out TPlane hitPlane, optional out TVec contactPoint,
+                                        optional out CD_HitType hitType, optional out int hitplanenum,
+                                        optional float eps/*=CD_CLIP_EPSILON*/)
+{
+  if (!specified_eps) eps = CD_CLIP_EPSILON;
+  hitType = CD_HitType.CD_HT_None;
+  hitplanenum = -1;
+
+  float ifrac = -1.0f;
+  float ofrac = +1.0f;
+
+  bool startsOut = false;
+  //bool endsOut = false;
+  int phit = -1;
+
+  foreach (auto pidx; 0..linePlanes.count) {
+    TPlane *plane = &linePlanes.planes[pidx];
+    // box
+    // line plane normal z is always zero, so don't bother checking it
+    TVec offset = vector((plane.normal.x < 0.0f ? bmax.x : bmin.x), (plane.normal.y < 0.0f ? bmax.y : bmin.y), /*(plane.normal.z < 0.0f ? bmax.z : bmin.z)*/bmin.z);
+    // adjust the plane distance apropriately for mins/maxs
+    float ofsdist = plane.dist-offset.dot(plane.normal);
+    float idist = vstart.dot(plane.normal)-ofsdist;
+    float odist = vend.dot(plane.normal)-ofsdist;
+
+    if (idist <= 0.0f && odist <= 0.0f) continue; // doesn't cross this plane, don't bother
+
+    if (idist > 0.0f) {
+      startsOut = true;
+      // if completely in front of face, no intersection with the entire brush
+      if (odist >= eps || odist >= idist) return 1.0f;
+    }
+    //if (odist > 0.0f) endsOut = true;
+
+    // crosses plane
+    if (idist > odist) {
+      // line is entering into the brush
+      float fr = fmax(0.0f, (idist-eps)/(idist-odist));
+      if (fr > ifrac) {
+        ifrac = fr;
+        phit = pidx;
+      }
+    } else {
+      // line is leaving the brush
+      float fr = fmin(1.0f, (idist+eps)/(idist-odist));
+      if (fr < ofrac) ofrac = fr;
+    }
+  }
+
+  // all planes have been checked, and the trace was not completely outside the brush
+  if (!startsOut) {
+    // original point was inside the brush
+    return -1.0f;
+  }
+
+  if (ifrac > -1.0f && ifrac < ofrac) {
+    // might be exact hit
+    ifrac = fclamp(ifrac, 0.0f, 1.0f);
+    if (/*ifrac == 0.0f ||*/ ifrac == 1.0f) return ifrac; // just in case
+    hitplanenum = phit;
+    hitPlane = linePlanes.planes[phit];
+    //print("ifrac=%s; hp(%s): %s:%s", ifrac, phit, hitPlane.normal, hitPlane.dist);
+    // check what kind of hit this is
+    if (phit > 1 && !hitPlane.normal.y) {
+      // left or right side of the box
+      hitType = (hitPlane.normal.x < 0.0f ? CD_HitType.CD_HT_Right : CD_HitType.CD_HT_Left);
+      contactPoint =
+        linePlanes.lineA.x < linePlanes.lineB.x ?
+          (hitType == CD_HitType.CD_HT_Right ? linePlanes.lineA : linePlanes.lineB) :
+          (hitType == CD_HitType.CD_HT_Right ? linePlanes.lineB : linePlanes.lineA);
+      contactPoint -= (vend-vstart).normalise*eps;
+    } else if (phit > 1 && !hitPlane.normal.x) {
+      // top or down side of the box
+      hitType = (hitPlane.normal.y < 0.0f ? CD_HitType.CD_HT_Bottom : CD_HitType.CD_HT_Top);
+      contactPoint =
+        linePlanes.lineA.y < linePlanes.lineB.y ?
+          (hitType == CD_HitType.CD_HT_Bottom ? linePlanes.lineA : linePlanes.lineB) :
+          (hitType == CD_HitType.CD_HT_Bottom ? linePlanes.lineB : linePlanes.lineA);
+      contactPoint -= (vend-vstart).normalise*eps;
+    } else {
+      // point hit
+      hitType = CD_HitType.CD_HT_Point;
+      if (linePlanes.count == 4 && linePlanes.lineA.xy == linePlanes.lineB.xy) {
+        // point
+        contactPoint = linePlanes.lineA-(vend-vstart).normalise*eps;
+      } else {
+        bool fixX = false, fixY = false;
+        if (!hitPlane.normal.x) {
+          // horizontal line
+          contactPoint = vector(0.0f, (hitPlane.normal.y < 0.0f ? bmax.y : hitPlane.normal.y > 0.0f ? bmin.y : 0.0f), bmin.z);
+          fixX = true;
+        } else if (!hitPlane.normal.y) {
+          // vertical line
+          contactPoint = vector((hitPlane.normal.x < 0.0f ? bmax.x : hitPlane.normal.x > 0.0f ? bmin.x : 0.0f), 0.0f, bmin.z);
+          fixY = true;
+        } else {
+          contactPoint = vector((hitPlane.normal.x < 0.0f ? bmax.x : bmin.x), (hitPlane.normal.y < 0.0f ? bmax.y : bmin.y), bmin.z);
+        }
+        contactPoint += vstart+(vend-vstart)*ifrac;
+        if (fixX) {
+          if (linePlanes.lineA.x < linePlanes.lineB.x) {
+            contactPoint.x = fclamp(contactPoint.x, linePlanes.lineA.x, linePlanes.lineB.x);
+          } else {
+            contactPoint.x = fclamp(contactPoint.x, linePlanes.lineB.x, linePlanes.lineA.x);
+          }
+        } else if (fixY) {
+          if (linePlanes.lineA.y < linePlanes.lineB.y) {
+            contactPoint.y = fclamp(contactPoint.y, linePlanes.lineA.y, linePlanes.lineB.y);
+          } else {
+            contactPoint.y = fclamp(contactPoint.y, linePlanes.lineB.y, linePlanes.lineA.y);
+          }
+        }
+      }
+    }
+    return ifrac;
+  }
+
+  return 1.0f;
+}
+#endif
+
+
