@@ -755,6 +755,12 @@ native static final class FindClassFromScriptId (int Id, int GameFilter);
 native static final bool AM_GetPlayerPos (out float xc, out float yc, out float angle);
 native static final void AM_DrawAtWidget (Widget w, float xc, float yc, float scale, float angle, float plrangle, float alpha);
 
+// is automap active?
+// note that automap (de)activation will take effect only on the next frame
+native static final bool AM_Active { get; set; }
+// has any meaning only if the automap is active, otherwise it is always `false`
+native static final bool AM_IsOverlay { get; }
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 // wad lump iteration

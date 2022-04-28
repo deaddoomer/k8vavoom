@@ -720,6 +720,36 @@ IMPLEMENT_FREE_FUNCTION(VObject, AM_GetPlayerPos) {
 }
 
 
+// native static final bool AM_Active { get; set; }
+IMPLEMENT_FREE_FUNCTION(VObject, get_AM_Active) {
+#ifdef CLIENT
+  RET_BOOL(AM_IsActive());
+#else
+  RET_BOOL(false);
+#endif
+}
+
+IMPLEMENT_FREE_FUNCTION(VObject, set_AM_Active) {
+  bool flag;
+  vobjGetParam(flag);
+#ifdef CLIENT
+  AM_SetActive(flag);
+#else
+  (void)flag;
+#endif
+}
+
+
+//native static final bool AM_IsOverlay { get; }
+IMPLEMENT_FREE_FUNCTION(VObject, get_AM_IsOverlay) {
+#ifdef CLIENT
+  RET_BOOL(AM_IsOverlay());
+#else
+  RET_BOOL(false);
+#endif
+}
+
+
 // native int dlight_t.GetFlags () const;
 /*
 IMPLEMENT_FREE_STRUCT_FUNCTION(Object, dlight_t, GetFlags) {

@@ -43,6 +43,8 @@ bool AM_IsActive ();
 bool AM_IsOverlay (); // returns `false` if automap is not active
 bool AM_IsFullscreen (); // returns `false` if automap is not active
 
+void AM_SetActive (bool act);
+
 // automap marks API
 int AM_GetMaxMarks ();
 // for saving
