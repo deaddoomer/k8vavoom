@@ -629,6 +629,49 @@ native static final int SB_GetTextColor (SBTextColor type, optional int defval);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+// HACK! drawing text as FS overlay
+// DO NOT USE! for internal needs only!
+
+// horisontal alignement
+enum halign_e {
+  hleft,   //Left
+  hcenter, //Centered
+  hright,  //Right
+};
+
+// vertical alignement
+enum valign_e {
+  vtop,    //Top
+  vcenter, //Center
+  vbottom, //Bottom
+};
+
+native static final void T_SetFont (name FontName);
+native static final void T_SetAlign (halign_e halign, valign_e valign);
+native static final bool T_IsFontExists (name fontname);
+
+native static final void T_DrawText (int x, int y, string text, int col, optional float alpha/*=1.0f*/);
+native static final int T_TextWidth (string text);
+native static final int T_TextHeight (string text);
+native static final int T_StringWidth (string text);
+native static final int T_FontHeight ();
+
+native static final int T_ToDrawerX (int x);
+native static final int T_ToDrawerY (int y);
+native static final int T_FromDrawerX (int x);
+native static final int T_FromDrawerY (int y);
+
+native static final int T_CursorWidth ();
+native static final void T_DrawCursor ();
+native static final void T_DrawCursorAt (int x, int y, optional int cursorChar, optional int cursorColor/*=CR_UNTRANSLATED*/);
+native static final void T_SetCursorPos (int cx, int cy);
+native static final int T_GetCursorX ();
+native static final int T_GetCursorY ();
+
+native static final int T_GetCursorChar ();
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 // client sound stuff
 
 // plays a sound

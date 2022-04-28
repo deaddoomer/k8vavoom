@@ -116,6 +116,18 @@ void T_SetFont (VFont *AFont) {
 
 //==========================================================================
 //
+//  T_SetFont
+//
+//==========================================================================
+void T_SetFont (VName fontname) {
+  if (fontname == NAME_None) return;
+  VFont *f = VFont::GetFont(VStr(fontname)); // this doesn't allocate
+  if (f) T_SetFont(f);
+}
+
+
+//==========================================================================
+//
 //  T_SetAlign
 //
 //==========================================================================
@@ -252,6 +264,11 @@ int T_GetCursorX () {
 //==========================================================================
 int T_GetCursorY () {
   return GRoot->GetCursorY();
+}
+
+
+int T_GetCursorChar () {
+  return GRoot->GetCursorChar();
 }
 #endif
 

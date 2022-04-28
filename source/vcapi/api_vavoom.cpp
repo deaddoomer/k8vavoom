@@ -29,6 +29,7 @@
 # include "../drawer.h"
 # include "../input.h"
 # include "../automap.h"
+# include "../text.h"
 # include "../client/client.h"
 #else
 # include "../render/r_public.h"
@@ -835,4 +836,197 @@ IMPLEMENT_FREE_FUNCTION(VObject, FindScriptLineSpecialByName) {
   VStr s;
   vobjGetParam(s);
   RET_INT(FindScriptLineSpecialByName(s));
+}
+
+
+
+//native static final void T_SetFont (name FontName);
+IMPLEMENT_FREE_FUNCTION(VObject, T_SetFont) {
+  VName fontname;
+  vobjGetParam(fontname);
+#ifdef CLIENT
+  T_SetFont(fontname);
+#endif
+}
+
+//native static final void T_SetAlign (int halign, int valign);
+IMPLEMENT_FREE_FUNCTION(VObject, T_SetAlign) {
+  int h, v;
+  vobjGetParam(h, v);
+#ifdef CLIENT
+  T_SetAlign((halign_e)h, (valign_e)v);
+#endif
+}
+
+//native static final bool T_IsFontExists (VName fontname);
+IMPLEMENT_FREE_FUNCTION(VObject, T_IsFontExists) {
+  VName fontname;
+  vobjGetParam(fontname);
+#ifdef CLIENT
+  RET_BOOL(T_IsFontExists(fontname));
+#else
+  RET_BOOL(false);
+#endif
+}
+
+//native static final void T_DrawText (int x, int y, string text, int col, optional float alpha/*=1.0f*/);
+IMPLEMENT_FREE_FUNCTION(VObject, T_DrawText) {
+  int x, y;
+  VStr text;
+  int col;
+  VOptParamFloat alpha(1.0f);
+  vobjGetParam(x, y, text, col, alpha);
+#ifdef CLIENT
+  T_DrawText(x, y, text, col, alpha);
+#endif
+}
+
+//native static final int T_TextWidth (string text);
+IMPLEMENT_FREE_FUNCTION(VObject, T_TextWidth) {
+  VStr text;
+  vobjGetParam(text);
+#ifdef CLIENT
+  RET_INT(T_TextWidth(text));
+#else
+  RET_INT(0);
+#endif
+}
+
+//native static final int T_TextHeight (string text);
+IMPLEMENT_FREE_FUNCTION(VObject, T_TextHeight) {
+  VStr text;
+  vobjGetParam(text);
+#ifdef CLIENT
+  RET_INT(T_TextHeight(text));
+#else
+  RET_INT(0);
+#endif
+}
+
+//native static final int T_StringWidth (string text);
+IMPLEMENT_FREE_FUNCTION(VObject, T_StringWidth) {
+  VStr text;
+  vobjGetParam(text);
+#ifdef CLIENT
+  RET_INT(T_StringWidth(text));
+#else
+  RET_INT(0);
+#endif
+}
+
+//native static final int T_FontHeight ();
+IMPLEMENT_FREE_FUNCTION(VObject, T_FontHeight) {
+#ifdef CLIENT
+  RET_INT(T_FontHeight());
+#else
+  RET_INT(0);
+#endif
+}
+
+//native static final int T_ToDrawerX (int x);
+IMPLEMENT_FREE_FUNCTION(VObject, T_ToDrawerX) {
+  int x;
+  vobjGetParam(x);
+#ifdef CLIENT
+  RET_INT(T_ToDrawerX(x));
+#else
+  RET_INT(0);
+#endif
+}
+
+//native static final int T_ToDrawerY (int y);
+IMPLEMENT_FREE_FUNCTION(VObject, T_ToDrawerY) {
+  int y;
+  vobjGetParam(y);
+#ifdef CLIENT
+  RET_INT(T_ToDrawerY(y));
+#else
+  RET_INT(0);
+#endif
+}
+
+//native static final int T_FromDrawerX (int x);
+IMPLEMENT_FREE_FUNCTION(VObject, T_FromDrawerX) {
+  int x;
+  vobjGetParam(x);
+#ifdef CLIENT
+  RET_INT(T_FromDrawerX(x));
+#else
+  RET_INT(0);
+#endif
+}
+
+//native static final int T_FromDrawerY (int y);
+IMPLEMENT_FREE_FUNCTION(VObject, T_FromDrawerY) {
+  int y;
+  vobjGetParam(y);
+#ifdef CLIENT
+  RET_INT(T_FromDrawerY(y));
+#else
+  RET_INT(0);
+#endif
+}
+
+//native static final int T_CursorWidth ();
+IMPLEMENT_FREE_FUNCTION(VObject, T_CursorWidth) {
+#ifdef CLIENT
+  RET_INT(T_CursorWidth());
+#else
+  RET_INT(0);
+#endif
+}
+
+//native static final void T_DrawCursor ();
+IMPLEMENT_FREE_FUNCTION(VObject, T_DrawCursor) {
+#ifdef CLIENT
+  T_DrawCursor();
+#endif
+}
+
+//native static final void T_DrawCursorAt (int x, int y, optional int cursorChar, optional int cursorColor/*=CR_UNTRANSLATED*/);
+IMPLEMENT_FREE_FUNCTION(VObject, T_DrawCursorAt) {
+  int x, y;
+  VOptParamInt cursorChar(-1);
+  VOptParamInt cursorColor(CR_UNTRANSLATED);
+  vobjGetParam(x, y, cursorChar, cursorColor);
+#ifdef CLIENT
+  if (!cursorChar.specified) cursorChar.value = T_GetCursorChar();
+  T_DrawCursorAt(x, y, cursorChar.value, cursorColor);
+#endif
+}
+
+//native static final void T_SetCursorPos (int cx, int cy);
+IMPLEMENT_FREE_FUNCTION(VObject, T_SetCursorPos) {
+  int x, y;
+  vobjGetParam(x, y);
+#ifdef CLIENT
+  T_SetCursorPos(x, y);
+#endif
+}
+
+//native static final int T_GetCursorX ();
+IMPLEMENT_FREE_FUNCTION(VObject, T_GetCursorX) {
+#ifdef CLIENT
+  RET_INT(T_GetCursorX());
+#else
+  RET_INT(0);
+#endif
+}
+
+//native static final int T_GetCursorY ();
+IMPLEMENT_FREE_FUNCTION(VObject, T_GetCursorY) {
+#ifdef CLIENT
+  RET_INT(T_GetCursorY());
+#else
+  RET_INT(0);
+#endif
+}
+
+//native static final int T_GetCursorChar ();
+IMPLEMENT_FREE_FUNCTION(VObject, T_GetCursorChar) {
+#ifdef CLIENT
+  RET_INT(T_GetCursorChar());
+#else
+  RET_INT(0);
+#endif
 }

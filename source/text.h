@@ -48,6 +48,7 @@ void T_Init ();
 void T_Shutdown ();
 
 void T_SetFont (VFont *);
+void T_SetFont (VName fontname);
 void T_SetAlign (halign_e, valign_e);
 bool T_IsFontExists (VName fontname);
 
@@ -69,6 +70,7 @@ void T_DrawCursorAt (int x, int y, int cursorChar, int cursorColor=CR_UNTRANSLAT
 void T_SetCursorPos (int cx, int cy);
 int T_GetCursorX ();
 int T_GetCursorY ();
+int T_GetCursorChar ();
 
 extern VFont *SmallFont;
 extern VFont *ConFont;
