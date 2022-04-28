@@ -1,0 +1,2 @@
+Error: ztest_bangspec_01.vc:5: Invalid identifier, bad type name `specified_b`
+FATAL: Confused by previous errors, bailing out
