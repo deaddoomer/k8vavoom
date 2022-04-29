@@ -1,0 +1,88 @@
+//**************************************************************************
+//**
+//**    ##   ##    ##    ##   ##   ####     ####   ###     ###
+//**    ##   ##  ##  ##  ##   ##  ##  ##   ##  ##  ####   ####
+//**     ## ##  ##    ##  ## ##  ##    ## ##    ## ## ## ## ##
+//**     ## ##  ########  ## ##  ##    ## ##    ## ##  ###  ##
+//**      ###   ##    ##   ###    ##  ##   ##  ##  ##       ##
+//**       #    ##    ##    #      ####     ####   ##       ##
+//**
+//**  Copyright (C) 1999-2006 Jānis Legzdiņš
+//**  Copyright (C) 2018-2022 Ketmar Dark
+//**
+//**  This program is free software: you can redistribute it and/or modify
+//**  it under the terms of the GNU General Public License as published by
+//**  the Free Software Foundation, version 3 of the License ONLY.
+//**
+//**  This program is distributed in the hope that it will be useful,
+//**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**  GNU General Public License for more details.
+//**
+//**  You should have received a copy of the GNU General Public License
+//**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//**
+//**************************************************************************
+// Center message
+//
+// directly included from "StatusBarShared.vc"
+//**************************************************************************
+
+
+//==========================================================================
+//
+//  ClearCenterMessage
+//
+//==========================================================================
+void ClearCenterMessage () {
+  CenterTime = 0.0;
+}
+
+
+//==========================================================================
+//
+//  AddCenterMessage
+//
+//==========================================================================
+void AddCenterMessage (string Msg) {
+  SetFont('smallfont');
+  CenterMessageHeight = SplitText(Msg, CenterMessageLines, 600);
+  CenterTime = fmax(0.5, GetCvarF('hud_center_message_time'));
+}
+
+
+//==========================================================================
+//
+//  DrawCenterMessage
+//
+//==========================================================================
+void DrawCenterMessage () {
+  if (CenterTime && CenterMessageLines) {
+    //auto ovw = GetVirtualWidth();
+    //auto ovh = GetVirtualHeight();
+    auto ovw = cast(int)Width;
+    auto ovh = cast(int)Height;
+    int LineH = CenterMessageHeight/CenterMessageLines.length;
+    SetFont('smallfont');
+    SetTextAlign(hleft, vtop);
+    int tx = ovw/2;
+    int ty = (ovh-FontHeight()-4)/2-CenterMessageLines.length*LineH;
+    float alpha = (CenterTime < 0 ? (CenterMessageFadeoutTime+CenterTime)/CenterMessageFadeoutTime : 1);
+    foreach (auto i; 0..CenterMessageLines.length) {
+      DrawText(tx-CenterMessageLines[i].Width/2, ty+i*LineH, CenterMessageLines[i].Text, GetCvar('hud_font_color_centered'), CR_YELLOW, alpha);
+    }
+  }
+}
+
+
+//==========================================================================
+//
+//  UpdateCenterMessage
+//
+//==========================================================================
+void UpdateCenterMessage (float DeltaTime) {
+  if (CenterTime) {
+    CenterTime -= DeltaTime;
+    if (CenterTime < -CenterMessageFadeoutTime) CenterTime = 0.0;
+  }
+}

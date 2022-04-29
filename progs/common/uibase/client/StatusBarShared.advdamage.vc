@@ -1,0 +1,272 @@
+//**************************************************************************
+//**
+//**    ##   ##    ##    ##   ##   ####     ####   ###     ###
+//**    ##   ##  ##  ##  ##   ##  ##  ##   ##  ##  ####   ####
+//**     ## ##  ##    ##  ## ##  ##    ## ##    ## ## ## ## ##
+//**     ## ##  ########  ## ##  ##    ## ##    ## ##  ###  ##
+//**      ###   ##    ##   ###    ##  ##   ##  ##  ##       ##
+//**       #    ##    ##    #      ####     ####   ##       ##
+//**
+//**  Copyright (C) 1999-2006 Jānis Legzdiņš
+//**  Copyright (C) 2018-2022 Ketmar Dark
+//**
+//**  This program is free software: you can redistribute it and/or modify
+//**  it under the terms of the GNU General Public License as published by
+//**  the Free Software Foundation, version 3 of the License ONLY.
+//**
+//**  This program is distributed in the hope that it will be useful,
+//**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**  GNU General Public License for more details.
+//**
+//**  You should have received a copy of the GNU General Public License
+//**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//**
+//**************************************************************************
+// advanced damage indicator
+//
+// directly included from "StatusBarShared.vc"
+//**************************************************************************
+
+
+//==========================================================================
+//
+//  SB_DrawDamageIndicator
+//
+//==========================================================================
+void SB_DrawDamageIndicator (int dir, int clr, float alpha, int udflag) {
+  if (alpha <= 0.0) return;
+  alpha = fmin(1.0, alpha);
+
+  //int mind = min(Width, Height);
+  int maxd = max(Width, Height);
+
+  float rsz = fmax(Width*(0.5+SB_DMG_YOFS)-Width*0.5, Height*(0.5+SB_DMG_YOFS)-Height*0.5);
+
+  /*
+  float x0 = mind*(0.5-SB_DMG_YOFS);
+  float y0 = mind*(0.5-SB_DMG_YOFS);
+  float x1 = mind*(0.5+SB_DMG_YOFS);
+  float y1 = mind*(0.5+SB_DMG_YOFS);
+  */
+  float x0 = Width*0.5-rsz;
+  float x1 = Width*0.5+rsz;
+  float y0 = Height*0.5-rsz;
+  float y1 = Height*0.5+rsz;
+
+  int sizeh = int(maxd*SB_DMG_SIZE*0.25);
+  int sizev = sizeh;
+
+  int wdt, hgt;
+
+  //udflag &= ~SB_DMG_DOWN_FLAG;
+  //udflag &= ~SB_DMG_UP_FLAG;
+
+  switch (dir) {
+    case SB_DMG_TOP:
+      wdt = sizeh;
+      hgt = int(SB_DMG_THICKNESS);
+      R_FillRect((x0+x1-wdt)*0.5, y0, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_B), h2 = int(hgt*SB_DMG_SMALL_SIZE_S);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect((x0+x1-w2)*0.5, y0-h2*2, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect((x0+x1-w2)*0.5, y0+hgt+h2, w2, h2, clr, alpha);
+      }
+      break;
+    case SB_DMG_BOTTOM:
+      wdt = sizeh;
+      hgt = int(SB_DMG_THICKNESS);
+      R_FillRect((x0+x1-wdt)*0.5, y1-hgt, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_B), h2 = int(hgt*SB_DMG_SMALL_SIZE_S);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect((x0+x1-w2)*0.5, y1+h2, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect((x0+x1-w2)*0.5, y1-hgt-h2*2, w2, h2, clr, alpha);
+      }
+      break;
+    case SB_DMG_LEFT:
+      wdt = int(SB_DMG_THICKNESS);
+      hgt = sizev;
+      R_FillRect(x0, (y0+y1-hgt)*0.5, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_S), h2 = int(hgt*SB_DMG_SMALL_SIZE_B);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect(x0-w2*2, (y0+y1-h2)*0.5, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect(x0+wdt+w2, (y0+y1-h2)*0.5, w2, h2, clr, alpha);
+      }
+      break;
+    case SB_DMG_RIGHT:
+      wdt = int(SB_DMG_THICKNESS);
+      hgt = sizev;
+      R_FillRect(x1-wdt, (y0+y1-hgt)*0.5, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_S), h2 = int(hgt*SB_DMG_SMALL_SIZE_B);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect(x1+w2, (y0+y1-h2)*0.5, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect(x1-wdt-w2*2, (y0+y1-h2)*0.5, w2, h2, clr, alpha);
+      }
+      break;
+    case SB_DMG_LEFT_TOP:
+      // left
+      wdt = int(SB_DMG_THICKNESS);
+      hgt = sizev;
+      R_FillRect(x0, y0+SB_DMG_THICKNESS, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_S), h2 = int(hgt*SB_DMG_SMALL_SIZE_B);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect(x0-w2*2, y0+SB_DMG_THICKNESS+2, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect(x0+wdt+w2, y0+SB_DMG_THICKNESS+2+w2, w2, h2-w2*2, clr, alpha);
+      }
+      // top
+      wdt = sizeh;
+      hgt = int(SB_DMG_THICKNESS);
+      R_FillRect(x0+SB_DMG_THICKNESS, y0, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_B), h2 = int(hgt*SB_DMG_SMALL_SIZE_S);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect(x0+SB_DMG_THICKNESS+2, y0-h2*2, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect(x0+SB_DMG_THICKNESS+2+h2, y0+hgt+h2, w2-h2*2, h2, clr, alpha);
+      }
+      break;
+    case SB_DMG_LEFT_BOTTOM:
+      // left
+      wdt = int(SB_DMG_THICKNESS);
+      hgt = sizev;
+      R_FillRect(x0, y1-SB_DMG_THICKNESS-hgt, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_S), h2 = int(hgt*SB_DMG_SMALL_SIZE_B);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect(x0-w2*2, y1-SB_DMG_THICKNESS-2-h2, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect(x0+wdt+w2, y1-SB_DMG_THICKNESS-2-h2+w2, w2, h2-w2*2, clr, alpha);
+      }
+      // bottom
+      wdt = sizeh;
+      hgt = int(SB_DMG_THICKNESS);
+      R_FillRect(x0+SB_DMG_THICKNESS, y1-hgt, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_B), h2 = int(hgt*SB_DMG_SMALL_SIZE_S);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect(x0+SB_DMG_THICKNESS+2, y1+h2, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect(x0+SB_DMG_THICKNESS+2+h2, y1-hgt-h2*2, w2-h2*2, h2, clr, alpha);
+      }
+      break;
+    case SB_DMG_RIGHT_TOP:
+      // right
+      wdt = int(SB_DMG_THICKNESS);
+      hgt = sizev;
+      R_FillRect(x1-wdt, y0+SB_DMG_THICKNESS, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_S), h2 = int(hgt*SB_DMG_SMALL_SIZE_B);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect(x1+w2, y0+SB_DMG_THICKNESS+2, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect(x1-wdt-w2*2, y0+SB_DMG_THICKNESS+2+w2, w2, h2-w2*2, clr, alpha);
+      }
+      // top
+      wdt = sizeh;
+      hgt = int(SB_DMG_THICKNESS);
+      R_FillRect(x1-SB_DMG_THICKNESS-wdt, y0, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_B), h2 = int(hgt*SB_DMG_SMALL_SIZE_S);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect(x1-SB_DMG_THICKNESS-2-w2, y0-h2-2, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect(x1-SB_DMG_THICKNESS-2-w2+h2, y0+hgt+h2, w2-h2*2, h2, clr, alpha);
+      }
+      break;
+    case SB_DMG_RIGHT_BOTTOM:
+      // right
+      wdt = int(SB_DMG_THICKNESS);
+      hgt = sizev;
+      R_FillRect(x1-wdt, y1-SB_DMG_THICKNESS-hgt, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_S), h2 = int(hgt*SB_DMG_SMALL_SIZE_B);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect(x1+w2, y1-h2-SB_DMG_THICKNESS-2, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect(x1-wdt-w2*2, y1-h2-SB_DMG_THICKNESS-2+w2, w2, h2-w2*2, clr, alpha);
+      }
+      // bottom
+      wdt = sizeh;
+      hgt = int(SB_DMG_THICKNESS);
+      R_FillRect(x1-SB_DMG_THICKNESS-wdt, y1-hgt, wdt, hgt, clr, alpha);
+      if (udflag) {
+        int w2 = int(wdt*SB_DMG_SMALL_SIZE_B), h2 = int(hgt*SB_DMG_SMALL_SIZE_S);
+        if (udflag&SB_DMG_UP_FLAG) R_FillRect(x1-SB_DMG_THICKNESS-2-w2, y1+h2, w2, h2, clr, alpha);
+        if (udflag&SB_DMG_DOWN_FLAG) R_FillRect(x1-SB_DMG_THICKNESS-2-w2+h2, y1-hgt-h2*2, w2-h2*2, h2, clr, alpha);
+      }
+      break;
+  }
+}
+
+
+//==========================================================================
+//
+//  SB_DrawAdvancedDamage
+//
+//  advanced damage indicator code
+//
+//==========================================================================
+void SB_DrawAdvancedDamage (PlayerEx cl) {
+  //if (!GetCvarB('r_statusbar_advdamage')) return;
+  #if 0
+  //printdebug("Width=%s; Height=%s", Width, Height);
+  SB_DrawDamageIndicator(SB_DMG_TOP, RGB(255, 0, 0), 0.6, SB_DMG_UP_FLAG|SB_DMG_DOWN_FLAG);
+  SB_DrawDamageIndicator(SB_DMG_BOTTOM, RGB(255, 0, 0), 0.6, SB_DMG_UP_FLAG|SB_DMG_DOWN_FLAG);
+  SB_DrawDamageIndicator(SB_DMG_LEFT, RGB(255, 0, 0), 0.6, SB_DMG_UP_FLAG|SB_DMG_DOWN_FLAG);
+  SB_DrawDamageIndicator(SB_DMG_RIGHT, RGB(255, 0, 0), 0.6, SB_DMG_UP_FLAG|SB_DMG_DOWN_FLAG);
+  SB_DrawDamageIndicator(SB_DMG_LEFT_TOP, RGB(255, 0, 0), 0.6, SB_DMG_UP_FLAG|SB_DMG_DOWN_FLAG);
+  SB_DrawDamageIndicator(SB_DMG_LEFT_BOTTOM, RGB(255, 0, 0), 0.6, SB_DMG_UP_FLAG|SB_DMG_DOWN_FLAG);
+  SB_DrawDamageIndicator(SB_DMG_RIGHT_TOP, RGB(255, 0, 0), 0.6, SB_DMG_UP_FLAG|SB_DMG_DOWN_FLAG);
+  SB_DrawDamageIndicator(SB_DMG_RIGHT_BOTTOM, RGB(255, 0, 0), 0.6, SB_DMG_UP_FLAG|SB_DMG_DOWN_FLAG);
+  return;
+  #endif
+
+  float[SB_DMG_MAXDIR] dmgAttackTimeout;
+  int[SB_DMG_MAXDIR] dmgUpDownFlag;
+
+  int dmgflash = 0;
+
+  if (cl && cl.MO && PlayerPawn(cl.MO) && cl.MO.Player) {
+    auto pex = PlayerEx(cl.MO.Player);
+    if (pex) dmgflash = int(clamp(pex.DamageFlashBlend, 0, 114)*(255.0/114.0));
+    //printdebug("=== %d attackers (flash:%s) ===", cl.Attackers.length, dmgflash);
+  }
+
+  if (cl && cl.MO && cl.Attackers) {
+    Entity mo = cl.MO;
+    TAVec itang;
+
+    //printdebug("=== %d attackers (flash:%s) ===", cl.Attackers.length, dmgflash);
+    foreach (auto ref atk; cl.Attackers) {
+      //if (atk.GameTime < 0) continue;
+      float td = fmax(0.0, cl.GameTime-atk.GameTime);
+      if (td >= SB_DMG_TIMEOUT) continue;
+
+      //if (dmgflash) { atk.GameTime = cl.GameTime; td = 0; }
+
+      VectorAngles(atk.Origin-mo.Origin, out itang);
+
+      float diffangyaw = AngleDiff(mo.Angles.yaw, itang.yaw);
+      bool toright = (diffangyaw < 0.0);
+      diffangyaw = fabs(diffangyaw);
+
+      int dir;
+           if (diffangyaw < 22.5) dir = SB_DMG_TOP; // forward
+      else if (diffangyaw < 67.5) dir = (toright ? SB_DMG_RIGHT_TOP : SB_DMG_LEFT_TOP); // forward, diagonal
+      else if (diffangyaw < 112.5) dir = (toright ? SB_DMG_RIGHT : SB_DMG_LEFT); // left/right
+      else if (diffangyaw < 157.5) dir = (toright ? SB_DMG_RIGHT_BOTTOM : SB_DMG_LEFT_BOTTOM); // backward, diagonal
+      else dir = SB_DMG_BOTTOM; // backward
+
+      //dmgAttackTimeout[dir] = SB_DMG_TIMEOUT;
+      dmgAttackTimeout[dir] = SB_DMG_TIMEOUT-td;
+
+      float diffangpitch = AngleDiff(/*mo.Angles.pitch*/0, itang.pitch);
+      bool toup = (diffangpitch < 0.0);
+      diffangpitch = fabs(diffangpitch);
+
+      if (diffangpitch > 45.0) dmgUpDownFlag[dir] |= (toup ? SB_DMG_UP_FLAG : SB_DMG_DOWN_FLAG);
+
+      //atk.GameTime = -1;
+    }
+  }
+
+  int clr = RGB(255, dmgflash, 0);
+
+  // draw damage indicators
+  foreach (int dir; 0..SB_DMG_MAXDIR) {
+    float td = fmin(SB_DMG_TIMEOUT, dmgAttackTimeout[dir]);
+    if (td <= 0.0) continue;
+
+    float alpha = (td/SB_DMG_TIMEOUT)*SB_DMG_ALPHA;
+
+    SB_DrawDamageIndicator(dir, clr, alpha, dmgUpDownFlag[dir]);
+  }
+}
