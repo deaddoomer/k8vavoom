@@ -801,7 +801,6 @@ if(ENABLE_CLIENT)
   install(FILES ${CMAKE_SOURCE_DIR}/res/k8vavoom.png DESTINATION ${DATADIR})
   # more docs
   install(FILES ${CMAKE_SOURCE_DIR}/docs/code_of_conduct.txt DESTINATION ${DATADIR}/docs)
-  install(FILES ${CMAKE_SOURCE_DIR}/dox_vavoomc/vavoomc.txt DESTINATION ${DATADIR}/docs)
   install(FILES ${CMAKE_SOURCE_DIR}/README DESTINATION ${DATADIR}/docs)
   # variants
   if(WIN32)
@@ -831,7 +830,8 @@ if(ENABLE_CLIENT)
     set(DSPECSDIR ${DATADIR}/${SPECSDIR})
   endif(WIN32)
   #
-  install(FILES ${CMAKE_SOURCE_DIR}/specs/3dpobj/k8vavoom_3dpobj.html DESTINATION ${DSPECSDIR}/3dpobj)
+  #install(FILES ${CMAKE_SOURCE_DIR}/specs/3dpobj/k8vavoom_3dpobj.html DESTINATION ${DSPECSDIR}/3dpobj)
+  install(FILES ${CMAKE_SOURCE_DIR}/specs/3dpobj/k8vavoom_3dpobj.wiki DESTINATION ${DSPECSDIR}/3dpobj)
   install(FILES ${CMAKE_SOURCE_DIR}/specs/3dpobj/fig1.png DESTINATION ${DSPECSDIR}/3dpobj)
   install(FILES ${CMAKE_SOURCE_DIR}/specs/3dpobj/zacc_acs/zdefs.acs DESTINATION ${DSPECSDIR}/3dpobj/zacc_acs)
   install(FILES ${CMAKE_SOURCE_DIR}/specs/3dpobj/zacc_acs/zspecial.acs DESTINATION ${DSPECSDIR}/3dpobj/zacc_acs)
@@ -851,10 +851,12 @@ if(ENABLE_CLIENT)
   install(FILES ${CMAKE_SOURCE_DIR}/specs/3dpobj/sample_wads/complex/3d_polyobject_cabin_move_spot.wad DESTINATION ${DSPECSDIR}/3dpobj/sample_wads/complex)
   install(FILES ${CMAKE_SOURCE_DIR}/specs/3dpobj/sample_wads/complex/3d_polyobject_cabin_move_spot_doors.wad DESTINATION ${DSPECSDIR}/3dpobj/sample_wads/complex)
   # more specs
+  install(FILES ${CMAKE_SOURCE_DIR}/specs/index.wiki DESTINATION ${DSPECSDIR})
   install(FILES ${CMAKE_SOURCE_DIR}/specs/udmf_k8vavoom.txt DESTINATION ${DSPECSDIR})
   install(FILES ${CMAKE_SOURCE_DIR}/specs/k8vavoom_terrain_bootprints.txt DESTINATION ${DSPECSDIR})
   install(FILES ${CMAKE_SOURCE_DIR}/specs/k8vavoom_pointlights.txt DESTINATION ${DSPECSDIR})
   install(FILES ${CMAKE_SOURCE_DIR}/specs/k8vavoom_decals.txt DESTINATION ${DSPECSDIR})
+  install(FILES ${CMAKE_SOURCE_DIR}/specs/k8vavoom_decorate.txt DESTINATION ${DSPECSDIR})
   # unfinished specs
   install(FILES ${CMAKE_SOURCE_DIR}/specs/unfinished/k8vavoom_models.txt DESTINATION ${DSPECSDIR}/unfinished)
   # non-specific specs
