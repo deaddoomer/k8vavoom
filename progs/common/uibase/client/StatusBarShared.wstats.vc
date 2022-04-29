@@ -1,0 +1,184 @@
+//**************************************************************************
+//**
+//**    ##   ##    ##    ##   ##   ####     ####   ###     ###
+//**    ##   ##  ##  ##  ##   ##  ##  ##   ##  ##  ####   ####
+//**     ## ##  ##    ##  ## ##  ##    ## ##    ## ## ## ## ##
+//**     ## ##  ########  ## ##  ##    ## ##    ## ##  ###  ##
+//**      ###   ##    ##   ###    ##  ##   ##  ##  ##       ##
+//**       #    ##    ##    #      ####     ####   ##       ##
+//**
+//**  Copyright (C) 1999-2006 Jānis Legzdiņš
+//**  Copyright (C) 2018-2022 Ketmar Dark
+//**
+//**  This program is free software: you can redistribute it and/or modify
+//**  it under the terms of the GNU General Public License as published by
+//**  the Free Software Foundation, version 3 of the License ONLY.
+//**
+//**  This program is distributed in the hope that it will be useful,
+//**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//**  GNU General Public License for more details.
+//**
+//**  You should have received a copy of the GNU General Public License
+//**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//**
+//**************************************************************************
+// World Stats
+//
+// directly included from "StatusBarShared.vc"
+//**************************************************************************
+
+
+//===========================================================================
+//
+//  GetWorldTimerMaxWidth
+//
+//  `T_SetFont()` must be already called!
+//
+//===========================================================================
+int GetWorldTimerMaxWidth () {
+  int sx = max(74, T_StringWidth("00 : 00 : 00"));
+  sx = max(sx, T_StringWidth("88 : 88 : 88"));
+  return GetVirtualWidth()-sx-4;
+}
+
+
+//===========================================================================
+//
+//  DrawWorldTimer
+//
+//===========================================================================
+void DrawWorldTimer () {
+  if (!GetCvarB('draw_world_timer')) return;
+
+  if (!ClGame) return;
+  if (!ClGame.GLevel) return;
+  if (ClGame.Game.NetMode < GameInfo::NM_Standalone) return;
+  if (!ClGame.cl || !ClGame.cl.MO) return;
+
+  int worldTimer = max(0, cast(int)ClGame.cl.WorldTimer);
+
+  int days = worldTimer/86400;
+  worldTimer -= days*86400;
+  int hours = worldTimer/3600;
+  worldTimer -= hours*3600;
+  int minutes = worldTimer/60;
+  worldTimer -= minutes*60;
+  int seconds = worldTimer;
+
+  T_SetFont('smallfont');
+  T_SetAlign(hleft, vtop);
+
+  //k8: sorry!
+  int sx = GetWorldTimerMaxWidth();
+
+  string text = va("%02s : %02s : %02s", hours, minutes, seconds);
+  T_DrawText(sx, 8, text, SB_GetTextColor(SBTextColor.AutomapGameTotalTime));
+
+  if (days) {
+    text = va("%2s DAY%s", days, (days == 1 ? "" : "s"));
+    T_DrawText(sx, 18, text, SB_GetTextColor(SBTextColor.AutomapGameTotalTime));
+    if (days >= 5) T_DrawText(sx-10, 28, "YOU FREAK!!!", SB_GetTextColor(SBTextColor.AutomapGameTotalTime));
+  }
+}
+
+
+//===========================================================================
+//
+//  DrawLevelStats
+//
+//===========================================================================
+void DrawLevelStats () {
+  if (!GetCvarB('draw_map_stats')) return;
+  if (AM_Active) return;
+
+  if (!ClGame) return;
+  if (!ClGame.GLevel) return;
+  if (ClGame.Game.NetMode < GameInfo::NM_Standalone) return;
+  if (!ClGame.cl || !ClGame.cl.MO) return;
+
+  float alpha = fclamp(GetCvarF('draw_map_stats_alpha'), 0.0f, 1.0f);
+  if (alpha < 0.004f) return;
+
+  T_SetFont('smallfont');
+  T_SetAlign(hleft, vbottom);
+
+  int sb_height = ClGame.sb_height; //(int)(ScreenHeight/480.0f*sb_height*R_GetAspectRatio());
+  sb_height = cast(int)(sb_height*R_GetAspectRatio());
+  //int sb_height = cast(int)(GetRealScreenHeight/480.0f*ClGame.sb_height*R_GetAspectRatio());
+
+  int currY = GetVirtualHeight()-sb_height-7-2;
+
+  string mapname = string(ClGame.GLevel.MapName);
+
+  bool nameRendered = false;
+  string lname = ClGame.GLevel.LevelInfo.GetLevelName().xstrip();
+  if (lname && GetCvarB('draw_map_stats_title')) {
+    string lbx;
+    foreach (int f; 0..lname.length) {
+      int ch = lname[f];
+      if (ch < 32) continue;
+      if (lbx.length == 124) break;
+      if (ch == 127) ch = 95;
+      lbx ~= va("%c", ch);
+    }
+
+    bool hasInternalName = lbx.startsWithCI(mapname);
+
+    if (GetCvarB('draw_map_stats_name')) {
+      // need internal name
+      if (!hasInternalName) {
+        string ss = va("%s: %s", mapname, lbx);
+        T_DrawText(20, currY, ss, SB_GetTextColor(SBTextColor.AutomapMapName), alpha);
+      } else {
+        T_DrawText(20, currY, lbx, SB_GetTextColor(SBTextColor.AutomapMapName), alpha);
+      }
+    } else {
+      // no internal name
+      if (!hasInternalName) {
+        T_DrawText(20, currY, lbx, SB_GetTextColor(SBTextColor.AutomapMapName), alpha);
+      } else {
+        string ss = lbx[mapname.length..$];
+        for (;;) {
+          ss = ss.xstrip();
+          if (!ss) break;
+          if (ss[0] != 58) break;
+          ss = ss[1..$];
+        }
+        T_DrawText(20, currY, ss, SB_GetTextColor(SBTextColor.AutomapMapName), alpha);
+      }
+    }
+    currY -= T_FontHeight();
+    nameRendered = true;
+  }
+
+  if (!nameRendered && (GetCvarB('draw_map_stats_title') || GetCvarB('draw_map_stats_name'))) {
+    lname = mapname.xstrip();
+    T_DrawText(20, currY, va("%s (n%d:c%d)", lname, ClGame.GLevel.LevelInfo.LevelNum,
+               ClGame.GLevel.LevelInfo.Cluster), SB_GetTextColor(SBTextColor.AutomapMapCluster), alpha);
+    currY -= T_FontHeight();
+  }
+
+  currY -= 4;
+
+  if (GetCvarB('draw_map_stats_secrets')) {
+    int secrets = ClGame.cl.SecretCount;
+    int totalsecrets = ClGame.GLevel.LevelInfo.TotalSecret;
+    T_DrawText(8, currY, va("Secrets: %02s / %02s", secrets, totalsecrets), SB_GetTextColor(SBTextColor.AutomapSecrets), alpha);
+    currY -= T_FontHeight();
+  }
+
+  if (GetCvarB('draw_map_stats_items')) {
+    int items = ClGame.cl.ItemCount;
+    int totalitems = ClGame.GLevel.LevelInfo.TotalItems;
+    T_DrawText(8, currY, va("Items: %02s / %02s", items, totalitems), SB_GetTextColor(SBTextColor.AutomapItems), alpha);
+    currY -= T_FontHeight();
+  }
+
+  if (GetCvarB('draw_map_stats_kills')) {
+    int kills = ClGame.cl.KillCount;
+    int totalkills = ClGame.GLevel.LevelInfo.TotalKills;
+    T_DrawText(8, currY, va("Kills: %02s / %02s", kills, totalkills), SB_GetTextColor(SBTextColor.AutomapKills), alpha);
+    //currY -= T_FontHeight();
+  }
+}

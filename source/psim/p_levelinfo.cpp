@@ -359,7 +359,7 @@ void VLevelInfo::ChangeMusic (VName SongName) {
 //
 //==========================================================================
 VStr VLevelInfo::GetLevelName () const {
-  return (LevelInfoFlags & LIF_LookupName ? GLanguage[*LevelName] : LevelName);
+  return (LevelInfoFlags&LIF_LookupName ? GLanguage[*LevelName] : LevelName);
 }
 
 
@@ -603,6 +603,13 @@ IMPLEMENT_FUNCTION(VLevelInfo, ChangeSky) {
   vobjGetParamSelf(skytex1, skytex2);
   if (!skytex2.specified) skytex2 = skytex1;
   Self->ChangeSky(skytex1, skytex2);
+}
+
+// because `LevelName` may require translation
+//native final string GetLevelName ();
+IMPLEMENT_FUNCTION(VLevelInfo, GetLevelName) {
+  vobjGetParamSelf();
+  RET_STR(Self->GetLevelName());
 }
 
 // compat getters

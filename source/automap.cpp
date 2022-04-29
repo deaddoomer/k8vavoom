@@ -2275,7 +2275,9 @@ static void AM_drawMarks () {
 //  AM_DrawWorldTimer
 //
 //===========================================================================
+/*
 static void AM_DrawWorldTimer () {
+  // moved to VavoomC code
   int days;
   int hours;
   int minutes;
@@ -2323,6 +2325,7 @@ static void AM_DrawWorldTimer () {
     if (days >= 5) T_DrawText(sx-10, 28, "YOU FREAK!!!", SB_GetTextColor(SBTS_AutomapGameTotalTime));
   }
 }
+*/
 
 
 //===========================================================================
@@ -2330,32 +2333,20 @@ static void AM_DrawWorldTimer () {
 //  AM_DrawLevelStats
 //
 //===========================================================================
-static void AM_DrawLevelStats (bool asAutomap, bool drawMapName, bool drawStats) {
-  int kills;
-  int totalkills;
-  int items;
-  int totalitems;
-  int secrets;
-  int totalsecrets;
-  char kill[80];
-  char secret[80];
-  char item[80];
+static void AM_DrawLevelStats (bool drawMapName, bool drawStats) {
   char lnamebuf[128];
 
   if (!cl || !GClLevel) return;
 
-  const float alpha = (asAutomap ? 1.0 : clampval(draw_map_stats_alpha.asFloat(), 0.0f, 1.0f));
-  if (alpha < 0.004f) return;
+  const float alpha = 1.0;
 
   T_SetFont(SmallFont);
   T_SetAlign(hleft, vbottom);
 
-  int currY = VirtualHeight-sb_height-7;
-  if (!asAutomap) currY -= 2;
+  int currY = VirtualHeight-sb_height-7-2;
 
-  bool nameRendered = false;
   VStr lname = GClLevel->LevelInfo->GetLevelName().xstrip();
-  if (lname.length() && (asAutomap || draw_map_stats_title)) {
+  if (lname.length()) {
     size_t lbpos = 0;
     for (int f = 0; f < lname.length(); ++f) {
       char ch = lname[f];
@@ -2365,39 +2356,11 @@ static void AM_DrawLevelStats (bool asAutomap, bool drawMapName, bool drawStats)
       lnamebuf[lbpos++] = ch;
     }
     lnamebuf[lbpos] = 0;
-    if (asAutomap) {
-      T_DrawText(20, currY, lnamebuf, SB_GetTextColor(SBTC_AutomapMapName), alpha);
-    } else {
-      const bool hasInternalName = VStr::startsWithCI(lnamebuf, *GClLevel->MapName);
-      if (draw_map_stats_name) {
-        // need internal name
-        if (!hasInternalName) {
-          VStr ss = va("%s: %s", *GClLevel->MapName, lnamebuf);
-          T_DrawText(20, currY, *ss, SB_GetTextColor(SBTC_AutomapMapName), alpha);
-        } else {
-          T_DrawText(20, currY, lnamebuf, SB_GetTextColor(SBTC_AutomapMapName), alpha);
-        }
-      } else {
-        // no internal name
-        if (!hasInternalName) {
-          T_DrawText(20, currY, lnamebuf, SB_GetTextColor(SBTC_AutomapMapName), alpha);
-        } else {
-          VStr ss(lnamebuf+strlen(*GClLevel->MapName));
-          for (;;) {
-            ss = ss.xstrip();
-            if (ss.isEmpty()) break;
-            if (ss[0] != ':') break;
-            ss.chopLeft(1);
-          }
-          T_DrawText(20, currY, *ss, SB_GetTextColor(SBTC_AutomapMapName), alpha);
-        }
-      }
-    }
+    T_DrawText(20, currY, lnamebuf, SB_GetTextColor(SBTC_AutomapMapName), alpha);
     currY -= T_FontHeight();
-    nameRendered = true;
   }
 
-  if (drawMapName || (!asAutomap && !nameRendered && (draw_map_stats_title || draw_map_stats_name))) {
+  if (drawMapName) {
     lname = VStr(GClLevel->MapName);
     lname = lname.xstrip();
     T_DrawText(20, currY, va("%s (n%d:c%d)", *lname, GClLevel->LevelInfo->LevelNum, GClLevel->LevelInfo->Cluster), SB_GetTextColor(SBTC_AutomapMapCluster), alpha);
@@ -2406,37 +2369,24 @@ static void AM_DrawLevelStats (bool asAutomap, bool drawMapName, bool drawStats)
 
   if (drawStats) {
     currY -= 4;
-    if (asAutomap) {
-      currY -= 3*T_FontHeight();
-    } else {
-      if (draw_map_stats_kills) currY -= T_FontHeight();
-      if (draw_map_stats_items) currY -= T_FontHeight();
-      if (draw_map_stats_secrets) currY -= T_FontHeight();
-    }
-    kills = cl->KillCount;
-    items = cl->ItemCount;
-    secrets = cl->SecretCount;
-    totalkills = GClLevel->LevelInfo->TotalKills;
-    totalitems = GClLevel->LevelInfo->TotalItems;
-    totalsecrets = GClLevel->LevelInfo->TotalSecret;
+    //currY -= 3*T_FontHeight();
+    const int kills = cl->KillCount;
+    const int totalkills = GClLevel->LevelInfo->TotalKills;
+    const int items = cl->ItemCount;
+    const int totalitems = GClLevel->LevelInfo->TotalItems;
+    const int secrets = cl->SecretCount;
+    const int totalsecrets = GClLevel->LevelInfo->TotalSecret;
 
-    T_SetFont(SmallFont);
-    T_SetAlign(hleft, vtop);
+    snprintf(lnamebuf, sizeof(lnamebuf), "Secrets: %.2d / %.2d", secrets, totalsecrets);
+    T_DrawText(8, currY, lnamebuf, SB_GetTextColor(SBTC_AutomapSecrets), alpha);
+    currY -= T_FontHeight();
 
-    if (asAutomap || draw_map_stats_kills) {
-      snprintf(kill, sizeof(kill), "Kills: %.2d / %.2d", kills, totalkills);
-      T_DrawText(8, currY, kill, SB_GetTextColor(SBTC_AutomapKills), alpha);
-      currY += T_FontHeight();
-    }
-    if (asAutomap || draw_map_stats_items) {
-      snprintf(item, sizeof(item), "Items: %.2d / %.2d", items, totalitems);
-      T_DrawText(8, currY, item, SB_GetTextColor(SBTC_AutomapItems), alpha);
-      currY += T_FontHeight();
-    }
-    if (asAutomap || draw_map_stats_secrets) {
-      snprintf(secret, sizeof(secret), "Secrets: %.2d / %.2d", secrets, totalsecrets);
-      T_DrawText(8, currY, secret, SB_GetTextColor(SBTC_AutomapSecrets), alpha);
-    }
+    snprintf(lnamebuf, sizeof(lnamebuf), "Items: %.2d / %.2d", items, totalitems);
+    T_DrawText(8, currY, lnamebuf, SB_GetTextColor(SBTC_AutomapItems), alpha);
+    currY -= T_FontHeight();
+
+    snprintf(lnamebuf, sizeof(lnamebuf), "Kills: %.2d / %.2d", kills, totalkills);
+    T_DrawText(8, currY, lnamebuf, SB_GetTextColor(SBTC_AutomapKills), alpha);
   }
 }
 
@@ -2482,8 +2432,9 @@ void AM_Drawer () {
   AM_Check();
 
   if (!automapactive) {
-    AM_DrawWorldTimer();
-    if (draw_map_stats) AM_DrawLevelStats(false, false, true);
+    // moved to VC code
+    //AM_DrawWorldTimer();
+    //if (draw_map_stats) AM_DrawLevelStats(false, false, true);
     return;
   }
 
@@ -2527,8 +2478,8 @@ void AM_Drawer () {
   if (am_cheating && am_show_rendered_nodes) AM_DrawRenderedNodes();
   if (am_cheating && am_show_rendered_subs) AM_DrawRenderedSubs();
   Drawer->EndAutomap();
-  AM_DrawWorldTimer();
-  if (am_show_stats || am_show_map_name) AM_DrawLevelStats(true, am_show_map_name, am_show_stats);
+  //AM_DrawWorldTimer();
+  if (am_show_stats || am_show_map_name) AM_DrawLevelStats(am_show_map_name, am_show_stats);
   if (mapMarksAllowed) AM_drawMarks();
 
   //if (am_overlay) glColor4f(1, 1, 1, 1);

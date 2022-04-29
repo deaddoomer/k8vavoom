@@ -217,6 +217,8 @@ public:
 
   DECLARE_FUNCTION(ChangeSky)
 
+  DECLARE_FUNCTION(GetLevelName)
+
   DECLARE_FUNCTION (get_CompatShortTex)
   DECLARE_FUNCTION (get_CompatStairs)
   DECLARE_FUNCTION (get_CompatLimitPain)

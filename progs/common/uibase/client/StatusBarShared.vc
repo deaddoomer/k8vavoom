@@ -93,11 +93,6 @@ const float SB_DMG_SMALL_SIZE_S = 0.3;
 const int SB_DMG_THICKNESS = 8;
 
 
-#include "StatusBarShared.notifymsg.vc"
-#include "StatusBarShared.centermsg.vc"
-#include "StatusBarShared.advdamage.vc"
-
-
 //==========================================================================
 //
 //  OnCreate
@@ -503,6 +498,8 @@ void SB_DrawNetworkStats () {
 //==========================================================================
 void SB_Drawer (int sb_view) {
   SB_Housekeeping(sb_view);
+  DrawWorldTimer();
+  DrawLevelStats();
 }
 
 
@@ -530,6 +527,12 @@ void SB_Housekeeping (int sb_view) {
   lastWasFullscreen = fs;
 }
 
+
+#include "StatusBarShared.notifymsg.vc"
+#include "StatusBarShared.centermsg.vc"
+#include "StatusBarShared.advdamage.vc"
+
+#include "StatusBarShared.wstats.vc"
 
 defaultproperties {
 }

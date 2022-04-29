@@ -260,6 +260,10 @@ native final bool CompatDropOff { get; } // compat_dropoff
 native final bool CompatBoomScroll { get; } // compat_boomscroll
 native final bool CompatInvisibility { get; } // compat_invisibility
 
+// because `LevelName` may require translation
+native final string GetLevelName ();
+
+
 // ////////////////////////////////////////////////////////////////////////// //
 // flags: LIGHTFLAG_XXX
 // static lights
