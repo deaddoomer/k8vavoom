@@ -122,9 +122,6 @@ protected:
 
   vint32 CursorChar;
 
-  //VObjectDelegate FocusLost;
-  //VObjectDelegate FocusReceived;
-
 protected:
   void AddChild (VWidget *NewChild);
   void RemoveChild (VWidget *InChild);
@@ -245,7 +242,7 @@ public:
   static void CleanupWidgets ();
 
 
-  virtual void PostCtor () override; // this is called after defaults were blit
+  virtual void PostCtor () override; // this is called after defaults are blit
 
   // destroys all child widgets
   virtual void Init (VWidget *);
@@ -267,6 +264,7 @@ public:
   int FromDrawerY (int y) const noexcept;
 
   // call this to close widget instead of destroying it
+  // note that VavoomC `.Destroy()` method will actually call this one
   void Close ();
 
   // methods to move widget on top or bottom
@@ -475,6 +473,8 @@ public:
   static VWidget *CreateNewWidget (VClass *, VWidget *);
 
   // events
+  // they are virtual to allow C++ overrides
+  // (not that any C++ code is using that yet)
   virtual void OnCreate () { static VMethodProxy method("OnCreate"); vobjPutParamSelf(); VMT_RET_VOID(method); }
   virtual void OnDestroy () { static VMethodProxy method("OnDestroy"); vobjPutParamSelf(); VMT_RET_VOID(method); }
   virtual void OnClose () { static VMethodProxy method("OnClose"); vobjPutParamSelf(); VMT_RET_VOID(method); }

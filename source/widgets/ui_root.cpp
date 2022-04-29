@@ -193,11 +193,11 @@ void VRootWidget::FixEventCoords (VWidget *w, event_t *evt, SavedEventParts &svp
 void VRootWidget::RestoreEventCoords (event_t *evt, const SavedEventParts &svparts) noexcept {
   if (!evt) return;
   switch (svparts.type) {
-    case 1:
+    case 1: // ev_mouse
       evt->x = svparts.x;
       evt->y = svparts.y;
       break;
-    case 2:
+    case 2: // any mouse event except `ev_mouse`
       evt->dx = svparts.dx;
       evt->dy = svparts.dy;
       evt->msx = svparts.msx;
@@ -307,30 +307,6 @@ void VRootWidget::MouseMoveEvent (const event_t *evt, int OldMouseX, int OldMous
     // dispatch it
     DispatchEvent(&cev);
   }
-
-  /*
-  // only bubble
-  EventPath.resetNoDtor();
-  for (VWidget *W = OldFocus; W; W = W->ParentWidget) EventPath.append(W);
-
-  const float ScaledOldX = OldMouseX*SizeScaleX;
-  const float ScaledOldY = OldMouseY*SizeScaleY;
-
-  const float ScaledNewX = MouseX*SizeScaleX;
-  const float ScaledNewY = MouseY*SizeScaleY;
-
-  for (auto &&W : EventPath) {
-    if (W->IsGoingToDie()) break;
-    if (W->OnMouseMove(
-      (int)((ScaledOldX-W->ClipRect.OriginX)/W->ClipRect.ScaleX),
-      (int)((ScaledOldY-W->ClipRect.OriginY)/W->ClipRect.ScaleY),
-      (int)((ScaledNewX-W->ClipRect.OriginX)/W->ClipRect.ScaleX),
-      (int)((ScaledNewY-W->ClipRect.OriginY)/W->ClipRect.ScaleY), OldFocus))
-    {
-      break;
-    }
-  }
-  */
 }
 
 

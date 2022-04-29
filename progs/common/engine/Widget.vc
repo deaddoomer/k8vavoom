@@ -137,6 +137,12 @@ final bool CloseOnBlur { get { return IsCloseOnBlur(); } set { SetCloseOnBlur(va
 final int OldOriginX { get { return int(ClipRect.OriginX/ClipRect.ScaleX); } }
 final int OldOriginY { get { return int(ClipRect.OriginY/ClipRect.ScaleY); } }
 
+
+//==========================================================================
+//
+//  dumpClipRect
+//
+//==========================================================================
 final void dumpClipRect (optional string msg) {
   print("CR: %s%ssize=(%d,%d); orig=(%s,%s); scale=(%s,%s); cr=(%s,%s)-(%s,%s); ssc=(%s,%s); ssz=(%s,%s)",
     msg, (msg ? "; " : ""),
@@ -147,6 +153,11 @@ final void dumpClipRect (optional string msg) {
 }
 
 
+//==========================================================================
+//
+//  FindParentWithClass
+//
+//==========================================================================
 final spawner Widget FindParentWithClass (class!Widget wclass) {
   for (Widget w = Parent; w; w = w.Parent) {
     if (wclass(w)) return wclass(w);
@@ -155,16 +166,30 @@ final spawner Widget FindParentWithClass (class!Widget wclass) {
 }
 
 
-// fix scale so pixel size of this widget will be equal to real pixels
+//==========================================================================
+//
+//  SetScaleOneToOne
+//
+//  fix scale so pixel size of this widget will be equal to real pixels
+//
+//==========================================================================
 final void SetScaleOneToOne () {
   SetScale(1.0/ClipRect.ScaleX, 1.0/ClipRect.ScaleY);
 }
 
 
-// sets size and scale of this widget so it will fill the whole parent
-// adjusts scale if necessary
-// returns `true` if something was changed
-final bool SetFullScaledSize (int mywdt, int myhgt, optional bool proportional/*=true*/, optional float aspect) {
+//==========================================================================
+//
+//  SetFullScaledSize
+//
+//  sets size and scale of this widget so it will fill the whole parent
+//  adjusts scale if necessary
+//  returns `true` if something was changed
+//
+//==========================================================================
+final bool SetFullScaledSize (int mywdt, int myhgt, optional bool proportional/*=true*/,
+                              optional float aspect)
+{
   auto par = ParentWidget;
   if (!par) return false;
   if (mywdt < 1 || myhgt < 1) return false;
@@ -199,15 +224,12 @@ final bool SetFullScaledSize (int mywdt, int myhgt, optional bool proportional/*
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-//delegate void FocusLost (Object Sender);
-//delegate void FocusReceived (Object Sender);
-
-
-// ////////////////////////////////////////////////////////////////////////// //
-//  Creation and destruction of widgets.
+// creation and destruction of widgets
+// note that there is no need to manually destroy children
+// the main widget system code will take care of that
 native final spawner Widget NewChild (class!Widget ChildClass);
-override native /*final*/ void Destroy ();
-// do not call this! ;-)
+override native void Destroy ();
+// do not call this! ;-) no, really.
 native final void DestroyAllChildren ();
 
 native final RootWidget GetRootWidget ();
@@ -409,7 +431,7 @@ native final Widget GetWidgetAt (float x, float y, optional bool allowDisabled/*
 //
 //  OnCreate
 //
-//  Called when widget has been just created.
+//  called when widget has been just created
 //
 //==========================================================================
 void OnCreate () {}
@@ -419,7 +441,7 @@ void OnCreate () {}
 //
 //  OnDestroy
 //
-//  Called when widget is about to be destroyed.
+//  called when widget is about to be destroyed
 //
 //==========================================================================
 void OnDestroy () {}
@@ -429,7 +451,7 @@ void OnDestroy () {}
 //
 //  OnClose
 //
-//  Called when widget is about to be closed.
+//  called when widget is about to be closed
 //
 //==========================================================================
 void OnClose () {}
@@ -439,7 +461,7 @@ void OnClose () {}
 //
 //  OnChildAdded
 //
-//  Called when a child widget is added.
+//  called when a child widget is added
 //
 //==========================================================================
 void OnChildAdded (Widget Child) {}
@@ -449,7 +471,7 @@ void OnChildAdded (Widget Child) {}
 //
 //  OnChildRemoved
 //
-//  Called when a child widget is removed.
+//  called when a child widget is removed
 //
 //==========================================================================
 void OnChildRemoved (Widget Child) {}
@@ -459,7 +481,7 @@ void OnChildRemoved (Widget Child) {}
 //
 //  OnConfigurationChanged
 //
-//  Called when position or size has been changed.
+//  called when position or size has been changed
 //
 //==========================================================================
 void OnConfigurationChanged () {}
@@ -469,7 +491,7 @@ void OnConfigurationChanged () {}
 //
 //  OnVisibilityChanged
 //
-//  Called when this widget is shown or hidden.
+//  called when this widget is shown or hidden
 //
 //==========================================================================
 void OnVisibilityChanged (bool bNewVisibility) {}
@@ -479,7 +501,7 @@ void OnVisibilityChanged (bool bNewVisibility) {}
 //
 //  OnEnableChanged
 //
-//  Called when this widget is enabled or disabled.
+//  called when this widget is enabled or disabled
 //
 //==========================================================================
 void OnEnableChanged (bool bNewEnable) {}
@@ -489,7 +511,7 @@ void OnEnableChanged (bool bNewEnable) {}
 //
 //  OnFocusableChanged
 //
-//  Called when focusable flag of this widget is changed.
+//  called when focusable flag of this widget is changed
 //
 //==========================================================================
 void OnFocusableChanged (bool bNewFocusable) {}
@@ -499,7 +521,7 @@ void OnFocusableChanged (bool bNewFocusable) {}
 //
 //  OnFocusReceived
 //
-//  Called when focus enters this widget.
+//  called when focus enters this widget
 //
 //==========================================================================
 void OnFocusReceived () {}
@@ -509,7 +531,7 @@ void OnFocusReceived () {}
 //
 //  OnFocusLost
 //
-//  Called when focus leaves this widget.
+//  called when focus leaves this widget
 //
 //==========================================================================
 void OnFocusLost () {}
@@ -519,7 +541,7 @@ void OnFocusLost () {}
 //
 //  OnDraw
 //
-//  Draws the window.
+//  draws the window
 //
 //==========================================================================
 void OnDraw () {}
@@ -529,7 +551,7 @@ void OnDraw () {}
 //
 //  OnPostDraw
 //
-//  Draws the window (AFTER all children are drawn).
+//  draws the window (AFTER all children are drawn)
 //
 //==========================================================================
 void OnPostDraw () {}
@@ -539,7 +561,7 @@ void OnPostDraw () {}
 //
 //  Tick
 //
-//  Called periodicly, but only when bTickEnabled is true.
+//  called periodicly, but only when `bTickEnabled` is true
 //
 //==========================================================================
 void Tick (float DeltaTime) {}
@@ -627,7 +649,10 @@ static final void DrawEmptyScreen () {
 //  DrawFullScreenPic
 //
 //==========================================================================
-static final void DrawFullScreenPic (int Handle, optional bool dontRestoreVScreen, optional out int xofs, optional out int yofs, optional out float scale, optional bool dontClearScreen) {
+static final void DrawFullScreenPic (int Handle, optional bool dontRestoreVScreen,
+                                     optional out int xofs, optional out int yofs,
+                                     optional out float scale, optional bool dontClearScreen)
+{
   picinfo_t pinf;
   R_GetPicInfo(Handle, &pinf);
   if (pinf.width < 1 || pinf.height < 1) {
@@ -708,7 +733,10 @@ static final void DrawFullScreenPicFinale (int Handle, optional bool dontClearSc
 //  DrawFullScreenPicFinale320
 //
 //==========================================================================
-static final void DrawFullScreenPicFinale320 (float xofs320, float yofs200, int Handle, optional bool dontClearScreen, optional bool scaleOffsets) {
+static final void DrawFullScreenPicFinale320 (float xofs320, float yofs200, int Handle,
+                                              optional bool dontClearScreen,
+                                              optional bool scaleOffsets)
+{
 #ifndef VC_USE_PROPER_SCALING
   //DrawFullScreenPic(Handle, dontClearScreen:dontClearScreen!optional);
   if (!dontClearScreen) R_FillRect(0, 0, GetVirtualWidth(), GetVirtualHeight(), 0xff_000000);
@@ -803,12 +831,15 @@ static final void DrawPicFS320 (float X, float Y, int Handle, optional float alp
 }
 #endif
 
+
 //==========================================================================
 //
 //  DrawPicFS320HScroll2
 //
 //==========================================================================
-static final void DrawPicFS320HScroll2 (float fracofs, int Handle1, int Handle2, optional float alpha) {
+static final void DrawPicFS320HScroll2 (float fracofs, int Handle1, int Handle2,
+                                        optional float alpha)
+{
 #ifndef VC_USE_PROPER_SCALING
   float scrolled = (1.0-fclamp(fracofs, 0, 1))*320.0;
   DrawPicFS320(scrolled, 0, Handle2, alpha!optional);
@@ -846,7 +877,9 @@ static final void DrawPicFS320HScroll2 (float fracofs, int Handle1, int Handle2,
 //  DrawPicFS200VScroll2
 //
 //==========================================================================
-static final void DrawPicFS200VScroll2 (float fracofs, int Handle1, int Handle2, optional float alpha) {
+static final void DrawPicFS200VScroll2 (float fracofs, int Handle1, int Handle2,
+                                        optional float alpha)
+{
 #ifndef VC_USE_PROPER_SCALING
   float scrolled = (1.0-fclamp(fracofs, 0, 1))*200.0;
   DrawPicFS320(0, scrolled, Handle2, alpha!optional);
@@ -887,6 +920,11 @@ static final void wgGetBindingKeys (string cmd, int *key1, int *key2) {
 }
 
 
+//==========================================================================
+//
+//  ConvertBoundKey
+//
+//==========================================================================
 static final int ConvertBoundKey (int key, optional bool useBindings/*=true*/) {
   if (key <= 0) return key;
   if (key >= K_MOUSE1 && key <= K_MWHEELDOWN) return key;
