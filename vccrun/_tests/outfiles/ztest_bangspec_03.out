@@ -1,0 +1,10 @@
+a!specified=true; b!specified=false
+  a: arg=69; specified=true
+  b: arg=0; specified=false
+  b (forced true): arg=0; specified=true
+  b (forced false): arg=0; specified=false
+a!specified=true; b!specified=true
+  a: arg=69; specified=true
+  b: arg=666; specified=true
+  b (forced true): arg=666; specified=true
+  b (forced false): arg=666; specified=false

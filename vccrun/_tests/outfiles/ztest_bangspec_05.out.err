@@ -1,0 +1,4 @@
+Error: ztest_bangspec_05.vc:12: `!optional` marshaling for parameter #2 got `specified_a` of type `float` instead of int/bool
+Error: ztest_bangspec_05.vc:15: `!optional` marshaling for parameter #2 got `specified_a` of type `float` instead of int/bool
+Error: ztest_bangspec_05.vc:18: `!optional` marshaling for parameter #2 got `specified_a` of type `float` instead of int/bool
+FATAL: Confused by previous errors, bailing out

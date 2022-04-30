@@ -1,0 +1,23 @@
+class Main : Object;
+
+void goo (string Name, optional int arg) {
+  print("  %s: arg=%s; specified=%B", Name, arg, arg!specified);
+}
+
+
+void boo (int a) {
+  goo("a", a!optional);
+  bool specified_a = false;
+  goo("a (speclocal)", a!optional);
+  a!specified = true;
+  //print("00: %B", specified_a);
+  goo("a (forced true)", a!optional);
+  a!specified = false;
+  //print("01: %B", specified_a);
+  goo("a (forced false)", a!optional);
+}
+
+
+void main () {
+  boo(69);
+}

@@ -1,0 +1,4 @@
+  a: arg=69; specified=true
+  a (speclocal): arg=69; specified=false
+  a (forced true): arg=69; specified=true
+  a (forced false): arg=69; specified=false

@@ -1,0 +1,24 @@
+//FAIL
+class Main : Object;
+
+void goo (string Name, optional int arg) {
+  print("  %s: arg=%s; specified=%B", Name, arg, arg!specified);
+}
+
+
+void boo (int a) {
+  goo("a", a!optional);
+  float specified_a = 1;
+  goo("a (speclocal)", a!optional);
+  a!specified = false;
+  print("00: %B", specified_a);
+  goo("a (forced false)", a!optional);
+  a!specified = true;
+  print("01: %B", specified_a);
+  goo("a (forced true)", a!optional);
+}
+
+
+void main () {
+  boo(69);
+}

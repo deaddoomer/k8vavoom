@@ -1,0 +1,11 @@
+class Main : Object;
+
+void boo (int a, optional int b) {
+  print("a!specified=%B; b!specified=%B", a!specified, b!specified);
+}
+
+
+void main () {
+  boo(69);
+  boo(69, 666);
+}

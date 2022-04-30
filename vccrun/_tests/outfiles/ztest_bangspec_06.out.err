@@ -1,0 +1,4 @@
+Error: ztest_bangspec_06.vc:13: `!optional` marshaling for parameter #2 got `specified_a` of type `float` instead of int/bool
+Error: ztest_bangspec_06.vc:18: cannot set `!specified` for non-optional argument `a`
+Error: ztest_bangspec_06.vc:19: Invalid identifier, bad type name `specified_a`
+FATAL: Confused by previous errors, bailing out
