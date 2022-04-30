@@ -254,8 +254,9 @@ protected:
 //==========================================================================
 class VInvocation : public VInvocationBase {
 private:
-  int lcidx[VMethod::MAX_PARAMS];
-  bool optmarshall[VMethod::MAX_PARAMS];
+  // both set in `DoResolve()`
+  int lcidx[VMethod::MAX_PARAMS]; // temp vars for omited `ref`/`out` args (<0: none)
+  int optmarshall[VMethod::MAX_PARAMS]; // `!optional` marshal var index (<0: none)
 
 public:
   VExpression *SelfExpr;

@@ -2052,7 +2052,7 @@ VExpression *VInvocation::DoResolve (VEmitContext &ec) {
     }
   }
 
-  memset(optmarshall, 0, sizeof(optmarshall));
+  for (int f = 0; f < VMethod::MAX_PARAMS; ++f) optmarshall[f] = -1;
 
   // resolve arguments
   int requiredParams = Func->NumParams;
@@ -2071,9 +2071,6 @@ VExpression *VInvocation::DoResolve (VEmitContext &ec) {
       Args[i] = nullptr;
     }
     if (Args[i]) {
-      if (i < VMethod::MAX_PARAMS && Args[i]->IsOptMarshallArg() && (Func->ParamFlags[i]&FPARM_Optional) != 0) {
-        optmarshall[i] = true;
-      }
       // check for `ref`/`out` validness
       if (Args[i]->IsRefArg() && (i >= requiredParams || (Func->ParamFlags[i]&FPARM_Ref) == 0)) {
         ParseError(Args[i]->Loc, "`ref` argument for non-ref parameter #%d", i+1);
@@ -2090,9 +2087,37 @@ VExpression *VInvocation::DoResolve (VEmitContext &ec) {
         GLog.Logf(NAME_Debug, "MT:<%s>: arg#%d: pt=%s; at=%s (%s)", *Func->GetFullName(), i+1, *Func->ParamTypes[i].GetName(), *Args[i]->Type.GetName(), *Args[i]->toString());
       }
       */
-      //FIXME: this can be already resolved if we're in `VPropertyAssign`
+      // need to resolve it before determining marshal `specified_` var
+      // but the type may be changed by `Resolve()`, so save the flag here
+      const bool wantOptMarshal = Args[i]->IsOptMarshallArg();
+      // this can be already resolved if we're in `VPropertyAssign`
       if (!Args[i]->IsResolved()) Args[i] = Args[i]->Resolve(ec);
       if (!Args[i]) { ArgsOk = false; break; }
+      // marshaling
+      if (wantOptMarshal && i < VMethod::MAX_PARAMS &&
+          Args[i]->IsLocalVarExpr() && (Func->ParamFlags[i]&FPARM_Optional) != 0)
+      {
+        // setup marshaling
+        VLocalVar *ve = (VLocalVar *)Args[i];
+        const VLocalVarDef &L = ec.GetLocalByIndex(ve->num);
+        // can be unnamed
+        if (L.Name != NAME_None) {
+          VStr spname = VStr("specified_")+(*L.Name);
+          const int lidx = ec.CheckForLocalVar(VName(*spname));
+          if (lidx >= 0) {
+            const VLocalVarDef &LL = ec.GetLocalByIndex(lidx);
+            // allow ints and local bools
+            if (LL.Type.Type == TYPE_Int || LL.Type.Type == TYPE_Bool) {
+              optmarshall[i] = lidx;
+            } else {
+              // bad type
+              ParseError(Args[i]->Loc, "`!optional` marshaling for parameter #%d got `specified_%s` of type `%s` instead of int/bool", i+1, *L.Name, *LL.Type.GetName());
+              ArgsOk = false;
+              break;
+            }
+          }
+        }
+      }
       //GLog.Logf(NAME_Debug, "%s: ...#%d: <%s>", *Args[i]->Loc.toStringNoCol(), i, *Args[i]->toString());
     }
   }
@@ -2896,35 +2921,16 @@ void VInvocation::Emit (VEmitContext &ec) {
       }
       if (Func->ParamFlags[i]&FPARM_Optional) {
         // marshall "specified_*"?
-        if (i < VMethod::MAX_PARAMS && optmarshall[i] && Args[i]->IsLocalVarExpr()) {
-          VLocalVar *ve = (VLocalVar *)Args[i];
-          const VLocalVarDef &L = ec.GetLocalByIndex(ve->num);
-          if (L.Name == NAME_None) {
-            // unnamed, no "specified_*"
-            ec.EmitPushNumber(1, Loc);
-          } else {
-            VStr spname = VStr("specified_")+(*L.Name);
-            int lidx = ec.CheckForLocalVar(VName(*spname));
-            if (lidx < 0) {
-              // not found
-              ec.EmitPushNumber(1, Loc);
-            } else {
-              const VLocalVarDef &LL = ec.GetLocalByIndex(lidx);
-              if (LL.Type.Type != TYPE_Int) {
-                // not int
-                ec.EmitPushNumber(1, Loc);
-              } else {
-                // i found her!
-                //HACK: it is safe (and necessary) to resolve here
-                VExpression *xlv = new VLocalVar(lidx, ve->Loc);
-                xlv = xlv->Resolve(ec);
-                if (!xlv) VCFatalError("VC: internal compiler error (13496)");
-                xlv->Emit(ec);
-                delete xlv;
-              }
-            }
-          }
+        if (i < VMethod::MAX_PARAMS && optmarshall[i] >= 0) {
+          // i found her!
+          //HACK: it is safe (and necessary) to resolve here
+          VExpression *xlv = new VLocalVar(optmarshall[i], Args[i]->Loc);
+          xlv = xlv->Resolve(ec);
+          if (!xlv) VCFatalError("VC: internal compiler error (13496)");
+          xlv->Emit(ec);
+          delete xlv;
         } else {
+          // not optional, so always specified
           ec.EmitPushNumber(1, Loc);
         }
         ++SelfOffset;

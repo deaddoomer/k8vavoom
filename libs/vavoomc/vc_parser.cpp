@@ -644,12 +644,14 @@ VExpression *VParser::ParseExpressionPriority0 () {
         // `a!alive` -> `!(a.isDestroyed)`
         // `a!dead` -> `a.isDestroyed`
         // done this way due to `!isa`
+        bool bangSpec = false;
         if (Lex.Token == TK_Not && Lex.peekTokenType(1) == TK_Identifier) {
           Lex.Expect(TK_Not);
           vassert(Lex.Token == TK_Identifier); // guaranteed
           if (VStr::strEquCI(*Lex.Name, "specified")) {
             Lex.NextToken(); // skip token
             Name = VName(va("specified_%s", *Name));
+            bangSpec = true;
           } else if (VStr::strEquCI(*Lex.Name, "alive") || VStr::strEquCI(*Lex.Name, "dead")) {
             const bool doNot = VStr::strEquCI(*Lex.Name, "alive");
             // create property getter
@@ -664,7 +666,7 @@ VExpression *VParser::ParseExpressionPriority0 () {
           }
         }
 
-        return new VSingleName(Name, l);
+        return new VSingleName(Name, l, bangSpec);
       }
     case TK_Default:
       {

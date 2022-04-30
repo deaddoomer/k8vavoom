@@ -217,9 +217,10 @@ VStr VVectorExpr::toString () const {
 //  VSingleName::VSingleName
 //
 //==========================================================================
-VSingleName::VSingleName (VName AName, const TLocation &ALoc)
+VSingleName::VSingleName (VName AName, const TLocation &ALoc, bool aBangSpec)
   : VExpression(ALoc)
   , Name(AName)
+  , bIsBangSpecified(aBangSpec)
 {
 }
 
@@ -253,6 +254,7 @@ void VSingleName::DoSyntaxCopyTo (VExpression *e) {
   VExpression::DoSyntaxCopyTo(e);
   auto res = (VSingleName *)e;
   res->Name = Name;
+  res->bIsBangSpecified = bIsBangSpecified;
 }
 
 
@@ -265,6 +267,19 @@ VExpression *VSingleName::InternalResolve (VEmitContext &ec, VSingleName::AssTyp
   int num = ec.CheckForLocalVar(Name);
   if (num != -1) {
     VExpression *e = new VLocalVar(num, Loc);
+    delete this;
+    return e->Resolve(ec);
+  }
+
+  // check for `!specified`, but no `specified_xxx` local
+  if (bIsBangSpecified && VStr::startsWith(*Name, "specified_")) {
+    if (assType == AssType::AssTarget) {
+      ParseError(Loc, "cannot set `!specified` for non-optional argument `%s`", *Name+10);
+      delete this;
+      return nullptr;
+    }
+    // always true
+    VExpression *e = new VIntLiteral(1, Loc);
     delete this;
     return e->Resolve(ec);
   }
@@ -555,6 +570,9 @@ bool VSingleName::IsValidTypeExpression () const {
 //
 //==========================================================================
 VStr VSingleName::toString () const {
+  if (bIsBangSpecified && VStr::startsWith(*Name, "specified_")) {
+    return VStr(*Name+10)+"!specified";
+  }
   return VStr(Name);
 }
 

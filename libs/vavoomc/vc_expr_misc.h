@@ -71,8 +71,11 @@ private:
 
 public:
   VName Name;
+  // is this a node for `a!specified`?
+  // made separate, so `!specified` could be used on any var
+  bool bIsBangSpecified;
 
-  VSingleName (VName, const TLocation &);
+  VSingleName (VName AName, const TLocation &ALoc, bool aBangSpec=false);
   virtual VExpression *SyntaxCopy () override;
   VExpression *InternalResolve (VEmitContext &ec, AssType assType);
   virtual VExpression *DoResolve (VEmitContext &) override;
