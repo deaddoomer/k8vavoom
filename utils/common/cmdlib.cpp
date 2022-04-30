@@ -62,9 +62,12 @@ static inline bool isAbsolutePath (const char *s) {
 //==========================================================================
 __attribute__((noreturn)) __attribute__((format(printf, 1, 2))) void Error (const char *error, ...) {
   va_list argptr;
+  if (stdout) fflush(stdout);
+  fprintf(stderr, "FATAL: ");
   va_start(argptr, error);
   vfprintf(stderr, error, argptr);
   va_end(argptr);
+  fprintf(stderr, "\n");
   Z_Exit(1);
 }
 

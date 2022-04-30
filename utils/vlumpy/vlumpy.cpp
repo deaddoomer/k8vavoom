@@ -102,15 +102,15 @@ static zipFile Zip;
 static unsigned zipTotalUnpacked = 0;
 static unsigned zipTotalPacked = 0;
 
-static char basepath[256];
-static char srcpath[256];
-static char destpath[256];
+static char basepath[4096];
+static char srcpath[4096];
+static char destpath[4096];
 
 static RGB_MAP rgb_table;
 static bool rgb_table_created = false;
 
 static char lumpname[256];
-static char destfile[1024];
+static char destfile[4096];
 
 static bool Fon2ColorsUsed[256] = {0};
 
@@ -181,19 +181,18 @@ static void SetupRGBTable () {
 //  fn
 //
 //==========================================================================
-static char *fn (const char *name) {
+static char *fn (const char *name, bool checkdir=false) {
   static char filename[8192];
   if (name[0] == '/' || name[0] == '\\' || name[1] == ':') {
     // absolute path
     strcpy(filename, name);
   } else if (destpath[0]) {
     snprintf(filename, sizeof(filename)-256, "%s%s", destpath, name);
-    FILE *f = fopen(filename, "rb");
-    if (f) {
-      fclose(f);
-    } else {
-      snprintf(filename, sizeof(filename)-256, "%s%s", srcpath, name);
-    }
+    if (Sys_FileExists(filename)) return filename;
+    //FILE *f = fopen(filename, "rb");
+    //if (f) { fclose(f); return filename; }
+    if (checkdir && Sys_DirExists(filename)) return filename;
+    snprintf(filename, sizeof(filename)-256, "%s%s", srcpath, name);
   } else {
     snprintf(filename, sizeof(filename)-256, "%s%s", srcpath, name);
   }
@@ -448,7 +447,6 @@ static void GrabScaleMap () {
 //
 //==========================================================================
 static void GrabRaw () {
-
   SC_MustGetNumber();
   int x1 = sc_Number;
   SC_MustGetNumber();
@@ -1021,14 +1019,31 @@ static void ParseScript (const char *name) {
     if (SC_Compare("$dest")) {
       if (OutputOpened) SC_ScriptError("Output already opened");
       SC_MustGetString();
-      strcpy(destfile, fn(sc_String));
-      fprintf(stderr, "creating '%s' from script '%s'...\n", sc_String, name);
+      // start with `!` to be relative to script dir
+      if (sc_String[0] == '!') {
+        if (!sc_String[1]) Error("empty dest file");
+        if (strlen(basepath)+strlen(sc_String)+2 >= sizeof(destfile)) Error("$dest too long");
+        snprintf(destfile, sizeof(destfile), "%s%s", basepath, sc_String+1);
+      } else {
+        strcpy(destfile, /*fn*/(sc_String));
+      }
+      fprintf(stderr, "creating '%s' from script '%s'...\n", destfile, name);
       continue;
     }
 
     if (SC_Compare("$srcdir")) {
       SC_MustGetString();
-      sprintf(srcpath, "%s%s", basepath, sc_String);
+      if (sc_String[0] == '!') {
+        if (!sc_String[1]) {
+          snprintf(srcpath, sizeof(srcpath), "%s", basepath);
+        } else {
+          if (strlen(basepath)+strlen(sc_String)+2 >= sizeof(destfile)) Error("$srcdir too long");
+          snprintf(srcpath, sizeof(srcpath), "%s%s", basepath, sc_String+1);
+        }
+      } else {
+        if (strlen(basepath)+strlen(sc_String)+2 >= sizeof(srcpath)) Error("$srcdir too long");
+        snprintf(srcpath, sizeof(srcpath), "%s%s", basepath, sc_String);
+      }
       if (srcpath[strlen(srcpath)-1] != '/') strcat(srcpath, "/");
       continue;
     }
@@ -1102,7 +1117,7 @@ static void ParseScript (const char *name) {
       VStr zippath = VStr(sc_String);
       // diskpath
       SC_MustGetString();
-      VStr diskpath = VStr(sc_String);
+      VStr diskpath = VStr(fn(sc_String, true));
       // extension
       if (isScanDirWithExt && !gotExt) {
         SC_MustGetString();
