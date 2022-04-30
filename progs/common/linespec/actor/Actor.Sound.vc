@@ -32,24 +32,20 @@
 //  A_StartSound
 //
 //==========================================================================
-[decorate] final void A_StartSound (name Sound, optional [soundchannel] int ChannelNameOrNumber,
+[decorate] final void A_StartSound (name Sound, optional [soundchannel] int Channel,
                                     optional int flags, optional float volume, optional float attenuation,
                                     optional float pitch, optional float startTime)
 {
   if (!Sound) return;
   // use `auto` channel, not body here
   // "body" is default "for historical reasons", but meh
-  if (!specified_ChannelNameOrNumber) ChannelNameOrNumber = CHAN_AUTO;
+  if (!specified_Channel) Channel = CHAN_AUTO;
   // also, i don't get how `local` should work
   // it seems that `local` means "play only if client camera is at the current actor
   if (flags&CHANF_OVERLAP) printwarn("%C: A_StartSound: CHANF_OVERLAP is not supported!");
   if (startTime > 0.0f) printwarn("%C: A_StartSound: startTime is not supported!");
-  if (flags&CHANF_LOCAL) {
-    EntityEx se = GetLocalSoundEntity();
-    if (se) se.PlaySound(Sound, ChannelNameOrNumber, volume!optional, attenuation!optional, !!(flags&CHANF_LOOP), pitch!optional);
-  } else {
-    PlaySound(Sound, ChannelNameOrNumber, volume!optional, attenuation!optional, !!(flags&CHANF_LOOP), pitch!optional);
-  }
+  EntityEx se = (flags&CHANF_LOCAL ? GetLocalSoundEntity() : EntityEx(self));
+  if (se) se.PlaySound(Sound, Channel, volume!optional, attenuation!optional, !!(flags&CHANF_LOOP), pitch!optional);
 }
 
 
@@ -58,7 +54,7 @@
 //  A_PlaySound
 //
 //==========================================================================
-[decorate] final void A_PlaySound (optional name Sound, optional [soundchannel] int ChannelNameOrNumber,
+[decorate] final void A_PlaySound (optional name Sound, optional [soundchannel] int Channel,
                                    optional float volume, optional bool looping, optional float attenuation,
                                    optional bool local, optional float pitch)
 {
@@ -66,19 +62,13 @@
   if (!Sound) return;
   // use `auto` channel, not body here
   // "body" is default "for historical reasons", but meh
-  if (!specified_ChannelNameOrNumber) ChannelNameOrNumber = CHAN_AUTO;
+  if (!specified_Channel) Channel = CHAN_AUTO;
   // hack!
-  if (!specified_looping) {
-    looping = (ChannelNameOrNumber > 0 ? !!(ChannelNameOrNumber&CHAN_LOOP) : false);
-  }
+  if (!specified_looping) looping = (Channel > 0 ? !!(Channel&CHAN_LOOP) : false);
   // also, i don't get how `local` should work
   // it seems that `local` means "play only if client camera is at the current actor
-  if (local) {
-    EntityEx se = GetLocalSoundEntity();
-    if (se) se.PlaySound(Sound, ChannelNameOrNumber, volume!optional, attenuation!optional, looping, pitch!optional);
-  } else {
-    PlaySound(Sound, ChannelNameOrNumber, volume!optional, attenuation!optional, looping, pitch!optional);
-  }
+  EntityEx se = (local ? GetLocalSoundEntity() : EntityEx(self));
+  if (se) se.PlaySound(Sound, Channel, volume!optional, attenuation!optional, looping, pitch!optional);
 }
 
 
@@ -87,7 +77,7 @@
 //  A_PlaySound_NoNet
 //
 //==========================================================================
-[decorate] final void A_PlaySound_NoNet (optional name Sound, optional [soundchannel] int ChannelNameOrNumber,
+[decorate] final void A_PlaySound_NoNet (optional name Sound, optional [soundchannel] int Channel,
                                          optional float volume, optional bool looping, optional float attenuation,
                                          optional bool local, optional float pitch)
 {
@@ -96,7 +86,7 @@
     //printdebug("%C: ignored sound '%s'", self, Sound);
     return;
   }
-  A_PlaySound(Sound, ChannelNameOrNumber!optional, volume!optional, looping!optional,
+  A_PlaySound(Sound, Channel!optional, volume!optional, looping!optional,
               attenuation!optional, local!optional, pitch!optional);
 }
 
@@ -106,14 +96,14 @@
 //  A_PlaySoundEx
 //
 //==========================================================================
-[decorate] final void A_PlaySoundEx (name Sound, [soundchannel] int ChannelNameOrNumber, optional bool Loop, optional int Attenuation) {
+[decorate] final void A_PlaySoundEx (name Sound, [soundchannel] int Channel, optional bool Loop, optional int Attenuation) {
   // attenuation
   float Atten = ATTN_NORMAL;
   switch (Attenuation) {
     case -1: Atten = ATTN_STATIC; break;
     case 1: Atten = ATTN_NONE; break;
   }
-  PlaySound(Sound, ChannelNameOrNumber, default, Atten, Loop);
+  PlaySound(Sound, Channel, default, Atten, Loop);
 }
 
 
@@ -164,9 +154,9 @@
 //  A_StopSound
 //
 //==========================================================================
-[decorate] final void A_StopSound (optional [soundchannel] int ChannelNameOrNumber) {
-  if (!specified_ChannelNameOrNumber) ChannelNameOrNumber = CHAN_VOICE;
-  StopSound(ChannelNameOrNumber);
+[decorate] final void A_StopSound (optional [soundchannel] int Channel) {
+  if (!specified_Channel) Channel = CHAN_VOICE;
+  StopSound(Channel);
 }
 
 
@@ -175,8 +165,8 @@
 //  A_StopSoundEx
 //
 //==========================================================================
-[decorate] final void A_StopSoundEx ([soundchannel] int ChannelNameOrNumber) {
-  StopSound(ChannelNameOrNumber);
+[decorate] final void A_StopSoundEx ([soundchannel] int Channel) {
+  StopSound(Channel);
 }
 
 
