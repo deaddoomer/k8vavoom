@@ -1188,22 +1188,36 @@ static void ParseScript (const char *name) {
 
 //==========================================================================
 //
+//  showHelp
+//
+//==========================================================================
+static void showHelp () {
+  fprintf(stderr,
+    "Usage: k8vlumpy [options] <script1> [<script2> ...]\n"
+    "\n"
+    "options:\n"
+    "  --zopfli[=yes|=no]    use zopfli compressor (slow)\n"
+    "  --verbose             become verbose (useless)\n"
+    "  --stats               show packed file sizes (boring)\n"
+    "  -Dfname               override output file name\n"
+    ""
+  );
+  exit(1);
+}
+
+
+//==========================================================================
+//
 //  main
 //
 //==========================================================================
 int main (int argc, char *argv[]) {
-  if (argc < 2) {
-    fprintf(stderr, "Usage: k8vlumpy <script1> [<script2> ...]\n");
-    return 1;
-  }
+  if (argc < 2) showHelp();
 
 #ifdef _WIN32
-  useZopfli = true;
   showPackedSize = true;
-  useZopfli = false;
-#else
-  useZopfli = false;
 #endif
+  useZopfli = false;
 
   try {
     bool inopt = true;
@@ -1216,12 +1230,15 @@ int main (int argc, char *argv[]) {
         if (strcmp(argv[i], "--zopfli=no") == 0) { useZopfli = false; continue; }
         if (strcmp(argv[i], "--verbose") == 0) { showPackedSize = true; verbose = true; continue; }
         if (strcmp(argv[i], "--stats") == 0) { showPackedSize = true; continue; }
+        if (argv[i][0] == '-' && argv[i][1] == 'D') {
+          if (!argv[i][2]) Error("filename expected for \"-D\"");
+          strcpy(destfile, argv[i]+2);
+          continue;
+        }
+        if (strcmp(argv[i], "--help") == 0) showHelp();
+        if (strcmp(argv[i], "-h") == 0) showHelp();
       }
-      if (argv[i][0] == '-' && argv[i][1] == 'D') {
-        strcpy(destfile, argv[i]+2);
-      } else {
-        ParseScript(argv[i]);
-      }
+      ParseScript(argv[i]);
     }
   } catch (WadLibError &E) {
     Error("%s", E.message);
