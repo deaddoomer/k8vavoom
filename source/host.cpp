@@ -184,7 +184,7 @@ static char CurrentLanguage[4];
 static VCvarS Language("language", "en", "Game language.", /*CVAR_Archive|CVAR_PreInit|*/CVAR_Rom|CVAR_NoShadow);
 
 static VCvarB cl_cap_framerate("cl_cap_framerate", true, "Cap framerate for non-networking games?", CVAR_Archive|CVAR_NoShadow);
-static VCvarI cl_framerate("cl_framerate", "64", "Framerate cap for client rendering.", CVAR_Archive|CVAR_NoShadow);
+static VCvarI cl_framerate("cl_framerate", "70", "Framerate cap for client rendering.", CVAR_Archive|CVAR_NoShadow);
 static VCvarI sv_framerate("sv_framerate", "70", "Framerate cap for dedicated server.", CVAR_Archive|CVAR_NoShadow);
 
 // this is hack for my GPU
