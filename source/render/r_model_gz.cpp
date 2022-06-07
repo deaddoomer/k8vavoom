@@ -31,6 +31,7 @@
 static VCvarB gz_mdl_fix_hud_weapon_scale("gz_mdl_fix_hud_weapon_scale", true, "Don't allow negative scales for MODELDEF HUD weapons?", CVAR_PreInit|CVAR_NoShadow|CVAR_Archive);
 static VCvarB gz_mdl_debug_force_attach("gz_mdl_debug_force_attach", false, "Show 'force-attaching' messages for MODELDEF?", CVAR_PreInit|CVAR_NoShadow|CVAR_Archive);
 static VCvarB gz_mdl_debug_attach_override("gz_mdl_debug_attach_override", false, "Show 'attached several times' messages for MODELDEF?", CVAR_PreInit|CVAR_NoShadow|CVAR_Archive);
+static VCvarB gz_mdl_debug_wiki_pitch("gz_mdl_debug_wiki_pitch", false, "Should 'InheritActorPitch' be inverted, as wiki says?", CVAR_PreInit|CVAR_NoShadow|CVAR_Archive);
 
 
 //==========================================================================
@@ -384,7 +385,7 @@ void GZModelDef::parse (VScriptParser *sc) {
     // "InheritActorPitch"
     if (sc->Check("InheritActorPitch")) {
       usePitch = -1;
-      usePitchInverted = true;
+      usePitchInverted = gz_mdl_debug_wiki_pitch.asBool();
       continue;
     }
     // "InheritActorRoll"
