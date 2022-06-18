@@ -35,7 +35,6 @@ class K8VSectorParmSetter : Actor;
 // script can do its work), and perform the effect.
 // also, perform the effect on destroying (if it wasn't done yet)
 // (so script that creates, set args, and destroys will work)
-bool bEffectApplied;
 
 
 // override this in children
@@ -45,10 +44,7 @@ void SetSectorArgs () {
 
 override void Destroy () {
   //printdebug("%C(%s): dying; gt=%s", self, UniqueId, XLevel.Time);
-  if (!bEffectApplied) {
-    bEffectApplied = true; // just in case
-    SetSectorArgs();
-  }
+  SetSectorArgs();
   ::Destroy();
 }
 
@@ -61,7 +57,6 @@ override void Tick (float DeltaTime) {
 
 
 defaultproperties {
-  bEffectApplied = false;
   bNoSector = true;
   bNoBlockmap = true;
   bNoGravity = true;
