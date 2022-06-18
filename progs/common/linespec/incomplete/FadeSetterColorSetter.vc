@@ -23,19 +23,45 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-class FadeSetter : Actor __mobjinfo__(9039);
+// common base for setters
+class K8VSectorParmSetter : Actor;
+
+// we should wait a tick before doing our job
+// this is because ACS spawner, for example,
+// sets args *after* the spawn, and we're
+// already dead at that time.
+// perform a trick here: wait for one tick before applying the
+// effect (because ticker is not called on spawn, so ACS
+// script can do its work), and perform the effect.
+// also, perform the effect on destroying (if it wasn't done yet)
+// (so script that creates, set args, and destroys will work)
+bool bEffectApplied;
 
 
-override void BeginPlay () {
-  ::BeginPlay();
-  if (!Sector) return;
-  //print("FadeSetter: %d;%d;%d", Args[0], Args[1], Args[2]);
-  int Fade = RGBA(Args[0], Args[1], Args[2], 255);
-  Sector.params.Fade = Fade;
-  Destroy();
+// override this in children
+void SetSectorArgs () {
 }
 
+
+override void Destroy () {
+  //printdebug("%C(%s): dying; gt=%s", self, UniqueId, XLevel.Time);
+  if (!bEffectApplied) {
+    bEffectApplied = true; // just in case
+    SetSectorArgs();
+  }
+  ::Destroy();
+}
+
+
+override void Tick (float DeltaTime) {
+  ::Tick(DeltaTime);
+  //printdebug("%C(%s): ticker; dt=%s; gt=%s", self, UniqueId, DeltaTime, XLevel.Time);
+  Destroy(); // this will apply the effect
+}
+
+
 defaultproperties {
+  bEffectApplied = false;
   bNoSector = true;
   bNoBlockmap = true;
   bNoGravity = true;
@@ -43,21 +69,20 @@ defaultproperties {
 }
 
 
-class ColorSetter : Actor __mobjinfo__(9038);
+class FadeSetter : K8VSectorParmSetter __mobjinfo__(9039);
 
-override void BeginPlay () {
-  ::BeginPlay();
-  if (!Sector) return;
-  //print("FadeSetter: %d;%d;%d", Args[0], Args[1], Args[2]);
+override void SetSectorArgs () {
+  //printdebug("FadeSetter: %d;%d;%d", Args[0], Args[1], Args[2]);
+  int Fade = RGBA(Args[0], Args[1], Args[2], 255);
+  Sector.params.Fade = Fade;
+}
+
+
+class ColorSetter : K8VSectorParmSetter __mobjinfo__(9038);
+
+override void SetSectorArgs () {
+  //printdebug("ColorSetter: %d;%d;%d", Args[0], Args[1], Args[2]);
   int color = RGBA(Args[0], Args[1], Args[2], 255);
   if (Args[3] > 0) printwarn("desaturation in thing 9038 is not supported yet!");
   Sector.params.LightColor = color;
-  Destroy();
-}
-
-defaultproperties {
-  bNoSector = true;
-  bNoBlockmap = true;
-  bNoGravity = true;
-  bNoSplash = true;
 }
