@@ -370,7 +370,9 @@ final EntityEx SpawnMissile (EntityEx dest, class!EntityEx type, optional float 
   if (org.z != ONFLOORZ) org.z -= FloorClip;
 
   EntityEx A = Spawn(type, org);
-  if (A) A.DecalName = A.default.DecalName;
+  if (!A) return none;
+
+  A.DecalName = A.default.DecalName;
   A.CarryBloodTranslations(self);
   A.PlayMissileSpawnSound(self);
   A.Target = self; // where it came from
