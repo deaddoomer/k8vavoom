@@ -23,7 +23,34 @@
 //**  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //**
 //**************************************************************************
-#include "Health.vc"
-#include "HealthPickup.vc"
-#include "HealthTraining.vc"
-#include "MaxHealth.vc"
+
+// seems to be a Zandronum actor
+class MaxHealth : Health;
+
+
+//==========================================================================
+//
+//  TryPickup
+//
+//  k8: this isn't right, but idk
+//
+//==========================================================================
+override bool TryPickup (EntityEx Toucher) {
+  if (!CheckInventoryRestrictions(Toucher)) return false;
+
+  if (Amount <= 0) return false;
+  if (MaxAmount <= 0) return false;
+
+  if (Toucher.bIsPlayer) {
+    PlayerEx pex = PlayerEx(Toucher.Player);
+    if (!pex) return false;
+    int max = pex.GetMaxHealth();
+    if (max >= MaxAmount) return false;
+    PlayerPawn(pex.MO).MaxHealth = min(max+Amount, MaxAmount);
+    if (bTransferInventory) TransferInventoryTo(Toucher);
+    GoAwayAndDie();
+    return true;
+  }
+
+  return false;
+}
