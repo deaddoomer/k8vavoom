@@ -748,7 +748,7 @@ void VAudio::PlaySound (int InSoundId, const TVec &origin, const TVec &velocity,
   float pitch = 1.0f;
   if (ForcePitch > 0.0f) {
     pitch = ForcePitch;
-  } else /*if (snd_random_pitch_enabled)*/ {
+  } else if (snd_random_pitch_enabled) {
     float sndcp = GSoundManager->S_sfx[sound_id].ChangePitch;
     float rboost = 1.0f;
     // apply default pitch?
@@ -761,14 +761,14 @@ void VAudio::PlaySound (int InSoundId, const TVec &origin, const TVec &velocity,
           !VStr::startsWithCI(tagstr, "misc/"))
       {
         // randomize pitch for various sounds
-        if (snd_random_pitch_enabled && ForcePitch == 0.0f) {
+        if (/*snd_random_pitch_enabled &&*/ ForcePitch == 0.0f) {
           sndcp = clampval(snd_random_pitch_default.asFloat(), 0.0f, 1.0f);
           rboost = snd_random_pitch_boost.asFloat();
         }
       }
     }
     // apply pitch
-    if (sndcp) {
+    if (sndcp != 0.0f) {
       pitch += (FRandomFull()-FRandomFull())*(sndcp*rboost/*snd_random_pitch_boost.asFloat()*/);
       if (pitch <= 0.0f) pitch = 1.0f; // just in case
       //GCon->Logf(NAME_Debug, "applied random pitch to sound '%s' (ccp=%g; sndcp=%g; boost=%g); pitch=%g", *GSoundManager->S_sfx[sound_id].TagName, GSoundManager->S_sfx[sound_id].ChangePitch, sndcp, rboost, pitch);
