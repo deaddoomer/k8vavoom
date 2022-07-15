@@ -48,7 +48,7 @@
 # endif
 #endif
 
-#if defined(VAVOOM_K8_DEVELOPER) && defined(VAVOOM_ALLOW_FPU_DEBUG)
+#if !defined(VAVOOM_K8_DEVELOPER) && defined(VAVOOM_ALLOW_FPU_DEBUG)
 # undef VAVOOM_ALLOW_FPU_DEBUG
 #endif
 
@@ -240,7 +240,7 @@ static void mainloop (int argc, char **argv) {
 #endif
 */
 
-#ifdef VAVOOM_ALLOW_FPU_DEBUG
+    #ifdef VAVOOM_ALLOW_FPU_DEBUG
     if (GArgs.CheckParm("-dev-fpu-alltraps") || GArgs.CheckParm("-dev-fpu-all-traps")) {
       feenableexcept(FE_DIVBYZERO|FE_INVALID|FE_OVERFLOW|FE_UNDERFLOW);
     } else if (GArgs.CheckParm("-dev-fpu-traps")) {
@@ -251,7 +251,7 @@ static void mainloop (int argc, char **argv) {
     }
     // sse math can only round towards zero, so force it for FPU
     if (fesetround(0) != 0) GCon->Logf(NAME_Warning, "Cannot set float rounding mode (this is not fatal)");
-#endif
+    #endif
 
     Host_Init();
     /*
