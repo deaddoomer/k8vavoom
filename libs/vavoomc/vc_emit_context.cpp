@@ -118,7 +118,12 @@ static EmitBuffer *ebHead = nullptr;
 //
 //==========================================================================
 static EmitBuffer *allocEmitBuffer () {
-  for (EmitBuffer *eb = ebHead; eb; eb = eb->next) if (eb->used == 0) return eb;
+  for (EmitBuffer *eb = ebHead; eb; eb = eb->next) {
+    if (eb->used == 0) {
+      eb->used = 1;
+      return eb;
+    }
+  }
   EmitBuffer *res = (EmitBuffer*)Z_Calloc(sizeof(EmitBuffer));
   if (ebHead) ebHead->next = res; else ebHead = res;
   res->used = 1;
