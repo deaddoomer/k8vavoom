@@ -48,6 +48,10 @@
 # endif
 #endif
 
+#if defined(VAVOOM_K8_DEVELOPER) && defined(VAVOOM_ALLOW_FPU_DEBUG)
+# undef VAVOOM_ALLOW_FPU_DEBUG
+#endif
+
 #ifdef VAVOOM_ALLOW_FPU_DEBUG
 # ifndef _GNU_SOURCE
 #  define _GNU_SOURCE
