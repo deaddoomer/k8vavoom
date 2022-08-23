@@ -873,7 +873,7 @@ static void parseMouse (TTYEvent &type, int toEscMSec) noexcept {
  */
 TTYEvent ttyReadKey (int toMSec, int toEscMSec) noexcept {
   TTYEvent type;
-  memset((void *)&type, 0, 0);
+  memset((void *)&type, 0, sizeof(type));
   type.time = Sys_Time();
 
   int ch = ttyReadKeyByte(toMSec);
