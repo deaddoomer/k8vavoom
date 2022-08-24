@@ -467,7 +467,7 @@ bool ttySetRawMode (bool enable) noexcept {
     //tcflush(STDIN_FILENO, TCIOFLUSH);
     raw.c_iflag = IGNBRK;
     // output modes: disable post processing
-    raw.c_oflag = OPOST|ONLCR;
+    raw.c_oflag = /*OPOST|*/ONLCR;
     // control modes: set 8 bit chars
     raw.c_cflag = CS8|CLOCAL;
     // control chars: set return condition: min number of bytes and timer; we want read to return every single byte, without timeout
