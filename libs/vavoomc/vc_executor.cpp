@@ -82,7 +82,7 @@
 # define VM_zeroDenormalsFI32InPlace  zeroDenormalsFI32InPlace
 #else
 # define VM_zeroDenormalsF
-# define VM_zeroDenormalsFI32InPlace
+# define VM_zeroDenormalsFI32InPlace(arg_)  do {} while (0)
 #endif
 
 

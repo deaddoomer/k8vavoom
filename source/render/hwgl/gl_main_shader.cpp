@@ -365,7 +365,8 @@ static VStr fixVersionLine (VStr s, int glVerMajor, int glVerMinor) {
   while (spos < s.length() && s[spos] > ' ') ++spos;
   while (spos < s.length() && s[spos] <= ' ') ++spos;
   bool addVersions = false;
-  if (s.right(s.length()-spos) == "4xx") {
+  VStr svright = (spos < s.length() ? s.right(s.length()-spos) : VStr::EmptyString);
+  if (svright == "4xx") {
     s.chopRight(s.length()-spos);
          if (glVerMajor >= 4) s += "400";
     else if (glVerMajor >= 3 && glVerMinor >= 1) s += "140";
@@ -373,7 +374,7 @@ static VStr fixVersionLine (VStr s, int glVerMajor, int glVerMinor) {
     else s += "120";
     //GCon->Logf(NAME_Debug, "GLVER4xx: %s", *s);
     addVersions = true;
-  } else if (s.right(s.length()-spos) == "3xx") {
+  } else if (svright == "3xx") {
     s.chopRight(s.length()-spos);
          if (glVerMajor >= 4 || (glVerMajor >= 3 && glVerMinor >= 1)) s += "140";
     else if (glVerMajor >= 3) s += "130";

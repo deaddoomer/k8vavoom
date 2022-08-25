@@ -1033,16 +1033,12 @@ static void ParseScript (const char *name) {
 
     if (SC_Compare("$srcdir")) {
       SC_MustGetString();
+      // start with `!` to be relative to script dir
       if (sc_String[0] == '!') {
-        if (!sc_String[1]) {
-          snprintf(srcpath, sizeof(srcpath), "%s", basepath);
-        } else {
-          if (strlen(basepath)+strlen(sc_String)+2 >= sizeof(destfile)) Error("$srcdir too long");
-          snprintf(srcpath, sizeof(srcpath), "%s%s", basepath, sc_String+1);
-        }
-      } else {
         if (strlen(basepath)+strlen(sc_String)+2 >= sizeof(srcpath)) Error("$srcdir too long");
-        snprintf(srcpath, sizeof(srcpath), "%s%s", basepath, sc_String);
+        snprintf(srcpath, sizeof(srcpath), "%s%s", basepath, sc_String+1);
+      } else {
+        strcpy(srcpath, basepath);
       }
       if (srcpath[strlen(srcpath)-1] != '/') strcat(srcpath, "/");
       continue;
