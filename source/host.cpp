@@ -373,6 +373,10 @@ void Host_Init () {
   GCon->Log(NAME_Init, "Ketmar Dark: improvements, bugfixes, new bugs, segfaults, etc.");
   GCon->Log(NAME_Init, "id0: support, testing, motivation for 88% of features.");
   GCon->Log(NAME_Init, "---------------------------------------------------------------");
+  GCon->Log(NAME_Init, "project site: http://ketmar.no-ip.org/fossil/k8vavoom/");
+  GCon->Log(NAME_Init, " Ketmar Dark: ketmar@ketmar.no-ip.org");
+  GCon->Log(NAME_Init, "         id0: vasily.boytsov@proton.me");
+  GCon->Log(NAME_Init, "---------------------------------------------------------------");
   GCon->Log(NAME_Init, "REMEMBER: BY USING FOSS SOFTWARE, YOU ARE SUPPORTING COMMUNISM!");
   GCon->Log(NAME_Init, "---------------------------------------------------------------");
   #if defined(FOSSIL_COMMIT_HASH)
