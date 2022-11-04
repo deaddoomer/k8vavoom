@@ -147,6 +147,7 @@ VCvarF r_fog_density("r_fog_density", "0.5", "Fog density.", CVAR_NoShadow);
 
 VCvarI r_aspect_ratio("r_aspect_ratio", "1", "Aspect ratio correction mode.", CVAR_Archive|CVAR_NoShadow);
 VCvarB r_interpolate_frames("r_interpolate_frames", true, "Use frame interpolation for smoother rendering?", CVAR_Archive|CVAR_NoShadow);
+VCvarB r_interpolate_frames_voxels("r_interpolate_frames_voxels", false, "Interpolate voxel model frames?", CVAR_Archive|CVAR_NoShadow);
 VCvarB r_vsync("r_vsync", true, "VSync mode.", CVAR_Archive|CVAR_NoShadow);
 VCvarB r_vsync_adaptive("r_vsync_adaptive", true, "Use adaptive VSync mode.", CVAR_Archive|CVAR_NoShadow);
 VCvarB r_fade_light("r_fade_light", "0", "Fade light with distance?", CVAR_Archive|CVAR_NoShadow);

@@ -324,6 +324,12 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
       continue;
     }
 
+    // can interpolate voxels?
+    if (DoInterp && SubMdl.Model->isVoxel && !r_interpolate_frames_voxels) {
+      //GCon->Logf("DISABLED interpolation for voxel sub-model frame index %d for model '%s' (class '%s')", FDef.FrameIndex, *ScMdl.Name, *nfo.Cls->Name);
+      DoInterp = false;
+    }
+
     // cannot interpolate between different models or submodels
     if (DoInterp) {
       if (NFDef.FrameIndex >= SubMdl.Frames.length()) {

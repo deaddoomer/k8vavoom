@@ -463,6 +463,7 @@ extern VCvarB r_static_lights;
 
 extern VCvarI r_aspect_ratio;
 extern VCvarB r_interpolate_frames;
+extern VCvarB r_interpolate_frames_voxels;
 
 extern VCvarB r_vertical_fov;
 
