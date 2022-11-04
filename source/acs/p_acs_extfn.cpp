@@ -99,7 +99,12 @@ int VAcs::CallFunction (line_t *actline, int argCount, int funcIndex, vint32 *ar
     case ACSF_GetActorClass:
       if (argCount > 0) {
         VEntity *Ent = EntityFromTID(args[0], Activator);
-        if (Ent) return ActiveObject->Level->PutNewString(*Ent->GetClass()->Name);
+        if (Ent) {
+          if (Ent->IsPlayer() && acs_fake_player_class.asStr().length()) {
+            return ActiveObject->Level->PutNewString(acs_fake_player_class.asStr());
+          }
+          return ActiveObject->Level->PutNewString(*Ent->GetClass()->Name);
+        }
       }
       return ActiveObject->Level->PutNewString("");
 

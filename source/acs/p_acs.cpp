@@ -111,6 +111,8 @@ static VCvarB acs_debug_start_acs("acs_debug_start_acs", false, "Show some info 
 
 static VCvarB dbg_acs_allow_unimplemented_opcodes("dbg_acs_allow_unimplemented_opcodes", false, "Override 'acs_halt_on_unimplemented_opcode', non-persistent", CVAR_PreInit|CVAR_NoShadow);
 
+static VCvarS acs_fake_player_class("acs_fake_player_class", "", "Return this fake player class instead of the real one.", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
+
 extern VCvarF mouse_x_sensitivity;
 extern VCvarF mouse_y_sensitivity;
 extern VCvarF m_yaw;
