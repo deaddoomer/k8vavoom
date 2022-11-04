@@ -44,6 +44,14 @@ menudef AliasModelVideoOptions {
     help = "Interpolate model animation if it has interstate frames?";
   }
 
+  option bool {
+    title = "Voxel Model Frame Interpolation";
+    cvar = r_interpolate_frames_voxels;
+    help =
+      "Interpolate voxel model animation if it has interstate frames?",
+      "Will have any effect only if the previous option is enabled.";
+  }
+
 
   header "Fine Model Control";
 

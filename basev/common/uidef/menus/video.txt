@@ -392,13 +392,13 @@ menudef VideoOptions {
   header "Interpolation Options";
 
   option bool {
-    title = "Movement Interpolation";
+    title = "Movement";
     cvar = r_interpolate_thing_movement;
     help = "Interpolate thing/monster movement?";
   }
 
   option bool {
-    title = "Sprite Rotation Interpolation";
+    title = "Sprite Rotation";
     cvar = r_interpolate_thing_angles_sprites;
     help =
       "Interpolate thing/monster rotation for sprites?",
@@ -413,9 +413,17 @@ menudef VideoOptions {
   }
 
   option bool {
-    title = "3D Model Rotation Interpolation";
+    title = "3D Model Rotation";
     cvar = r_interpolate_thing_angles_models;
-    help = "Interpolate thing/monster rotation for 3D models?";
+    help = "Interpolate rotation for 3D models?";
+  }
+
+  option bool {
+    title = "3D Monster Rotation";
+    cvar = r_interpolate_thing_angles_models_monsters;
+    help =
+      "Interpolate monster rotation for 3D models?",
+      "Will have any effect only if the previous option is enabled.";
   }
 
 
