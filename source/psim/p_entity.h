@@ -159,6 +159,8 @@ class VEntity : public VThinker {
   VStr FixedModelName;
   vuint8 ModelVersion;
   vint32 NumRenderedShadows;
+  // last game time when this object was rendered (taken from `Level->Time`)
+  float LastRenderTime;
 
   vuint8 RenderStyle;
   float Alpha;

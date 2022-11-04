@@ -270,6 +270,30 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
 
 // ////////////////////////////////////////////////////////////////////////// //
 //final int *decorate_args { get { return &Args[0]; } }
+// last render time; compare with `LevelTime`
+[decorate] final float decorate_rendertime { get { return LastRenderTime; } }
+[decorate] final float decorate_leveltime { get { return XLevel.Time; } }
+[decorate] final float decorate_levelnexttime { get { return XLevel.NextTime; } }
+[decorate] final int decorate_leveltictime { get { return XLevel.TicTime; } }
+
+[decorate] final float decorate_gametime {
+  get {
+    BasePlayer plr;
+    EntityEx sex = EntityEx(self);
+    if (sex.bIsPlayer && PlayerPawn(sex)) {
+      plr = sex.Player;
+    }
+    if (!plr) {
+      foreach (auto plridx; 0..MAXPLAYERS) {
+        plr = Level.Game.Players[plridx];
+        if (plr /*&& plr.bSpawned*/) break;
+      }
+    }
+    return (plr ? plr.GameTime : XLevel.Time);
+  }
+}
+
+
 [decorate] final float decorate_alpha { get { return Alpha; } }
 [decorate] final float decorate_angle { get { return AngleMod360(Angles.yaw); } }
 [decorate] final float decorate_yaw { get { return AngleMod360(Angles.yaw); } }

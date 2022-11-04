@@ -241,7 +241,9 @@ ubyte SpriteType; // how to draw sprite
 name FixedSpriteName;
 string FixedModelName;
 ubyte ModelVersion;
-native int NumRenderedShadows;
+native transient int NumRenderedShadows;
+// last game time when this object was rendered (taken from `Level->Time`)
+native transient float LastRenderTime;
 
 ubyte RenderStyle;
 float Alpha;
