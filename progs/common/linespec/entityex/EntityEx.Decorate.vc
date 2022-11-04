@@ -343,6 +343,9 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
 [decorate] final Object decorate_GetSelf () { return self; }
 [decorate] final Object decorate_GetSSR () { /*print("(SSR.self=%C)", self);*/ return _stateRouteSelf; }
 
+// for some GZDoom mods
+[decorate] final int decorate_GetMissileDamage (int Mask, int Add) { return GetMissileDamage(Mask, Add); }
+
 [decorate] final int decorate_MissileDamage (int Mask, int Add) { return GetMissileDamage(Mask, Add); }
 [decorate] final int decorate_MissileDamageOverride { get { return MissileDamageOverride; } }
 
