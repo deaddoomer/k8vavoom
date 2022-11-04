@@ -50,6 +50,7 @@ static VCvarF gm_corpse_radius_mult("gm_corpse_radius_mult", "0.4", "Corpse radi
 #ifdef CLIENT
 VCvarB r_interpolate_thing_movement("r_interpolate_thing_movement", true, "Interpolate mobj movement?", CVAR_Archive|CVAR_NoShadow);
 VCvarB r_interpolate_thing_angles_models("r_interpolate_thing_angles_models", true, "Interpolate mobj rotation for 3D models?", CVAR_Archive|CVAR_NoShadow);
+VCvarB r_interpolate_thing_angles_models_monsters("r_interpolate_thing_angles_models_monsters", false, "Interpolate mobj rotation for monster 3D models?", CVAR_Archive|CVAR_NoShadow);
 VCvarB r_interpolate_thing_angles_sprites("r_interpolate_thing_angles_sprites", false, "Interpolate mobj rotation for sprites?", CVAR_Archive|CVAR_NoShadow);
 #endif
 

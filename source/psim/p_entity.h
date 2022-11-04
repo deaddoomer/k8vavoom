@@ -117,6 +117,7 @@ struct tmtrace_t;
 #ifdef CLIENT
 extern VCvarB r_interpolate_thing_angles_models;
 extern VCvarB r_interpolate_thing_angles_sprites;
+extern VCvarB r_interpolate_thing_angles_models_monsters;
 #endif
 extern VCvarB sv_decoration_block_projectiles;
 
@@ -486,7 +487,9 @@ public:
   TAVec GetInterpolatedDrawAngles ();
   inline TAVec GetModelDrawAngles () {
     #ifdef CLIENT
-      return (r_interpolate_thing_angles_models && (MoveFlags&MVF_JustMoved) ? GetInterpolatedDrawAngles() : Angles);
+      return (r_interpolate_thing_angles_models && (MoveFlags&MVF_JustMoved) &&
+              (!IsPlayerOrMonster() || r_interpolate_thing_angles_models_monsters) ?
+                GetInterpolatedDrawAngles() : Angles);
     #else
       return Angles;
     #endif
