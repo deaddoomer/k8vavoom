@@ -33,7 +33,7 @@ static VCvarB vox_cache_enabled("vox_cache_enabled", false, "Enable caching of c
 static VCvarB vox_verbose_conversion("vox_verbose_conversion", false, "Show info messages from voxel converter?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 static VCvarI vox_optimisation("vox_optimisation", "3", "Voxel loader optimisation (higher is better, but with space ants) [0..3].", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 static VCvarB vox_fix_faces("vox_fix_faces", true, "Fix voxel face visibility info?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
-static VCvarB vox_fix_tjunctions("vox_fix_tjunctions", false, "Show info messages from voxel converter?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
+static VCvarB vox_fix_tjunctions("vox_fix_tjunctions", true, "Fix voxel t-junctions?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 
 // useful for debugging, but not really needed
 #define VOX_ENABLE_INVARIANT_CHECK
@@ -41,7 +41,11 @@ static VCvarB vox_fix_tjunctions("vox_fix_tjunctions", false, "Show info message
 
 #define VOX_CACHE_SIGNATURE  "k8vavoom voxel model cache file, version 4\n"
 
-#define BreakIndex  (65535)
+#ifdef VAVOOM_GLMODEL_32BIT_VIDX
+# define BreakIndex  (6553500)
+#else
+# define BreakIndex  (65535)
+#endif
 
 
 // ////////////////////////////////////////////////////////////////////////// //

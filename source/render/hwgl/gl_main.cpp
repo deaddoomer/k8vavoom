@@ -1472,7 +1472,11 @@ void VOpenGLDrawer::InitResolution () {
   if (gl_disable_primitive_restart) p_glPrimitiveRestartIndex = nullptr;
   if (p_glPrimitiveRestartIndex) {
     glEnable(GL_PRIMITIVE_RESTART);
+    #ifdef VAVOOM_GLMODEL_32BIT_VIDX
+    p_glPrimitiveRestartIndex(6553500);
+    #else
     p_glPrimitiveRestartIndex(65535);
+    #endif
     GCon->Log(NAME_Init, "OpenGL: `glPrimitiveRestartIndex()` found.");
     gl_can_use_primitive_restart = true;
   } else {

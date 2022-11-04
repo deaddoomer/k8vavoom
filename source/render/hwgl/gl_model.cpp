@@ -27,6 +27,12 @@
 
 //#define VV_MODEL_TEXTURES_DEBUG_NORMALS
 
+#ifdef VAVOOM_GLMODEL_32BIT_VIDX
+# define VV_GLDRW_TYPE  GL_UNSIGNED_INT
+#else
+# define VV_GLDRW_TYPE  GL_UNSIGNED_SHORT
+#endif
+
 
 static VCvarB gl_dbg_adv_render_textures_models("gl_dbg_adv_render_textures_models", true, "Render model textures in advanced renderer?", CVAR_NoShadow);
 static VCvarB gl_dbg_adv_render_ambient_models("gl_dbg_adv_render_ambient_models", true, "Render model ambient light in advanced renderer?", CVAR_NoShadow);
@@ -199,10 +205,10 @@ void VOpenGLDrawer::UploadModel (VMeshModel *Mdl) {
 
   // vertex indices
   if (p_glPrimitiveRestartIndex && Mdl->TriVerts.length() && Mdl->GlMode != 0) {
-    p_glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 2*Mdl->TriVerts.length(), &Mdl->TriVerts[0], GL_STATIC_DRAW_ARB);
+    p_glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, (int)sizeof(VV_GLM_VIDX)*Mdl->TriVerts.length(), &Mdl->TriVerts[0], GL_STATIC_DRAW_ARB);
   } else {
     Mdl->GlMode = 0;
-    p_glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 6*Mdl->Tris.length(), &Mdl->Tris[0], GL_STATIC_DRAW_ARB);
+    p_glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 3*(int)sizeof(VV_GLM_VIDX)*Mdl->Tris.length(), &Mdl->Tris[0], GL_STATIC_DRAW_ARB);
   }
 
   p_glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
@@ -231,9 +237,9 @@ void VOpenGLDrawer::UnloadModels () {
 
 #define DRAW_TRI_ELEMENTS()  do { \
   if (Mdl->GlMode) { \
-    p_glDrawRangeElements(Mdl->GlMode, 0, Mdl->STVerts.length()-1, Mdl->TriVerts.length(), GL_UNSIGNED_SHORT, 0); \
+    p_glDrawRangeElements(Mdl->GlMode, 0, Mdl->STVerts.length()-1, Mdl->TriVerts.length(), VV_GLDRW_TYPE, 0); \
   } else { \
-    p_glDrawRangeElements(GL_TRIANGLES, 0, Mdl->STVerts.length()-1, Mdl->Tris.length()*3, GL_UNSIGNED_SHORT, 0); \
+    p_glDrawRangeElements(GL_TRIANGLES, 0, Mdl->STVerts.length()-1, Mdl->Tris.length()*3, VV_GLDRW_TYPE, 0); \
   } \
 } while (0)
 
@@ -651,7 +657,7 @@ void VOpenGLDrawer::EndModelsLightPass () {
   } \
  \
   p_glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, Mdl->IndexBuffer); \
-  /*p_glDrawRangeElements(GL_TRIANGLES, 0, Mdl->STVerts.length()-1, Mdl->Tris.length()*3, GL_UNSIGNED_SHORT, 0);*/ \
+  /*p_glDrawRangeElements(GL_TRIANGLES, 0, Mdl->STVerts.length()-1, Mdl->Tris.length()*3, VV_GLDRW_TYPE, 0);*/ \
   DRAW_TRI_ELEMENTS(); \
   p_glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0); \
  \
@@ -718,7 +724,7 @@ void VOpenGLDrawer::EndModelsLightPass () {
  \
   p_glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, Mdl->IndexBuffer); \
   AMDL_LIGHT_DBG("  DrawAliasModelLight <%s:%d>: index buffer bound", *Mdl->Name, Mdl->MeshIndex); \
-  /*p_glDrawRangeElements(GL_TRIANGLES, 0, Mdl->STVerts.length()-1, Mdl->Tris.length()*3, GL_UNSIGNED_SHORT, 0);*/ \
+  /*p_glDrawRangeElements(GL_TRIANGLES, 0, Mdl->STVerts.length()-1, Mdl->Tris.length()*3, VV_GLDRW_TYPE, 0);*/ \
   DRAW_TRI_ELEMENTS(); \
   AMDL_LIGHT_DBG("  DrawAliasModelLight <%s:%d>: rendered", *Mdl->Name, Mdl->MeshIndex); \
   p_glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0); \
@@ -911,12 +917,12 @@ void VOpenGLDrawer::DrawAliasModelShadowMap (const TVec &origin, const TAVec &an
   for (unsigned int fc = 0; fc < 6; ++fc) {
     SetupModelShadowMap(fc);
     ShadowsModelShadowMap.UploadChangedUniforms();
-    p_glDrawRangeElements(GL_TRIANGLES, 0, Mdl->STVerts.length()-1, Mdl->Tris.length()*3, GL_UNSIGNED_SHORT, 0);
+    p_glDrawRangeElements(GL_TRIANGLES, 0, Mdl->STVerts.length()-1, Mdl->Tris.length()*3, VV_GLDRW_TYPE, 0);
     //GLDRW_CHECK_ERROR("model shadowmap: draw");
   }
   */
   ShadowsModelShadowMap.UploadChangedUniforms();
-  //p_glDrawRangeElements(GL_TRIANGLES, 0, Mdl->STVerts.length()-1, Mdl->Tris.length()*3, GL_UNSIGNED_SHORT, 0);
+  //p_glDrawRangeElements(GL_TRIANGLES, 0, Mdl->STVerts.length()-1, Mdl->Tris.length()*3, VV_GLDRW_TYPE, 0);
   DRAW_TRI_ELEMENTS();
 
   p_glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
@@ -1222,7 +1228,7 @@ void VOpenGLDrawer::DrawAliasModelTextures (const TVec &origin, const TAVec &ang
 
   p_glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, Mdl->IndexBuffer);
 
-  //p_glDrawRangeElements(GL_TRIANGLES, 0, Mdl->STVerts.length()-1, Mdl->Tris.length()*3, GL_UNSIGNED_SHORT, 0);
+  //p_glDrawRangeElements(GL_TRIANGLES, 0, Mdl->STVerts.length()-1, Mdl->Tris.length()*3, VV_GLDRW_TYPE, 0);
   DRAW_TRI_ELEMENTS();
   p_glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 
@@ -1324,7 +1330,7 @@ void VOpenGLDrawer::DrawAliasModelFog (const TVec &origin, const TAVec &angles,
   p_glEnableVertexAttribArrayARB(ShadowsModelFog.loc_TexCoord);
 
   p_glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, Mdl->IndexBuffer);
-  //p_glDrawRangeElements(GL_TRIANGLES, 0, Mdl->STVerts.length()-1, Mdl->Tris.length()*3, GL_UNSIGNED_SHORT, 0);
+  //p_glDrawRangeElements(GL_TRIANGLES, 0, Mdl->STVerts.length()-1, Mdl->Tris.length()*3, VV_GLDRW_TYPE, 0);
   DRAW_TRI_ELEMENTS();
   p_glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 

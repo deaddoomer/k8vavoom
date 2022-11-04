@@ -34,6 +34,14 @@
 #include "../level/beamclip.h"
 
 //#define VV_DEBUG_LMAP_ALLOCATOR
+#define VAVOOM_GLMODEL_32BIT_VIDX
+
+// this is required for huge voxel models (like Cheello voxels)
+#ifdef VAVOOM_GLMODEL_32BIT_VIDX
+# define VV_GLM_VIDX  vuint32
+#else
+# define VV_GLM_VIDX  vuint16
+#endif
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -824,14 +832,14 @@ struct VMeshSTVert {
 
 // one mesh triangle
 struct VMeshTri {
-  vuint16 VertIndex[3];
+  /*vuint16*/VV_GLM_VIDX VertIndex[3];
 };
 #pragma pack(pop)
 
 
 struct VMeshEdge {
-  vuint16 Vert1;
-  vuint16 Vert2;
+  /*vuint16*/VV_GLM_VIDX Vert1;
+  /*vuint16*/VV_GLM_VIDX Vert2;
   vint16 Tri1;
   vint16 Tri2;
 };
@@ -866,7 +874,7 @@ struct VMeshModel {
   TArray<TVec> AllNormals; // normals are per-vertex!
   TArray<VMeshSTVert> STVerts;
   TArray<VMeshTri> Tris; // vetex indices
-  TArray<vuint16> TriVerts; // vetex indices for triangle strips and such, with 65535 as restart index
+  TArray</*vuint16*/VV_GLM_VIDX> TriVerts; // vetex indices for triangle strips and such, with 65535 as restart index
   // the following two arrays are used only in stencil shadows
   // they are lazily created
   TArray<TPlane> AllPlanes; // for `Tris`
@@ -911,8 +919,8 @@ private:
 
 private:
   struct VTempEdge {
-    vuint16 Vert1;
-    vuint16 Vert2;
+    /*vuint16*/VV_GLM_VIDX Vert1;
+    /*vuint16*/VV_GLM_VIDX Vert2;
     vint16 Tri1;
     vint16 Tri2;
   };

@@ -41,7 +41,7 @@ void VMeshModel::AddEdge (TArray<VTempEdge> &Edges, int Vert1, int Vert2, int Tr
   // check for a match
   // compare original vertex indices since texture coordinates are not important here
   for (auto &&E : Edges) {
-    if (E.Tri2 == -1 && E.Vert1 == Vert2 && E.Vert2 == Vert1) {
+    if (E.Tri2 == -1 && (int)E.Vert1 == Vert2 && (int)E.Vert2 == Vert1) {
       E.Tri2 = Tri;
       return;
     }
