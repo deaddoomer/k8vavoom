@@ -682,6 +682,7 @@ static void AddLine (const char *Data) noexcept {
   */
   ++num_lines;
   if (last_line == num_lines-1) last_line = num_lines;
+  #ifdef CLIENT
   // update splash if necessary
   if (GConSplashActive && Drawer) {
     if (Drawer->IsLoadingSplashActive()) {
@@ -690,6 +691,27 @@ static void AddLine (const char *Data) noexcept {
       GConSplashActive = false;
     }
   }
+  #endif
+}
+
+
+//==========================================================================
+//
+//  C_FlushSplash
+//
+//  can be called to force splash screen update
+//
+//==========================================================================
+void C_FlushSplash () {
+#ifdef CLIENT
+  if (GConSplashActive && Drawer) {
+    if (Drawer->IsLoadingSplashActive()) {
+      Drawer->DrawLoadingSplashText(nullptr, 0);
+    } else {
+      GConSplashActive = false;
+    }
+  }
+#endif
 }
 
 

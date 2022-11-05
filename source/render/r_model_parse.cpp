@@ -164,6 +164,7 @@ bool R_EntModelNoSelfShadow (VEntity *mobj) {
 //==========================================================================
 void R_InitModels () {
   GCon->Log(NAME_Init, "loading model scripts");
+  C_FlushSplash();
   for (int Lump = W_IterateFile(-1, "models/models.xml"); Lump != -1; Lump = W_IterateFile(Lump, "models/models.xml")) {
     VStream *lumpstream = W_CreateLumpReaderNum(Lump);
     VCheckedStream Strm(lumpstream, true); // load to memory
@@ -188,6 +189,7 @@ void R_InitModels () {
     delete Doc;
   }
   GCon->Log(NAME_Init, "all model scripts loaded");
+  C_FlushSplash();
 
   if (!cli_DisableModeldef) ParseGZModelDefs();
 }
@@ -1726,6 +1728,7 @@ static double LoadModelSkins (VModel *mdl, const vuint32 stotal, vuint32 &scount
     stt = xtt;
     GCon->Logf(NAME_Init, "precached %u of %u model skins (%d.%03d seconds)",
                scount, stotal, (int)(xtt-sttime), (int)((xtt-sttime)*1000)%1000);
+    C_FlushSplash();
   }
   return stt;
 }
@@ -1739,6 +1742,7 @@ static double LoadModelSkins (VModel *mdl, const vuint32 stotal, vuint32 &scount
 void R_LoadAllModelsSkins () {
   if (r_preload_alias_models) {
     GCon->Log(NAME_Init, "preloading model skins");
+    C_FlushSplash();
     AllModelTextures.reset();
     AllModelTexturesSeen.reset();
     AllModelTexturesSeen.put(GTextureManager.DefaultTexture, true);
@@ -1758,11 +1762,13 @@ void R_LoadAllModelsSkins () {
       if (!vox_cache_enabled && Sys_Time()-sttime >= 3.0) {
         GCon->Log(NAME_Warning, "automatically turned on model cache");
         vox_cache_enabled = true;
+        C_FlushSplash();
       }
     }
     AllModelTexturesSeen.clear();
     const double xtt = Sys_Time();
     GCon->Logf(NAME_Init, "all model skins preloaded (%d.%03d seconds)",
                (int)(xtt-sttime), (int)((xtt-sttime)*1000)%1000);
+    C_FlushSplash();
   }
 }

@@ -958,41 +958,43 @@ void VSdlOpenGLDrawer::DrawLoadingSplashText (const char *text, int len) {
   #ifdef VV_USE_CONFONT_ATLAS_TEXTURE
   if (!imgsplashfont) { clearImgText(); return; }
   #endif
-  // copy text line
-  if (len < 0) len = (text && text[0] ? (int)strlen(text) : 0);
-  unsigned dpos = 0;
-  while (len && dpos < IMG_TEXT_MAXLEN && text[0]) {
-    // skip colors
-    if (text[0] == TEXT_COLOR_ESCAPE) {
-      ++text;
-      --len;
-      if (!len) break;
-      const bool sq = (text[0] == '[');
-      ++text;
-      --len;
-      if (!len) break;
-      if (sq) {
-        while (len && text[0] != ']') { ++text; --len; }
-        if (len) {
-          ++text;
-          --len;
-          if (!len) break;
+  if (text) {
+    // copy text line
+    if (len < 0) len = (text && text[0] ? (int)strlen(text) : 0);
+    unsigned dpos = 0;
+    while (len && dpos < IMG_TEXT_MAXLEN && text[0]) {
+      // skip colors
+      if (text[0] == TEXT_COLOR_ESCAPE) {
+        ++text;
+        --len;
+        if (!len) break;
+        const bool sq = (text[0] == '[');
+        ++text;
+        --len;
+        if (!len) break;
+        if (sq) {
+          while (len && text[0] != ']') { ++text; --len; }
+          if (len) {
+            ++text;
+            --len;
+            if (!len) break;
+          }
         }
+        continue;
       }
-      continue;
+      imgtext[imgtextpos+dpos] = text[0];
+      ++dpos;
+      ++text;
+      --len;
     }
-    imgtext[imgtextpos+dpos] = text[0];
-    ++dpos;
-    ++text;
-    --len;
+    if (dpos < IMG_TEXT_MAXLEN) imgtext[imgtextpos+dpos] = 0;
+    // advance line
+    imgtextpos = imgTextAdvanceLine(imgtextpos);
+    // limit updates
+    const double ctt = Sys_Time();
+    if (imgtlastupdate > 0 && ctt-imgtlastupdate < 1.0/10.0) return;
+    imgtlastupdate = ctt;
   }
-  if (dpos < IMG_TEXT_MAXLEN) imgtext[imgtextpos+dpos] = 0;
-  // advance line
-  imgtextpos = imgTextAdvanceLine(imgtextpos);
-  // limit updates
-  const double ctt = Sys_Time();
-  if (imgtlastupdate > 0 && ctt-imgtlastupdate < 1.0/10.0) return;
-  imgtlastupdate = ctt;
   // render image
   {
     #ifdef VV_SPLASH_PARTIAL_UPDATES

@@ -983,6 +983,8 @@ FDrawerDesc TClass##Desc(Type, Name, Description, CmdLineArg, Create##TClass);
 extern VDrawer *Drawer;
 #endif
 
+// can be called to force splash screen update
+void C_FlushSplash ();
 
 // call this before initializing video, to tell shitdoze to GTFO
 // does nothing on normal OSes
