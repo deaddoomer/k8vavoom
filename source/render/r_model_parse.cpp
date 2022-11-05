@@ -30,6 +30,9 @@
 #include "r_local_gz.h"
 
 
+extern VCvarB vox_cache_enabled;
+
+
 static VCvarI mdl_verbose_loading("mdl_verbose_loading", "0", "Verbose alias model loading?", CVAR_NoShadow/*|CVAR_Archive*/);
 static VCvarB r_preload_alias_models("r_preload_alias_models", true, "Preload all alias models and their skins?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
 static VCvarI dbg_dump_gzmodels("dbg_dump_gzmodels", "0", "Dump xml files for gz modeldefs (1:final;2:all)?", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
@@ -184,6 +187,7 @@ void R_InitModels () {
     }
     delete Doc;
   }
+  GCon->Log(NAME_Init, "all model scripts loaded");
 
   if (!cli_DisableModeldef) ParseGZModelDefs();
 }
@@ -1670,8 +1674,8 @@ static void ParseGZModelDefs () {
 //  LoadModelSkins
 //
 //==========================================================================
-static void LoadModelSkins (VModel *mdl) {
-  if (!mdl) return;
+static double LoadModelSkins (VModel *mdl, const vuint32 stotal, vuint32 &scount, double stt, double sttime, double ivl) {
+  if (!mdl) return stt;
   // load submodel skins
   for (auto &&ScMdl : mdl->Models) {
     for (auto &&SubMdl : ScMdl.SubModels) {
@@ -1713,8 +1717,17 @@ static void LoadModelSkins (VModel *mdl) {
           }
         }
       }
+      // progress
+      scount += 1;
     }
   }
+  const double xtt = Sys_Time();
+  if (xtt-stt >= ivl) {
+    stt = xtt;
+    GCon->Logf(NAME_Init, "precached %u of %u model skins (%d.%03d seconds)",
+               scount, stotal, (int)(xtt-sttime), (int)((xtt-sttime)*1000)%1000);
+  }
+  return stt;
 }
 
 
@@ -1725,13 +1738,31 @@ static void LoadModelSkins (VModel *mdl) {
 //==========================================================================
 void R_LoadAllModelsSkins () {
   if (r_preload_alias_models) {
+    GCon->Log(NAME_Init, "preloading model skins");
     AllModelTextures.reset();
     AllModelTexturesSeen.reset();
     AllModelTexturesSeen.put(GTextureManager.DefaultTexture, true);
+    const double ivl = (vox_cache_enabled ? 6.6 : 2.2);
+    // count total (used for progress)
+    vuint32 stotal = 0;
+    vuint32 scount = 0;
+    for (auto &&mdl : ClassModels) {
+      for (auto &&ScMdl : mdl->Model->Models) stotal += ScMdl.SubModels.length();
+    }
+    const double sttime = Sys_Time();
+    double stt = sttime;
     for (auto &&mdl : ClassModels) {
       if (mdl->Name == NAME_None || !mdl->Model || mdl->Frames.length() == 0) continue;
-      LoadModelSkins(mdl->Model);
+      stt = LoadModelSkins(mdl->Model, stotal, scount, stt, sttime, ivl);
+      // automatically turn on model cache
+      if (!vox_cache_enabled && Sys_Time()-sttime >= 3.0) {
+        GCon->Log(NAME_Warning, "automatically turned on model cache");
+        vox_cache_enabled = true;
+      }
     }
     AllModelTexturesSeen.clear();
+    const double xtt = Sys_Time();
+    GCon->Logf(NAME_Init, "all model skins preloaded (%d.%03d seconds)",
+               (int)(xtt-sttime), (int)((xtt-sttime)*1000)%1000);
   }
 }
