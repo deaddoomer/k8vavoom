@@ -3,42 +3,49 @@ pointlight AxePuffGlow_X1
 {
   color 0.25 0.75 1
   radius 200
+  noselfshadow
 }
 
 pointlight AxePuffGlow_X2
 {
   color 0.25 0.75 1
   radius 170
+  noselfshadow
 }
 
 pointlight AxePuffGlow_X3
 {
   color 0.25 0.75 1
   radius 140
+  noselfshadow
 }
 
 pointlight AxePuffGlow_X4
 {
   color 0.25 0.75 1
   radius 110
+  noselfshadow
 }
 
 pointlight AxePuffGlow_X5
 {
   color 0.25 0.75 1
   radius 80
+  noselfshadow
 }
 
 pointlight AxePuffGlow_X6
 {
   color 0.25 0.75 1
   radius 50
+  noselfshadow
 }
 
 pointlight AxePuffGlow_X7
 {
   color 0.25 0.75 1
   radius 20
+  noselfshadow
 }
 
 class AxePuffGlow
@@ -57,66 +64,77 @@ pointlight HammerMissile
 {
   color 0.95 0 0
   radius 126
+  noselfshadow
 }
 
 pointlight HammerMissile_X1
 {
   color 0.95 0 0
   radius 250
+  noselfshadow
 }
 
 pointlight HammerMissile_X2
 {
   color 0.95 0 0
   radius 225
+  noselfshadow
 }
 
 pointlight HammerMissile_X3
 {
   color 0.95 0 0
   radius 200
+  noselfshadow
 }
 
 pointlight HammerMissile_X4
 {
   color 0.95 0 0
   radius 175
+  noselfshadow
 }
 
 pointlight HammerMissile_X5
 {
   color 0.95 0 0
   radius 150
+  noselfshadow
 }
 
 pointlight HammerMissile_X6
 {
   color 0.95 0 0
   radius 125
+  noselfshadow
 }
 
 pointlight HammerMissile_X7
 {
   color 0.95 0 0
   radius 100
+  noselfshadow
 }
 
 pointlight HammerMissile_X8
 {
   color 0.95 0 0
   radius 75
+  noselfshadow
 }
 
 pointlight HammerMissile_X9
 {
   color 0.95 0 0
   radius 50
+  noselfshadow
 }
 
 pointlight HammerMissile_X10
 {
   color 0.95 0 0
   radius 25
+  noselfshadow
 }
 
 class HammerMissile
@@ -146,66 +164,77 @@ pointlight FSwordMissile
 {
   color 0.25 0.6 0.2
   radius 90
+  noselfshadow
 }
 
 pointlight FSwordMissile_X1
 {
   color 0.25 0.6 0.2
   radius 200
+  noselfshadow
 }
 
 pointlight FSwordMissile_X2
 {
   color 0.25 0.6 0.2
   radius 180
+  noselfshadow
 }
 
 pointlight FSwordMissile_X3
 {
   color 0.25 0.6 0.2
   radius 160
+  noselfshadow
 }
 
 pointlight FSwordMissile_X4
 {
   color 0.25 0.6 0.2
   radius 140
+  noselfshadow
 }
 
 pointlight FSwordMissile_X5
 {
   color 0.25 0.6 0.2
   radius 120
+  noselfshadow
 }
 
 pointlight FSwordMissile_X6
 {
   color 0.25 0.6 0.2
   radius 100
+  noselfshadow
 }
 
 pointlight FSwordMissile_X7
 {
   color 0.25 0.6 0.2
   radius 80
+  noselfshadow
 }
 
 pointlight FSwordMissile_X8
 {
   color 0.25 0.6 0.2
   radius 60
+  noselfshadow
 }
 
 pointlight FSwordMissile_X9
 {
   color 0.25 0.6 0.2
   radius 40
+  noselfshadow
 }
 
 pointlight FSwordMissile_X10
 {
   color 0.25 0.6 0.2
   radius 20
+  noselfshadow
 }
 
 class FSwordMissile
@@ -230,30 +259,35 @@ pointlight CStaffMissile
 {
   color 0 0.9 0
   radius 118
+  noselfshadow
 }
 
 pointlight CStaffMissile_X1
 {
   color 0 0.9 0
   radius 250
+  noselfshadow
 }
 
 pointlight CStaffMissile_X2
 {
   color 0 0.9 0
   radius 190
+  noselfshadow
 }
 
 pointlight CStaffMissile_X3
 {
   color 0 0.9 0
   radius 130
+  noselfshadow
 }
 
 pointlight CStaffMissile_X4
 {
   color 0 0.9 0
   radius 70
+  noselfshadow
 }
 
 class CStaffMissile
@@ -271,66 +305,77 @@ pointlight CFlameMissile
 {
   color 1 0.6 0
   radius 134
+  noselfshadow
 }
 
 pointlight CFlameMissile_X1
 {
   color 1 0.6 0
   radius 250
+  noselfshadow
 }
 
 pointlight CFlameMissile_X2
 {
   color 1 0.6 0
   radius 225
+  noselfshadow
 }
 
 pointlight CFlameMissile_X3
 {
   color 1 0.6 0
   radius 200
+  noselfshadow
 }
 
 pointlight CFlameMissile_X4
 {
   color 1 0.6 0
   radius 175
+  noselfshadow
 }
 
 pointlight CFlameMissile_X5
 {
   color 1 0.6 0
   radius 150
+  noselfshadow
 }
 
 pointlight CFlameMissile_X6
 {
   color 1 0.6 0
   radius 125
+  noselfshadow
 }
 
 pointlight CFlameMissile_X7
 {
   color 1 0.6 0
   radius 100
+  noselfshadow
 }
 
 pointlight CFlameMissile_X8
 {
   color 1 0.6 0
   radius 75
+  noselfshadow
 }
 
 pointlight CFlameMissile_X9
 {
   color 1 0.6 0
   radius 50
+  noselfshadow
 }
 
 pointlight CFlameMissile_X10
 {
   color 1 0.6 0
   radius 25
+  noselfshadow
 }
 
 class CFlameMissile
@@ -353,30 +398,35 @@ pointlight CircleFlame
 {
   color 1 0.6 0
   radius 100
+  noselfshadow
 }
 
 pointlight CircleFlame_X1
 {
   color 1 0.6 0
   radius 80
+  noselfshadow
 }
 
 pointlight CircleFlame_X2
 {
   color 1 0.6 0
   radius 60
+  noselfshadow
 }
 
 pointlight CircleFlame_X3
 {
   color 1 0.6 0
   radius 40
+  noselfshadow
 }
 
 pointlight CircleFlame_X4
 {
   color 1 0.6 0
   radius 20
+  noselfshadow
 }
 
 class CircleFlame
@@ -414,6 +464,7 @@ pointlight HolyMissile
 {
   color 0.85 0.85 0.85
   radius 126
+  noselfshadow
 }
 
 class HolyMissile
@@ -426,42 +477,49 @@ pointlight HolySpirit
 {
   color 1 1 1
   radius 126
+  noselfshadow
 }
 
 pointlight HolySpirit_X1
 {
   color 1 1 1
   radius 120
+  noselfshadow
 }
 
 pointlight HolySpirit_X2
 {
   color 1 1 1
   radius 100
+  noselfshadow
 }
 
 pointlight HolySpirit_X3
 {
   color 1 1 1
   radius 80
+  noselfshadow
 }
 
 pointlight HolySpirit_X4
 {
   color 1 1 1
   radius 60
+  noselfshadow
 }
 
 pointlight HolySpirit_X5
 {
   color 1 1 1
   radius 40
+  noselfshadow
 }
 
 pointlight HolySpirit_X6
 {
   color 1 1 1
   radius 20
+  noselfshadow
 }
 
 class HolySpirit
@@ -481,36 +539,42 @@ pointlight MageWandMissile
 {
   color 0.35 0.35 0.8
   radius 118
+  noselfshadow
 }
 
 pointlight MageWandMissile_X1
 {
   color 0.35 0.35 0.8
   radius 250
+  noselfshadow
 }
 
 pointlight MageWandMissile_X2
 {
   color 0.35 0.35 0.8
   radius 200
+  noselfshadow
 }
 
 pointlight MageWandMissile_X3
 {
   color 0.35 0.35 0.8
   radius 150
+  noselfshadow
 }
 
 pointlight MageWandMissile_X4
 {
   color 0.35 0.35 0.8
   radius 100
+  noselfshadow
 }
 
 pointlight MageWandMissile_X5
 {
   color 0.35 0.35 0.8
   radius 50
+  noselfshadow
 }
 
 class MageWandMissile
@@ -529,36 +593,42 @@ pointlight FrostMissile
 {
   color 0.3 0.3 0.75
   radius 90
+  noselfshadow
 }
 
 pointlight FrostMissile_X1
 {
   color 0.3 0.3 0.75
   radius 200
+  noselfshadow
 }
 
 pointlight FrostMissile_X2
 {
   color 0.3 0.3 0.75
   radius 160
+  noselfshadow
 }
 
 pointlight FrostMissile_X3
 {
   color 0.3 0.3 0.75
   radius 120
+  noselfshadow
 }
 
 pointlight FrostMissile_X4
 {
   color 0.3 0.3 0.75
   radius 80
+  noselfshadow
 }
 
 pointlight FrostMissile_X5
 {
   color 0.3 0.3 0.75
   radius 40
+  noselfshadow
 }
 
 class FrostMissile
@@ -576,42 +646,49 @@ pointlight LightningFloor
 {
   color 0.2 0.6 1
   radius 126
+  noselfshadow
 }
 
 pointlight LightningFloor_X1
 {
   color 0.2 0.6 1
   radius 120
+  noselfshadow
 }
 
 pointlight LightningFloor_X2
 {
   color 0.2 0.6 1
   radius 100
+  noselfshadow
 }
 
 pointlight LightningFloor_X3
 {
   color 0.2 0.6 1
   radius 80
+  noselfshadow
 }
 
 pointlight LightningFloor_X4
 {
   color 0.2 0.6 1
   radius 60
+  noselfshadow
 }
 
 pointlight LightningFloor_X5
 {
   color 0.2 0.6 1
   radius 40
+  noselfshadow
 }
 
 pointlight LightningFloor_X6
 {
   color 0.2 0.6 1
   radius 20
+  noselfshadow
 }
 
 class LightningFloor
@@ -670,36 +747,42 @@ pointlight MageStaffFX2
 {
   color 1 0.25 0
   radius 134
+  noselfshadow
 }
 
 pointlight MageStaffFX2_X1
 {
   color 1 0.25 0
   radius 250
+  noselfshadow
 }
 
 pointlight MageStaffFX2_X2
 {
   color 1 0.25 0
   radius 200
+  noselfshadow
 }
 
 pointlight MageStaffFX2_X3
 {
   color 1 0.25 0
   radius 150
+  noselfshadow
 }
 
 pointlight MageStaffFX2_X4
 {
   color 1 0.25 0
   radius 100
+  noselfshadow
 }
 
 pointlight MageStaffFX2_X5
 {
   color 1 0.25 0
   radius 50
+  noselfshadow
 }
 
 class MageStaffFX2

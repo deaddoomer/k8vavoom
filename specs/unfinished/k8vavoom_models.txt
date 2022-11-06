@@ -163,8 +163,14 @@ currently supported:
         float angle_end
         float alpha_start
         float alpha_end
+        float random_zoffset_min (0)
+        float random_zoffset_max (0)
       for angle/rotate, you can specify "random". random value will be different for each map entity.
       this can be useful for things like blood splats, for example.
+      note that this random value is always the same for the given entity, i.e. two states with random
+      angle will get the same value for the same entity.
+      random z offset can be used for blood pools and such, so they will less likely end with the same Z
+      coord, to get rid of z-fighting.
     -->
     <state index="-1" model="base" frame_index="0" />
   </class>

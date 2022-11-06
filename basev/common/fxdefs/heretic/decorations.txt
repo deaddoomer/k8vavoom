@@ -4,6 +4,7 @@ pointlight KeyGizmoYellow
   color 1 1 0
   radius 118
   offset 0 0 69
+  noselfshadow
 }
 
 class KeyGizmoYellow
@@ -18,6 +19,7 @@ pointlight KeyGizmoGreen
   color 0 1 0
   radius 118
   offset 0 0 69
+  noselfshadow
 }
 
 class KeyGizmoGreen
@@ -32,6 +34,7 @@ pointlight KeyGizmoBlue
   color 0 0 1
   radius 118
   offset 0 0 69
+  noselfshadow
 }
 
 class KeyGizmoBlue
@@ -46,6 +49,7 @@ pointlight WallTorch
   color 1 1 0
   radius 128
   offset 0 0 8
+  noselfshadow
 }
 
 class WallTorch
@@ -60,6 +64,7 @@ pointlight SerpentTorch
   color 1 1 0
   radius 128
   offset 0 0 46
+  noselfshadow
 }
 
 class SerpentTorch
@@ -74,6 +79,7 @@ pointlight Chandelier
   color 1 1 0.5
   radius 160
   offset 0 0 56
+  noselfshadow
 }
 
 class Chandelier
@@ -88,6 +94,7 @@ pointlight FireBrazier
   color 1 1 0
   radius 160
   offset 0 0 55
+  noselfshadow
 }
 
 class FireBrazier

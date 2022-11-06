@@ -3,30 +3,35 @@ pointlight EggFX
 {
   color 1 1 1
   radius 120
+  noselfshadow
 }
 
 pointlight EggFX_X1
 {
   color 1 1 1
   radius 250
+  noselfshadow
 }
 
 pointlight EggFX_X2
 {
   color 1 1 1
   radius 190
+  noselfshadow
 }
 
 pointlight EggFX_X3
 {
   color 1 1 1
   radius 130
+  noselfshadow
 }
 
 pointlight EggFX_X4
 {
   color 1 1 1
   radius 70
+  noselfshadow
 }
 
 class EggFX
@@ -64,42 +69,49 @@ pointlight VolcanoBlast
 {
   color 1 0.5 0
   radius 126
+  noselfshadow
 }
 
 pointlight VolcanoBlast_X1
 {
   color 1 0.5 0
   radius 250
+  noselfshadow
 }
 
 pointlight VolcanoBlast_X2
 {
   color 1 0.5 0
   radius 210
+  noselfshadow
 }
 
 pointlight VolcanoBlast_X3
 {
   color 1 0.5 0
   radius 170
+  noselfshadow
 }
 
 pointlight VolcanoBlast_X4
 {
   color 1 0.5 0
   radius 130
+  noselfshadow
 }
 
 pointlight VolcanoBlast_X5
 {
   color 1 0.5 0
   radius 90
+  noselfshadow
 }
 
 pointlight VolcanoBlast_X6
 {
   color 1 0.5 0
   radius 50
+  noselfshadow
 }
 
 particleeffect VolcanoBlast
@@ -142,6 +154,7 @@ pointlight TeleGlitter1
 {
   color 1 0.7 0.7
   radius 66
+  noselfshadow
 }
 
 class TeleGlitter1
@@ -154,6 +167,7 @@ pointlight TeleGlitter2
 {
   color 0.75 0.75 0.8
   radius 66
+  noselfshadow
 }
 
 class TeleGlitter2
@@ -166,36 +180,42 @@ pointlight ActivatedTimeBomb_X1
 {
   color 1 0.5 0
   radius 126
+  noselfshadow
 }
 
 pointlight ActivatedTimeBomb_X2
 {
   color 1 0.5 0
   radius 105
+  noselfshadow
 }
 
 pointlight ActivatedTimeBomb_X3
 {
   color 1 0.5 0
   radius 84
+  noselfshadow
 }
 
 pointlight ActivatedTimeBomb_X4
 {
   color 1 0.5 0
   radius 63
+  noselfshadow
 }
 
 pointlight ActivatedTimeBomb_X5
 {
   color 1 0.5 0
   radius 42
+  noselfshadow
 }
 
 pointlight ActivatedTimeBomb_X6
 {
   color 1 0.5 0
   radius 21
+  noselfshadow
 }
 
 class ActivatedTimeBomb
@@ -213,12 +233,14 @@ pointlight Pod_X1
 {
   color 0.4 0.9 0.4
   radius 200
+  noselfshadow
 }
 
 pointlight Pod_X2
 {
   color 0.4 0.9 0.4
   radius 100
+  noselfshadow
 }
 
 class Pod

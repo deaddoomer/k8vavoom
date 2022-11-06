@@ -3,72 +3,86 @@ pointlight TeleportFog_1
 {
   color 0.3 0.6 0.25
   radius 40
+  noselfshadow
+  noshadow
 }
 
 pointlight TeleportFog_2
 {
   color 0.3 0.6 0.25
   radius 80
+  noselfshadow
 }
 
 pointlight TeleportFog_3
 {
   color 0.3 0.6 0.25
   radius 120
+  noselfshadow
 }
 
 pointlight TeleportFog_4
 {
   color 0.3 0.6 0.25
   radius 160
+  noselfshadow
 }
 
 pointlight TeleportFog_5
 {
   color 0.3 0.6 0.25
   radius 200
+  noselfshadow
 }
 
 pointlight TeleportFog_6
 {
   color 0.3 0.6 0.25
   radius 240
+  noselfshadow
 }
 
 pointlight TeleportFog2_1
 {
   color 0.4 0.35 0.7
   radius 40
+  noselfshadow
+  noshadow
 }
 
 pointlight TeleportFog2_2
 {
   color 0.4 0.35 0.7
   radius 80
+  noselfshadow
 }
 
 pointlight TeleportFog2_3
 {
   color 0.4 0.35 0.7
   radius 120
+  noselfshadow
 }
 
 pointlight TeleportFog2_4
 {
   color 0.4 0.35 0.7
   radius 160
+  noselfshadow
 }
 
 pointlight TeleportFog2_5
 {
   color 0.4 0.35 0.7
   radius 200
+  noselfshadow
 }
 
 pointlight TeleportFog2_6
 {
   color 0.4 0.35 0.7
   radius 240
+  noselfshadow
 }
 
 class TeleportFog

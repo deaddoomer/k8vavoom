@@ -3,6 +3,7 @@ pointlight KlaxonWarningLight
 {
   color 1 0 0
   radius 86
+  noselfshadow
 }
 
 class KlaxonWarningLight
@@ -15,66 +16,77 @@ pointlight Computer
 {
   color 0.35 0.6 0.2
   radius 118
+  noselfshadow
 }
 
 pointlight Computer_X1
 {
   color 0.35 0.6 0.2
   radius 250
+  noselfshadow
 }
 
 pointlight Computer_X2
 {
   color 0.35 0.6 0.2
   radius 225
+  noselfshadow
 }
 
 pointlight Computer_X3
 {
   color 0.35 0.6 0.2
   radius 200
+  noselfshadow
 }
 
 pointlight Computer_X4
 {
   color 0.35 0.6 0.2
   radius 175
+  noselfshadow
 }
 
 pointlight Computer_X5
 {
   color 0.35 0.6 0.2
   radius 150
+  noselfshadow
 }
 
 pointlight Computer_X6
 {
   color 0.35 0.6 0.2
   radius 125
+  noselfshadow
 }
 
 pointlight Computer_X7
 {
   color 0.35 0.6 0.2
   radius 100
+  noselfshadow
 }
 
 pointlight Computer_X8
 {
   color 0.35 0.6 0.2
   radius 75
+  noselfshadow
 }
 
 pointlight Computer_X9
 {
   color 0.35 0.6 0.2
   radius 50
+  noselfshadow
 }
 
 pointlight Computer_X10
 {
   color 0.35 0.6 0.2
   radius 25
+  noselfshadow
 }
 
 class Computer
@@ -100,54 +112,63 @@ pointlight PowerCrystal_X1
 {
   color 1 1 1
   radius 450
+  noselfshadow
 }
 
 pointlight PowerCrystal_X2
 {
   color 1 1 1
   radius 400
+  noselfshadow
 }
 
 pointlight PowerCrystal_X3
 {
   color 1 1 1
   radius 350
+  noselfshadow
 }
 
 pointlight PowerCrystal_X4
 {
   color 1 1 1
   radius 300
+  noselfshadow
 }
 
 pointlight PowerCrystal_X5
 {
   color 1 1 1
   radius 250
+  noselfshadow
 }
 
 pointlight PowerCrystal_X6
 {
   color 1 1 1
   radius 200
+  noselfshadow
 }
 
 pointlight PowerCrystal_X7
 {
   color 1 1 1
   radius 150
+  noselfshadow
 }
 
 pointlight PowerCrystal_X8
 {
   color 1 1 1
   radius 100
+  noselfshadow
 }
 
 pointlight PowerCrystal_X9
 {
   color 1 1 1
   radius 50
+  noselfshadow
 }
 
 class PowerCrystal
@@ -168,36 +189,42 @@ pointlight ExplosiveBarrel2_X1
 {
   color 1 1 0
   radius 200
+  noselfshadow
 }
 
 pointlight ExplosiveBarrel2_X2
 {
   color 1 1 0
   radius 170
+  noselfshadow
 }
 
 pointlight ExplosiveBarrel2_X3
 {
   color 1 1 0
   radius 140
+  noselfshadow
 }
 
 pointlight ExplosiveBarrel2_X4
 {
   color 1 1 0
   radius 110
+  noselfshadow
 }
 
 pointlight ExplosiveBarrel2_X5
 {
   color 1 1 0
   radius 70
+  noselfshadow
 }
 
 pointlight ExplosiveBarrel2_X6
 {
   color 1 1 0
   radius 30
+  noselfshadow
 }
 
 class ExplosiveBarrel2
@@ -215,48 +242,56 @@ pointlight DegninOre_X1
 {
   color 1 1 0
   radius 200
+  noselfshadow
 }
 
 pointlight DegninOre_X2
 {
   color 1 1 0
   radius 175
+  noselfshadow
 }
 
 pointlight DegninOre_X3
 {
   color 1 1 0
   radius 150
+  noselfshadow
 }
 
 pointlight DegninOre_X4
 {
   color 1 1 0
   radius 125
+  noselfshadow
 }
 
 pointlight DegninOre_X5
 {
   color 1 1 0
   radius 100
+  noselfshadow
 }
 
 pointlight DegninOre_X6
 {
   color 1 1 0
   radius 75
+  noselfshadow
 }
 
 pointlight DegninOre_X7
 {
   color 1 1 0
   radius 50
+  noselfshadow
 }
 
 pointlight DegninOre_X8
 {
   color 1 1 0
   radius 25
+  noselfshadow
 }
 
 class DegninOre
@@ -277,6 +312,7 @@ pointlight TechLampSilver
   color 1 1 1
   radius 200
   offset 0 0 48
+  noselfshadow
 }
 
 class TechLampSilver
@@ -291,6 +327,7 @@ pointlight TechLampBrass
   color 0.7 0.7 0.5
   radius 160
   offset 0 0 32
+  noselfshadow
 }
 
 class TechLampBrass
@@ -305,6 +342,7 @@ pointlight LightSilverFluorescent
   color 1 1 1
   radius 180
   offset 0 0 32
+  noselfshadow
 }
 
 class LightSilverFluorescent
@@ -319,6 +357,7 @@ pointlight LightBrownFluorescent
   color 1 1 1
   radius 160
   offset 0 0 32
+  noselfshadow
 }
 
 class LightBrownFluorescent
@@ -339,6 +378,7 @@ pointlight SmallTorchLit
   color 1 0.7 0.5
   radius 160
   offset 0 0 48
+  noselfshadow
 }
 
 class SmallTorchLit
@@ -353,6 +393,7 @@ pointlight MediumTorch
   color 1 0.7 0.5
   radius 160
   offset 0 0 64
+  noselfshadow
 }
 
 class MediumTorch
@@ -367,6 +408,7 @@ pointlight LargeTorch
   color 1 0.8 0.5
   radius 160
   offset 0 0 64
+  noselfshadow
 }
 
 class LargeTorch
@@ -381,6 +423,7 @@ pointlight HugeTorch
   color 1 0.7 0.5
   radius 180
   offset 0 0 80
+  noselfshadow
 }
 
 class HugeTorch
@@ -394,6 +437,7 @@ pointlight CageLight
 {
   color 1 1 1
   radius 180
+  noselfshadow
 }
 
 class CageLight
@@ -408,6 +452,7 @@ pointlight LightGlobe
   color 1 1 1
   radius 140
   offset 0 0 64
+  noselfshadow
 }
 
 class LightGlobe
@@ -422,6 +467,7 @@ pointlight OutsideLamp
   color 1 1 1
   radius 160
   offset 0 0 70
+  noselfshadow
 }
 
 class OutsideLamp
@@ -436,6 +482,7 @@ pointlight Candle
   color 1 1 1
   radius 64
   offset 0 0 16
+  noselfshadow
 }
 
 class Candle
@@ -450,6 +497,7 @@ pointlight StrifeCandelabra
   color 1 1 1
   radius 160
   offset 0 0 64
+  noselfshadow
 }
 
 class StrifeCandelabra
@@ -464,6 +512,7 @@ pointlight StrifeBurningBarrel
   color 1 1 1
   radius 160
   offset 0 0 64
+  noselfshadow
 }
 
 class StrifeBurningBarrel
@@ -478,6 +527,7 @@ pointlight BurningBrazier
   color 1 1 1
   radius 160
   offset 0 0 32
+  noselfshadow
 }
 
 class BurningBrazier
@@ -492,6 +542,7 @@ pointlight BurningBowl
   color 1 1 1
   radius 160
   offset 0 0 16
+  noselfshadow
 }
 
 class BurningBowl
@@ -506,6 +557,7 @@ pointlight PillarHugeTech
   color 0.5 1 0.5
   radius 185
   offset 0 0 96
+  noselfshadow
 }
 
 class PillarHugeTech
@@ -520,6 +572,7 @@ pointlight AlienSpiderLight
   color 0 1 0
   radius 160
   offset 0 0 32
+  noselfshadow
 }
 
 class AlienSpiderLight
@@ -534,6 +587,7 @@ pointlight TeleportSwirl
   color 1 1 0.5
   radius 200
   offset 0 0 32
+  noselfshadow
 }
 
 class TeleportSwirl
@@ -548,6 +602,7 @@ pointlight HeartsInTank
   color 1 1 1
   radius 128
   offset 0 0 25
+  noselfshadow
 }
 
 class HeartsInTank

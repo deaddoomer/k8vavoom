@@ -3,36 +3,42 @@ pointlight StaffPuff2_X1
 {
   color 1 1 1
   radius 240
+  noselfshadow
 }
 
 pointlight StaffPuff2_X2
 {
   color 1 1 1
   radius 200
+  noselfshadow
 }
 
 pointlight StaffPuff2_X3
 {
   color 1 1 1
   radius 160
+  noselfshadow
 }
 
 pointlight StaffPuff2_X4
 {
   color 1 1 1
   radius 120
+  noselfshadow
 }
 
 pointlight StaffPuff2_X5
 {
   color 1 1 1
   radius 80
+  noselfshadow
 }
 
 pointlight StaffPuff2_X6
 {
   color 1 1 1
   radius 40
+  noselfshadow
 }
 
 class StaffPuff2
@@ -50,24 +56,28 @@ pointlight GauntletPuff1_X1
 {
   color 0.35 0.75 0.3
   radius 200
+  noselfshadow
 }
 
 pointlight GauntletPuff1_X2
 {
   color 0.35 0.75 0.3
   radius 150
+  noselfshadow
 }
 
 pointlight GauntletPuff1_X3
 {
   color 0.35 0.75 0.3
   radius 100
+  noselfshadow
 }
 
 pointlight GauntletPuff1_X4
 {
   color 0.35 0.75 0.3
   radius 50
+  noselfshadow
 }
 
 class GauntletPuff1
@@ -83,24 +93,28 @@ pointlight GauntletPuff2_X1
 {
   color 1 0 0
   radius 200
+  noselfshadow
 }
 
 pointlight GauntletPuff2_X2
 {
   color 1 0 0
   radius 150
+  noselfshadow
 }
 
 pointlight GauntletPuff2_X3
 {
   color 1 0 0
   radius 100
+  noselfshadow
 }
 
 pointlight GauntletPuff2_X4
 {
   color 1 0 0
   radius 50
+  noselfshadow
 }
 
 class GauntletPuff2
@@ -116,30 +130,35 @@ pointlight GoldWandPuff1_X1
 {
   color 1 0.7 0.2
   radius 200
+  noselfshadow
 }
 
 pointlight GoldWandPuff1_X2
 {
   color 1 0.7 0.2
   radius 160
+  noselfshadow
 }
 
 pointlight GoldWandPuff1_X3
 {
   color 1 0.7 0.2
   radius 120
+  noselfshadow
 }
 
 pointlight GoldWandPuff1_X4
 {
   color 1 0.7 0.2
   radius 80
+  noselfshadow
 }
 
 pointlight GoldWandPuff1_X5
 {
   color 1 0.7 0.2
   radius 40
+  noselfshadow
 }
 
 class GoldWandPuff1
@@ -164,30 +183,35 @@ pointlight GoldWandFX2
 {
   color 1 0.7 0.2
   radius 118
+  noselfshadow
 }
 
 pointlight GoldWandFX2_X1
 {
   color 1 0.7 0.2
   radius 250
+  noselfshadow
 }
 
 pointlight GoldWandFX2_X2
 {
   color 1 0.7 0.2
   radius 190
+  noselfshadow
 }
 
 pointlight GoldWandFX2_X3
 {
   color 1 0.7 0.2
   radius 130
+  noselfshadow
 }
 
 pointlight GoldWandFX2_X4
 {
   color 1 0.7 0.2
   radius 70
+  noselfshadow
 }
 
 class GoldWandFX2
@@ -205,24 +229,28 @@ pointlight CrossbowFX1
 {
   color 0.35 0.75 0.3
   radius 126
+  noselfshadow
 }
 
 pointlight CrossbowFX1_X1
 {
   color 0.35 0.75 0.3
   radius 250
+  noselfshadow
 }
 
 pointlight CrossbowFX1_X2
 {
   color 0.35 0.75 0.3
   radius 170
+  noselfshadow
 }
 
 pointlight CrossbowFX1_X3
 {
   color 0.35 0.75 0.3
   radius 90
+  noselfshadow
 }
 
 class CrossbowFX1
@@ -254,30 +282,35 @@ pointlight BlasterPuff_X1
 {
   color 0.3 0.65 1
   radius 200
+  noselfshadow
 }
 
 pointlight BlasterPuff_X2
 {
   color 0.3 0.65 1
   radius 160
+  noselfshadow
 }
 
 pointlight BlasterPuff_X3
 {
   color 0.3 0.65 1
   radius 120
+  noselfshadow
 }
 
 pointlight BlasterPuff_X4
 {
   color 0.3 0.65 1
   radius 80
+  noselfshadow
 }
 
 pointlight BlasterPuff_X5
 {
   color 0.3 0.65 1
   radius 40
+  noselfshadow
 }
 
 class BlasterPuff
@@ -301,48 +334,56 @@ pointlight BlasterFX1
 {
   color 0.3 0.65 1
   radius 118
+  noselfshadow
 }
 
 pointlight BlasterFX1_X1
 {
   color 0.3 0.65 1
   radius 250
+  noselfshadow
 }
 
 pointlight BlasterFX1_X2
 {
   color 0.3 0.65 1
   radius 210
+  noselfshadow
 }
 
 pointlight BlasterFX1_X3
 {
   color 0.3 0.65 1
   radius 170
+  noselfshadow
 }
 
 pointlight BlasterFX1_X4
 {
   color 0.3 0.65 1
   radius 130
+  noselfshadow
 }
 
 pointlight BlasterFX1_X5
 {
   color 0.3 0.65 1
   radius 90
+  noselfshadow
 }
 
 pointlight BlasterFX1_X6
 {
   color 0.3 0.65 1
   radius 50
+  noselfshadow
 }
 
 pointlight BlasterFX1_X7
 {
   color 0.3 0.65 1
   radius 10
+  noselfshadow
 }
 
 class BlasterFX1
@@ -362,42 +403,49 @@ pointlight HornRodFX1
 {
   color 1 0.3 0.3
   radius 126
+  noselfshadow
 }
 
 pointlight HornRodFX1_X1
 {
   color 1 0.3 0.3
   radius 250
+  noselfshadow
 }
 
 pointlight HornRodFX1_X2
 {
   color 1 0.3 0.3
   radius 210
+  noselfshadow
 }
 
 pointlight HornRodFX1_X3
 {
   color 1 0.3 0.3
   radius 170
+  noselfshadow
 }
 
 pointlight HornRodFX1_X4
 {
   color 1 0.3 0.3
   radius 130
+  noselfshadow
 }
 
 pointlight HornRodFX1_X5
 {
   color 1 0.3 0.3
   radius 90
+  noselfshadow
 }
 
 pointlight HornRodFX1_X6
 {
   color 1 0.3 0.3
   radius 50
+  noselfshadow
 }
 
 class HornRodFX1
@@ -431,24 +479,28 @@ pointlight RainPillar
 {
   color 0.35 0.8 0.35
   radius 100
+  noselfshadow
 }
 
 pointlight RainPillar_X1
 {
   color 0.35 0.8 0.35
   radius 120
+  noselfshadow
 }
 
 pointlight RainPillar_X2
 {
   color 0.35 0.8 0.35
   radius 80
+  noselfshadow
 }
 
 pointlight RainPillar_X3
 {
   color 0.35 0.8 0.35
   radius 40
+  noselfshadow
 }
 
 class RainPillar
@@ -467,24 +519,28 @@ pointlight RainPlayer2
 {
   color 0.9 0.65 0
   radius 100
+  noselfshadow
 }
 
 pointlight RainPlayer2_X1
 {
   color 0.9 0.65 0
   radius 120
+  noselfshadow
 }
 
 pointlight RainPlayer2_X2
 {
   color 0.9 0.65 0
   radius 80
+  noselfshadow
 }
 
 pointlight RainPlayer2_X3
 {
   color 0.9 0.65 0
   radius 40
+  noselfshadow
 }
 
 class RainPlayer2
@@ -503,24 +559,28 @@ pointlight RainPlayer3
 {
   color 1 0.3 0.3
   radius 100
+  noselfshadow
 }
 
 pointlight RainPlayer3_X1
 {
   color 1 0.3 0.3
   radius 120
+  noselfshadow
 }
 
 pointlight RainPlayer3_X2
 {
   color 1 0.3 0.3
   radius 80
+  noselfshadow
 }
 
 pointlight RainPlayer3_X3
 {
   color 1 0.3 0.3
   radius 40
+  noselfshadow
 }
 
 class RainPlayer3
@@ -539,24 +599,28 @@ pointlight RainPlayer4
 {
   color 0.3 0.3 1
   radius 100
+  noselfshadow
 }
 
 pointlight RainPlayer4_X1
 {
   color 0.3 0.3 1
   radius 120
+  noselfshadow
 }
 
 pointlight RainPlayer4_X2
 {
   color 0.3 0.3 1
   radius 80
+  noselfshadow
 }
 
 pointlight RainPlayer4_X3
 {
   color 0.3 0.3 1
   radius 40
+  noselfshadow
 }
 
 class RainPlayer4
@@ -575,42 +639,49 @@ pointlight PhoenixFX1
 {
   color 1 0.35 0
   radius 126
+  noselfshadow
 }
 
 pointlight PhoenixFX1_X1
 {
   color 1 0.35 0
   radius 250
+  noselfshadow
 }
 
 pointlight PhoenixFX1_X2
 {
   color 1 0.35 0
   radius 210
+  noselfshadow
 }
 
 pointlight PhoenixFX1_X3
 {
   color 1 0.35 0
   radius 170
+  noselfshadow
 }
 
 pointlight PhoenixFX1_X4
 {
   color 1 0.35 0
   radius 130
+  noselfshadow
 }
 
 pointlight PhoenixFX1_X5
 {
   color 1 0.35 0
   radius 90
+  noselfshadow
 }
 
 pointlight PhoenixFX1_X6
 {
   color 1 0.35 0
   radius 50
+  noselfshadow
 }
 
 class PhoenixFX1
@@ -629,36 +700,42 @@ pointlight PhoenixFX2
 {
   color 1 0.6 0
   radius 118
+  noselfshadow
 }
 
 pointlight PhoenixFX2_X1
 {
   color 1 0.6 0
   radius 250
+  noselfshadow
 }
 
 pointlight PhoenixFX2_X2
 {
   color 1 0.6 0
   radius 200
+  noselfshadow
 }
 
 pointlight PhoenixFX2_X3
 {
   color 1 0.6 0
   radius 150
+  noselfshadow
 }
 
 pointlight PhoenixFX2_X4
 {
   color 1 0.6 0
   radius 100
+  noselfshadow
 }
 
 pointlight PhoenixFX2_X5
 {
   color 1 0.6 0
   radius 50
+  noselfshadow
 }
 
 class PhoenixFX2

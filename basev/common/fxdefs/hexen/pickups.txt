@@ -4,6 +4,7 @@ pointlight Mana1
   color 0.3 0.3 0.75
   radius 100
   offset 0 0 1
+  noselfshadow
 }
 
 class Mana1
@@ -17,6 +18,7 @@ pointlight Mana2
   color 0.2 0.4 0.15
   radius 100
   offset 0 0 1
+  noselfshadow
 }
 
 class Mana2
@@ -30,6 +32,7 @@ pointlight Mana3
   color 1 0 0
   radius 100
   offset 0 0 1
+  noselfshadow
 }
 
 class Mana3
@@ -43,6 +46,7 @@ pointlight ArtiSpeedBoots
   color 0.3 0.3 0.75
   radius 86
   offset 0 0 1
+  noselfshadow
 }
 
 class ArtiSpeedBoots
@@ -56,6 +60,7 @@ pointlight ArtiBoostArmor
   color 0.6 0 0.7
   radius 86
   offset 0 0 1
+  noselfshadow
 }
 
 class ArtiBoostArmor
@@ -69,6 +74,7 @@ pointlight MWeapLightning
   color 0.3 0.3 0.75
   radius 86
   offset 0 0 1
+  noselfshadow
 }
 
 class MWeapLightning
@@ -82,6 +88,7 @@ pointlight FighterWeaponPiece
   color 0.2 0.4 0.2
   radius 86
   offset 0 0 1
+  noselfshadow
 }
 
 class FWeaponPiece1
@@ -105,6 +112,7 @@ pointlight ClericWeaponPiece
   color 0.3 0.3 0.75
   radius 86
   offset 0 0 1
+  noselfshadow
 }
 
 class CWeaponPiece1
@@ -128,6 +136,7 @@ pointlight MageWeaponPiece
   color 1 0 0
   radius 86
   offset 0 0 1
+  noselfshadow
 }
 
 class MWeaponPiece1

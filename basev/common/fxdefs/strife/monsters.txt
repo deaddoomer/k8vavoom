@@ -804,18 +804,21 @@ pointlight Stalker_X1
 {
   color 1 0.5 0
   radius 250
+  noselfshadow
 }
 
 pointlight Stalker_X2
 {
   color 1 0.5 0
   radius 170
+  noselfshadow
 }
 
 pointlight Stalker_X3
 {
   color 1 0.5 0
   radius 90
+  noselfshadow
 }
 
 class Stalker
@@ -838,36 +841,42 @@ pointlight SentinelFX1
 {
   color 0.6 0.1 0.1
   radius 96
+  noselfshadow
 }
 
 pointlight SentinelFX1_X1
 {
   color 0.6 0.1 0.1
   radius 200
+  noselfshadow
 }
 
 pointlight SentinelFX1_X2
 {
   color 0.6 0.1 0.1
   radius 160
+  noselfshadow
 }
 
 pointlight SentinelFX1_X3
 {
   color 0.6 0.1 0.1
   radius 120
+  noselfshadow
 }
 
 pointlight SentinelFX1_X4
 {
   color 0.6 0.1 0.1
   radius 80
+  noselfshadow
 }
 
 pointlight SentinelFX1_X5
 {
   color 0.6 0.1 0.1
   radius 40
+  noselfshadow
 }
 
 class SentinelFX1
@@ -891,24 +900,28 @@ pointlight CeilingTurret_X1
 {
   color 1 1 1
   radius 250
+  noselfshadow
 }
 
 pointlight CeilingTurret_X2
 {
   color 1 1 1
   radius 190
+  noselfshadow
 }
 
 pointlight CeilingTurret_X3
 {
   color 1 1 1
   radius 130
+  noselfshadow
 }
 
 pointlight CeilingTurret_X4
 {
   color 1 1 1
   radius 70
+  noselfshadow
 }
 
 class CeilingTurret
@@ -925,24 +938,28 @@ pointlight Reaver_X1
 {
   color 0.7 0.25 0
   radius 120
+  noselfshadow
 }
 
 pointlight Reaver_X2
 {
   color 0.7 0.25 0
   radius 90
+  noselfshadow
 }
 
 pointlight Reaver_X3
 {
   color 0.7 0.25 0
   radius 60
+  noselfshadow
 }
 
 pointlight Reaver_X4
 {
   color 0.7 0.25 0
   radius 30
+  noselfshadow
 }
 
 class Reaver
@@ -959,18 +976,21 @@ pointlight Crusader_X1
 {
   color 0.7 0.25 0
   radius 118
+  noselfshadow
 }
 
 pointlight Crusader_X2
 {
   color 0.7 0.25 0
   radius 80
+  noselfshadow
 }
 
 pointlight Crusader_X3
 {
   color 0.7 0.25 0
   radius 40
+  noselfshadow
 }
 
 class Crusader
@@ -988,48 +1008,56 @@ pointlight CrusaderMissile
 {
   color 0.85 0.7 0
   radius 200
+  noselfshadow
 }
 
 pointlight CrusaderMissile_X1
 {
   color 0.85 0.7 0
   radius 300
+  noselfshadow
 }
 
 pointlight CrusaderMissile_X2
 {
   color 0.85 0.7 0
   radius 255
+  noselfshadow
 }
 
 pointlight CrusaderMissile_X3
 {
   color 0.85 0.7 0
   radius 210
+  noselfshadow
 }
 
 pointlight CrusaderMissile_X4
 {
   color 0.85 0.7 0
   radius 165
+  noselfshadow
 }
 
 pointlight CrusaderMissile_X5
 {
   color 0.85 0.7 0
   radius 120
+  noselfshadow
 }
 
 pointlight CrusaderMissile_X6
 {
   color 0.85 0.7 0
   radius 80
+  noselfshadow
 }
 
 pointlight CrusaderMissile_X7
 {
   color 0.85 0.7 0
   radius 40
+  noselfshadow
 }
 
 class CrusaderMissile
@@ -1049,30 +1077,35 @@ pointlight Inquisitor
 {
   color 0.6 0.6 0.8
   radius 164
+  noselfshadow
 }
 
 pointlight Inquisitor_X1
 {
   color 0.8 0.45 0
   radius 200
+  noselfshadow
 }
 
 pointlight Inquisitor_X2
 {
   color 0.8 0.45 0
   radius 200
+  noselfshadow
 }
 
 pointlight Inquisitor_X3
 {
   color 0.8 0.45 0
   radius 200
+  noselfshadow
 }
 
 pointlight Inquisitor_X4
 {
   color 0.8 0.45 0
   radius 200
+  noselfshadow
 }
 
 class Inquisitor
@@ -1099,54 +1132,63 @@ pointlight InquisitorShot_X1
 {
   color 1 1 0
   radius 250
+  noselfshadow
 }
 
 pointlight InquisitorShot_X2
 {
   color 1 1 0
   radius 220
+  noselfshadow
 }
 
 pointlight InquisitorShot_X3
 {
   color 1 1 0
   radius 190
+  noselfshadow
 }
 
 pointlight InquisitorShot_X4
 {
   color 1 1 0
   radius 160
+  noselfshadow
 }
 
 pointlight InquisitorShot_X5
 {
   color 1 1 0
   radius 130
+  noselfshadow
 }
 
 pointlight InquisitorShot_X6
 {
   color 1 1 0
   radius 100
+  noselfshadow
 }
 
 pointlight InquisitorShot_X7
 {
   color 1 1 0
   radius 75
+  noselfshadow
 }
 
 pointlight InquisitorShot_X8
 {
   color 1 1 0
   radius 50
+  noselfshadow
 }
 
 pointlight InquisitorShot_X9
 {
   color 1 1 0
   radius 25
+  noselfshadow
 }
 
 class InquisitorShot
@@ -1167,42 +1209,49 @@ pointlight Programmer_X1
 {
   color 1 0.5 0
   radius 350
+  noselfshadow
 }
 
 pointlight Programmer_X2
 {
   color 1 0.5 0
   radius 300
+  noselfshadow
 }
 
 pointlight Programmer_X3
 {
   color 1 0.5 0
   radius 250
+  noselfshadow
 }
 
 pointlight Programmer_X4
 {
   color 1 0.5 0
   radius 200
+  noselfshadow
 }
 
 pointlight Programmer_X5
 {
   color 1 0.5 0
   radius 150
+  noselfshadow
 }
 
 pointlight Programmer_X6
 {
   color 1 0.5 0
   radius 100
+  noselfshadow
 }
 
 pointlight Programmer_X7
 {
   color 1 0.5 0
   radius 50
+  noselfshadow
 }
 
 class Programmer
@@ -1221,48 +1270,56 @@ pointlight ProgrammerBase_X1
 {
   color 1 1 0
   radius 320
+  noselfshadow
 }
 
 pointlight ProgrammerBase_X2
 {
   color 1 1 0
   radius 280
+  noselfshadow
 }
 
 pointlight ProgrammerBase_X3
 {
   color 1 1 0
   radius 240
+  noselfshadow
 }
 
 pointlight ProgrammerBase_X4
 {
   color 1 1 0
   radius 200
+  noselfshadow
 }
 
 pointlight ProgrammerBase_X5
 {
   color 1 1 0
   radius 160
+  noselfshadow
 }
 
 pointlight ProgrammerBase_X6
 {
   color 1 1 0
   radius 120
+  noselfshadow
 }
 
 pointlight ProgrammerBase_X7
 {
   color 1 1 0
   radius 80
+  noselfshadow
 }
 
 pointlight ProgrammerBase_X8
 {
   color 1 1 0
   radius 40
+  noselfshadow
 }
 
 class ProgrammerBase

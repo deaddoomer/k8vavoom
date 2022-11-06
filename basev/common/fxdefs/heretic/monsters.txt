@@ -32,30 +32,35 @@ pointlight HereticImpBall
 {
   color 0.85 0.45 0.05
   radius 118
+  noselfshadow
 }
 
 pointlight HereticImpBall_X1
 {
   color 0.85 0.45 0.05
   radius 250
+  noselfshadow
 }
 
 pointlight HereticImpBall_X2
 {
   color 0.85 0.45 0.05
   radius 190
+  noselfshadow
 }
 
 pointlight HereticImpBall_X3
 {
   color 0.85 0.45 0.05
   radius 130
+  noselfshadow
 }
 
 pointlight HereticImpBall_X4
 {
   color 0.85 0.45 0.05
   radius 70
+  noselfshadow
 }
 
 class HereticImpBall
@@ -74,30 +79,35 @@ pointlight MummyFX1
 {
   color 1 0.9 0.5
   radius 118
+  noselfshadow
 }
 
 pointlight MummyFX1_X1
 {
   color 1 0.9 0.5
   radius 250
+  noselfshadow
 }
 
 pointlight MummyFX1_X2
 {
   color 1 0.9 0.5
   radius 190
+  noselfshadow
 }
 
 pointlight MummyFX1_X3
 {
   color 1 0.9 0.5
   radius 130
+  noselfshadow
 }
 
 pointlight MummyFX1_X4
 {
   color 1 0.9 0.5
   radius 70
+  noselfshadow
 }
 
 class MummyFX1
@@ -116,24 +126,28 @@ pointlight KnightAxe
 {
   color 0.25 0.6 0.2
   radius 118
+  noselfshadow
 }
 
 pointlight KnightAxe_X1
 {
   color 0.25 0.6 0.2
   radius 250
+  noselfshadow
 }
 
 pointlight KnightAxe_X2
 {
   color 0.25 0.6 0.2
   radius 170
+  noselfshadow
 }
 
 pointlight KnightAxe_X3
 {
   color 0.25 0.6 0.2
   radius 90
+  noselfshadow
 }
 
 class KnightAxe
@@ -151,24 +165,28 @@ pointlight RedAxe
 {
   color 1 0 0
   radius 118
+  noselfshadow
 }
 
 pointlight RedAxe_X1
 {
   color 1 0 0
   radius 250
+  noselfshadow
 }
 
 pointlight RedAxe_X2
 {
   color 1 0 0
   radius 170
+  noselfshadow
 }
 
 pointlight RedAxe_X3
 {
   color 1 0 0
   radius 90
+  noselfshadow
 }
 
 class RedAxe
@@ -185,36 +203,42 @@ pointlight Wizard_X1
 {
   color 0.6 0 0.75
   radius 250
+  noselfshadow
 }
 
 pointlight Wizard_X2
 {
   color 0.6 0 0.75
   radius 210
+  noselfshadow
 }
 
 pointlight Wizard_X3
 {
   color 0.6 0 0.75
   radius 170
+  noselfshadow
 }
 
 pointlight Wizard_X4
 {
   color 0.6 0 0.75
   radius 130
+  noselfshadow
 }
 
 pointlight Wizard_X5
 {
   color 0.6 0 0.75
   radius 90
+  noselfshadow
 }
 
 pointlight Wizard_X6
 {
   color 0.6 0 0.75
   radius 50
+  noselfshadow
 }
 
 class Wizard
@@ -232,36 +256,42 @@ pointlight WizardFX1
 {
   color 0.6 0.05 0.75
   radius 118
+  noselfshadow
 }
 
 pointlight WizardFX1_X1
 {
   color 0.6 0.05 0.75
   radius 250
+  noselfshadow
 }
 
 pointlight WizardFX1_X2
 {
   color 0.6 0.05 0.75
   radius 200
+  noselfshadow
 }
 
 pointlight WizardFX1_X3
 {
   color 0.6 0.05 0.75
   radius 150
+  noselfshadow
 }
 
 pointlight WizardFX1_X4
 {
   color 0.6 0.05 0.75
   radius 100
+  noselfshadow
 }
 
 pointlight WizardFX1_X5
 {
   color 0.6 0.05 0.75
   radius 50
+  noselfshadow
 }
 
 class WizardFX1
@@ -280,24 +310,28 @@ pointlight Clink_X1
 {
   color 1 0.4 0
   radius 200
+  noselfshadow
 }
 
 pointlight Clink_X2
 {
   color 1 0.4 0
   radius 150
+  noselfshadow
 }
 
 pointlight Clink_X3
 {
   color 1 0.4 0
   radius 100
+  noselfshadow
 }
 
 pointlight Clink_X4
 {
   color 1 0.4 0
   radius 50
+  noselfshadow
 }
 
 class Clink
@@ -313,36 +347,42 @@ pointlight BeastBall
 {
   color 1 0.5 0
   radius 126
+  noselfshadow
 }
 
 pointlight BeastBall_X1
 {
   color 1 0.5 0
   radius 250
+  noselfshadow
 }
 
 pointlight BeastBall_X2
 {
   color 1 0.5 0
   radius 200
+  noselfshadow
 }
 
 pointlight BeastBall_X3
 {
   color 1 0.5 0
   radius 150
+  noselfshadow
 }
 
 pointlight BeastBall_X4
 {
   color 1 0.5 0
   radius 100
+  noselfshadow
 }
 
 pointlight BeastBall_X5
 {
   color 1 0.5 0
   radius 50
+  noselfshadow
 }
 
 class BeastBall
@@ -362,36 +402,42 @@ pointlight SnakeProjA
 {
   color 0.6 0.55 0.85
   radius 118
+  noselfshadow
 }
 
 pointlight SnakeProjA_X1
 {
   color 0.6 0.55 0.85
   radius 250
+  noselfshadow
 }
 
 pointlight SnakeProjA_X2
 {
   color 0.6 0.55 0.85
   radius 200
+  noselfshadow
 }
 
 pointlight SnakeProjA_X3
 {
   color 0.6 0.55 0.85
   radius 150
+  noselfshadow
 }
 
 pointlight SnakeProjA_X4
 {
   color 0.6 0.55 0.85
   radius 100
+  noselfshadow
 }
 
 pointlight SnakeProjA_X5
 {
   color 0.6 0.55 0.85
   radius 50
+  noselfshadow
 }
 
 particleeffect SnakeProjA
@@ -426,30 +472,35 @@ pointlight SnakeProjB
 {
   color 1 0.5 0
   radius 126
+  noselfshadow
 }
 
 pointlight SnakeProjB_X1
 {
   color 1 0.5 0
   radius 250
+  noselfshadow
 }
 
 pointlight SnakeProjB_X2
 {
   color 1 0.5 0
   radius 190
+  noselfshadow
 }
 
 pointlight SnakeProjB_X3
 {
   color 1 0.5 0
   radius 130
+  noselfshadow
 }
 
 pointlight SnakeProjB_X4
 {
   color 1 0.5 0
   radius 70
+  noselfshadow
 }
 
 class SnakeProjB
@@ -467,30 +518,35 @@ pointlight Ironlich_X1
 {
   color 1 0.4 0
   radius 250
+  noselfshadow
 }
 
 pointlight Ironlich_X2
 {
   color 1 0.4 0
   radius 200
+  noselfshadow
 }
 
 pointlight Ironlich_X3
 {
   color 1 0.4 0
   radius 150
+  noselfshadow
 }
 
 pointlight Ironlich_X4
 {
   color 1 0.4 0
   radius 100
+  noselfshadow
 }
 
 pointlight Ironlich_X5
 {
   color 1 0.4 0
   radius 50
+  noselfshadow
 }
 
 class Ironlich
@@ -507,30 +563,35 @@ pointlight HeadFX1
 {
   color 0.05 0.05 0.6
   radius 126
+  noselfshadow
 }
 
 pointlight HeadFX1_X1
 {
   color 0.05 0.05 0.6
   radius 250
+  noselfshadow
 }
 
 pointlight HeadFX1_X2
 {
   color 0.05 0.05 0.6
   radius 190
+  noselfshadow
 }
 
 pointlight HeadFX1_X3
 {
   color 0.05 0.05 0.6
   radius 120
+  noselfshadow
 }
 
 pointlight HeadFX1_X4
 {
   color 0.05 0.05 0.6
   radius 60
+  noselfshadow
 }
 
 class HeadFX1
@@ -560,30 +621,35 @@ pointlight HeadFX3
 {
   color 1 0.35 0
   radius 134
+  noselfshadow
 }
 
 pointlight HeadFX3_X1
 {
   color 1 0.35 0
   radius 250
+  noselfshadow
 }
 
 pointlight HeadFX3_X2
 {
   color 1 0.35 0
   radius 190
+  noselfshadow
 }
 
 pointlight HeadFX3_X3
 {
   color 1 0.35 0
   radius 130
+  noselfshadow
 }
 
 pointlight HeadFX3_X4
 {
   color 1 0.35 0
   radius 70
+  noselfshadow
 }
 
 class HeadFX3
@@ -602,36 +668,42 @@ pointlight SorcererFX1
 {
   color 0.75 0.4 0.1
   radius 126
+  noselfshadow
 }
 
 pointlight SorcererFX1_X1
 {
   color 0.75 0.4 0.1
   radius 250
+  noselfshadow
 }
 
 pointlight SorcererFX1_X2
 {
   color 0.75 0.4 0.1
   radius 200
+  noselfshadow
 }
 
 pointlight SorcererFX1_X3
 {
   color 0.75 0.4 0.1
   radius 150
+  noselfshadow
 }
 
 pointlight SorcererFX1_X4
 {
   color 0.75 0.4 0.1
   radius 100
+  noselfshadow
 }
 
 pointlight SorcererFX1_X5
 {
   color 0.75 0.4 0.1
   radius 50
+  noselfshadow
 }
 
 class SorcererFX1
@@ -651,42 +723,49 @@ pointlight Sorcerer2FX1
 {
   color 0.3 0.3 1
   radius 126
+  noselfshadow
 }
 
 pointlight Sorcerer2FX1_X1
 {
   color 0.3 0.3 1
   radius 250
+  noselfshadow
 }
 
 pointlight Sorcerer2FX1_X2
 {
   color 0.3 0.3 1
   radius 210
+  noselfshadow
 }
 
 pointlight Sorcerer2FX1_X3
 {
   color 0.3 0.3 1
   radius 170
+  noselfshadow
 }
 
 pointlight Sorcerer2FX1_X4
 {
   color 0.3 0.3 1
   radius 130
+  noselfshadow
 }
 
 pointlight Sorcerer2FX1_X5
 {
   color 0.3 0.3 1
   radius 90
+  noselfshadow
 }
 
 pointlight Sorcerer2FX1_X6
 {
   color 0.3 0.3 1
   radius 50
+  noselfshadow
 }
 
 class Sorcerer2FX1
@@ -718,18 +797,21 @@ pointlight Sorcerer2Telefade_1
 {
   color 0.75 0.4 0.1
   radius 50
+  noselfshadow
 }
 
 pointlight Sorcerer2Telefade_2
 {
   color 0.75 0.4 0.1
   radius 100
+  noselfshadow
 }
 
 pointlight Sorcerer2Telefade_3
 {
   color 0.75 0.4 0.1
   radius 150
+  noselfshadow
 }
 
 class Sorcerer2Telefade

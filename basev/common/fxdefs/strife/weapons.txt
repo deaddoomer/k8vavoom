@@ -3,42 +3,49 @@ pointlight ElectricBolt
 {
   color 0.5 0.5 0.65
   radius 86
+  noselfshadow
 }
 
 pointlight ElectricBolt_X1
 {
   color 0.5 0.5 0.65
   radius 200
+  noselfshadow
 }
 
 pointlight ElectricBolt_X2
 {
   color 0.5 0.5 0.65
   radius 170
+  noselfshadow
 }
 
 pointlight ElectricBolt_X3
 {
   color 0.5 0.5 0.65
   radius 140
+  noselfshadow
 }
 
 pointlight ElectricBolt_X4
 {
   color 0.5 0.5 0.65
   radius 110
+  noselfshadow
 }
 
 pointlight ElectricBolt_X5
 {
   color 0.5 0.5 0.65
   radius 80
+  noselfshadow
 }
 
 pointlight ElectricBolt_X6
 {
   color 0.5 0.5 0.65
   radius 50
+  noselfshadow
 }
 
 class ElectricBolt
@@ -57,48 +64,56 @@ pointlight MiniMissile
 {
   color 0.85 0.7 0
   radius 118
+  noselfshadow
 }
 
 pointlight MiniMissile_X1
 {
   color 0.85 0.7 0
   radius 280
+  noselfshadow
 }
 
 pointlight MiniMissile_X2
 {
   color 0.85 0.7 0
   radius 240
+  noselfshadow
 }
 
 pointlight MiniMissile_X3
 {
   color 0.85 0.7 0
   radius 200
+  noselfshadow
 }
 
 pointlight MiniMissile_X4
 {
   color 0.85 0.7 0
   radius 160
+  noselfshadow
 }
 
 pointlight MiniMissile_X5
 {
   color 0.85 0.7 0
   radius 120
+  noselfshadow
 }
 
 pointlight MiniMissile_X6
 {
   color 0.85 0.7 0
   radius 80
+  noselfshadow
 }
 
 pointlight MiniMissile_X7
 {
   color 0.85 0.7 0
   radius 40
+  noselfshadow
 }
 
 class MiniMissile
@@ -130,60 +145,70 @@ pointlight HEGrenade_X1
 {
   color 1 1 0
   radius 250
+  noselfshadow
 }
 
 pointlight HEGrenade_X2
 {
   color 1 1 0
   radius 225
+  noselfshadow
 }
 
 pointlight HEGrenade_X3
 {
   color 1 1 0
   radius 200
+  noselfshadow
 }
 
 pointlight HEGrenade_X4
 {
   color 1 1 0
   radius 175
+  noselfshadow
 }
 
 pointlight HEGrenade_X5
 {
   color 1 1 0
   radius 150
+  noselfshadow
 }
 
 pointlight HEGrenade_X6
 {
   color 1 1 0
   radius 125
+  noselfshadow
 }
 
 pointlight HEGrenade_X7
 {
   color 1 1 0
   radius 100
+  noselfshadow
 }
 
 pointlight HEGrenade_X8
 {
   color 1 1 0
   radius 75
+  noselfshadow
 }
 
 pointlight HEGrenade_X9
 {
   color 1 1 0
   radius 50
+  noselfshadow
 }
 
 pointlight HEGrenade_X10
 {
   color 1 1 0
   radius 25
+  noselfshadow
 }
 
 class HEGrenade
@@ -205,30 +230,35 @@ pointlight PhosphorousFire
 {
   color 0.8 0.35 0
   radius 200
+  noselfshadow
 }
 
 pointlight PhosphorousFire_X1
 {
   color 0.8 0.35 0
   radius 160
+  noselfshadow
 }
 
 pointlight PhosphorousFire_X2
 {
   color 0.8 0.35 0
   radius 120
+  noselfshadow
 }
 
 pointlight PhosphorousFire_X3
 {
   color 0.8 0.35 0
   radius 80
+  noselfshadow
 }
 
 pointlight PhosphorousFire_X4
 {
   color 0.8 0.35 0
   radius 40
+  noselfshadow
 }
 
 class PhosphorousFire
@@ -253,42 +283,49 @@ pointlight FlameMissile
 {
   color 0.8 0.5 0
   radius 100
+  noselfshadow
 }
 
 pointlight FlameMissile_X1
 {
   color 0.8 0.5 0
   radius 120
+  noselfshadow
 }
 
 pointlight FlameMissile_X2
 {
   color 0.8 0.5 0
   radius 100
+  noselfshadow
 }
 
 pointlight FlameMissile_X3
 {
   color 0.8 0.5 0
   radius 80
+  noselfshadow
 }
 
 pointlight FlameMissile_X4
 {
   color 0.8 0.5 0
   radius 60
+  noselfshadow
 }
 
 pointlight FlameMissile_X5
 {
   color 0.8 0.5 0
   radius 40
+  noselfshadow
 }
 
 pointlight FlameMissile_X6
 {
   color 0.8 0.5 0
   radius 20
+  noselfshadow
 }
 
 class FlameMissile
@@ -322,36 +359,42 @@ pointlight MaulerTorpedo
 {
   color 0.3 0.55 0.2
   radius 118
+  noselfshadow
 }
 
 pointlight MaulerTorpedo_X1
 {
   color 0.3 0.55 0.2
   radius 250
+  noselfshadow
 }
 
 pointlight MaulerTorpedo_X2
 {
   color 0.3 0.55 0.2
   radius 200
+  noselfshadow
 }
 
 pointlight MaulerTorpedo_X3
 {
   color 0.3 0.55 0.2
   radius 150
+  noselfshadow
 }
 
 pointlight MaulerTorpedo_X4
 {
   color 0.3 0.55 0.2
   radius 100
+  noselfshadow
 }
 
 pointlight MaulerTorpedo_X5
 {
   color 0.3 0.55 0.2
   radius 50
+  noselfshadow
 }
 
 class MaulerTorpedo
@@ -369,6 +412,7 @@ pointlight MaulerTorpedoWave
 {
   color 0.25 0.5 0.15
   radius 126
+  noselfshadow
 }
 
 class MaulerTorpedoWave
@@ -383,6 +427,7 @@ pointlight SpectralLightningBall1
 {
   color 0.6 0.6 0.8
   radius 100
+  noselfshadow
 }
 
 class SpectralLightningBall1
@@ -434,6 +479,7 @@ pointlight SpectralLightningBigBall1
 {
   color 0.6 0.6 0.8
   radius 134
+  noselfshadow
 }
 
 class SpectralLightningBigBall1
@@ -463,6 +509,7 @@ pointlight SpectralLightningBigV1
 {
   color 0.6 0.6 0.8
   radius 126
+  noselfshadow
 }
 
 class SpectralLightningBigV1
@@ -492,6 +539,7 @@ pointlight SpectralLightningH1
 {
   color 0.6 0.6 0.8
   radius 118
+  noselfshadow
 }
 
 class SpectralLightningH1

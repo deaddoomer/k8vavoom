@@ -3,30 +3,35 @@ pointlight BurnableTree_X1
 {
   color 1 0.5 0
   radius 200
+  noselfshadow
 }
 
 pointlight BurnableTree_X2
 {
   color 1 0.5 0
   radius 160
+  noselfshadow
 }
 
 pointlight BurnableTree_X3
 {
   color 1 0.5 0
   radius 120
+  noselfshadow
 }
 
 pointlight BurnableTree_X4
 {
   color 1 0.5 0
   radius 80
+  noselfshadow
 }
 
 pointlight BurnableTree_X5
 {
   color 1 0.5 0
   radius 40
+  noselfshadow
 }
 
 class ZShrub1
@@ -59,6 +64,7 @@ pointlight FireThing
   color 1 1 0
   radius 160
   offset 0 0 16
+  noselfshadow
 }
 
 class FireThing
@@ -73,6 +79,7 @@ pointlight ZChandelier
   color 1 1 0.5
   radius 128
   offset 0 0 56
+  noselfshadow
 }
 
 class ZChandelier
@@ -87,6 +94,7 @@ pointlight BrassTorch
   color 1 1 0
   radius 160
   offset 0 0 55
+  noselfshadow
 }
 
 class BrassTorch
@@ -100,6 +108,7 @@ pointlight ZCandle
 {
   color 1 1 0.5
   radius 128
+  noselfshadow
 }
 
 class ZCandle
@@ -114,6 +123,7 @@ pointlight ZBlueCandle
   color 0.4 0.4 1
   radius 128
   offset 0 0 10
+  noselfshadow
 }
 
 class ZBlueCandle
@@ -128,6 +138,7 @@ pointlight ZTwinedTorch
   color 1 1 0
   radius 160
   offset 0 0 66
+  noselfshadow
 }
 
 class ZTwinedTorch
@@ -161,6 +172,7 @@ pointlight ZWallTorch
   color 1 1 0
   radius 128
   offset 0 0 38
+  noselfshadow
 }
 
 class ZWallTorch
@@ -194,6 +206,7 @@ pointlight ZCauldron
   color 1 1 0
   radius 128
   offset 0 0 18
+  noselfshadow
 }
 
 class ZCauldron
@@ -225,6 +238,7 @@ pointlight ZFireBull
   color 1 1 0
   radius 170
   offset 0 5 74
+  noselfshadow
 }
 
 class ZFireBull
@@ -258,6 +272,7 @@ pointlight FlameSmall
   color 1 1 0
   radius 128
   offset 0 0 8
+  noselfshadow
 }
 
 class FlameSmall
@@ -278,6 +293,7 @@ pointlight FlameLarge
   color 1 1 0
   radius 128
   offset 0 0 16
+  noselfshadow
 }
 
 class FlameLarge

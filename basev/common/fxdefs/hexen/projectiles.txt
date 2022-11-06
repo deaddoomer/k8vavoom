@@ -3,42 +3,49 @@ pointlight FireBall
 {
   color 1 0.5 0
   radius 126
+  noselfshadow
 }
 
 pointlight FireBall_X1
 {
   color 1 0.5 0
   radius 250
+  noselfshadow
 }
 
 pointlight FireBall_X2
 {
   color 1 0.5 0
   radius 210
+  noselfshadow
 }
 
 pointlight FireBall_X3
 {
   color 1 0.5 0
   radius 170
+  noselfshadow
 }
 
 pointlight FireBall_X4
 {
   color 1 0.5 0
   radius 130
+  noselfshadow
 }
 
 pointlight FireBall_X5
 {
   color 1 0.5 0
   radius 90
+  noselfshadow
 }
 
 pointlight FireBall_X6
 {
   color 1 0.5 0
   radius 50
+  noselfshadow
 }
 
 particleeffect FireBall
@@ -72,36 +79,42 @@ pointlight IceShard
 {
   color 0.3 0.3 0.75
   radius 66
+  noselfshadow
 }
 
 pointlight IceShard_X1
 {
   color 0.3 0.3 0.75
   radius 150
+  noselfshadow
 }
 
 pointlight IceShard_X2
 {
   color 0.3 0.3 0.75
   radius 120
+  noselfshadow
 }
 
 pointlight IceShard_X3
 {
   color 0.3 0.3 0.75
   radius 90
+  noselfshadow
 }
 
 pointlight IceShard_X4
 {
   color 0.3 0.3 0.75
   radius 60
+  noselfshadow
 }
 
 pointlight IceShard_X5
 {
   color 0.3 0.3 0.75
   radius 30
+  noselfshadow
 }
 
 class IceShard

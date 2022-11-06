@@ -4,6 +4,7 @@ pointlight KeyYellow
   color 1 1 0
   radius 66
   offset 0 0 1
+  noselfshadow
 }
 
 class KeyYellow
@@ -17,6 +18,7 @@ pointlight KeyGreen
   color 0 1 0
   radius 66
   offset 0 0 1
+  noselfshadow
 }
 
 class KeyGreen
@@ -30,6 +32,7 @@ pointlight KeyBlue
   color 0 0 1
   radius 66
   offset 0 0 1
+  noselfshadow
 }
 
 class KeyBlue
@@ -43,6 +46,7 @@ pointlight ArtiInvisibility
   color 0.4 0.5 0.4
   radius 86
   offset 0 0 1
+  noselfshadow
 }
 
 class ArtiInvisibility
