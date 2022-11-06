@@ -1918,6 +1918,17 @@ bool VViewClipper::ClipLightCheckSubsector (subsector_t *sub, int /*asShadow*/) 
   const int slight = CheckSubsectorLight(sub);
   if (!slight) return false;
   if (slight > 0 && ClipIsEmpty()) return true; // no clip nodes yet, and the box is fully inside the light
+  // here we may not touch any seg, but still touch floor/ceiling
+  // check for this case (there's no need to check segs in this case)
+  if (slight < 0) {
+    const sector_t *sector = sub->sector;
+    if ((Origin.z > sector->floor.maxz && Origin.z-Radius-sector->floor.maxz < -2.0f) ||
+        (Origin.z < sector->ceiling.minz && Origin.z+Radius-sector->ceiling.minz > 2.0f))
+    {
+      // surface check is done in another function (`UpdateBBoxWithSurface()`)
+      return true;
+    }
+  }
   const seg_t *seg = &Level->Segs[sub->firstline];
   for (int count = sub->numlines; count--; ++seg) {
     // if the light intersects the box, or fully inside the box, we need to check for touching
