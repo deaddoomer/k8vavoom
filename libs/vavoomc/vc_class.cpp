@@ -1306,12 +1306,12 @@ bool VClass::Define () {
           if (member->MemberType != MEMBER_Class) continue;
           if (member == this || member == ParentClass || member == origParent) continue; // do not touch these
           VClass *c = (VClass *)member;
-          if (c->ParentClass == origParent || c->ParentClass == ParentClass) {
+          if (/*c->ParentClass == origParent ||*/ c->ParentClass == ParentClass) {
             vdrlogf("VClass::Define (%s): parent `%s` for class `%s` replaced with self", GetName(), c->ParentClass->GetName(), c->GetName());
             c->ParentClass = this;
             // fix parent class name (neede for lastchild searching)
             c->ParentClassName = Name;
-          } else if (!c->ParentClass && (c->ParentClassName == origParent->Name || c->ParentClassName == ParentClass->Name)) {
+          } else if (!c->ParentClass && (/*c->ParentClassName == origParent->Name ||*/ c->ParentClassName == ParentClass->Name)) {
             vdrlogf("VClass::Define (%s): parent `%s` for class `%s` replaced with self (by name)", GetName(), *c->ParentClassName, c->GetName());
             // fix parent class name (neede for lastchild searching)
             c->ParentClassName = Name;
