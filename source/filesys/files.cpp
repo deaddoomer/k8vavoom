@@ -1271,10 +1271,11 @@ void AddAutoloadRC (VStr aubasedir) {
   // add skips from custom mode
   for (int f = 0; f < customMode.autoskips.length(); ++f) {
     GroupMask &gi = customMode.autoskips[f];
+    //GCon->Logf(NAME_Debug, "f=%d; %s=<%s>; enabled=%s", f, (gi.isGlob() ? "glob" : "name"), *gi.mask, (gi.enabled ? "tan" : "ona"));
     if (gi.isGlob()) {
       cliGroupMask.append(gi);
     } else {
-      cliGroupMap.put(gi.mask.toLowerCase(), false);
+      cliGroupMap.put(gi.mask.toLowerCase(), gi.enabled);
     }
   }
 
@@ -1288,6 +1289,7 @@ void AddAutoloadRC (VStr aubasedir) {
     bool enabled = !sc->Check("disabled");
     sc->Expect("{");
     // exact matches has precedence
+    //GCon->Logf("  GROUP: <%s>", *grpname);
     auto gmp = cliGroupMap.get(grpname.toLowerCase());
     if (gmp) {
       enabled = *gmp;
