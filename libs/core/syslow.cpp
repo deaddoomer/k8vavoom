@@ -1020,6 +1020,7 @@ static void __attribute__((constructor)) ctor_checkshitdoze_ctor (void) {
   MessageBox(NULL, buf, "k8vavoom", MB_OK);
   //TerminateProcess(GetCurrentProcess(), 1);
   #endif
+#if 0
   const char *ee = getenv("K8VAVOOM_SKIP_WINVER_CHECK");
   if (ee && strcmp(ee, "tan") == 0) return;
   const char *msg = nullptr;
@@ -1056,6 +1057,7 @@ static void __attribute__((constructor)) ctor_checkshitdoze_ctor (void) {
       ExitProcess(1); // just in case
     }
   }
+#endif
 }
 
 
