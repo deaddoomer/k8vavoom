@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <vavoom_models_list>
   <include file="models/tracer/tracer.xml" />
+  <!-- voxel models -->
+  <include file="models/voxels/BDW_EmptyClip/BDW_EmptyClip.xml" />
+  <include file="models/voxels/BDW_Rifle/BDW_Rifle.xml" />
+  <include file="models/voxels/BDW_Shotgun/BDW_Shotgun.xml" />
 </vavoom_models_list>

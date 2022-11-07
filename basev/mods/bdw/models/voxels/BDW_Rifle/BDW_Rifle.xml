@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<vavoom_model_definition noselfshadow="true">
+  <model name="voxmodel_0">
+    <kvx file="rifla.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.8" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <class name="BDW_Rifle" rotation="tan" bobbing="tan">
+    <state sprite="RIFL" sprite_frame="A" model="voxmodel_0" frame_index="0" />
+  </class>
+</vavoom_model_definition>

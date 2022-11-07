@@ -139,13 +139,32 @@ Actor BDW_EmptyClip : BDW_CasingBase {
         }
 
       //"####" "#" 0 A_SetTics(GetCVar("K8BDWOpt_EmptyClipTime")*35*60+10)
-      // become non-scripted instead
+      // fall down (used with voxel models)
+      "####" "#" 0 A_Jump(128, "DeathFall1")
+      "####" "#" 1 A_SetPitch(9*1)
+      "####" "#" 1 A_SetPitch(9*2)
+      "####" "#" 1 A_SetPitch(9*4)
+      "####" "#" 1 A_SetPitch(9*6)
+      "####" "#" 1 A_SetPitch(9*10)
       "####" "#" -1 A_BecomeK8VavoomInternalNoTickGrav(GetCVar("K8BDWOpt_EmptyClipTime")*60+frandom(1, 4), frandom(64, 90)/35.0/10.0)
+
     FadeOut:
       "####" "#" random(10, 15) A_FadeOut(0.01)
       Loop
 
-   Stopping:
+    DeathFall1:
+      "####" "#" 1 A_SetPitch(-9*1)
+      "####" "#" 1 A_SetPitch(-9*2)
+      "####" "#" 1 A_SetPitch(-9*4)
+      "####" "#" 1 A_SetPitch(-9*6)
+      "####" "#" 1 A_SetPitch(-9*10)
+      "####" "#" -1 A_BecomeK8VavoomInternalNoTickGrav(GetCVar("K8BDWOpt_EmptyClipTime")*60+frandom(1, 4), frandom(64, 90)/35.0/10.0)
+
+    FadeOut1:
+      "####" "#" random(10, 15) A_FadeOut(0.01)
+      Loop
+
+    Stopping:
       "####" "#" 0 A_ChangeFlag("NoInteraction", true)
       "####" "#" 0 A_ChangeVelocity(0, 0, -14, CVF_REPLACE)
       "####" "#" 25

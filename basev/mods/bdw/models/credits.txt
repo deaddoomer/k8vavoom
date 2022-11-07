@@ -1,0 +1,6 @@
+Voxelbro:
+  Combat Shotgun (modified by Ketmar)
+  Rifle
+
+unknown author:
+  Empty Casing
