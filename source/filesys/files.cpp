@@ -1518,6 +1518,8 @@ static void AddGameDir (VStr dir) {
 static VStr FindMainWad (VStr MainWad) {
   if (MainWad.length() == 0) return VStr();
 
+  if (Sys_FileExists(MainWad)) return MainWad;
+
   // if we have path separators, try relative path first
 #ifdef _WIN32
   const bool hasSep = (strchr(*MainWad, '\\') || strchr(*MainWad, '/') || (MainWad.length() >= 2 && MainWad[1] == ':'));
@@ -1954,7 +1956,10 @@ static void ProcessBaseGameDefs (VStr mainiwad) {
     } else {
       selectedGame = &knownGames[0];
     }
-    if (!selectedGame) Sys_Error("Looks like I cannot find any IWADs. Did you forgot to specify -iwaddir?");
+    if (!selectedGame) {
+      if (mainiwad.isEmpty()) Sys_Error("Looks like I cannot find any IWADs. Did you forgot to specify -iwaddir?");
+      selectedGame = &knownGames[0];
+    }
   }
   // set game name variable
   game_name = *selectedGame->gamename;
@@ -2490,8 +2495,23 @@ void FL_Init () {
   }
   */
 
-  if (cli_IWadName && cli_IWadName[0]) mainIWad = cli_IWadName;
-
+  if (cli_IWadName && cli_IWadName[0]) {
+    mainIWad = cli_IWadName;
+    if (mainIWad.length()) {
+      if (!Sys_FileExists(mainIWad) && !mainIWad.IsAbsolutePath()) {
+        // try "-iwaddir"
+        if (cli_IWadDir && cli_IWadDir[0]) {
+          VStr ipp = VStr(cli_IWadDir).appendPath(mainIWad);
+          if (Sys_FileExists(ipp)) {
+            mainIWad = ipp;
+            GCon->Logf(NAME_Init, "found custom iwad at \"-iwaddir\"");
+            vassert(Sys_FileExists(mainIWad));
+          }
+        }
+      }
+      if (!Sys_FileExists(mainIWad)) Sys_Error("custom IWAD '%s' not found!", *mainIWad);
+    }
+  }
 
   fsys_report_added_paks = !!reportWads;
 
