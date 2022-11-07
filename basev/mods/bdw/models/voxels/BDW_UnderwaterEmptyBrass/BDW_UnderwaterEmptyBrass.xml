@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<vavoom_model_definition noselfshadow="true">
+  <model name="voxmodel_0">
+    <kvx file="c4s3a0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <model name="voxmodel_1">
+    <kvx file="c4s3b0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <model name="voxmodel_2">
+    <kvx file="c4s3c0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <model name="voxmodel_3">
+    <kvx file="c4s3d0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <model name="voxmodel_4">
+    <kvx file="c4s3e0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <model name="voxmodel_5">
+    <kvx file="c4s3f0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <model name="voxmodel_6">
+    <kvx file="c4s3g0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <model name="voxmodel_7">
+    <kvx file="c4s3h0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <class name="BDW_UnderwaterEmptyBrass">
+    <state sprite="CAS3" sprite_frame="A" model="voxmodel_0" frame_index="0" />
+    <state sprite="CAS3" sprite_frame="B" model="voxmodel_1" frame_index="0" />
+    <state sprite="CAS3" sprite_frame="C" model="voxmodel_2" frame_index="0" />
+    <state sprite="CAS3" sprite_frame="D" model="voxmodel_3" frame_index="0" />
+    <state sprite="CAS3" sprite_frame="E" model="voxmodel_4" frame_index="0" />
+    <state sprite="CAS3" sprite_frame="F" model="voxmodel_5" frame_index="0" />
+    <state sprite="CAS3" sprite_frame="G" model="voxmodel_6" frame_index="0" />
+    <state sprite="CAS3" sprite_frame="H" model="voxmodel_7" frame_index="0" />
+  </class>
+</vavoom_model_definition>

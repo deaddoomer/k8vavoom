@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<vavoom_model_definition noselfshadow="true">
+  <model name="voxmodel_0">
+    <kvx file="c4s2a0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <model name="voxmodel_1">
+    <kvx file="c4s2b0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <model name="voxmodel_2">
+    <kvx file="c4s2c0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <model name="voxmodel_3">
+    <kvx file="c4s2d0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <model name="voxmodel_4">
+    <kvx file="c4s2e0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <model name="voxmodel_5">
+    <kvx file="c4s2f0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <model name="voxmodel_6">
+    <kvx file="c4s2g0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <model name="voxmodel_7">
+    <kvx file="c4s2h0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <model name="voxmodel_8">
+    <kvx file="c4s2i0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <model name="voxmodel_9">
+    <kvx file="c4s2j0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <model name="voxmodel_10">
+    <kvx file="c4s2k0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <model name="voxmodel_11">
+    <kvx file="c4s2l0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <model name="voxmodel_12">
+    <kvx file="c4s2m0.kvx">
+      <transform>
+        <rotate gz_voxel_yaw="90" />
+        <scale value="0.5" />
+      </transform>
+      <frame index="0" />
+    </kvx>
+  </model>
+  <class name="BDW_ShotgunCasing">
+    <state sprite="CAS2" sprite_frame="A" model="voxmodel_0" frame_index="0" />
+    <state sprite="CAS2" sprite_frame="B" model="voxmodel_1" frame_index="0" />
+    <state sprite="CAS2" sprite_frame="C" model="voxmodel_2" frame_index="0" />
+    <state sprite="CAS2" sprite_frame="D" model="voxmodel_3" frame_index="0" />
+    <state sprite="CAS2" sprite_frame="E" model="voxmodel_4" frame_index="0" />
+    <state sprite="CAS2" sprite_frame="F" model="voxmodel_5" frame_index="0" />
+    <state sprite="CAS2" sprite_frame="G" model="voxmodel_6" frame_index="0" />
+    <state sprite="CAS2" sprite_frame="H" model="voxmodel_7" frame_index="0" />
+    <state sprite="CAS2" sprite_frame="I" model="voxmodel_8" frame_index="0" />
+    <state sprite="CAS2" sprite_frame="J" model="voxmodel_9" frame_index="0" />
+    <state sprite="CAS2" sprite_frame="K" model="voxmodel_10" frame_index="0" />
+    <state sprite="CAS2" sprite_frame="L" model="voxmodel_11" frame_index="0" />
+    <state sprite="CAS2" sprite_frame="M" model="voxmodel_12" frame_index="0" />
+  </class>
+</vavoom_model_definition>

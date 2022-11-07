@@ -6,9 +6,12 @@ file(GLOB bdw_pak_SRC CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/actors/gl/*.gl
   ${CMAKE_CURRENT_SOURCE_DIR}/models/*
   ${CMAKE_CURRENT_SOURCE_DIR}/models/tracer/*
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/voxels/BDW_EmptyBrass/*
   ${CMAKE_CURRENT_SOURCE_DIR}/models/voxels/BDW_EmptyClip/*
   ${CMAKE_CURRENT_SOURCE_DIR}/models/voxels/BDW_Rifle/*
   ${CMAKE_CURRENT_SOURCE_DIR}/models/voxels/BDW_Shotgun/*
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/voxels/BDW_ShotgunCasing/*
+  ${CMAKE_CURRENT_SOURCE_DIR}/models/voxels/BDW_UnderwaterEmptyBrass/*
   ${CMAKE_CURRENT_SOURCE_DIR}/sounds/weapons/*
   ${CMAKE_CURRENT_SOURCE_DIR}/sprites/*
   ${CMAKE_CURRENT_SOURCE_DIR}/sprites/ammo/*

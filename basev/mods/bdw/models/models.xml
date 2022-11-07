@@ -3,6 +3,9 @@
   <include file="models/tracer/tracer.xml" />
   <!-- voxel models -->
   <include file="models/voxels/BDW_EmptyClip/BDW_EmptyClip.xml" />
+  <include file="models/voxels/BDW_EmptyBrass/BDW_EmptyBrass.xml" />
+  <include file="models/voxels/BDW_UnderwaterEmptyBrass/BDW_UnderwaterEmptyBrass.xml" />
+  <include file="models/voxels/BDW_ShotgunCasing/BDW_ShotgunCasing.xml" />
   <include file="models/voxels/BDW_Rifle/BDW_Rifle.xml" />
   <include file="models/voxels/BDW_Shotgun/BDW_Shotgun.xml" />
 </vavoom_models_list>
