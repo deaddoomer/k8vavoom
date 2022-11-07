@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<vavoom_model_definition noselfshadow="true">
+<vavoom_model_definition noselfshadow="true" noshadow="true">
   <model name="voxmodel_0">
     <kvx file="c4s2a0.kvx">
       <transform>
