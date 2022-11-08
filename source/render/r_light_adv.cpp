@@ -324,7 +324,10 @@ void VRenderLevelShadowVolume::RenderLightShadows (VEntity *ent, vuint32 dlflags
       for (unsigned fc = 0; fc < 6; ++fc) {
         Drawer->SetupLightShadowMap(fc);
         Drawer->RenderShadowMaps(shadowSurfacesSolid, shadowSurfacesMasked);
-        if (spShad > 0) RenderMobjSpriteShadowMap(ent, fc, spShad, dlflags);
+        // force monster shadows as sprites?
+        if (spShad > 0) {
+          RenderMobjSpriteShadowMap(ent, fc, spShad, dlflags);
+        }
         if (doModels) {
           Drawer->SetupModelShadowMap(fc);
           RenderMobjsShadowMap(ent, fc, dlflags);

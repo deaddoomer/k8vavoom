@@ -45,7 +45,7 @@ extern VCvarB r_model_shadows;
 extern VCvarB r_camera_player_shadows;
 extern VCvarB r_model_light;
 extern VCvarI r_max_model_shadows;
-extern VCvarI r_shadowmap_sprshadows_player;
+//extern VCvarI r_shadowmap_sprshadows_player;
 
 extern VCvarI r_fix_sprite_offsets;
 extern VCvarB r_fix_sprite_offsets_missiles;
@@ -76,6 +76,13 @@ static VCvarB r_shadowmap_spr_missiles("r_shadowmap_spr_missiles", true, "Render
 static VCvarB r_shadowmap_spr_pickups("r_shadowmap_spr_pickups", true, "Render fake sprite shadows for pickups?", CVAR_Archive);
 static VCvarB r_shadowmap_spr_decorations("r_shadowmap_spr_decorations", true, "Render fake sprite shadows for decorations?", CVAR_Archive);
 static VCvarB r_shadowmap_spr_players("r_shadowmap_spr_players", true, "Render fake sprite shadows for players?", CVAR_Archive);
+
+static VCvarB r_shadowmap_forcesprshadows_monsters("r_shadowmap_forcesprshadows_monsters", false, "Use sprites for monster shadows even if we have a model?", CVAR_Archive);
+static VCvarB r_shadowmap_forcesprshadows_corpses("r_shadowmap_forcesprshadows_corpses", false, "Use sprites for corpses even if we have a model?", CVAR_Archive);
+static VCvarB r_shadowmap_forcesprshadows_missiles("r_shadowmap_forcesprshadows_missiles", false, "Use sprites for projectiles even if we have a model?", CVAR_Archive);
+static VCvarB r_shadowmap_forcesprshadows_pickups("r_shadowmap_forcesprshadows_pickups", false, "Use sprites for pickups even if we have a model?", CVAR_Archive);
+static VCvarB r_shadowmap_forcesprshadows_decorations("r_shadowmap_forcesprshadows_decorations", false, "Use sprites for decorations even if we have a model?", CVAR_Archive);
+static VCvarB r_shadowmap_forcesprshadows_players("r_shadowmap_forcesprshadows_players", false, "Use sprites for players even if we have a model?", CVAR_Archive);
 
 
 //==========================================================================
@@ -241,10 +248,13 @@ void VRenderLevelShadowVolume::RenderMobjsShadow (VEntity *owner, vuint32 dlflag
 //  VRenderLevelShadowVolume::RenderMobjsShadowMap
 //
 //==========================================================================
-void VRenderLevelShadowVolume::RenderMobjsShadowMap (VEntity *owner, const unsigned int /*facenum*/, vuint32 dlflags) {
+void VRenderLevelShadowVolume::RenderMobjsShadowMap (VEntity *owner,
+                                                     const unsigned int facenum,
+                                                     vuint32 dlflags)
+{
+  if (dlflags&(dlight_t::NoActorLight|dlight_t::NoActorShadow|dlight_t::NoShadow)) return;
   if (!r_draw_mobjs || !r_models || !r_model_shadows) return;
   if (!r_dbg_advthing_draw_shadow) return;
-  if (dlflags&(dlight_t::NoActorLight|dlight_t::NoActorShadow|dlight_t::NoShadow)) return;
   float TimeFrac;
   RenderStyleInfo ri;
   for (auto &&ent : mobjsInCurrLightModels) {
@@ -255,22 +265,47 @@ void VRenderLevelShadowVolume::RenderMobjsShadowMap (VEntity *owner, const unsig
     if (SetupRenderStyleAndTime(ent, ri, TimeFrac)) {
       //GCon->Logf("THING SHADOW! (%s)", *ent->GetClass()->GetFullName());
       if (ri.isTranslucent()) continue;
-      bool renderShadow = true;
+      bool renderShadow = true, renderSprite = false;
       const VEntity::EType tclass = ent->Classify();
       switch (tclass) {
-        case VEntity::EType::ET_Unknown: renderShadow = true; break;
-        case VEntity::EType::ET_Player: renderShadow = r_shadowmap_spr_players.asBool(); break;
-        case VEntity::EType::ET_Missile: renderShadow = r_shadowmap_spr_missiles.asBool(); break;
-        case VEntity::EType::ET_Corpse: renderShadow = r_shadowmap_spr_corpses.asBool(); break;
-        case VEntity::EType::ET_Monster: renderShadow = r_shadowmap_spr_monsters.asBool(); break;
-        case VEntity::EType::ET_Decoration: renderShadow = r_shadowmap_spr_decorations.asBool(); break;
-        case VEntity::EType::ET_Pickup: renderShadow = r_shadowmap_spr_pickups.asBool(); break;
+        case VEntity::EType::ET_Unknown:
+          renderShadow = true;
+          break;
+        case VEntity::EType::ET_Player:
+          renderShadow = r_shadowmap_spr_players.asBool();
+          renderSprite = r_shadowmap_forcesprshadows_players.asBool();
+          break;
+        case VEntity::EType::ET_Missile:
+          renderShadow = r_shadowmap_spr_missiles.asBool();
+          renderSprite = r_shadowmap_forcesprshadows_missiles.asBool();
+          break;
+        case VEntity::EType::ET_Corpse:
+          renderShadow = r_shadowmap_spr_corpses.asBool();
+          renderSprite = r_shadowmap_forcesprshadows_corpses.asBool();
+          break;
+        case VEntity::EType::ET_Monster:
+          renderShadow = r_shadowmap_spr_monsters.asBool();
+          renderSprite = r_shadowmap_forcesprshadows_monsters.asBool();
+          break;
+        case VEntity::EType::ET_Decoration:
+          renderShadow = r_shadowmap_spr_decorations.asBool();
+          renderSprite = r_shadowmap_forcesprshadows_decorations.asBool();
+          break;
+        case VEntity::EType::ET_Pickup:
+          renderShadow = r_shadowmap_spr_pickups.asBool();
+          renderSprite = r_shadowmap_forcesprshadows_pickups.asBool();
+          break;
         default: abort();
       }
       if (!renderShadow) continue;
       ri.light = 0xffffffffu;
       ri.fade = 0;
-      DrawEntityModel(ent, ri, TimeFrac, RPASS_ShadowMaps);
+      // use sprites for monster shadows?
+      if (renderSprite) {
+        RenderMobjShadowMapSprite(ent, facenum, true/*use rotations*/);
+      } else {
+        DrawEntityModel(ent, ri, TimeFrac, RPASS_ShadowMaps);
+      }
       //DrawEntityModel(ent, 0xffffffff, 0, ri, TimeFrac, RPASS_ShadowVolumes);
     }
     //++ent->NumRenderedShadows;
@@ -421,9 +456,15 @@ void VRenderLevelShadowVolume::RenderMobjsFog () {
 //  VRenderLevelShadowVolume::RenderMobjSpriteShadowMap
 //
 //==========================================================================
-void VRenderLevelShadowVolume::RenderMobjSpriteShadowMap (VEntity *owner, const unsigned int facenum, int spShad, vuint32 dlflags) {
+void VRenderLevelShadowVolume::RenderMobjSpriteShadowMap (VEntity *owner,
+                                                          const unsigned int facenum,
+                                                          int spShad, vuint32 dlflags)
+{
   if (dlflags&(dlight_t::NoActorLight|dlight_t::NoActorShadow|dlight_t::NoShadow)) return;
-  if (spShad < 1) return;
+  if (spShad < 1) {
+    // check for monster
+    return;
+  }
   //const bool doPlayer = r_shadowmap_spr_player.asBool();
 
   for (auto &&mo : mobjsInCurrLightSprites) {

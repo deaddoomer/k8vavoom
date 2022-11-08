@@ -94,6 +94,47 @@ menudef ShadowMapOptions {
   }
 
 
+  header "Force Sprite Shadows";
+
+  option bool {
+    title = "Monsters";
+    cvar = r_shadowmap_forcesprshadows_monsters;
+    help = "Use sprites for monster shadows even if we have a model?";
+  }
+
+  option bool {
+    title = "Corpses";
+    cvar = r_shadowmap_forcesprshadows_corpses;
+    help = "Use sprites for corpses even if we have a model?";
+  }
+
+  option bool {
+    title = "Missiles";
+    cvar = r_shadowmap_forcesprshadows_missiles;
+    help = "Use sprites for projectiles even if we have a model?";
+  }
+
+  option bool {
+    title = "Pickups";
+    cvar = r_shadowmap_forcesprshadows_pickups;
+    help = "Use sprites for pickups even if we have a model?";
+  }
+
+  option bool {
+    title = "Decorations";
+    cvar = r_shadowmap_forcesprshadows_decorations;
+    help =
+      "Use sprites for decorations even if we have a model?"
+      "'Decoration' is any solid thing.";
+  }
+
+  option bool {
+    title = "Players";
+    cvar = r_shadowmap_forcesprshadows_players;
+    help = "Use sprites for players even if we have a model?";
+  }
+
+
   header "Rendering Options";
 
   option enum {
