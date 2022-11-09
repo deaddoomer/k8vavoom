@@ -128,6 +128,7 @@ currently supported:
       bool thiswadonly -- replace frames only if sprites are from the current WAD/PK3
       bool rotation
       bool bobbing
+      bool spriteshadow -- use sprite instead of 3d model for shadowmaps
   -->
   <class name="ClipBox">
     <!--

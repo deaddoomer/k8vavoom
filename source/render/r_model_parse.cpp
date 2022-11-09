@@ -153,7 +153,7 @@ bool R_HaveClassModelByName (VName clsName) {
 //==========================================================================
 bool R_EntModelNoSelfShadow (VEntity *mobj) {
   VClassModelScript *cs = RM_FindClassModelByName(VRenderLevelShared::GetClassNameForModel(mobj));
-  return (cs ? cs->NoSelfShadow : true);
+  return (cs ? cs->noSelfShadow : true);
 }
 
 
@@ -1115,7 +1115,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
                                                 "rotation", "bobbing",
                                                 "usepitch", "useroll",
                                                 "random_zoffset_min", "random_zoffset_max",
-                                                "gzdoom", nullptr);
+                                                "gzdoom", "spriteshadow", nullptr);
       if (bad) Sys_Error("%s: model '%s' class definition has invalid attribute '%s'", *bad->Loc.toStringNoCol(), *Mdl->Name, *bad->Name);
     }
 
@@ -1148,11 +1148,12 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
     const bool classGZDoom = ParseBool(ClassDefNode, "gzdoom", false);
     Cls->Model = Mdl;
     Cls->Name = (xcls ? xcls->GetName() : *vcClassName);
-    Cls->NoSelfShadow = ParseBool(ClassDefNode, "noselfshadow", globNoSelfShadow);
-    Cls->OneForAll = false;
-    Cls->CacheBuilt = false;
+    Cls->noSelfShadow = ParseBool(ClassDefNode, "noselfshadow", globNoSelfShadow);
+    Cls->oneForAll = false;
+    Cls->frameCacheBuilt = false;
     Cls->isGZDoom = isGZDoom;
     Cls->asTranslucent = false;
+    Cls->spriteShadow = ParseBool(ClassDefNode, "spriteshadow", false);
     Cls->iwadonly = ParseBool(ClassDefNode, "iwadonly", globIWadOnly);
     Cls->thiswadonly = ParseBool(ClassDefNode, "thiswadonly", globThisWadOnly);
     ModelZOffset defzoffset;
@@ -1445,7 +1446,7 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
 
     if (deleteIt) { delete Cls; continue; }
     if (hasOneAll && !hasOthers) {
-      Cls->OneForAll = true;
+      Cls->oneForAll = true;
       //GCon->Logf("model '%s' for class '%s' is \"one-for-all\"", *Mdl->Name, *Cls->Name);
     }
   }

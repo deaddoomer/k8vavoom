@@ -395,16 +395,17 @@ struct VScriptedModelFrame {
 struct VClassModelScript {
   VName Name;
   VModel *Model;
-  bool NoSelfShadow;
-  bool OneForAll; // no need to do anything, this is "one model for all frames"
   TArray<VScriptedModelFrame> Frames;
-  bool CacheBuilt;
-  bool isGZDoom;
+  TMapNC<vuint32, int> SprFrameMap; // sprite name -> frame index (first)
+  TMapNC<int, int> NumFrameMap; // frame number -> frame index (first)
+  bool noSelfShadow;
+  bool oneForAll; // no need to do anything, this is "one model for all frames"
+  bool frameCacheBuilt; // is frame cache built (see `UpdateClassFrameCache()`)
+  bool isGZDoom; // GZDoom model from MODELDEF?
   bool iwadonly;
   bool thiswadonly;
   bool asTranslucent; // always queue this as translucent model?
-  TMapNC<vuint32, int> SprFrameMap; // sprite name -> frame index (first)
-  TMapNC<int, int> NumFrameMap; // frame number -> frame index (first)
+  bool spriteShadow; // use sprite for shadowmaps
 };
 
 
@@ -422,7 +423,7 @@ extern TMapNC<VName, VClassModelScript *> ClassModelMap;
 
 void RM_FreeModelRenderer ();
 
-void RM_RebuildClassModelMap();
+void RM_RebuildClassModelMap ();
 
 static inline VVA_OKUNUSED VClassModelScript *RM_FindClassModelByName (VName clsName) {
   if (ClassModelMapNeedRebuild) RM_RebuildClassModelMap();

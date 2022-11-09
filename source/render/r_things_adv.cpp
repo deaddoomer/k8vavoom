@@ -77,13 +77,15 @@ static VCvarB r_shadowmap_spr_pickups("r_shadowmap_spr_pickups", true, "Render f
 static VCvarB r_shadowmap_spr_decorations("r_shadowmap_spr_decorations", true, "Render fake sprite shadows for decorations?", CVAR_Archive);
 static VCvarB r_shadowmap_spr_players("r_shadowmap_spr_players", true, "Render fake sprite shadows for players?", CVAR_Archive);
 
-static VCvarB r_shadowmap_forcesprshadows_monsters("r_shadowmap_forcesprshadows_monsters", false, "Use sprites for monster shadows even if we have a model?", CVAR_Archive);
-static VCvarB r_shadowmap_forcesprshadows_corpses("r_shadowmap_forcesprshadows_corpses", false, "Use sprites for corpses even if we have a model?", CVAR_Archive);
-static VCvarB r_shadowmap_forcesprshadows_missiles("r_shadowmap_forcesprshadows_missiles", false, "Use sprites for projectiles even if we have a model?", CVAR_Archive);
-static VCvarB r_shadowmap_forcesprshadows_pickups("r_shadowmap_forcesprshadows_pickups", false, "Use sprites for pickups even if we have a model?", CVAR_Archive);
-static VCvarB r_shadowmap_forcesprshadows_decorations("r_shadowmap_forcesprshadows_decorations", false, "Use sprites for decorations even if we have a model?", CVAR_Archive);
-static VCvarB r_shadowmap_forcesprshadows_players("r_shadowmap_forcesprshadows_players", false, "Use sprites for players even if we have a model?", CVAR_Archive);
-static VCvarB r_shadowmap_forcesprshadows_barrels("r_shadowmap_forcesprshadows_barrels", true, "Use sprites for barrels even if we have a model?", CVAR_Archive);
+// -1: never
+//  0: default
+//  1: always
+static VCvarI r_shadowmap_forcesprshadows_monsters("r_shadowmap_forcesprshadows_monsters", 0, "Use sprites for monster shadows even if we have a model?", CVAR_Archive);
+static VCvarI r_shadowmap_forcesprshadows_corpses("r_shadowmap_forcesprshadows_corpses", 0, "Use sprites for corpses even if we have a model?", CVAR_Archive);
+static VCvarI r_shadowmap_forcesprshadows_missiles("r_shadowmap_forcesprshadows_missiles", 0, "Use sprites for projectiles even if we have a model?", CVAR_Archive);
+static VCvarI r_shadowmap_forcesprshadows_pickups("r_shadowmap_forcesprshadows_pickups", 0, "Use sprites for pickups even if we have a model?", CVAR_Archive);
+static VCvarI r_shadowmap_forcesprshadows_decorations("r_shadowmap_forcesprshadows_decorations", 0, "Use sprites for decorations even if we have a model?", CVAR_Archive);
+static VCvarI r_shadowmap_forcesprshadows_players("r_shadowmap_forcesprshadows_players", 0, "Use sprites for players even if we have a model?", CVAR_Archive);
 
 
 //==========================================================================
@@ -266,7 +268,8 @@ void VRenderLevelShadowVolume::RenderMobjsShadowMap (VEntity *owner,
     if (SetupRenderStyleAndTime(ent, ri, TimeFrac)) {
       //GCon->Logf("THING SHADOW! (%s)", *ent->GetClass()->GetFullName());
       if (ri.isTranslucent()) continue;
-      bool renderShadow = true, renderSprite = false;
+      bool renderShadow = true;
+      int renderSprite = 0; // default
       const VEntity::EType tclass = ent->Classify();
       switch (tclass) {
         case VEntity::EType::ET_Unknown:
@@ -274,42 +277,46 @@ void VRenderLevelShadowVolume::RenderMobjsShadowMap (VEntity *owner,
           break;
         case VEntity::EType::ET_Player:
           renderShadow = r_shadowmap_spr_players.asBool();
-          renderSprite = r_shadowmap_forcesprshadows_players.asBool();
+          renderSprite = r_shadowmap_forcesprshadows_players.asInt();
           break;
         case VEntity::EType::ET_Missile:
           renderShadow = r_shadowmap_spr_missiles.asBool();
-          renderSprite = r_shadowmap_forcesprshadows_missiles.asBool();
+          renderSprite = r_shadowmap_forcesprshadows_missiles.asInt();
           break;
         case VEntity::EType::ET_Corpse:
           renderShadow = r_shadowmap_spr_corpses.asBool();
-          renderSprite = r_shadowmap_forcesprshadows_corpses.asBool();
+          renderSprite = r_shadowmap_forcesprshadows_corpses.asInt();
           break;
         case VEntity::EType::ET_Monster:
           renderShadow = r_shadowmap_spr_monsters.asBool();
-          renderSprite = r_shadowmap_forcesprshadows_monsters.asBool();
+          renderSprite = r_shadowmap_forcesprshadows_monsters.asInt();
           break;
         case VEntity::EType::ET_Decoration:
           renderShadow = r_shadowmap_spr_decorations.asBool();
-          renderSprite = r_shadowmap_forcesprshadows_decorations.asBool();
-          // hack! detect barrels by name
-          if (renderShadow && !renderSprite && r_shadowmap_forcesprshadows_barrels.asBool() &&
-              strstr(*ent->GetClass()->Name, "Barrel"))
-          {
-            renderSprite = true;
-            //GCon->Logf(NAME_Debug, "BARREL DETECTED!");
-          }
+          renderSprite = r_shadowmap_forcesprshadows_decorations.asInt();
           break;
         case VEntity::EType::ET_Pickup:
           renderShadow = r_shadowmap_spr_pickups.asBool();
-          renderSprite = r_shadowmap_forcesprshadows_pickups.asBool();
+          renderSprite = r_shadowmap_forcesprshadows_pickups.asInt();
           break;
         default: abort();
       }
       if (!renderShadow) continue;
       ri.light = 0xffffffffu;
       ri.fade = 0;
-      // use sprites for monster shadows?
-      if (renderSprite) {
+      // final check
+      if (renderSprite == 0) {
+        VClassModelScript *csc = RM_FindClassModelByName(GetClassNameForModel(ent));
+        if (!csc) continue; // just in case
+        renderSprite = csc->spriteShadow;
+        #if 0
+        if (renderSprite > 0) {
+          GCon->Logf(NAME_Debug, "FORCED SPRITE SHADOW FOR '%s'", *ent->GetClass()->GetFullName());
+        }
+        #endif
+      }
+      // use sprites for shadows?
+      if (renderSprite > 0) {
         RenderMobjShadowMapSprite(ent, facenum, true/*use rotations*/);
       } else {
         DrawEntityModel(ent, ri, TimeFrac, RPASS_ShadowMaps);

@@ -96,41 +96,71 @@ menudef ShadowMapOptions {
 
   header "Force Sprite Shadows";
 
-  option bool {
+  option enum {
     title = "Monsters";
     cvar = r_shadowmap_forcesprshadows_monsters;
+    list {
+      "Never" = -1,
+      "Default" = 0,
+      "Always" = 1
+    }
     help = "Use sprites for monster shadows even if we have a model?";
   }
 
-  option bool {
+  option enum {
     title = "Corpses";
     cvar = r_shadowmap_forcesprshadows_corpses;
+    list {
+      "Never" = -1,
+      "Default" = 0,
+      "Always" = 1
+    }
     help = "Use sprites for corpses even if we have a model?";
   }
 
-  option bool {
+  option enum {
     title = "Missiles";
     cvar = r_shadowmap_forcesprshadows_missiles;
+    list {
+      "Never" = -1,
+      "Default" = 0,
+      "Always" = 1
+    }
     help = "Use sprites for projectiles even if we have a model?";
   }
 
-  option bool {
+  option enum {
     title = "Pickups";
     cvar = r_shadowmap_forcesprshadows_pickups;
+    list {
+      "Never" = -1,
+      "Default" = 0,
+      "Always" = 1
+    }
     help = "Use sprites for pickups even if we have a model?";
   }
 
-  option bool {
+  option enum {
     title = "Decorations";
     cvar = r_shadowmap_forcesprshadows_decorations;
+    list {
+      "Never" = -1,
+      "Default" = 0,
+      "Always" = 1
+    }
     help =
       "Use sprites for decorations even if we have a model?"
       "'Decoration' is any solid thing.";
   }
 
-  option bool {
+  option enum {
     title = "Players";
     cvar = r_shadowmap_forcesprshadows_players;
+    list {
+      "Never" = -1,
+      "Default" = 0,
+      "Always" = 1
+    }
     help = "Use sprites for players even if we have a model?";
   }
 

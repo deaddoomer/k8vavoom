@@ -179,7 +179,7 @@ static void PositionModel (TVec &Origin, TAVec &Angles, VMeshModel *wpmodel, int
 //
 //==========================================================================
 static void UpdateClassFrameCache (VClassModelScript &Cls) {
-  if (!Cls.CacheBuilt) {
+  if (!Cls.frameCacheBuilt) {
     for (int i = 0; i < Cls.Frames.length(); ++i) {
       VScriptedModelFrame &frm = Cls.Frames[i];
       frm.nextSpriteIdx = frm.nextNumberIdx = -1;
@@ -215,7 +215,7 @@ static void UpdateClassFrameCache (VClassModelScript &Cls) {
         }
       }
     }
-    Cls.CacheBuilt = true;
+    Cls.frameCacheBuilt = true;
   }
 }
 
@@ -687,7 +687,7 @@ static int FindFrame (VClassModelScript &Cls, const VAliasModelFrameInfo &Frame,
   UpdateClassFrameCache(Cls);
 
   // try cached frames
-  if (Cls.OneForAll) return 0; // guaranteed
+  if (Cls.oneForAll) return 0; // guaranteed
 
   // we have to check both index and frame here, because we don't know which was defined
   // i can preprocess this, but meh, i guess that hashtable+chain is fast enough
@@ -739,7 +739,7 @@ static int FindFrameGZ (VClassModelScript &Cls, const VAliasModelFrameInfo &Fram
   UpdateClassFrameCache(Cls);
 
   // try cached frames
-  if (Cls.OneForAll) return 0; // guaranteed
+  if (Cls.oneForAll) return 0; // guaranteed
 
   // we have to check both index and frame here, because we don't know which was defined
   // i can preprocess this, but meh, i guess that hashtable+chain is fast enough
