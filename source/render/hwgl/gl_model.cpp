@@ -246,6 +246,137 @@ void VOpenGLDrawer::UnloadModels () {
 
 //==========================================================================
 //
+//  VOpenGLDrawer::DrawAliasModelFrame
+//
+//  render alias model for sprite frame
+//
+//==========================================================================
+void VOpenGLDrawer::DrawAliasModelFrame (const TVec &origin, const TAVec &angles, const TVec &scale,
+                                         VMeshModel *Mdl, int frame, VTexture *Skin, VTextureTranslation *Trans,
+                                         int CMap)
+{
+  // do not render models without textures
+  if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return;
+
+  UploadModel(Mdl);
+
+  SetPicModel(Skin, Trans, CMap, 0u);
+/*
+  if (ri.isShaded()) AllowTransparency = true;
+
+  //glEnable(GL_ALPHA_TEST);
+  //glShadeModel(GL_SMOOTH);
+  //glAlphaFunc(GL_GREATER, 0.0f);
+  GLEnableBlend();
+
+  VMatrix4 RotationMatrix;
+  AliasSetupTransform(origin, angles, Transform, RotationMatrix);
+
+  GLint attrPosition;
+  GLint attrVert2;
+  GLint attrTexCoord;
+
+  if (!ri.isStenciled()) {
+    SurfModel.Activate();
+    SurfModel.SetTexture(0);
+    SurfModel.SetModelToWorldMat(RotationMatrix);
+    SurfModel.SetFogFade(ri.fade, ri.alpha);
+    SurfModel.SetInAlpha(ri.alpha < 1.0f ? ri.alpha : 1.0f);
+    SurfModel.SetAllowTransparency(AllowTransparency);
+    SurfModel.SetInter(Inter);
+    SurfModel.UploadChangedUniforms();
+    attrPosition = SurfModel.loc_Position;
+    attrVert2 = SurfModel.loc_Vert2;
+    attrTexCoord = SurfModel.loc_TexCoord;
+  } else {
+    SurfModelStencil.Activate();
+    SurfModelStencil.SetTexture(0);
+    SurfModelStencil.SetModelToWorldMat(RotationMatrix);
+    SurfModelStencil.SetFogFade(ri.fade, ri.alpha);
+    SurfModelStencil.SetInAlpha(ri.alpha < 1.0f ? ri.alpha : 1.0f);
+    SurfModelStencil.SetAllowTransparency(AllowTransparency);
+    SurfModelStencil.SetInter(Inter);
+    SurfModelStencil.SetStencilColor(((ri.stencilColor>>16)&255)/255.0f, ((ri.stencilColor>>8)&255)/255.0f, (ri.stencilColor&255)/255.0f);
+    SurfModelStencil.UploadChangedUniforms();
+    attrPosition = SurfModelStencil.loc_Position;
+    attrVert2 = SurfModelStencil.loc_Vert2;
+    attrTexCoord = SurfModelStencil.loc_TexCoord;
+  }
+
+  bool restoreDepth = false;
+  //PushDepthMask();
+
+  //if (ri.isShaded()) GCon->Logf(NAME_Debug, "!!!!! %s (0x%08x)", *Mdl->Name, ri.stencilColor);
+  SetupBlending(ri);
+
+  {
+    if (gl_gpu_debug_models) p_glDebugLogf("DrawAliasModel <%s:%d>", *Mdl->Name, Mdl->MeshIndex);
+
+    VMeshFrame *FrameDesc = &Mdl->Frames[frame];
+    VMeshFrame *NextFrameDesc = &Mdl->Frames[nextframe];
+
+    p_glBindBufferARB(GL_ARRAY_BUFFER_ARB, Mdl->VertsBuffer);
+
+    if (attrPosition >= 0) {
+      p_glVertexAttribPointerARB(attrPosition, 3, GL_FLOAT, GL_FALSE, 0, (void *)(size_t)FrameDesc->VertsOffset);
+      p_glEnableVertexAttribArrayARB(attrPosition);
+    }
+
+    if (attrVert2 >= 0) {
+      p_glVertexAttribPointerARB(attrVert2, 3, GL_FLOAT, GL_FALSE, 0, (void *)(size_t)NextFrameDesc->VertsOffset);
+      p_glEnableVertexAttribArrayARB(attrVert2);
+    }
+
+    if (attrTexCoord >= 0) {
+      p_glVertexAttribPointerARB(attrTexCoord, 2, GL_FLOAT, GL_FALSE, 0, 0);
+      p_glEnableVertexAttribArrayARB(attrTexCoord);
+    }
+
+    if (!ri.isStenciled()) {
+      SurfModel.SetLightValAttr(((ri.light>>16)&255)/255.0f, ((ri.light>>8)&255)/255.0f, (ri.light&255)/255.0f, ri.alpha);
+    } else {
+      SurfModelStencil.SetLightValAttr(((ri.light>>16)&255)/255.0f, ((ri.light>>8)&255)/255.0f, (ri.light&255)/255.0f, ri.alpha);
+    }
+
+    p_glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, Mdl->IndexBuffer);
+
+    //if ((ri.alpha < 1.0f && !ForceDepthUse) || AllowTransparency) { //k8: dunno. really.
+    if (!ForceDepthUse && (ri.alpha < 1.0f || AllowTransparency)) { //k8: this looks more logical
+      restoreDepth = true;
+      PushDepthMask();
+      //glDepthMask(GL_FALSE);
+      GLDisableDepthWrite();
+      //GCon->Logf(NAME_Debug, "DrawAliasModel-NODEPTH <%s:%d>", *Mdl->Name, Mdl->MeshIndex);
+    }
+
+    DRAW_TRI_ELEMENTS();
+
+    p_glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+
+    if (attrPosition >= 0) p_glDisableVertexAttribArrayARB(attrPosition);
+    if (attrVert2 >= 0) p_glDisableVertexAttribArrayARB(attrVert2);
+    if (attrTexCoord >= 0) p_glDisableVertexAttribArrayARB(attrTexCoord);
+    p_glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+
+    if (gl_gpu_debug_models) p_glDebugLogf("done DrawAliasModel <%s:%d>", *Mdl->Name, Mdl->MeshIndex);
+  }
+
+  //glShadeModel(GL_FLAT);
+  //glAlphaFunc(GL_GREATER, getAlphaThreshold());
+  //glDisable(GL_ALPHA_TEST);
+  //if (ri.isAdditive()) glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+  RestoreBlending(ri);
+
+  if (is_view_model) glDepthRange(0.0f, 1.0f);
+
+  if (onlyDepth) glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+  if (restoreDepth) PopDepthMask();
+*/
+}
+
+
+//==========================================================================
+//
 //  VOpenGLDrawer::DrawAliasModel
 //
 //  renders alias model for lightmapped renderer

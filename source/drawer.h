@@ -721,6 +721,12 @@ public:
                                   const TVec &saxis, const TVec &taxis, const TVec &texorg,
                                   SpriteType sptype=SP_Normal) = 0;
 
+  // render alias model for sprite frame
+  virtual void DrawAliasModelFrame (const TVec &origin, const TAVec &angles, const TVec &scale,
+                                    VMeshModel *Mdl, int frame, VTexture *Skin, VTextureTranslation *Trans,
+                                    int CMap) = 0;
+
+  // render alias model for lightmapped renderer
   virtual void DrawAliasModel (const TVec &origin, const TAVec &angles, const AliasModelTrans &Transform,
                                VMeshModel *Mdl, int frame, int nextframe, VTexture *Skin, VTextureTranslation *Trans,
                                int CMap, const RenderStyleInfo &ri, bool is_view_model,

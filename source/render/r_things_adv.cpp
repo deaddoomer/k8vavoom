@@ -83,6 +83,7 @@ static VCvarB r_shadowmap_forcesprshadows_missiles("r_shadowmap_forcesprshadows_
 static VCvarB r_shadowmap_forcesprshadows_pickups("r_shadowmap_forcesprshadows_pickups", false, "Use sprites for pickups even if we have a model?", CVAR_Archive);
 static VCvarB r_shadowmap_forcesprshadows_decorations("r_shadowmap_forcesprshadows_decorations", false, "Use sprites for decorations even if we have a model?", CVAR_Archive);
 static VCvarB r_shadowmap_forcesprshadows_players("r_shadowmap_forcesprshadows_players", false, "Use sprites for players even if we have a model?", CVAR_Archive);
+static VCvarB r_shadowmap_forcesprshadows_barrels("r_shadowmap_forcesprshadows_barrels", true, "Use sprites for barrels even if we have a model?", CVAR_Archive);
 
 
 //==========================================================================
@@ -290,6 +291,13 @@ void VRenderLevelShadowVolume::RenderMobjsShadowMap (VEntity *owner,
         case VEntity::EType::ET_Decoration:
           renderShadow = r_shadowmap_spr_decorations.asBool();
           renderSprite = r_shadowmap_forcesprshadows_decorations.asBool();
+          // hack! detect barrels by name
+          if (renderShadow && !renderSprite && r_shadowmap_forcesprshadows_barrels.asBool() &&
+              strstr(*ent->GetClass()->Name, "Barrel"))
+          {
+            renderSprite = true;
+            //GCon->Logf(NAME_Debug, "BARREL DETECTED!");
+          }
           break;
         case VEntity::EType::ET_Pickup:
           renderShadow = r_shadowmap_spr_pickups.asBool();
