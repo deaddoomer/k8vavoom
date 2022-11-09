@@ -662,10 +662,8 @@ public:
   virtual void DrawSpriteShadowMap (const TVec *cv, VTexture *Tex, const TVec &sprnormal,
                                     const TVec &saxis, const TVec &taxis, const TVec &texorg) override;
 
-  // render alias model for sprite frame
-  virtual void DrawAliasModelFrame (const TVec &origin, const TAVec &angles, const TVec &scale,
-                                    VMeshModel *Mdl, int frame, VTexture *Skin, VTextureTranslation *Trans,
-                                    int CMap) override;
+  // render alias model for shadow sprite frame
+  virtual void DrawAliasModelShadowFrame (const VMatrix4 &TMatrix, VMeshModel *Mdl, int frame) override;
 
   virtual void DrawAliasModel (const TVec &origin, const TAVec &angles, const AliasModelTrans &Transform,
                                VMeshModel *Mdl, int frame, int nextframe, VTexture *Skin, VTextureTranslation *Trans,

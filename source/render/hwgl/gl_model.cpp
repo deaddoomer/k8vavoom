@@ -246,22 +246,19 @@ void VOpenGLDrawer::UnloadModels () {
 
 //==========================================================================
 //
-//  VOpenGLDrawer::DrawAliasModelFrame
+//  VOpenGLDrawer::DrawAliasModelShadowFrame
 //
 //  render alias model for sprite frame
 //
 //==========================================================================
-void VOpenGLDrawer::DrawAliasModelFrame (const TVec &origin, const TAVec &angles, const TVec &scale,
-                                         VMeshModel *Mdl, int frame, VTexture *Skin, VTextureTranslation *Trans,
-                                         int CMap)
-{
+void VOpenGLDrawer::DrawAliasModelShadowFrame (const VMatrix4 &TMatrix, VMeshModel *Mdl, int frame) {
   // do not render models without textures
-  if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return;
+  if (Mdl->STVerts.length() == 0) return;
 
   UploadModel(Mdl);
 
-  SetPicModel(Skin, Trans, CMap, 0u);
 /*
+  SetPicModel(Skin, Trans, CMap, 0u);
   if (ri.isShaded()) AllowTransparency = true;
 
   //glEnable(GL_ALPHA_TEST);
