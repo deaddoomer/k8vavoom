@@ -99,6 +99,12 @@ bool bAutomapShowThings;
 // this flag is set for client games if the player is using prediction engine (not yet)
 transient bool bAutonomousProxy;
 transient bool bExitedViaSecret; // set/reset in C++ code
+// inverse mouse movement
+bool bInverseMouseX;
+bool bInverseMouseY;
+// block mouse movement
+bool bBlockMouseX;
+bool bBlockMouseY;
 
 native readonly private void *Net;
 
@@ -139,6 +145,11 @@ transient int OldButtons;
 transient float AcsNextButtonUpdate;
 transient float AcsPrevMouseX, AcsPrevMouseY; // previous ACS mouse movement
 transient float AcsMouseX, AcsMouseY; // current ACS mouse movement
+// ACS mouse is not exactly what was used to change view angles
+// the following two variables holds values (with applied acceleration and such)
+transient float ViewMouseDeltaX, ViewMouseDeltaY;
+// "raw" deltas, without acceleration
+transient float RawMouseDeltaX, RawMouseDeltaY;
 
 Entity MO;
 Entity Camera;

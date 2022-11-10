@@ -981,10 +981,10 @@ void VBasePlayer::ResetButtons () {
   AcsButtons = 0;
   OldButtons = 0;
   AcsNextButtonUpdate = 0;
-  AcsPrevMouseX = 0;
-  AcsPrevMouseY = 0;
-  AcsMouseX = 0;
-  AcsMouseY = 0;
+  AcsPrevMouseX = AcsPrevMouseY = 0;
+  AcsMouseX = AcsMouseY = 0;
+  ViewMouseDeltaX = ViewMouseDeltaY = 0;
+  RawMouseDeltaX = RawMouseDeltaY = 0;
   // reset "down" flags
   PlayerFlags &= ~VBasePlayer::PF_AttackDown;
   PlayerFlags &= ~VBasePlayer::PF_UseDown;
@@ -1069,10 +1069,10 @@ IMPLEMENT_FUNCTION(VBasePlayer, ClearPlayer) {
   Self->AcsButtons = 0;
   Self->OldButtons = 0;
   Self->AcsNextButtonUpdate = 0;
-  Self->AcsPrevMouseX = 0;
-  Self->AcsPrevMouseY = 0;
-  Self->AcsMouseX = 0;
-  Self->AcsMouseY = 0;
+  Self->AcsPrevMouseX = Self->AcsPrevMouseY = 0;
+  Self->AcsMouseX = Self->AcsMouseY = 0;
+  Self->ViewMouseDeltaX = Self->ViewMouseDeltaY = 0;
+  Self->RawMouseDeltaX = Self->RawMouseDeltaY = 0;
   Self->MO = nullptr;
   Self->PlayerState = 0;
   Self->ViewOrg = TVec(0, 0, 0);

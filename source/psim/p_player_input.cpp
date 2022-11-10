@@ -695,7 +695,23 @@ void VBasePlayer::HandleInput () {
   float side = 0.0f;
   float flyheight = 0.0f;
 
+  ViewMouseDeltaX = mousex*m_yaw;
+  ViewMouseDeltaY = mousey*m_pitch;
+  RawMouseDeltaX = mousex;
+  RawMouseDeltaY = mousey;
+
+  const float oldMouseX = mousex;
+  const float oldMouseY = mousey;
+  const TAVec origViewAngles = ViewAngles;
+  if (PlayerFlags&PF_BlockMouseX) mousex = 0; else if (PlayerFlags&PF_InverseMouseX) mousex = -mousex;
+  if (PlayerFlags&PF_BlockMouseY) mousey = 0; else if (PlayerFlags&PF_InverseMouseY) mousey = -mousey;
+
   AdjustAngles();
+
+  if (PlayerFlags&PF_BlockMouseX) ViewAngles.yaw = origViewAngles.yaw;
+  if (PlayerFlags&PF_BlockMouseY) ViewAngles.pitch = origViewAngles.pitch;
+  mousex = oldMouseX;
+  mousey = oldMouseY;
 
   // let movement keys cancel each other out
   if (KeyStrafe.IsDown()) {
@@ -800,8 +816,7 @@ void VBasePlayer::HandleInput () {
   AcsPrevMouseX += mousex*m_yaw;
   AcsPrevMouseY += mousey*m_pitch;
 
-  mousex = 0;
-  mousey = 0;
+  mousex = mousey = 0;
 }
 
 

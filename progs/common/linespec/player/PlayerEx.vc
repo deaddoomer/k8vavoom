@@ -4945,6 +4945,18 @@ override void PlayerTick (float deltaTime) {
 
   if (bIsClient) { SimulatedPlayerTick(deltaTime); return; }
 
+  #if 0
+  if (ViewMouseDeltaX || ViewMouseDeltaY || RawMouseDeltaX || RawMouseDeltaY) {
+    printdebug("VMS: x=%s; y=%s  --  RMS: x=%s; y=%s", ViewMouseDeltaX, ViewMouseDeltaY, RawMouseDeltaX, RawMouseDeltaY);
+  }
+  bInverseMouseX = false;
+  bInverseMouseY = false;
+  bBlockMouseX = true;
+  bBlockMouseY = true;
+  ViewAngles.yaw = AngleMod360(ViewAngles.yaw-ViewMouseDeltaX);
+  ViewAngles.pitch = fclamp(ViewAngles.pitch-ViewMouseDeltaY, -80, 80);
+  #endif
+
   LastDeltaTime = deltaTime;
 
   // update current world tick for server

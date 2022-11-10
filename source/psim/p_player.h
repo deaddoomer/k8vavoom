@@ -155,6 +155,12 @@ class VBasePlayer : public VGameObject {
     // this flag is set for client games if the player is using prediction engine (not yet)
     PF_AutonomousProxy   = 1u<<11,
     PF_ExitedViaSecret   = 1u<<12,
+    // inverse mouse movement
+    PF_InverseMouseX     = 1u<<13,
+    PF_InverseMouseY     = 1u<<14,
+    // block mouse movement
+    PF_BlockMouseX       = 1u<<15,
+    PF_BlockMouseY       = 1u<<16,
   };
   vuint32 PlayerFlags;
 
@@ -201,6 +207,11 @@ class VBasePlayer : public VGameObject {
   float AcsNextButtonUpdate; // time left before copying AcsCurrButtons to AcsButtons
   float AcsPrevMouseX, AcsPrevMouseY; // previous ACS mouse movement
   float AcsMouseX, AcsMouseY; // current ACS mouse movement
+  // ACS mouse is not exactly what was used to change view angles
+  // the following two variables holds values (with applied acceleration and such)
+  float ViewMouseDeltaX, ViewMouseDeltaY;
+  // "raw" deltas, without acceleration
+  float RawMouseDeltaX, RawMouseDeltaY;
 
   VEntity *MO;
   VEntity *Camera;
