@@ -669,7 +669,7 @@ public:
                                VMeshModel *Mdl, int frame, int nextframe, VTexture *Skin, VTextureTranslation *Trans,
                                int CMap, const RenderStyleInfo &ri, bool is_view_model,
                                float Inter, bool Interpolate, bool ForceDepthUse, bool AllowTransparency,
-                               bool onlyDepth) override;
+                               bool onlyDepth, float Time) override;
 
   virtual void BeginModelsAmbientPass () override;
   virtual void EndModelsAmbientPass () override;

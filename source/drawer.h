@@ -729,7 +729,7 @@ public:
                                VMeshModel *Mdl, int frame, int nextframe, VTexture *Skin, VTextureTranslation *Trans,
                                int CMap, const RenderStyleInfo &ri, bool is_view_model,
                                float Inter, bool Interpolate, bool ForceDepthUse, bool AllowTransparency,
-                               bool onlyDepth) = 0;
+                               bool onlyDepth, float Time) = 0;
 
   virtual void DrawSpriteShadowMap (const TVec *cv, VTexture *Tex, const TVec &sprnormal,
                                     const TVec &saxis, const TVec &taxis, const TVec &texorg) = 0;

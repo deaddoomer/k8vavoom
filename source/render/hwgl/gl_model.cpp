@@ -41,6 +41,7 @@ static VCvarB gl_dbg_adv_render_alias_models("gl_dbg_adv_render_alias_models", t
 static VCvarB gl_dbg_adv_render_shadow_models("gl_dbg_adv_render_shadow_models", true, "Render model shadow volumes?", CVAR_NoShadow);
 static VCvarB gl_dbg_adv_render_fog_models("gl_dbg_adv_render_fog_models", true, "Render model fog?", CVAR_NoShadow);
 
+extern VCvarI r_fuzzmode;
 extern VCvarB r_shadowmaps;
 extern VCvarI gl_shadowmap_blur;
 
@@ -377,6 +378,7 @@ void VOpenGLDrawer::DrawAliasModelShadowFrame (const VMatrix4 &TMatrix, VMeshMod
 //  VOpenGLDrawer::DrawAliasModel
 //
 //  renders alias model for lightmapped renderer
+//  also, renders translucent, glass, and non-shadow models
 //
 //==========================================================================
 void VOpenGLDrawer::DrawAliasModel (const TVec &origin, const TAVec &angles,
@@ -385,7 +387,8 @@ void VOpenGLDrawer::DrawAliasModel (const TVec &origin, const TAVec &angles,
                                     VTexture *Skin, VTextureTranslation *Trans, int CMap,
                                     const RenderStyleInfo &ri,
                                     bool is_view_model, float Inter, bool /*Interpolate*/,
-                                    bool ForceDepthUse, bool AllowTransparency, bool onlyDepth)
+                                    bool ForceDepthUse, bool AllowTransparency, bool onlyDepth,
+                                    float Time)
 {
   // do not render models without textures
   if (!Skin || Skin->Type == TEXTYPE_Null || Mdl->STVerts.length() == 0) return;
@@ -401,6 +404,7 @@ void VOpenGLDrawer::DrawAliasModel (const TVec &origin, const TAVec &angles,
 
   SetPicModel(Skin, Trans, CMap, (ri.isShaded() ? ri.stencilColor : 0u));
   if (ri.isShaded()) AllowTransparency = true;
+  if (ri.isFuzzy()) ForceDepthUse = false;
 
   //glEnable(GL_ALPHA_TEST);
   //glShadeModel(GL_SMOOTH);
@@ -415,17 +419,39 @@ void VOpenGLDrawer::DrawAliasModel (const TVec &origin, const TAVec &angles,
   GLint attrTexCoord;
 
   if (!ri.isStenciled()) {
-    SurfModel.Activate();
-    SurfModel.SetTexture(0);
-    SurfModel.SetModelToWorldMat(RotationMatrix);
-    SurfModel.SetFogFade(ri.fade, ri.alpha);
-    SurfModel.SetInAlpha(ri.alpha < 1.0f ? ri.alpha : 1.0f);
-    SurfModel.SetAllowTransparency(AllowTransparency);
-    SurfModel.SetInter(Inter);
-    SurfModel.UploadChangedUniforms();
-    attrPosition = SurfModel.loc_Position;
-    attrVert2 = SurfModel.loc_Vert2;
-    attrTexCoord = SurfModel.loc_TexCoord;
+    if (!ri.isFuzzy()) {
+      SurfModel.Activate();
+      SurfModel.SetTexture(0);
+      SurfModel.SetModelToWorldMat(RotationMatrix);
+      SurfModel.SetFogFade(ri.fade, ri.alpha);
+      SurfModel.SetInAlpha(ri.alpha < 1.0f ? ri.alpha : 1.0f);
+      SurfModel.SetAllowTransparency(AllowTransparency);
+      SurfModel.SetInter(Inter);
+      SurfModel.UploadChangedUniforms();
+      attrPosition = SurfModel.loc_Position;
+      attrVert2 = SurfModel.loc_Vert2;
+      attrTexCoord = SurfModel.loc_TexCoord;
+    } else {
+      #if 0
+      GCon->Logf(NAME_Debug, "FUZZY: Time=%g; VH=%d; mode=%d", Time, currentActiveFBO->getHeight(), r_fuzzmode.asInt());
+      #endif
+      SurfModelFuzzy.Activate();
+      SurfModelFuzzy.SetTexture(0);
+      SurfModelFuzzy.SetModelToWorldMat(RotationMatrix);
+      SurfModelFuzzy.SetFogFade(ri.fade, ri.alpha);
+      //SurfModelFuzzy.SetInAlpha(ri.alpha < 1.0f ? ri.alpha : 1.0f);
+      SurfModelFuzzy.SetAllowTransparency(/*AllowTransparency*/false);
+      SurfModelFuzzy.SetInter(Inter);
+      // fuzzy vars
+      SurfModelFuzzy.SetTime(Time);
+      SurfModelFuzzy.SetMode(r_fuzzmode.asInt());
+      SurfModelFuzzy.SetViewHeight(currentActiveFBO->getHeight());
+      // fuzzy vars
+      SurfModelFuzzy.UploadChangedUniforms();
+      attrPosition = SurfModelFuzzy.loc_Position;
+      attrVert2 = SurfModelFuzzy.loc_Vert2;
+      attrTexCoord = SurfModelFuzzy.loc_TexCoord;
+    }
   } else {
     SurfModelStencil.Activate();
     SurfModelStencil.SetTexture(0);
@@ -471,7 +497,11 @@ void VOpenGLDrawer::DrawAliasModel (const TVec &origin, const TAVec &angles,
     }
 
     if (!ri.isStenciled()) {
-      SurfModel.SetLightValAttr(((ri.light>>16)&255)/255.0f, ((ri.light>>8)&255)/255.0f, (ri.light&255)/255.0f, ri.alpha);
+      if (!ri.isFuzzy()) {
+        SurfModel.SetLightValAttr(((ri.light>>16)&255)/255.0f, ((ri.light>>8)&255)/255.0f, (ri.light&255)/255.0f, ri.alpha);
+      } else {
+        //SurfModelFuzzy.SetLightValAttr(((ri.light>>16)&255)/255.0f, ((ri.light>>8)&255)/255.0f, (ri.light&255)/255.0f, ri.alpha);
+      }
     } else {
       SurfModelStencil.SetLightValAttr(((ri.light>>16)&255)/255.0f, ((ri.light>>8)&255)/255.0f, (ri.light&255)/255.0f, ri.alpha);
     }
@@ -479,7 +509,7 @@ void VOpenGLDrawer::DrawAliasModel (const TVec &origin, const TAVec &angles,
     p_glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, Mdl->IndexBuffer);
 
     //if ((ri.alpha < 1.0f && !ForceDepthUse) || AllowTransparency) { //k8: dunno. really.
-    if (!ForceDepthUse && (ri.alpha < 1.0f || AllowTransparency)) { //k8: this looks more logical
+    if (ri.isFuzzy() || (!ForceDepthUse && (ri.alpha < 1.0f || AllowTransparency)/*k8: this looks more logical*/)) {
       restoreDepth = true;
       PushDepthMask();
       //glDepthMask(GL_FALSE);

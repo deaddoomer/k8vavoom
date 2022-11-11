@@ -8,9 +8,12 @@ uniform bool AllowTransparency;
 #ifdef VV_STENCIL
 uniform vec3 StencilColor;
 #endif
-
 varying vec4 Light;
 varying vec2 TextureCoordinate;
+
+#ifdef VV_FUZZY
+$include "common/fuzshade_vars.fs.inc"
+#endif
 
 
 void main () {
@@ -21,8 +24,12 @@ void main () {
   } else {
     if (TexColor.a < ALPHA_MIN) discard;
   }
-  TexColor *= Light;
 
+#ifdef VV_FUZZY
+  $include "common/fuzshade_calc.fs.inc"
+  vec4 FinalColor = clamp(vec4(0.0, 0.0, 0.0, TexColor.a*resFuzzAlpha), 0.0, 1.0);
+#else
+  TexColor *= Light;
   vec4 FinalColor = TexColor;
 
   // do fog before premultiply, otherwise it is wrong
@@ -35,6 +42,7 @@ void main () {
   FinalColor.rgb = StencilColor.rgb;
 #else
   FinalColor.rgb = clamp(FinalColor.rgb*FinalColor.a, 0.0, 1.0);
+#endif
 #endif
 
   $include "common/fog_calc.fs"

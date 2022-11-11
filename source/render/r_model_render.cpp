@@ -243,6 +243,7 @@ static inline bool CheckModelEarlyRejects (const RenderStyleInfo &ri, ERenderPas
       break;
     case RPASS_Ambient:
       if (ri.isAdditive()) return false;
+      if (ri.isFuzzy()) return false;
       if (ri.isTranslucent() && ri.stencilColor) return false; // shaded too
       break;
     case RPASS_ShadowVolumes:
@@ -251,20 +252,25 @@ static inline bool CheckModelEarlyRejects (const RenderStyleInfo &ri, ERenderPas
       break;
     case RPASS_Textures:
       if (ri.isAdditive() || ri.isShaded()) return false;
+      if (ri.isFuzzy()) return false;
       break;
     case RPASS_Light:
       if (ri.isAdditive() || ri.isShaded()) return false;
+      if (ri.isFuzzy()) return false;
       //if (ri.isTranslucent() && ri.stencilColor) return; // shaded too
       break;
     case RPASS_Fog:
       //FIXME
       if (ri.isAdditive() || ri.isShaded()) return false;
+      if (ri.isFuzzy()) return false;
       //if (ri.stencilColor) return;
       break;
     case RPASS_NonShadow: // non-lightmapped renderers are using this for translucent models
       if (!ri.isAdditive() && !ri.isShaded()) return false;
+      if (ri.isFuzzy()) return false;
       break;
     case RPASS_Glass:
+      // this includes fuzzy
       if (ri.isTranslucent()) return false;
       break;
     case RPASS_Trans:
@@ -465,29 +471,36 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
 
     switch (Pass) {
       case RPASS_Normal:
+        //if (nfo.ri.isFuzzy()) GCon->Log(NAME_Debug, "NORMAL: fuzzy!");
         break;
       case RPASS_Ambient:
         //if (ri.isTranslucent() && ri.stencilColor) continue; // already checked
         //if (ri.isAdditive()) continue; // already checked
+        //if (nfo.ri.isFuzzy()) GCon->Log(NAME_Debug, "AMBIENT: fuzzy!");
         break;
       case RPASS_ShadowVolumes:
+        //if (nfo.ri.isFuzzy()) GCon->Log(NAME_Debug, "SVOL: fuzzy!");
         if (Md2Alpha < 1.0f || SubMdl.NoShadow || SubMdl.Model->HadErrors) continue;
         break;
       case RPASS_ShadowMaps:
+        //if (nfo.ri.isFuzzy()) GCon->Log(NAME_Debug, "SMAP: fuzzy!");
         if (Md2Alpha < 1.0f || SubMdl.NoShadow) continue;
         //if (ri.isTranslucent() && ri.stencilColor) continue; // already checked
         //if (ri.isAdditive()) continue; // already checked
         break;
       case RPASS_Textures:
+        //if (nfo.ri.isFuzzy()) GCon->Log(NAME_Debug, "TEXTURE: fuzzy!");
         //if (Md2Alpha <= getAlphaThreshold() && !ri.isAdditive()) continue; // already checked
         //if (ri.isAdditive()) continue; // already checked
         break;
       case RPASS_Light:
+        //if (nfo.ri.isFuzzy()) GCon->Log(NAME_Debug, "LIGHT: fuzzy!");
         if (Md2Alpha <= getAlphaThreshold() /*|| SubMdl.NoShadow*/) continue;
         //if (ri.isTranslucent() && ri.stencilColor) continue; // no need to
         //if (ri.isAdditive()) continue; // already checked
         break;
       case RPASS_Fog:
+        //if (nfo.ri.isFuzzy()) GCon->Log(NAME_Debug, "FOG: fuzzy!");
         /*
         // noshadow model is rendered as "noshadow", so it doesn't need fog
         if (Md2Alpha <= getAlphaThreshold() || SubMdl.NoShadow) {
@@ -497,6 +510,7 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
         */
         break;
       case RPASS_NonShadow:
+        //if (nfo.ri.isFuzzy()) GCon->Log(NAME_Debug, "NONSHADOW: fuzzy!");
         //if (Md2Alpha >= 1.0f && !Additive && !SubMdl.NoShadow) continue;
         //!if (Md2Alpha < 1.0f || ri.isAdditive() /*|| SubMdl.NoShadow*/) continue;
         //if (Md2Alpha >= 1.0f && !ri.isAdditive() /*|| SubMdl.NoShadow*/) continue;
@@ -505,7 +519,10 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
         //if (!ri.isAdditive()) continue; // already checked
         break;
       case RPASS_Glass:
+        //if (nfo.ri.isFuzzy()) GCon->Log(NAME_Debug, "GLASS: fuzzy!");
+        break;
       case RPASS_Trans:
+        //if (nfo.ri.isFuzzy()) GCon->Log(NAME_Debug, "TRANS: fuzzy!");
         break;
     }
 
@@ -603,6 +620,7 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
     vuint32 Md2Light = nfo.ri.light;
     if (SubMdl.FullBright) Md2Light = 0xffffffff;
 
+    // fuzzy models end up in `RPASS_Glass` or `RPASS_Trans` only
     switch (Pass) {
       case RPASS_Normal:
       case RPASS_NonShadow:
@@ -626,7 +644,8 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
             newri,
             nfo.IsViewModel, smooth_inter, DoInterp, SubMdl.UseDepth,
             SubMdl.AllowTransparency,
-            (Pass != RPASS_Glass ? (!nfo.IsViewModel && isShadowVol) : false)); // for advanced renderer, we need to fill z-buffer, but not color buffer
+            (Pass != RPASS_Glass ? (!nfo.IsViewModel && isShadowVol) : false), // for advanced renderer, we need to fill z-buffer, but not color buffer
+            (nfo.Level ? nfo.Level->Time : 0.0f));
         }
         break;
       case RPASS_Ambient:

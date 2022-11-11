@@ -346,6 +346,7 @@ void VRenderLevelShadowVolume::RenderMobjsLight (VEntity *owner, vuint32 dlflags
       if (ent == owner) continue; // this is done in ambient pass
       //RenderThingLight(ent);
       if (SetupRenderStyleAndTime(ent, ri, TimeFrac)) {
+        if (ri.isFuzzy()) continue;
         ri.light = 0xffffffffu;
         ri.fade = 0;
         DrawEntityModel(ent, ri, TimeFrac, RPASS_Light);
@@ -363,6 +364,7 @@ void VRenderLevelShadowVolume::RenderMobjsLight (VEntity *owner, vuint32 dlflags
       //RenderThingLight(ent);
       if (SetupRenderStyleAndTime(ent, ri, TimeFrac)) {
         //if (ri.isTranslucent()) continue;
+        if (ri.isFuzzy()) continue;
         ri.light = 0xffffffffu;
         ri.fade = 0;
         DrawEntityModel(ent, ri, TimeFrac, RPASS_Light);
@@ -452,7 +454,7 @@ void VRenderLevelShadowVolume::RenderMobjsFog () {
     if (ent == ViewEnt && (!r_chasecam || ent != cl->MO)) continue; // don't draw camera actor
     //RenderThingFog(ent);
     if (SetupRenderStyleAndTime(ent, ri, TimeFrac)) {
-      if (ri.isAdditive()) continue;
+      if (ri.isAdditive() || ri.isFuzzy()) continue;
       vuint32 Fade = GetFade(Level->PointRegionLight(ent->SubSector, ent->Origin));
       if (Fade) {
         ri.light = 0xffffffffu;
@@ -484,6 +486,7 @@ void VRenderLevelShadowVolume::RenderMobjSpriteShadowMap (VEntity *owner,
 
   for (auto &&mo : mobjsInCurrLightSprites) {
     if (mo == owner /*&& (dlflags&dlight_t::NoSelfShadow)*/) continue; // always
+    if (mo->RenderStyle == STYLE_Fuzzy || mo->RenderStyle == STYLE_OptFuzzy) continue;
 
     bool renderShadow = true;
     const VEntity::EType tclass = mo->Classify();
@@ -511,7 +514,8 @@ void VRenderLevelShadowVolume::RenderMobjSpriteShadowMap (VEntity *owner,
 //==========================================================================
 void VRenderLevelShadowVolume::RenderMobjShadowMapSprite (VEntity *ent, const unsigned int /*facenum*/, const bool allowRotating) {
   const int sprtype = ent->SpriteType;
-  if (sprtype != SPR_VP_PARALLEL_UPRIGHT) return;
+  // allow XY billboards too
+  if (sprtype != SPR_VP_PARALLEL_UPRIGHT && sprtype != SPR_VP_PARALLEL_ORIENTED) return;
 
   //GCon->Logf(NAME_Debug, "r00: thing:<%s>", ent->GetClass()->GetName());
 

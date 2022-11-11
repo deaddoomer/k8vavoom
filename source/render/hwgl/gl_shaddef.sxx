@@ -292,6 +292,7 @@ ShaderList basedir="basev/common/glshaders" pakdir="glshaders" {
 
   Shader SurfModel both="lightmap/surf_model";
   Shader SurfModelStencil both="lightmap/surf_model" { define "VV_STENCIL"; }
+  Shader SurfModelFuzzy both="lightmap/surf_model" { define "VV_FUZZY"; }
 
   Shader [advanced] ShadowsModelAmbient both="shadowvol/model/shadows_model_ambient";
   Shader [advanced] ShadowsModelTextures both="shadowvol/model/shadows_model_textures";
