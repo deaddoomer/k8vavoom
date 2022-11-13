@@ -1082,6 +1082,10 @@ IMPLEMENT_FUNCTION(VBasePlayer, ClearPlayer) {
   Self->PlayerFlags &= ~VBasePlayer::PF_UseDown;
   Self->PlayerFlags &= ~VBasePlayer::PF_AutomapRevealed;
   Self->PlayerFlags &= ~VBasePlayer::PF_AutomapShowThings;
+  Self->PlayerFlags &= ~(VBasePlayer::PF_InverseMouseX|
+                         VBasePlayer::PF_InverseMouseY|
+                         VBasePlayer::PF_BlockMouseX|
+                         VBasePlayer::PF_BlockMouseY);
   Self->WeaponActionFlags = 0;
   Self->ExtraLight = 0;
   Self->FixedColormap = 0;

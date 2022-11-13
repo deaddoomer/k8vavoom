@@ -3783,6 +3783,12 @@ void ResetPlayerOnSpawn (optional bool keepPlayerState) {
   Poisoner = none; // none for non-player mobjs
   PoisonerPlayer = none; // for KArena
 
+  // reset mouselook flags
+  bInverseMouseX = false;
+  bInverseMouseY = false;
+  bBlockMouseX = false;
+  bBlockMouseY = false;
+
   MorphTime = 0;  // player is morphed into something if > 0
   MorphStyle = 0;
   BlendR = 0;
