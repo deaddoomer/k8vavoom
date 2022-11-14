@@ -40,6 +40,27 @@ void (*voxlib_fatal) (const char *msg) = nullptr;
 static char vabuf[VABUF_SIZE];
 
 
+// default palette for Magica Voxel files
+static const uint32_t magicaPal[256] = {
+  0x00000000U,0xffffffffU,0xffccffffU,0xff99ffffU,0xff66ffffU,0xff33ffffU,0xff00ffffU,0xffffccffU,0xffccccffU,0xff99ccffU,0xff66ccffU,0xff33ccffU,0xff00ccffU,0xffff99ffU,0xffcc99ffU,0xff9999ffU,
+  0xff6699ffU,0xff3399ffU,0xff0099ffU,0xffff66ffU,0xffcc66ffU,0xff9966ffU,0xff6666ffU,0xff3366ffU,0xff0066ffU,0xffff33ffU,0xffcc33ffU,0xff9933ffU,0xff6633ffU,0xff3333ffU,0xff0033ffU,0xffff00ffU,
+  0xffcc00ffU,0xff9900ffU,0xff6600ffU,0xff3300ffU,0xff0000ffU,0xffffffccU,0xffccffccU,0xff99ffccU,0xff66ffccU,0xff33ffccU,0xff00ffccU,0xffffccccU,0xffccccccU,0xff99ccccU,0xff66ccccU,0xff33ccccU,
+  0xff00ccccU,0xffff99ccU,0xffcc99ccU,0xff9999ccU,0xff6699ccU,0xff3399ccU,0xff0099ccU,0xffff66ccU,0xffcc66ccU,0xff9966ccU,0xff6666ccU,0xff3366ccU,0xff0066ccU,0xffff33ccU,0xffcc33ccU,0xff9933ccU,
+  0xff6633ccU,0xff3333ccU,0xff0033ccU,0xffff00ccU,0xffcc00ccU,0xff9900ccU,0xff6600ccU,0xff3300ccU,0xff0000ccU,0xffffff99U,0xffccff99U,0xff99ff99U,0xff66ff99U,0xff33ff99U,0xff00ff99U,0xffffcc99U,
+  0xffcccc99U,0xff99cc99U,0xff66cc99U,0xff33cc99U,0xff00cc99U,0xffff9999U,0xffcc9999U,0xff999999U,0xff669999U,0xff339999U,0xff009999U,0xffff6699U,0xffcc6699U,0xff996699U,0xff666699U,0xff336699U,
+  0xff006699U,0xffff3399U,0xffcc3399U,0xff993399U,0xff663399U,0xff333399U,0xff003399U,0xffff0099U,0xffcc0099U,0xff990099U,0xff660099U,0xff330099U,0xff000099U,0xffffff66U,0xffccff66U,0xff99ff66U,
+  0xff66ff66U,0xff33ff66U,0xff00ff66U,0xffffcc66U,0xffcccc66U,0xff99cc66U,0xff66cc66U,0xff33cc66U,0xff00cc66U,0xffff9966U,0xffcc9966U,0xff999966U,0xff669966U,0xff339966U,0xff009966U,0xffff6666U,
+  0xffcc6666U,0xff996666U,0xff666666U,0xff336666U,0xff006666U,0xffff3366U,0xffcc3366U,0xff993366U,0xff663366U,0xff333366U,0xff003366U,0xffff0066U,0xffcc0066U,0xff990066U,0xff660066U,0xff330066U,
+  0xff000066U,0xffffff33U,0xffccff33U,0xff99ff33U,0xff66ff33U,0xff33ff33U,0xff00ff33U,0xffffcc33U,0xffcccc33U,0xff99cc33U,0xff66cc33U,0xff33cc33U,0xff00cc33U,0xffff9933U,0xffcc9933U,0xff999933U,
+  0xff669933U,0xff339933U,0xff009933U,0xffff6633U,0xffcc6633U,0xff996633U,0xff666633U,0xff336633U,0xff006633U,0xffff3333U,0xffcc3333U,0xff993333U,0xff663333U,0xff333333U,0xff003333U,0xffff0033U,
+  0xffcc0033U,0xff990033U,0xff660033U,0xff330033U,0xff000033U,0xffffff00U,0xffccff00U,0xff99ff00U,0xff66ff00U,0xff33ff00U,0xff00ff00U,0xffffcc00U,0xffcccc00U,0xff99cc00U,0xff66cc00U,0xff33cc00U,
+  0xff00cc00U,0xffff9900U,0xffcc9900U,0xff999900U,0xff669900U,0xff339900U,0xff009900U,0xffff6600U,0xffcc6600U,0xff996600U,0xff666600U,0xff336600U,0xff006600U,0xffff3300U,0xffcc3300U,0xff993300U,
+  0xff663300U,0xff333300U,0xff003300U,0xffff0000U,0xffcc0000U,0xff990000U,0xff660000U,0xff330000U,0xff0000eeU,0xff0000ddU,0xff0000bbU,0xff0000aaU,0xff000088U,0xff000077U,0xff000055U,0xff000044U,
+  0xff000022U,0xff000011U,0xff00ee00U,0xff00dd00U,0xff00bb00U,0xff00aa00U,0xff008800U,0xff007700U,0xff005500U,0xff004400U,0xff002200U,0xff001100U,0xffee0000U,0xffdd0000U,0xffbb0000U,0xffaa0000U,
+  0xff880000U,0xff770000U,0xff550000U,0xff440000U,0xff220000U,0xff110000U,0xffeeeeeeU,0xffddddddU,0xffbbbbbbU,0xffaaaaaaU,0xff888888U,0xff777777U,0xff555555U,0xff444444U,0xff222222U,0xff111111U,
+};
+
+
 //==========================================================================
 //
 //  vox_logf
@@ -2563,7 +2584,7 @@ VoxByteStream *vox_InitMemoryStream (VoxMemByteStream *mst, const void *buf, uin
   if (*cpos != CPOS_ERR) { \
     tp_ res; \
     if (strm.readBuf(&res, (uint32_t)sizeof(tp_), &strm)) { \
-      cpos += (uint32_t)sizeof(tp_); \
+      *cpos += (uint32_t)sizeof(tp_); \
       return res; \
     } \
   } \
@@ -2602,6 +2623,7 @@ static inline bool readBuf (VoxByteStream &strm, void *buf, uint32_t len, uint32
 VoxFmt vox_detectFormat (const uint8_t bytes[4]) {
   if (!bytes) return VoxFmt_Unknown;
   if (memcmp(bytes, "Kvxl", 4) == 0) return VoxFmt_KV6;
+  if (memcmp(bytes, "VOX ", 4) == 0) return VoxFmt_Magica;
   if (memcmp(bytes, "\x00\x20\x07\x09", 4) == 0) return VoxFmt_Vxl;
   return VoxFmt_Unknown;
 }
@@ -3038,6 +3060,239 @@ bool vox_loadVxl (VoxByteStream &strm, VoxelData &vox) {
       }
       v += (v[2]-v[1]+2)*4;
     }
+  }
+
+  vox.cx = px;
+  vox.cy = py;
+  vox.cz = pz;
+
+  return true;
+}
+
+
+//==========================================================================
+//
+//  vox_loadMagica
+//
+//  Magica Voxel (only first model)
+//
+//==========================================================================
+bool vox_loadMagica (VoxByteStream &strm, VoxelData &vox) {
+  struct XYZI {
+    uint8_t x;
+    uint8_t y;
+    uint8_t z;
+    uint8_t clr;
+  };
+
+
+  CHECK_STRM();
+
+  if (tsize < 16 || tsize > 0x03ffffffU) {
+    vox_logf(VoxLibMsg_Error, "invalid voxel data (magica)");
+    return false;
+  }
+
+  // check signature
+  uint32_t sign = readULong(strm, &cpos); CHECKERR();
+  if (sign != 0x20584f56U) {
+    vox_logf(VoxLibMsg_Error, "invalid magica signature (0x%08x)", sign);
+    return false;
+  }
+
+  // check version
+  uint32_t ver = readULong(strm, &cpos); CHECKERR();
+  if (ver != 150) {
+    vox_logf(VoxLibMsg_Error, "invalid magica version (0x%08x)", ver);
+    return false;
+  }
+
+  // set default palette
+  uint32_t pal[256];
+  memcpy(pal, magicaPal, sizeof(pal));
+
+  uint32_t csig, dsize, csize;
+
+  // look for "MAIN" chunk
+  bool found = false;
+  for (;;) {
+    csig = readULong(strm, &cpos); CHECKERR();
+    dsize = readULong(strm, &cpos); CHECKERR();
+    csize = readULong(strm, &cpos); CHECKERR();
+    if (csig == 0x4e49414d) { found = true; break; }
+  }
+
+  if (!found) {
+    vox_logf(VoxLibMsg_Error, "magica \"MAIN\" chunk not found");
+    return false;
+  }
+
+  if (csize < 32) {
+    vox_logf(VoxLibMsg_Error, "magica \"MAIN\" chunk has no children");
+    return false;
+  }
+
+  if (cpos >= tsize || tsize-cpos < 32) {
+    vox_logf(VoxLibMsg_Error, "magica \"MAIN\" chunk too small");
+    return false;
+  }
+
+  // skip content
+  if (dsize) {
+    if (dsize >= tsize || tsize-cpos < dsize) {
+      vox_logf(VoxLibMsg_Error, "magica \"MAIN\" chunk content too big");
+      return false;
+    }
+    if (!strm.seek(cpos+dsize, &strm)) {
+      vox_logf(VoxLibMsg_Error, "error skipping magica \"MAIN\" content");
+      return false;
+    }
+    cpos += dsize;
+  }
+
+  const uint32_t endpos = cpos+csize;
+  if (endpos > tsize || endpos < cpos) {
+    vox_logf(VoxLibMsg_Error, "error in \"MAIN\" children size");
+    return false;
+  }
+
+  // scan and read subchunks
+  // we are interested only in the first "SIZE" and "XYZI"
+  // also, we are interested in "RGBA"
+
+  VoxLibArray<XYZI> vxdata;
+  int32_t xsiz = 0, ysiz = 0, zsiz = 0;
+  bool seenRGBA = false;
+
+  while (cpos < endpos) {
+    if (endpos-cpos < 4*3) break;
+    csig = readULong(strm, &cpos); CHECKERR();
+    dsize = readULong(strm, &cpos); CHECKERR();
+    csize = readULong(strm, &cpos); CHECKERR();
+
+    #if 1
+    vox_logf(VoxLibMsg_Error, "CHUNK: 0x%08x (dsize=%u; csize=%u)", csig, dsize, csize);
+    #endif
+
+    if (csig == 0x455a4953U && xsiz == 0 && dsize >= 4*3) {
+      // "SIZE"
+      xsiz = readILong(strm, &cpos); CHECKERR();
+      ysiz = readILong(strm, &cpos); CHECKERR();
+      zsiz = readILong(strm, &cpos); CHECKERR();
+      if (zsiz < 0) zsiz = -zsiz;
+      if (xsiz < 1 || ysiz < 1 || zsiz < 1) {
+        vox_logf(VoxLibMsg_Error, "magica voxel too small (%d,%d,%d)", xsiz, ysiz, zsiz);
+        return false;
+      }
+      if (xsiz > 1024 || ysiz > 1024 || zsiz > 1024) {
+        vox_logf(VoxLibMsg_Error, "magica voxel too big (%d,%d,%d)", xsiz, ysiz, zsiz);
+        return false;
+      }
+      dsize -= 4*3;
+      if (voxlib_verbose) vox_logf(VoxLibMsg_Normal, "voxel size: %dx%dx%d", xsiz, ysiz, zsiz);
+    } else if (csig == 0x495a5958U && dsize >= 4 && vxdata.length() == 0) {
+      // "XYZI"
+      uint32_t count = readULong(strm, &cpos); CHECKERR(); dsize -= 4;
+      if (voxlib_verbose) vox_logf(VoxLibMsg_Normal, "voxel cubes: %u", count);
+      if (count > 0) {
+        vxdata.setLength(count);
+        for (uint32_t f = 0; f < count; f += 1) {
+          if (dsize < 4) {
+            vox_logf(VoxLibMsg_Error, "out of magica voxel xyzi data");
+            return false;
+          }
+          vxdata[f].x = readUByte(strm, &cpos); CHECKERR(); dsize -= 1;
+          vxdata[f].y = readUByte(strm, &cpos); CHECKERR(); dsize -= 1;
+          vxdata[f].z = readUByte(strm, &cpos); CHECKERR(); dsize -= 1;
+          vxdata[f].clr = readUByte(strm, &cpos); CHECKERR(); dsize -= 1;
+        }
+      } else {
+        // one transparent voxel
+        vxdata.setLength(1);
+        vxdata[0].x = 0;
+        vxdata[0].y = 0;
+        vxdata[0].z = 0;
+        vxdata[0].clr = 0;
+      }
+    } else if (csig == 0x41424752U && dsize >= 4 && !seenRGBA) {
+      // "RGBA"
+      if (voxlib_verbose) vox_logf(VoxLibMsg_Normal, "found voxel palette");
+      for (uint32_t f = 1; f <= 255; f += 1) {
+        if (dsize < 4) break;
+        pal[f] = readULong(strm, &cpos); CHECKERR(); dsize -= 4;
+      }
+    }
+
+    #if 1
+    vox_logf(VoxLibMsg_Error, "CHUNK: left: dsize=%u; csize=%u; cpos=%u; end=%u",
+             dsize, csize, cpos, endpos);
+    #endif
+
+    // skip content (if there is any)
+    if (dsize) {
+      if (dsize > endpos-cpos) {
+        vox_logf(VoxLibMsg_Error, "error skipping magica subchunk content size");
+        return false;
+      }
+      if (dsize == endpos-cpos) break;
+      if (!strm.seek(cpos+dsize, &strm)) {
+        vox_logf(VoxLibMsg_Error, "error skipping magica subchunk content size");
+        return false;
+      }
+      cpos += dsize;
+    }
+
+    // skip subchunks (if there is any)
+    if (csize) {
+      if (csize > endpos-cpos) {
+        vox_logf(VoxLibMsg_Error, "error skipping magica subchunk children size");
+        return false;
+      }
+      if (csize == endpos-cpos) break;
+      if (!strm.seek(cpos+csize, &strm)) {
+        vox_logf(VoxLibMsg_Error, "error skipping magica subchunk children size");
+        return false;
+      }
+      cpos += csize;
+    }
+
+    #if 1
+    vox_logf(VoxLibMsg_Error, "CHUNK: left: %u (cpos=%u)", endpos-cpos, cpos);
+    #endif
+  }
+
+  if (xsiz == 0) {
+    vox_logf(VoxLibMsg_Error, "no \"SIZE\" subchunk in magica");
+    return false;
+  }
+  if (vxdata.length() == 0) {
+    vox_logf(VoxLibMsg_Error, "no \"XYZI\" subchunk in magica");
+    return false;
+  }
+
+  // now build cubes
+  const float px = 1.0f*xsiz/2.0f;
+  const float py = 1.0f*ysiz/2.0f;
+  const float pz = 1.0f*zsiz/2.0f;
+  const int xright = xsiz-1;
+  const int yright = ysiz-1;
+  vox.setSize(xsiz, ysiz, zsiz);
+  for (int f = 0; f < vxdata.length(); f += 1) {
+    XYZI vx = vxdata[f];
+    if (vx.clr == 0) continue; // transparent
+    const uint32_t rgb = pal[vx.clr];
+    const uint8_t a = (uint8_t)(rgb>>24);
+    if (a == 0) continue; // still transparent
+    if (a != 0xffU) {
+      //conwritefln!"%u: 0x%08x"(vx.clr, rgb);
+      vox_logf(VoxLibMsg_Error, "magica translucent voxels are not supported");
+      return false;
+    }
+    const uint32_t b = (uint8_t)(rgb>>16);
+    const uint32_t g = (uint8_t)(rgb>>8);
+    const uint32_t r = (uint8_t)rgb;
+    //vox.addVoxel(xright-(vx.x+xofs), yright-(vx.y+yofs), vx.z, b|(g<<8)|(r<<16), 0xff);
+    vox.addVoxel(xright-vx.x, yright-vx.y, vx.z, b|(g<<8)|(r<<16), 0x3f);
   }
 
   vox.cx = px;

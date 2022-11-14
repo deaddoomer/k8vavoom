@@ -1268,6 +1268,7 @@ enum VoxFmt {
   VoxFmt_Unknown,
   VoxFmt_KV6,
   VoxFmt_Vxl,
+  VoxFmt_Magica,
 };
 
 // detect voxel file format by the first 4 file bytes
@@ -1285,6 +1286,8 @@ bool vox_loadKV6 (VoxByteStream &strm, VoxelData &vox);
 bool vox_loadVxl (VoxByteStream &strm, VoxelData &vox);
 // raw voxel cube with dimensions
 bool vox_loadVox (VoxByteStream &strm, VoxelData &vox, const uint8_t defpal[768]);
+// Magica Voxel (only first model)
+bool vox_loadMagica (VoxByteStream &strm, VoxelData &vox);
 
 
 #endif

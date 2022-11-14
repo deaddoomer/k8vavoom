@@ -359,6 +359,10 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
         if (vox_verbose_conversion.asBool()) GCon->Logf(NAME_Init, "  loading KV6...");
         ok = vox_loadKV6(*xst, vox);
         break;
+      case VoxFmt_Magica:
+        if (vox_verbose_conversion.asBool()) GCon->Logf(NAME_Init, "  loading Magica...");
+        ok = vox_loadMagica(*xst, vox);
+        break;
       case VoxFmt_Vxl:
         Sys_Error("cannot load voxel model '%s' in VXL format", *this->Name);
         break;
