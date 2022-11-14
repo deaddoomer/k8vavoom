@@ -3170,7 +3170,7 @@ bool vox_loadMagica (VoxByteStream &strm, VoxelData &vox) {
     dsize = readULong(strm, &cpos); CHECKERR();
     csize = readULong(strm, &cpos); CHECKERR();
 
-    #if 1
+    #if 0
     vox_logf(VoxLibMsg_Error, "CHUNK: 0x%08x (dsize=%u; csize=%u)", csig, dsize, csize);
     #endif
 
@@ -3223,7 +3223,7 @@ bool vox_loadMagica (VoxByteStream &strm, VoxelData &vox) {
       }
     }
 
-    #if 1
+    #if 0
     vox_logf(VoxLibMsg_Error, "CHUNK: left: dsize=%u; csize=%u; cpos=%u; end=%u",
              dsize, csize, cpos, endpos);
     #endif
@@ -3256,7 +3256,7 @@ bool vox_loadMagica (VoxByteStream &strm, VoxelData &vox) {
       cpos += csize;
     }
 
-    #if 1
+    #if 0
     vox_logf(VoxLibMsg_Error, "CHUNK: left: %u (cpos=%u)", endpos-cpos, cpos);
     #endif
   }
