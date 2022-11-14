@@ -2644,13 +2644,13 @@ bool vox_loadKVX (VoxByteStream &strm, VoxelData &vox, const uint8_t defpal[768]
   CHECK_STRM();
 
   if (tsize < 28 || tsize > 0x00ffffffU) {
-    vox_logf(VoxLibMsg_Error, "invalid voxel data (kvx)");
+    vox_logf(VoxLibMsg_Error, "invalid voxel data (kvx) (tsize=%u)", tsize);
     return false;
   }
 
   uint32_t fsize = readULong(strm, &cpos);
-  if (WASERR() || fsize < 56 || fsize > 0x00ffffffU || fsize > tsize) {
-    vox_logf(VoxLibMsg_Error, "invalid voxel data (kvx)");
+  if (WASERR() || fsize < 4*6 || fsize > 0x00ffffffU || fsize > tsize) {
+    vox_logf(VoxLibMsg_Error, "invalid voxel data (kvx) (fsize=%u)", fsize);
     return false;
   }
 
