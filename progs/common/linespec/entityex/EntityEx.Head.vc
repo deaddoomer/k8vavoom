@@ -1426,7 +1426,7 @@ static final bool IsSpawnableClass (class cls) {
   StateTime = -1;
   LastMoveTime = (lifetime > 0 ? lifetime : -1);
   PlaneAlpha = (fadetime > 0 ? fadetime : -1);
-  //printdebug("%C: becomes notick; lifetime=%s; fadetime=%s", self, lifetime, fadetime);
+  //printdebug("%C: becomes notick; lifetime=%s; fadetime=%s", self, LastMoveTime, PlaneAlpha);
   bNoTickGravLifeTime = (LastMoveTime > 0 || PlaneAlpha > 0);
   // debug
   //if (bNoTickGravLifeTime) { LastMoveTime = 3; /*PlaneAlpha = 0.2;*/ }

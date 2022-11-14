@@ -2341,7 +2341,7 @@ override void Tick (float deltaTime) {
       LastMoveOrigin += Origin-lastOrg;
       LastMoveOrigin.z -= tmp_phys_z_change;
     } else {
-      if (fabs(tmp_phys_z_change) > 1) {
+      if (fabs(tmp_phys_z_change) > 1 && StateTime > 0) {
         bIntrJustMoved = true;
         LastMoveOrigin = Origin;
         LastMoveAngles = Angles;
@@ -2375,13 +2375,15 @@ override void Tick (float deltaTime) {
         LastMoveDuration += StateTime;
       } else
       */
-      {
-        // possibly moved, set new interpolation state
-        // if mobj is not moved, the engine will take care of it
+      // possibly moved, set new interpolation state
+      // if mobj is not moved, the engine will take care of it
+      if (StateTime > 0) {
         LastMoveOrigin = lastOrg;
         LastMoveAngles = lastAngles;
         LastMoveTime = XLevel.Time;
         LastMoveDuration = StateTime;
+      } else {
+        bIntrJustMoved = false;
       }
     } else {
       bIntrJustMoved = lastInterp;

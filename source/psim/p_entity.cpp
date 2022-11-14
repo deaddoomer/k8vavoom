@@ -634,7 +634,7 @@ void VEntity::Tick (float deltaTime) {
     if (GLevelInfo && GLevelInfo->LevelInfoFlags2&VLevelInfo::LIF2_Frozen) return;
     if (eflagsex&EFEX_NoTickGravLT) {
       #ifdef CLIENT
-      //GCon->Logf(NAME_Debug, "  : %s lifetime (lmt=%g)", GetClass()->GetName(), LastMoveTime-deltaTime);
+      //GCon->Logf(NAME_Debug, "  : %s lifetime (lmt=%g; %g : %f)", GetClass()->GetName(), LastMoveTime-deltaTime, LastMoveTime, deltaTime);
       #endif
       //GCon->Logf(NAME_Debug, "*** %s ***", GetClass()->GetName());
       // perform lifetime logic
