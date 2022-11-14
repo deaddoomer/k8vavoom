@@ -31,11 +31,11 @@
 //  A_TossGib
 //
 //==========================================================================
-[decorate] final void A_TossGib () {
+[decorate] final bool A_TossGib () {
   class!EntityEx tp = (bNoBlood ? Junk : Meat);
 
   EntityEx gib = Spawn(tp, Origin+vector(0.0, 0.0, 24.0));
-  if (!gib) return;
+  if (!gib) return false;
 
   float an = Random()*360.0;
   gib.Angles.yaw = an;
@@ -44,6 +44,7 @@
   gib.Velocity.y = tossspeed*sin(an);
   gib.Velocity.z = Random()*16.0*35.0;
   gib.CarryBloodTranslations(self);
+  return true;
 }
 
 
@@ -52,13 +53,14 @@
 //  A_SpawnDebris
 //
 //==========================================================================
-[decorate] final void A_SpawnDebris (class!Actor SpawnType, optional bool TransTransl,
-                          optional float MultH, optional float MultV)
+[decorate] final bool A_SpawnDebris (class!Actor SpawnType, optional bool TransTransl,
+                                     optional float MultH, optional float MultV)
 {
-  if (!SpawnType) return;
+  if (!SpawnType) return false;
   if (MultH <= 0.0) MultH = 1.0;
   if (MultV <= 0.0) MultV = 1.0;
 
+  bool res = false;
   foreach (auto i; 0..SpawnType.default.Health) {
     EntityEx A = Spawn(SpawnType, Origin+vector((Random()-0.5)*16.0, (Random()-0.5)*16.0, Random()*Height));
     if (!A) continue;
@@ -71,7 +73,9 @@
       A.Velocity.y = MultH*(Random()-Random())*4.0*35.0;
       A.Velocity.z = MultV*(Random()*8.0+5.0)*35.0;
     }
+    res = true;
   }
+  return res;
 }
 
 
@@ -203,18 +207,18 @@ final void InitSpawnedItem (EntityEx A, bool TransTransl, bool SetMaster,
 //  A_SpawnItem
 //
 //==========================================================================
-[decorate] final void A_SpawnItem (class!Actor ItemType, optional float Distance,
+[decorate] final bool A_SpawnItem (class!Actor ItemType, optional float Distance,
                                    optional float ZHeight, optional bool UseAmmo,
                                    optional bool TransTransl)
 {
   if (!specified_UseAmmo) UseAmmo = true;
 
-  if (!ItemType) { KeepChainResult(); return; }
+  if (!ItemType) { KeepChainResult(); return false; }
 
   // don't spawn monsters if this actor has been massacred
   if (nameicmp(DamageType, 'Massacre') == 0 && ItemType.default.bMonster) {
     //k8: should we keep chain result here?
-    return;
+    return false;
   }
 
   //k8: i absolutely don't know why it was here
@@ -228,18 +232,26 @@ final void InitSpawnedItem (EntityEx A, bool TransTransl, bool SetMaster,
        XLevel.CallingState == Player.ViewStates[PS_WEAPON_OVL_BACK].State))
   {
     Weapon Wpn = PlayerEx(Player).ReadyWeapon;
-    if (!Wpn) return;
-    if (UseAmmo && !Wpn.DepleteAmmo(Wpn.FireMode)) return;
+    if (!Wpn) return false;
+    if (UseAmmo && !Wpn.DepleteAmmo(Wpn.FireMode)) return false;
   }
 
   TVec org = Origin+vector(Distance*cos(Angles.yaw), Distance*sin(Angles.yaw), ZHeight-FloorClip);
-  //printdebug("A_SpawnItem: type=%C; Distance=%s; org=%s; Origin=%s; yaw=%s", ItemType, Distance, org, Origin, Angles.yaw);
+  #if 0
+  printdebug("A_SpawnItem: type=%C (%C); Distance=%s; org=%s; Origin=%s; yaw=%s",
+             ItemType, ItemType.Replacement, Distance, org, Origin, Angles.yaw);
+  #endif
 
   EntityEx A = Spawn(ItemType, org);
   if (A) {
+    #if 0
+    printdebug("A_SpawnItem:   spawned=%C", A);
+    #endif
     InitSpawnedItem(A, TransTransl, UseAmmo, false, false, false, false);
+    return true;
   } else {
     KeepChainResult();
+    return false;
   }
 }
 

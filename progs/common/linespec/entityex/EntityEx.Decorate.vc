@@ -456,6 +456,14 @@ private final EntityEx dccDoAPtr (optional int aptr0) {
   return (sex ? nameEquCI(GetClassName(sex.Class), classname) : false);
 }
 
+[decorate] final bool decorate_IsActorClassExists (name classname) {
+  if (classname) {
+    auto acls = class!Actor(FindClassNoCase(classname));
+    return (acls ? true : false);
+  }
+  return false;
+}
+
 
 [decorate] final bool decorate_IsNetGame () { return Level.Game.netgame; }
 [decorate] final bool decorate_IsNetServer () { return Level.Game.IsNetServer; }
