@@ -116,4 +116,10 @@ class_ignore "Unimplemented" {
 // ////////////////////////////////////////////////////////////////////////// //
 classes_ignore_missing_in_saves {
   LudoGib_JumpingGib,
+  // Zan Voxels Extra
+  Zan_CasingBase,
+  Zan_BoltMagCasingSpawn, Zan_BoltMagEmpty, Zan_PainGunUnderwaterBoltMagEmpty,
+  Zan_FragfireGunCasingSpawn, Zan_FragfireGunEmptyShell, Zan_UnderwaterFragfireGunEmptyShell,
+  Zan_PaingunBulletCasingSpawn, Zan_PainGunEmptyBrass, Zan_PainGunUnderwaterEmptyBrass,
+  Zan_EmptySpikeMagSpawn, Zan_SpikeMagDroppedEx, Zan_SpikeMagUnderwaterDroppedEx,
 }
