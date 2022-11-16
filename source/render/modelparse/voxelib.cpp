@@ -2774,7 +2774,7 @@ bool vox_loadKVX (VoxByteStream &strm, VoxelData &vox, const uint8_t defpal[768]
 bool vox_loadKV6 (VoxByteStream &strm, VoxelData &vox) {
   struct KVox {
     uint32_t rgb;
-    uint8_t zlo, zhi;
+    uint16_t z;
     uint8_t cull;
     uint8_t normidx;
   };
@@ -2827,14 +2827,9 @@ bool vox_loadKV6 (VoxByteStream &strm, VoxelData &vox) {
     uint8_t zhi = readUByte(strm, &cpos); CHECKERR();
     uint8_t cull = readUByte(strm, &cpos); CHECKERR();
     uint8_t normidx = readUByte(strm, &cpos); CHECKERR();
-    kv.zlo = zlo;
-    kv.zhi = zhi;
+    kv.z = zlo+(zhi<<8);
     kv.cull = cull;
     kv.normidx = normidx;
-    if (kv.zhi != 0) {
-      vox_logf(VoxLibMsg_Error, "wtf?! zhi is not 0! (kv6)");
-      return false;
-    }
   }
 
   VoxLibArray<uint32_t> xofs;
@@ -2866,15 +2861,13 @@ bool vox_loadKV6 (VoxByteStream &strm, VoxelData &vox) {
     for (int x = 0; x < xsiz; ++x) {
       uint32_t sofs = xofs[x]+xyofs[x*ww+y];
       uint32_t eofs = xofs[x]+xyofs[x*ww+y+1];
+      if (eofs > (uint32_t)kvox.length()) eofs = (uint32_t)kvox.length();
       //if (sofs == eofs) continue;
       //vassert(sofs < data.length && eofs <= data.length);
       while (sofs < eofs) {
         const KVox &kv = kvox[sofs++];
-        int z = kv.zlo;
-        for (int cidx = 0; cidx <= kv.zhi; ++cidx) {
-          ++z;
-          vox.addVoxel(xsiz-x-1, y, zsiz-z, kv.rgb, kv.cull);
-        }
+        const int z = kv.z+1;
+        vox.addVoxel(xsiz-x-1, y, zsiz-z, kv.rgb, kv.cull);
       }
     }
   }
