@@ -2803,9 +2803,9 @@ bool vox_loadKV6 (VoxByteStream &strm, VoxelData &vox) {
     return false;
   }
 
-  float xpivot = readILong(strm, &cpos); CHECKERR();
-  float ypivot = readILong(strm, &cpos); CHECKERR();
-  float zpivot = readILong(strm, &cpos); CHECKERR();
+  float xpivot = readFloat(strm, &cpos); CHECKERR();
+  float ypivot = readFloat(strm, &cpos); CHECKERR();
+  float zpivot = readFloat(strm, &cpos); CHECKERR();
 
   int32_t voxcount = readILong(strm, &cpos); CHECKERR();
   if (voxcount <= 0 || voxcount > 0x00ffffff) {
