@@ -2849,7 +2849,7 @@ bool vox_loadKV6 (VoxByteStream &strm, VoxelData &vox) {
     curvidx = 0;
     for (int yyidx = 0; yyidx < ysiz; ++yyidx) {
       xyofs[xxidx*ww+yyidx] = curvidx;
-      uint32_t count = readULong(strm, &cpos); CHECKERR();
+      uint32_t count = readUShort(strm, &cpos); CHECKERR();
       curvidx += count;
     }
     xyofs[xxidx*ww+ysiz] = curvidx;
