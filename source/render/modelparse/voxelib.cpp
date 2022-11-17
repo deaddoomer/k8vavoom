@@ -2820,7 +2820,7 @@ bool vox_loadKV6 (VoxByteStream &strm, VoxelData &vox) {
     uint8_t r8 = readUByte(strm, &cpos); CHECKERR();
     uint8_t g8 = readUByte(strm, &cpos); CHECKERR();
     uint8_t b8 = readUByte(strm, &cpos); CHECKERR();
-    kv.rgb = b8|(g8<<8)|(r8<<16);
+    kv.rgb = r8|(g8<<8)|(b8<<16);
     uint8_t dummy = readUByte(strm, &cpos); CHECKERR(); // always 128; ignore
     (void)dummy;
     uint8_t zlo = readUByte(strm, &cpos); CHECKERR();
