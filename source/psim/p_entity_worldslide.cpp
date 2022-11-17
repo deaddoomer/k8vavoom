@@ -399,6 +399,19 @@ float VEntity::SlidePathTraverseNew (const TVec dir, TVec *BestSlideNormal, line
 } while (0)
 
 
+// this tries to avoid occasional wall stucking
+#define SLIDEOLD_FINAL_CHECK()  do { \
+  if (Origin.x != orig.x || Origin.y != orig.y) { \
+    if (!TryMove(tmtrace, Origin, true, noPickups)) { \
+      UnlinkFromWorld(); \
+      Origin = orig; \
+      LinkToWorld(); \
+      TryMove(tmtrace, Origin, true, noPickups); \
+    } \
+  } \
+} while (0)
+
+
 //==========================================================================
 //
 //  VEntity::SlideMoveVanilla
@@ -414,6 +427,7 @@ void VEntity::SlideMoveVanilla (float deltaTime, bool noPickups) {
   tmtrace_t tmtrace;
   memset((void *)&tmtrace, 0, sizeof(tmtrace)); // valgrind: AnyBlockingLine
 
+  const TVec orig = Origin;
   float XMove = Velocity.x*deltaTime;
   float YMove = Velocity.y*deltaTime;
 
@@ -432,12 +446,17 @@ void VEntity::SlideMoveVanilla (float deltaTime, bool noPickups) {
     XMove = zeroNanInfDenormalsF(XMove);
     YMove = zeroNanInfDenormalsF(YMove);
     #endif
-    if (!(isU32NonZeroF(XMove)|isU32NonZeroF(YMove))) return; // just in case
+    // just in case
+    if (!(isU32NonZeroF(XMove)|isU32NonZeroF(YMove))) {
+      SLIDEOLD_FINAL_CHECK();
+      return;
+    }
 
     // this was `3`, but why not `4`?
     if (++hitcount == 4) {
       // don't loop forever
       SLIDEOLD_MOVE_FINALTRY();
+      SLIDEOLD_FINAL_CHECK();
       return;
     }
 
@@ -472,8 +491,12 @@ void VEntity::SlideMoveVanilla (float deltaTime, bool noPickups) {
     // move up to the wall
     if (BestSlideFrac >= 1.0f) {
       // the move must have hit the middle, so stairstep
-      if (TryMove(tmtrace, TVec(Origin.x+XMove, Origin.y+YMove, Origin.z), true, noPickups)) return;
+      if (TryMove(tmtrace, TVec(Origin.x+XMove, Origin.y+YMove, Origin.z), true, noPickups)) {
+        SLIDEOLD_FINAL_CHECK();
+        return;
+      }
       SLIDEOLD_MOVE_FINALTRY();
+      SLIDEOLD_FINAL_CHECK();
       return;
     }
 
@@ -486,6 +509,7 @@ void VEntity::SlideMoveVanilla (float deltaTime, bool noPickups) {
         XMove = newx;
         YMove = newy;
         SLIDEOLD_MOVE_FINALTRY();
+        SLIDEOLD_FINAL_CHECK();
         return;
       }
     }
@@ -495,7 +519,11 @@ void VEntity::SlideMoveVanilla (float deltaTime, bool noPickups) {
     BestSlideFrac = 1.0f-BestSlideFrac;
 
     //if (BestSlideFrac > 1.0f) BestSlideFrac = 1.0f; // just in case
-    if (BestSlideFrac <= 0.0f) return; // just in case too
+    // just in case too
+    if (BestSlideFrac <= 0.0f) {
+      SLIDEOLD_FINAL_CHECK();
+      return;
+    }
 
     // clip the moves
     Velocity *= BestSlideFrac;
@@ -505,6 +533,7 @@ void VEntity::SlideMoveVanilla (float deltaTime, bool noPickups) {
     XMove = Velocity.x*deltaTime;
     YMove = Velocity.y*deltaTime;
   } while (!TryMove(tmtrace, TVec(Origin.x+XMove, Origin.y+YMove, Origin.z), true, noPickups));
+  SLIDEOLD_FINAL_CHECK();
 }
 
 #undef SLIDEOLD_MOVE_FINALTRY
