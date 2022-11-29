@@ -3937,7 +3937,7 @@ override void PreraiseWeapon () {
 //  structure stays unchanged between levels.
 //
 //==========================================================================
-void SpawnPlayer (mthing_t *mthing, bool Voodoo) {
+PlayerPawn SpawnPlayer (mthing_t *mthing, bool Voodoo) {
   PlayerPawn PP;
   bool ResetInventory = false;
   bool reborned = false;
@@ -4086,6 +4086,8 @@ void SpawnPlayer (mthing_t *mthing, bool Voodoo) {
   }
 
   k8BossesDetected = (GetCvarB('k8ElvenDetect') ? -0.5 : 666);
+
+  return PP;
 }
 
 
