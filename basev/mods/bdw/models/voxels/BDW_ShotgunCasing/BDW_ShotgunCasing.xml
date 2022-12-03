@@ -118,18 +118,18 @@
     </kvx>
   </model>
   <class name="BDW_ShotgunCasing">
-    <state sprite="CAS2" sprite_frame="A" model="voxmodel_0" frame_index="0" />
-    <state sprite="CAS2" sprite_frame="B" model="voxmodel_1" frame_index="0" />
-    <state sprite="CAS2" sprite_frame="C" model="voxmodel_2" frame_index="0" />
-    <state sprite="CAS2" sprite_frame="D" model="voxmodel_3" frame_index="0" />
-    <state sprite="CAS2" sprite_frame="E" model="voxmodel_4" frame_index="0" />
-    <state sprite="CAS2" sprite_frame="F" model="voxmodel_5" frame_index="0" />
-    <state sprite="CAS2" sprite_frame="G" model="voxmodel_6" frame_index="0" />
-    <state sprite="CAS2" sprite_frame="H" model="voxmodel_7" frame_index="0" />
-    <state sprite="CAS2" sprite_frame="I" model="voxmodel_8" frame_index="0" />
-    <state sprite="CAS2" sprite_frame="J" model="voxmodel_9" frame_index="0" />
-    <state sprite="CAS2" sprite_frame="K" model="voxmodel_10" frame_index="0" />
-    <state sprite="CAS2" sprite_frame="L" model="voxmodel_11" frame_index="0" />
-    <state sprite="CAS2" sprite_frame="M" model="voxmodel_12" frame_index="0" />
+    <state sprite="CAS2" sprite_frame="A" model="voxmodel_0" frame_index="0" random_zoffset_min="-0.96" />
+    <state sprite="CAS2" sprite_frame="B" model="voxmodel_1" frame_index="0" random_zoffset_min="-0.96" />
+    <state sprite="CAS2" sprite_frame="C" model="voxmodel_2" frame_index="0" random_zoffset_min="-0.96" />
+    <state sprite="CAS2" sprite_frame="D" model="voxmodel_3" frame_index="0" random_zoffset_min="-0.96" />
+    <state sprite="CAS2" sprite_frame="E" model="voxmodel_4" frame_index="0" random_zoffset_min="-0.96" />
+    <state sprite="CAS2" sprite_frame="F" model="voxmodel_5" frame_index="0" random_zoffset_min="-0.96" />
+    <state sprite="CAS2" sprite_frame="G" model="voxmodel_6" frame_index="0" random_zoffset_min="-0.96" />
+    <state sprite="CAS2" sprite_frame="H" model="voxmodel_7" frame_index="0" random_zoffset_min="-0.96" />
+    <state sprite="CAS2" sprite_frame="I" model="voxmodel_8" frame_index="0" random_zoffset_min="-0.96" />
+    <state sprite="CAS2" sprite_frame="J" model="voxmodel_9" frame_index="0" random_zoffset_min="-0.96" />
+    <state sprite="CAS2" sprite_frame="K" model="voxmodel_10" frame_index="0" random_zoffset_min="-0.96" />
+    <state sprite="CAS2" sprite_frame="L" model="voxmodel_11" frame_index="0" random_zoffset_min="-0.96" />
+    <state sprite="CAS2" sprite_frame="M" model="voxmodel_12" frame_index="0" random_zoffset_min="-0.96" />
   </class>
 </vavoom_model_definition>
