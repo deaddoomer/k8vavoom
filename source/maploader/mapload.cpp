@@ -47,6 +47,8 @@ static VCvarB loader_cache_rebuild_data("loader_cache_rebuild_data", true, "Cach
 VCvarB loader_cache_data("loader_cache_data", true, "Cache built level data?", CVAR_Archive|CVAR_NoShadow);
 VCvarF loader_cache_time_limit("loader_cache_time_limit", "3", "Cache data if building took more than this number of seconds.", CVAR_Archive|CVAR_NoShadow);
 
+static VCvarB loader_xeep_vanilla_horizon_hack("loader_xeep_vanilla_horizon_hack", true, "Allow Xeep's \"Vanilla Horizon\" hack?", CVAR_Archive|CVAR_NoShadow);
+
 
 //extern VCvarI nodes_builder_type;
 #ifdef CLIENT
@@ -183,6 +185,32 @@ void VLevel::FixKnownMapErrors () {
   if (LevelFlags&LF_ForceNoTexturePrecache) r_precache_textures_override = 0;
   if (LevelFlags&LF_ForceNoPrecalcStaticLights) r_precalc_static_lights_override = 0;
 #endif
+  // check for xeep "vanilla hoziron" trick
+  if (loader_xeep_vanilla_horizon_hack.asBool()) {
+    for (auto &&line : allLines()) {
+      if (line.lineTag != 999 || line.special) continue;
+      side_t *side;
+      if (line.frontside) {
+        if (line.backside) continue;
+        side = line.frontside;
+      } else if (line.backside) {
+        if (line.frontside) continue;
+        side = line.backside;
+      } else {
+        continue;
+      }
+      if (side->Mid.TextureOffset != 180.0f) continue;
+      GCon->Logf(NAME_Warning, "XEEP VANILLA HORIZON FX on line #%d", (int)(ptrdiff_t)(&line-&Lines[0]));
+      #if 0
+      GCon->Logf(NAME_Warning, "VANILLA HORIZON! xofs=%g; yofs=%g; scalex=%g; scaley=%g",
+                 side->Mid.TextureOffset,
+                 side->Mid.RowOffset,
+                 side->Mid.ScaleX,
+                 side->Mid.ScaleY);
+      #endif
+      line.special = 9; // SPEC_LineHorizon
+    }
+  }
 }
 
 
