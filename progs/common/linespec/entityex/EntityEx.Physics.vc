@@ -318,12 +318,25 @@ bool Physics (float DeltaTime) {
   }
   #endif
 
+  EntityEx onmo = EntityEx(CheckOnmobj());
+  // more hacks: if we stuck in another object, not standing on it, ignore it
+  // this should fix things like E1M5 pillars, where monsters are stuck in the air
+  // it should also fix other instances where monsters are stuck in each other, and suspended in the air
+  // this is totally wrong, but should do the job for now
+  // currently, i'm doing this only for monsters; dunno if it should be done for everything
+  if (onmo && bMonster && bSolid && (onmo.bMonster || onmo.bIsPlayer) && onmo.bSolid) {
+    float zdelta = Origin.z-onmo.Origin.z;
+    // if we are not "above enough", ignore the monster to avoid stucking
+    if (zdelta < onmo.Height) {
+      onmo = none;
+    }
+  }
+
   // k8: thingy bridges should be checked even if we have zero vertical velocity.
   //     the following code looks like optimization attempt, and it introduced a bug:
   //     if a player (or a monster, i think) moved into step-like thing while
   //     standing on a floor, that thing will be ignored. meh, just always check
   //     things, 'cause why not?
-  EntityEx onmo = EntityEx(CheckOnmobj());
   if (onmo || Velocity.z ||
       (Origin.z != FloorZ &&
        /*(!bFloatBob || (!bSpecial && Origin.z-Level.Game.FloatBobOffsets[int(FloatBobPhase*35.0)&63] != FloorZ))*/
