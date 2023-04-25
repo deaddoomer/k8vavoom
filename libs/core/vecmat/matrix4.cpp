@@ -495,6 +495,7 @@ VMatrix4 VMatrix4::Ortho (float left, float right, float bottom, float top, floa
   res.m[3][0] = -(right+left)/(right-left);
   res.m[3][1] = -(top+bottom)/(top-bottom);
   res.m[3][2] = -(farVal+nearVal)/(farVal-nearVal);
+  res.m[3][3] = 1.0f; //k8: does it matter?
   return res;
 }
 

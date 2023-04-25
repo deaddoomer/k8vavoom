@@ -199,7 +199,7 @@ TAVec VectorAngles (const TVec &vec) noexcept {
   const float fy = vec.y;
   const float len2d = VSUM2(fx*fx, fy*fy);
   if (len2d < 0.0001f) {
-    angles.pitch = (vec.z < 0.0f ? 90 : 270);
+    angles.pitch = (vec.z > 0.0f ? 270.0f : 90.0f); // was '<'; made it the same as in `VectorsAngles`
     angles.yaw = 0.0f;
   } else {
     angles.pitch = -matan(vec.z, sqrtf(len2d));
@@ -222,10 +222,10 @@ void VectorsAngles (const TVec &forward, const TVec &right, const TVec &up, TAVe
   if (len2d < 0.0001f) {
     angles.yaw = 0.0f;
     if (forward.z > 0.0f) {
-      angles.pitch = 270;
+      angles.pitch = 270.0f;
       angles.roll = matan(-up.y, -up.x);
     } else {
-      angles.pitch = 90;
+      angles.pitch = 90.0f;
       angles.roll = matan(-up.y, up.x);
     }
   } else {
