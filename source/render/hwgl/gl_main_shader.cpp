@@ -562,7 +562,7 @@ GLhandleARB VOpenGLDrawer::LoadShader (VGLShader *gls, const char *progname, con
   // compile it
   p_glCompileShaderARB(Shader);
 
-  // check id it is compiled successfully
+  // check if it was compiled successfully
   GLint Status;
   p_glGetObjectParameterivARB(Shader, GL_OBJECT_COMPILE_STATUS_ARB, &Status);
   if (!Status) {
