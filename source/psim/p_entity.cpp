@@ -1513,11 +1513,25 @@ IMPLEMENT_FUNCTION(VEntity, AdvanceState) {
 }
 
 IMPLEMENT_FUNCTION(VEntity, FindState) {
+  /*
   P_GET_BOOL_OPT(Exact, false);
   P_GET_NAME_OPT(SubLabel, NAME_None);
   P_GET_NAME(StateName);
   P_GET_SELF;
   RET_PTR(Self->FindState(StateName, SubLabel, Exact));
+  */
+  VName StateName;
+  VOptParamName SubLabel(NAME_None);
+  VOptParamBool Exact(false);
+  VOptParamBool ignoreDefault(false);
+  vobjGetParamSelf(StateName, SubLabel, Exact, ignoreDefault);
+  VState *state = Self->FindState(StateName, SubLabel, Exact);
+  if (ignoreDefault && state) {
+    /* check if it's not an Actor state */
+    VStateLabel *ass = classActor->FindStateLabel(StateName, SubLabel, Exact);
+    if (ass && ass->State == state) state = nullptr;
+  }
+  RET_PTR(state);
 }
 
 IMPLEMENT_FUNCTION(VEntity, FindStateEx) {

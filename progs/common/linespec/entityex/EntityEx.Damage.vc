@@ -531,7 +531,7 @@ int TakeSpecialDamage (EntityEx inflictor, EntityEx source, int damage, name Dmg
   if (!Level.Game.IsAuthority) return 0;
 
   // always apply damage if actor has regular death state or no death states at all
-  if (FindState('Death') || !HasSpecialStates('Death')) return damage;
+  if (FindState('Death', ignoreDefault:true) || !HasSpecialStates('Death')) return damage;
 
   // if there's no corresponding death state, actor takes no damage at all
   if (nameicmp(DmgType, 'Ice') == 0) {

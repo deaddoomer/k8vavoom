@@ -24,6 +24,11 @@
 //**
 //**************************************************************************
 
+/*
+  damage dealing code expects the default actor to not have Death state.
+  i'm dealing with this by using a dirty hack in `TakeSpecialDamage()`.
+*/
+
 states {
 FreeTargMobj:
   TNT1 A 1050 A_FreeTargMobj
