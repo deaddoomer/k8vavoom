@@ -606,7 +606,7 @@ public:
   };
 
 private:
-  enum { HASH_SIZE = 4096 };
+  enum { HASH_SIZE = 4093 };
   enum { FirstMapTextureIndex = 1000000 };
 
   TArray<VTexture *> Textures;
@@ -615,7 +615,8 @@ private:
 
   int inMapTextures; // >0: loading map textures
 
-  static inline VVA_CHECKRESULT uint16_t TextureBucket (uint32_t hash) noexcept { return (uint16_t)(foldHash32to16(hash)&(HASH_SIZE-1)); }
+  //static inline VVA_CHECKRESULT uint16_t TextureBucket (uint32_t hash) noexcept { return (uint16_t)(foldHash32to16(hash)&(HASH_SIZE-1)); }
+  static inline VVA_CHECKRESULT uint16_t TextureBucket (uint32_t hash) noexcept { return (uint16_t)(hash%HASH_SIZE); }
 
 public:
   struct MTLock {

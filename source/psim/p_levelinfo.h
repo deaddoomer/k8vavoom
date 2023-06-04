@@ -38,7 +38,7 @@ class VLevelInfo : public VThinker {
   DECLARE_CLASS(VLevelInfo, VThinker, 0)
   NO_DEFAULT_CONSTRUCTOR(VLevelInfo)
 
-  enum { TID_HASH_SIZE = 128 };
+  enum { TID_HASH_SIZE = 1021 };
 
   VGameInfo *Game;
   VWorldInfo *World;
@@ -150,6 +150,9 @@ class VLevelInfo : public VThinker {
   TArray<VMapSpecialAction> SpecialActions;
 
   vint32 PerfectHatredMode;
+
+public:
+  static inline int TIDHashBucket (int tid) noexcept { return (int)(hashU32((unsigned)tid)%TID_HASH_SIZE); }
 
 public:
   //VLevelInfo ();

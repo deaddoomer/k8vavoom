@@ -748,7 +748,7 @@ void VEntity::InsertIntoTIDList (int tid) {
   vassert(TIDHashNext == nullptr);
   vassert(TIDHashPrev == nullptr);
   TID = tid;
-  const int HashIndex = tid&(VLevelInfo::TID_HASH_SIZE-1);
+  const int HashIndex = VLevelInfo::TIDHashBucket(tid);
   TIDHashPrev = nullptr;
   TIDHashNext = Level->TIDHash[HashIndex];
   if (TIDHashNext) TIDHashNext->TIDHashPrev = this;
@@ -767,7 +767,7 @@ void VEntity::RemoveFromTIDList () {
   if (TIDHashPrev) {
     TIDHashPrev->TIDHashNext = TIDHashNext;
   } else {
-    const int HashIndex = TID&(VLevelInfo::TID_HASH_SIZE-1);
+    const int HashIndex = VLevelInfo::TIDHashBucket(TID);
     vassert(Level->TIDHash[HashIndex] == this);
     Level->TIDHash[HashIndex] = TIDHashNext;
   }

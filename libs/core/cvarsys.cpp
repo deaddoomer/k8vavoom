@@ -39,17 +39,19 @@ bool VCvar::Cheating = false;
 static bool hostInitComplete = false;
 
 
-#define CVAR_HASH_SIZE  (256)
+#define CVAR_HASH_SIZE  (509)
 static VCvar *cvhBuckets[CVAR_HASH_SIZE] = {nullptr};
 
-#define CHH(v_)  (foldHash32to8(v_)&(CVAR_HASH_SIZE-1))
+/*#define CHH(v_)  (foldHash32to8(v_)&(CVAR_HASH_SIZE-1))*/
+#define CHH(v_)  ((v_)%CVAR_HASH_SIZE)
 
 
 // ////////////////////////////////////////////////////////////////////////// //
 static inline vuint32 cvnamehash (const char *buf) {
   if (!buf || !buf[0]) return 1;
 #ifdef USE_SIMPLE_HASHFN
-  return djbHashBufCI(buf, strlen(buf));
+  //return djbHashBufCI(buf, strlen(buf));
+  return fnvHashBufCI(buf, strlen(buf));
 #else
   return vvHashBufCI(buf, strlen(buf));
 #endif

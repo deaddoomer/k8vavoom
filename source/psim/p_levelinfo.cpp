@@ -336,8 +336,10 @@ void VLevelInfo::Completed (int InMap, int InPosition, int SaveAngle) {
 //
 //==========================================================================
 VEntity *VLevelInfo::FindMobjFromTID (int tid, VEntity *Prev) {
-  for (VEntity *E = (Prev ? Prev->TIDHashNext : TIDHash[tid&(TID_HASH_SIZE-1)]); E; E = E->TIDHashNext) {
-    if (!E->IsGoingToDie() && E->TID == tid) return E;
+  if (tid) {
+    for (VEntity *E = (Prev ? Prev->TIDHashNext : TIDHash[VLevelInfo::TIDHashBucket(tid)]); E; E = E->TIDHashNext) {
+      if (!E->IsGoingToDie() && E->TID == tid) return E;
+    }
   }
   return nullptr;
 }
@@ -403,7 +405,7 @@ int VLevelInfo::FindFreeTID (int tidstart, int limit) const {
 //==========================================================================
 bool VLevelInfo::IsTIDUsed (int tid, bool allowdead) const {
   if (tid == 0) return true; // this is "self"
-  for (VEntity *E = Level->TIDHash[tid&(TID_HASH_SIZE-1)]; E; E = E->TIDHashNext) {
+  for (VEntity *E = Level->TIDHash[VLevelInfo::TIDHashBucket(tid)]; E; E = E->TIDHashNext) {
     if (!allowdead && E->IsGoingToDie()) continue;
     if (E->TID == tid) return true;
   }
