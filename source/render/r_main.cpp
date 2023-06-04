@@ -2500,7 +2500,7 @@ void VRenderLevelShared::UncacheLevel () {
     }
   }
 
-  if (Drawer) Drawer->ReportGPUMemoryUse("level unaching complete");
+  if (Drawer) Drawer->ReportGPUMemoryUse("level uncaching complete");
 }
 
 
