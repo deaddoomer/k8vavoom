@@ -964,14 +964,29 @@ int GetMoveSpeedType () {
     pex.AdjustForwardMove(ref fwd, ref fm1, ref fm2);
     //printdebug("%C: adiff=%s; fm1=%s (%s); fm2=%s (%s); fwd=%s (%s); vel=%s", self, velyawdiff, fm1, ForwardMove1, fm2, ForwardMove2, fwd, WALKING_SPEED, vel);
     fwd *= fm1;
+    if (pex.ReadyWeapon) fwd *= pex.ReadyWeapon.PlayerSpeedScaleFwd;
     return (vel > fwd*mult ? PMT_Running : PMT_Walking);
   } else {
     float sm1 = SideMove1, sm2 = SideMove2;
     //if (sm2 <= sm1) return PMT_Walking;
     pex.AdjustSideMove(ref side, ref sm1, ref sm2);
     side *= sm1;
+    if (pex.ReadyWeapon) fwd *= pex.ReadyWeapon.PlayerSpeedScaleSide;
     return (vel > side*mult ? PMT_Running : PMT_Walking);
   }
+}
+
+
+//==========================================================================
+//
+//  GetJumpVelZ
+//
+//==========================================================================
+float GetJumpVelZ () {
+  float res = JumpVelZ;
+  PlayerEx pex = PlayerEx(Player);
+  if (pex && pex.ReadyWeapon) res *= pex.ReadyWeapon.PlayerJumpScale;
+  return res;
 }
 
 
@@ -992,6 +1007,11 @@ void AdjustSpeed (ref float forward, ref float side) {
 
   PlayerEx pex = (bIsPlayer ? PlayerEx(Player) : none);
 
+  if (pex.ReadyWeapon && pex.ReadyWeapon.bDisablePlayerRun) {
+    forward = fclamp(forward, -WALKING_SPEED, WALKING_SPEED);
+    side = fclamp(side, -WALKING_SPEED, WALKING_SPEED);
+  }
+
   //forward *= (forward >= -1000.0 && forward < 1000.0 ? ForwardMove1 : ForwardMove2);
   if (forward) {
     //printdebug("%C:000: forward=%s (%s : %s)", self, forward, ForwardMove1, ForwardMove2);
@@ -999,6 +1019,10 @@ void AdjustSpeed (ref float forward, ref float side) {
     if (pex) pex.AdjustForwardMove(ref forward, ref fm1, ref fm2);
     forward *= (fabs(forward) <= 1000.0 ? fm1 : fm2);
     //printdebug("%C:001: forward=%s (%s : %s)", self, forward, ForwardMove1, ForwardMove2);
+    if (pex.ReadyWeapon) {
+      //printdebug("FSCALE: %s", pex.ReadyWeapon.PlayerSpeedScaleFwd);
+      forward *= pex.ReadyWeapon.PlayerSpeedScaleFwd;
+    }
   }
   if (side) {
     //printdebug("%C:000: side=%s (%s : %s)", self, side, SideMove1, SideMove2);
@@ -1006,6 +1030,7 @@ void AdjustSpeed (ref float forward, ref float side) {
     if (pex) pex.AdjustSideMove(ref side, ref sm1, ref sm2);
     side *= (fabs(side) <= 1000.0 ? sm1 : sm2);
     //printdebug("%C:001: side=%s (%s : %s)", self, side, SideMove1, SideMove2);
+    if (pex.ReadyWeapon) side *= pex.ReadyWeapon.PlayerSpeedScaleSide;
   }
 
   if (Inventory && !PlayerEx(Player).MorphTime) {

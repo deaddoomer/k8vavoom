@@ -69,6 +69,11 @@ float BotCombatDist;
 
 int ReloadCounter;
 
+// k8vavoom extensions
+float PlayerSpeedScaleFwd;
+float PlayerSpeedScaleSide;
+float PlayerJumpScale;
+
 
 bool bWimpyWeapon; // switch away if got ammo for more powerfull weapon
 bool bNoAutoFire; // don't auto fire
@@ -77,7 +82,7 @@ bool bStaff2Kickback; // does Heretic staff level 2 style kickback
 bool bAmmoOptional; // ammo is optional
 bool bAltAmmoOptional; // ammo is optional for alternate fire
 bool bCheckAnyAmmo; // can be selected if have any ammo (either normal, or alt)
-bool bReadySndHalf; // half a chance to play the reay sound
+bool bReadySndHalf; // half a chance to play the ready sound
 bool bDontBob; // don't bob weapon
 bool bNoAlert; // doesn't allert monsters when fired
 bool bCheatNotWeapon; // not considered a weapon by gimme cheat
@@ -99,6 +104,8 @@ bool bAllowPickupWeaponState;
 bool bAllowTryPickupWeaponForAmmoState;
 bool bAllowPickupWeaponForAmmoState;
 
+bool bDisablePlayerRun;
+
 // this is used to freeze bobbing when firing
 // no need to save this
 transient bool bBobFrozen;
@@ -113,7 +120,9 @@ float FOVScale;
 
 replication {
   reliable if (Role == ROLE_Authority && bNetOwner)
-    Ammo1, Ammo2;
+    Ammo1, Ammo2,
+    PlayerSpeedScaleFwd, PlayerSpeedScaleSide,
+    bDisablePlayerRun;
 }
 
 
@@ -884,4 +893,8 @@ LightDone:
 
 defaultproperties {
   PickupSound = 'misc/w_pkup';
+  PlayerSpeedScaleFwd = 1.0;
+  PlayerSpeedScaleSide = 1.0;
+  PlayerJumpScale = 1.0;
+  bDisablePlayerRun = false;
 }

@@ -2368,3 +2368,94 @@ final bool common_k8JumpIfLiquidFloor (EntityEx tgt, state label) {
   }
   return false;
 }
+
+
+//==========================================================================
+//
+//  A_PlayerWeaponSpeedScale
+//
+//==========================================================================
+[decorate] final void A_PlayerWeaponSpeedScale (float fwdscale, optional float sidescale) {
+  PlayerEx pex = (bIsPlayer ? PlayerEx(Player) : none);
+  if (pex && pex.ReadyWeapon) {
+    //printdebug("%C: A_PlayerSpeedScale: fwd=%s; side=%s", self, fwdscale, sidescale);
+    //printdebug("%C: prevscale: %s", self, pex.ReadyWeapon.PlayerSpeedScaleFwd);
+    pex.ReadyWeapon.PlayerSpeedScaleFwd = fwdscale;
+    if (sidescale!specified) {
+      pex.ReadyWeapon.PlayerSpeedScaleSide = sidescale;
+    } else {
+      pex.ReadyWeapon.PlayerSpeedScaleSide = fwdscale;
+    }
+    //printdebug("%C: newscale: %s", self, pex.ReadyWeapon.PlayerSpeedScaleFwd);
+  }
+}
+
+
+//==========================================================================
+//
+//  A_PlayerWeaponJumpScale
+//
+//==========================================================================
+[decorate] final void A_PlayerWeaponJumpScale (float scale) {
+  PlayerEx pex = (bIsPlayer ? PlayerEx(Player) : none);
+  if (pex && pex.ReadyWeapon) {
+    pex.ReadyWeapon.PlayerJumpScale = scale;
+  }
+}
+
+
+//==========================================================================
+//
+//  A_PlayerWeaponDisableRun
+//
+//==========================================================================
+[decorate] final void A_PlayerWeaponDisableRun (bool flag) {
+  PlayerEx pex = (bIsPlayer ? PlayerEx(Player) : none);
+  if (pex && pex.ReadyWeapon) {
+    pex.ReadyWeapon.bDisablePlayerRun = flag;
+  }
+}
+
+
+//==========================================================================
+//
+//  decorate_GetPlayerWeaponSpeedScaleFwd
+//
+//==========================================================================
+[decorate] final float decorate_GetPlayerWeaponSpeedScaleFwd () {
+  PlayerEx pex = (bIsPlayer ? PlayerEx(Player) : none);
+  return (pex && pex.ReadyWeapon ? pex.ReadyWeapon.PlayerSpeedScaleFwd : 1.0);
+}
+
+
+//==========================================================================
+//
+//  decorate_GetPlayerWeaponSpeedScaleSide
+//
+//==========================================================================
+[decorate] final float decorate_GetPlayerWeaponSpeedScaleSide () {
+  PlayerEx pex = (bIsPlayer ? PlayerEx(Player) : none);
+  return (pex && pex.ReadyWeapon ? pex.ReadyWeapon.PlayerSpeedScaleSide : 1.0);
+}
+
+
+//==========================================================================
+//
+//  decorate_GetPlayerWeaponGetDisableRun
+//
+//==========================================================================
+[decorate] final float decorate_GetPlayerWeaponGetDisableRun () {
+  PlayerEx pex = (bIsPlayer ? PlayerEx(Player) : none);
+  return (pex && pex.ReadyWeapon ? pex.ReadyWeapon.bDisablePlayerRun : false);
+}
+
+
+//==========================================================================
+//
+//  decorate_GetPlayerWeaponJumpScale
+//
+//==========================================================================
+[decorate] final float decorate_GetPlayerWeaponJumpScale () {
+  PlayerEx pex = (bIsPlayer ? PlayerEx(Player) : none);
+  return (pex && pex.ReadyWeapon ? pex.ReadyWeapon.PlayerJumpScale : 1.0);
+}

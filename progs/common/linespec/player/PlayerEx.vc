@@ -1001,7 +1001,7 @@ void MovePlayer (float deltaTime) {
   }
 
   if ((Buttons&BT_JUMP) && !bFly && onground && !JumpTime && IsJumpEnabled()) {
-    MO.Velocity.z = (PlayerPawn(MO).JumpVelZ*(Cheats&CF_HIGHJUMP ? 2.0 : 1.0))*1.1;
+    MO.Velocity.z = (PlayerPawn(MO).GetJumpVelZ()*(Cheats&CF_HIGHJUMP ? 2.0 : 1.0))*1.1;
     EntityEx(MO).bOnMobj = false;
     JumpTime = 0.5;
     MO.PlaySound('*jump', CHAN_VOICE);
@@ -1193,7 +1193,7 @@ void WaterMove (float deltaTime) {
 
   // do real jump here, but only if we aren't jumping out of water
   if (doNormalJump && !EntityEx(MO).bWaterJump) {
-    MO.Velocity.z = (PlayerPawn(MO).JumpVelZ*(Cheats&CF_HIGHJUMP ? 2.0 : 1.0))*1.1;
+    MO.Velocity.z = (PlayerPawn(MO).GetJumpVelZ()*(Cheats&CF_HIGHJUMP ? 2.0 : 1.0))*1.1;
     EntityEx(MO).bOnMobj = false;
     //JumpTime = 0.5;
   }
