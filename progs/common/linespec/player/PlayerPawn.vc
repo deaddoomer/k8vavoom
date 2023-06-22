@@ -884,18 +884,34 @@ override bool UseInventory (Inventory Item) {
 
 //==========================================================================
 //
-//  AdjustCrouchSpeed
+//  AdjustCrouchSpeedPre
 //
-//  moved to separate method, do mods can override it
+//  moved to separate method, so mods can override it
 //
 //==========================================================================
-void AdjustCrouchSpeed (ref float forward, ref float side) {
-  // when crouching, speed have to be reduced, and player is not allowed to run
+void AdjustCrouchSpeedPre (float origFwd, float origSide, ref float forward, ref float side) {
+  // when crouching, speed have to be reduced, and the player is not allowed to run
   // normal speed is |1000|, running speed is |2000|
   if (crouchfactor != 1) {
     //if (forward) print("old: f=%s; s=%s; nf=%s; ns=%s", forward, side, forward*crouchfactor, side*crouchfactor);
     forward = fclamp(forward, -WALKING_SPEED, WALKING_SPEED);
     side = fclamp(side, -WALKING_SPEED, WALKING_SPEED);
+  }
+}
+
+
+//==========================================================================
+//
+//  AdjustCrouchSpeedScale
+//
+//  moved to separate method, so mods can override it
+//
+//==========================================================================
+void AdjustCrouchSpeedScale (float origFwd, float origSide, ref float forward, ref float side) {
+  // when crouching, speed have to be reduced, and the player is not allowed to run
+  // normal speed is |1000|, running speed is |2000|
+  if (crouchfactor != 1) {
+    //if (forward) print("old: f=%s; s=%s; nf=%s; ns=%s", forward, side, forward*crouchfactor, side*crouchfactor);
     forward *= /*crouchfactor*/CROUCHSLOWDOWN;
     side *= /*crouchfactor*/CROUCHSLOWDOWN;
   }
@@ -926,17 +942,20 @@ int GetMoveSpeedType () {
 
   if (vel < 1.0) return PMT_Standing;
 
-  if (pex) {
-    if (fabs(pex.ForwardMove) || fabs(pex.SideMove)) {
-      // moving
-      if (vel < 16.0) return PMT_Standing;
-    } else {
-      // not moving
-      if (vel < 26.0) return PMT_Standing;
-    }
+  if (fabs(pex.ForwardMove) || fabs(pex.SideMove)) {
+    // moving
+    if (vel < 16.0) return PMT_Standing;
+  } else {
+    // not moving
+    if (vel < 26.0) return PMT_Standing;
   }
 
   if (crouchfactor != 1) return PMT_Crouching;
+
+  //Weapon rwp = (pex ? pex.ReadyWeapon : none);
+
+  // if we cannot run, don't bother checking for runnung ;-)
+  //if (rwp && rwp.bDisablePlayerRun) return PMT_Walking;
 
   float velyawdiff = fabs(AngleDiff(VectorAngleYaw(Velocity.xy), Angles.yaw));
   //printdebug("%C: velyawdiff=%s", self, velyawdiff);
@@ -961,32 +980,19 @@ int GetMoveSpeedType () {
   if (fwd) {
     float fm1 = ForwardMove1, fm2 = ForwardMove2;
     //if (fm2 <= fm1) return PMT_Walking;
+    pex.ApplyWeaponSpeedRestrictions(ref fwd, ref fm1, ref fm2);
     pex.AdjustForwardMove(ref fwd, ref fm1, ref fm2);
     //printdebug("%C: adiff=%s; fm1=%s (%s); fm2=%s (%s); fwd=%s (%s); vel=%s", self, velyawdiff, fm1, ForwardMove1, fm2, ForwardMove2, fwd, WALKING_SPEED, vel);
     fwd *= fm1;
-    if (pex.ReadyWeapon) fwd *= pex.ReadyWeapon.PlayerSpeedScaleFwd;
     return (vel > fwd*mult ? PMT_Running : PMT_Walking);
   } else {
     float sm1 = SideMove1, sm2 = SideMove2;
     //if (sm2 <= sm1) return PMT_Walking;
+    pex.ApplyWeaponSpeedRestrictions(ref side, ref sm1, ref sm2);
     pex.AdjustSideMove(ref side, ref sm1, ref sm2);
     side *= sm1;
-    if (pex.ReadyWeapon) fwd *= pex.ReadyWeapon.PlayerSpeedScaleSide;
     return (vel > side*mult ? PMT_Running : PMT_Walking);
   }
-}
-
-
-//==========================================================================
-//
-//  GetJumpVelZ
-//
-//==========================================================================
-float GetJumpVelZ () {
-  float res = JumpVelZ;
-  PlayerEx pex = PlayerEx(Player);
-  if (pex && pex.ReadyWeapon) res *= pex.ReadyWeapon.PlayerJumpScale;
-  return res;
 }
 
 
@@ -998,6 +1004,8 @@ float GetJumpVelZ () {
 //
 //==========================================================================
 void AdjustSpeed (ref float forward, ref float side) {
+  float origFwd = forward, origSide = side;
+
   // when the player has less than 25 health points, he's unable to run
   // used only in Strife
   if (Health < RunHealth) {
@@ -1007,33 +1015,31 @@ void AdjustSpeed (ref float forward, ref float side) {
 
   PlayerEx pex = (bIsPlayer ? PlayerEx(Player) : none);
 
-  if (pex.ReadyWeapon && pex.ReadyWeapon.bDisablePlayerRun) {
-    forward = fclamp(forward, -WALKING_SPEED, WALKING_SPEED);
-    side = fclamp(side, -WALKING_SPEED, WALKING_SPEED);
-  }
+  AdjustCrouchSpeedPre(origFwd, origSide, ref forward, ref side);
 
   //forward *= (forward >= -1000.0 && forward < 1000.0 ? ForwardMove1 : ForwardMove2);
   if (forward) {
     //printdebug("%C:000: forward=%s (%s : %s)", self, forward, ForwardMove1, ForwardMove2);
     float fm1 = ForwardMove1, fm2 = ForwardMove2;
-    if (pex) pex.AdjustForwardMove(ref forward, ref fm1, ref fm2);
-    forward *= (fabs(forward) <= 1000.0 ? fm1 : fm2);
-    //printdebug("%C:001: forward=%s (%s : %s)", self, forward, ForwardMove1, ForwardMove2);
-    if (pex.ReadyWeapon) {
-      //printdebug("FSCALE: %s", pex.ReadyWeapon.PlayerSpeedScaleFwd);
-      forward *= pex.ReadyWeapon.PlayerSpeedScaleFwd;
+    if (pex) {
+      pex.ApplyWeaponSpeedRestrictions(ref forward, ref fm1, ref fm2);
+      pex.AdjustForwardMove(ref forward, ref fm1, ref fm2);
     }
+    forward *= (fabs(forward) <= WALKING_SPEED ? fm1 : fm2);
+    //printdebug("%C:001: forward=%s (%s : %s)", self, forward, ForwardMove1, ForwardMove2);
   }
   if (side) {
     //printdebug("%C:000: side=%s (%s : %s)", self, side, SideMove1, SideMove2);
     float sm1 = SideMove1, sm2 = SideMove2;
-    if (pex) pex.AdjustSideMove(ref side, ref sm1, ref sm2);
-    side *= (fabs(side) <= 1000.0 ? sm1 : sm2);
+    if (pex) {
+      pex.ApplyWeaponSpeedRestrictions(ref side, ref sm1, ref sm2);
+      pex.AdjustSideMove(ref side, ref sm1, ref sm2);
+    }
+    side *= (fabs(side) <= WALKING_SPEED ? sm1 : sm2);
     //printdebug("%C:001: side=%s (%s : %s)", self, side, SideMove1, SideMove2);
-    if (pex.ReadyWeapon) side *= pex.ReadyWeapon.PlayerSpeedScaleSide;
   }
 
-  if (Inventory && !PlayerEx(Player).MorphTime) {
+  if (Inventory && pex && !pex.MorphTime) {
     // adjust for a player with a speed artifact
     //float SpeedFactor = Inventory.GetSpeedFactor();
     float SpeedFactor = 1.0f; // default
@@ -1047,7 +1053,7 @@ void AdjustSpeed (ref float forward, ref float side) {
     side *= SpeedFactor;
   }
 
-  AdjustCrouchSpeed(ref forward, ref side);
+  AdjustCrouchSpeedScale(origFwd, origSide, ref forward, ref side);
 }
 
 

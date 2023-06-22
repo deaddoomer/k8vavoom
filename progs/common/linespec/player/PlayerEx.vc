@@ -995,13 +995,13 @@ void MovePlayer (float deltaTime) {
     if ((Buttons&BT_JUMP) && MO.Velocity.z < 160) MO.Velocity.z += 30;
     if ((Buttons&BT_CROUCH) && MO.Velocity.z > -160) MO.Velocity.z -= 30;
     // sanitize
-    float limit = ((Buttons&BT_SPEED) && IsRunEnabled() ? 400 : 200);
+    float limit = ((Buttons&BT_SPEED) && IsRunEnabled() && IsWeaponRunEnabled() ? 400 : 200);
     MO.Velocity.z = fclamp(MO.Velocity.z, -limit, limit);
     //print("VZ=%s; FH=%s; fvwd=%s", MO.Velocity.z, FlyHeight, vforward);
   }
 
   if ((Buttons&BT_JUMP) && !bFly && onground && !JumpTime && IsJumpEnabled()) {
-    MO.Velocity.z = (PlayerPawn(MO).GetJumpVelZ()*(Cheats&CF_HIGHJUMP ? 2.0 : 1.0))*1.1;
+    MO.Velocity.z = (GetJumpVelZ()*(Cheats&CF_HIGHJUMP ? 2.0 : 1.0))*1.1;
     EntityEx(MO).bOnMobj = false;
     JumpTime = 0.5;
     MO.PlaySound('*jump', CHAN_VOICE);
@@ -1181,7 +1181,7 @@ void WaterMove (float deltaTime) {
     if (/*!forward*/!wishvz) {
       if (MO.Velocity.z < -20) MO.Velocity.z = fmin(-20, MO.Velocity.z+20);
     } else {
-      float limit = ((Buttons&BT_SPEED) && IsRunEnabled() ? 140 : 140*2);
+      float limit = ((Buttons&BT_SPEED) && IsRunEnabled() && IsWeaponRunEnabled() ? 140 : 140*2);
       MO.Velocity.z = fclamp(MO.Velocity.z, -limit, limit);
     }
   }
@@ -1193,7 +1193,7 @@ void WaterMove (float deltaTime) {
 
   // do real jump here, but only if we aren't jumping out of water
   if (doNormalJump && !EntityEx(MO).bWaterJump) {
-    MO.Velocity.z = (PlayerPawn(MO).GetJumpVelZ()*(Cheats&CF_HIGHJUMP ? 2.0 : 1.0))*1.1;
+    MO.Velocity.z = (GetJumpVelZ()*(Cheats&CF_HIGHJUMP ? 2.0 : 1.0))*1.1;
     EntityEx(MO).bOnMobj = false;
     //JumpTime = 0.5;
   }
@@ -6394,9 +6394,50 @@ void CheatHelper_AllKeys () {
 
 //==========================================================================
 //
+//  IsWeaponRunEnabled
+//
+//  can be overriden in user mods
+//
+//==========================================================================
+bool IsWeaponRunEnabled () {
+  Weapon rwp = ReadyWeapon;
+  return (rwp ? !rwp.bDisablePlayerRun : true);
+}
+
+
+//==========================================================================
+//
+//  ApplyWeaponSpeedRestrictions
+//
+//  can be overriden in user mods
+//
+//==========================================================================
+void ApplyWeaponSpeedRestrictions (ref float speed, ref float moveWalk, ref float moveRun) {
+  Weapon rwp = ReadyWeapon;
+  if (rwp) {
+    if (rwp.bDisablePlayerRun) {
+      speed = fclamp(speed, -PlayerPawn::WALKING_SPEED, PlayerPawn::WALKING_SPEED);
+      moveWalk *= rwp.PlayerSpeedScaleWalk;
+      moveRun *= rwp.PlayerSpeedScaleWalk;
+    } else if (fabs(speed) <= PlayerPawn::WALKING_SPEED) {
+      moveWalk *= rwp.PlayerSpeedScaleWalk;
+      moveRun *= rwp.PlayerSpeedScaleWalk;
+    } else {
+      moveWalk *= rwp.PlayerSpeedScaleRun;
+      moveRun *= rwp.PlayerSpeedScaleRun;
+    }
+  }
+}
+
+
+//==========================================================================
+//
 //  AdjustForwardMove
 //
 //  can be overriden in user mods
+//
+//  `speed` the original speed in abstract units
+//    |speed| <= 1000 is walking, otherwise running
 //
 //==========================================================================
 void AdjustForwardMove (ref float speed, ref float moveWalk, ref float moveRun) {
@@ -6409,8 +6450,25 @@ void AdjustForwardMove (ref float speed, ref float moveWalk, ref float moveRun) 
 //
 //  can be overriden in user mods
 //
+//  `speed` the original speed in abstract units
+//    |speed| <= 1000 is walking, otherwise running
+//
 //==========================================================================
 void AdjustSideMove (ref float speed, ref float moveWalk, ref float moveRun) {
+}
+
+
+//==========================================================================
+//
+//  GetJumpVelZ
+//
+//  can be overriden in user mods
+//
+//==========================================================================
+float GetJumpVelZ () {
+  float res = PlayerPawn(MO).JumpVelZ;
+  if (ReadyWeapon) res *= ReadyWeapon.PlayerJumpScale;
+  return res;
 }
 
 
@@ -6523,7 +6581,7 @@ void ProduceFootSteps (float deltaTime) {
 
   int speed = pwn.GetMoveSpeedType();
   //if (speed) printdebug("%C: speedtype=%s", MO, speed);
-  if (!speed) return;
+  if (speed == PlayerPawn::PMT_Standing) return;
 
   float tm, vol;
   switch (speed) {

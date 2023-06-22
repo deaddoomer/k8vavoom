@@ -518,7 +518,7 @@
     <prop_float name="Weapon.BotCombatDist" property="BotCombatDist" />
     <prop_int name="Weapon.PlayerModelVersion" property="PlayerModelVersion" />
 
-    <prop_float_optional_2 name="Weapon.PlayerSpeedScale" property="PlayerSpeedScaleFwd" property2="PlayerSpeedScaleSide" />
+    <prop_float_optional_2 name="Weapon.PlayerSpeedScale" property="PlayerSpeedScaleWalk" property2="PlayerSpeedScaleRun" />
     <prop_float name="Weapon.PlayerJumpScale" property="PlayerJumpScale" />
     <flag name="DisablePlayerRun" property="bDisablePlayerRun" />
 

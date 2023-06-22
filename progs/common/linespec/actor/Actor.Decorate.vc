@@ -2375,18 +2375,15 @@ final bool common_k8JumpIfLiquidFloor (EntityEx tgt, state label) {
 //  A_PlayerWeaponSpeedScale
 //
 //==========================================================================
-[decorate] final void A_PlayerWeaponSpeedScale (float fwdscale, optional float sidescale) {
+[decorate] final void A_PlayerWeaponSpeedScale (float walkscale, optional float runscale) {
   PlayerEx pex = (bIsPlayer ? PlayerEx(Player) : none);
   if (pex && pex.ReadyWeapon) {
-    //printdebug("%C: A_PlayerSpeedScale: fwd=%s; side=%s", self, fwdscale, sidescale);
-    //printdebug("%C: prevscale: %s", self, pex.ReadyWeapon.PlayerSpeedScaleFwd);
-    pex.ReadyWeapon.PlayerSpeedScaleFwd = fwdscale;
-    if (sidescale!specified) {
-      pex.ReadyWeapon.PlayerSpeedScaleSide = sidescale;
+    pex.ReadyWeapon.PlayerSpeedScaleWalk = walkscale;
+    if (runscale!specified) {
+      pex.ReadyWeapon.PlayerSpeedScaleRun = runscale;
     } else {
-      pex.ReadyWeapon.PlayerSpeedScaleSide = fwdscale;
+      pex.ReadyWeapon.PlayerSpeedScaleRun = walkscale;
     }
-    //printdebug("%C: newscale: %s", self, pex.ReadyWeapon.PlayerSpeedScaleFwd);
   }
 }
 
@@ -2419,23 +2416,23 @@ final bool common_k8JumpIfLiquidFloor (EntityEx tgt, state label) {
 
 //==========================================================================
 //
-//  decorate_GetPlayerWeaponSpeedScaleFwd
+//  decorate_GetPlayerWeaponSpeedScaleWalk
 //
 //==========================================================================
-[decorate] final float decorate_GetPlayerWeaponSpeedScaleFwd () {
+[decorate] final float decorate_GetPlayerWeaponSpeedScaleWalk () {
   PlayerEx pex = (bIsPlayer ? PlayerEx(Player) : none);
-  return (pex && pex.ReadyWeapon ? pex.ReadyWeapon.PlayerSpeedScaleFwd : 1.0);
+  return (pex && pex.ReadyWeapon ? pex.ReadyWeapon.PlayerSpeedScaleWalk : 1.0);
 }
 
 
 //==========================================================================
 //
-//  decorate_GetPlayerWeaponSpeedScaleSide
+//  decorate_GetPlayerWeaponSpeedScaleRun
 //
 //==========================================================================
-[decorate] final float decorate_GetPlayerWeaponSpeedScaleSide () {
+[decorate] final float decorate_GetPlayerWeaponSpeedScaleRun () {
   PlayerEx pex = (bIsPlayer ? PlayerEx(Player) : none);
-  return (pex && pex.ReadyWeapon ? pex.ReadyWeapon.PlayerSpeedScaleSide : 1.0);
+  return (pex && pex.ReadyWeapon ? pex.ReadyWeapon.PlayerSpeedScaleRun : 1.0);
 }
 
 
@@ -2458,4 +2455,15 @@ final bool common_k8JumpIfLiquidFloor (EntityEx tgt, state label) {
 [decorate] final float decorate_GetPlayerWeaponJumpScale () {
   PlayerEx pex = (bIsPlayer ? PlayerEx(Player) : none);
   return (pex && pex.ReadyWeapon ? pex.ReadyWeapon.PlayerJumpScale : 1.0);
+}
+
+
+//==========================================================================
+//
+//  decorate_IsPlayerRunning
+//
+//==========================================================================
+[decorate] final float decorate_IsPlayerRunning () {
+  PlayerEx pex = (bIsPlayer ? PlayerEx(Player) : none);
+  return (pex ? (pex.Buttons&BT_SPEED) && pex.IsRunEnabled() && pex.IsWeaponRunEnabled() : false);
 }

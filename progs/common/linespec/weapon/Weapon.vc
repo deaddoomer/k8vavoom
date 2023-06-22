@@ -70,8 +70,8 @@ float BotCombatDist;
 int ReloadCounter;
 
 // k8vavoom extensions
-float PlayerSpeedScaleFwd;
-float PlayerSpeedScaleSide;
+float PlayerSpeedScaleWalk;
+float PlayerSpeedScaleRun;
 float PlayerJumpScale;
 
 
@@ -121,7 +121,7 @@ float FOVScale;
 replication {
   reliable if (Role == ROLE_Authority && bNetOwner)
     Ammo1, Ammo2,
-    PlayerSpeedScaleFwd, PlayerSpeedScaleSide,
+    PlayerSpeedScaleWalk, PlayerSpeedScaleRun,
     bDisablePlayerRun;
 }
 
@@ -893,8 +893,8 @@ LightDone:
 
 defaultproperties {
   PickupSound = 'misc/w_pkup';
-  PlayerSpeedScaleFwd = 1.0;
-  PlayerSpeedScaleSide = 1.0;
+  PlayerSpeedScaleWalk = 1.0;
+  PlayerSpeedScaleRun = 1.0;
   PlayerJumpScale = 1.0;
   bDisablePlayerRun = false;
 }
