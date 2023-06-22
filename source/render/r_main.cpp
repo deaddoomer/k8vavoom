@@ -1839,6 +1839,14 @@ void VRenderLevelShared::RenderPlayerView () {
     }
   }
 
+  // CAS should be not applied to psprites too
+  if (r_cas_filter.asInt() > 0) {
+    float coeff = r_cas_filter_coeff.asFloat();
+    if (isFiniteF(coeff) && coeff >= 0.001f) {
+      Drawer->Posteffect_CAS(coeff, refdef.x, refdef.y, refdef.width, refdef.height, true/*save matrices*/);
+    }
+  }
+
   // recalc in case recursive scene renderer moved it
   // we need it for psprite rendering
   if (Drawer->vieworg == lastorg) {
@@ -1851,13 +1859,6 @@ void VRenderLevelShared::RenderPlayerView () {
 
   // draw the psprites on top of everything
   if (drawPSprites) DrawPlayerSprites();
-
-  if (r_cas_filter.asInt() > 0) {
-    float coeff = r_cas_filter_coeff.asFloat();
-    if (isFiniteF(coeff) && coeff >= 0.001f) {
-      Drawer->Posteffect_CAS(coeff, refdef.x, refdef.y, refdef.width, refdef.height, false/*don't save matrices*/);
-    }
-  }
 
   int sct = 0;
   if (sctreg) {
