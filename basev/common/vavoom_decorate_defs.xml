@@ -118,6 +118,8 @@
     <prop_int name="RipLevelMin" property="RipLevelMin" />
     <prop_int name="RipLevelMax" property="RipLevelMax" />
     <prop_int name="FriendlySeeBlocks" property="FriendlySeeBlocks" />
+    <!-- k8vavoom extension -->
+    <prop_int name="FriendlyTargetChance" property="FriendlyTargetChance" />
 
     <!-- Physics -->
     <flag name="Solid" property="bSolid" relinktoworld="true" />

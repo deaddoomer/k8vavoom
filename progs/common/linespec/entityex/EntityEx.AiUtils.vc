@@ -229,6 +229,19 @@ final bool LookForMonstersPH (optional EntityEx exingore) {
 
 //==========================================================================
 //
+//  IsSomethingStationary
+//
+//  speed is zero, and not moving
+//
+//==========================================================================
+final bool IsSomethingStationary () {
+  return (!Speed && !Velocity.xy);
+  //return (!Speed);
+}
+
+
+//==========================================================================
+//
 //  LookForMonsters2
 //
 //  If fov is 0, only look 180 degrees in front.
@@ -237,10 +250,17 @@ final bool LookForMonstersPH (optional EntityEx exingore) {
 //
 //==========================================================================
 final bool LookForMonsters2 (float fov, float minseedist, float maxseedist) {
+  bool station = IsSomethingStationary();
+
   if (!maxseedist) {
     //maxseedist = 4096;
-    //FIXME: zero may be valid value here
-    maxseedist = (FriendlySeeBlocks <= 0 ? 1280 : FriendlySeeBlocks*128);
+    //FIXME: zero for `FriendlySeeBlocks` may be valid value here
+    if (station && MeleeRange > 0 && FriendlySeeBlocks <= 0) {
+      // stationary mine or something
+      maxseedist = MeleeRange;
+    } else {
+      maxseedist = (FriendlySeeBlocks <= 0 ? 1280 : FriendlySeeBlocks*128);
+    }
   }
 
   minseedist = fmax(0.0f, minseedist);
@@ -252,7 +272,13 @@ final bool LookForMonsters2 (float fov, float minseedist, float maxseedist) {
     float minseedistSq = minseedist*minseedist;
     float maxseedistSq = maxseedist*maxseedist;
 
+    if (!LastTargetForFriends || LastTargetForFriends.IsDestroyed) LastTargetForFriends = none;
+
+    // k8 extension: try to find the closest enemy, but not the one we choose before
     Entity ee;
+    EntityEx bestE = none;
+    float bestDist = +float.max;
+    bool seenLastTarget = false;
     foreach RadiusThings(out ee, Origin, maxseedist) {
       EntityEx mo = EntityEx(ee);
       if (!mo) continue;
@@ -269,7 +295,7 @@ final bool LookForMonsters2 (float fov, float minseedist, float maxseedist) {
       if (minseedistSq && distSq < minseedistSq) continue;
 
       if (!CanSee(mo)) continue; // out of sight
-      if (P_Random() > 128) continue; // sometimes skip
+      if (P_Random() > /*128*/FriendlyTargetChance) continue; // sometimes skip
 
       if (!allaround) {
         /*
@@ -286,7 +312,25 @@ final bool LookForMonsters2 (float fov, float minseedist, float maxseedist) {
           if (distSq > DEFAULT_MELEERANGE*DEFAULT_MELEERANGE) continue; // behind back
         }
       }
-      Target = mo;
+      if (mo == LastTargetForFriends) {
+        seenLastTarget = true;
+      } else if (distSq < bestDist) {
+        bestDist = distSq;
+        bestE = mo;
+        // hack for Zan Hell Mine: it doesn't matter what we found anyway
+        if (station) break;
+      }
+      //Target = mo;
+      //return true;
+    }
+    if (!bestE) {
+      if (seenLastTarget) {
+        Target = LastTargetForFriends;
+        return true;
+      }
+    } else if (bestE) {
+      LastTargetForFriends = bestE;
+      Target = bestE;
       return true;
     }
   }

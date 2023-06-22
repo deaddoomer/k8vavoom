@@ -48,4 +48,5 @@ defaultproperties {
   BloodType = Blood;
   BloodSplatterType = BloodSplatter;
   AxeBloodType = AxeBlood;
+  FriendlyTargetChance = 128;
 }

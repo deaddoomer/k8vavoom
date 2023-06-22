@@ -567,6 +567,12 @@ int RipLevelMax;
 // distance for friendly monster lookup, in 128-unit blocks; <=0 means "128"
 int FriendlySeeBlocks = -1;
 
+// used in `LookForMonsters2()`: will skip if `P_Random() > FriendlyTargetChance`
+int FriendlyTargetChance;
+
+// this is used to skip the last target in `LookForMonsters2()`
+transient EntityEx LastTargetForFriends;
+
 // temporary for physics z change due to stepping
 transient float tmp_phys_z_change;
 transient float tmp_phys_last_water_z; // used to trigger water checks

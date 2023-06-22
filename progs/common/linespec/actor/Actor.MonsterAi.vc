@@ -79,7 +79,11 @@ final void SetSeeOrWanderState () {
     targ = (Level.CompatSoundTarget || bNoSector ? EntityEx(Sector->SoundTarget) : LastHeard);
     if (targ) {
       // if it's dead, don't chase it
-      if (targ && targ.Health <= 0) targ = none;
+      // also, don't chase it if we cannot move, and it is too far away
+      if (targ) {
+        if (targ.Health <= 0) targ = none;
+        else if (IsSomethingStationary() && DistToSquared(targ) < MeleeRange*MeleeRange) targ = none;
+      }
       if (targ && targ.bIsPlayer) {
         if (PlayerEx(targ.Player).bNoTarget) {
           if (Level.PerfectHatredMode&LevelInfo::PHM_HUNT_MONSTERS) LookForPlayers(fov);
@@ -94,7 +98,7 @@ final void SetSeeOrWanderState () {
 
   if (targ && targ.bShootable) {
     if (bFriendly && targ.bFriendly) {
-      // if we find a valid target here, the wandering logic should *not* be activated!
+      // if we found a valid target here, the wandering logic should *not* be activated!
       // if would cause the seestate to be set twice
       if (!LookForPlayers(fov)) SetSeeOrWanderState();
     } else {
