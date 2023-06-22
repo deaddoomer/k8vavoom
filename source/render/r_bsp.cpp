@@ -39,6 +39,13 @@
 
 #define HORIZON_SURF_SIZE  (sizeof(surface_t)+sizeof(SurfVertex)*3)
 
+// if the origin is on a plane, we should consider this plane front-facing
+// without this hack, rendering when the origin is exactly on a plane will
+// skip some clipping, and "crack through walls". this is long-standing
+// clipping bug; i knew about it for a long time, but never managed to
+// investigate the cause of it.
+#define RENDER_ONPLANE_HACK  true
+
 // THIS IS GLITCHY!
 //#define VV_CHOOSE_SKY_BY_AREA
 
@@ -68,6 +75,8 @@ VCvarB r_disable_world_update("r_disable_world_update", false, "Disable world up
 static VCvarB r_dbg_always_draw_flats("r_dbg_always_draw_flats", true, "Draw flat surfaces even if region is not visible (this is pobj hack)?", CVAR_NoShadow/*|CVAR_Archive*/);
 //static VCvarB r_draw_adjacent_subsector_things("r_draw_adjacent_subsector_things", true, "Draw things subsectors adjacent to visible subsectors (can fix disappearing things)?", CVAR_Archive|CVAR_NoShadow);
 
+static VCvarB r_hack_pointside("r_hack_pointside", RENDER_ONPLANE_HACK, "Fix occasional \"through the wall\" bug? (EXPERIMENTAL!)", CVAR_NoShadow/*|CVAR_Archive*/);
+
 extern VCvarB r_underwater_colored_light;
 
 extern VCvarB r_decals;
@@ -93,6 +102,29 @@ double dbgCheckVisTime = 0.0;
 
 // sorry for this global!
 static TArrayNC<sec_region_t *> uwregs;
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// returns side 0 (front, or on a plane) or 1 (back)
+static VVA_FORCEINLINE VVA_CHECKRESULT int RenderPointOnSide2 (const TPlane &plane,
+                                                               const TVec &point) noexcept
+{
+  if (r_hack_pointside) {
+    return (point.dot(plane.normal)-plane.dist < 0.0f);
+  } else {
+    return plane.PointOnSide2(point);
+  }
+}
+
+static VVA_FORCEINLINE VVA_CHECKRESULT int RenderPointOnSide (const TPlane &plane,
+                                                               const TVec &point) noexcept
+{
+  if (r_hack_pointside) {
+    return (point.dot(plane.normal)-plane.dist < 0.0f);
+  } else {
+    return plane.PointOnSide(point);
+  }
+}
 
 
 //==========================================================================
@@ -515,7 +547,7 @@ void VRenderLevelShared::DrawSurfaces (subsector_t *sub, sec_region_t *secregion
     for (const surface_t *ss = surf; ss; ss = ss->next) {
       if (ss->count < 3) continue;
       for (int f = 0; f < ss->count; ++f) {
-        if (Drawer->MirrorPlane.PointOnSide2(ss->verts[f].vec())) return;
+        if (RenderPointOnSide2(Drawer->MirrorPlane, ss->verts[f].vec())) return;
       }
     }
   }
@@ -1058,7 +1090,12 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
     if (sub->numlines < 1) return;
     if (sub->sector->SectorFlags&sector_t::SF_Hidden) return;
     // mirror clip
-    if (Drawer->MirrorClip && (Drawer->MirrorPlane.PointOnSide2(*seg->v1) || Drawer->MirrorPlane.PointOnSide2(*seg->v2))) return;
+    if (Drawer->MirrorClip &&
+        (RenderPointOnSide2(Drawer->MirrorPlane, *seg->v1) ||
+         RenderPointOnSide2(Drawer->MirrorPlane, *seg->v2)))
+    {
+      return;
+    }
     // check with clipper
     if (!ViewClip.IsRangeVisible(*seg->v2, *seg->v1)) return;
     RenderSegMarkMapped(sub, seg);
@@ -1071,11 +1108,16 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
   if (!dseg) return; // just in case
 
   // mirror clip
-  if (Drawer->MirrorClip && (Drawer->MirrorPlane.PointOnSide2(*seg->v1) || Drawer->MirrorPlane.PointOnSide2(*seg->v2))) return;
+  if (Drawer->MirrorClip &&
+      (RenderPointOnSide2(Drawer->MirrorPlane, *seg->v1) ||
+       RenderPointOnSide2(Drawer->MirrorPlane, *seg->v2)))
+  {
+    return;
+  }
 
-  if (seg->PointOnSide(Drawer->vieworg)) {
+  if (RenderPointOnSide(*seg, Drawer->vieworg)) {
     // viewer is in back side or on plane
-    // gozzo 3d floors should be rendered regardless of orientation
+    // gozzo 3d floors should be rendered regardless of the orientation
     segpart_t *sp = dseg->extra;
     if (sp && sp->texinfo.Tex && (sp->texinfo.Alpha < 1.0f || sp->texinfo.Additive || sp->texinfo.Tex->isTranslucent())) {
       // mark subsector as rendered (nope)
@@ -1095,7 +1137,8 @@ void VRenderLevelShared::RenderLine (subsector_t *sub, sec_region_t *secregion, 
   #if 0
   if (MirrorClipSegs && clip_frustum && clip_frustum_mirror && /*clip_frustum_bsp &&*/ Drawer->viewfrustum.planes[TFrustum::Forward].isValid()) {
     // clip away segs that are behind mirror
-    if (Drawer->viewfrustum.planes[TFrustum::Forward].PointOnSide(*seg->v1) && Drawer->viewfrustum.planes[TFrustum::Forward].PointOnSide(*seg->v2)) return; // behind mirror
+    if (RenderPointOnSide(Drawer->viewfrustum.planes[TFrustum::Forward], *seg->v1) &&
+        RenderPointOnSide(Drawer->viewfrustum.planes[TFrustum::Forward], *seg->v2)) return; // behind mirror
   }
   #endif
 
@@ -1598,7 +1641,7 @@ void VRenderLevelShared::RenderBSPNode (int bspnum, const float bbox[6], unsigne
     const node_t *bsp = &Level->Nodes[bspnum];
     //if (bsp->visframe == currVisFrame) return; // if we're exactly on a splitting plane, this can happen
     // decide which side the view point is on
-    unsigned side = (unsigned)bsp->PointOnSide(Drawer->vieworg);
+    unsigned side = (unsigned)RenderPointOnSide(*bsp, Drawer->vieworg);
     // recursively divide front space (towards the viewer)
     RenderBSPNode(bsp->children[side], bsp->bbox[side], clipflags, onlyClip);
     // recursively divide back space (away from the viewer)

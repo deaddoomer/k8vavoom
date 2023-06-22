@@ -32,6 +32,13 @@
 
 //#define XXX_CLIPPER_DUMP_ADDED_RANGES
 
+// if `Origin` is on a plane, we should consider this plane front-facing
+// without this hack, rendering when the origin is exactly on a plane will
+// skip some clipping, and "crack through walls". this is long-standing
+// clipping bug; i knew about it for a long time, but never managed to
+// investigate the cause of it.
+#define CLIPPER_ONPLANE_HACK  true
+
 #ifdef VAVOOM_CLIPPER_USE_REAL_ANGLES
 # define MIN_ANGLE  ((VFloat)0)
 # define MAX_ANGLE  ((VFloat)360)
@@ -57,6 +64,22 @@
 # define RNGLOG(...)  do {} while (0)
 # define SBCLOG(...)  do {} while (0)
 #endif
+
+
+static VCvarB clip_hack_pointside("clip_hack_pointside", CLIPPER_ONPLANE_HACK, "Fix occasional \"through the wall\" bug? (EXPERIMENTAL!)", CVAR_NoShadow/*|CVAR_Archive*/);
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// returns side 0 (front, or on a plane) or 1 (back)
+static VVA_FORCEINLINE VVA_CHECKRESULT int ClipPointOnSide2 (const TPlane &plane,
+                                                             const TVec &point) noexcept
+{
+  if (clip_hack_pointside) {
+    return (point.dot(plane.normal)-plane.dist < 0.0f);
+  } else {
+    return plane.PointOnSide2(point);
+  }
+}
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -1416,7 +1439,7 @@ void VViewClipper::ClipAddLine (const TVec v1, const TVec v2) noexcept {
   TPlane pl;
   pl.SetPointDirXY(v1, v2-v1); // for boxes, this doesn't even do sqrt
   // viewer is in back side or on plane?
-  const int orgside = pl.PointOnSide2(Origin);
+  const int orgside = ClipPointOnSide2(pl, Origin);
   if (orgside) return; // origin is on plane, or on back
   AddClipRange(v2, v1);
 }
@@ -1470,7 +1493,7 @@ bool VViewClipper::ClipCheckSubsector (const subsector_t *sub) noexcept {
   for (int count = sub->numlines; count--; ++seg) {
     //k8: q: i am not sure here, but why don't check both sides?
     //    a: because differently oriented side is not visible in any case
-    const int orgside = seg->PointOnSide2(Origin);
+    const int orgside = ClipPointOnSide2(*seg, Origin);
     if (orgside) {
       if (orgside == 2) {
         // if origin is on the seg, it doesn't matter how we'll count it
@@ -1502,7 +1525,7 @@ static inline bool MirrorCheck (const TPlane *Mirror, const TVec &v1, const TVec
   if (Mirror) {
     // clip seg with mirror plane
     //if (Mirror->PointOnSideThreshold(v1) && Mirror->PointOnSideThreshold(v2)) return false;
-    if (Mirror->PointOnSide2(v1) || Mirror->PointOnSide2(v2)) return false;
+    if (ClipPointOnSide2(*Mirror, v1) || ClipPointOnSide2(*Mirror, v2)) return false;
     // and clip it while we are here
     //const float dist1 = v1.dot(Mirror->normal)-Mirror->dist;
     //const float dist2 = v2.dot(Mirror->normal)-Mirror->dist;
@@ -1541,7 +1564,7 @@ bool VViewClipper::ClipCheckAddSubsector (const subsector_t *sub, const TPlane *
 
     //k8: q: i am not sure here, but why don't check both sides?
     //    a: because differently oriented side is not visible in any case
-    const int orgside = seg->PointOnSide2(Origin);
+    const int orgside = ClipPointOnSide2(*seg, Origin);
     if (orgside) {
       if (orgside == 2) {
         // origin is on plane
@@ -1631,7 +1654,7 @@ void VViewClipper::CheckAddClipSeg (const seg_t *seg, const TPlane *Mirror, bool
   if (!clipAll && !ldef) return; // miniseg
 
   // viewer is in back side or on plane?
-  int orgside = seg->PointOnSide2(Origin);
+  int orgside = ClipPointOnSide2(*seg, Origin);
   if (orgside == 2) return; // origin is on plane
   // add differently oriented segs too
   if (orgside) {
@@ -1683,7 +1706,7 @@ void VViewClipper::CheckAddClipSeg (const seg_t *seg, const TPlane *Mirror, bool
 //==========================================================================
 void VViewClipper::CheckAddPObjClipSeg (polyobj_t *pobj, const subsector_t *sub, const seg_t *seg, const TPlane *Mirror, bool /*clipAll*/) noexcept {
   // viewer is in back side or on plane?
-  int orgside = seg->PointOnSide2(Origin);
+  int orgside = ClipPointOnSide2(*seg, Origin);
   if (orgside == 2) return; // origin is on plane
 
   // add differently oriented segs too
@@ -1894,7 +1917,7 @@ bool VViewClipper::ClipLightCheckSeg (const seg_t *seg, int /*asShadow*/) const 
   if (!seg->SphereTouches(Origin, Radius)) return false;
   // we have to check even "invisible" segs here, 'cause we need them all
   const TVec *v1, *v2;
-  const int orgside = seg->PointOnSide2(Origin);
+  const int orgside = ClipPointOnSide2(*seg, Origin);
   if (orgside == 2) return true; // origin is on plane, we cannot do anything sane
   if (orgside) {
     //if (!asShadow) return false;
@@ -1937,7 +1960,7 @@ bool VViewClipper::ClipLightCheckSubsector (subsector_t *sub, int /*asShadow*/) 
     }
     // we have to check even "invisible" segs here, 'cause we need them all
     const TVec *v1, *v2;
-    const int orgside = seg->PointOnSide2(Origin);
+    const int orgside = ClipPointOnSide2(*seg, Origin);
     if (orgside == 2) return true; // origin is on plane, we cannot do anything sane
     if (orgside) {
       //if (!asShadow) continue;
@@ -1979,7 +2002,7 @@ void VViewClipper::CheckLightAddClipSeg (const seg_t *seg, const TPlane *Mirror,
 
   // light has 360 degree FOV, so clip with all walls
   const TVec *v1, *v2;
-  const int orgside = seg->PointOnSide2(Origin);
+  const int orgside = ClipPointOnSide2(*seg, Origin);
 #if 1
   if (orgside == 2) return; // origin is on plane, we cannot do anything sane
   if (orgside) {
@@ -2017,7 +2040,7 @@ void VViewClipper::CheckLightAddPObjClipSeg (polyobj_t *pobj, const subsector_t 
 
   // light has 360 degree FOV, so clip with all walls
   const TVec *v1, *v2;
-  const int orgside = seg->PointOnSide2(Origin);
+  const int orgside = ClipPointOnSide2(*seg, Origin);
   if (orgside == 2) return; // origin is on plane, we cannot do anything sane
 
 #if 1
