@@ -275,6 +275,7 @@ static VVA_OKUNUSED int surfIndex (const surface_t *surfs, const surface_t *curr
 static surface_t *RemoveCentroids (surface_t *surf) {
   for (surface_t *ss = surf; ss; ss = ss->next) {
     if (ss->isCentroidCreated()) ss->RemoveCentroid();
+    vassert(!ss->isCentroidCreated());
   }
   return surf;
 }
@@ -294,8 +295,13 @@ static surface_t *RecreateCentroids (VRenderLevelShared *RLev, surface_t *surf) 
   for (surface_t *ss = surf; ss; prev = ss, ss = ss->next) {
     if (ss->count > 4 && !ss->isCentroidCreated()) {
       // make room
-      ss = RLev->EnsureSurfacePoints(ss, ss->count+2, surf, prev);
-      // add insert centroid
+      if (ss == surf) {
+        ss = RLev->EnsureSurfacePoints(ss, ss->count+2, surf, prev);
+        surf = ss;
+      } else {
+        ss = RLev->EnsureSurfacePoints(ss, ss->count+2, surf, prev);
+      }
+      // insert centroid
       ss->AddCentroid();
     }
   }
@@ -472,293 +478,16 @@ surface_t *VRenderLevelLightmap::SubdivideFaceInternal (surface_t *surf, const T
 }
 
 
-/*
-  subdivision t-junctions fixer
-
-  loop over all surfaces; for each surface point, check if it touches
-  any surfaces from the adjacent subsectors. if it is, insert that point there
-
-  currently we're doing this by brute force
-*/
-
-
-//==========================================================================
-//
-//  IsPointOnLine3D
-//
-//==========================================================================
-static inline bool IsPointOnLine3D (const TVec &v0, const TVec &v1, const TVec &p) noexcept {
-  const TVec ldir = v1-v0;
-  const float llensq = ldir.lengthSquared();
-  if (llensq < 1.0f) return false; // dot
-  // check for corners
-  const TVec p0 = p-v0;
-  if (p0.lengthSquared() < 1.0f) return false;
-  const TVec p1 = p-v1;
-  if (p1.lengthSquared() < 1.0f) return false;
-  const float llen = sqrtf(llensq);
-  // check projection
-  const TVec ndir = ldir/llen;
-  const float prj = ndir.dot(p0);
-  if (prj < 1.0f || prj > llen-1.0f) return false; // projection is too big
-  // check point distance
-  const float dist = p0.cross(p1).length()/llen;
-  //const float dist = p0.cross(p1).lengthSquared()/llensq;
-  return (dist < 0.001f);
-}
-
-
-//==========================================================================
-//
-//  SurfaceInsertPointIntoEdge
-//
-//  do not use reference to `p` here!
-//  it may be a vector from some source that can be modified
-//
-//==========================================================================
-static surface_t *SurfaceInsertPointIntoEdge (VRenderLevelShared *RLev, sec_surface_t *ownssf, seg_t *ownseg, surface_t *surf, surface_t *&surfhead, surface_t *prev, const TVec p) {
-  if (!surf || surf->count < 3 || fabsf(surf->plane.PointDistance(p)) >= 0.01f) return surf;
-  //surface_t *prev = nullptr;
-  #if 0
-  VLevel *Level = RLev->GetLevel();
-  const int sfidx = surfIndex(surfhead, surf);
-  #endif
-  // check each surface line
-  for (int pn0 = (int)surf->isCentroidCreated(); pn0 < surf->count-(int)surf->isCentroidCreated(); ++pn0) {
-    int pn1 = (pn0+1)%surf->count;
-    if (surf->isCentroidCreated()) vassert(pn1 != 0);
-    const TVec v0 = surf->verts[pn0].vec();
-    const TVec v1 = surf->verts[pn1].vec();
-    #if 0
-    GCon->Logf(NAME_Debug, "surface #%d : %p for subsector #%d: checking point; line=(%g,%g,%g)-(%g,%g,%g); plane=(%g,%g,%g):%g; point=(%g,%g,%g); online=%d",
-      sfidx, surf, (int)(ptrdiff_t)(surf->subsector-&Level->Subsectors[0]),
-      v0.x, v0.y, v0.z, v1.x, v1.y, v1.z,
-      surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z, surf->plane.dist,
-      p.x, p.y, p.z, (int)IsPointOnLine2D(v0, v1, p));
-    #endif
-    // this also checks for corners, and for very short lines
-    if (!IsPointOnLine3D(v0, v1, p)) continue;
-    #if 0
-    GCon->Logf(NAME_Debug, "surface #%d : %p for subsector #%d need a new point before %d; line=(%g,%g,%g)-(%g,%g,%g); plane=(%g,%g,%g):%g; orgpoint=(%g,%g,%g) (cp=%d)",
-      sfidx, surf, (int)(ptrdiff_t)(surf->subsector-&Level->Subsectors[0]), pn0+1,
-      v0.x, v0.y, v0.z, v1.x, v1.y, v1.z,
-      surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z, surf->plane.dist,
-      p.x, p.y, p.z, (int)surf->isCentroidCreated());
-    GCon->Logf(NAME_Debug, "=== BEFORE (%d) ===", surf->count);
-    for (int f = 0; f < surf->count; ++f) {
-      GCon->Logf(NAME_Debug, "  %2d: (%g,%g,%g); ownssf=%p, ownseg=%d", f, surf->verts[f].x, surf->verts[f].y, surf->verts[f].z,
-        surf->verts[f].ownerssf,
-        (surf->verts[f].ownerseg ? (int)(ptrdiff_t)(surf->verts[f].ownerseg-&Level->Segs[0]) : -1));
-    }
-    #endif
-    // insert a new point
-    if (!prev && surf != surfhead) {
-      prev = surfhead;
-      while (prev->next != surf) prev = prev->next;
-    }
-    surf = RLev->EnsureSurfacePoints(surf, surf->count+(surf->isCentroidCreated() ? 1 : 3), surfhead, prev);
-    // create centroid
-    if (!surf->isCentroidCreated()) {
-      surf->AddCentroid();
-      ++pn0;
-    }
-    // insert point
-    surf->InsertVertexAt(pn0+1, p, ownssf, ownseg);
-    #if 0
-    GCon->Logf(NAME_Debug, "=== AFTER (%d) ===", surf->count);
-    for (int f = 0; f < surf->count; ++f) {
-      GCon->Logf(NAME_Debug, "  %2d: (%g,%g,%g); ownssf=%d, ownseg=%d", f, surf->verts[f].x, surf->verts[f].y, surf->verts[f].z,
-        surf->verts[f].ownerssf,
-        (surf->verts[f].ownerseg ? (int)(ptrdiff_t)(surf->verts[f].ownerseg-&Level->Segs[0]) : -1));
-    }
-    #endif
-    // the point cannot be inserted into several lines,
-    // so we're finished with this surface
-    break;
-  }
-
-  return surf;
-}
-
-
-//==========================================================================
-//
-//  FlatSurfacesInsertPoint
-//
-//  do not pass surface vertices as `p`!
-//  it may be a vertex from some source that can be modified
-//
-//==========================================================================
-static void FlatSurfacesInsertPoint (VRenderLevelShared *RLev, sec_surface_t *ownssf, seg_t *ownseg, surface_t *&surfhead, const TVec p) {
-  surface_t *surf = surfhead;
-  surface_t *prev = nullptr;
-  while (surf) {
-    surf = SurfaceInsertPointIntoEdge(RLev, ownssf, ownseg, surf, surfhead, prev, p);
-    prev = surf;
-    surf = surf->next;
-  }
-}
-
-
-//==========================================================================
-//
-//  WallSurfacesInsertPoint
-//
-//  do not pass surface vertices as `p`!
-//  it may be a vertex from some source that can be modified
-//
-//==========================================================================
-static void WallSurfacesInsertPoint (VRenderLevelShared *RLev, sec_surface_t *ownssf, seg_t *ownseg, surface_t *&surfhead, const TVec p) {
-  surface_t *surf = surfhead;
-  surface_t *prev = nullptr;
-  while (surf) {
-    surf = SurfaceInsertPointIntoEdge(RLev, ownssf, ownseg, surf, surfhead, prev, p);
-    prev = surf;
-    surf = surf->next;
-  }
-}
-
-
-//==========================================================================
-//
-//  FixSecSurface
-//
-//  do not pass surface vertices as `p`!
-//  it may be a vertex from some source that can be modified
-//
-//==========================================================================
-static inline void FixSecSurface (VRenderLevelShared *RLev, sec_surface_t *ownssf, seg_t *ownseg, sec_surface_t *secsurf, const TVec &p) {
-  if (secsurf && secsurf->surfs) FlatSurfacesInsertPoint(RLev, ownssf, ownseg, secsurf->surfs, p);
-}
-
-
-//==========================================================================
-//
-//  FixOwnSecSurface
-//
-//  fixes one surface
-//  must be called before subdivisions
-//
-//==========================================================================
-static surface_t *FixOwnSecSurface (VRenderLevelShared *RLev, sec_surface_t *ownssf, seg_t *ownseg, surface_t *surf, sec_surface_t *secsfc) {
-  for (const surface_t *srcsurf = (secsfc ? secsfc->surfs : nullptr); srcsurf; srcsurf = srcsurf->next) {
-    for (int pn0 = (int)srcsurf->isCentroidCreated(); pn0 < srcsurf->count-(int)srcsurf->isCentroidCreated(); ++pn0) {
-      surf = SurfaceInsertPointIntoEdge(RLev, ownssf, ownseg, surf, surf, nullptr, srcsurf->verts[pn0].vec());
-    }
-  }
-  return surf;
-}
-
-
-//==========================================================================
-//
-//  FlatInsertPointsFromAllSurfaces
-//
-//  used to insert points from wall surfaces
-//
-//==========================================================================
-static void FlatInsertPointsFromAllSurfaces (VRenderLevelShared *RLev, sec_surface_t *ownssf, seg_t *ownseg, surface_t *slist, surface_t *&surfhead) {
-  for (; slist; slist = slist->next) {
-    for (int spn = (int)slist->isCentroidCreated(); spn < slist->count-(int)slist->isCentroidCreated(); ++spn) {
-      FlatSurfacesInsertPoint(RLev, ownssf, ownseg, surfhead, slist->verts[spn].vec());
-    }
-  }
-}
-
-
-//==========================================================================
-//
-//  CleanupSurfaceList
-//
-//==========================================================================
-static void CleanupSurfaceList (surface_t *surf, const sec_surface_t *ownssf, const seg_t *ownseg) {
-  for (; surf; surf = surf->next) {
-    if (ownssf) surf->RemoveSsfOwnVertices(ownssf);
-    if (ownseg) surf->RemoveSegOwnVertices(ownseg);
-  }
-}
-
-
-//==========================================================================
-//
-//  CleanupSurfaceLists
-//
-//==========================================================================
-static void CleanupSurfaceLists (drawseg_t *ds, const sec_surface_t *ownssf, const seg_t *ownseg) {
-  if (ds) {
-    if (ds->top) CleanupSurfaceList(ds->top->surfs, ownssf, ownseg);
-    if (ds->mid) CleanupSurfaceList(ds->mid->surfs, ownssf, ownseg);
-    if (ds->bot) CleanupSurfaceList(ds->bot->surfs, ownssf, ownseg);
-    if (ds->topsky) CleanupSurfaceList(ds->topsky->surfs, ownssf, ownseg);
-    //if (ds->extra) CleanupSurfaceList(ds->extra->surfs, ownssf, ownseg);
-    //CleanupSurfaceList(ds->HorizonTop, ownssf, ownseg);
-    //CleanupSurfaceList(ds->HorizonBot, ownssf, ownseg);
-  }
-}
-
-
-//==========================================================================
-//
-//  AddWallPointsFromSurfaceList
-//
-//==========================================================================
-static void AddWallPointsFromSurfaceList (VRenderLevelShared *RLev, surface_t *surf, seg_t *seg, surface_t *&surfhead) {
-  for (; surf; surf = surf->next) {
-    for (int spn = (int)surf->isCentroidCreated(); spn < surf->count-(int)surf->isCentroidCreated(); ++spn) {
-      const SurfVertex *sv = &surf->verts[spn];
-      if (sv->ownerseg == seg) continue; // fast reject, just in case
-      WallSurfacesInsertPoint(RLev, nullptr, seg, surfhead, sv->vec());
-    }
-  }
-}
-
-
-//==========================================================================
-//
-//  AddWallPointsFromSegSurfaces
-//
-//==========================================================================
-static void AddWallPointsFromSegSurfaces (VRenderLevelShared *RLev, seg_t *seg, surface_t *&surfhead) {
-  if (!seg) return;
-  drawseg_t *ds = seg->drawsegs;
-  if (ds) {
-    if (ds->top) AddWallPointsFromSurfaceList(RLev, ds->top->surfs, seg, surfhead);
-    if (ds->mid) AddWallPointsFromSurfaceList(RLev, ds->mid->surfs, seg, surfhead);
-    if (ds->bot) AddWallPointsFromSurfaceList(RLev, ds->bot->surfs, seg, surfhead);
-    if (ds->topsky) AddWallPointsFromSurfaceList(RLev, ds->topsky->surfs, seg, surfhead);
-    //if (ds->extra) AddWallPointsFromSurfaceList(RLev, ds->extra->surfs, seg, surfhead);
-    //AddWallPointsFromSurfaceList(RLev, ds->HorizonTop, seg, surfhead);
-    //AddWallPointsFromSurfaceList(RLev, ds->HorizonBot, seg, surfhead);
-  }
-}
-
-
-//==========================================================================
-//
-//  AddFloorPointToSegWalls
-//
-//==========================================================================
-static void AddFloorPointToSegWalls (VRenderLevelShared *RLev, seg_t *seg, sec_surface_t *ownssf, const TVec &p) {
-  if (!seg) return;
-  drawseg_t *ds = seg->drawsegs;
-  if (!ds) return;
-  if (ds->top) WallSurfacesInsertPoint(RLev, ownssf, nullptr, ds->top->surfs, p);
-  if (ds->mid) WallSurfacesInsertPoint(RLev, ownssf, nullptr, ds->mid->surfs, p);
-  if (ds->bot) WallSurfacesInsertPoint(RLev, ownssf, nullptr, ds->bot->surfs, p);
-  if (ds->topsky) WallSurfacesInsertPoint(RLev, ownssf, nullptr, ds->topsky->surfs, p);
-  //if (ds->extra) WallSurfacesInsertPoint(RLev, ownssf, nullptr, ds->extra->surfs, p);
-  //WallSurfacesInsertPoint(RLev, ownssf, nullptr, ds->HorizonTop, p);
-  //WallSurfacesInsertPoint(RLev, ownssf, nullptr, ds->HorizonBot, p);
-}
-
-
-
 //==========================================================================
 //
 //  VRenderLevelLightmap::SubdivideFace
 //
 //==========================================================================
-surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, subregion_t *sreg, sec_surface_t *ssf, const TVec &axis, const TVec *nextaxis, const TPlane *plane, bool doSubdivisions) {
+surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf,
+                                                subregion_t *sreg, sec_surface_t *ssf,
+                                                const TVec &axis, const TVec *nextaxis,
+                                                const TPlane *plane, bool doSubdivisions)
+{
   (void)sreg;
   if (!surf) return surf;
 
@@ -768,51 +497,6 @@ surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, subregion_t *sr
   if (surf->count < 3 || sub->isOriginalPObj()) return surf; // nobody cares
 
   vassert(!surf->isCentroidCreated());
-
-  adjSubs.resetNoDtor(); // adjacent subsectors will be collected here
-  adjSegs.resetNoDtor(); // partner segs will be collected here
-
-  {
-    seg_t *seg = &Level->Segs[sub->firstline];
-    for (int f = sub->numlines; f--; ++seg) {
-      vassert(seg->frontsub == sub);
-      CleanupSurfaceLists(seg->drawsegs, ssf, nullptr);
-      seg_t *partner = seg->partner;
-      if (!partner) continue; // one-sided seg
-      subsector_t *psub = partner->frontsub;
-      if (psub == sub) continue; // just in case
-      bool found = false;
-      for (auto &&v : adjSegs) if (v == partner) { found = true; break; }
-      if (!found) {
-        adjSegs.append(partner);
-        CleanupSurfaceLists(partner->drawsegs, ssf, nullptr);
-      }
-      found = false;
-      for (auto &&v : adjSubs) if (v == psub) { found = true; break; }
-      if (!found) {
-        adjSubs.append(psub);
-        // clear regions
-        for (subregion_t *region = psub->regions; region; region = region->next) {
-          if (region->realfloor) CleanupSurfaceList(region->realfloor->surfs, ssf, nullptr);
-          if (region->realceil) CleanupSurfaceList(region->realceil->surfs, ssf, nullptr);
-          if (region->fakefloor) CleanupSurfaceList(region->fakefloor->surfs, ssf, nullptr);
-          if (region->fakeceil) CleanupSurfaceList(region->fakeceil->surfs, ssf, nullptr);
-        }
-      }
-    }
-  }
-
-  // add points from the adjacent subsectors to this one
-  if (lastRenderQuality) {
-    for (auto &&psub : adjSubs) {
-      for (subregion_t *region = psub->regions; region; region = region->next) {
-        surf = FixOwnSecSurface(this, region->realfloor, nullptr, surf, region->realfloor);
-        surf = FixOwnSecSurface(this, region->realceil, nullptr, surf, region->realceil);
-        surf = FixOwnSecSurface(this, region->fakefloor, nullptr, surf, region->fakefloor);
-        surf = FixOwnSecSurface(this, region->fakeceil, nullptr, surf, region->fakeceil);
-      }
-    }
-  }
 
   if (doSubdivisions) {
     //GCon->Logf(NAME_Debug, "removing centroid from default %s surface of subsector #%d (vcount=%d; hasc=%d)", (plane->isFloor() ? "floor" : "ceiling"), (int)(ptrdiff_t)(sub-&Level->Subsectors[0]), surf->count, surf->isCentroidCreated());
@@ -824,88 +508,7 @@ surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, subregion_t *sr
 
   // always create centroids for complex surfaces
   // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
-  surf = RecreateCentroids(this, surf);
-
-  if (!lastRenderQuality) return surf; // no "quality fixes" required
-
-  // fix t-junctions //
-
-  // fix splitted surfaces with each other
-  // this is stupid brute-force approach, but i may do something with it later
-  if (surf->next) {
-    // surface to check
-    surface_t *prev = nullptr;
-    for (surface_t *sfcheck = surf; sfcheck; prev = sfcheck, sfcheck = sfcheck->next) {
-      // check with other surfaces' points
-      for (surface_t *sfother = surf; sfother; sfother = sfother->next) {
-        if (sfcheck == sfother) continue;
-        for (int spn = (int)sfother->isCentroidCreated(); spn < sfother->count-(int)sfother->isCentroidCreated(); ++spn) {
-          sfcheck = SurfaceInsertPointIntoEdge(this, nullptr, nullptr, sfcheck, surf, prev, sfother->verts[spn].vec());
-        }
-      }
-    }
-  }
-
-  // append points from our wall surfaces
-  {
-    seg_t *seg = &Level->Segs[sub->firstline];
-    for (int f = sub->numlines; f--; ++seg) {
-      drawseg_t *ds = seg->drawsegs;
-      if (ds) {
-        if (ds->top) FlatInsertPointsFromAllSurfaces(this, nullptr, seg, ds->top->surfs, surf);
-        if (ds->mid) FlatInsertPointsFromAllSurfaces(this, nullptr, seg, ds->mid->surfs, surf);
-        if (ds->bot) FlatInsertPointsFromAllSurfaces(this, nullptr, seg, ds->bot->surfs, surf);
-        if (ds->topsky) FlatInsertPointsFromAllSurfaces(this, nullptr, seg, ds->topsky->surfs, surf);
-        //if (ds->extra) FlatInsertPointsFromAllSurfaces(this, nullptr, seg, ds->extra->surfs, surf);
-        //FlatInsertPointsFromAllSurfaces(this, nullptr, seg, ds->HorizonTop, surf);
-        //FlatInsertPointsFromAllSurfaces(this, nullptr, seg, ds->HorizonBot, surf);
-      }
-    }
-  }
-
-  // append points from adjacent wall surfaces
-  for (auto &&partner : adjSegs) {
-    drawseg_t *ds = partner->drawsegs;
-    if (ds) {
-      if (ds->top) FlatInsertPointsFromAllSurfaces(this, nullptr, partner, ds->top->surfs, surf);
-      if (ds->mid) FlatInsertPointsFromAllSurfaces(this, nullptr, partner, ds->mid->surfs, surf);
-      if (ds->bot) FlatInsertPointsFromAllSurfaces(this, nullptr, partner, ds->bot->surfs, surf);
-      if (ds->topsky) FlatInsertPointsFromAllSurfaces(this, nullptr, partner, ds->topsky->surfs, surf);
-      //if (ds->extra) FlatInsertPointsFromAllSurfaces(this, nullptr, partner, ds->extra->surfs, surf);
-      //FlatInsertPointsFromAllSurfaces(this, nullptr, partner, ds->HorizonTop, surf);
-      //FlatInsertPointsFromAllSurfaces(this, nullptr, partner, ds->HorizonBot, surf);
-    }
-  }
-
-  // do not fix polyobjects, or invalid subsectors (yet)
-  if (sub->isAnyPObj() || sub->numlines < 1) return surf;
-
-  // fix adjacent subsector segs and flats
-  for (surface_t *ss = surf; ss; ss = ss->next) {
-    for (int spn = (int)ss->isCentroidCreated(); spn < ss->count-(int)ss->isCentroidCreated(); ++spn) {
-      TVec p(ss->verts[spn].vec());
-      // our segs
-      {
-        seg_t *seg = &Level->Segs[sub->firstline];
-        for (int f = sub->numlines; f--; ++seg) {
-          AddFloorPointToSegWalls(this, seg, ssf, p);
-        }
-      }
-      // adjacent segs
-      for (auto &&partner : adjSegs) {
-        AddFloorPointToSegWalls(this, partner, ssf, p);
-      }
-      // add point to adjacent flats
-      for (auto &&psub : adjSubs) {
-        for (subregion_t *region = psub->regions; region; region = region->next) {
-          FixSecSurface(this, ssf, nullptr, region->realfloor, p);
-          FixSecSurface(this, ssf, nullptr, region->realceil, p);
-          FixSecSurface(this, ssf, nullptr, region->fakefloor, p);
-          FixSecSurface(this, ssf, nullptr, region->fakeceil, p);
-        }
-      }
-    }
-  }
+  if (!lastRenderQuality) surf = RecreateCentroids(this, surf);
 
   return surf;
 }
@@ -916,7 +519,9 @@ surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf, subregion_t *sr
 //  VRenderLevelLightmap::SubdivideSegInternal
 //
 //==========================================================================
-surface_t *VRenderLevelLightmap::SubdivideSegInternal (surface_t *surf, const TVec &axis, const TVec *nextaxis, seg_t *seg) {
+surface_t *VRenderLevelLightmap::SubdivideSegInternal (surface_t *surf, const TVec &axis,
+                                                       const TVec *nextaxis, seg_t *seg)
+{
   subsector_t *sub = surf->subsector;
   //vassert(surf->seg == seg);
   vassert(sub);
@@ -972,15 +577,221 @@ surface_t *VRenderLevelLightmap::SubdivideSegInternal (surface_t *surf, const TV
 //  VRenderLevelLightmap::SubdivideSeg
 //
 //==========================================================================
-surface_t *VRenderLevelLightmap::SubdivideSeg (surface_t *surf, const TVec &axis, const TVec *nextaxis, seg_t *seg) {
+surface_t *VRenderLevelLightmap::SubdivideSeg (surface_t *surf, const TVec &axis,
+                                               const TVec *nextaxis, seg_t *seg)
+{
   vassert(!surf->next);
   // remove centroid (it could be added by wall t-junction fixer)
   surf = RemoveCentroids(surf);
   surf = SubdivideSegInternal(surf, axis, nextaxis, seg);
   // always create centroids for complex surfaces
   // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
-  surf = RecreateCentroids(this, surf);
+  if (!lastRenderQuality) surf = RecreateCentroids(this, surf);
   return surf;
+}
+
+
+/*
+  subdivision t-junctions fixer
+
+  loop over all surfaces; for each surface point, check if it touches
+  any surfaces from the adjacent subsectors. if it is, insert that point there
+
+  currently we're doing this by brute force
+*/
+
+
+//==========================================================================
+//
+//  IsPointOnLine3D
+//
+//==========================================================================
+static inline bool IsPointOnLine3D (const TVec &v0, const TVec &v1, const TVec &p) noexcept {
+  const TVec ldir = v1-v0;
+  const float llensq = ldir.lengthSquared();
+  if (llensq < 1.0f) return false; // dot
+  // check for corners
+  const TVec p0 = p-v0;
+  if (p0.lengthSquared() < 1.0f) return false;
+  const TVec p1 = p-v1;
+  if (p1.lengthSquared() < 1.0f) return false;
+  const float llen = sqrtf(llensq);
+  // check projection
+  const TVec ndir = ldir/llen;
+  const float prj = ndir.dot(p0);
+  if (prj < 1.0f || prj > llen-1.0f) return false; // projection is too big
+  // check point distance
+  const float dist = p0.cross(p1).length()/llen;
+  //const float dist = p0.cross(p1).lengthSquared()/llensq;
+  return (dist < 0.001f);
+}
+
+
+//==========================================================================
+//
+//  SurfaceInsertPointIntoEdge
+//
+//  do not use reference to `p` here!
+//  it may be a vector from some source that can be modified
+//
+//==========================================================================
+static surface_t *SurfaceInsertPointIntoEdge (VRenderLevelShared *RLev,
+                                              sec_surface_t *ownssf, seg_t *ownseg,
+                                              surface_t *surf, surface_t *&surfhead,
+                                              surface_t *prev, const TVec p)
+{
+  if (!surf || surf->count < 3+(int)surf->isCentroidCreated() || fabsf(surf->plane.PointDistance(p)) >= 0.01f) return surf;
+  //surface_t *prev = nullptr;
+  #if 0
+  VLevel *Level = RLev->GetLevel();
+  const int sfidx = surfIndex(surfhead, surf);
+  #endif
+  // check each surface line
+  for (int pn0 = (int)surf->isCentroidCreated(); pn0 < surf->count-(int)surf->isCentroidCreated(); ++pn0) {
+    int pn1 = (pn0+1)%surf->count;
+    if (surf->isCentroidCreated()) vassert(pn1 != 0);
+    const TVec v0 = surf->verts[pn0].vec();
+    const TVec v1 = surf->verts[pn1].vec();
+    #if 0
+    GCon->Logf(NAME_Debug, "surface #%d : %p for subsector #%d: checking point; line=(%g,%g,%g)-(%g,%g,%g); plane=(%g,%g,%g):%g; point=(%g,%g,%g); online=%d",
+      sfidx, surf, (int)(ptrdiff_t)(surf->subsector-&Level->Subsectors[0]),
+      v0.x, v0.y, v0.z, v1.x, v1.y, v1.z,
+      surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z, surf->plane.dist,
+      p.x, p.y, p.z, (int)IsPointOnLine2D(v0, v1, p));
+    #endif
+    // this also checks for corners, and for very short lines
+    if (!IsPointOnLine3D(v0, v1, p)) continue;
+    #if 0
+    GCon->Logf(NAME_Debug, "surface #%d : %p for subsector #%d need a new point before %d; line=(%g,%g,%g)-(%g,%g,%g); plane=(%g,%g,%g):%g; orgpoint=(%g,%g,%g) (cp=%d)",
+      sfidx, surf, (int)(ptrdiff_t)(surf->subsector-&Level->Subsectors[0]), pn0+1,
+      v0.x, v0.y, v0.z, v1.x, v1.y, v1.z,
+      surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z, surf->plane.dist,
+      p.x, p.y, p.z, (int)surf->isCentroidCreated());
+    GCon->Logf(NAME_Debug, "=== BEFORE (%d) ===", surf->count);
+    for (int f = 0; f < surf->count; ++f) {
+      GCon->Logf(NAME_Debug, "  %2d: (%g,%g,%g); ownssf=%p, ownseg=%d", f, surf->verts[f].x, surf->verts[f].y, surf->verts[f].z,
+        surf->verts[f].ownerssf,
+        (surf->verts[f].ownerseg ? (int)(ptrdiff_t)(surf->verts[f].ownerseg-&Level->Segs[0]) : -1));
+    }
+    #endif
+    // insert a new point
+    if (!prev && surf != surfhead) {
+      prev = surfhead;
+      while (prev->next != surf) prev = prev->next;
+    }
+    #if 0
+      surf = RLev->EnsureSurfacePoints(surf, surf->count+(surf->isCentroidCreated() ? 1 : 3), surfhead, prev);
+      // create centroid
+      if (!surf->isCentroidCreated()) {
+        surf->AddCentroid();
+        ++pn0;
+      }
+    #else
+      // remove centroid, it will be recreated by the caller
+      if (surf->isCentroidCreated()) {
+        surf->RemoveCentroid();
+        --pn0;
+        vassert(pn0 >= 0);
+      }
+      surf = RLev->EnsureSurfacePoints(surf, surf->count+1, surfhead, prev);
+    #endif
+    // insert point
+    surf->InsertVertexAt(pn0+1, p, ownssf, ownseg);
+    //vassert(surf->count > 4);
+    #if 0
+    GCon->Logf(NAME_Debug, "=== AFTER (%d) ===", surf->count);
+    for (int f = 0; f < surf->count; ++f) {
+      GCon->Logf(NAME_Debug, "  %2d: (%g,%g,%g); ownssf=%d, ownseg=%d", f, surf->verts[f].x, surf->verts[f].y, surf->verts[f].z,
+        surf->verts[f].ownerssf,
+        (surf->verts[f].ownerseg ? (int)(ptrdiff_t)(surf->verts[f].ownerseg-&Level->Segs[0]) : -1));
+    }
+    #endif
+    // the point cannot be inserted into several lines,
+    // so we're finished with this surface
+    break;
+  }
+
+  return surf;
+}
+
+
+//==========================================================================
+//
+//  CleanupSurfaceList
+//
+//==========================================================================
+static void CleanupSurfaceList (surface_t *surf, const sec_surface_t *ownssf, const seg_t *ownseg) {
+  for (; surf; surf = surf->next) {
+    if (ownssf) surf->RemoveSsfOwnVertices(ownssf);
+    if (ownseg) surf->RemoveSegOwnVertices(ownseg);
+    // don't bother, we don't need to do it
+    //if (surf->isCentroidCreated()) surf->RemoveCentroid();
+  }
+}
+
+
+//==========================================================================
+//
+//  CleanupSurfaceLists
+//
+//==========================================================================
+static void CleanupSurfaceLists (drawseg_t *ds, const sec_surface_t *ownssf, const seg_t *ownseg) {
+  if (ds) {
+    if (ds->top) CleanupSurfaceList(ds->top->surfs, ownssf, ownseg);
+    if (ds->mid) CleanupSurfaceList(ds->mid->surfs, ownssf, ownseg);
+    if (ds->bot) CleanupSurfaceList(ds->bot->surfs, ownssf, ownseg);
+    if (ds->topsky) CleanupSurfaceList(ds->topsky->surfs, ownssf, ownseg);
+    if (ds->extra) CleanupSurfaceList(ds->extra->surfs, ownssf, ownseg);
+    //CleanupSurfaceList(ds->HorizonTop, ownssf, ownseg);
+    //CleanupSurfaceList(ds->HorizonBot, ownssf, ownseg);
+  }
+}
+
+
+//==========================================================================
+//
+//  AddPointsFromSurfaceList
+//
+//==========================================================================
+static void AddPointsFromSurfaceList (VRenderLevelShared *RLev, seg_t *ownseg,
+                                      surface_t *list, /*from*/
+                                      surface_t *&surfhead/*to*/)
+{
+  for (surface_t *curr = list; curr; curr = curr->next) {
+    for (int spn = (int)curr->isCentroidCreated(); spn < curr->count-(int)curr->isCentroidCreated(); ++spn) {
+      const SurfVertex *sv = &curr->verts[spn];
+      if (sv->ownerseg == ownseg) continue; // fast reject, just in case (we just added this point)
+
+      surface_t *surf = surfhead;
+      surface_t *prev = nullptr;
+      while (surf) {
+        if (surf != curr) {
+          surf = SurfaceInsertPointIntoEdge(RLev, nullptr, ownseg, surf, surfhead, prev, sv->vec());
+        }
+        prev = surf;
+        surf = surf->next;
+      }
+    }
+  }
+}
+
+
+//==========================================================================
+//
+//  AddPointsFromDrawseg
+//
+//==========================================================================
+static void AddPointsFromDrawseg (VRenderLevelShared *RLev, seg_t *ownseg,
+                                  drawseg_t *ds,
+                                  surface_t *&surfhead/*to*/)
+{
+  if (ds) {
+    if (ds->top) AddPointsFromSurfaceList(RLev, ownseg, ds->top->surfs, surfhead);
+    if (ds->mid) AddPointsFromSurfaceList(RLev, ownseg, ds->mid->surfs, surfhead);
+    if (ds->bot) AddPointsFromSurfaceList(RLev, ownseg, ds->bot->surfs, surfhead);
+    if (ds->topsky) AddPointsFromSurfaceList(RLev, ownseg, ds->topsky->surfs, surfhead);
+    if (ds->extra) AddPointsFromSurfaceList(RLev, ownseg, ds->extra->surfs, surfhead);
+  }
 }
 
 
@@ -988,150 +799,163 @@ surface_t *VRenderLevelLightmap::SubdivideSeg (surface_t *surf, const TVec &axis
 //
 //  VRenderLevelLightmap::FixSegSurfaceTJunctions
 //
-//  append points from adjacent line (seg) surfaces
-//  append our new points to adjacent line (seg) surfaces
-//
 //==========================================================================
 surface_t *VRenderLevelLightmap::FixSegSurfaceTJunctions (surface_t *surf, seg_t *myseg) {
-  if (!surf || !lastRenderQuality || !myseg->linedef) return surf;
+  if (!surf || !myseg || !lastRenderQuality || !myseg->linedef) return surf;
 
   subsector_t *sub = surf->subsector;
   vassert(sub);
 
   if (sub->isOriginalPObj()) return surf; // nobody cares
 
-  surf = RemoveCentroids(surf);
+  //if ((int)(ptrdiff_t)(sub-&Level->Subsectors[0]) != 40) return surf;
 
-  // collect all segs we may modify
+ if (true) {
+  // no need to do it
+  //surf = RemoveCentroids(surf);
+
+  // collect all segs we want to inspect
   adjSegs.resetNoDtor();
   {
     const line_t *ld = myseg->linedef;
+
     // own segs
     for (seg_t *lseg = ld->firstseg; lseg; lseg = lseg->lsnext) {
-      if (!lseg->drawsegs || lseg == myseg) continue;
-      if (lseg->v1 == myseg->v1 || lseg->v2 == myseg->v1 ||
-          lseg->v1 == myseg->v2 || lseg->v2 == myseg->v2)
-      {
+      if (lseg != myseg && lseg->drawsegs) {
         // good seg
+        /*
         bool found = false;
-        for (int c = 0; c < adjSegs.length(); ++c) if (adjSegs.ptr()[c] == lseg) { found = true; break; }
+        for (seg_t *ss : adjSegs) if (ss == lseg) { found = true; break; }
         if (!found) adjSegs.append(lseg);
+        */
+        adjSegs.append(lseg);
       }
     }
-    // adjacent segs
+
+    // segs from adjacent lines
     for (int lvidx = 0; lvidx < 2; ++lvidx) {
-      // don't do this for "inner" segs
-      if (lvidx == 0) {
-        if (myseg->v1 != ld->v1 && myseg->v2 != ld->v1) continue;
-      } else {
-        if (myseg->v1 != ld->v2 && myseg->v2 != ld->v2) continue;
-      }
       const int len = ld->vxCount(lvidx);
       for (int f = 0; f < len; ++f) {
         const line_t *ll = ld->vxLine(lvidx, f);
-        // we need the first and the last segs
         for (seg_t *lseg = ll->firstseg; lseg; lseg = lseg->lsnext) {
-          if (!lseg->drawsegs || lseg == myseg) continue;
-          if (lseg->v1 == ld->v1 || lseg->v2 == ld->v1 ||
-              lseg->v1 == ld->v2 || lseg->v2 == ld->v2)
-          {
+          if (lseg != myseg && lseg->drawsegs) {
             // good seg
+            /*
             bool found = false;
-            for (int c = 0; c < adjSegs.length(); ++c) if (adjSegs.ptr()[c] == lseg) { found = true; break; }
+            for (seg_t *ss : adjSegs) if (ss == lseg) { found = true; break; }
             if (!found) adjSegs.append(lseg);
+            */
+            adjSegs.append(lseg);
           }
         }
       }
     }
   }
 
-  // remove all vertices we may add to adjacent surfaces
-  for (auto &&seg : adjSegs) CleanupSurfaceLists(seg->drawsegs, nullptr, myseg);
-
-  // add points to adjacent surfaces
-  if (surf->next) {
-    // had a split, need to do it
-    for (auto &&seg : adjSegs) {
-      drawseg_t *ds = seg->drawsegs;
-      //AddWallPointsFromSegSurfaces(this, myseg, surf);
-      if (ds->top) AddWallPointsFromSegSurfaces(this, myseg, ds->top->surfs);
-      if (ds->mid) AddWallPointsFromSegSurfaces(this, myseg, ds->mid->surfs);
-      if (ds->bot) AddWallPointsFromSegSurfaces(this, myseg, ds->bot->surfs);
-      if (ds->topsky) AddWallPointsFromSegSurfaces(this, myseg, ds->topsky->surfs);
-      //if (ds->extra) AddWallPointsFromSegSurfaces(this, myseg, ds->extra->surfs);
-      //AddWallPointsFromSegSurfaces(this, myseg, ds->HorizonTop);
-      //AddWallPointsFromSegSurfaces(this, myseg, ds->HorizonBot);
+  // collect adjacent subsectors
+  adjSubs.resetNoDtor(); // adjacent subsectors will be collected here
+  adjSubs.append(sub);
+  for (seg_t *xseg : adjSegs) {
+    subsector_t *xsub = xseg->frontsub;
+    if (xsub && xsub != sub) {
+      bool found = false;
+      for (subsector_t *ss : adjSubs) if (ss == xsub) { found = true; break; }
+      if (!found) adjSubs.append(xsub);
     }
-  }
-
-  {
-    // cleanup adjacent subsector flats
-    seg_t *seg = &Level->Segs[sub->firstline];
-    for (int f = sub->numlines; f--; ++seg) {
-      if (!seg->linedef) continue; // minisegs cannot change anything
-      vassert(seg->frontsub == sub);
-      seg_t *partner = seg->partner;
-      if (!partner) continue; // one-sided seg
-      subsector_t *psub = partner->frontsub;
-      if (psub == sub) continue; // just in case
-      // check floor and ceiling
-      for (subregion_t *region = psub->regions; region; region = region->next) {
-        if (region->realfloor) CleanupSurfaceList(region->realfloor->surfs, nullptr, myseg);
-        if (region->realceil) CleanupSurfaceList(region->realceil->surfs, nullptr, myseg);
-        if (region->fakefloor) CleanupSurfaceList(region->fakefloor->surfs, nullptr, myseg);
-        if (region->fakeceil) CleanupSurfaceList(region->fakeceil->surfs, nullptr, myseg);
+    if (xseg->partner) {
+      subsector_t *xsub = xseg->partner->frontsub;
+      if (xsub && xsub != sub) {
+        bool found = false;
+        for (subsector_t *ss : adjSubs) if (ss == xsub) { found = true; break; }
+        if (!found) adjSubs.append(xsub);
       }
     }
   }
 
-  {
-    // process adjacent subsector flats too
-    seg_t *seg = &Level->Segs[sub->firstline];
-    for (int f = sub->numlines; f--; ++seg) {
-      if (!seg->linedef) continue; // minisegs cannot change anything
-      vassert(seg->frontsub == sub);
-      seg_t *partner = seg->partner;
-      if (!partner) continue; // one-sided seg
-      subsector_t *psub = partner->frontsub;
-      if (psub == sub) continue; // just in case
-      // check floor and ceiling
-      for (subregion_t *region = psub->regions; region; region = region->next) {
-        for (surface_t *ss = surf; ss; ss = ss->next) {
-          for (int spn = (int)ss->isCentroidCreated(); spn < ss->count-(int)ss->isCentroidCreated(); ++spn) {
-            const TVec &p = ss->verts[spn].vec();
-            FixSecSurface(this, nullptr, myseg, region->realfloor, p);
-            FixSecSurface(this, nullptr, myseg, region->realceil, p);
-            FixSecSurface(this, nullptr, myseg, region->fakefloor, p);
-            FixSecSurface(this, nullptr, myseg, region->fakeceil, p);
-          }
-        }
-      }
+  #if 1
+  // remove fixes for our seg surfaces
+  CleanupSurfaceLists(myseg->drawsegs, nullptr, myseg);
+  // also, clean subsector flats, we will refix them
+  // check floor and ceiling
+  for (subregion_t *region = sub->regions; region; region = region->next) {
+    for (surface_t *ss = surf; ss; ss = ss->next) {
+      if (region->realfloor) CleanupSurfaceList(region->realfloor->surfs, nullptr, myseg);
+      if (region->realceil) CleanupSurfaceList(region->realceil->surfs, nullptr, myseg);
+      if (region->fakefloor) CleanupSurfaceList(region->fakefloor->surfs, nullptr, myseg);
+      if (region->fakeceil) CleanupSurfaceList(region->fakeceil->surfs, nullptr, myseg);
     }
   }
-  // and own too, why not?
-  {
-    // check floor and ceiling
-    for (subregion_t *region = sub->regions; region; region = region->next) {
-      for (surface_t *ss = surf; ss; ss = ss->next) {
-        for (int spn = (int)ss->isCentroidCreated(); spn < ss->count-(int)ss->isCentroidCreated(); ++spn) {
-          const TVec &p = ss->verts[spn].vec();
-          FixSecSurface(this, nullptr, nullptr, region->realfloor, p);
-          FixSecSurface(this, nullptr, nullptr, region->realceil, p);
-          FixSecSurface(this, nullptr, nullptr, region->fakefloor, p);
-          FixSecSurface(this, nullptr, nullptr, region->fakeceil, p);
-        }
-      }
-    }
-  }
-
-  //if (surf->count < 3) return surf; // nothing to do here
+  #endif
 
   // add all points from adjacent surfaces
-  for (auto &&seg : adjSegs) AddWallPointsFromSegSurfaces(this, seg, surf);
+
+  // insert wall surfaces
+  for (seg_t *xseg : adjSegs) {
+    drawseg_t *ds = xseg->drawsegs;
+    if (xseg != myseg && ds) {
+      #if 1
+      AddPointsFromDrawseg(this, myseg, ds, surf);
+      #endif
+    }
+  }
+
+  #if 1
+  // insert floor surface points from adjacent subsectors into walls
+  for (subsector_t *xsub : adjSubs) {
+    //seg_t *xseg = &Level->Segs[sub->firstline];
+    //for (int f = sub->numlines; f--; ++xseg) {}
+    for (subregion_t *region = xsub->regions; region; region = region->next) {
+      if (region->realfloor) AddPointsFromSurfaceList(this, myseg, region->realfloor->surfs, surf);
+      if (region->realceil) AddPointsFromSurfaceList(this, myseg, region->realceil->surfs, surf);
+      if (region->fakefloor) AddPointsFromSurfaceList(this, myseg, region->fakefloor->surfs, surf);
+      if (region->fakeceil) AddPointsFromSurfaceList(this, myseg, region->fakeceil->surfs, surf);
+    }
+  }
+  #endif
+
+  // lines from adjacent subsectors should affect floors
+  // collect adjacent subsector lines
+  adjSegs.resetNoDtor(); // we don't need old segs, they cannot affect floors anyway
+  for (subsector_t *xsub : adjSubs) {
+    seg_t *lseg = &Level->Segs[xsub->firstline];
+    for (int f = sub->numlines; f--; ++lseg) {
+      if (lseg != myseg && lseg->drawsegs) {
+        // good seg
+        bool found = false;
+        for (seg_t *ss : adjSegs) if (ss == lseg) { found = true; break; }
+        if (!found) adjSegs.append(lseg);
+      }
+    }
+  }
+
+  // fix floors
+  for (seg_t *xseg : adjSegs) {
+    drawseg_t *ds = xseg->drawsegs;
+    if (xseg != myseg && ds) {
+      #if 1
+      // insert wall surface points into floors of `sub`
+      for (subregion_t *region = sub->regions; region; region = region->next) {
+        if (region->realfloor) AddPointsFromDrawseg(this, myseg, ds, region->realfloor->surfs);
+        if (region->realceil) AddPointsFromDrawseg(this, myseg, ds, region->realceil->surfs);
+        if (region->fakefloor) AddPointsFromDrawseg(this, myseg, ds, region->fakefloor->surfs);
+        if (region->fakeceil) AddPointsFromDrawseg(this, myseg, ds, region->fakeceil->surfs);
+      }
+      #endif
+    }
+  }
+ }
 
   // always create centroids for complex surfaces
   // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
   surf = RecreateCentroids(this, surf);
+
+  // also, recreate centroids for floors
+  for (subregion_t *region = sub->regions; region; region = region->next) {
+    if (region->realfloor) region->realfloor->surfs = RecreateCentroids(this, region->realfloor->surfs);
+    if (region->realceil) region->realceil->surfs = RecreateCentroids(this, region->realceil->surfs);
+    if (region->fakefloor) region->fakefloor->surfs = RecreateCentroids(this, region->fakefloor->surfs);
+    if (region->fakeceil) region->fakeceil->surfs = RecreateCentroids(this, region->fakeceil->surfs);
+  }
 
   return surf;
 }
@@ -1151,7 +975,27 @@ surface_t *VRenderLevelLightmap::FixSegSurfaceTJunctions (surface_t *surf, seg_t
 //
 //==========================================================================
 void VRenderLevelLightmap::DoneInitialWordSurfCreation () {
+  /*
   for (auto &&sec : Level->allSectors()) {
     SectorModified(&sec);
+  }
+  */
+  if (lastRenderQuality) {
+    for (auto &&ssx : Level->allSegs()) {
+      if (ssx.linedef && ssx.drawsegs) {
+        for (int dsidx = 0; dsidx < 4; ++dsidx) {
+          segpart_t *xsegpart =
+            dsidx == 0 ? ssx.drawsegs->top :
+            dsidx == 1 ? ssx.drawsegs->mid :
+            dsidx == 2 ? ssx.drawsegs->bot :
+            dsidx == 3 ? ssx.drawsegs->extra :
+            nullptr;
+          while (xsegpart) {
+            xsegpart->surfs = FixSegSurfaceTJunctions(xsegpart->surfs, &ssx);
+            xsegpart = xsegpart->next;
+          }
+        }
+      }
+    }
   }
 }

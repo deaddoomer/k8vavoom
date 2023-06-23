@@ -174,6 +174,33 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
   const sector_t *mysec = seg->frontsector;
   if (!line || line->pobj() || !mysec || mysec->isAnyPObj()) return surf; // just in case
 
+  // for lightmapped renderer, we need to do more complex work
+/*
+  if (!IsShadowVolumeRenderer()) {
+    //return FixSegSurfaceTJunctions(surf, seg);
+    if (!line) return; // just in case
+    const seg_t *ssx = line->firstseg;
+    while (ssx) {
+      if (ssx->drawsegs) {
+        for (int dsidx = 0; dsidx < 4; ++dsidx) {
+          segpart_t *xsegpart =
+            dsidx == 0 ? ssx->drawsegs->top :
+            dsidx == 1 ? ssx->drawsegs->mid :
+            dsidx == 2 ? ssx->drawsegs->bot :
+            dsidx == 3 ? ssx->drawsegs->extra :
+            nullptr;
+          while (xsegpart) {
+            xsegpart->surfs = FixSegSurfaceTJunctions(xsegpart->surfs, &ssx);
+            if (
+            xsegpart = xsegpart->next;
+          }
+        }
+      }
+      ssx = ssx->lsnext;
+    }
+  }
+*/
+
   // invariant, actually
   // it is called from `CreateWSurf()`, so it can't have any linked surfaces
   // the only case it can is when it was subdivided, but advanced render doesn't do any subdivisions
@@ -368,8 +395,11 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
            the problem is that a surface can be already fixed, and contain extra
            points we are not interested in. so take only points touching the proper
            vertical side.
+
+           fix: this is done above, so no need to do it
         */
 
+        #if 0
         const seg_t *ssx = ln->firstseg;
         /*
         if ((int)(ptrdiff_t)(ln-&Level->Lines[0]) != 9604) {
@@ -412,6 +442,7 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
           }
           ssx = ssx->lsnext;
         }
+        #endif
       }
     }
   }
