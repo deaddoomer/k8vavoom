@@ -500,6 +500,8 @@ void VRenderLevelShared::CreateWorldSurfaces () {
     if (inWorldCreation) R_PBarUpdate("Surfaces", it.index(), totalSegCount);
   }
 
+  DoneInitialWordSurfCreation();
+
   GCon->Log(NAME_Debug, "performing initial world update...");
   InitialWorldUpdate();
 

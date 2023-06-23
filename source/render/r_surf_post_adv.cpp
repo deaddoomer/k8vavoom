@@ -88,6 +88,16 @@ surface_t *VRenderLevelShadowVolume::SubdivideSeg (surface_t *surf, const TVec &
 
 //==========================================================================
 //
+//  VRenderLevelShadowVolume::DoneInitialWordSurfCreation
+//
+//==========================================================================
+void VRenderLevelShadowVolume::DoneInitialWordSurfCreation () {
+  // nothing to do here yet
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelShadowVolume::FixSegSurfaceTJunctions
 //
 //==========================================================================

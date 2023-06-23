@@ -1135,3 +1135,23 @@ surface_t *VRenderLevelLightmap::FixSegSurfaceTJunctions (surface_t *surf, seg_t
 
   return surf;
 }
+
+
+//==========================================================================
+//
+//  VRenderLevelLightmap::DoneInitialWordSurfCreation
+//
+//  t-junctions should be processed after all subdivisions are done,
+//  otherwise there will be some unprocessed quads.
+//  the easiest way of doing it is to call `SectorModified()` for all sectors
+//  after finishing initial world surface creation.
+//  this is required only for the lightmapped renderer, though.
+//
+//  not the best way of doing it, but meh...
+//
+//==========================================================================
+void VRenderLevelLightmap::DoneInitialWordSurfCreation () {
+  for (auto &&sec : Level->allSectors()) {
+    SectorModified(&sec);
+  }
+}

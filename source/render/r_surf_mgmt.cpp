@@ -553,6 +553,13 @@ surface_t *VRenderLevelShared::CreateWSurf (TVec *wv, texinfo_t *texinfo, seg_t 
     return surf;
   }
 
+  // t-junctions should be processed after all subdivisions are done,
+  // otherwise there will be some unprocessed quads.
+  // the easiest way of doing it is to call `SectorModified()` for all sectors
+  // after finishing initial world surface creation.
+  // we cannot remove t-junction fixer here, though, because this is
+  // exactly the place where we're doing it, lol.
+
   //!GCon->Logf(NAME_Debug, "sfcS:%p: saxis=(%g,%g,%g); taxis=(%g,%g,%g); saxisLM=(%g,%g,%g); taxisLM=(%g,%g,%g)", surf, texinfo->saxis.x, texinfo->saxis.y, texinfo->saxis.z, texinfo->taxis.x, texinfo->taxis.y, texinfo->taxis.z, texinfo->saxisLM.x, texinfo->saxisLM.y, texinfo->saxisLM.z, texinfo->taxisLM.x, texinfo->taxisLM.y, texinfo->taxisLM.z);
   // fix wall t-junctions with common firxer first
   surf = FixSegTJunctions(surf, seg);

@@ -30,7 +30,8 @@
 //#define VV_TJUNCTION_VERBOSE
 
 #ifdef VV_TJUNCTION_VERBOSE
-# define TJLOG(...)  if (dbg_fix_tjunctions) GCon->Logf(__VA_ARGS__)
+static bool tjlog_verbose = false;
+# define TJLOG(...)  if (tjlog_verbose && dbg_fix_tjunctions) GCon->Logf(__VA_ARGS__)
 #else
 # define TJLOG(...)  do {} while (0)
 #endif
@@ -86,6 +87,48 @@ static void InsertEdgePoint (VRenderLevelShared *RLev, const float hz, surface_t
 
 //==========================================================================
 //
+//  DumpSegParts
+//
+//==========================================================================
+static VVA_OKUNUSED void DumpSegParts (const segpart_t *segpart) {
+  while (segpart) {
+    int scount = 0;
+    const surface_t *surfs = segpart->surfs;
+    while (surfs) { ++scount; surfs = surfs->next; }
+    GCon->Logf(NAME_Debug, ":::: SPART:%08x : scount=%d ::::", (uintptr_t)segpart, scount);
+    segpart = segpart->next;
+  }
+}
+
+
+//==========================================================================
+//
+//  DumpDrawSegs
+//
+//==========================================================================
+static VVA_OKUNUSED void DumpDrawSegs (const drawseg_t *drawsegs) {
+  GCon->Logf(NAME_Debug, ":: DRAWSEGS:%08x ::", (uintptr_t)drawsegs);
+  if (drawsegs->top) {
+    GCon->Logf(NAME_Debug, "::: SPART:TOP:%08x :::", (uintptr_t)drawsegs->top);
+    DumpSegParts(drawsegs->top);
+  }
+  if (drawsegs->mid) {
+    GCon->Logf(NAME_Debug, "::: SPART:MID:%08x :::", (uintptr_t)drawsegs->mid);
+    DumpSegParts(drawsegs->mid);
+  }
+  if (drawsegs->bot) {
+    GCon->Logf(NAME_Debug, "::: SPART:BOT:%08x :::", (uintptr_t)drawsegs->bot);
+    DumpSegParts(drawsegs->bot);
+  }
+  if (drawsegs->extra) {
+    GCon->Logf(NAME_Debug, "::: SPART:EXTRA:%08x :::", (uintptr_t)drawsegs->extra);
+    DumpSegParts(drawsegs->extra);
+  }
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelShared::FixSegTJunctions
 //
 //  new code, that will not create two triangles,
@@ -117,6 +160,16 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
   if (seg->pobj) return surf; // do not fix polyobjects (yet?)
 
   const line_t *line = seg->linedef;
+
+  #if 0
+  const int lidx = (int)(ptrdiff_t)(line-&Level->Lines[0]);
+  //tjlog_verbose = (lidx == 10424 || lidx == 10445 || lidx == 9599 || lidx == 10444 || lidx == 9606);
+  // 9599 is the interesting line; goes from the right to the left; 9604 is the line with subdivisions
+  tjlog_verbose = (lidx == 9604 || lidx == 9599 /*|| lidx == 9600*/);
+  if (!tjlog_verbose) return surf;
+  #endif
+  //tjlog_verbose = false;
+
   //if (line) TJLOG(NAME_Debug, "FixSegTJunctions:000: line #%d, seg #%d: surf->count=%d; surf->next=%p", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]), surf->count, surf->next);
   const sector_t *mysec = seg->frontsector;
   if (!line || line->pobj() || !mysec || mysec->isAnyPObj()) return surf; // just in case
@@ -233,50 +286,131 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
       const line_t *ln = line->vxLine(lvidx, f);
       if (ln == line) continue;
       TJLOG(NAME_Debug, "  vidx=%d; other line #%d...", vidx, (int)(ptrdiff_t)(ln-&Level->Lines[0]));
+
+      #if 0
+      if ((int)(ptrdiff_t)(ln-&Level->Lines[0]) == 9604 && ln->firstseg) {
+        const seg_t *ssx = ln->firstseg;
+        while (ssx) {
+          if (ssx->drawsegs) {
+            TJLOG("...WOW! DRAWSEGS!");
+            DumpDrawSegs(ssx->drawsegs);
+            //ssx = nullptr;
+          } else {
+            TJLOG("...SHIT! NO DRAWSEGS!");
+          }
+          ssx = ssx->lsnext;
+        }
+      }
+      #endif
+
       for (int sn = 0; sn < 2; ++sn) {
         const sector_t *sec = (sn ? ln->backsector : ln->frontsector);
         TJLOG(NAME_Debug, "   sn=%d; mysec=%d; sec=%d", sn, (int)(ptrdiff_t)(mysec-&Level->Sectors[0]), (sec ? (int)(ptrdiff_t)(sec-&Level->Sectors[0]) : -1));
-        if (!sec || sec == mysec) continue;
-        if (sn && ln->frontsector == ln->backsector) continue; // self-referenced line
-
-        /*const*/ float fz = sec->floor.GetPointZClamped(lv);
-        /*const*/ float cz = sec->ceiling.GetPointZClamped(lv);
-        TJLOG(NAME_Debug, "    fz=%g; cz=%g", fz, cz);
-        if (fz > cz) continue; // just in case
-        if (cz <= minz[vidx] || fz >= maxz[vidx]) continue; // no need to introduce any new vertices
-        //TJLOG(NAME_Debug, "  other line #%d: sec=%d; fz=%g; cz=%g", (int)(ptrdiff_t)(ln-&Level->Lines[0]), (int)(ptrdiff_t)(sec-&Level->Sectors[0]), fz, cz);
-        if (fz > minz[vidx]) {
-          TJLOG(NAME_Debug, "      adding fz as edge point: %g", fz);
-          InsertEdgePoint(this, fz, surf, vf0, vf1, goUp, wasChanged, linenum);
-        }
-        if (cz != fz && cz < maxz[vidx]) {
-          TJLOG(NAME_Debug, "      adding cz as edge point: %g", cz);
-          InsertEdgePoint(this, cz, surf, vf0, vf1, goUp, wasChanged, linenum);
-        }
-
-        // fake floors
-        if (sec->heightsec) {
-          const sector_t *fsec = sec->heightsec;
-          cz = fsec->ceiling.GetPointZ(lv);
-          fz = fsec->floor.GetPointZ(lv);
-          TJLOG(NAME_Debug, "  other line #%d: sec=%d; hsec=%d; fz=%g; cz=%g", (int)(ptrdiff_t)(ln-&Level->Lines[0]), (int)(ptrdiff_t)(sec-&Level->Sectors[0]), (int)(ptrdiff_t)(fsec-&Level->Sectors[0]), fz, cz);
-          if (fz > minz[vidx]) InsertEdgePoint(this, fz, surf, vf0, vf1, goUp, wasChanged, linenum);
-          if (cz != fz && cz < maxz[vidx]) InsertEdgePoint(this, cz, surf, vf0, vf1, goUp, wasChanged, linenum);
-        }
-
-        // collect 3d floors too, because we have to split textures by 3d floors for proper lighting
-        if (sec->Has3DFloors()) {
-          //FIXME: make this faster! `isPointInsideSolidReg()` is SLOW!
-          for (sec_region_t *reg = sec->eregions->next; reg; reg = reg->next) {
-            if (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion)) continue;
-            if (!reg->isBlockingExtraLine()) continue;
-            cz = reg->eceiling.GetPointZ(lv);
-            fz = reg->efloor.GetPointZ(lv);
-            if (cz < fz) continue; // invisible region
-            // paper-thin regions will split planes too
-            if (fz > minz[vidx] && !isPointInsideSolidReg(lv, fz, sec->eregions->next, reg)) InsertEdgePoint(this, fz, surf, vf0, vf1, goUp, wasChanged, linenum);
-            if (cz != fz && cz < maxz[vidx] && !isPointInsideSolidReg(lv, cz, sec->eregions->next, reg)) InsertEdgePoint(this, cz, surf, vf0, vf1, goUp, wasChanged, linenum);
+        if (sec && sec != mysec) {
+          if (sn && ln->frontsector == ln->backsector) {
+            // self-referenced line
+            TJLOG(NAME_Debug, "    ignored self-referenced line");
+            continue;
           }
+
+          /*const*/ float fz = sec->floor.GetPointZClamped(lv);
+          /*const*/ float cz = sec->ceiling.GetPointZClamped(lv);
+          TJLOG(NAME_Debug, "    fz=%g; cz=%g", fz, cz);
+          if (fz > cz) continue; // just in case
+          if (cz <= minz[vidx] || fz >= maxz[vidx]) continue; // no need to introduce any new vertices
+          //TJLOG(NAME_Debug, "  other line #%d: sec=%d; fz=%g; cz=%g", (int)(ptrdiff_t)(ln-&Level->Lines[0]), (int)(ptrdiff_t)(sec-&Level->Sectors[0]), fz, cz);
+          if (fz > minz[vidx]) {
+            TJLOG(NAME_Debug, "      adding fz as edge point: %g", fz);
+            InsertEdgePoint(this, fz, surf, vf0, vf1, goUp, wasChanged, linenum);
+          }
+          if (cz != fz && cz < maxz[vidx]) {
+            TJLOG(NAME_Debug, "      adding cz as edge point: %g", cz);
+            InsertEdgePoint(this, cz, surf, vf0, vf1, goUp, wasChanged, linenum);
+          }
+
+          // fake floors
+          if (sec->heightsec) {
+            const sector_t *fsec = sec->heightsec;
+            cz = fsec->ceiling.GetPointZ(lv);
+            fz = fsec->floor.GetPointZ(lv);
+            TJLOG(NAME_Debug, "  other line #%d: sec=%d; hsec=%d; fz=%g; cz=%g", (int)(ptrdiff_t)(ln-&Level->Lines[0]), (int)(ptrdiff_t)(sec-&Level->Sectors[0]), (int)(ptrdiff_t)(fsec-&Level->Sectors[0]), fz, cz);
+            if (fz > minz[vidx]) {
+              InsertEdgePoint(this, fz, surf, vf0, vf1, goUp, wasChanged, linenum);
+            }
+            if (cz != fz && cz < maxz[vidx]) {
+              InsertEdgePoint(this, cz, surf, vf0, vf1, goUp, wasChanged, linenum);
+            }
+          }
+
+          // collect 3d floors too, because we have to split textures by 3d floors for proper lighting
+          if (sec->Has3DFloors()) {
+            //FIXME: make this faster! `isPointInsideSolidReg()` is SLOW!
+            for (sec_region_t *reg = sec->eregions->next; reg; reg = reg->next) {
+              if (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion)) continue;
+              if (!reg->isBlockingExtraLine()) continue;
+              cz = reg->eceiling.GetPointZ(lv);
+              fz = reg->efloor.GetPointZ(lv);
+              if (cz < fz) continue; // invisible region
+              // paper-thin regions will split planes too
+              if (fz > minz[vidx] && !isPointInsideSolidReg(lv, fz, sec->eregions->next, reg)) {
+                InsertEdgePoint(this, fz, surf, vf0, vf1, goUp, wasChanged, linenum);
+              }
+              if (cz != fz && cz < maxz[vidx] && !isPointInsideSolidReg(lv, cz, sec->eregions->next, reg)) {
+                InsertEdgePoint(this, cz, surf, vf0, vf1, goUp, wasChanged, linenum);
+              }
+            }
+          }
+        }
+
+        /* actually, the whole thing up there is not necessary, because we can
+           use surfaces instead. tbh, we *NEED* to use surfaces for lightmapped
+           renderer, due to subdivisions.
+           the problem is that a surface can be already fixed, and contain extra
+           points we are not interested in. so take only points touching the proper
+           vertical side.
+        */
+
+        const seg_t *ssx = ln->firstseg;
+        /*
+        if ((int)(ptrdiff_t)(ln-&Level->Lines[0]) != 9604) {
+          ssx = nullptr;
+        } else {
+          TJLOG(NAME_Debug, "### BOOO! ###");
+        }
+        */
+        while (ssx) {
+          if (ssx->drawsegs) {
+            TJLOG(NAME_Debug, ":: DRAWSEGS:%08x ::", (uintptr_t)ssx->drawsegs);
+            for (int dsidx = 0; dsidx < 4; ++dsidx) {
+              const segpart_t *xsegpart =
+                dsidx == 0 ? ssx->drawsegs->top :
+                dsidx == 1 ? ssx->drawsegs->mid :
+                dsidx == 2 ? ssx->drawsegs->bot :
+                dsidx == 3 ? ssx->drawsegs->extra :
+                nullptr;
+              while (xsegpart) {
+                TJLOG(NAME_Debug, "::: SPART:%08x :::", (uintptr_t)xsegpart);
+                const surface_t *xsurf = xsegpart->surfs;
+                while (xsurf) {
+                  TJLOG(NAME_Debug, ":::: surf:%08x (count=%d) :::", (uintptr_t)xsurf, xsurf->count);
+                  for (int sfvids = 0; sfvids < xsurf->count; ++sfvids) {
+                    const TVec xsv = xsurf->verts[sfvids].vec();
+                    TJLOG(NAME_Debug, "::::: xsv #%d:(%f,%f,%f) : lv(%f,%f) :::::",
+                          sfvids, xsv.x, xsv.y, xsv.x, lv.x, lv.y);
+                    // check if this vertex touches the right line vertical edge
+                    // i.e. it should have x and y equal to the proper side
+                    if (xsv.x == lv.x && xsv.y == lv.y) {
+                      TJLOG(NAME_Debug, "*** HIT! ***");
+                      InsertEdgePoint(this, xsv.z, surf, vf0, vf1, goUp, wasChanged, linenum);
+                    }
+                  }
+                  xsurf = xsurf->next;
+                }
+                xsegpart = xsegpart->next;
+              }
+            }
+          }
+          ssx = ssx->lsnext;
         }
       }
     }

@@ -613,6 +613,7 @@ protected:
   virtual void InitSurfs (bool recalcStaticLightmaps, surface_t *ASurfs, texinfo_t *texinfo, const TPlane *plane, subsector_t *sub, seg_t *seg, subregion_t *sreg) = 0;
   virtual surface_t *SubdivideFace (surface_t *InF, subregion_t *sreg, sec_surface_t *ssf, const TVec &axis, const TVec *nextaxis, const TPlane *plane, bool doSubdivisions=true) = 0;
   virtual surface_t *SubdivideSeg (surface_t *InSurf, const TVec &axis, const TVec *nextaxis, seg_t *seg) = 0;
+  virtual void DoneInitialWordSurfCreation () = 0;
 
   virtual void QueueWorldSurface (surface_t *surf) = 0;
   // this does BSP traversing, and collect world surfaces into various lists to drive GPU rendering
