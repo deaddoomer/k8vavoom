@@ -946,7 +946,11 @@ surface_t *VRenderLevelLightmap::SubdivideSegInternal (surface_t *surf, const TV
 
   ++c_seg_div;
 
-  vassert(clip.vcount[1] <= surface_t::MAXWVERTS);
+  if (clip.vcount[1] > surface_t::MAXWVERTS && clip.vcount[1] > surf->count) {
+    GCon->Logf(NAME_Error, "clipped surface has %d vertices (orig: %d) (and max is %d)", clip.vcount[1], surf->count, surface_t::MAXWVERTS);
+    vassert(clip.vcount[1] <= surface_t::MAXWVERTS || clip.vcount[1] <= surf->count);
+  }
+
   surf->count = clip.vcount[1];
   if (surf->count) memcpy((void *)surf->verts, clip.verts[1], surf->count*sizeof(SurfVertex));
 
