@@ -78,7 +78,7 @@ static void InsertEdgePoint (VRenderLevelShared *RLev, const float hz, surface_t
   surf = RLev->EnsureSurfacePoints(surf, surf->count+1, surf, nullptr);
 
   const TVec np = TVec(surf->verts[vf0].x, surf->verts[vf0].y, hz);
-  surf->InsertVertexAt(insidx, np, nullptr, nullptr);
+  surf->InsertVertexAt(insidx, np, 1);
 
   ++vf1; // our range was increased
   wasChanged = true;

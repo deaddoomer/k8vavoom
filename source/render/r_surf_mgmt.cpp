@@ -109,25 +109,37 @@ TVec surface_t::CalculateFastCentroid () const noexcept {
     const SurfVertex *sf = &verts[0];
     if (plane.normal.z != 0.0f) {
       // flat
+      int cnt = 0;
       for (int f = count; f--; ++sf) {
-        cp.x += sf->x;
-        cp.y += sf->y;
+        if (sf->tjflags == 0) {
+          cp.x += sf->x;
+          cp.y += sf->y;
+          ++cnt;
+        }
       }
-      cp.x /= (float)count;
-      cp.y /= (float)count;
-      cp.z = plane.GetPointZ(cp);
+      if (cnt != 0) {
+        cp.x /= (float)count;
+        cp.y /= (float)count;
+        cp.z = plane.GetPointZ(cp);
+      }
     } else {
       // wall
+      int cnt = 0;
       for (int f = count; f--; ++sf) {
-        cp.x += sf->x;
-        cp.y += sf->y;
-        cp.z += sf->z;
+        if (sf->tjflags == 0) {
+          cp.x += sf->x;
+          cp.y += sf->y;
+          cp.z += sf->z;
+          ++cnt;
+        }
       }
-      cp.x /= (float)count;
-      cp.y /= (float)count;
-      cp.z /= (float)count;
-      // just in case, project it on the plane
-      if (plane.PointDistance(cp) != 0.0f) cp = plane.Project(cp);
+      if (cnt != 0) {
+        cp.x /= (float)count;
+        cp.y /= (float)count;
+        cp.z /= (float)count;
+        // just in case, project it on the plane
+        if (plane.PointDistance(cp) != 0.0f) cp = plane.Project(cp);
+      }
     }
   }
   return cp;
@@ -149,43 +161,46 @@ TVec surface_t::CalculateRealCentroid () const noexcept {
   if (count <= 3) return CalculateFastCentroid();
   TVec cp(0.0f, 0.0f, 0.0f); // accumulator, and final result
   TVec pdir(0.0f, 0.0f, 0.0f); // last direction
+  vassert(verts[0].tjflags == 0);
   const SurfVertex *sf = &verts[0];
   TVec lastv1(sf->x, sf->y, sf->z);
   ++sf;
   TVec prevpt(lastv1); // previous vertex
   int ccnt = 0;
   for (int f = count+1; f--; ++sf) {
-    const TVec cv = sf->vec();
-    if (!ccnt) {
-      // first one
-      pdir = cv-lastv1;
-      if (pdir.lengthSquared() >= 0.2f*0.2f) {
-        pdir = pdir.normalise();
-        cp += lastv1;
-        ccnt = 1;
-      }
-    } else {
-      // are we making a turn here?
-      TVec xdir = cv-lastv1;
-      if (xdir.lengthSquared() >= 0.2f*0.2f) {
-        xdir = xdir.normalise();
-        // dot product for two normalized vectors is cosine between them
-        // cos(0) is 1, so if it isn't, we have a turn
-        // cos(180) is -1, but it doesn't matter here
-        if (fabsf(xdir.dot(pdir)) < 1.0f-0.0001f) {
-          // looks like we did made a turn
-          // we have a new point
-          // remember it
-          lastv1 = prevpt;
-          // add it to the sum
+    if (sf->tjflags == 0) {
+      const TVec cv = sf->vec();
+      if (!ccnt) {
+        // first one
+        pdir = cv-lastv1;
+        if (pdir.lengthSquared() >= 0.2f*0.2f) {
+          pdir = pdir.normalise();
           cp += lastv1;
-          ++ccnt;
-          // and remember new direction
-          pdir = (cv-lastv1).normalise();
+          ccnt = 1;
+        }
+      } else {
+        // are we making a turn here?
+        TVec xdir = cv-lastv1;
+        if (xdir.lengthSquared() >= 0.2f*0.2f) {
+          xdir = xdir.normalise();
+          // dot product for two normalized vectors is cosine between them
+          // cos(0) is 1, so if it isn't, we have a turn
+          // cos(180) is -1, but it doesn't matter here
+          if (fabsf(xdir.dot(pdir)) < 1.0f-0.0001f) {
+            // looks like we did made a turn
+            // we have a new point
+            // remember it
+            lastv1 = prevpt;
+            // add it to the sum
+            cp += lastv1;
+            ++ccnt;
+            // and remember new direction
+            pdir = (cv-lastv1).normalise();
+          }
         }
       }
+      prevpt = cv;
     }
-    prevpt = cv;
   }
   // if we have less than three points, something's gone wrong...
   if (ccnt < 3) return CalculateFastCentroid();
@@ -215,15 +230,16 @@ void surface_t::AddCentroid () noexcept {
     #else
     TVec cp(CalculateFastCentroid());
     #endif
-    InsertVertexAt(0, cp, nullptr, nullptr);
+    InsertVertexAt(0, cp, -1);
     setCentroidCreated();
     // and re-add the previous first point as the final one
     // (so the final triangle will be rendered too)
     // this is not required for quad, but required for "real" triangle fan
     // need to copy the point first, because we're passing a reference to it
     cp = verts[1].vec();
-    InsertVertexAt(count, cp, nullptr, nullptr);
+    InsertVertexAt(count, cp, verts[1].tjflags);
     vassert(verts[1].vec() == verts[count-1].vec());
+    vassert(verts[1].tjflags == verts[count-1].tjflags);
   }
 }
 
@@ -235,7 +251,7 @@ void surface_t::AddCentroid () noexcept {
 //  there should be enough room for vertex
 //
 //==========================================================================
-void surface_t::InsertVertexAt (int idx, const TVec &p, sec_surface_t *ownssf, seg_t *ownseg) noexcept {
+void surface_t::InsertVertexAt (int idx, const TVec &p, int tjflags) noexcept {
   vassert(idx >= 0 && idx <= count);
   if (idx < count) memmove((void *)(&verts[idx+1]), (void *)(&verts[idx]), (count-idx)*sizeof(verts[0]));
   ++count;
@@ -244,8 +260,7 @@ void surface_t::InsertVertexAt (int idx, const TVec &p, sec_surface_t *ownssf, s
   dv->x = p.x;
   dv->y = p.y;
   dv->z = p.z;
-  dv->ownerssf = ownssf;
-  dv->ownerseg = ownseg;
+  dv->tjflags = tjflags;
 }
 
 
@@ -280,31 +295,21 @@ void surface_t::RemoveCentroid () noexcept {
 
 //==========================================================================
 //
-//  surface_t::RemoveSsfOwnVertices
+//  surface_t::RemoveTJVerts
 //
-//  remove all vertices with this owning subsector
+//  remove all vertices with tjflags > 0
 //
 //==========================================================================
-void surface_t::RemoveSsfOwnVertices (const sec_surface_t *ssf) noexcept {
-  if (!ssf) return;
+void surface_t::RemoveTJVerts () noexcept {
+  if (isCentroidCreated()) {
+    vassert(verts[0].tjflags == -1);
+    vassert(count > 3);
+    vassert(verts[1].tjflags == verts[count-1].tjflags);
+    if (verts[1].tjflags > 0) RemoveCentroid();
+  }
   int idx = 0;
-  while (idx < count) if (verts[idx].ownerssf == ssf) RemoveVertexAt(idx); else ++idx;
+  while (idx < count) if (verts[idx].tjflags > 0) RemoveVertexAt(idx); else ++idx;
 }
-
-
-//==========================================================================
-//
-//  surface_t::RemoveSegOwnVertices
-//
-//  remove all vertices with this owning seg
-//
-//==========================================================================
-void surface_t::RemoveSegOwnVertices (const seg_t *seg) noexcept {
-  if (!seg) return;
-  int idx = 0;
-  while (idx < count) if (verts[idx].ownerseg == seg) RemoveVertexAt(idx); else ++idx;
-}
-
 
 
 //**************************************************************************
@@ -562,7 +567,9 @@ surface_t *VRenderLevelShared::CreateWSurf (TVec *wv, texinfo_t *texinfo, seg_t 
 
   //!GCon->Logf(NAME_Debug, "sfcS:%p: saxis=(%g,%g,%g); taxis=(%g,%g,%g); saxisLM=(%g,%g,%g); taxisLM=(%g,%g,%g)", surf, texinfo->saxis.x, texinfo->saxis.y, texinfo->saxis.z, texinfo->taxis.x, texinfo->taxis.y, texinfo->taxis.z, texinfo->saxisLM.x, texinfo->saxisLM.y, texinfo->saxisLM.z, texinfo->taxisLM.x, texinfo->taxisLM.y, texinfo->taxisLM.z);
   // fix wall t-junctions with common firxer first
-  surf = FixSegTJunctions(surf, seg);
+  if (IsShadowVolumeRenderer()) {
+    surf = FixSegTJunctions(surf, seg);
+  }
   // subdivide surface
   surf = SubdivideSeg(surf, texinfo->saxisLM, &texinfo->taxisLM, seg);
   // and fix t-junctions from subdivision

@@ -636,7 +636,6 @@ static inline bool IsPointOnLine3D (const TVec &v0, const TVec &v1, const TVec &
 //
 //==========================================================================
 static surface_t *SurfaceInsertPointIntoEdge (VRenderLevelShared *RLev,
-                                              sec_surface_t *ownssf, seg_t *ownseg,
                                               surface_t *surf, surface_t *&surfhead,
                                               surface_t *prev, const TVec p)
 {
@@ -696,7 +695,7 @@ static surface_t *SurfaceInsertPointIntoEdge (VRenderLevelShared *RLev,
       surf = RLev->EnsureSurfacePoints(surf, surf->count+1, surfhead, prev);
     #endif
     // insert point
-    surf->InsertVertexAt(pn0+1, p, ownssf, ownseg);
+    surf->InsertVertexAt(pn0+1, p, 1);
     //vassert(surf->count > 4);
     #if 0
     GCon->Logf(NAME_Debug, "=== AFTER (%d) ===", surf->count);
@@ -720,10 +719,9 @@ static surface_t *SurfaceInsertPointIntoEdge (VRenderLevelShared *RLev,
 //  CleanupSurfaceList
 //
 //==========================================================================
-static void CleanupSurfaceList (surface_t *surf, const sec_surface_t *ownssf, const seg_t *ownseg) {
+static void CleanupSurfaceList (surface_t *surf) {
   for (; surf; surf = surf->next) {
-    if (ownssf) surf->RemoveSsfOwnVertices(ownssf);
-    if (ownseg) surf->RemoveSegOwnVertices(ownseg);
+    surf->RemoveTJVerts();
     // don't bother, we don't need to do it
     //if (surf->isCentroidCreated()) surf->RemoveCentroid();
   }
@@ -735,13 +733,13 @@ static void CleanupSurfaceList (surface_t *surf, const sec_surface_t *ownssf, co
 //  CleanupSurfaceLists
 //
 //==========================================================================
-static void CleanupSurfaceLists (drawseg_t *ds, const sec_surface_t *ownssf, const seg_t *ownseg) {
+static void CleanupSurfaceLists (drawseg_t *ds) {
   if (ds) {
-    if (ds->top) CleanupSurfaceList(ds->top->surfs, ownssf, ownseg);
-    if (ds->mid) CleanupSurfaceList(ds->mid->surfs, ownssf, ownseg);
-    if (ds->bot) CleanupSurfaceList(ds->bot->surfs, ownssf, ownseg);
-    if (ds->topsky) CleanupSurfaceList(ds->topsky->surfs, ownssf, ownseg);
-    if (ds->extra) CleanupSurfaceList(ds->extra->surfs, ownssf, ownseg);
+    if (ds->top) CleanupSurfaceList(ds->top->surfs);
+    if (ds->mid) CleanupSurfaceList(ds->mid->surfs);
+    if (ds->bot) CleanupSurfaceList(ds->bot->surfs);
+    if (ds->topsky) CleanupSurfaceList(ds->topsky->surfs);
+    if (ds->extra) CleanupSurfaceList(ds->extra->surfs);
     //CleanupSurfaceList(ds->HorizonTop, ownssf, ownseg);
     //CleanupSurfaceList(ds->HorizonBot, ownssf, ownseg);
   }
@@ -753,20 +751,20 @@ static void CleanupSurfaceLists (drawseg_t *ds, const sec_surface_t *ownssf, con
 //  AddPointsFromSurfaceList
 //
 //==========================================================================
-static void AddPointsFromSurfaceList (VRenderLevelShared *RLev, seg_t *ownseg,
+static void AddPointsFromSurfaceList (VRenderLevelShared *RLev,
                                       surface_t *list, /*from*/
                                       surface_t *&surfhead/*to*/)
 {
   for (surface_t *curr = list; curr; curr = curr->next) {
     for (int spn = (int)curr->isCentroidCreated(); spn < curr->count-(int)curr->isCentroidCreated(); ++spn) {
       const SurfVertex *sv = &curr->verts[spn];
-      if (sv->ownerseg == ownseg) continue; // fast reject, just in case (we just added this point)
+      if (sv->tjflags > 0) continue; // fast reject, just in case (we just added this point)
 
       surface_t *surf = surfhead;
       surface_t *prev = nullptr;
       while (surf) {
         if (surf != curr) {
-          surf = SurfaceInsertPointIntoEdge(RLev, nullptr, ownseg, surf, surfhead, prev, sv->vec());
+          surf = SurfaceInsertPointIntoEdge(RLev, surf, surfhead, prev, sv->vec());
         }
         prev = surf;
         surf = surf->next;
@@ -781,16 +779,16 @@ static void AddPointsFromSurfaceList (VRenderLevelShared *RLev, seg_t *ownseg,
 //  AddPointsFromDrawseg
 //
 //==========================================================================
-static void AddPointsFromDrawseg (VRenderLevelShared *RLev, seg_t *ownseg,
+static void AddPointsFromDrawseg (VRenderLevelShared *RLev,
                                   drawseg_t *ds,
                                   surface_t *&surfhead/*to*/)
 {
   if (ds) {
-    if (ds->top) AddPointsFromSurfaceList(RLev, ownseg, ds->top->surfs, surfhead);
-    if (ds->mid) AddPointsFromSurfaceList(RLev, ownseg, ds->mid->surfs, surfhead);
-    if (ds->bot) AddPointsFromSurfaceList(RLev, ownseg, ds->bot->surfs, surfhead);
-    if (ds->topsky) AddPointsFromSurfaceList(RLev, ownseg, ds->topsky->surfs, surfhead);
-    if (ds->extra) AddPointsFromSurfaceList(RLev, ownseg, ds->extra->surfs, surfhead);
+    if (ds->top) AddPointsFromSurfaceList(RLev, ds->top->surfs, surfhead);
+    if (ds->mid) AddPointsFromSurfaceList(RLev, ds->mid->surfs, surfhead);
+    if (ds->bot) AddPointsFromSurfaceList(RLev, ds->bot->surfs, surfhead);
+    if (ds->topsky) AddPointsFromSurfaceList(RLev, ds->topsky->surfs, surfhead);
+    if (ds->extra) AddPointsFromSurfaceList(RLev, ds->extra->surfs, surfhead);
   }
 }
 
@@ -874,15 +872,15 @@ surface_t *VRenderLevelLightmap::FixSegSurfaceTJunctions (surface_t *surf, seg_t
 
   #if 1
   // remove fixes for our seg surfaces
-  CleanupSurfaceLists(myseg->drawsegs, nullptr, myseg);
+  CleanupSurfaceLists(myseg->drawsegs);
   // also, clean subsector flats, we will refix them
   // check floor and ceiling
   for (subregion_t *region = sub->regions; region; region = region->next) {
     for (surface_t *ss = surf; ss; ss = ss->next) {
-      if (region->realfloor) CleanupSurfaceList(region->realfloor->surfs, nullptr, myseg);
-      if (region->realceil) CleanupSurfaceList(region->realceil->surfs, nullptr, myseg);
-      if (region->fakefloor) CleanupSurfaceList(region->fakefloor->surfs, nullptr, myseg);
-      if (region->fakeceil) CleanupSurfaceList(region->fakeceil->surfs, nullptr, myseg);
+      if (region->realfloor) CleanupSurfaceList(region->realfloor->surfs);
+      if (region->realceil) CleanupSurfaceList(region->realceil->surfs);
+      if (region->fakefloor) CleanupSurfaceList(region->fakefloor->surfs);
+      if (region->fakeceil) CleanupSurfaceList(region->fakeceil->surfs);
     }
   }
   #endif
@@ -894,7 +892,7 @@ surface_t *VRenderLevelLightmap::FixSegSurfaceTJunctions (surface_t *surf, seg_t
     drawseg_t *ds = xseg->drawsegs;
     if (xseg != myseg && ds) {
       #if 1
-      AddPointsFromDrawseg(this, myseg, ds, surf);
+      AddPointsFromDrawseg(this, ds, surf);
       #endif
     }
   }
@@ -905,10 +903,10 @@ surface_t *VRenderLevelLightmap::FixSegSurfaceTJunctions (surface_t *surf, seg_t
     //seg_t *xseg = &Level->Segs[sub->firstline];
     //for (int f = sub->numlines; f--; ++xseg) {}
     for (subregion_t *region = xsub->regions; region; region = region->next) {
-      if (region->realfloor) AddPointsFromSurfaceList(this, myseg, region->realfloor->surfs, surf);
-      if (region->realceil) AddPointsFromSurfaceList(this, myseg, region->realceil->surfs, surf);
-      if (region->fakefloor) AddPointsFromSurfaceList(this, myseg, region->fakefloor->surfs, surf);
-      if (region->fakeceil) AddPointsFromSurfaceList(this, myseg, region->fakeceil->surfs, surf);
+      if (region->realfloor) AddPointsFromSurfaceList(this, region->realfloor->surfs, surf);
+      if (region->realceil) AddPointsFromSurfaceList(this, region->realceil->surfs, surf);
+      if (region->fakefloor) AddPointsFromSurfaceList(this, region->fakefloor->surfs, surf);
+      if (region->fakeceil) AddPointsFromSurfaceList(this, region->fakeceil->surfs, surf);
     }
   }
   #endif
@@ -935,10 +933,10 @@ surface_t *VRenderLevelLightmap::FixSegSurfaceTJunctions (surface_t *surf, seg_t
       #if 1
       // insert wall surface points into floors of `sub`
       for (subregion_t *region = sub->regions; region; region = region->next) {
-        if (region->realfloor) AddPointsFromDrawseg(this, myseg, ds, region->realfloor->surfs);
-        if (region->realceil) AddPointsFromDrawseg(this, myseg, ds, region->realceil->surfs);
-        if (region->fakefloor) AddPointsFromDrawseg(this, myseg, ds, region->fakefloor->surfs);
-        if (region->fakeceil) AddPointsFromDrawseg(this, myseg, ds, region->fakeceil->surfs);
+        if (region->realfloor) AddPointsFromDrawseg(this, ds, region->realfloor->surfs);
+        if (region->realceil) AddPointsFromDrawseg(this, ds, region->realceil->surfs);
+        if (region->fakefloor) AddPointsFromDrawseg(this, ds, region->fakefloor->surfs);
+        if (region->fakeceil) AddPointsFromDrawseg(this, ds, region->fakeceil->surfs);
       }
       #endif
     }

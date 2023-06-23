@@ -278,7 +278,7 @@ public:
 
 
   // there should be enough room for vertex
-  void InsertVertexAt (int idx, const TVec &p, sec_surface_t *ownssf, seg_t *ownseg) noexcept;
+  void InsertVertexAt (int idx, const TVec &p, int tjflags) noexcept;
   void RemoveVertexAt (int idx) noexcept;
 
   void RemoveCentroid () noexcept;
@@ -286,11 +286,8 @@ public:
   // there should be enough room for two new points
   void AddCentroid () noexcept;
 
-  // remove all vertices with this owning subsector
-  void RemoveSsfOwnVertices (const sec_surface_t *ssf) noexcept;
-
-  // remove all vertices with this owning seg
-  void RemoveSegOwnVertices (const seg_t *seg) noexcept;
+  // remove all vertices with tjflags > 0
+  void RemoveTJVerts () noexcept;
 
   inline bool NeedRecalcStaticLightmap () const noexcept { return (drawflags&DF_CALC_LMAP); }
   inline bool IsMasked () const noexcept { return (drawflags&DF_MASKED); }

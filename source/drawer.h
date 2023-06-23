@@ -50,13 +50,10 @@ struct SurfVertex {
       float x, y, z;
     };
   };
-  // `owner` will be set in lightmap t-junction fixer
-  // it can be `nullptr` if this is the original point
-  // (or added from the subsector that owns the surface)
+  // set and used in lightmap t-junction fixer
+  // it can be 0 if this is the original point
   // used to remove points we don't need anymore before creating new ones
-  //subsector_t *ownersub; // if set, this vertex was added from flat t-junction fixer
-  sec_surface_t *ownerssf; // if set, this vertex was added from flat t-junction fixer
-  seg_t *ownerseg; // if set, this vertex was added from wall t-junction fixer
+  int tjflags;
 
   inline SurfVertex () noexcept {}
   inline ~SurfVertex () noexcept {}
@@ -67,7 +64,7 @@ struct SurfVertex {
   inline void setVec (const float ax, const float ay, const float az) noexcept { x = ax; y = ay; z = az; }
   inline void setVec (const TVec &av) noexcept { x = av.x; y = av.y; z = av.z; }
 
-  inline void clearSetVec (const TVec &av) noexcept { x = av.x; y = av.y; z = av.z; ownerssf = nullptr; ownerseg = nullptr; }
+  inline void clearSetVec (const TVec &av) noexcept { x = av.x; y = av.y; z = av.z; tjflags = 0; }
 };
 //static_assert(sizeof(SurfVertex) == sizeof(float)*3+sizeof(subsector_t *), "invalid SurfVertex size");
 
