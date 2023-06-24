@@ -61,6 +61,24 @@ static int spvPoolSize = 0;
 
 //==========================================================================
 //
+//  surfIndex
+//
+//==========================================================================
+static VVA_OKUNUSED int surfIndex (const surface_t *surfs, const surface_t *curr) noexcept {
+  int res;
+  if (!curr) {
+    res = -1;
+  } else {
+    res = 0;
+    while (surfs && surfs != curr) { ++res; surfs = surfs->next; }
+    if (!surfs) res = -666;
+  }
+  return res;
+}
+
+
+//==========================================================================
+//
 //  spvReserve
 //
 //==========================================================================
@@ -199,68 +217,29 @@ static bool SplitSurface (SClipInfo &clip, surface_t *surf, const TVec &axis) {
     if (sides[i] == PlaneCoplanar) {
       clip.appendVertex(0, vt[i]);
       clip.appendVertex(1, vt[i]);
-      continue;
+    } else {
+      clip.appendVertex((sides[i] == PlaneBack), vt[i]);
+      if (sides[i+1] != PlaneCoplanar && sides[i] != sides[i+1]) {
+        // generate a split point
+        const TVec &p1 = vt[i].vec();
+        const TVec &p2 = vt[(i+1)%surfcount].vec();
+
+        const float dot = dots[i]/(dots[i]-dots[i+1]);
+        for (int j = 0; j < 3; ++j) {
+          // avoid round off error when possible
+               if (plane.normal[j] == +1.0f) mid[j] = plane.dist;
+          else if (plane.normal[j] == -1.0f) mid[j] = -plane.dist;
+          else mid[j] = p1[j]+dot*(p2[j]-p1[j]);
+        }
+
+        clip.appendPoint(0, mid);
+        clip.appendPoint(1, mid);
+      }
     }
-
-    clip.appendVertex((sides[i] == PlaneBack), vt[i]);
-
-    if (sides[i+1] == PlaneCoplanar || sides[i] == sides[i+1]) continue;
-
-    // generate a split point
-    const TVec &p1 = vt[i].vec();
-    const TVec &p2 = vt[(i+1)%surfcount].vec();
-
-    const float dot = dots[i]/(dots[i]-dots[i+1]);
-    for (int j = 0; j < 3; ++j) {
-      // avoid round off error when possible
-           if (plane.normal[j] == +1.0f) mid[j] = plane.dist;
-      else if (plane.normal[j] == -1.0f) mid[j] = -plane.dist;
-      else mid[j] = p1[j]+dot*(p2[j]-p1[j]);
-    }
-
-    clip.appendPoint(0, mid);
-    clip.appendPoint(1, mid);
   }
 
   return (clip.vcount[0] >= 3 && clip.vcount[1] >= 3);
 }
-
-
-//==========================================================================
-//
-//  surfDrop
-//
-//==========================================================================
-/*
-static VVA_OKUNUSED surface_t *surfDrop (surface_t *surfs, int idx) noexcept {
-  surface_t *prev = nullptr;
-  surface_t *curr = surfs;
-  while (curr) {
-    if (idx-- == 0) {
-      if (prev) prev->next = curr->next; else surfs = curr->next;
-      break;
-    }
-    prev = curr;
-    curr = curr->next;
-  }
-  return surfs;
-}
-*/
-
-
-//==========================================================================
-//
-//  surfIndex
-//
-//==========================================================================
-/*
-static VVA_OKUNUSED int surfIndex (const surface_t *surfs, const surface_t *curr) noexcept {
-  if (!curr) return -1;
-  int res = 0;
-  while (surfs && surfs != curr) { ++res; surfs = surfs->next; }
-  return (surfs == curr ? res : -666);
-}
-*/
 
 
 //==========================================================================
@@ -290,22 +269,17 @@ static surface_t *RemoveCentroids (surface_t *surf) {
 //  in renderer (which can cause t-junctions)
 //
 //==========================================================================
-static surface_t *RecreateCentroids (VRenderLevelShared *RLev, surface_t *surf) {
+static void RecreateCentroids (VRenderLevelShared *RLev, surface_t *&surf) {
   surface_t *prev = nullptr;
   for (surface_t *ss = surf; ss; prev = ss, ss = ss->next) {
     if (ss->count > 4 && !ss->isCentroidCreated()) {
       // make room
-      if (ss == surf) {
-        ss = RLev->EnsureSurfacePoints(ss, ss->count+2, surf, prev);
-        surf = ss;
-      } else {
-        ss = RLev->EnsureSurfacePoints(ss, ss->count+2, surf, prev);
-      }
+      ss = RLev->EnsureSurfacePoints(ss, ss->count+2, surf, prev);
+      if (!prev) surf = ss; // first item, fix list head
       // insert centroid
       ss->AddCentroid();
     }
   }
-  return surf;
 }
 
 
@@ -314,8 +288,13 @@ static surface_t *RecreateCentroids (VRenderLevelShared *RLev, surface_t *surf) 
 //  VRenderLevelLightmap::InitSurfs
 //
 //==========================================================================
-void VRenderLevelLightmap::InitSurfs (bool recalcStaticLightmaps, surface_t *ASurfs, texinfo_t *texinfo, const TPlane *plane, subsector_t *sub, seg_t *seg, subregion_t *sreg) {
-  bool doPrecalc = (r_precalc_static_lights_override >= 0 ? !!r_precalc_static_lights_override : r_precalc_static_lights);
+void VRenderLevelLightmap::InitSurfs (bool recalcStaticLightmaps, surface_t *ASurfs,
+                                      texinfo_t *texinfo, const TPlane *plane,
+                                      subsector_t *sub, seg_t *seg, subregion_t *sreg)
+{
+  bool doPrecalc = (r_precalc_static_lights_override >= 0
+                      ? !!r_precalc_static_lights_override
+                      : r_precalc_static_lights);
 
   for (surface_t *surf = ASurfs; surf; surf = surf->next) {
     if (texinfo) surf->texinfo = texinfo;
@@ -325,7 +304,8 @@ void VRenderLevelLightmap::InitSurfs (bool recalcStaticLightmaps, surface_t *ASu
     surf->sreg = sreg;
 
     if (surf->count == 0) {
-      GCon->Logf(NAME_Warning, "empty surface at subsector #%d", (int)(ptrdiff_t)(sub-Level->Subsectors));
+      GCon->Logf(NAME_Warning, "empty surface at subsector #%d",
+                 (int)(ptrdiff_t)(sub-Level->Subsectors));
       surf->texturemins[0] = 16;
       surf->extents[0] = 16;
       surf->texturemins[1] = 16;
@@ -333,7 +313,8 @@ void VRenderLevelLightmap::InitSurfs (bool recalcStaticLightmaps, surface_t *ASu
       surf->subsector = sub;
       surf->drawflags &= ~surface_t::DF_CALC_LMAP; // just in case
     } else if (surf->count < 3) {
-      GCon->Logf(NAME_Warning, "degenerate surface with #%d vertices at subsector #%d", surf->count, (int)(ptrdiff_t)(sub-Level->Subsectors));
+      GCon->Logf(NAME_Warning, "degenerate surface with #%d vertices at subsector #%d",
+                 surf->count, (int)(ptrdiff_t)(sub-Level->Subsectors));
       surf->texturemins[0] = 16;
       surf->extents[0] = 16;
       surf->texturemins[1] = 16;
@@ -365,7 +346,8 @@ void VRenderLevelLightmap::InitSurfs (bool recalcStaticLightmaps, surface_t *ASu
           (bmaxs-bmins) < -EXTMAX/16 ||
           (bmaxs-bmins) > EXTMAX/16)
       {
-        GCon->Logf(NAME_Warning, "Subsector %d got too big S surface extents: (%d,%d)", (int)(ptrdiff_t)(sub-Level->Subsectors), bmins, bmaxs);
+        GCon->Logf(NAME_Warning, "Subsector %d got too big S surface extents: (%d,%d)",
+                   (int)(ptrdiff_t)(sub-Level->Subsectors), bmins, bmaxs);
         surf->texturemins[0] = 0;
         surf->extents[0] = 256;
       } else {
@@ -386,7 +368,8 @@ void VRenderLevelLightmap::InitSurfs (bool recalcStaticLightmaps, surface_t *ASu
           (bmaxs-bmins) < -EXTMAX/16 ||
           (bmaxs-bmins) > EXTMAX/16)
       {
-        GCon->Logf(NAME_Warning, "Subsector %d got too big T surface extents: (%d,%d)", (int)(ptrdiff_t)(sub-Level->Subsectors), bmins, bmaxs);
+        GCon->Logf(NAME_Warning, "Subsector %d got too big T surface extents: (%d,%d)",
+                   (int)(ptrdiff_t)(sub-Level->Subsectors), bmins, bmaxs);
         surf->texturemins[1] = 0;
         surf->extents[1] = 256;
         //GCon->Logf("AXIS=(%g,%g,%g)", texinfo->taxis.x, texinfo->taxis.y, texinfo->taxis.z);
@@ -427,7 +410,9 @@ void VRenderLevelLightmap::InitSurfs (bool recalcStaticLightmaps, surface_t *ASu
 //  VRenderLevelLightmap::SubdivideFaceInternal
 //
 //==========================================================================
-surface_t *VRenderLevelLightmap::SubdivideFaceInternal (surface_t *surf, const TVec &axis, const TVec *nextaxis, const TPlane *plane) {
+surface_t *VRenderLevelLightmap::SubdivideFaceInternal (surface_t *surf, const TVec &axis,
+                                                        const TVec *nextaxis, const TPlane *plane)
+{
   subsector_t *sub = surf->subsector;
   vassert(sub);
 
@@ -435,13 +420,17 @@ surface_t *VRenderLevelLightmap::SubdivideFaceInternal (surface_t *surf, const T
 
   if (surf->count < 2) {
     //Sys_Error("surface with less than three (%d) vertices)", f->count);
-    GCon->Logf(NAME_Warning, "surface with less than two (%d) vertices (divface) (sub=%d; sector=%d)", surf->count, (int)(ptrdiff_t)(sub-Level->Subsectors), (int)(ptrdiff_t)(sub->sector-Level->Sectors));
+    GCon->Logf(NAME_Warning, "surface with less than two (%d) vertices (divface) (sub=%d; sector=%d)",
+               surf->count, (int)(ptrdiff_t)(sub-Level->Subsectors),
+               (int)(ptrdiff_t)(sub->sector-Level->Sectors));
     return surf;
   }
 
   // this can happen for wall without texture
   if (!axis.isValid() || axis.isZero()) {
-    GCon->Logf(NAME_Warning, "ERROR(SF): invalid axis (%f,%f,%f); THIS IS MAP BUG! (sub=%d; sector=%d)", axis.x, axis.y, axis.z, (int)(ptrdiff_t)(sub-Level->Subsectors), (int)(ptrdiff_t)(sub->sector-Level->Sectors));
+    GCon->Logf(NAME_Warning, "ERROR(SF): invalid axis (%f,%f,%f); THIS IS MAP BUG! (sub=%d; sector=%d)",
+               axis.x, axis.y, axis.z, (int)(ptrdiff_t)(sub-Level->Subsectors),
+               (int)(ptrdiff_t)(sub->sector-Level->Sectors));
     return (nextaxis ? SubdivideFaceInternal(surf, *nextaxis, nullptr, plane) : surf);
   }
 
@@ -508,7 +497,7 @@ surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf,
 
   // always create centroids for complex surfaces
   // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
-  if (!lastRenderQuality) surf = RecreateCentroids(this, surf);
+  //if (!lastRenderQuality) RecreateCentroids(this, surf);
 
   return surf;
 }
@@ -586,7 +575,7 @@ surface_t *VRenderLevelLightmap::SubdivideSeg (surface_t *surf, const TVec &axis
   surf = SubdivideSegInternal(surf, axis, nextaxis, seg);
   // always create centroids for complex surfaces
   // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
-  if (!lastRenderQuality) surf = RecreateCentroids(this, surf);
+  //if (!lastRenderQuality) RecreateCentroids(this, surf);
   return surf;
 }
 
@@ -795,47 +784,55 @@ static void AddPointsFromDrawseg (VRenderLevelShared *RLev,
 
 //==========================================================================
 //
+//  SurfSubRestoreCentroids
+//
+//==========================================================================
+static void SurfSubRestoreCentroids (VRenderLevelShared *RLev, surface_t *&surf,
+                                     subsector_t *sub)
+{
+  // always create centroids for complex surfaces
+  // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
+  RecreateCentroids(RLev, surf);
+
+  // also, recreate centroids for floors
+  if (sub) {
+    for (subregion_t *region = sub->regions; region; region = region->next) {
+      if (region->realfloor) RecreateCentroids(RLev, region->realfloor->surfs);
+      if (region->realceil) RecreateCentroids(RLev, region->realceil->surfs);
+      if (region->fakefloor) RecreateCentroids(RLev, region->fakefloor->surfs);
+      if (region->fakeceil) RecreateCentroids(RLev, region->fakeceil->surfs);
+    }
+  }
+}
+
+
+//==========================================================================
+//
 //  VRenderLevelLightmap::FixSegSurfaceTJunctions
 //
 //==========================================================================
 surface_t *VRenderLevelLightmap::FixSegSurfaceTJunctions (surface_t *surf, seg_t *myseg) {
-  if (!surf || !myseg || !lastRenderQuality || !myseg->linedef) return surf;
+  if (!surf || !myseg || !myseg->linedef || inWorldCreation) return surf;
 
   subsector_t *sub = surf->subsector;
   vassert(sub);
 
   if (sub->isOriginalPObj()) return surf; // nobody cares
 
-  //if ((int)(ptrdiff_t)(sub-&Level->Subsectors[0]) != 40) return surf;
+  if (lastRenderQuality) {
+    //if ((int)(ptrdiff_t)(sub-&Level->Subsectors[0]) != 40) return surf;
 
- if (true) {
-  // no need to do it
-  //surf = RemoveCentroids(surf);
+    if (true) {
+      // no need to do it
+      //surf = RemoveCentroids(surf);
 
-  // collect all segs we want to inspect
-  adjSegs.resetNoDtor();
-  {
-    const line_t *ld = myseg->linedef;
+      // collect all segs we want to inspect
+      adjSegs.resetNoDtor();
+      {
+        const line_t *ld = myseg->linedef;
 
-    // own segs
-    for (seg_t *lseg = ld->firstseg; lseg; lseg = lseg->lsnext) {
-      if (lseg != myseg && lseg->drawsegs) {
-        // good seg
-        /*
-        bool found = false;
-        for (seg_t *ss : adjSegs) if (ss == lseg) { found = true; break; }
-        if (!found) adjSegs.append(lseg);
-        */
-        adjSegs.append(lseg);
-      }
-    }
-
-    // segs from adjacent lines
-    for (int lvidx = 0; lvidx < 2; ++lvidx) {
-      const int len = ld->vxCount(lvidx);
-      for (int f = 0; f < len; ++f) {
-        const line_t *ll = ld->vxLine(lvidx, f);
-        for (seg_t *lseg = ll->firstseg; lseg; lseg = lseg->lsnext) {
+        // own segs
+        for (seg_t *lseg = ld->firstseg; lseg; lseg = lseg->lsnext) {
           if (lseg != myseg && lseg->drawsegs) {
             // good seg
             /*
@@ -846,114 +843,124 @@ surface_t *VRenderLevelLightmap::FixSegSurfaceTJunctions (surface_t *surf, seg_t
             adjSegs.append(lseg);
           }
         }
+
+        // segs from adjacent lines
+        for (int lvidx = 0; lvidx < 2; ++lvidx) {
+          const int len = ld->vxCount(lvidx);
+          for (int f = 0; f < len; ++f) {
+            const line_t *ll = ld->vxLine(lvidx, f);
+            for (seg_t *lseg = ll->firstseg; lseg; lseg = lseg->lsnext) {
+              if (lseg != myseg && lseg->drawsegs) {
+                // good seg
+                /*
+                bool found = false;
+                for (seg_t *ss : adjSegs) if (ss == lseg) { found = true; break; }
+                if (!found) adjSegs.append(lseg);
+                */
+                adjSegs.append(lseg);
+              }
+            }
+          }
+        }
       }
-    }
-  }
 
-  // collect adjacent subsectors
-  adjSubs.resetNoDtor(); // adjacent subsectors will be collected here
-  adjSubs.append(sub);
-  for (seg_t *xseg : adjSegs) {
-    subsector_t *xsub = xseg->frontsub;
-    if (xsub && xsub != sub) {
-      bool found = false;
-      for (subsector_t *ss : adjSubs) if (ss == xsub) { found = true; break; }
-      if (!found) adjSubs.append(xsub);
-    }
-    if (xseg->partner) {
-      subsector_t *xsub = xseg->partner->frontsub;
-      if (xsub && xsub != sub) {
-        bool found = false;
-        for (subsector_t *ss : adjSubs) if (ss == xsub) { found = true; break; }
-        if (!found) adjSubs.append(xsub);
+      // collect adjacent subsectors
+      adjSubs.resetNoDtor(); // adjacent subsectors will be collected here
+      adjSubs.append(sub);
+      for (seg_t *xseg : adjSegs) {
+        subsector_t *xsub = xseg->frontsub;
+        if (xsub && xsub != sub) {
+          bool found = false;
+          for (subsector_t *ss : adjSubs) if (ss == xsub) { found = true; break; }
+          if (!found) adjSubs.append(xsub);
+        }
+        if (xseg->partner) {
+          subsector_t *xsub = xseg->partner->frontsub;
+          if (xsub && xsub != sub) {
+            bool found = false;
+            for (subsector_t *ss : adjSubs) if (ss == xsub) { found = true; break; }
+            if (!found) adjSubs.append(xsub);
+          }
+        }
       }
-    }
-  }
 
-  #if 1
-  // remove fixes for our seg surfaces
-  CleanupSurfaceLists(myseg->drawsegs);
-  // also, clean subsector flats, we will refix them
-  // check floor and ceiling
-  for (subregion_t *region = sub->regions; region; region = region->next) {
-    for (surface_t *ss = surf; ss; ss = ss->next) {
-      if (region->realfloor) CleanupSurfaceList(region->realfloor->surfs);
-      if (region->realceil) CleanupSurfaceList(region->realceil->surfs);
-      if (region->fakefloor) CleanupSurfaceList(region->fakefloor->surfs);
-      if (region->fakeceil) CleanupSurfaceList(region->fakeceil->surfs);
-    }
-  }
-  #endif
-
-  // add all points from adjacent surfaces
-
-  // insert wall surfaces
-  for (seg_t *xseg : adjSegs) {
-    drawseg_t *ds = xseg->drawsegs;
-    if (xseg != myseg && ds) {
       #if 1
-      AddPointsFromDrawseg(this, ds, surf);
-      #endif
-    }
-  }
-
-  #if 1
-  // insert floor surface points from adjacent subsectors into walls
-  for (subsector_t *xsub : adjSubs) {
-    //seg_t *xseg = &Level->Segs[sub->firstline];
-    //for (int f = sub->numlines; f--; ++xseg) {}
-    for (subregion_t *region = xsub->regions; region; region = region->next) {
-      if (region->realfloor) AddPointsFromSurfaceList(this, region->realfloor->surfs, surf);
-      if (region->realceil) AddPointsFromSurfaceList(this, region->realceil->surfs, surf);
-      if (region->fakefloor) AddPointsFromSurfaceList(this, region->fakefloor->surfs, surf);
-      if (region->fakeceil) AddPointsFromSurfaceList(this, region->fakeceil->surfs, surf);
-    }
-  }
-  #endif
-
-  // lines from adjacent subsectors should affect floors
-  // collect adjacent subsector lines
-  adjSegs.resetNoDtor(); // we don't need old segs, they cannot affect floors anyway
-  for (subsector_t *xsub : adjSubs) {
-    seg_t *lseg = &Level->Segs[xsub->firstline];
-    for (int f = sub->numlines; f--; ++lseg) {
-      if (lseg != myseg && lseg->drawsegs) {
-        // good seg
-        bool found = false;
-        for (seg_t *ss : adjSegs) if (ss == lseg) { found = true; break; }
-        if (!found) adjSegs.append(lseg);
-      }
-    }
-  }
-
-  // fix floors
-  for (seg_t *xseg : adjSegs) {
-    drawseg_t *ds = xseg->drawsegs;
-    if (xseg != myseg && ds) {
-      #if 1
-      // insert wall surface points into floors of `sub`
+      // remove fixes for our seg surfaces
+      CleanupSurfaceLists(myseg->drawsegs);
+      // also, clean subsector flats, we will refix them
+      // check floor and ceiling
       for (subregion_t *region = sub->regions; region; region = region->next) {
-        if (region->realfloor) AddPointsFromDrawseg(this, ds, region->realfloor->surfs);
-        if (region->realceil) AddPointsFromDrawseg(this, ds, region->realceil->surfs);
-        if (region->fakefloor) AddPointsFromDrawseg(this, ds, region->fakefloor->surfs);
-        if (region->fakeceil) AddPointsFromDrawseg(this, ds, region->fakeceil->surfs);
+        for (surface_t *ss = surf; ss; ss = ss->next) {
+          if (region->realfloor) CleanupSurfaceList(region->realfloor->surfs);
+          if (region->realceil) CleanupSurfaceList(region->realceil->surfs);
+          if (region->fakefloor) CleanupSurfaceList(region->fakefloor->surfs);
+          if (region->fakeceil) CleanupSurfaceList(region->fakeceil->surfs);
+        }
       }
       #endif
+
+      // add all points from adjacent surfaces
+
+      // insert wall surfaces
+      for (seg_t *xseg : adjSegs) {
+        drawseg_t *ds = xseg->drawsegs;
+        if (xseg != myseg && ds) {
+          #if 1
+          AddPointsFromDrawseg(this, ds, surf);
+          #endif
+        }
+      }
+
+      #if 1
+      // insert floor surface points from adjacent subsectors into walls
+      for (subsector_t *xsub : adjSubs) {
+        //seg_t *xseg = &Level->Segs[sub->firstline];
+        //for (int f = sub->numlines; f--; ++xseg) {}
+        for (subregion_t *region = xsub->regions; region; region = region->next) {
+          if (region->realfloor) AddPointsFromSurfaceList(this, region->realfloor->surfs, surf);
+          if (region->realceil) AddPointsFromSurfaceList(this, region->realceil->surfs, surf);
+          if (region->fakefloor) AddPointsFromSurfaceList(this, region->fakefloor->surfs, surf);
+          if (region->fakeceil) AddPointsFromSurfaceList(this, region->fakeceil->surfs, surf);
+        }
+      }
+      #endif
+
+      // lines from adjacent subsectors should affect floors
+      // collect adjacent subsector lines
+      adjSegs.resetNoDtor(); // we don't need old segs, they cannot affect floors anyway
+      for (subsector_t *xsub : adjSubs) {
+        seg_t *lseg = &Level->Segs[xsub->firstline];
+        for (int f = sub->numlines; f--; ++lseg) {
+          if (lseg != myseg && lseg->drawsegs) {
+            // good seg
+            bool found = false;
+            for (seg_t *ss : adjSegs) if (ss == lseg) { found = true; break; }
+            if (!found) adjSegs.append(lseg);
+          }
+        }
+      }
+
+      // fix floors
+      for (seg_t *xseg : adjSegs) {
+        drawseg_t *ds = xseg->drawsegs;
+        if (xseg != myseg && ds) {
+          #if 1
+          // insert wall surface points into floors of `sub`
+          for (subregion_t *region = sub->regions; region; region = region->next) {
+            if (region->realfloor) AddPointsFromDrawseg(this, ds, region->realfloor->surfs);
+            if (region->realceil) AddPointsFromDrawseg(this, ds, region->realceil->surfs);
+            if (region->fakefloor) AddPointsFromDrawseg(this, ds, region->fakefloor->surfs);
+            if (region->fakeceil) AddPointsFromDrawseg(this, ds, region->fakeceil->surfs);
+          }
+          #endif
+        }
+      }
     }
   }
- }
 
   // always create centroids for complex surfaces
   // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
-  surf = RecreateCentroids(this, surf);
-
-  // also, recreate centroids for floors
-  for (subregion_t *region = sub->regions; region; region = region->next) {
-    if (region->realfloor) region->realfloor->surfs = RecreateCentroids(this, region->realfloor->surfs);
-    if (region->realceil) region->realceil->surfs = RecreateCentroids(this, region->realceil->surfs);
-    if (region->fakefloor) region->fakefloor->surfs = RecreateCentroids(this, region->fakefloor->surfs);
-    if (region->fakeceil) region->fakeceil->surfs = RecreateCentroids(this, region->fakeceil->surfs);
-  }
+  SurfSubRestoreCentroids(this, surf, sub);
 
   return surf;
 }
@@ -965,35 +972,31 @@ surface_t *VRenderLevelLightmap::FixSegSurfaceTJunctions (surface_t *surf, seg_t
 //
 //  t-junctions should be processed after all subdivisions are done,
 //  otherwise there will be some unprocessed quads.
-//  the easiest way of doing it is to call `SectorModified()` for all sectors
-//  after finishing initial world surface creation.
-//  this is required only for the lightmapped renderer, though.
-//
-//  not the best way of doing it, but meh...
 //
 //==========================================================================
 void VRenderLevelLightmap::DoneInitialWordSurfCreation () {
   /*
-  for (auto &&sec : Level->allSectors()) {
-    SectorModified(&sec);
-  }
+  for (auto &&sec : Level->allSectors()) SectorModified(&sec);
   */
-  if (lastRenderQuality) {
-    for (auto &&ssx : Level->allSegs()) {
-      if (ssx.linedef && ssx.drawsegs) {
-        for (int dsidx = 0; dsidx < 4; ++dsidx) {
-          segpart_t *xsegpart =
-            dsidx == 0 ? ssx.drawsegs->top :
-            dsidx == 1 ? ssx.drawsegs->mid :
-            dsidx == 2 ? ssx.drawsegs->bot :
-            dsidx == 3 ? ssx.drawsegs->extra :
-            nullptr;
-          while (xsegpart) {
-            xsegpart->surfs = FixSegSurfaceTJunctions(xsegpart->surfs, &ssx);
-            xsegpart = xsegpart->next;
-          }
+  const bool oldIWC = inWorldCreation;
+  inWorldCreation = false; // otherwise `FixSegSurfaceTJunctions()` will do nothing
+
+  for (auto &&ssx : Level->allSegs()) {
+    if (ssx.linedef && ssx.drawsegs) {
+      for (int dsidx = 0; dsidx < 4; ++dsidx) {
+        segpart_t *xsegpart =
+          dsidx == 0 ? ssx.drawsegs->top :
+          dsidx == 1 ? ssx.drawsegs->mid :
+          dsidx == 2 ? ssx.drawsegs->bot :
+          dsidx == 3 ? ssx.drawsegs->extra :
+          nullptr;
+        while (xsegpart) {
+          xsegpart->surfs = FixSegSurfaceTJunctions(xsegpart->surfs, &ssx);
+          xsegpart = xsegpart->next;
         }
       }
     }
   }
+
+  inWorldCreation = oldIWC;
 }

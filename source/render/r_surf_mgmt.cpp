@@ -27,7 +27,10 @@
 #include "r_local.h"
 
 //#define VV_ENSURE_POINTS_DEBUG
-#define VV_USE_PROPER_CENTROID
+//#define VV_USE_PROPER_CENTROID
+
+
+static VCvarB r_tj_proper_centroids("r_tj_proper_centroids", true, "Use \"proper\" centroids instead of fast? (DO NOT CHANGE!)", CVAR_Archive|CVAR_NoShadow);
 
 
 //==========================================================================
@@ -107,39 +110,30 @@ TVec surface_t::CalculateFastCentroid () const noexcept {
   TVec cp(0.0f, 0.0f, 0.0f);
   if (count > 0) {
     const SurfVertex *sf = &verts[0];
-    if (plane.normal.z != 0.0f) {
-      // flat
-      int cnt = 0;
-      for (int f = count; f--; ++sf) {
-        if (sf->tjflags == 0) {
-          cp.x += sf->x;
-          cp.y += sf->y;
-          ++cnt;
-        }
+    int cnt = 0;
+    for (int f = count; f--; ++sf) {
+      if (sf->tjflags == 0) {
+        cp.x += sf->x;
+        cp.y += sf->y;
+        cp.z += sf->z;
+        ++cnt;
       }
-      if (cnt != 0) {
-        cp.x /= (float)count;
-        cp.y /= (float)count;
+    }
+    if (cnt != 0) {
+      const float icnt = 1.0/(float)cnt;
+      cp.x *= icnt;
+      cp.y *= icnt;
+      if (fabsf(plane.normal.z) == 1.0f) {
+        // flat
         cp.z = plane.GetPointZ(cp);
-      }
-    } else {
-      // wall
-      int cnt = 0;
-      for (int f = count; f--; ++sf) {
-        if (sf->tjflags == 0) {
-          cp.x += sf->x;
-          cp.y += sf->y;
-          cp.z += sf->z;
-          ++cnt;
-        }
-      }
-      if (cnt != 0) {
-        cp.x /= (float)count;
-        cp.y /= (float)count;
-        cp.z /= (float)count;
+      } else {
+        // wall or slope
+        cp.z *= icnt;
         // just in case, project it on the plane
         if (plane.PointDistance(cp) != 0.0f) cp = plane.Project(cp);
       }
+    } else {
+      cp = verts[0].vec();
     }
   }
   return cp;
@@ -156,6 +150,7 @@ TVec surface_t::CalculateFastCentroid () const noexcept {
 //
 //==========================================================================
 TVec surface_t::CalculateRealCentroid () const noexcept {
+  enum { DumpPoints = false };
   // surfaces with 3 vertices are usually proper triangles,
   // don't bother with complex calculations in this case
   if (count <= 3) return CalculateFastCentroid();
@@ -163,51 +158,88 @@ TVec surface_t::CalculateRealCentroid () const noexcept {
   TVec pdir(0.0f, 0.0f, 0.0f); // last direction
   vassert(verts[0].tjflags == 0);
   const SurfVertex *sf = &verts[0];
-  TVec lastv1(sf->x, sf->y, sf->z);
-  ++sf;
-  TVec prevpt(lastv1); // previous vertex
-  int ccnt = 0;
-  for (int f = count+1; f--; ++sf) {
+  TVec pivot(0, 0, 0), prevpt(0, 0, 0), firstpt(0, 0, 0);
+  int ccnt = -1;
+  if (DumpPoints) {
+    GCon->Logf(NAME_Debug, "=== COUNT: %d (plane.normal.z: %f) ===", count, plane.normal.z);
+  }
+  for (int f = count; f--; ++sf) {
+    if (DumpPoints) {
+      GCon->Logf(NAME_Debug, "  (%2d) %2d: (%f,%f,%f)", sf->tjflags, ccnt, sf->x, sf->y, sf->z);
+    }
+    // t-junction fix points will be dropped anyway, but we can optimise this
     if (sf->tjflags == 0) {
       const TVec cv = sf->vec();
-      if (!ccnt) {
-        // first one
-        pdir = cv-lastv1;
+      if (ccnt == -1) {
+        pivot = cv; firstpt = cv;
+        ccnt = 0;
+      } else if (ccnt == 0) {
+        pdir = cv-pivot;
         if (pdir.lengthSquared() >= 0.2f*0.2f) {
           pdir = pdir.normalise();
-          cp += lastv1;
+          cp = pivot;
           ccnt = 1;
         }
       } else {
         // are we making a turn here?
-        TVec xdir = cv-lastv1;
+        TVec xdir = cv-pivot;
         if (xdir.lengthSquared() >= 0.2f*0.2f) {
           xdir = xdir.normalise();
           // dot product for two normalized vectors is cosine between them
           // cos(0) is 1, so if it isn't, we have a turn
           // cos(180) is -1, but it doesn't matter here
           if (fabsf(xdir.dot(pdir)) < 1.0f-0.0001f) {
+            if (DumpPoints) {
+              GCon->Logf(NAME_Debug, "    turn; new pivot: (%f,%f,%f)", prevpt.x, prevpt.y, prevpt.z);
+            }
             // looks like we did made a turn
-            // we have a new point
-            // remember it
-            lastv1 = prevpt;
-            // add it to the sum
-            cp += lastv1;
+            // we have a new pivot point
+            // add last point to the sum (because it was the turning point)
+            cp += prevpt;
             ++ccnt;
-            // and remember new direction
-            pdir = (cv-lastv1).normalise();
+            // last point is the new pivot
+            pivot = prevpt;
+            // remember the new direction
+            pdir = (cv-pivot).normalise();
           }
         }
       }
       prevpt = cv;
     }
   }
+  if (ccnt > 0) {
+    TVec xdir = firstpt-pivot;
+    if (xdir.lengthSquared() >= 0.2f*0.2f) {
+      xdir = xdir.normalise();
+      // dot product for two normalized vectors is cosine between them
+      // cos(0) is 1, so if it isn't, we have a turn
+      // cos(180) is -1, but it doesn't matter here
+      if (fabsf(xdir.dot(pdir)) < 1.0f-0.0001f) {
+        if (DumpPoints) {
+          GCon->Logf(NAME_Debug, "    last turn");
+        }
+        // looks like we did made a turn
+        // we have a new pivot point
+        // add last point to the sum (because it was the turning point)
+        cp += prevpt;
+        ++ccnt;
+      }
+    }
+  }
+  if (DumpPoints) {
+    GCon->Logf(NAME_Debug, " DONE: %d: (%f,%f,%f)", ccnt, cp.x, cp.y, cp.z);
+  }
   // if we have less than three points, something's gone wrong...
   if (ccnt < 3) return CalculateFastCentroid();
-  cp = cp/(float)ccnt;
-  if (plane.normal.z != 0.0f) {
+  const float icnt = 1.0f/(float)ccnt;
+  cp.x *= icnt;
+  cp.y *= icnt;
+  if (fabsf(plane.normal.z) == 1.0f) {
+    // flat
     cp.z = plane.GetPointZ(cp);
   } else {
+    // wall or slope
+    cp.z *= icnt;
     // just in case, project it on the plane
     if (plane.PointDistance(cp) != 0.0f) cp = plane.Project(cp);
   }
@@ -225,11 +257,12 @@ TVec surface_t::CalculateRealCentroid () const noexcept {
 void surface_t::AddCentroid () noexcept {
   vassert(!isCentroidCreated());
   if (count >= 3) {
-    #ifdef VV_USE_PROPER_CENTROID
-    TVec cp(CalculateRealCentroid());
-    #else
-    TVec cp(CalculateFastCentroid());
-    #endif
+    TVec cp;
+    if (r_tj_proper_centroids) {
+      cp = CalculateRealCentroid();
+    } else {
+      cp = CalculateFastCentroid();
+    }
     InsertVertexAt(0, cp, -1);
     setCentroidCreated();
     // and re-add the previous first point as the final one
@@ -564,15 +597,17 @@ surface_t *VRenderLevelShared::CreateWSurf (TVec *wv, texinfo_t *texinfo, seg_t 
   // after finishing initial world surface creation.
   // we cannot remove t-junction fixer here, though, because this is
   // exactly the place where we're doing it, lol.
+  // i.e. we need to fix t-junctions when recreating a surface, and
+  // need to fix them again after initial world surface creation.
+  // this is waste of time to subdivide on initial world creation,
+  // so let's use a flag in tj fixers.
 
   //!GCon->Logf(NAME_Debug, "sfcS:%p: saxis=(%g,%g,%g); taxis=(%g,%g,%g); saxisLM=(%g,%g,%g); taxisLM=(%g,%g,%g)", surf, texinfo->saxis.x, texinfo->saxis.y, texinfo->saxis.z, texinfo->taxis.x, texinfo->taxis.y, texinfo->taxis.z, texinfo->saxisLM.x, texinfo->saxisLM.y, texinfo->saxisLM.z, texinfo->taxisLM.x, texinfo->taxisLM.y, texinfo->taxisLM.z);
-  // fix wall t-junctions with common firxer first
-  if (IsShadowVolumeRenderer()) {
-    surf = FixSegTJunctions(surf, seg);
-  }
+  // fix wall t-junctions with common firxer first (does nothing for lightmaps)
+  surf = FixSegTJunctions(surf, seg);
   // subdivide surface
   surf = SubdivideSeg(surf, texinfo->saxisLM, &texinfo->taxisLM, seg);
-  // and fix t-junctions from subdivision
+  // and fix t-junctions from subdivision (does nothing for non-lightmaps)
   surf = FixSegSurfaceTJunctions(surf, seg);
   InitSurfs(true, surf, texinfo, seg, sub, seg, nullptr); // recalc static lightmaps
   return surf;

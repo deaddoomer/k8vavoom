@@ -157,6 +157,10 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
   //if (lastRenderQuality) TJLOG(NAME_Debug, "FixSegTJunctions: line #%d, seg #%d: count=%d; next=%p", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]), surf->count, surf->next);
   // wall segment should always be a quad, and it should be the only one
   if (!lastRenderQuality) return surf; // just in case
+
+  // for lightmaps, proper splitting is done by `FixSegSurfaceTJunctions()`
+  if (IsShadowVolumeRenderer()) return surf;
+
   if (seg->pobj) return surf; // do not fix polyobjects (yet?)
 
   const line_t *line = seg->linedef;
@@ -173,33 +177,6 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
   //if (line) TJLOG(NAME_Debug, "FixSegTJunctions:000: line #%d, seg #%d: surf->count=%d; surf->next=%p", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]), surf->count, surf->next);
   const sector_t *mysec = seg->frontsector;
   if (!line || line->pobj() || !mysec || mysec->isAnyPObj()) return surf; // just in case
-
-  // for lightmapped renderer, we need to do more complex work
-/*
-  if (!IsShadowVolumeRenderer()) {
-    //return FixSegSurfaceTJunctions(surf, seg);
-    if (!line) return; // just in case
-    const seg_t *ssx = line->firstseg;
-    while (ssx) {
-      if (ssx->drawsegs) {
-        for (int dsidx = 0; dsidx < 4; ++dsidx) {
-          segpart_t *xsegpart =
-            dsidx == 0 ? ssx->drawsegs->top :
-            dsidx == 1 ? ssx->drawsegs->mid :
-            dsidx == 2 ? ssx->drawsegs->bot :
-            dsidx == 3 ? ssx->drawsegs->extra :
-            nullptr;
-          while (xsegpart) {
-            xsegpart->surfs = FixSegSurfaceTJunctions(xsegpart->surfs, &ssx);
-            if (
-            xsegpart = xsegpart->next;
-          }
-        }
-      }
-      ssx = ssx->lsnext;
-    }
-  }
-*/
 
   // invariant, actually
   // it is called from `CreateWSurf()`, so it can't have any linked surfaces
