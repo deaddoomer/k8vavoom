@@ -262,6 +262,10 @@ public:
   inline void setCentroidCreated () noexcept { allocflags |= CENTROID_CREATED; }
   inline void resetCentroidCreated () noexcept { allocflags &= ~CENTROID_CREATED; }
 
+  inline bool IsFixCracks () const noexcept { return !!(drawflags&DF_FIX_CRACKS); }
+  inline void SetFixCracks () noexcept { drawflags |= DF_FIX_CRACKS; }
+  inline void ResetFixCracks () noexcept { drawflags &= ~DF_FIX_CRACKS; }
+
   // used to fill subdivided surfaces
   inline void copyRequiredFrom (const surface_t &other) noexcept {
     if (&other != this) {

@@ -593,6 +593,9 @@ void VOpenGLDrawer::PrepareWireframe () {
   SelectTexture(1);
   glBindTexture(GL_TEXTURE_2D, 0);
   SelectTexture(0);
+
+  glPointSize(8.0f);
+  glEnable(GL_POINT_SMOOTH);
 }
 
 
@@ -603,21 +606,34 @@ void VOpenGLDrawer::PrepareWireframe () {
 //==========================================================================
 void VOpenGLDrawer::DrawWireframeSurface (const surface_t *surf) {
   if (!surf || surf->count < 3) return;
-  const TVec sv0 = surf->verts[0].vec();
-  for (int i = 1; i < surf->count; ++i) {
-    glBegin(GL_LINE_LOOP);
+  if (surf->isCentroidCreated()) {
+    glColor4f(1.0f, 1.0f, 0.0f, 1.0f);
+    const TVec sv0 = surf->verts[0].vec();
+    glBegin(GL_LINES);
     glVertex(sv0);
-    glVertex(surf->verts[i].vec());
-    glVertex(surf->verts[(i+1)%surf->count].vec());
+    glVertex(surf->verts[1].vec());
+    for (int i = 1; i < surf->count-1; ++i) {
+      glVertex(surf->verts[i].vec());
+      glVertex(surf->verts[i+1].vec());
+      glVertex(surf->verts[i+1].vec());
+      glVertex(sv0);
+    }
     glEnd();
+    glBegin(GL_POINTS);
+    glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
+    glVertex(sv0);
+    glEnd();
+  } else {
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    const TVec sv0 = surf->verts[0].vec();
+    for (int i = 1; i < surf->count; ++i) {
+      glBegin(GL_LINE_LOOP);
+      glVertex(sv0);
+      glVertex(surf->verts[i].vec());
+      glVertex(surf->verts[(i+1)%surf->count].vec());
+      glEnd();
+    }
   }
-  /*
-  glPointSize(3.0f);
-  glBegin(GL_POINTS);
-  for (int i = 0; i < surf->count; ++i) glVertex(surf->verts[i].vec());
-  glEnd();
-  glPointSize(1.0f);
-  */
 }
 
 
@@ -627,6 +643,9 @@ void VOpenGLDrawer::DrawWireframeSurface (const surface_t *surf) {
 //
 //==========================================================================
 void VOpenGLDrawer::DoneWireframe () {
+  glDisable(GL_POINT_SMOOTH);
+  glPointSize(1.0f);
+  glColor4f(1.0f, 1.0f, 0.0f, 1.0f);
 }
 
 

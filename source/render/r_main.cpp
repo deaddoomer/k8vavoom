@@ -1721,7 +1721,7 @@ void VRenderLevelShared::RenderPlayerView () {
   if (lastRenderQuality != r_fix_tjunctions.asBool()) {
     lastRenderQuality = r_fix_tjunctions.asBool();
     GCon->Logf(NAME_Debug, "render quality changed to '%s', invalidating all surfaces", (lastRenderQuality ? "quality" : "speed"));
-    InvaldateAllSegParts();
+    InvaldateAllTJunctions();
   }
 
   if (IsShadowMapRenderer() || IsShadowVolumeRenderer()) {

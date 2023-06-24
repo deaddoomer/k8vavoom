@@ -228,6 +228,6 @@ void VRenderLevelShared::SetupTwoSidedMidExtraWSurf (sec_region_t *reg, subsecto
   */
   sp->TextureOffset = sidedef->Mid.TextureOffset+segsidedef->Mid.TextureOffset;
   sp->RowOffset = sidedef->Mid.RowOffset+segsidedef->Mid.RowOffset;
-  sp->ResetFixTJunk();
+  //sp->ResetFixSurfCracks();
   SetupFakeDistances(seg, sp);
 }

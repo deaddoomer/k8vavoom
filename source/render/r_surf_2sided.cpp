@@ -85,7 +85,7 @@ void VRenderLevelShared::SetupTwoSidedSkyWSurf (subsector_t *sub, seg_t *seg, se
   sp->frontFakeCeilDist = 0.0f;
   sp->backFakeFloorDist = 0.0f;
   sp->backFakeCeilDist = 0.0f;
-  sp->ResetFixTJunk();
+  sp->ResetFixSurfCracks();
 }
 
 
@@ -238,7 +238,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf (subsector_t *sub, seg_t *seg, se
   sp->backBotDist = back_floor->dist;
   sp->TextureOffset = sidedef->Top.TextureOffset;
   sp->RowOffset = sidedef->Top.RowOffset;
-  sp->ResetFixTJunk();
+  //sp->ResetFixSurfCracks();
   SetupFakeDistances(seg, sp);
 }
 
@@ -440,7 +440,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf (subsector_t *sub, seg_t *seg, se
   sp->backTopDist = back_ceiling->dist;
   sp->TextureOffset = sidedef->Bot.TextureOffset;
   sp->RowOffset = sidedef->Bot.RowOffset;
-  sp->ResetFixTJunk();
+  //sp->ResetFixSurfCracks();
   SetupFakeDistances(seg, sp);
 }
 
@@ -623,6 +623,6 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf (subsector_t *sub, seg_t *seg, se
   sp->backBotDist = back_floor->dist;
   sp->TextureOffset = sidedef->Mid.TextureOffset;
   sp->RowOffset = sidedef->Mid.RowOffset;
-  sp->ResetFixTJunk();
+  //sp->ResetFixSurfCracks();
   SetupFakeDistances(seg, sp);
 }

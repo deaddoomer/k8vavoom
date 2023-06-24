@@ -1653,6 +1653,7 @@ bool VRenderLevelLightmap::QueueLMapSurface (surface_t *surf) {
   if (!surf->IsPlVisible()) return true;
   vassert(surf->count >= 3);
   // remember this surface, it will be processed later
+  SurfaceFixTJunctions(surf);
   LMSurfList.append(surf);
   return true;
 }

@@ -85,7 +85,7 @@ void VRenderLevelShared::SetupTwoSidedTopWSurf3DPObj (subsector_t *sub, seg_t *s
   sp->backBotDist = po->pofloor.dist;
   sp->TextureOffset = sidedef->Top.TextureOffset;
   sp->RowOffset = sidedef->Top.RowOffset;
-  sp->ResetFixTJunk();
+  //sp->ResetFixSurfCracks();
   SetupFakeDistances(seg, sp);
 }
 
@@ -141,7 +141,7 @@ void VRenderLevelShared::SetupTwoSidedBotWSurf3DPObj (subsector_t *sub, seg_t *s
   sp->backBotDist = po->pofloor.dist;
   sp->TextureOffset = sidedef->Bot.TextureOffset;
   sp->RowOffset = sidedef->Bot.RowOffset;
-  sp->ResetFixTJunk();
+  //sp->ResetFixSurfCracks();
   SetupFakeDistances(seg, sp);
 }
 
@@ -220,6 +220,6 @@ void VRenderLevelShared::SetupTwoSidedMidWSurf3DPObj (subsector_t *sub, seg_t *s
   sp->backBotDist = po->pofloor.dist;
   sp->TextureOffset = sidedef->Mid.TextureOffset;
   sp->RowOffset = sidedef->Mid.RowOffset;
-  sp->ResetFixTJunk();
+  //sp->ResetFixSurfCracks();
   SetupFakeDistances(seg, sp);
 }

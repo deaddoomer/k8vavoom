@@ -420,6 +420,7 @@ bool VRenderLevelShared::SurfPrepareForRender (surface_t *surf) {
 //
 //==========================================================================
 void VRenderLevelShared::QueueSimpleSurf (surface_t *surf) {
+  SurfaceFixTJunctions(surf);
   if ((surf->drawflags&surface_t::DF_MASKED) == 0) {
     GetCurrentDLS().DrawSurfListSolid.append(surf);
   } else {

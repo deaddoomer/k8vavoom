@@ -644,11 +644,11 @@ surface_t *VRenderLevelShared::CreateWSurf (TVec *wv, texinfo_t *texinfo,
 
   //!GCon->Logf(NAME_Debug, "sfcS:%p: saxis=(%g,%g,%g); taxis=(%g,%g,%g); saxisLM=(%g,%g,%g); taxisLM=(%g,%g,%g)", surf, texinfo->saxis.x, texinfo->saxis.y, texinfo->saxis.z, texinfo->taxis.x, texinfo->taxis.y, texinfo->taxis.z, texinfo->saxisLM.x, texinfo->saxisLM.y, texinfo->saxisLM.z, texinfo->taxisLM.x, texinfo->taxisLM.y, texinfo->taxisLM.z);
   // fix wall t-junctions with common firxer first (does nothing for lightmaps)
-  surf = FixSegTJunctions(surf, seg);
+  //surf = FixSegTJunctions(surf, seg);
   // subdivide surface
   surf = SubdivideSeg(surf, texinfo->saxisLM, &texinfo->taxisLM, seg);
   // and fix t-junctions from subdivision (does nothing for non-lightmaps)
-  surf = FixSegSurfaceTJunctions(surf, seg);
+  //surf = FixSegSurfaceTJunctions(surf, seg);
   InitSurfs(true, surf, texinfo, seg, sub, seg, nullptr); // recalc static lightmaps
   return surf;
 }
@@ -932,11 +932,60 @@ void VRenderLevelShared::FreeSegParts (segpart_t *ASP) noexcept {
 
 //==========================================================================
 //
+//  VRenderLevelShared::ForceWholeSegRecreation
+//
+//==========================================================================
+void VRenderLevelShared::ForceWholeSegRecreation (seg_t *seg) noexcept {
+  //GCon->Logf(NAME_Debug, "*TRANSDOOR INVALIDATION; seg=%p; line %p", seg, seg->linedef);
+  if (seg->drawsegs) seg->drawsegs->SetRecreate();
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::InvaldateAllTJunctions
+//
+//==========================================================================
+void VRenderLevelShared::InvaldateAllTJunctions () noexcept {
+  segpart_t *sp = AllocatedSegParts;
+  for (int f = NumSegParts; f--; ++sp) {
+    //sp->SetFixTJunk(); // this forces recreation
+    sp->SetFixSurfCracks();
+  }
+  if (IsLightmapRenderer()) {
+    for (auto &&xsub : Level->allSubsectors()) {
+      for (subregion_t *region = xsub.regions; region; region = region->next) {
+        region->SetTJFix();
+      }
+    }
+  }
+}
+
+
+//==========================================================================
+//
+//  MarkSubFloors
+//
+//==========================================================================
+static inline void MarkSubFloors (VRenderLevelShared *RLev, const subsector_t *sub) {
+  if (sub && RLev->IsLightmapRenderer()) {
+    for (subregion_t *region = sub->regions; region; region = region->next) {
+      region->SetTJFix();
+    }
+  }
+}
+
+
+//==========================================================================
+//
 //  InvalidateSegPart
 //
 //==========================================================================
-void VRenderLevelShared::InvalidateSegPart (segpart_t *sp) noexcept {
-  for (; sp; sp = sp->next) sp->SetFixTJunk();
+static void InvalidateSegPart (segpart_t *sp) noexcept {
+  for (; sp; sp = sp->next) {
+    //sp->SetFixTJunk();
+    sp->SetFixSurfCracks();
+  }
 }
 
 
@@ -945,7 +994,7 @@ void VRenderLevelShared::InvalidateSegPart (segpart_t *sp) noexcept {
 //  InvalidateWholeSeg
 //
 //==========================================================================
-void VRenderLevelShared::InvalidateWholeSeg (seg_t *seg) noexcept {
+static void InvalidateWholeSeg (seg_t *seg) noexcept {
   //GCon->Logf(NAME_Debug, "*TRANSDOOR INVALIDATION; seg=%p; line %p", seg, seg->linedef);
   drawseg_t *ds = seg->drawsegs;
   if (ds) {
@@ -955,17 +1004,6 @@ void VRenderLevelShared::InvalidateWholeSeg (seg_t *seg) noexcept {
     InvalidateSegPart(ds->topsky);
     InvalidateSegPart(ds->extra);
   }
-}
-
-
-//==========================================================================
-//
-//  VRenderLevelShared::InvaldateAllSegParts
-//
-//==========================================================================
-void VRenderLevelShared::InvaldateAllSegParts () noexcept {
-  segpart_t *sp = AllocatedSegParts;
-  for (int f = NumSegParts; f--; ++sp) sp->SetFixTJunk(); // this forces recreation
 }
 
 
@@ -1010,25 +1048,35 @@ void VRenderLevelShared::MarkAdjacentTJunctions (const sector_t *fsec, const lin
       if (tjLineMarkFix[lnidx] == updateWorldFrame) continue; // already marked (and maybe processed) at this frame
       tjLineMarkFix[lnidx] = updateWorldFrame;
       //GCon->Logf(NAME_Debug, "  ...marking line #%d", (int)(ptrdiff_t)(ln-&Level->Lines[0]));
+      const bool isLM = IsLightmapRenderer();
       // for each seg
       for (seg_t *ns = ln->firstseg; ns; ns = ns->lsnext) {
         // ignore "inner" seg (i.e. that one which doesn't start or end on line vertex)
         // this is to avoid introducing cracks in the middle of the wall that was splitted by BSP
         // we can be absolutely sure that vertices are reused, because we're creating segs by our own nodes builder
-        if (ns->v1 != ln->v1 && ns->v1 != ln->v2 &&
-            ns->v2 != ln->v1 && ns->v2 != ln->v2)
-        {
-          continue;
+        if (!isLM) {
+          if (ns->v1 != ln->v1 && ns->v1 != ln->v2 &&
+              ns->v2 != ln->v1 && ns->v2 != ln->v2)
+          {
+            continue;
+          }
         }
         drawseg_t *ds = ns->drawsegs;
         if (ds) {
           // for each segpart
+          /*
           InvalidateSegPart(ds->top);
           InvalidateSegPart(ds->mid);
           InvalidateSegPart(ds->bot);
           InvalidateSegPart(ds->topsky);
-          // i'm pretty sure that we don't have to fix 3d floors
+          // i'm pretty sure that we don't have to fix 3d floors (not)
           //InvalidateSegPart(ds->extra);
+          */
+          InvalidateWholeSeg(ns);
+        }
+        if (isLM) {
+          MarkSubFloors(this, ns->frontsub);
+          if (ns->partner) MarkSubFloors(this,  ns->partner->frontsub);
         }
       }
     }
@@ -1050,5 +1098,7 @@ void VRenderLevelShared::MarkTJunctions (seg_t *seg) noexcept {
   if (!mysec || mysec->isAnyPObj()) return;
   const unsigned lineidx = (unsigned)(ptrdiff_t)(line-&Level->Lines[0]);
   if (tjLineMarkCheck[lineidx] == updateWorldFrame) return; // already processed at this frame
+  MarkSubFloors(this, seg->frontsub);
+  if (seg->partner) MarkSubFloors(this, seg->partner->frontsub);
   return MarkAdjacentTJunctions(mysec, line);
 }

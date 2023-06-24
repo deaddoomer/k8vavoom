@@ -88,12 +88,14 @@ static inline bool CheckFlatsChanged (const seg_t *seg, const segpart_t *sp, con
 //  CheckCommonRecreateEx
 //
 //==========================================================================
-static inline bool CheckCommonRecreateEx (segpart_t *sp, VTexture *NTex, const TPlane *floor, const TPlane *ceiling,
-                                                       const TPlane *backfloor, const TPlane *backceiling)
+static inline bool CheckCommonRecreateEx (segpart_t *sp, VTexture *NTex,
+                                          const TPlane *floor, const TPlane *ceiling,
+                                          const TPlane *backfloor, const TPlane *backceiling)
 {
   if (!NTex) NTex = GTextureManager[GTextureManager.DefaultTexture];
   const bool res =
-    (sp->NeedFixTJunk()) ||
+    /*(sp->NeedFixTJunk()) ||*/
+    /*(sp->drawseg && sp->drawseg->NeedRecreate()) ||*/
     (CheckFlatsChangedEx(sp, floor, ceiling, backfloor, backceiling)) ||
     FASI(sp->texinfo.Tex->SScale) != FASI(NTex->SScale) ||
     FASI(sp->texinfo.Tex->TScale) != FASI(NTex->TScale) ||

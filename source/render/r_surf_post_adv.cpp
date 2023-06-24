@@ -37,6 +37,7 @@ void VRenderLevelShadowVolume::InitSurfs (bool /*recalcStaticLightmaps*/, surfac
   for (; surfs; surfs = surfs->next) {
     if (texinfo) surfs->texinfo = texinfo;
     if (plane) surfs->plane = *plane;
+    surfs->SetFixCracks();
     surfs->subsector = sub;
     surfs->seg = seg;
     surfs->sreg = sreg;
@@ -96,6 +97,7 @@ void VRenderLevelShadowVolume::DoneInitialWordSurfCreation () {
 }
 
 
+/*
 //==========================================================================
 //
 //  VRenderLevelShadowVolume::FixSegSurfaceTJunctions
@@ -105,6 +107,20 @@ surface_t *VRenderLevelShadowVolume::FixSegSurfaceTJunctions (surface_t *surf, s
   (void)seg;
   return surf;
 }
+
+
+//==========================================================================
+//
+//  VRenderLevelShadowVolume::FixSubFlatSurfaceTJunctions
+//
+//==========================================================================
+surface_t *VRenderLevelShadowVolume::FixSubFlatSurfaceTJunctions (surface_t *surf,
+                                                                  subsector_t *sub)
+{
+  (void)sub;
+  return surf;
+}
+*/
 
 
 //==========================================================================

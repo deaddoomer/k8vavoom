@@ -74,7 +74,7 @@ void VRenderLevelShared::SetupOneSidedSkyWSurf (subsector_t *sub, seg_t *seg, se
   sp->frontFakeCeilDist = 0.0f;
   sp->backFakeFloorDist = 0.0f;
   sp->backFakeCeilDist = 0.0f;
-  sp->ResetFixTJunk();
+  sp->ResetFixSurfCracks();
 }
 
 
@@ -236,6 +236,6 @@ void VRenderLevelShared::SetupOneSidedMidWSurf (subsector_t *sub, seg_t *seg, se
   sp->backBotDist = 0.0f;
   sp->TextureOffset = sidedef->Mid.TextureOffset;
   sp->RowOffset = sidedef->Mid.RowOffset;
-  sp->ResetFixTJunk();
+  //sp->ResetFixSurfCracks();
   SetupFakeDistances(seg, sp);
 }

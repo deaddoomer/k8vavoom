@@ -125,7 +125,10 @@ static inline void SurfRecalcFlatOffset (sec_surface_t *surf, const TSecPlaneRef
 //  `ssurf` can be `nullptr`, and it will be allocated, otherwise changed
 //
 //==========================================================================
-sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subsector_t *sub, TSecPlaneRef InSplane, subregion_t *sreg, bool fake) {
+sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subsector_t *sub,
+                                                     TSecPlaneRef InSplane, subregion_t *sreg,
+                                                     bool fake)
+{
   int vcount = sub->numlines;
 
   if (vcount < 3) {
@@ -176,7 +179,9 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
   } else {
     // change sector surface
     // we still may have to recreate it if it was a "sky <-> non-sky" change, so check for it
-    recreateSurface = !isSkyFlat || ((ssurf->esecplane.splane->pic == skyflatnum) != isSkyFlat) || sreg->IsForcedRecreation();
+    recreateSurface = !isSkyFlat ||
+                      ((ssurf->esecplane.splane->pic == skyflatnum) != isSkyFlat) ||
+                      sreg->IsForcedRecreation();
     if (recreateSurface) {
       //if (sub->isInnerPObj()) GCon->Logf("***  RECREATING!");
       surf = ReallocSurface(ssurf->surfs, vcount);
@@ -280,7 +285,9 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
     } else {
       //!GCon->Logf(NAME_Debug, "sfcF:%p: saxis=(%g,%g,%g); taxis=(%g,%g,%g); saxisLM=(%g,%g,%g); taxisLM=(%g,%g,%g)", ssurf, ssurf->texinfo.saxis.x, ssurf->texinfo.saxis.y, ssurf->texinfo.saxis.z, ssurf->texinfo.taxis.x, ssurf->texinfo.taxis.y, ssurf->texinfo.taxis.z, ssurf->texinfo.saxisLM.x, ssurf->texinfo.saxisLM.y, ssurf->texinfo.saxisLM.z, ssurf->texinfo.taxisLM.x, ssurf->texinfo.taxisLM.y, ssurf->texinfo.taxisLM.z);
       ssurf->surfs = SubdivideFace(surf, sreg, ssurf, ssurf->texinfo.saxisLM, &ssurf->texinfo.taxisLM, &plane);
-      surf = ssurf->surfs; // if may be changed
+      surf = ssurf->surfs; // it may be changed
+      //sreg->ForceTJFix();
+      ssurf->SetFixSurfCracks();
       InitSurfs(true, ssurf->surfs, &ssurf->texinfo, &plane, sub, nullptr, sreg); // recalc static lightmaps
     }
   } else if (updateZ) {

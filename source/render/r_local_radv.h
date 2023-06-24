@@ -120,7 +120,8 @@ protected:
   virtual void RenderScene (const refdef_t *, const VViewClipper *) override;
 
   // surface fixer for lightmaps, does nothing here
-  virtual surface_t *FixSegSurfaceTJunctions (surface_t *surf, seg_t *seg) override;
+  //virtual surface_t *FixSegSurfaceTJunctions (surface_t *surf, seg_t *seg) override;
+  //virtual surface_t *FixSubFlatSurfaceTJunctions (surface_t *surf, subsector_t *sub) override;
 
   // surf methods
   virtual void InitSurfs (bool recalcStaticLightmaps, surface_t *ASurfs, texinfo_t *texinfo, const TPlane *plane, subsector_t *sub, seg_t *seg, subregion_t *sreg) override;

@@ -272,7 +272,9 @@ void VRenderLevelShared::CreateSegParts (subsector_t *sub, drawseg_t *dseg, seg_
         }
       }
 
-      if (transDoorHack != !!(sub->sector->SectorFlags&sector_t::SF_IsTransDoor)) InvalidateWholeSeg(seg);
+      if (transDoorHack != !!(sub->sector->SectorFlags&sector_t::SF_IsTransDoor)) {
+        ForceWholeSegRecreation(seg);
+      }
     }
   }
 }

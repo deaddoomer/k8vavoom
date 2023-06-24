@@ -37,401 +37,459 @@ static bool tjlog_verbose = false;
 #endif
 
 
+/*
+  subdivision t-junctions fixer
+
+  loop over all surfaces; for each surface point, check if it touches
+  any surfaces from the adjacent subsectors. if it is, insert that point there
+
+  currently we're doing this by brute force
+*/
+
+
 //==========================================================================
 //
-//  InsertEdgePoint
-//
-//  insert point into quad edge
-//  returns `true` if the point was inserted
+//  IsPointOnLine3D
 //
 //==========================================================================
-static void InsertEdgePoint (VRenderLevelShared *RLev, const float hz, surface_t *&surf, int vf0, int &vf1, const bool goUp, bool &wasChanged, const int linenum) {
-  (void)linenum;
-  TJLOG(NAME_Debug, "InsertEdgePoint: hz=%g; goUp=%d; vf0=%d; vf1=%d; vf0.z=%g; vf1.z=%g", hz, (int)goUp, vf0, vf1, surf->verts[vf0].z, surf->verts[vf1-1].z);
-  // find the index to insert new vertex (before)
-  int insidx = vf0;
-  if (goUp) {
-    // z goes up
-    if (hz <= surf->verts[vf0].z) return; // too low
-    if (hz >= surf->verts[vf1-1].z) return; // too high
-    while (insidx < vf1 && hz > surf->verts[insidx].z) ++insidx;
-  } else {
-    // z goes down
-    if (hz >= surf->verts[vf0].z) return; // too high
-    if (hz <= surf->verts[vf1-1].z) return; // too low
-    while (insidx < vf1 && hz < surf->verts[insidx].z) ++insidx;
-  }
-
-  #ifdef VV_TJUNCTION_VERBOSE
-  if (!wasChanged) {
-    TJLOG(NAME_Debug, "line #%d, adding points to range [%d..%d) (of %d) goUp=%d", linenum, vf0, vf1, surf->count, (int)goUp);
-
-    TJLOG(NAME_Debug, "    found index %d [%d..%d) for hz=%g prev=(%g,%g,%g); next=(%g,%g,%g)", insidx, vf0, vf1, hz,
-      (insidx > 0 ? surf->verts[insidx-1].x : -NAN), (insidx > 0 ? surf->verts[insidx-1].y : -NAN), (insidx > 0 ? surf->verts[insidx-1].z : -NAN),
-      (insidx < surf->count ? surf->verts[insidx].x : -NAN), (insidx < surf->count ? surf->verts[insidx].y : -NAN), (insidx < surf->count ? surf->verts[insidx].z : -NAN));
-  }
-  #endif
-
-  if (insidx >= vf1 || surf->verts[insidx].z == hz) return; // cannot insert, or duplicate point
-
-  TJLOG(NAME_Debug, "      inserting before index %d, hz=%g", insidx, hz);
-  surf = RLev->EnsureSurfacePoints(surf, surf->count+1, surf, nullptr);
-
-  const TVec np = TVec(surf->verts[vf0].x, surf->verts[vf0].y, hz);
-  surf->InsertVertexAt(insidx, np, 1);
-
-  ++vf1; // our range was increased
-  wasChanged = true;
+static inline bool IsPointOnLine3D (const TVec &v0, const TVec &v1, const TVec &p) noexcept {
+  const TVec ldir = v1-v0;
+  const float llensq = ldir.lengthSquared();
+  if (llensq < 1.0f) return false; // dot
+  // check for corners
+  const TVec p0 = p-v0;
+  if (p0.lengthSquared() < 1.0f) return false;
+  const TVec p1 = p-v1;
+  if (p1.lengthSquared() < 1.0f) return false;
+  const float llen = sqrtf(llensq);
+  // check projection
+  const TVec ndir = ldir/llen;
+  const float prj = ndir.dot(p0);
+  if (prj < 1.0f || prj > llen-1.0f) return false; // projection is too big
+  // check point distance
+  const float dist = p0.cross(p1).length()/llen;
+  //const float dist = p0.cross(p1).lengthSquared()/llensq;
+  return (dist < 0.001f);
 }
 
 
 //==========================================================================
 //
-//  DumpSegParts
+//  FindSurf
 //
 //==========================================================================
-static VVA_OKUNUSED void DumpSegParts (const segpart_t *segpart) {
-  while (segpart) {
-    int scount = 0;
-    const surface_t *surfs = segpart->surfs;
-    while (surfs) { ++scount; surfs = surfs->next; }
-    GCon->Logf(NAME_Debug, ":::: SPART:%08x : scount=%d ::::", (uintptr_t)segpart, scount);
-    segpart = segpart->next;
-  }
+static inline bool FindSurf (surface_t *surf, surface_t *list, surface_t **pprev) {
+  surface_t *prev = nullptr;
+  while (list && list != surf) { prev = list; list = list->next; }
+  if (list && pprev) *pprev = prev;
+  return !!list;
 }
 
 
 //==========================================================================
 //
-//  DumpDrawSegs
+//  VRenderLevelShared::FindWallSurfHead
 //
 //==========================================================================
-static VVA_OKUNUSED void DumpDrawSegs (const drawseg_t *drawsegs) {
-  GCon->Logf(NAME_Debug, ":: DRAWSEGS:%08x ::", (uintptr_t)drawsegs);
-  if (drawsegs->top) {
-    GCon->Logf(NAME_Debug, "::: SPART:TOP:%08x :::", (uintptr_t)drawsegs->top);
-    DumpSegParts(drawsegs->top);
+surface_t **VRenderLevelShared::FindWallSurfHead (surface_t *surf, seg_t *myseg, surface_t **pprev) {
+  vassert(surf);
+  vassert(myseg);
+  drawseg_t *ds = myseg->drawsegs;
+  if (ds) {
+    if (ds->top && FindSurf(surf, ds->top->surfs, pprev)) return &ds->top->surfs;
+    if (ds->mid && FindSurf(surf, ds->mid->surfs, pprev)) return &ds->mid->surfs;
+    if (ds->bot && FindSurf(surf, ds->bot->surfs, pprev)) return &ds->bot->surfs;
+    if (ds->topsky && FindSurf(surf, ds->topsky->surfs, pprev)) return &ds->topsky->surfs;
+    if (ds->extra && FindSurf(surf, ds->extra->surfs, pprev)) return &ds->extra->surfs;
   }
-  if (drawsegs->mid) {
-    GCon->Logf(NAME_Debug, "::: SPART:MID:%08x :::", (uintptr_t)drawsegs->mid);
-    DumpSegParts(drawsegs->mid);
-  }
-  if (drawsegs->bot) {
-    GCon->Logf(NAME_Debug, "::: SPART:BOT:%08x :::", (uintptr_t)drawsegs->bot);
-    DumpSegParts(drawsegs->bot);
-  }
-  if (drawsegs->extra) {
-    GCon->Logf(NAME_Debug, "::: SPART:EXTRA:%08x :::", (uintptr_t)drawsegs->extra);
-    DumpSegParts(drawsegs->extra);
-  }
+  if (pprev) *pprev = nullptr;
+  return nullptr;
 }
 
 
 //==========================================================================
 //
-//  VRenderLevelShared::FixSegTJunctions
-//
-//  new code, that will not create two triangles,
-//  but will use centroid instead
-//
-//  note that we should get a single valid vertical quad here
-//
-//  we'll fix t-junctions here
-//
-//  i mean, real fixing is done when the renderer hits the subsector
-//  this may be wrong, because we may hit adjacent subsectors first,
-//  and only then updater will mark them for fixing.
-//
-//  this is not fatal, because it will be fixed on the next frame, but
-//  it may be better to mark adjacents in `ChangeSector()`, for example
-//
-//  the text above is not true anymore, because `ChangeSector()` calls
-//  `SectorModified()`, which in turn calls `MarkAdjacentTJunctions()`
-//  for all sector lines. this may be excessive, but why not?
-//
-//  i am also using `updateWorldFrame` as validcounter, so no lines
-//  will be processed twice in one frame.
+//  VRenderLevelShared::FindSubSurfHead
 //
 //==========================================================================
-surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
-  //if (lastRenderQuality) TJLOG(NAME_Debug, "FixSegTJunctions: line #%d, seg #%d: count=%d; next=%p", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]), surf->count, surf->next);
-  // wall segment should always be a quad, and it should be the only one
-  if (!lastRenderQuality) return surf; // just in case
+surface_t **VRenderLevelShared::FindSubSurfHead (surface_t *surf, subsector_t *sub, surface_t **pprev) {
+  vassert(surf);
+  vassert(sub);
+  for (subregion_t *region = sub->regions; region; region = region->next) {
+    if (region->realfloor && FindSurf(surf, region->realfloor->surfs, pprev)) return &region->realfloor->surfs;
+    if (region->realceil && FindSurf(surf, region->realceil->surfs, pprev)) return &region->realceil->surfs;
+    if (region->fakefloor && FindSurf(surf, region->fakefloor->surfs, pprev)) return &region->fakefloor->surfs;
+    if (region->fakeceil && FindSurf(surf, region->fakeceil->surfs, pprev)) return &region->fakeceil->surfs;
+  }
+  if (pprev) *pprev = nullptr;
+  return nullptr;
+}
 
-  // for lightmaps, proper splitting is done by `FixSegSurfaceTJunctions()`
-  if (IsLightmapRenderer()) return surf;
 
-  if (seg->pobj) return surf; // do not fix polyobjects (yet?)
-
-  const line_t *line = seg->linedef;
-
+//==========================================================================
+//
+//  VRenderLevelShared::SurfaceInsertPointIntoEdge
+//
+//  do not use reference to `p` here!
+//  it may be a vector from some source that can be modified
+//
+//==========================================================================
+surface_t *VRenderLevelShared::SurfaceInsertPointIntoEdge (surface_t *surf, surface_t *&surfhead,
+                                                           surface_t *prev, const TVec p,
+                                                           bool *modified)
+{
+  if (!surf || surf->count < 3+(int)surf->isCentroidCreated() ||  // bad surface?
+      fabsf(surf->plane.PointDistance(p)) >= 0.01f)  // the point should be on the surface plane
+  {
+    return surf;
+  }
+  //surface_t *prev = nullptr;
   #if 0
-  const int lidx = (int)(ptrdiff_t)(line-&Level->Lines[0]);
-  //tjlog_verbose = (lidx == 10424 || lidx == 10445 || lidx == 9599 || lidx == 10444 || lidx == 9606);
-  // 9599 is the interesting line; goes from the right to the left; 9604 is the line with subdivisions
-  tjlog_verbose = (lidx == 9604 || lidx == 9599 /*|| lidx == 9600*/);
-  if (!tjlog_verbose) return surf;
+  VLevel *Level = GetLevel();
+  const int sfidx = surfIndex(surfhead, surf);
   #endif
-  //tjlog_verbose = false;
-
-  //if (line) TJLOG(NAME_Debug, "FixSegTJunctions:000: line #%d, seg #%d: surf->count=%d; surf->next=%p", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]), surf->count, surf->next);
-  const sector_t *mysec = seg->frontsector;
-  if (!line || line->pobj() || !mysec || mysec->isAnyPObj()) return surf; // just in case
-
-  // invariant, actually
-  // it is called from `CreateWSurf()`, so it can't have any linked surfaces
-  // the only case it can is when it was subdivided, but advanced render doesn't do any subdivisions
-  if (surf->next) {
-    GCon->Logf(NAME_Warning, "line #%d, seg #%d: has subdivided surfaces", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]));
-    return surf;
-  }
-
-  if (surf->count != 4) {
-    TJLOG(NAME_Debug, "line #%d, seg #%d: ignored surface %p due to not being a quad (%d)", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]), surf, surf->count);
-    return surf;
-  }
-
-  if (surf->isCentroidCreated()) {
-    GCon->Logf(NAME_Error, "line #%d, seg #%d: ignored surface %p due to centroid presence", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]), surf);
-    return surf;
-  }
-
-  // ignore paper-thin surfaces
-  if (surf->verts[0].z == surf->verts[1].z &&
-      surf->verts[2].z == surf->verts[3].z)
-  {
-    TJLOG(NAME_Debug, "line #%d, seg #%d: ignore due to being paper-thin", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]));
-    return surf;
-  }
-
-  // good wall quad should consist of two vertical lines
-  if (surf->verts[0].x != surf->verts[1].x || surf->verts[0].y != surf->verts[1].y ||
-      surf->verts[2].x != surf->verts[3].x || surf->verts[2].y != surf->verts[3].y)
-  {
-    if (warn_fix_tjunctions) GCon->Logf(NAME_Warning, "line #%d, seg #%d: bad quad (0)", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]));
-    if (warn_fix_tjunctions) {
-      GCon->Logf(NAME_Debug, " (%g,%g,%g)-(%g,%g,%g)", seg->v1->x, seg->v1->y, seg->v1->z, seg->v2->x, seg->v2->y, seg->v2->z);
-      for (int f = 0; f < surf->count; ++f) GCon->Logf(NAME_Debug, "  %d: (%g,%g,%g)", f, surf->verts[f].x, surf->verts[f].y, surf->verts[f].z);
+  // check each surface line
+  const int cc = (int)surf->isCentroidCreated();
+  const int end = surf->count-cc; // with centroid, last vertex dups first non-centroid one
+  for (int pn0 = cc; pn0 < end; ++pn0) {
+    const int pn1 = (pn0+1)%surf->count;
+    vassert((cc == 0) || (pn1 != 0));
+    const TVec v0 = surf->verts[pn0].vec();
+    const TVec v1 = surf->verts[pn1].vec();
+    #if 0
+    GCon->Logf(NAME_Debug, "surface #%d : %p for subsector #%d: checking point; line=(%g,%g,%g)-(%g,%g,%g); plane=(%g,%g,%g):%g; point=(%g,%g,%g); online=%d",
+      sfidx, surf, (int)(ptrdiff_t)(surf->subsector-&Level->Subsectors[0]),
+      v0.x, v0.y, v0.z, v1.x, v1.y, v1.z,
+      surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z, surf->plane.dist,
+      p.x, p.y, p.z, (int)IsPointOnLine2D(v0, v1, p));
+    #endif
+    // this also checks for corners, and for very short lines
+    if (!IsPointOnLine3D(v0, v1, p)) continue;
+    #if 0
+    GCon->Logf(NAME_Debug, "surface #%d : %p for subsector #%d need a new point before %d; line=(%g,%g,%g)-(%g,%g,%g); plane=(%g,%g,%g):%g; orgpoint=(%g,%g,%g) (cp=%d)",
+      sfidx, surf, (int)(ptrdiff_t)(surf->subsector-&Level->Subsectors[0]), pn0+1,
+      v0.x, v0.y, v0.z, v1.x, v1.y, v1.z,
+      surf->plane.normal.x, surf->plane.normal.y, surf->plane.normal.z, surf->plane.dist,
+      p.x, p.y, p.z, (int)surf->isCentroidCreated());
+    GCon->Logf(NAME_Debug, "=== BEFORE (%d) ===", surf->count);
+    for (int f = 0; f < surf->count; ++f) {
+      GCon->Logf(NAME_Debug, "  %2d: (%g,%g,%g); ownssf=%p, ownseg=%d", f, surf->verts[f].x, surf->verts[f].y, surf->verts[f].z,
+        surf->verts[f].ownerssf,
+        (surf->verts[f].ownerseg ? (int)(ptrdiff_t)(surf->verts[f].ownerseg-&Level->Segs[0]) : -1));
     }
-    return surf;
+    #endif
+    // insert a new point
+    if (!prev && surf != surfhead) {
+      prev = surfhead;
+      while (prev->next != surf) prev = prev->next;
+    }
+    #if 0
+      surf = EnsureSurfacePoints(surf, surf->count+(surf->isCentroidCreated() ? 1 : 3), surfhead, prev);
+      // create centroid
+      if (!surf->isCentroidCreated()) {
+        surf->AddCentroid();
+        ++pn0;
+      }
+    #else
+      // remove centroid, it will be recreated by the caller
+      if (surf->isCentroidCreated()) {
+        surf->RemoveCentroid();
+        --pn0;
+        vassert(pn0 >= 0);
+      }
+      surf = EnsureSurfacePoints(surf, surf->count+1, surfhead, prev);
+    #endif
+    // insert point
+    surf->InsertVertexAt(pn0+1, p, 1);
+    //vassert(surf->count > 4);
+    #if 0
+    GCon->Logf(NAME_Debug, "=== AFTER (%d) ===", surf->count);
+    for (int f = 0; f < surf->count; ++f) {
+      GCon->Logf(NAME_Debug, "  %2d: (%g,%g,%g); ownssf=%d, ownseg=%d", f, surf->verts[f].x, surf->verts[f].y, surf->verts[f].z,
+        surf->verts[f].ownerssf,
+        (surf->verts[f].ownerseg ? (int)(ptrdiff_t)(surf->verts[f].ownerseg-&Level->Segs[0]) : -1));
+    }
+    #endif
+    // the point cannot be inserted into several lines,
+    // so we're finished with this surface
+    if (modified) *modified = true;
+    break;
   }
 
-  //GCon->Logf(NAME_Debug, "*** checking line #%d...", (int)(ptrdiff_t)(line-&Level->Lines[0]));
+  return surf;
+}
 
-  float minz[2];
-  float maxz[2];
-  int v0idx;
-       if (fabsf(surf->verts[0].x-seg->v1->x) < 0.1f && fabsf(surf->verts[0].y-seg->v1->y) < 0.1f) v0idx = 0;
-  else if (fabsf(surf->verts[0].x-seg->v2->x) < 0.1f && fabsf(surf->verts[0].y-seg->v2->y) < 0.1f) v0idx = 2;
-  else {
-    if (warn_fix_tjunctions) GCon->Logf(NAME_Warning, "line #%d, seg #%d: bad quad (1)", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]));
-    if (warn_fix_tjunctions) {
-      GCon->Logf(NAME_Debug, " (%g,%g,%g)-(%g,%g,%g)", seg->v1->x, seg->v1->y, seg->v1->z, seg->v2->x, seg->v2->y, seg->v2->z);
-      for (int f = 0; f < surf->count; ++f) GCon->Logf(NAME_Debug, "  %d: (%g,%g,%g)", f, surf->verts[f].x, surf->verts[f].y, surf->verts[f].z);
-    }
-    return surf;
-  }
-  minz[0] = min2(surf->verts[v0idx].z, surf->verts[v0idx+1].z);
-  maxz[0] = max2(surf->verts[v0idx].z, surf->verts[v0idx+1].z);
-  minz[1] = min2(surf->verts[2-v0idx].z, surf->verts[2-v0idx+1].z);
-  maxz[1] = max2(surf->verts[2-v0idx].z, surf->verts[2-v0idx+1].z);
 
-  TJLOG(NAME_Debug, "FixSegTJunctions:003: line #%d, seg #%d: minz=%g : %g; maxz=%g : %g", (int)(ptrdiff_t)(line-&Level->Lines[0]), (int)(ptrdiff_t)(seg-&Level->Segs[0]), minz[0], minz[1], maxz[0], maxz[1]);
-
-  bool wasChanged = false;
-  const int linenum = (int)(ptrdiff_t)(line-&Level->Lines[0]);
-
-  //TJLOG(NAME_Debug, "*** minz=%g; maxz=%g", minz, maxz);
-  // for each seg vertex
-  for (int vidx = 0; vidx < 2; ++vidx) {
-    // do not fix anything for seg vertex that doesn't touch line vertex
-    // this is to avoid introducing cracks in the middle of the wall that was splitted by BSP
-    // we can be absolutely sure that vertices are reused, because we're creating segs by our own nodes builder
-    const TVec *segv = (vidx == 0 ? seg->v1 : seg->v2);
-    int lvidx;
-    if (vidx == 0) {
-           if (segv == line->v1) lvidx = 0;
-      else if (segv == line->v2) lvidx = 1;
-      else continue;
-    } else {
-           if (segv == line->v1) lvidx = 0;
-      else if (segv == line->v2) lvidx = 1;
-      else continue;
-    }
-    const TVec lv = (lvidx ? *line->v2 : *line->v1);
-
-    // collect all possible height fixes
-    const int lvxCount = line->vxCount(lvidx);
-    TJLOG(NAME_Debug, "FixSegTJunctions:003:   vidx=%d; lvidx=%d; lvxCount=%d", vidx, lvidx, lvxCount);
-    if (!lvxCount) continue;
-
-    // get side indices
-    int vf0 = 0;
-    while (vf0 < surf->count && (surf->verts[vf0].x != segv->x || surf->verts[vf0].y != segv->y)) ++vf0;
-    if (vf0 >= surf->count-1) {
-      GCon->Logf(NAME_Error, "SOMETHING IS WRONG (0) with a seg of line #%d!", linenum);
-      continue;
-    }
-
-    int vf1 = vf0+1;
-    while (vf1 < surf->count && surf->verts[vf1].x == segv->x && surf->verts[vf1].y == segv->y) ++vf1;
-    if (vf1-vf0 < 2) {
-      GCon->Logf(NAME_Error, "SOMETHING IS WRONG (1) with a seg of line #%d!", linenum);
-      continue;
-    }
-
-    const bool goUp = (surf->verts[vf0].z <= surf->verts[vf1-1].z);
-    // our edge is [vf0..vf1)
-
-    //TJLOG(NAME_Debug, "line #%d, adding points to range [%d..%d) (of %d) goUp=%d", linenum, vf0, vf1, surf->count, (int)goUp);
-
-    // insert points; order doesn't matter
-    for (int f = 0; f < lvxCount; ++f) {
-      const line_t *ln = line->vxLine(lvidx, f);
-      if (ln == line) continue;
-      TJLOG(NAME_Debug, "  vidx=%d; other line #%d...", vidx, (int)(ptrdiff_t)(ln-&Level->Lines[0]));
-
-      #if 0
-      if ((int)(ptrdiff_t)(ln-&Level->Lines[0]) == 9604 && ln->firstseg) {
-        const seg_t *ssx = ln->firstseg;
-        while (ssx) {
-          if (ssx->drawsegs) {
-            TJLOG("...WOW! DRAWSEGS!");
-            DumpDrawSegs(ssx->drawsegs);
-            //ssx = nullptr;
-          } else {
-            TJLOG("...SHIT! NO DRAWSEGS!");
-          }
-          ssx = ssx->lsnext;
+//==========================================================================
+//
+//  AddPointsFromSurfaceList
+//
+//==========================================================================
+void VRenderLevelShared::AddPointsFromSurfaceList (surface_t *list, /*from*/
+                                                   surface_t *&dest,
+                                                   surface_t *&surfhead/*to*/,
+                                                   surface_t *prev, bool *modified)
+{
+  vassert(dest);
+  vassert(surfhead);
+  while (list) {
+    if (list != dest) {
+      const SurfVertex *sv = &list->verts[0];
+      for (int spn = list->count; spn--; ++sv) {
+        // do not process fix points (it is useless)
+        if (sv->tjflags == 0) {
+          dest = SurfaceInsertPointIntoEdge(dest, surfhead, nullptr, sv->vec(), modified);
         }
       }
-      #endif
+    }
+    list = list->next;
+  }
+}
 
-      for (int sn = 0; sn < 2; ++sn) {
-        const sector_t *sec = (sn ? ln->backsector : ln->frontsector);
-        TJLOG(NAME_Debug, "   sn=%d; mysec=%d; sec=%d", sn, (int)(ptrdiff_t)(mysec-&Level->Sectors[0]), (sec ? (int)(ptrdiff_t)(sec-&Level->Sectors[0]) : -1));
-        if (sec && sec != mysec) {
-          if (sn && ln->frontsector == ln->backsector) {
-            // self-referenced line
-            TJLOG(NAME_Debug, "    ignored self-referenced line");
-            continue;
-          }
 
-          /*const*/ float fz = sec->floor.GetPointZClamped(lv);
-          /*const*/ float cz = sec->ceiling.GetPointZClamped(lv);
-          TJLOG(NAME_Debug, "    fz=%g; cz=%g", fz, cz);
-          if (fz > cz) continue; // just in case
-          if (cz <= minz[vidx] || fz >= maxz[vidx]) continue; // no need to introduce any new vertices
-          //TJLOG(NAME_Debug, "  other line #%d: sec=%d; fz=%g; cz=%g", (int)(ptrdiff_t)(ln-&Level->Lines[0]), (int)(ptrdiff_t)(sec-&Level->Sectors[0]), fz, cz);
-          if (fz > minz[vidx]) {
-            TJLOG(NAME_Debug, "      adding fz as edge point: %g", fz);
-            InsertEdgePoint(this, fz, surf, vf0, vf1, goUp, wasChanged, linenum);
-          }
-          if (cz != fz && cz < maxz[vidx]) {
-            TJLOG(NAME_Debug, "      adding cz as edge point: %g", cz);
-            InsertEdgePoint(this, cz, surf, vf0, vf1, goUp, wasChanged, linenum);
-          }
+//==========================================================================
+//
+//  VRenderLevelShared::AddPointsFromDrawseg
+//
+//==========================================================================
+void VRenderLevelShared::AddPointsFromDrawseg (drawseg_t *ds,
+                                               surface_t *&dest,
+                                               surface_t *&surfhead/*to*/,
+                                               surface_t *prev, bool *modified)
+{
+  if (ds) {
+    if (ds->top) AddPointsFromSurfaceList(ds->top->surfs, dest, surfhead, prev, modified);
+    if (ds->mid) AddPointsFromSurfaceList(ds->mid->surfs, dest, surfhead, prev, modified);
+    if (ds->bot) AddPointsFromSurfaceList(ds->bot->surfs, dest, surfhead, prev, modified);
+    if (ds->topsky) AddPointsFromSurfaceList(ds->topsky->surfs, dest, surfhead, prev, modified);
+    if (ds->extra) AddPointsFromSurfaceList(ds->extra->surfs, dest, surfhead, prev, modified);
+  }
+}
 
-          // fake floors
-          if (sec->heightsec) {
-            const sector_t *fsec = sec->heightsec;
-            cz = fsec->ceiling.GetPointZ(lv);
-            fz = fsec->floor.GetPointZ(lv);
-            TJLOG(NAME_Debug, "  other line #%d: sec=%d; hsec=%d; fz=%g; cz=%g", (int)(ptrdiff_t)(ln-&Level->Lines[0]), (int)(ptrdiff_t)(sec-&Level->Sectors[0]), (int)(ptrdiff_t)(fsec-&Level->Sectors[0]), fz, cz);
-            if (fz > minz[vidx]) {
-              InsertEdgePoint(this, fz, surf, vf0, vf1, goUp, wasChanged, linenum);
-            }
-            if (cz != fz && cz < maxz[vidx]) {
-              InsertEdgePoint(this, cz, surf, vf0, vf1, goUp, wasChanged, linenum);
-            }
-          }
 
-          // collect 3d floors too, because we have to split textures by 3d floors for proper lighting
-          if (sec->Has3DFloors()) {
-            //FIXME: make this faster! `isPointInsideSolidReg()` is SLOW!
-            for (sec_region_t *reg = sec->eregions->next; reg; reg = reg->next) {
-              if (reg->regflags&(sec_region_t::RF_NonSolid|sec_region_t::RF_OnlyVisual|sec_region_t::RF_BaseRegion)) continue;
-              if (!reg->isBlockingExtraLine()) continue;
-              cz = reg->eceiling.GetPointZ(lv);
-              fz = reg->efloor.GetPointZ(lv);
-              if (cz < fz) continue; // invisible region
-              // paper-thin regions will split planes too
-              if (fz > minz[vidx] && !isPointInsideSolidReg(lv, fz, sec->eregions->next, reg)) {
-                InsertEdgePoint(this, fz, surf, vf0, vf1, goUp, wasChanged, linenum);
-              }
-              if (cz != fz && cz < maxz[vidx] && !isPointInsideSolidReg(lv, cz, sec->eregions->next, reg)) {
-                InsertEdgePoint(this, cz, surf, vf0, vf1, goUp, wasChanged, linenum);
-              }
-            }
-          }
-        }
+//==========================================================================
+//
+//  VRenderLevelShared::AddPointsFromRegion
+//
+//==========================================================================
+void VRenderLevelShared::AddPointsFromRegion (subregion_t *region,
+                                              surface_t *&dest,
+                                              surface_t *&surfhead/*to*/,
+                                              surface_t *prev, bool *modified)
+{
+  if (region) {
+    if (region->realfloor) AddPointsFromSurfaceList(region->realfloor->surfs, dest, surfhead, prev, modified);
+    if (region->realceil) AddPointsFromSurfaceList(region->realceil->surfs, dest, surfhead, prev, modified);
+    if (region->fakefloor) AddPointsFromSurfaceList(region->fakefloor->surfs, dest, surfhead, prev, modified);
+    if (region->fakeceil) AddPointsFromSurfaceList(region->fakeceil->surfs, dest, surfhead, prev, modified);
+  }
+}
 
-        /* actually, the whole thing up there is not necessary, because we can
-           use surfaces instead. tbh, we *NEED* to use surfaces for lightmapped
-           renderer, due to subdivisions.
-           the problem is that a surface can be already fixed, and contain extra
-           points we are not interested in. so take only points touching the proper
-           vertical side.
 
-           fix: this is done above, so no need to do it
-        */
-
-        #if 0
-        const seg_t *ssx = ln->firstseg;
-        /*
-        if ((int)(ptrdiff_t)(ln-&Level->Lines[0]) != 9604) {
-          ssx = nullptr;
-        } else {
-          TJLOG(NAME_Debug, "### BOOO! ###");
-        }
-        */
-        while (ssx) {
-          if (ssx->drawsegs) {
-            TJLOG(NAME_Debug, ":: DRAWSEGS:%08x ::", (uintptr_t)ssx->drawsegs);
-            for (int dsidx = 0; dsidx < 4; ++dsidx) {
-              const segpart_t *xsegpart =
-                dsidx == 0 ? ssx->drawsegs->top :
-                dsidx == 1 ? ssx->drawsegs->mid :
-                dsidx == 2 ? ssx->drawsegs->bot :
-                dsidx == 3 ? ssx->drawsegs->extra :
-                nullptr;
-              while (xsegpart) {
-                TJLOG(NAME_Debug, "::: SPART:%08x :::", (uintptr_t)xsegpart);
-                const surface_t *xsurf = xsegpart->surfs;
-                while (xsurf) {
-                  TJLOG(NAME_Debug, ":::: surf:%08x (count=%d) :::", (uintptr_t)xsurf, xsurf->count);
-                  for (int sfvids = 0; sfvids < xsurf->count; ++sfvids) {
-                    const TVec xsv = xsurf->verts[sfvids].vec();
-                    TJLOG(NAME_Debug, "::::: xsv #%d:(%f,%f,%f) : lv(%f,%f) :::::",
-                          sfvids, xsv.x, xsv.y, xsv.x, lv.x, lv.y);
-                    // check if this vertex touches the right line vertical edge
-                    // i.e. it should have x and y equal to the proper side
-                    if (xsv.x == lv.x && xsv.y == lv.y) {
-                      TJLOG(NAME_Debug, "*** HIT! ***");
-                      InsertEdgePoint(this, xsv.z, surf, vf0, vf1, goUp, wasChanged, linenum);
-                    }
-                  }
-                  xsurf = xsurf->next;
-                }
-                xsegpart = xsegpart->next;
-              }
-            }
-          }
-          ssx = ssx->lsnext;
-        }
-        #endif
-      }
+//==========================================================================
+//
+//  VRenderLevelShared::AddPointsFromAllRegions
+//
+//==========================================================================
+void VRenderLevelShared::AddPointsFromAllRegions (subsector_t *sub,
+                                                  surface_t *&dest,
+                                                  surface_t *&surfhead/*to*/,
+                                                  surface_t *prev, bool *modified)
+{
+  if (sub) {
+    for (subregion_t *region = sub->regions; region; region = region->next) {
+      AddPointsFromRegion(region, dest, surfhead, prev, modified);
     }
   }
+}
 
-  // create centroid if necessary
-  vassert(!surf->isCentroidCreated());
-  if (wasChanged && surf->count > 4) {
-    surf = EnsureSurfacePoints(surf, surf->count+2, surf, nullptr);
+
+//==========================================================================
+//
+//  VRenderLevelShared::FixSegSurfaceTJunctions
+//
+//==========================================================================
+surface_t *VRenderLevelShared::FixSegSurfaceTJunctions (surface_t *surf, seg_t *myseg) {
+  if (!surf) return nullptr;
+
+  surf->RemoveTJVerts();
+  surf->ResetFixCracks();
+  if (!myseg) return surf;
+
+  subsector_t *sub = surf->subsector;
+  vassert(sub);
+  vassert(sub == myseg->frontsub);
+
+  if (sub->isOriginalPObj()) return surf; // nobody cares
+
+  surface_t *prev;
+  surface_t **surfhead = FindWallSurfHead(surf, myseg, &prev);
+  if (!surfhead) {
+    GCon->Log(NAME_Error, "FixSegSurfaceTJunctions: orphaned surface!");
+    return surf;
+  }
+
+  if (lastRenderQuality) {
+    //if ((int)(ptrdiff_t)(sub-&Level->Subsectors[0]) != 40) return surf;
+
+    // mark adjacent subsector flats for fixing
+    if (IsLightmapRenderer()) {
+      for (subregion_t *region = sub->regions; region; region = region->next) {
+        if (region->realfloor) region->realfloor->SetFixSurfCracks();
+        if (region->realceil) region->realceil->SetFixSurfCracks();
+        if (region->fakefloor) region->fakefloor->SetFixSurfCracks();
+        if (region->fakeceil) region->fakeceil->SetFixSurfCracks();
+      }
+    }
+
+    const line_t *line = myseg->linedef;
+    if (line) {
+      /*
+        we need adjacent segs to process.
+
+        for starting/ending seg of a line, we need to collect the corresponding segs
+        from adjacent lines (but we need only segs which faces the same subsector).
+
+        for middle seg, it is enough to process left and right line segs.
+      */
+
+      //FIXME: we should process only segs we are interesting in...
+      //       it is safe to process segs that will not contribute,
+      //       but it's just a waste of time
+
+      // proces segs from our own line
+      for (seg_t *lseg = line->firstseg; lseg; lseg = lseg->lsnext) {
+        if (lseg != myseg && lseg->frontsub == sub && lseg->drawsegs) {
+          AddPointsFromDrawseg(lseg->drawsegs, surf, *surfhead, prev, nullptr);
+        }
+      }
+
+      // proces segs from adjacent lines
+      for (int lvidx = 0; lvidx < 2; ++lvidx) {
+        const int len = line->vxCount(lvidx);
+        for (int f = 0; f < len; ++f) {
+          const line_t *ll = line->vxLine(lvidx, f);
+          for (seg_t *lseg = ll->firstseg; lseg; lseg = lseg->lsnext) {
+            if (lseg != myseg && lseg->frontsub == sub && lseg->drawsegs) {
+              AddPointsFromDrawseg(lseg->drawsegs, surf, *surfhead, prev, nullptr);
+            }
+          }
+        }
+      }
+    }
+
+    // insert floor surface points into walls
+    if (IsLightmapRenderer()) {
+      AddPointsFromAllRegions(sub, surf, *surfhead, prev, nullptr);
+      // and adjacent subsectors
+      seg_t *xseg = &Level->Segs[sub->firstline];
+      for (int f = sub->numlines; f--; ++xseg) {
+        if (xseg->drawsegs) AddPointsFromDrawseg(xseg->drawsegs, surf, *surfhead, prev, nullptr);
+        if (xseg->frontsub != sub) {
+          AddPointsFromAllRegions(xseg->frontsub, surf, *surfhead, prev, nullptr);
+        }
+        if (xseg->partner) {
+          AddPointsFromDrawseg(xseg->partner->drawsegs, surf, *surfhead, prev, nullptr);
+          if (xseg->partner->frontsub != sub) {
+            AddPointsFromAllRegions(xseg->partner->frontsub, surf, *surfhead, prev, nullptr);
+          }
+        }
+      }
+    }
+  } else {
+    surf->RemoveTJVerts();
+    surf->ResetFixCracks();
+  }
+
+  // always create centroids for complex surfaces
+  // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
+  if (surf->count > 4 && !surf->isCentroidCreated()) {
+    // make room
+    surf = EnsureSurfacePoints(surf, surf->count+2, *surfhead, nullptr);
+    // insert centroid
     surf->AddCentroid();
   }
 
-  if (wasChanged && dbg_fix_tjunctions.asBool()) GCon->Logf(NAME_Debug, "line #%d, seg #%d: fixed t-junctions", linenum, (int)(ptrdiff_t)(seg-&Level->Segs[0]));
+  return surf;
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::FixSubFlatSurfaceTJunctions
+//
+//==========================================================================
+surface_t *VRenderLevelShared::FixSubFlatSurfaceTJunctions (surface_t *surf, subsector_t *sub) {
+  if (!surf) return nullptr;
+
+  surf->RemoveTJVerts();
+  surf->ResetFixCracks();
+
+  if (!sub) return surf;
+
+  vassert(sub == surf->subsector);
+
+  if (sub->isOriginalPObj()) return surf; // nobody cares
+
+  //CleanupSubSurfaces(sub);
+
+  surface_t *prev;
+  surface_t **surfhead = FindSubSurfHead(surf, sub, &prev);
+  if (!surfhead) {
+    GCon->Log(NAME_Error, "FixSubFlatSurfaceTJunctions: orphaned surface!");
+    return surf;
+  }
+
+  if (lastRenderQuality && IsLightmapRenderer()) {
+    // other subsector surfaces
+    AddPointsFromAllRegions(sub, surf, *surfhead, prev, nullptr);
+
+    // fix flat surface using subsector segs.
+    // this is slightly more work than needed, but meh
+    // we also need to check adjacent subsectors, and process
+    // their flats too, but only if they have the same height.
+    // currently, we will simply process everything, but this should be optimized.
+    seg_t *xseg = &Level->Segs[sub->firstline];
+    for (int f = sub->numlines; f--; ++xseg) {
+      if (xseg->drawsegs) AddPointsFromDrawseg(xseg->drawsegs, surf, *surfhead, prev, nullptr);
+      // neighbour subsectors surfaces
+      // this is not required if the other sector has different floor or
+      // ceiling height, but meh... let's play safe here
+      if (xseg->frontsub != sub) {
+        AddPointsFromAllRegions(xseg->frontsub, surf, *surfhead, prev, nullptr);
+      }
+      if (xseg->partner && xseg->partner->frontsub != sub) {
+        AddPointsFromAllRegions(xseg->partner->frontsub, surf, *surfhead, prev, nullptr);
+      }
+    }
+  }
+
+  // always create centroids for complex surfaces
+  // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
+  if (surf->count > 4 && !surf->isCentroidCreated()) {
+    // make room
+    surf = EnsureSurfacePoints(surf, surf->count+2, *surfhead, prev);
+    // insert centroid
+    surf->AddCentroid();
+  }
 
   return surf;
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::SurfaceFixTJunctions
+//
+//==========================================================================
+void VRenderLevelShared::SurfaceFixTJunctions (surface_t *&surf) {
+  if (surf) {
+    if (!lastRenderQuality) {
+      surf->ResetFixCracks();
+    } else if (surf->IsFixCracks()) {
+      surf->ResetFixCracks();
+      if (surf->seg) surf = FixSegSurfaceTJunctions(surf, surf->seg);
+      if (surf->sreg) surf = FixSubFlatSurfaceTJunctions(surf, surf->subsector);
+    }
+  }
 }

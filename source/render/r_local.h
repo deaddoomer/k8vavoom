@@ -136,18 +136,30 @@ struct segpart_t {
   // various flags
   vuint32 flags;
   enum {
-    FixTJunk  = 1u<<0, // fix t-junction flag
+    //FixTJunk  = 1u<<0, // fix t-junction flag
     TransDoor = 1u<<1, // this is part of "transparent door" hack (used to check if we need to update surfaces)
   };
   //vint32 regidx; // region index (negative means "backsector region")
   sec_region_t *basereg;
 
-  inline void SetFixTJunk () noexcept { flags |= FixTJunk; }
-  inline void ResetFixTJunk () noexcept { flags &= ~FixTJunk; }
-  inline bool NeedFixTJunk () const noexcept { return (flags&FixTJunk); }
+  //inline void SetFixTJunk () noexcept { flags |= FixTJunk; }
+  //inline void ResetFixTJunk () noexcept { flags &= ~FixTJunk; }
+  //inline bool NeedFixTJunk () const noexcept { return !!(flags&FixTJunk); }
 
   inline void SetTransDoor (const bool flg) noexcept { if (flg) flags |= TransDoor; else flags &= ~TransDoor; }
-  inline bool IsTransDoor () const noexcept { return (flags&TransDoor); }
+  inline bool IsTransDoor () const noexcept { return !!(flags&TransDoor); }
+
+  inline void SetFixSurfCracks () noexcept {
+    for (surface_t *sf = surfs; sf; sf = sf->next) {
+      sf->SetFixCracks();
+    }
+  }
+
+  inline void ResetFixSurfCracks () noexcept {
+    for (surface_t *sf = surfs; sf; sf = sf->next) {
+      sf->ResetFixCracks();
+    }
+  }
 };
 
 
@@ -164,9 +176,17 @@ struct sec_surface_t {
     FlagUseAlpha = 1u<<0, // not implemented
     // for fake floors and ceilings
     FlagSkipMe = 1u<<1,
+    // fix t-junctions?
+    //FlagFixCracks = 1u<<2,
   };
   vuint32 Flags;
   surface_t *surfs;
+
+  /*
+  inline void SetFixTJunk () noexcept { Flags |= FlagFixCracks; }
+  inline void ResetFixTJunk () noexcept { Flags &= ~FlagFixCracks; }
+  inline bool NeedFixTJunk () const noexcept { return !!(Flags&FlagFixCracks); }
+  */
 
   inline float PointDistance (const TVec &p) const noexcept { return esecplane.PointDistance(p); }
   inline float GetPointZ (const TVec &p) const noexcept { return esecplane.GetPointZ(p); }
@@ -182,6 +202,12 @@ struct sec_surface_t {
   inline bool SkipMe () const noexcept { return (Flags&FlagSkipMe); }
   inline void SetSkipMe () noexcept { Flags |= FlagSkipMe; }
   inline void ResetSkipMe () noexcept { Flags &= ~FlagSkipMe; }
+
+  inline void SetFixSurfCracks () noexcept {
+    for (surface_t *sf = surfs; sf; sf = sf->next) {
+      sf->SetFixCracks();
+    }
+  }
 };
 
 

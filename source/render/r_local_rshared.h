@@ -604,16 +604,17 @@ protected:
   // returns attenuation multiplier (0 means "out of cone")
   static float CheckLightPointCone (VEntity *lowner, const TVec &p, const float radius, const float height, const TVec &coneOrigin, const TVec &coneDir, const float coneAngle);
 
-  // base fixer, need not to be virtual
-  surface_t *FixSegTJunctions (surface_t *surf, seg_t *seg);
-
-  // surface fixer for lightmaps
-  virtual surface_t *FixSegSurfaceTJunctions (surface_t *surf, seg_t *seg) = 0;
+  // base fixers, need not to be virtual
+  //surface_t *FixSegTJunctions (surface_t *surf, seg_t *seg);
+  surface_t *FixSegSurfaceTJunctions (surface_t *surf, seg_t *seg);
+  surface_t *FixSubFlatSurfaceTJunctions (surface_t *surf, subsector_t *sub);
 
   virtual void InitSurfs (bool recalcStaticLightmaps, surface_t *ASurfs, texinfo_t *texinfo, const TPlane *plane, subsector_t *sub, seg_t *seg, subregion_t *sreg) = 0;
   virtual surface_t *SubdivideFace (surface_t *InF, subregion_t *sreg, sec_surface_t *ssf, const TVec &axis, const TVec *nextaxis, const TPlane *plane, bool doSubdivisions=true) = 0;
   virtual surface_t *SubdivideSeg (surface_t *InSurf, const TVec &axis, const TVec *nextaxis, seg_t *seg) = 0;
   virtual void DoneInitialWordSurfCreation () = 0;
+
+  void SurfaceFixTJunctions (surface_t *&surf);
 
   virtual void QueueWorldSurface (surface_t *surf) = 0;
   // this does BSP traversing, and collect world surfaces into various lists to drive GPU rendering
@@ -754,15 +755,33 @@ public:
   surface_t *EnsureSurfacePoints (surface_t *surf, int vcount, surface_t *&listhead, surface_t *prev) noexcept;
 
 public:
-  // can be called to recreate all world surfaces
-  // call only after world surfaces were created for the first time!
-  void InvaldateAllSegParts () noexcept;
-
-  static void InvalidateSegPart (segpart_t *sp) noexcept;
-  static void InvalidateWholeSeg (seg_t *seg) noexcept;
-
+  void InvaldateAllTJunctions () noexcept;
   void MarkAdjacentTJunctions (const sector_t *fsec, const line_t *line) noexcept;
   void MarkTJunctions (seg_t *seg) noexcept;
+
+  void ForceWholeSegRecreation (seg_t *seg) noexcept;
+
+public:
+  surface_t **FindWallSurfHead (surface_t *surf, seg_t *myseg, surface_t **pprev);
+  surface_t **FindSubSurfHead (surface_t *surf, subsector_t *sub, surface_t **pprev);
+
+  surface_t *SurfaceInsertPointIntoEdge (surface_t *surf, surface_t *&surfhead,
+                                         surface_t *prev, const TVec p, bool *modified);
+  void AddPointsFromSurfaceList (surface_t *list, /*from*/
+                                 surface_t *&dest,
+                                 surface_t *&surfhead/*to*/,
+                                 surface_t *prev, bool *modified);
+  void AddPointsFromDrawseg (drawseg_t *ds, surface_t *&dest,
+                             surface_t *&surfhead/*to*/,
+                             surface_t *prev, bool *modified);
+  void AddPointsFromRegion (subregion_t *region,
+                            surface_t *&dest,
+                            surface_t *&surfhead/*to*/,
+                            surface_t *prev, bool *modified);
+  void AddPointsFromAllRegions (subsector_t *sub,
+                                surface_t *&dest,
+                                surface_t *&surfhead/*to*/,
+                                surface_t *prev, bool *modified);
 
 public:
   surface_t *CreateWSurf (TVec *wv, texinfo_t *texinfo, seg_t *seg, subsector_t *sub, int wvcount, vuint32 typeFlags) noexcept;

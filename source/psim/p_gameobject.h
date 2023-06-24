@@ -340,6 +340,10 @@ struct VTerrainInfo {
 //
 //==========================================================================
 struct drawseg_t {
+  enum {
+    Flag_Recreate = 1u<<0
+  };
+
   seg_t *seg; // line segment for this drawseg
 
   segpart_t *top; // top part of the wall (that one with top texture)
@@ -350,6 +354,12 @@ struct drawseg_t {
 
   surface_t *HorizonTop; // who knows...
   surface_t *HorizonBot; // who knows...
+
+  vuint32 flags;
+
+  inline bool NeedRecreate () const noexcept { return !!(flags&Flag_Recreate); }
+  inline void SetRecreate () noexcept { flags |= Flag_Recreate; }
+  inline void ResetRecreate () noexcept { flags &= ~Flag_Recreate; }
 };
 
 
@@ -1467,6 +1477,7 @@ struct subregion_t {
   enum {
     SRF_ZEROSKY_FLOOR_HACK = 1u<<0,
     SRF_FORCE_RECREATE = 1u<<1, // autoreset
+    SRF_FORCE_TJUNK = 1u<<2,
   };
   vuint32 flags;
   subsector_t *sub; // subsector for this region
@@ -1475,6 +1486,10 @@ struct subregion_t {
   inline void ForceRecreation () noexcept { flags |= SRF_FORCE_RECREATE; }
   inline void ResetForceRecreation () noexcept { flags &= ~SRF_FORCE_RECREATE; }
   inline bool IsForcedRecreation () const noexcept { return (flags&SRF_FORCE_RECREATE); }
+
+  inline void SetTJFix () noexcept { flags |= SRF_FORCE_TJUNK; }
+  inline void ResetTJFix () noexcept { flags &= ~SRF_FORCE_TJUNK; }
+  inline bool IsTJFix () const noexcept { return (flags&SRF_FORCE_TJUNK); }
 };
 
 

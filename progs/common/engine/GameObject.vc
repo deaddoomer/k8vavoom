@@ -747,6 +747,8 @@ struct drawseg_t {
 
   surface_t *HorizonTop;
   surface_t *HorizonBot;
+
+  bool bRecreate;
 };
 
 struct sec_surface_t {
