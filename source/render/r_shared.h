@@ -256,9 +256,9 @@ public:
   SurfVertex verts[1]; // dynamic array of vertices
 
 public:
-  inline bool isWorldAllocated () const noexcept { return (allocflags&ALLOC_WORLD); }
+  inline bool isWorldAllocated () const noexcept { return !!(allocflags&ALLOC_WORLD); }
 
-  inline bool isCentroidCreated () const noexcept { return (allocflags&CENTROID_CREATED); }
+  inline bool isCentroidCreated () const noexcept { return !!(allocflags&CENTROID_CREATED); }
   inline void setCentroidCreated () noexcept { allocflags |= CENTROID_CREATED; }
   inline void resetCentroidCreated () noexcept { allocflags &= ~CENTROID_CREATED; }
 

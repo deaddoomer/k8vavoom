@@ -249,36 +249,6 @@ TVec surface_t::CalculateRealCentroid () const noexcept {
 
 //==========================================================================
 //
-//  surface_t::AddCentroid
-//
-//  there should be enough room for two new points
-//
-//==========================================================================
-void surface_t::AddCentroid () noexcept {
-  vassert(!isCentroidCreated());
-  if (count >= 3) {
-    TVec cp;
-    if (r_tj_proper_centroids) {
-      cp = CalculateRealCentroid();
-    } else {
-      cp = CalculateFastCentroid();
-    }
-    InsertVertexAt(0, cp, -1);
-    setCentroidCreated();
-    // and re-add the previous first point as the final one
-    // (so the final triangle will be rendered too)
-    // this is not required for quad, but required for "real" triangle fan
-    // need to copy the point first, because we're passing a reference to it
-    cp = verts[1].vec();
-    InsertVertexAt(count, cp, verts[1].tjflags);
-    vassert(verts[1].vec() == verts[count-1].vec());
-    vassert(verts[1].tjflags == verts[count-1].tjflags);
-  }
-}
-
-
-//==========================================================================
-//
 //  surface_t::InsertVertexAt
 //
 //  there should be enough room for vertex
@@ -286,6 +256,9 @@ void surface_t::AddCentroid () noexcept {
 //==========================================================================
 void surface_t::InsertVertexAt (int idx, const TVec &p, int tjflags) noexcept {
   vassert(idx >= 0 && idx <= count);
+  vassert(count+1 <= alloted);
+  vassert(idx != 0 || verts[0].tjflags >= 0);
+  if (tjflags == -1) { vassert(idx == 0); }
   if (idx < count) memmove((void *)(&verts[idx+1]), (void *)(&verts[idx]), (count-idx)*sizeof(verts[0]));
   ++count;
   SurfVertex *dv = &verts[idx];
@@ -304,8 +277,46 @@ void surface_t::InsertVertexAt (int idx, const TVec &p, int tjflags) noexcept {
 //==========================================================================
 void surface_t::RemoveVertexAt (int idx) noexcept {
   vassert(idx >= 0 && idx < count);
+  vassert(idx != 0 || verts[0].tjflags >= 0);
   if (idx < count-1) memmove((void *)(&verts[idx]), (void *)(&verts[idx+1]), (count-idx-1)*sizeof(verts[0]));
   --count;
+}
+
+
+//==========================================================================
+//
+//  surface_t::AddCentroid
+//
+//  there should be enough room for two new points
+//
+//==========================================================================
+void surface_t::AddCentroid () noexcept {
+  vassert(!isCentroidCreated());
+  if (count >= 3) {
+    vassert(verts[0].tjflags >= 0);
+    #if 0
+    GCon->Logf(NAME_Debug, "AddCentroid: %08XH", (uintptr_t)this);
+    #endif
+    TVec cp;
+    if (r_tj_proper_centroids) {
+      cp = CalculateRealCentroid();
+    } else {
+      cp = CalculateFastCentroid();
+    }
+    InsertVertexAt(0, cp, -1);
+    setCentroidCreated();
+    vassert(isCentroidCreated());
+    // and re-add the previous first point as the final one
+    // (so the final triangle will be rendered too)
+    // this is not required for quad, but required for "real" triangle fan
+    // need to copy the point first, because we're passing a reference to it
+    cp = verts[1].vec();
+    vassert(verts[1].tjflags >= 0);
+    InsertVertexAt(count, cp, verts[1].tjflags);
+    vassert(verts[0].tjflags == -1);
+    vassert(verts[1].vec() == verts[count-1].vec());
+    vassert(verts[1].tjflags == verts[count-1].tjflags);
+  }
 }
 
 
@@ -316,9 +327,15 @@ void surface_t::RemoveVertexAt (int idx) noexcept {
 //==========================================================================
 void surface_t::RemoveCentroid () noexcept {
   if (isCentroidCreated()) {
+    #if 0
+    GCon->Logf(NAME_Debug, "RemoveCentroid: %08XH", (uintptr_t)this);
+    #endif
     vassert(count > 3);
+    vassert(verts[0].tjflags == -1);
     vassert(verts[1].vec() == verts[count-1].vec());
+    vassert(verts[1].tjflags == verts[count-1].tjflags);
     resetCentroidCreated();
+    vassert(!isCentroidCreated());
     // `-2`, because we don't need the last point
     memmove((void *)&verts[0], (void *)&verts[1], (count-2)*sizeof(verts[0]));
     count -= 2;
@@ -334,14 +351,26 @@ void surface_t::RemoveCentroid () noexcept {
 //
 //==========================================================================
 void surface_t::RemoveTJVerts () noexcept {
-  if (isCentroidCreated()) {
-    vassert(verts[0].tjflags == -1);
-    vassert(count > 3);
-    vassert(verts[1].tjflags == verts[count-1].tjflags);
-    if (verts[1].tjflags > 0) RemoveCentroid();
-  }
   int idx = 0;
-  while (idx < count) if (verts[idx].tjflags > 0) RemoveVertexAt(idx); else ++idx;
+  while (idx < count && verts[idx].tjflags <= 0) ++idx;
+  if (idx < count) {
+    #if 0
+    GCon->Logf(NAME_Debug, "RemoveTJVerts: FOUND: %08XH (%d) (%d, %d : %u)",
+               (uintptr_t)this, idx, verts[idx].tjflags,
+               verts[0].tjflags, allocflags);
+    #endif
+    if (isCentroidCreated()) RemoveCentroid();
+    int idx = 0;
+    while (idx < count) {
+      #if 0
+      if (verts[idx].tjflags < 0) {
+        GCon->Logf(NAME_Debug, "RemoveTJVerts: %08XH (%d)", (uintptr_t)this, idx);
+      }
+      #endif
+      vassert(verts[idx].tjflags >= 0);
+      if (verts[idx].tjflags != 0) RemoveVertexAt(idx); else ++idx;
+    }
+  }
 }
 
 
@@ -393,30 +422,30 @@ surface_t *VRenderLevelShared::NewWSurf (int vcount) noexcept {
     res->alloted = vcnt;
     res->count = vcount;
     return res;
-  }
-
-  // fits into "standard" world surface
-  if (!free_wsurfs) {
-    // allocate some more surfs
-    vuint8 *tmp = (vuint8 *)Z_Calloc(WSURFSIZE*4096+sizeof(void *));
-    *(void **)tmp = AllocatedWSurfBlocks;
-    AllocatedWSurfBlocks = tmp;
-    tmp += sizeof(void *);
-    for (int i = 0; i < 4096; ++i, tmp += WSURFSIZE) {
-      ((surface_t *)tmp)->next = free_wsurfs;
-      free_wsurfs = (surface_t *)tmp;
+  } else {
+    // fits into "standard" world surface
+    if (!free_wsurfs) {
+      // allocate some more surfs
+      vuint8 *tmp = (vuint8 *)Z_Calloc(WSURFSIZE*4096+sizeof(void *));
+      *(void **)tmp = AllocatedWSurfBlocks;
+      AllocatedWSurfBlocks = tmp;
+      tmp += sizeof(void *);
+      for (int i = 0; i < 4096; ++i, tmp += WSURFSIZE) {
+        ((surface_t *)tmp)->next = free_wsurfs;
+        free_wsurfs = (surface_t *)tmp;
+      }
     }
+
+    surface_t *surf = free_wsurfs;
+    free_wsurfs = surf->next;
+
+    memset((void *)surf, 0, WSURFSIZE);
+    surf->allocflags = surface_t::ALLOC_WORLD;
+
+    surf->alloted = surface_t::MAXWVERTS;
+    surf->count = vcount;
+    return surf;
   }
-
-  surface_t *surf = free_wsurfs;
-  free_wsurfs = surf->next;
-
-  memset((void *)surf, 0, WSURFSIZE);
-  surf->allocflags = surface_t::ALLOC_WORLD;
-
-  surf->alloted = surface_t::MAXWVERTS;
-  surf->count = vcount;
-  return surf;
 }
 
 
@@ -430,8 +459,13 @@ surface_t *VRenderLevelShared::NewWSurf (int vcount) noexcept {
 //  vertex counter is not changed
 //
 //==========================================================================
-surface_t *VRenderLevelShared::EnsureSurfacePoints (surface_t *surf, int vcount, surface_t *&listhead, surface_t *prev) noexcept {
+surface_t *VRenderLevelShared::EnsureSurfacePoints (surface_t *surf, int vcount,
+                                                    surface_t *&listhead, surface_t *prev) noexcept
+{
   if (vcount <= surf->alloted) return surf; // nothing to do
+  #if 0
+  GCon->Logf(NAME_Debug, "EnsureSurfacePoints: ENTER: %08XH (%u)", (uintptr_t)surf, surf->allocflags);
+  #endif
   #ifdef VV_ENSURE_POINTS_DEBUG
   if (surf->isCentroidCreated()) {
     vassert(surf->verts[1].vec() == surf->verts[surf->count-1].vec());
@@ -493,6 +527,9 @@ surface_t *VRenderLevelShared::EnsureSurfacePoints (surface_t *surf, int vcount,
   if (snew->isCentroidCreated()) {
     vassert(snew->verts[1].vec() == snew->verts[snew->count-1].vec());
   }
+  #endif
+  #if 0
+  GCon->Logf(NAME_Debug, "EnsureSurfacePoints: EXIT: %08XH (%u)", (uintptr_t)snew, surf->allocflags);
   #endif
   return snew;
 }
@@ -565,7 +602,10 @@ surface_t *VRenderLevelShared::ReallocSurface (surface_t *surfs, int vcount) noe
 //   [3]: right bottom point
 //
 //==========================================================================
-surface_t *VRenderLevelShared::CreateWSurf (TVec *wv, texinfo_t *texinfo, seg_t *seg, subsector_t *sub, int wvcount, vuint32 typeFlags) noexcept {
+surface_t *VRenderLevelShared::CreateWSurf (TVec *wv, texinfo_t *texinfo,
+                                            seg_t *seg, subsector_t *sub,
+                                            int wvcount, vuint32 typeFlags) noexcept
+{
   vassert(seg);
   if (wvcount < 3) return nullptr;
   if (wvcount == 4 && (wv[1].z <= wv[0].z && wv[2].z <= wv[3].z)) return nullptr;
@@ -582,7 +622,7 @@ surface_t *VRenderLevelShared::CreateWSurf (TVec *wv, texinfo_t *texinfo, seg_t 
   surf->typeFlags = typeFlags;
   //memcpy(surf->verts, wv, wvcount*sizeof(SurfVertex));
   //memset((void *)surf->verts, 0, wvcount*sizeof(SurfVertex));
-  for (int f = 0; f < wvcount; ++f) surf->verts[f].setVec(wv[f]);
+  for (int f = 0; f < wvcount; ++f) surf->verts[f].Set(wv[f]);
 
   if (texinfo->Tex == GTextureManager[skyflatnum]) {
     // never split sky surfaces

@@ -130,6 +130,7 @@ static bool CalcSurfMinMax (surface_t *surf, float &outmins, float &outmaxs, con
 
 // ////////////////////////////////////////////////////////////////////////// //
 struct SClipInfo {
+  // 0: front; 1: back
   int vcount[2];
   SurfVertex *verts[2];
 
@@ -138,7 +139,7 @@ struct SClipInfo {
   }
 
   inline void appendPoint (const int pidx, const TVec p) noexcept {
-    verts[pidx][vcount[pidx]++].clearSetVec(p);
+    verts[pidx][vcount[pidx]++].Set(p);
   }
 };
 
@@ -227,9 +228,11 @@ static bool SplitSurface (SClipInfo &clip, surface_t *surf, const TVec &axis) {
         const float dot = dots[i]/(dots[i]-dots[i+1]);
         for (int j = 0; j < 3; ++j) {
           // avoid round off error when possible
-               if (plane.normal[j] == +1.0f) mid[j] = plane.dist;
-          else if (plane.normal[j] == -1.0f) mid[j] = -plane.dist;
-          else mid[j] = p1[j]+dot*(p2[j]-p1[j]);
+          if (fabsf(plane.normal[j]) == 1.0f) {
+            mid[j] = (plane.normal[j] > 0.0f ? plane.dist : -plane.dist);
+          } else {
+            mid[j] = p1[j]+dot*(p2[j]-p1[j]);
+          }
         }
 
         clip.appendPoint(0, mid);
@@ -239,24 +242,6 @@ static bool SplitSurface (SClipInfo &clip, surface_t *surf, const TVec &axis) {
   }
 
   return (clip.vcount[0] >= 3 && clip.vcount[1] >= 3);
-}
-
-
-//==========================================================================
-//
-//  RemoveCentroids
-//
-//  always create centroids for complex surfaces
-//  this is required to avoid omiting some triangles
-//  in renderer (which can cause t-junctions)
-//
-//==========================================================================
-static surface_t *RemoveCentroids (surface_t *surf) {
-  for (surface_t *ss = surf; ss; ss = ss->next) {
-    if (ss->isCentroidCreated()) ss->RemoveCentroid();
-    vassert(!ss->isCentroidCreated());
-  }
-  return surf;
 }
 
 
@@ -416,6 +401,10 @@ surface_t *VRenderLevelLightmap::SubdivideFaceInternal (surface_t *surf, const T
   subsector_t *sub = surf->subsector;
   vassert(sub);
 
+  // just in case
+  //if (surf->isCentroidCreated()) surf->RemoveCentroid();
+  vassert(!surf->isCentroidCreated());
+
   if (plane) surf->plane = *plane;
 
   if (surf->count < 2) {
@@ -448,13 +437,15 @@ surface_t *VRenderLevelLightmap::SubdivideFaceInternal (surface_t *surf, const T
   surface_t *back = NewWSurf(clip.vcount[1]);
   back->copyRequiredFrom(*surf);
   back->count = clip.vcount[1];
-  if (back->count) memcpy((void *)back->verts, clip.verts[1], back->count*sizeof(SurfVertex));
+  memcpy((void *)back->verts, clip.verts[1], back->count*sizeof(SurfVertex));
+  vassert(back->verts[0].tjflags >= 0);
   if (plane) back->plane = *plane;
 
   surface_t *front = NewWSurf(clip.vcount[0]);
   front->copyRequiredFrom(*surf);
   front->count = clip.vcount[0];
-  if (front->count) memcpy((void *)front->verts, clip.verts[0], front->count*sizeof(SurfVertex));
+  memcpy((void *)front->verts, clip.verts[0], front->count*sizeof(SurfVertex));
+  vassert(front->verts[0].tjflags >= 0);
   if (plane) front->plane = *plane;
 
   front->next = surf->next;
@@ -490,14 +481,9 @@ surface_t *VRenderLevelLightmap::SubdivideFace (surface_t *surf,
   if (doSubdivisions) {
     //GCon->Logf(NAME_Debug, "removing centroid from default %s surface of subsector #%d (vcount=%d; hasc=%d)", (plane->isFloor() ? "floor" : "ceiling"), (int)(ptrdiff_t)(sub-&Level->Subsectors[0]), surf->count, surf->isCentroidCreated());
     // we'll re-add it later; subdivision works better without it
-    surf = RemoveCentroids(surf);
     surf = SubdivideFaceInternal(surf, axis, nextaxis, plane);
     vassert(surf);
   }
-
-  // always create centroids for complex surfaces
-  // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
-  //if (!lastRenderQuality) RecreateCentroids(this, surf);
 
   return surf;
 }
@@ -514,6 +500,8 @@ surface_t *VRenderLevelLightmap::SubdivideSegInternal (surface_t *surf, const TV
   subsector_t *sub = surf->subsector;
   //vassert(surf->seg == seg);
   vassert(sub);
+
+  vassert(!surf->isCentroidCreated());
 
   if (seg) surf->plane = *seg;
 
@@ -556,8 +544,7 @@ surface_t *VRenderLevelLightmap::SubdivideSegInternal (surface_t *surf, const TV
 
   news->next = surf->next;
   surf->next = SubdivideSegInternal(news, axis, nextaxis, seg);
-  if (nextaxis) return SubdivideSegInternal(surf, *nextaxis, nullptr, seg);
-  return surf;
+  return (nextaxis ? SubdivideSegInternal(surf, *nextaxis, nullptr, seg) : surf);
 }
 
 
@@ -570,13 +557,7 @@ surface_t *VRenderLevelLightmap::SubdivideSeg (surface_t *surf, const TVec &axis
                                                const TVec *nextaxis, seg_t *seg)
 {
   vassert(!surf->next);
-  // remove centroid (it could be added by wall t-junction fixer)
-  surf = RemoveCentroids(surf);
-  surf = SubdivideSegInternal(surf, axis, nextaxis, seg);
-  // always create centroids for complex surfaces
-  // this is required to avoid omiting some triangles in renderer (which can cause t-junctions)
-  //if (!lastRenderQuality) RecreateCentroids(this, surf);
-  return surf;
+  return SubdivideSegInternal(surf, axis, nextaxis, seg);
 }
 
 
@@ -635,9 +616,11 @@ static surface_t *SurfaceInsertPointIntoEdge (VRenderLevelShared *RLev,
   const int sfidx = surfIndex(surfhead, surf);
   #endif
   // check each surface line
-  for (int pn0 = (int)surf->isCentroidCreated(); pn0 < surf->count-(int)surf->isCentroidCreated(); ++pn0) {
-    int pn1 = (pn0+1)%surf->count;
-    if (surf->isCentroidCreated()) vassert(pn1 != 0);
+  const int cc = (int)surf->isCentroidCreated();
+  const int end = surf->count-cc; // with centroid, last vertex dups first non-centroid one
+  for (int pn0 = cc; pn0 < end; ++pn0) {
+    const int pn1 = (pn0+1)%surf->count;
+    vassert((cc == 0) || (pn1 != 0));
     const TVec v0 = surf->verts[pn0].vec();
     const TVec v1 = surf->verts[pn1].vec();
     #if 0

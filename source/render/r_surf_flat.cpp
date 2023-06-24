@@ -254,13 +254,13 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
       // backward
       for (seg += (vcount-1); vcount--; ++dptr, --seg) {
         const TVec &v = *seg->v1;
-        dptr->setVec(v.x, v.y, spl.GetPointZ(v.x, v.y));
+        dptr->Set(v.x, v.y, spl.GetPointZ(v.x, v.y));
       }
     } else {
       // forward
       for (; vcount--; ++dptr, ++seg) {
         const TVec &v = *seg->v1;
-        dptr->setVec(v.x, v.y, spl.GetPointZ(v.x, v.y));
+        dptr->Set(v.x, v.y, spl.GetPointZ(v.x, v.y));
       }
     }
 

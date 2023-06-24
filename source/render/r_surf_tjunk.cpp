@@ -159,7 +159,7 @@ surface_t *VRenderLevelShared::FixSegTJunctions (surface_t *surf, seg_t *seg) {
   if (!lastRenderQuality) return surf; // just in case
 
   // for lightmaps, proper splitting is done by `FixSegSurfaceTJunctions()`
-  if (IsShadowVolumeRenderer()) return surf;
+  if (IsLightmapRenderer()) return surf;
 
   if (seg->pobj) return surf; // do not fix polyobjects (yet?)
 

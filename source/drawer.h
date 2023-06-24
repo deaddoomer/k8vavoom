@@ -61,12 +61,13 @@ struct SurfVertex {
   inline const TVec &vec () const noexcept { return v; }
   inline const TVec *vecptr () const noexcept { return &v; }
 
-  inline void setVec (const float ax, const float ay, const float az) noexcept { x = ax; y = ay; z = az; }
-  inline void setVec (const TVec &av) noexcept { x = av.x; y = av.y; z = av.z; }
+  inline void ReplaceVec (const float ax, const float ay, const float az) noexcept { x = ax; y = ay; z = az; }
+  inline void ReplaceVec (const TVec &av) noexcept { x = av.x; y = av.y; z = av.z; }
 
-  inline void clearSetVec (const TVec &av) noexcept { x = av.x; y = av.y; z = av.z; tjflags = 0; }
+  inline void Set (const float ax, const float ay, const float az) noexcept { x = ax; y = ay; z = az; tjflags = 0; }
+  inline void Set (const TVec &av) noexcept { x = av.x; y = av.y; z = av.z; tjflags = 0; }
 };
-//static_assert(sizeof(SurfVertex) == sizeof(float)*3+sizeof(subsector_t *), "invalid SurfVertex size");
+static_assert(sizeof(SurfVertex) == sizeof(float)*3+sizeof(int), "invalid SurfVertex size");
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -327,6 +328,7 @@ public:
 
   virtual void UpdateSubsectorFlatSurfaces (subsector_t *sub, bool dofloors, bool doceils, bool forced=false) = 0;
 
+  inline bool IsLightmapRenderer () const noexcept { return !mIsShadowVolumeRenderer; }
   inline bool IsShadowVolumeRenderer () const noexcept { return mIsShadowVolumeRenderer; }
   // shadowmap renderer is a part of a shadow volume renderer (sorry, this is ugly hack, i know)
   virtual bool IsShadowMapRenderer () const noexcept = 0;
