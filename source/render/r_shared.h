@@ -187,7 +187,7 @@ public:
   enum {
     DF_MASKED       = 1u<<0, // this surface has "masked" texture
     DF_WSURF        = 1u<<1, // is this world/wall surface? such surfs are guaranteed to have space for `MAXWVERTS`
-    DF_FIX_CRACKS   = 1u<<2, // this surface must be processed with t-junction fixer (not implemented yet)
+    DF_FIX_CRACKS   = 1u<<2, // this surface must be processed with t-junction fixer
     DF_CALC_LMAP    = 1u<<3, // calculate static lightmap
     DF_NO_FACE_CULL = 1u<<4, // ignore face culling
     DF_MIRROR       = 1u<<5, // this is floor/ceiling mirror surface (set in renderer)

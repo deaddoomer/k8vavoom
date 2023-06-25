@@ -135,12 +135,6 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg,
       if (forceUpdate || CheckMidRecreate1S(seg, sp, r_floor.splane, r_ceiling.splane)) {
         if (!seg->pobj && CheckFlatsChanged(seg, sp, r_floor.splane, r_ceiling.splane)) needTJ = true;
         //if (seg->pobj) GCon->Logf(NAME_Debug, "pobj #%d seg; RECREATING; needTJ=%d", seg->pobj->index, (int)needTJ);
-        /*
-        if (sp->NeedFixTJunk()) {
-          sp->ResetFixTJunk();
-          sp->SetFixSurfCracks();
-        }
-        */
         SetupOneSidedMidWSurf(sub, seg, sp, r_floor, r_ceiling);
       } else if (sp->surfs) {
         //if (seg->pobj) GCon->Logf(NAME_Debug, "pobj #%d seg; OFFSETING", seg->pobj->index);
@@ -163,12 +157,6 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg,
            R_IsStrictlySkyFlatPlane(r_ceiling.splane) && !R_IsStrictlySkyFlatPlane(back_ceiling)))
       {
         if (!seg->pobj && CheckFlatsChanged(seg, sp, r_floor.splane, r_ceiling.splane)) needTJ = true;
-        /*
-        if (sp->NeedFixTJunk()) {
-          sp->ResetFixTJunk();
-          sp->SetFixSurfCracks();
-        }
-        */
         SetupTwoSidedSkyWSurf(sub, seg, sp, r_floor, r_ceiling);
       }
       sp->texinfo.ColorMap = ColorMap;
@@ -181,12 +169,6 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg,
     if (sp) {
       if (forceUpdate || CheckTopRecreate2S(seg, sp, r_floor.splane, r_ceiling.splane)) {
         if (!seg->pobj && CheckFlatsChanged(seg, sp, r_floor.splane, r_ceiling.splane)) needTJ = true;
-        /*
-        if (sp->NeedFixTJunk()) {
-          sp->ResetFixTJunk();
-          sp->SetFixSurfCracks();
-        }
-        */
         SetupTwoSidedTopWSurf(sub, seg, sp, r_floor, r_ceiling);
         //if (CheckTopRecreate2S(seg, sp, r_floor.splane, r_ceiling.splane)) GCon->Logf(NAME_Debug, "FUCK! line #%d", (int)(ptrdiff_t)(ld-&Level->Lines[0]));
       } else if (sp->surfs) {
@@ -200,12 +182,6 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg,
     if (sp) {
       if (forceUpdate || CheckBotRecreate2S(seg, sp, r_floor.splane, r_ceiling.splane)) {
         if (!seg->pobj && CheckFlatsChanged(seg, sp, r_floor.splane, r_ceiling.splane)) needTJ = true;
-        /*
-        if (sp->NeedFixTJunk()) {
-          sp->ResetFixTJunk();
-          sp->SetFixSurfCracks();
-        }
-        */
         SetupTwoSidedBotWSurf(sub, seg, sp, r_floor, r_ceiling);
       } else if (sp->surfs) {
         UpdateTextureOffsets(sub, seg, sp, &seg->sidedef->Bot);
@@ -218,12 +194,6 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg,
     if (sp) {
       if (forceUpdate || CheckMidRecreate2S(seg, sp, r_floor.splane, r_ceiling.splane)) {
         if (!seg->pobj && CheckFlatsChanged(seg, sp, r_floor.splane, r_ceiling.splane)) needTJ = true;
-        /*
-        if (sp->NeedFixTJunk()) {
-          sp->ResetFixTJunk();
-          sp->SetFixSurfCracks();
-        }
-        */
         SetupTwoSidedMidWSurf(sub, seg, sp, r_floor, r_ceiling);
         if (sp->surfs && sp->texinfo.Tex->Type != TEXTYPE_Null) {
           if (ld->alpha < 1.0f || sp->texinfo.Tex->isTranslucent()) ld->exFlags &= ~ML_EX_NON_TRANSLUCENT;
@@ -257,12 +227,6 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg,
 
       if (forceUpdate || CheckCommonRecreateEx(sp, MTex, r_floor.splane, r_ceiling.splane, reg->efloor.splane, reg->eceiling.splane)) {
         if (CheckFlatsChanged(seg, sp, r_floor.splane, r_ceiling.splane)) needTJ = true;
-        /*
-        if (sp->NeedFixTJunk()) {
-          sp->ResetFixTJunk();
-          sp->SetFixSurfCracks();
-        }
-        */
         SetupTwoSidedMidExtraWSurf(reg, sub, seg, sp, r_floor, r_ceiling);
         if (sp->surfs && sp->texinfo.Tex->Type != TEXTYPE_Null) {
           if (sp->texinfo.Alpha < 1.0f || sp->texinfo.Additive || sp->texinfo.Tex->isTranslucent()) ld->exFlags &= ~ML_EX_NON_TRANSLUCENT;
@@ -289,11 +253,6 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg,
           sp->texinfo.Additive = false;
         }
       }
-      /* -- this will be reset in renderer
-      if (reg->IsTJFix()) {
-        reg->ResetTJFix();
-      }
-      */
       sp->texinfo.ColorMap = ColorMap;
     }
 
@@ -302,7 +261,7 @@ void VRenderLevelShared::UpdateDrawSeg (subsector_t *sub, drawseg_t *dseg,
     }
   }
 
-  if (needTJ && lastRenderQuality) MarkTJunctions(seg);
+  if (needTJ /*&& lastRenderQuality*/) MarkTJunctions(seg);
 }
 
 
@@ -475,19 +434,6 @@ void VRenderLevelShared::UpdatePObj (polyobj_t *po) {
 
 //==========================================================================
 //
-//  CheckCracks
-//
-//==========================================================================
-static inline void CheckCracks (sec_surface_t *sf) {
-  if (sf) {
-    //sf->ResetFixTJunk();
-    sf->SetFixSurfCracks();
-  }
-}
-
-
-//==========================================================================
-//
 //  VRenderLevelShared::UpdateSubsectorFloorSurfaces
 //
 //==========================================================================
@@ -495,15 +441,6 @@ void VRenderLevelShared::UpdateSubsectorFlatSurfaces (subsector_t *sub, bool dof
   if (!sub || (!dofloors && !doceils)) return;
   if (!forced && sub->updateWorldFrame == updateWorldFrame) return;
   for (subregion_t *region = sub->regions; region; region = region->next) {
-    const bool fixTJ = region->IsTJFix();
-    if (fixTJ) {
-      region->ResetTJFix();
-      CheckCracks(region->realfloor);
-      CheckCracks(region->realceil);
-      CheckCracks(region->fakefloor);
-      CheckCracks(region->fakeceil);
-    }
-
     if (dofloors) {
       if (region->realfloor) {
         // check if we have to remove zerosky flag

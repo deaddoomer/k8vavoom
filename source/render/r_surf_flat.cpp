@@ -251,6 +251,8 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
   if (spl.isFlipped()) plane.FlipInPlace();
 
   if (recreateSurface) {
+    const bool isLM = IsLightmapRenderer();
+
     surf->plane = plane;
     surf->count = vcount;
     const seg_t *seg = &Level->Segs[sub->firstline];
@@ -275,6 +277,7 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
       //ssurf->surfs = surf;
       ssurf->surfs = SubdivideFace(surf, sreg, ssurf, ssurf->texinfo.saxisLM, &ssurf->texinfo.taxisLM, &plane, false);
       vassert(!ssurf->surfs->next);
+      ssurf->SetFixSurfCracks();
       surf = ssurf->surfs; // if may be changed
       surf->texinfo = &ssurf->texinfo;
       surf->plane = plane;
@@ -286,9 +289,20 @@ sec_surface_t *VRenderLevelShared::CreateSecSurface (sec_surface_t *ssurf, subse
       //!GCon->Logf(NAME_Debug, "sfcF:%p: saxis=(%g,%g,%g); taxis=(%g,%g,%g); saxisLM=(%g,%g,%g); taxisLM=(%g,%g,%g)", ssurf, ssurf->texinfo.saxis.x, ssurf->texinfo.saxis.y, ssurf->texinfo.saxis.z, ssurf->texinfo.taxis.x, ssurf->texinfo.taxis.y, ssurf->texinfo.taxis.z, ssurf->texinfo.saxisLM.x, ssurf->texinfo.saxisLM.y, ssurf->texinfo.saxisLM.z, ssurf->texinfo.taxisLM.x, ssurf->texinfo.taxisLM.y, ssurf->texinfo.taxisLM.z);
       ssurf->surfs = SubdivideFace(surf, sreg, ssurf, ssurf->texinfo.saxisLM, &ssurf->texinfo.taxisLM, &plane);
       surf = ssurf->surfs; // it may be changed
-      //sreg->ForceTJFix();
-      ssurf->SetFixSurfCracks();
       InitSurfs(true, ssurf->surfs, &ssurf->texinfo, &plane, sub, nullptr, sreg); // recalc static lightmaps
+    }
+
+    // recreated flat should cause tj fixes for all subsector lines
+    if (isLM && lastRenderQuality) {
+      MarkSubFloors(sub);
+      seg_t *xseg = &Level->Segs[sub->firstline];
+      for (int f = sub->numlines; f--; ++xseg) {
+        MarkTJFixWholeSeg(xseg);
+        if (xseg->frontsub != sub) MarkSubFloors(xseg->frontsub);
+        if (xseg->partner && xseg->partner->frontsub != sub) {
+          MarkSubFloors(xseg->partner->frontsub);
+        }
+      }
     }
   } else if (updateZ) {
     // update z coords

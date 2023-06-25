@@ -176,17 +176,9 @@ struct sec_surface_t {
     FlagUseAlpha = 1u<<0, // not implemented
     // for fake floors and ceilings
     FlagSkipMe = 1u<<1,
-    // fix t-junctions?
-    //FlagFixCracks = 1u<<2,
   };
   vuint32 Flags;
   surface_t *surfs;
-
-  /*
-  inline void SetFixTJunk () noexcept { Flags |= FlagFixCracks; }
-  inline void ResetFixTJunk () noexcept { Flags &= ~FlagFixCracks; }
-  inline bool NeedFixTJunk () const noexcept { return !!(Flags&FlagFixCracks); }
-  */
 
   inline float PointDistance (const TVec &p) const noexcept { return esecplane.PointDistance(p); }
   inline float GetPointZ (const TVec &p) const noexcept { return esecplane.GetPointZ(p); }

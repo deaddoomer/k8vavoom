@@ -61,24 +61,6 @@ static int spvPoolSize = 0;
 
 //==========================================================================
 //
-//  surfIndex
-//
-//==========================================================================
-static VVA_OKUNUSED int surfIndex (const surface_t *surfs, const surface_t *curr) noexcept {
-  int res;
-  if (!curr) {
-    res = -1;
-  } else {
-    res = 0;
-    while (surfs && surfs != curr) { ++res; surfs = surfs->next; }
-    if (!surfs) res = -666;
-  }
-  return res;
-}
-
-
-//==========================================================================
-//
 //  spvReserve
 //
 //==========================================================================

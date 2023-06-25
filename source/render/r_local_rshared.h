@@ -327,8 +327,9 @@ private:
 
 protected:
   // it is of `Level->NumLines` size, to avoid marking lines twice in `SectorModified`; marked with `updateWorldFrame`
-  vuint32 *tjLineMarkCheck; // some segment of this line was processed in `MarkTJunctions()`
-  vuint32 *tjLineMarkFix; // this line was fully processed in `MarkTJunctions()` (i.e. as adjacent line)
+  vuint32 *tjLineMarkCheck; // this line was processed by t-junctions fixer
+  vuint32 *tjLineMarkFix; // this line was fully processed in `MarkAdjacentTJunctions()` (i.e. as adjacent line)
+  vuint32 *tjSubMarkFix; // this subsector was fully processed in `MarkTJunctions()` (i.e. as adjacent line)
 
 protected:
   void NewBSPFloodVisibilityFrame () noexcept;
@@ -755,15 +756,21 @@ public:
   surface_t *EnsureSurfacePoints (surface_t *surf, int vcount, surface_t *&listhead, surface_t *prev) noexcept;
 
 public:
+  static void MarkTJFixWholeSeg (seg_t *seg) noexcept;
+  static void SetRegionFixSurfCracks (subregion_t *region) noexcept;
+
   void InvaldateAllTJunctions () noexcept;
   void MarkAdjacentTJunctions (const sector_t *fsec, const line_t *line) noexcept;
   void MarkTJunctions (seg_t *seg) noexcept;
+  void MarkSubFloors (const subsector_t *sub) noexcept;
 
   void ForceWholeSegRecreation (seg_t *seg) noexcept;
 
 public:
   surface_t **FindWallSurfHead (surface_t *surf, seg_t *myseg, surface_t **pprev);
   surface_t **FindSubSurfHead (surface_t *surf, subsector_t *sub, surface_t **pprev);
+
+  surface_t *FixSurfCentroid (surface_t *surf, surface_t *&surfhead, surface_t *prev);
 
   surface_t *SurfaceInsertPointIntoEdge (surface_t *surf, surface_t *&surfhead,
                                          surface_t *prev, const TVec p, bool *modified);

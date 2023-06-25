@@ -788,6 +788,7 @@ VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
 
   tjLineMarkCheck = (vuint32 *)Z_Calloc((Level->NumLines+1)*sizeof(tjLineMarkCheck[0]));
   tjLineMarkFix = (vuint32 *)Z_Calloc((Level->NumLines+1)*sizeof(tjLineMarkFix[0]));
+  tjSubMarkFix = (vuint32 *)Z_Calloc((Level->NumSubsectors+1)*sizeof(tjSubMarkFix[0]));
 
   PortalDepth = 0;
   PortalUsingStencil = 0;
@@ -1023,6 +1024,8 @@ VRenderLevelShared::~VRenderLevelShared () {
   tjLineMarkCheck = nullptr;
   Z_Free(tjLineMarkFix);
   tjLineMarkFix = nullptr;
+  Z_Free(tjSubMarkFix);
+  tjSubMarkFix = nullptr;
 
   KillPortalPool();
 
@@ -1092,6 +1095,7 @@ void VRenderLevelShared::ResetUpdateWorldFrame () noexcept {
   if (Level->NumLines) {
     if (tjLineMarkCheck) memset((void *)tjLineMarkCheck, 0, Level->NumLines*sizeof(tjLineMarkCheck[0]));
     if (tjLineMarkFix) memset((void *)tjLineMarkFix, 0, Level->NumLines*sizeof(tjLineMarkFix[0]));
+    if (tjSubMarkFix) memset((void *)tjSubMarkFix, 0, Level->NumSubsectors*sizeof(tjSubMarkFix[0]));
   }
 }
 
@@ -1720,7 +1724,8 @@ void VRenderLevelShared::RenderPlayerView () {
 
   if (lastRenderQuality != r_fix_tjunctions.asBool()) {
     lastRenderQuality = r_fix_tjunctions.asBool();
-    GCon->Logf(NAME_Debug, "render quality changed to '%s', invalidating all surfaces", (lastRenderQuality ? "quality" : "speed"));
+    GCon->Logf(NAME_Debug, "render quality changed to '%s', invalidating all surfaces",
+               (lastRenderQuality ? "quality" : "speed"));
     InvaldateAllTJunctions();
   }
 

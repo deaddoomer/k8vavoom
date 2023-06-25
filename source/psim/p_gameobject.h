@@ -1477,7 +1477,6 @@ struct subregion_t {
   enum {
     SRF_ZEROSKY_FLOOR_HACK = 1u<<0,
     SRF_FORCE_RECREATE = 1u<<1, // autoreset
-    SRF_FORCE_TJUNK = 1u<<2,
   };
   vuint32 flags;
   subsector_t *sub; // subsector for this region
@@ -1486,10 +1485,6 @@ struct subregion_t {
   inline void ForceRecreation () noexcept { flags |= SRF_FORCE_RECREATE; }
   inline void ResetForceRecreation () noexcept { flags &= ~SRF_FORCE_RECREATE; }
   inline bool IsForcedRecreation () const noexcept { return (flags&SRF_FORCE_RECREATE); }
-
-  inline void SetTJFix () noexcept { flags |= SRF_FORCE_TJUNK; }
-  inline void ResetTJFix () noexcept { flags &= ~SRF_FORCE_TJUNK; }
-  inline bool IsTJFix () const noexcept { return (flags&SRF_FORCE_TJUNK); }
 };
 
 
