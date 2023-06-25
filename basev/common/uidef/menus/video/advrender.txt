@@ -14,6 +14,7 @@ menudef AdvRenderOptions {
       "is glitchy, try to turn this 'OFF'";
   }
 
+  /* there is no reason to turn it off anymore
   option enum {
     title = "Render Quality";
     cvar = r_fix_tjunctions;
@@ -25,9 +26,10 @@ menudef AdvRenderOptions {
       "'Quality' setting fixes 'running white dots' on walls,",
       "but is somewhat slow.",
       "",
-      "Please, note that lightmapped renderer will still have",
-      "those dots all around. This will be fixed later.";
+      "Please, note that 3d floors still may cause Space Ants.",
+      "This will be fixed later.";
   }
+  */
 
 
   header "Render Portals Options";
