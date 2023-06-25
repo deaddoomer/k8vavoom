@@ -519,6 +519,7 @@ surface_t *VRenderLevelShared::FixSubFlatSurfaceTJunctions (surface_t *surf, sub
         AddPointsFromAllRegions(xseg->frontsub, surf, *surfhead, prev, nullptr);
       }
       if (xseg->partner && xseg->partner->frontsub != sub) {
+        AddPointsFromDrawseg(xseg->partner->drawsegs, surf, *surfhead, prev, nullptr);
         AddPointsFromAllRegions(xseg->partner->frontsub, surf, *surfhead, prev, nullptr);
       }
     }

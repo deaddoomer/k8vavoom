@@ -519,36 +519,3 @@ surface_t *VRenderLevelLightmap::SubdivideSeg (surface_t *surf, const TVec &axis
   vassert(!surf->next);
   return SubdivideSegInternal(surf, axis, nextaxis, seg);
 }
-
-
-//==========================================================================
-//
-//  VRenderLevelLightmap::DoneInitialWordSurfCreation
-//
-//  t-junctions should be processed after all subdivisions are done,
-//  otherwise there will be some unprocessed quads.
-//
-//==========================================================================
-void VRenderLevelLightmap::DoneInitialWordSurfCreation () {
-  /*
-  for (auto &&sec : Level->allSectors()) SectorModified(&sec);
-  */
-  /*
-  for (auto &&ssx : Level->allSegs()) {
-    if (ssx.linedef && ssx.drawsegs) {
-      for (int dsidx = 0; dsidx < 4; ++dsidx) {
-        segpart_t *xsegpart =
-          dsidx == 0 ? ssx.drawsegs->top :
-          dsidx == 1 ? ssx.drawsegs->mid :
-          dsidx == 2 ? ssx.drawsegs->bot :
-          dsidx == 3 ? ssx.drawsegs->extra :
-          nullptr;
-        while (xsegpart) {
-          xsegpart->surfs = FixSegSurfaceTJunctions(xsegpart->surfs, &ssx);
-          xsegpart = xsegpart->next;
-        }
-      }
-    }
-  }
-  */
-}

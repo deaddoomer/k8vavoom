@@ -200,6 +200,12 @@ struct sec_surface_t {
       sf->SetFixCracks();
     }
   }
+
+  inline void ResetFixSurfCracks () noexcept {
+    for (surface_t *sf = surfs; sf; sf = sf->next) {
+      sf->ResetFixCracks();
+    }
+  }
 };
 
 

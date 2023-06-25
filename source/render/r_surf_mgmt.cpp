@@ -962,14 +962,37 @@ void VRenderLevelShared::SetRegionFixSurfCracks (subregion_t *region) noexcept {
 //
 //==========================================================================
 void VRenderLevelShared::InvaldateAllTJunctions () noexcept {
-  segpart_t *sp = AllocatedSegParts;
-  for (int f = NumSegParts; f--; ++sp) {
-    sp->SetFixSurfCracks();
-  }
-  if (IsLightmapRenderer()) {
+  // clear all fix flags
+  if (false) {
+    segpart_t *sp = AllocatedSegParts;
+    for (int f = NumSegParts; f--; ++sp) {
+      sp->ResetFixSurfCracks();
+    }
     for (auto &&xsub : Level->allSubsectors()) {
       for (subregion_t *region = xsub.regions; region; region = region->next) {
-        SetRegionFixSurfCracks(region);
+        if (region->realfloor) region->realfloor->ResetFixSurfCracks();
+        if (region->realceil) region->realceil->ResetFixSurfCracks();
+        if (region->fakefloor) region->fakefloor->ResetFixSurfCracks();
+        if (region->fakeceil) region->fakeceil->ResetFixSurfCracks();
+      }
+    }
+  }
+
+  if (false) {
+    // debug code
+    for (subregion_t *region = Level->Subsectors[1].regions; region; region = region->next) {
+      if (region->realfloor) region->realfloor->SetFixSurfCracks();
+    }
+  } else {
+    segpart_t *sp = AllocatedSegParts;
+    for (int f = NumSegParts; f--; ++sp) {
+      sp->SetFixSurfCracks();
+    }
+    if (IsLightmapRenderer()) {
+      for (auto &&xsub : Level->allSubsectors()) {
+        for (subregion_t *region = xsub.regions; region; region = region->next) {
+          SetRegionFixSurfCracks(region);
+        }
       }
     }
   }

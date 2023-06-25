@@ -92,42 +92,6 @@ surface_t *VRenderLevelShadowVolume::SubdivideSeg (surface_t *surf, const TVec &
 
 //==========================================================================
 //
-//  VRenderLevelShadowVolume::DoneInitialWordSurfCreation
-//
-//==========================================================================
-void VRenderLevelShadowVolume::DoneInitialWordSurfCreation () {
-  // nothing to do here yet
-}
-
-
-/*
-//==========================================================================
-//
-//  VRenderLevelShadowVolume::FixSegSurfaceTJunctions
-//
-//==========================================================================
-surface_t *VRenderLevelShadowVolume::FixSegSurfaceTJunctions (surface_t *surf, seg_t *seg) {
-  (void)seg;
-  return surf;
-}
-
-
-//==========================================================================
-//
-//  VRenderLevelShadowVolume::FixSubFlatSurfaceTJunctions
-//
-//==========================================================================
-surface_t *VRenderLevelShadowVolume::FixSubFlatSurfaceTJunctions (surface_t *surf,
-                                                                  subsector_t *sub)
-{
-  (void)sub;
-  return surf;
-}
-*/
-
-
-//==========================================================================
-//
 //  VRenderLevelShadowVolume::PreRender
 //
 //==========================================================================
