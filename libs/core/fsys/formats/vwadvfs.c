@@ -2631,6 +2631,21 @@ const char *vwad_get_archive_comment (vwad_handle *wad) {
 
 //==========================================================================
 //
+//  vwad_free_archive_comment
+//
+//  forget main archive comment and free its memory.
+//
+//==========================================================================
+void vwad_free_archive_comment (vwad_handle *wad) {
+  if (wad && wad->comment) {
+    xfree(wad->mman, wad->comment);
+    wad->comment = NULL;
+  }
+}
+
+
+//==========================================================================
+//
 //  vwad_is_authenticated
 //
 //==========================================================================

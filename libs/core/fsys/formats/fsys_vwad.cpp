@@ -150,20 +150,35 @@ void VVWadFile::OpenArchive (VStream *fstream) {
   iostrm->udata = (void *)fstream;
   vw_strm = iostrm;
 
-  vwad_handle *wad = vwad_open_archive(iostrm, VWAD_OPEN_NO_MAIN_COMMENT, &memman);
+  vwad_handle *wad = vwad_open_archive(iostrm, VWAD_OPEN_DEFAULT, &memman);
   if (!wad) {
-    Sys_Error("cannot load zip/pk3 file \"%s\"", *PakFileName);
+    Sys_Error("cannot load vwad file \"%s\"", *PakFileName);
   }
   vw_handle = wad;
 
-  if (vwad_has_pubkey(wad)) {
+  if (vwad_has_pubkey(wad) && vwad_is_authenticated(wad)) {
     vwad_public_key pubkey;
     if (vwad_get_pubkey(wad, pubkey) == 0) {
       if (memcmp(pubkey, k8PubKey, sizeof(pubkey)) == 0) {
-        GLog.Logf(NAME_Init, "CREATOR of \"%s\": Ketmar Dark\n", *PakFileName);
+        GLog.Logf(NAME_Init, "CREATOR: Ketmar Dark");
       }
     }
   }
+
+  const char *comment = vwad_get_archive_comment(wad);
+  if (comment) {
+    char cmt[64];
+    int pos = 0;
+    while (pos < 63 && comment[pos] && comment[pos] != '\n') {
+      cmt[pos] = comment[pos];
+      ++pos;
+    }
+    if (pos < 63) {
+      cmt[pos] = 0;
+      GLog.Logf(NAME_Init, "COMMENT: %s", cmt);
+    }
+  }
+  vwad_free_archive_comment(wad);
 
   type = PAK;
 

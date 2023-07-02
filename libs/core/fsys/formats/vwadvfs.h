@@ -120,6 +120,10 @@ void vwad_close_archive (vwad_handle **wadp);
 // can return NULL if there is no comment, or `VWAD_OPEN_NO_MAIN_COMMENT` passed
 const char *vwad_get_archive_comment (vwad_handle *wad);
 
+// forget main archive comment and free its memory.
+// WARNING! `vwad_get_archive_comment()` result will be undefined!
+void vwad_free_archive_comment (vwad_handle *wad);
+
 vwad_bool vwad_has_opened_files (vwad_handle *wad);
 
 // check if opened wad is authenticated. if the library was
