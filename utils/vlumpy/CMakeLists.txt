@@ -5,10 +5,13 @@ if("$ENV{USER}" STREQUAL "ketmar")
   set(vlumpy_vwad ON)
   set(vlumpy_vwad_src vwadwrite.c vwadwrite.h)
   add_definitions(-DVAVOOM_VLUMPY_VWAD=1)
+  add_definitions(-DVWADWRITER_K8VAVOOM)
+  add_definitions(-DVAVOOM_VLUMPY_VWAD_K8=1)
 else()
   set(vlumpy_vwad OFF)
   set(vlumpy_vwad_src )
   add_definitions(-DVAVOOM_VLUMPY_VWAD=0)
+  add_definitions(-DVAVOOM_VLUMPY_VWAD_K8=0)
 endif()
 
 add_executable(vlumpy

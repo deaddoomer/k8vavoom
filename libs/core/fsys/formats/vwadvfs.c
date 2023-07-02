@@ -18,6 +18,157 @@ typedef unsigned char ed25519_signature[64];
 typedef unsigned char ed25519_public_key[32];
 typedef unsigned char ed25519_secret_key[32];
 
+
+static inline uint64_t get_u64 (const void *src) {
+  uint64_t res = ((const uint8_t *)src)[0];
+  res |= ((uint64_t)((const uint8_t *)src)[1])<<8;
+  res |= ((uint64_t)((const uint8_t *)src)[2])<<16;
+  res |= ((uint64_t)((const uint8_t *)src)[3])<<24;
+  res |= ((uint64_t)((const uint8_t *)src)[4])<<32;
+  res |= ((uint64_t)((const uint8_t *)src)[5])<<40;
+  res |= ((uint64_t)((const uint8_t *)src)[6])<<48;
+  res |= ((uint64_t)((const uint8_t *)src)[7])<<56;
+  return res;
+}
+
+
+static inline uint32_t get_u32 (const void *src) {
+  uint32_t res = ((const uint8_t *)src)[0];
+  res |= ((uint32_t)((const uint8_t *)src)[1])<<8;
+  res |= ((uint32_t)((const uint8_t *)src)[2])<<16;
+  res |= ((uint32_t)((const uint8_t *)src)[3])<<24;
+  return res;
+}
+
+
+static inline uint16_t get_u16 (const void *src) {
+  uint16_t res = ((const uint8_t *)src)[0];
+  res |= ((uint16_t)((const uint8_t *)src)[1])<<8;
+  return res;
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+typedef struct {
+  uint32_t input[16];
+} chacha20_ctx;
+
+
+static inline uint32_t CHACHA20_U8TO32_LITTLE (const void *p) { return ((uint32_t *)p)[0]; }
+static inline void CHACHA20_U32TO8_LITTLE (void *p, const uint32_t v) { ((uint32_t *)p)[0] = v; }
+
+
+#define CHACHA20_ROTL(a,b) (((a) << (b)) | ((a) >> (32 - (b))))
+#define CHACHA20_QUARTERROUND(a, b, c, d) ( \
+  a += b,  d ^= a,  d = CHACHA20_ROTL(d,16), \
+  c += d,  b ^= c,  b = CHACHA20_ROTL(b,12), \
+  a += b,  d ^= a,  d = CHACHA20_ROTL(d, 8), \
+  c += d,  b ^= c,  b = CHACHA20_ROTL(b, 7))
+
+#define CHACHA20_ROUNDS  20
+
+static inline void salsa20_wordtobyte (uint8_t output[64], const uint32_t input[16]) {
+  uint32_t x[16];
+  for (unsigned i = 0; i < 16; ++i) x[i] = input[i];
+  for (unsigned i = 0; i < CHACHA20_ROUNDS; i += 2) {
+    // odd round
+    CHACHA20_QUARTERROUND(x[0], x[4], x[ 8], x[12]); // column 0
+    CHACHA20_QUARTERROUND(x[1], x[5], x[ 9], x[13]); // column 1
+    CHACHA20_QUARTERROUND(x[2], x[6], x[10], x[14]); // column 2
+    CHACHA20_QUARTERROUND(x[3], x[7], x[11], x[15]); // column 3
+    // Even round
+    CHACHA20_QUARTERROUND(x[0], x[5], x[10], x[15]); // diagonal 1 (main diagonal)
+    CHACHA20_QUARTERROUND(x[1], x[6], x[11], x[12]); // diagonal 2
+    CHACHA20_QUARTERROUND(x[2], x[7], x[ 8], x[13]); // diagonal 3
+    CHACHA20_QUARTERROUND(x[3], x[4], x[ 9], x[14]); // diagonal 4
+  }
+  for (unsigned i = 0; i < 16; ++i) x[i] += input[i];
+  for (unsigned i = 0; i < 16; ++i) CHACHA20_U32TO8_LITTLE(output+4*i, x[i]);
+}
+
+#undef CHACHA20_ROUNDS
+#undef CHACHA20_QUARTERROUND
+#undef CHACHA20_ROTL
+
+
+/* Key size in bits: either 256 (32 bytes), or 128 (16 bytes) */
+/* Nonce size in bits: 64 (8 bytes) */
+/* returns 0 on success */
+static int chacha20_setup_ex (chacha20_ctx *ctx, const void *keydata,
+                              const void *noncedata, uint32_t keybits)
+{
+  const char *sigma = "expand 32-byte k";
+  const char *tau = "expand 16-byte k";
+
+  if (!keydata || !noncedata) return -1;
+
+  const char *constants;
+  const uint8_t *key = (const uint8_t *)keydata;
+  if (keybits != 128 && keybits != 256) return -2;
+
+  ctx->input[4] = CHACHA20_U8TO32_LITTLE(key+0);
+  ctx->input[5] = CHACHA20_U8TO32_LITTLE(key+4);
+  ctx->input[6] = CHACHA20_U8TO32_LITTLE(key+8);
+  ctx->input[7] = CHACHA20_U8TO32_LITTLE(key+12);
+  if (keybits == 256) {
+    /* recommended */
+    key += 16;
+    constants = sigma;
+  } else {
+    /* keybits == 128 */
+    constants = tau;
+  }
+  ctx->input[8] = CHACHA20_U8TO32_LITTLE(key+0);
+  ctx->input[9] = CHACHA20_U8TO32_LITTLE(key+4);
+  ctx->input[10] = CHACHA20_U8TO32_LITTLE(key+8);
+  ctx->input[11] = CHACHA20_U8TO32_LITTLE(key+12);
+  ctx->input[0] = CHACHA20_U8TO32_LITTLE(constants+0);
+  ctx->input[1] = CHACHA20_U8TO32_LITTLE(constants+4);
+  ctx->input[2] = CHACHA20_U8TO32_LITTLE(constants+8);
+  ctx->input[3] = CHACHA20_U8TO32_LITTLE(constants+12);
+
+  /* nonce setup */
+  const uint8_t *iv = (const uint8_t *)noncedata;
+  ctx->input[12] = 0;
+  ctx->input[13] = 0;
+  ctx->input[14] = CHACHA20_U8TO32_LITTLE(iv+0);
+  ctx->input[15] = CHACHA20_U8TO32_LITTLE(iv+4);
+
+  return 0;
+}
+
+
+/* encrypts or decrypts a full message */
+/* cypher is symmetric, so `ciphertextdata` and `plaintextdata` can point to the same address */
+static void chacha20_xcrypt (chacha20_ctx *ctx, void *ciphertextdata,
+                             const void *plaintextdata, uint32_t msglen)
+{
+  uint8_t output[64];
+  if (!msglen) return;
+
+  const uint8_t *plaintext = (const uint8_t *)plaintextdata;
+  uint8_t *ciphertext = (uint8_t *)ciphertextdata;
+
+  for (;;) {
+    salsa20_wordtobyte(output, ctx->input);
+    ++ctx->input[12];
+    if (!ctx->input[12]) {
+      ++ctx->input[13];
+      /* stopping at 2^70 bytes per nonce is user's responsibility */
+    }
+    if (msglen <= 64) {
+      for (unsigned i = 0; i < msglen; ++i) ciphertext[i] = plaintext[i]^output[i];
+      return;
+    }
+    for (unsigned i = 0; i < 64; ++i) ciphertext[i] = plaintext[i]^output[i];
+    msglen -= 64;
+    ciphertext += 64;
+    plaintext += 64;
+  }
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 #if !defined(VWAD_VFS_DISABLE_ED25519_CODE)
 /*
   Public domain by Andrew M. <liquidsun@gmail.com>
@@ -1554,6 +1705,21 @@ static inline __attribute__((cold)) const char *SkipPathPartCStr (const char *s)
 } while (0)
 
 
+//==========================================================================
+//
+//  decrypt_buffer
+//
+//==========================================================================
+static void decrypt_buffer (ed25519_public_key key, uint64_t nonce, void *buf, uint32_t bufsize) {
+  vassert(buf != NULL);
+  vassert(bufsize != 0);
+  chacha20_ctx ctx;
+  const int res = chacha20_setup_ex(&ctx, key, &nonce, 256);
+  vassert(res == 0);
+  chacha20_xcrypt(&ctx, buf, buf, bufsize);
+}
+
+
 // ////////////////////////////////////////////////////////////////////////// //
 // memory allocation
 static inline void *xalloc (vwad_memman *mman, size_t size) {
@@ -1856,18 +2022,6 @@ static int nameEqu (const char *s0, const char *s1) {
 }
 
 
-static inline uint32_t hashU32 (uint32_t a) {
-  a -= (a<<6);
-  a ^= (a>>17);
-  a -= (a<<9);
-  a ^= (a<<4);
-  a -= (a<<3);
-  a ^= (a<<10);
-  a ^= (a>>15);
-  return a;
-}
-
-
 // ////////////////////////////////////////////////////////////////////////// //
 // it MUST be a prime
 #define HASH_BUCKETS  (1021)
@@ -1905,13 +2059,15 @@ typedef struct {
   uint32_t lastera;
   uint32_t bidx;
   FileBuffer bufs[MAX_BUFFERS];
-  uint8_t pkdata[65536];
+  uint8_t pkdata[65536 + 4];
 } OpenedFile;
 
 struct vwad_handle_t {
   vwad_iostream *strm;
   vwad_memman *mman;
   uint32_t flags;
+  ed25519_public_key pubkey;
+  char *comment;       // can be NULL
   uint8_t *updir;      // unpacked directory
   ChunkInfo *chunks;   // points to the unpacked directory
   uint32_t chunkCount; // number of elements in `chunks` array
@@ -1925,10 +2081,25 @@ struct vwad_handle_t {
   uint32_t buckets[HASH_BUCKETS];
   // public key
   uint32_t haspubkey; // bit 0: has key; bit 1: authenticated
-  vwad_public_key pubkey;
   // opened files
   OpenedFile *fds[MAX_OPENED_FILES];
 };
+
+
+typedef struct __attribute__((packed)) {
+  uint8_t version;
+  uint8_t flags;
+  uint16_t u_cmt_size;
+  uint32_t dirofs;
+  uint16_t p_cmt_size;
+} MainFileHeader;
+
+typedef struct __attribute__((packed)) {
+  uint32_t pkdir_crc32;
+  uint32_t dir_crc32;
+  uint32_t pkdirsize;
+  uint32_t upkdirsize;
+} MainDirHeader;
 
 
 #if !defined(VWAD_VFS_DISABLE_ED25519_CODE)
@@ -1945,8 +2116,8 @@ typedef struct {
 //==========================================================================
 static int ed_rewind (ed25519_iostream *strm) {
   EdInfo *nfo = (EdInfo *)strm->udata;
-  if (nfo->strm->seek(nfo->strm, 0) != 0) return -1;
-  nfo->pos = 0;
+  if (nfo->strm->seek(nfo->strm, 4+64) != 0) return -1;
+  nfo->pos = 4+64;
   return 0;
 }
 
@@ -1958,22 +2129,31 @@ static int ed_read (ed25519_iostream *strm, void *buf, int bufsize) {
   if (pos >= nfo->size) return 0;
   int max = nfo->size - pos;
   if (bufsize > max) bufsize = max;
-  if (pos < 3*4) {
-    max = 3*4 - pos;
-    if (bufsize > max) bufsize = max;
-    if (nfo->strm->read(nfo->strm, buf, bufsize) != 0) return -1;
-  } else if (pos < 3*4 + (int)sizeof(ed25519_public_key) + (int)sizeof(ed25519_signature)) {
-    int max = 3*4 + (int)sizeof(ed25519_public_key) + (int)sizeof(ed25519_signature) - pos;
-    if (bufsize > max) bufsize = (int)max;
-    memset(buf, 0, (size_t)bufsize);
-    if (nfo->strm->seek(nfo->strm, pos + bufsize) != 0) return -1;
-  } else {
-    if (nfo->strm->read(nfo->strm, buf, bufsize) != 0) return -1;
-  }
+  if (nfo->strm->read(nfo->strm, buf, bufsize) != 0) return -1;
   nfo->pos += bufsize;
   return bufsize;
 }
 #endif
+
+
+//==========================================================================
+//
+//  is_valid_comment
+//
+//==========================================================================
+static vwad_bool is_valid_comment (const char *cmt, uint32_t cmtlen) {
+  vwad_bool res = 1;
+  if (cmt != NULL) {
+    for (uint32_t pos = 0; pos < cmtlen; ++pos) {
+      const unsigned char ch = ((const unsigned char *)cmt)[pos];
+      if (ch == 0) return 0;
+      if (ch >= 0x7f || (ch < 32 && ch != 9 && ch != 10)) return 0;
+    }
+  } else {
+    res = (cmtlen == 0);
+  }
+  return res;
+}
 
 
 //==========================================================================
@@ -1993,8 +2173,9 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
 
   ed25519_public_key pubkey;
   ed25519_signature edsign;
+  MainFileHeader mhdr;
+  MainDirHeader dhdr;
   char sign[4];
-  uint32_t ver, dirofs;
 
   // file signature
   if (strm->read(strm, sign, 4) != 0) {
@@ -2006,21 +2187,8 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     return NULL;
   }
 
-  if (strm->read(strm, &ver, 4) != 0) {
-    logf(ERROR, "vwad_open_archive: cannot read version");
-    return NULL;
-  }
-  if (ver != 0) {
-    logf(ERROR, "vwad_open_archive: invalid version");
-    return NULL;
-  }
-
-  if (strm->read(strm, &dirofs, 4) != 0) {
-    logf(ERROR, "vwad_open_archive: cannot read directory offset");
-    return NULL;
-  }
-  if (dirofs <= 4*3+32+64) {
-    logf(ERROR, "vwad_open_archive: invalid directory offset");
+  if (strm->read(strm, &edsign, (uint32_t)sizeof(edsign)) != 0) {
+    logf(ERROR, "vwad_open_archive: cannot read edsign");
     return NULL;
   }
 
@@ -2028,70 +2196,81 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     logf(ERROR, "vwad_open_archive: cannot read pubkey");
     return NULL;
   }
-  if (strm->read(strm, &edsign, (uint32_t)sizeof(edsign)) != 0) {
-    logf(ERROR, "vwad_open_archive: cannot read edsign");
+
+  if (strm->read(strm, &mhdr, (uint32_t)sizeof(mhdr)) != 0) {
+    logf(ERROR, "vwad_open_archive: cannot read main header");
+    return NULL;
+  }
+
+  decrypt_buffer(pubkey, 1, &mhdr, (uint32_t)sizeof(mhdr));
+  if (mhdr.version != 0) {
+    logf(ERROR, "vwad_open_archive: invalid version");
+    return NULL;
+  }
+  if (mhdr.flags != 0 && mhdr.flags != 1) {
+    logf(ERROR, "vwad_open_archive: invalid flags");
+    return NULL;
+  }
+
+  mhdr.u_cmt_size = get_u16(&mhdr.u_cmt_size);
+  mhdr.dirofs = get_u32(&mhdr.dirofs);
+  mhdr.p_cmt_size = get_u16(&mhdr.p_cmt_size);
+
+  if (mhdr.dirofs <= 4*3+32+64) {
+    logf(ERROR, "vwad_open_archive: invalid directory offset");
+    return NULL;
+  }
+
+  if (mhdr.u_cmt_size == 0 && mhdr.p_cmt_size != 0) {
+    logf(ERROR, "vwad_open_archive: invalid comment size");
     return NULL;
   }
 
   // determine file size
-  if (strm->seek(strm, dirofs) != 0) {
+  if (strm->seek(strm, mhdr.dirofs) != 0) {
     logf(ERROR, "vwad_open_archive: cannot seek to directory");
     return NULL;
   }
 
-  logf(DEBUG, "vwad_open_archive: dirofs=0x%08x", dirofs);
+  logf(DEBUG, "vwad_open_archive: dirofs=0x%08x", mhdr.dirofs);
 
-  uint32_t pkdir_crc32;
-  uint32_t dir_crc32;
-  uint32_t pkdirsize;
-  uint32_t upkdirsize;
-
-  if (strm->read(strm, &pkdir_crc32, 4) != 0) {
-    logf(ERROR, "vwad_open_archive: cannot read packed directory crc32");
-    return NULL;
-  }
-  if (strm->read(strm, &dir_crc32, 4) != 0) {
-    logf(ERROR, "vwad_open_archive: cannot read directory crc32");
-    return NULL;
-  }
-  if (strm->read(strm, &pkdirsize, 4) != 0) {
-    logf(ERROR, "vwad_open_archive: cannot read directory size");
-    return NULL;
-  }
-  if (strm->read(strm, &upkdirsize, 4) != 0) {
-    logf(ERROR, "vwad_open_archive: cannot read directory size");
+  if (strm->read(strm, &dhdr, (uint32_t)sizeof(dhdr)) != 0) {
+    logf(ERROR, "vwad_open_archive: cannot read directory header");
     return NULL;
   }
 
-  pkdirsize ^= hashU32(pkdir_crc32);
-  upkdirsize ^= hashU32(dir_crc32);
-  logf(DEBUG, "vwad_open_archive: pkdirsize=0x%08x", pkdirsize);
-  logf(DEBUG, "vwad_open_archive: upkdirsize=0x%08x", upkdirsize);
-  if (pkdirsize == 0 || pkdirsize > 0xffffff) {
+  decrypt_buffer(pubkey, 0xfffffffeU, &dhdr, (uint32_t)sizeof(dhdr));
+
+  dhdr.pkdir_crc32 = get_u32(&dhdr.pkdir_crc32);
+  dhdr.dir_crc32 = get_u32(&dhdr.dir_crc32);
+  dhdr.pkdirsize = get_u32(&dhdr.pkdirsize);
+  dhdr.upkdirsize = get_u32(&dhdr.upkdirsize);
+
+  logf(DEBUG, "vwad_open_archive: pkdirsize=0x%08x", dhdr.pkdirsize);
+  logf(DEBUG, "vwad_open_archive: upkdirsize=0x%08x", dhdr.upkdirsize);
+  if (dhdr.pkdirsize == 0 || dhdr.pkdirsize > 0xffffff) {
     logf(ERROR, "vwad_open_archive: invalid directory size");
     return NULL;
   }
-  if (upkdirsize <= 4*11 || upkdirsize > 0xffffff) {
+  if (dhdr.upkdirsize <= 4*11 || dhdr.upkdirsize > 0xffffff) {
     logf(ERROR, "vwad_open_archive: invalid directory size");
     return NULL;
   }
-  if (0x7fffffffU - dirofs < pkdirsize) {
+  if (0x7fffffffU - mhdr.dirofs < dhdr.pkdirsize) {
     logf(ERROR, "vwad_open_archive: invalid directory size");
     return NULL;
   }
 
   // check digital signature
   uint32_t haspubkey = 0;
-  uint8_t sum = 0;
-  for (size_t bidx = 0; bidx < sizeof(pubkey); ++bidx) sum |= pubkey[bidx];
-  if (sum != 0) {
-    haspubkey = 1; // has a key
+  if ((mhdr.flags & 0x01) == 0) haspubkey = 1;
+  if (haspubkey) {
     #if !defined(VWAD_VFS_DISABLE_ED25519_CODE)
     if ((flags & VWAD_OPEN_NO_SIGN_CHECK) == 0) {
       ed25519_iostream edstrm;
       EdInfo nfo;
       nfo.strm = strm;
-      nfo.pos = 0; nfo.size = (int)(dirofs + pkdirsize + 4*4);
+      nfo.pos = 0; nfo.size = (int)(mhdr.dirofs + dhdr.pkdirsize + (int)sizeof(dhdr));
       logf(DEBUG, "vwad_open_archive: file size: %d", nfo.size);
       edstrm.udata = &nfo;
       edstrm.rewind = ed_rewind;
@@ -2106,51 +2285,47 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
       haspubkey = 3; // has a key, and authenticated
     }
     #endif
-  } else {
-    for (size_t bidx = 0; bidx < sizeof(edsign); ++bidx) sum |= edsign[bidx];
-    if (sum != 0) {
-      logf(ERROR, "vwad_open_archive: invalid digital signature");
-      return NULL;
-    }
   }
 
   // read and unpack directory
-  if (strm->seek(strm, dirofs + 4*4) != 0) {
+  if (strm->seek(strm, mhdr.dirofs + (int)sizeof(dhdr)) != 0) {
     logf(ERROR, "vwad_open_archive: cannot seek to directory data");
     return NULL;
   }
 
-  void *unpkdir = xalloc(mman, upkdirsize + 1); // always end it with 0
+  void *unpkdir = xalloc(mman, dhdr.upkdirsize + 1); // always end it with 0
   if (!unpkdir) {
     logf(ERROR, "vwad_open_archive: cannot allocate memory for unpacked directory");
     return NULL;
   }
-  ((uint8_t *)unpkdir)[upkdirsize] = 0;
+  ((uint8_t *)unpkdir)[dhdr.upkdirsize] = 0;
 
-  void *pkdir = xalloc(mman, pkdirsize);
+  void *pkdir = xalloc(mman, dhdr.pkdirsize);
   if (!pkdir) {
     xfree(mman, unpkdir);
     logf(ERROR, "vwad_open_archive: cannot allocate memory for packed directory");
     return NULL;
   }
 
-  if (strm->read(strm, pkdir, pkdirsize) != 0) {
+  if (strm->read(strm, pkdir, dhdr.pkdirsize) != 0) {
     xfree(mman, pkdir);
     xfree(mman, unpkdir);
     logf(ERROR, "vwad_open_archive: cannot read directory data");
     return NULL;
   }
 
-  uint32_t crc32 = crc32_buf(pkdir, pkdirsize);
-  if (crc32 != pkdir_crc32) {
+  decrypt_buffer(pubkey, 0xffffffffU, pkdir, dhdr.pkdirsize);
+
+  uint32_t crc32 = crc32_buf(pkdir, dhdr.pkdirsize);
+  if (crc32 != dhdr.pkdir_crc32) {
     xfree(mman, pkdir);
     xfree(mman, unpkdir);
-    logf(DEBUG, "vwad_open_archive: pkcrc: file=0x%08x; real=0x%08x", pkdir_crc32, crc32);
+    logf(DEBUG, "vwad_open_archive: pkcrc: file=0x%08x; real=0x%08x", dhdr.pkdir_crc32, crc32);
     logf(ERROR, "vwad_open_archive: corrupted packed directory data");
     return NULL;
   }
 
-  if (!DecompressLZFF3(pkdir, pkdirsize, unpkdir, upkdirsize)) {
+  if (!DecompressLZFF3(pkdir, dhdr.pkdirsize, unpkdir, dhdr.upkdirsize)) {
     xfree(mman, pkdir);
     xfree(mman, unpkdir);
     logf(ERROR, "vwad_open_archive: cannot decompress directory");
@@ -2158,10 +2333,10 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   }
   xfree(mman, pkdir);
 
-  crc32 = crc32_buf(unpkdir, upkdirsize);
-  if (crc32 != dir_crc32) {
+  crc32 = crc32_buf(unpkdir, dhdr.upkdirsize);
+  if (crc32 != dhdr.dir_crc32) {
     xfree(mman, unpkdir);
-    logf(DEBUG, "vwad_open_archive: upkcrc: file=0x%08x; real=0x%08x", dir_crc32, crc32);
+    logf(DEBUG, "vwad_open_archive: upkcrc: file=0x%08x; real=0x%08x", dhdr.dir_crc32, crc32);
     logf(ERROR, "vwad_open_archive: corrupted unpacked directory data");
     return NULL;
   }
@@ -2190,8 +2365,8 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   memcpy(&wad->chunkCount, wad->updir, 4);
   uint32_t upofs = 4;
   if (wad->chunkCount == 0 || wad->chunkCount > 0x3fffffffU/(uint32_t)sizeof(ChunkInfo) ||
-      wad->chunkCount*(uint32_t)sizeof(ChunkInfo) >= upkdirsize ||
-      wad->chunkCount*(uint32_t)sizeof(ChunkInfo) >= upkdirsize - upofs)
+      wad->chunkCount*(uint32_t)sizeof(ChunkInfo) >= dhdr.upkdirsize ||
+      wad->chunkCount*(uint32_t)sizeof(ChunkInfo) >= dhdr.upkdirsize - upofs)
   {
     logf(DEBUG, "invalid chunk count (%u)", wad->chunkCount);
     goto error;
@@ -2201,23 +2376,25 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   upofs += wad->chunkCount * (uint32_t)sizeof(ChunkInfo);
 
   for (uint32_t cidx = 0; cidx < wad->chunkCount; ++cidx) {
-    if (wad->chunks[cidx].ofs != 0 || wad->chunks[cidx].upksize != 0) {
+    ChunkInfo *ci = &wad->chunks[cidx];
+    ci->pksize = get_u16(&ci->pksize);
+    if (ci->ofs != 0 || ci->upksize != 0) {
       logf(DEBUG, "invalid chunk data (0; idx=%u): ofs=%u; upksize=%u",
-           cidx, wad->chunks[cidx].ofs, wad->chunks[cidx].upksize);
+           cidx, ci->ofs, ci->upksize);
       goto error;
     }
-    wad->chunks[cidx].ofs = 0xffffffffU;
+    ci->ofs = 0xffffffffU;
   }
 
   // files
-  if (upofs >= upkdirsize || upkdirsize - upofs < 4 + (uint32_t)sizeof(FileInfo)) {
+  if (upofs >= dhdr.upkdirsize || dhdr.upkdirsize - upofs < 4 + (uint32_t)sizeof(FileInfo)) {
     logf(DEBUG, "invalid directory data (files, 0)");
     goto error;
   }
   memcpy(&wad->fileCount, wad->updir + upofs, 4); upofs += 4;
   if (wad->fileCount < 2 || wad->fileCount > 0x3fffffffU/(uint32_t)sizeof(FileInfo) ||
-      wad->fileCount * (uint32_t)sizeof(FileInfo) >= upkdirsize ||
-      wad->fileCount * (uint32_t)sizeof(FileInfo) >= upkdirsize - upofs)
+      wad->fileCount * (uint32_t)sizeof(FileInfo) >= dhdr.upkdirsize ||
+      wad->fileCount * (uint32_t)sizeof(FileInfo) >= dhdr.upkdirsize - upofs)
   {
     logf(DEBUG, "invalid file count (%u)", wad->fileCount);
     goto error;
@@ -2227,14 +2404,14 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   upofs += wad->fileCount * (uint32_t)sizeof(FileInfo);
 
   // names
-  if (upofs >= upkdirsize || upkdirsize - upofs < 4 + 2) {
+  if (upofs >= dhdr.upkdirsize || dhdr.upkdirsize - upofs < 4 + 2) {
     logf(DEBUG, "invalid directory data (names, 0)");
     goto error;
   }
   memcpy(&wad->namesSize, wad->updir + upofs, 4); upofs += 4;
   if (wad->namesSize < 2 || wad->namesSize > 0x3fffffffU ||
-      wad->namesSize >= upkdirsize ||
-      wad->namesSize != upkdirsize - upofs)
+      wad->namesSize >= dhdr.upkdirsize ||
+      wad->namesSize != dhdr.upkdirsize - upofs)
   {
     logf(DEBUG, "invalid names size (%u)", wad->namesSize);
     goto error;
@@ -2255,7 +2432,56 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     goto error;
   }
 
-  uint32_t chunkOfs = 4*3 + 32 + 64;
+  // read and unpack comment
+  if ((flags & VWAD_OPEN_NO_MAIN_COMMENT) == 0) {
+    if (mhdr.u_cmt_size != 0) {
+      if (strm->seek(strm, 4+32+64+(uint32_t)sizeof(mhdr)) != 0) {
+        logf(DEBUG, "vwad_open_archive: cannot seek to comment data");
+        goto error;
+      }
+      wad->comment = zalloc(mman, mhdr.u_cmt_size + 1);
+      if (wad->comment == NULL) {
+        logf(DEBUG, "vwad_open_archive: out of memory for comment data");
+        goto error;
+      }
+      if (mhdr.p_cmt_size == 0) {
+        // unpacked
+        if (strm->read(strm, wad->comment, mhdr.u_cmt_size) != 0) {
+          logf(DEBUG, "vwad_open_archive: cannot read comment data");
+          goto error;
+        }
+        decrypt_buffer(pubkey, 2, wad->comment, mhdr.u_cmt_size);
+      } else {
+        // packed
+        uint8_t *ctmp = zalloc(mman, mhdr.p_cmt_size + 1);
+        if (ctmp == NULL) {
+          logf(DEBUG, "vwad_open_archive: out of memory for packed comment data");
+          goto error;
+        }
+        if (strm->read(strm, ctmp, mhdr.p_cmt_size) != 0) {
+          xfree(mman, ctmp);
+          logf(DEBUG, "vwad_open_archive: cannot read packed comment data");
+          goto error;
+        }
+        decrypt_buffer(pubkey, 2, ctmp, mhdr.p_cmt_size);
+        const intbool_t cupres = DecompressLZFF3(ctmp, (int)mhdr.p_cmt_size,
+                                                 wad->comment, (int)mhdr.u_cmt_size);
+        xfree(mman, ctmp);
+        if (!cupres) {
+          logf(DEBUG, "vwad_open_archive: cannot decompress packed comment data");
+          goto error;
+        }
+      }
+      if (!is_valid_comment(wad->comment, mhdr.u_cmt_size)) {
+        logf(WARNING, "vwad_open_archive: invalid comment data, comment discarded");
+        xfree(mman, wad->comment);
+        wad->comment = NULL;
+      }
+    }
+  }
+
+  uint32_t chunkOfs = 4+32+64+(uint32_t)sizeof(mhdr);
+  if (mhdr.p_cmt_size != 0) chunkOfs += mhdr.p_cmt_size; else chunkOfs += mhdr.u_cmt_size;
   uint32_t currChunk = 0;
 
   for (uint32_t fidx = 1; fidx < wad->fileCount; ++fidx) {
@@ -2265,6 +2491,12 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
       logf(DEBUG, "invalid file data");
       goto error;
     }
+
+    fi->ftime = get_u64(&fi->ftime);
+    fi->upksize = get_u32(&fi->upksize);
+    fi->chunkCount = get_u32(&fi->chunkCount);
+    fi->nameofs = get_u32(&fi->nameofs);
+
     if (fi->chunkCount == 0) {
       if (fi->upksize != 0) {
         logf(DEBUG, "invalid file data");
@@ -2315,9 +2547,9 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
           logf(DEBUG, "invalid file data (chunks, oops)");
           goto error;
         }
-        if (chunkOfs >= dirofs) {
+        if (chunkOfs >= mhdr.dirofs) {
           logf(DEBUG, "invalid file data (chunk offset); fidx=%u; cofs=0x%08x; dofs=0x%08x",
-                  fidx, chunkOfs, dirofs);
+                  fidx, chunkOfs, mhdr.dirofs);
           goto error;
         }
         wad->chunks[currChunk].ofs = chunkOfs;
@@ -2337,17 +2569,17 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
           // packed chunk
           chunkOfs += wad->chunks[currChunk].pksize;
         }
-        if (chunkOfs > dirofs) {
+        if (chunkOfs > mhdr.dirofs) {
           logf(DEBUG, "invalid file data (chunk offset 1); fidx=%u/%u; cofs=0x%08x; dofs=0x%08x",
-                  fidx, wad->fileCount, chunkOfs, dirofs);
+                  fidx, wad->fileCount, chunkOfs, mhdr.dirofs);
           goto error;
         }
         currChunk += 1;
       }
     }
   }
-  if (chunkOfs != dirofs) {
-    logf(DEBUG, "invalid file data (extra chunk); cofs=0x%08x; dofs=0x%08x", chunkOfs, dirofs);
+  if (chunkOfs != mhdr.dirofs) {
+    logf(DEBUG, "invalid file data (extra chunk); cofs=0x%08x; dofs=0x%08x", chunkOfs, mhdr.dirofs);
     goto error;
   }
 
@@ -2379,10 +2611,21 @@ void vwad_close_archive (vwad_handle **wadp) {
         vwad_fclose(wad, fd);
       }
       xfree(mman, wad->updir);
+      xfree(mman, wad->comment);
       memset(wad, 0, sizeof(vwad_handle));
       xfree(mman, wad);
     }
   }
+}
+
+
+//==========================================================================
+//
+//  vwad_get_archive_comment
+//
+//==========================================================================
+const char *vwad_get_archive_comment (vwad_handle *wad) {
+  return (wad ? wad->comment : NULL);
 }
 
 
@@ -2630,37 +2873,33 @@ static FileBuffer *ensure_buffer (vwad_handle *wad, vwad_fd fd, uint32_t ofs) {
         logf(DEBUG, "ensure_buffer: cannot seek to chunk %u", fi->fchunk + bufofs);
         return NULL;
       }
-      uint32_t crc32;
-      if (wad->strm->read(wad->strm, &crc32, 4) != 0) {
+      if (wad->strm->read(wad->strm, &fl->pkdata[0], 4) != 0) {
         logf(DEBUG, "ensure_buffer: cannot read chunk %u crc32", fi->fchunk + bufofs);
         return NULL;
       }
+      const uint32_t nonce = 4 + fi->fchunk + bufofs;
       uint32_t cupsize = ci->upksize + 1;
       //vassert(cupsize > 0 && cupsize <= 65536);
       // packed data
       res = &fl->bufs[goodidx];
       if (ci->pksize == 0) {
-        // unpacked, but xored
-        if (wad->strm->read(wad->strm, &fl->pkdata, cupsize) != 0) {
+        // unpacked
+        if (wad->strm->read(wad->strm, &fl->pkdata[4], cupsize) != 0) {
           logf(DEBUG, "ensure_buffer: cannot read unpacked chunk %u", fi->fchunk + bufofs);
           return NULL;
         }
-        uint8_t key[4];
-        memcpy(key, &crc32, 4);
-        const uint8_t *src = fl->pkdata;
-        uint8_t *dest = res->data;
-        for (uint32_t f = 0; f < cupsize; ++f) {
-          dest[f] = src[f] ^ key[f % 4];
-        }
+        decrypt_buffer(wad->pubkey, nonce, &fl->pkdata[0], cupsize + 4);
+        memcpy(res->data, &fl->pkdata[4], cupsize);
       } else {
         // packed
-        if (wad->strm->read(wad->strm, &fl->pkdata, ci->pksize) != 0) {
+        if (wad->strm->read(wad->strm, &fl->pkdata[4], ci->pksize) != 0) {
           logf(DEBUG, "ensure_buffer: cannot read packed chunk %u", fi->fchunk + bufofs);
           return NULL;
         }
-        if (!DecompressLZFF3(fl->pkdata, ci->pksize, res->data, cupsize)) {
+        decrypt_buffer(wad->pubkey, nonce, &fl->pkdata[0], ci->pksize + 4);
+        if (!DecompressLZFF3(&fl->pkdata[4], ci->pksize, res->data, cupsize)) {
           logf(DEBUG, "ensure_buffer: cannot unpack chunk %u (%u -> %u)", fi->fchunk + bufofs,
-                  ci->pksize, cupsize);
+               ci->pksize, cupsize);
           res->size = 0;
           return NULL;
         }
@@ -2668,7 +2907,7 @@ static FileBuffer *ensure_buffer (vwad_handle *wad, vwad_fd fd, uint32_t ofs) {
       // check crc
       res->size = cupsize;
       if ((wad->flags & VWAD_OPEN_NO_CRC_CHECKS) == 0) {
-        if (crc32_buf(res->data, cupsize) != crc32) {
+        if (crc32_buf(res->data, cupsize) != get_u32(&fl->pkdata[0])) {
           logf(DEBUG, "ensure_buffer: corrupted chunk %u data (crc32)", fi->fchunk + bufofs);
           res->size = 0;
           return NULL;

@@ -105,7 +105,7 @@ static bool showPackedSize = false;
 static TOWadFile outwad;
 static zipFile Zip = NULL;
 #if VAVOOM_VLUMPY_VWAD == 1
-static VWadDir *wad_dir = NULL;
+static vwadwr_dir *wad_dir = NULL;
 static FILE *wad_file_out = NULL;
 static vwadwr_iostream *wad_outstrm = NULL;
 #else
@@ -123,6 +123,7 @@ static bool rgb_table_created = false;
 
 static char lumpname[256];
 static char destfile[4096];
+static char *destcomment = NULL;
 
 static bool Fon2ColorsUsed[256] = {0};
 
@@ -293,7 +294,7 @@ static void AddToZip (const char *Name, const void *Data, size_t Size, uint64_t 
     instrm.read = &bufioread;
     instrm.write = &bufiowrite;
     instrm.udata = (void *)&nfo;
-    vwadwr_result res = vwadwr_pack_file(wad_dir, &instrm, wad_outstrm, Name,
+    vwadwr_result res = vwadwr_pack_file(wad_dir, &instrm, Name,
                                          ftime, &upksize, &pksize);
     if (res != 0) {
       Error("Failed to write file '%s' to VWAD", Name);
@@ -1109,6 +1110,8 @@ static void SortFileList (TArray<DiskFile> &flist) {
 //
 //==========================================================================
 static void ParseScript (const char *name) {
+  if (destcomment) { free(destcomment); destcomment = NULL; }
+
   ExtractFilePath(name, basepath, sizeof(basepath));
   if (strlen(basepath)+1 > sizeof(srcpath)) Error("Path too long");
   strcpy(srcpath, basepath);
@@ -1127,6 +1130,42 @@ static void ParseScript (const char *name) {
   bool GrabMode = false;
 
   while (SC_GetString()) {
+    if (SC_Compare("$commentfile")) {
+      if (OutputOpened) SC_ScriptError("Output should not be opened");
+      SC_MustGetString();
+      FILE *cfl;
+      // start with `!` to be relative to script dir
+      if (sc_String[0] == '!') {
+        if (!sc_String[1]) Error("empty comment file name");
+        char *tmp = (char *)calloc(1, strlen(basepath)+strlen(sc_String)+8);
+        if (!tmp) Error("Out of memory");
+        sprintf(tmp, "%s%s", basepath, sc_String+1);
+        cfl = fopen(tmp, "r");
+        free(tmp);
+      } else {
+        cfl = fopen(sc_String, "r");
+      }
+      if (!cfl) Error("cannot open comment file");
+      if (destcomment) free(destcomment);
+      destcomment = (char *)calloc(1, 32780);
+      const ssize_t crd = fread(destcomment, 1, 32768, cfl);
+      fclose(cfl);
+      if (crd < 0) Error("cannot read comment file");
+      if (crd > 32767) Error("comment file too big");
+      destcomment[crd] = 0;
+      continue;
+    }
+
+    if (SC_Compare("$comment")) {
+      if (OutputOpened) SC_ScriptError("Output should not be opened");
+      SC_MustGetString();
+      const size_t crd = strlen(sc_String);
+      if (crd > 32767) Error("comment too big");
+      destcomment = (char *)calloc(1, crd + 1);
+      strcpy(destcomment, sc_String);
+      continue;
+    }
+
     if (SC_Compare("$dest")) {
       if (OutputOpened) SC_ScriptError("Output already opened");
       SC_MustGetString();
@@ -1176,13 +1215,14 @@ static void ParseScript (const char *name) {
         }
         #if VAVOOM_VLUMPY_VWAD == 1
         if (useVWAD) {
-          wad_dir = vwadwr_new_dir(NULL);
-          if (!wad_dir) Error("cannot init VWAD");
           wad_file_out = fopen(destfile, "wb+");
           if (!wad_file_out) Error("Failed to create VWAD file");
           wad_outstrm = vwadwr_new_file_stream(wad_file_out);
           if (!wad_outstrm) Error("cannot init VWAD");
-          if (vwadwr_init_header(wad_outstrm) != 0) Error("cannot init header");
+
+          wad_dir = vwadwr_new_dir(NULL, wad_outstrm, destcomment,
+                                   (has_privkey ? privkey : NULL), NULL);
+          if (!wad_dir) Error("cannot init VWAD");
         } else
         #endif
         {
@@ -1192,6 +1232,7 @@ static void ParseScript (const char *name) {
       } else {
         outwad.Open(destfile, "PWAD");
       }
+      if (destcomment) { free(destcomment); destcomment = NULL; }
       OutputOpened = true;
     }
 
@@ -1332,10 +1373,9 @@ static void ParseScript (const char *name) {
   #if VAVOOM_VLUMPY_VWAD == 1
   if (wad_dir) {
     if (!vwadwr_is_valid_dir(wad_dir)) Error("Failed to create empty VWAD");
-    if (vwadwr_finish(wad_dir, wad_outstrm, (has_privkey ? privkey : NULL), NULL) != 0) {
+    if (vwadwr_finish(&wad_dir) != 0) {
       Error("Failed to finalise VWAD file");
     }
-    vwadwr_free_dir(&wad_dir);
     vwadwr_free_file_stream(wad_outstrm); wad_outstrm = NULL;
     fclose(wad_file_out); wad_file_out = NULL;
   }
@@ -1408,16 +1448,18 @@ static void logger (int type, const char *fmt, ...) {
 //
 //==========================================================================
 int main (int argc, char *argv[]) {
+  useVWAD = false;
+
   #if VAVOOM_VLUMPY_VWAD == 1
   vwadwr_logf = logger;
+  #if VAVOOM_VLUMPY_VWAD_K8 == 1
+  useVWAD = true;
+  #endif
   #endif
   if (argc < 2) showHelp();
 
-#ifdef _WIN32
   showPackedSize = true;
-#endif
   useZopfli = false;
-  useVWAD = false;
 
   #if 0
   showPackedSize = true;
@@ -1466,6 +1508,7 @@ int main (int argc, char *argv[]) {
         }
         if (strcmp(argv[i], "--verbose") == 0) { showPackedSize = true; verbose = true; continue; }
         if (strcmp(argv[i], "--stats") == 0) { showPackedSize = true; continue; }
+        if (strcmp(argv[i], "--quiet") == 0) { showPackedSize = false; verbose = false; continue; }
         if (argv[i][0] == '-' && argv[i][1] == 'D') {
           if (!argv[i][2]) Error("filename expected for \"-D\"");
           strcpy(destfile, argv[i]+2);

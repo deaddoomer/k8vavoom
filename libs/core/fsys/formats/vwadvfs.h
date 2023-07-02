@@ -92,7 +92,10 @@ vwad_bool vwad_can_check_auth (void);
 
 
 // flags for `vwad_open_stream()`, to be bitwise ORed
-#define VWAD_OPEN_DEFAULT        (0u)
+#define VWAD_OPEN_DEFAULT          (0u)
+// if you are not interested in archive comment, use this flag.
+// it will save some memory.
+#define VWAD_OPEN_NO_MAIN_COMMENT  (0x2000u)
 // this flag can be used to omit digital signature checks.
 // signature checks are fast, so you should use this flag
 // only if you have a partially corrupted file which you
@@ -100,12 +103,12 @@ vwad_bool vwad_can_check_auth (void);
 // note that ed25519 public key will be read and accessible
 // even with disabled checks, but you should not use it to
 // determine the authorship, for example.
-#define VWAD_OPEN_NO_SIGN_CHECK  (0x4000u)
+#define VWAD_OPEN_NO_SIGN_CHECK    (0x4000u)
 // WARNING! DO NOT USE THIS!
 // this can be used to recover files with partially corrupted data,
 // but DON'T pass it "for speed", CRC checks are fast, and you
 // should not omit them.
-#define VWAD_OPEN_NO_CRC_CHECKS  (0x8000u)
+#define VWAD_OPEN_NO_CRC_CHECKS    (0x8000u)
 
 // on success, will copy stream pointer and memman pointer
 // (i.e. they should be alive until `vwad_close()`).
@@ -113,6 +116,9 @@ vwad_bool vwad_can_check_auth (void);
 vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman *mman);
 // will free handle memory, and clean handle pointer.
 void vwad_close_archive (vwad_handle **wadp);
+
+// can return NULL if there is no comment, or `VWAD_OPEN_NO_MAIN_COMMENT` passed
+const char *vwad_get_archive_comment (vwad_handle *wad);
 
 vwad_bool vwad_has_opened_files (vwad_handle *wad);
 

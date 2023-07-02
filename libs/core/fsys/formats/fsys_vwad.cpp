@@ -150,7 +150,7 @@ void VVWadFile::OpenArchive (VStream *fstream) {
   iostrm->udata = (void *)fstream;
   vw_strm = iostrm;
 
-  vwad_handle *wad = vwad_open_archive(iostrm, VWAD_OPEN_DEFAULT, &memman);
+  vwad_handle *wad = vwad_open_archive(iostrm, VWAD_OPEN_NO_MAIN_COMMENT, &memman);
   if (!wad) {
     Sys_Error("cannot load zip/pk3 file \"%s\"", *PakFileName);
   }
