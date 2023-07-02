@@ -935,6 +935,7 @@ void VZipFileReader::Serialise (void *V, int length) {
 //
 //==========================================================================
 void VZipFileReader::Seek (int InPos) {
+  MyThreadLocker locker(rdlock);
   if (bError) return;
   //if (InPos < 0 || InPos > total_unpacked_size) { SetError(); return; }
   //!GLog.Logf(NAME_Debug, "*** SEEK '%s' (currpos=%d; newpos=%d; realpos=%d; size=%u)", *fname, currpos, InPos, totalOut(), Info.filesize);
@@ -948,6 +949,7 @@ void VZipFileReader::Seek (int InPos) {
 //
 //==========================================================================
 int VZipFileReader::Tell () {
+  MyThreadLocker locker(rdlock);
   return currpos;
 }
 
@@ -958,6 +960,7 @@ int VZipFileReader::Tell () {
 //
 //==========================================================================
 int VZipFileReader::TotalSize () {
+  MyThreadLocker locker(rdlock);
   return total_unpacked_size;
 }
 
@@ -968,5 +971,6 @@ int VZipFileReader::TotalSize () {
 //
 //==========================================================================
 bool VZipFileReader::AtEnd () {
+  MyThreadLocker locker(rdlock);
   return (currpos >= total_unpacked_size);
 }

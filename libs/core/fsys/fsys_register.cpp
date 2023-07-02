@@ -118,6 +118,15 @@ public:
         return new VQuakePakFile(strm, filename, 2);
       }, "SPAK");
 
+    // VWAD
+    static __attribute__((used)) FArchiveReaderInfo vavoom_fsys_archive_opener_vwad("vwad",
+      [](VStream *strm, VStr filename, bool /*FixVoices*/) -> VSearchPath* {
+        if (strm->TotalSize() <= 4*3+32+64) return nullptr;
+        strm->Seek(0);
+        if (strm->IsError()) return nullptr;
+        return new VVWadFile(strm, filename);
+      }, "VWAD");
+
     // DFWAD
     /*
     static __attribute__((used)) FArchiveReaderInfo vavoom_fsys_archive_opener_dfwad("dfwad",

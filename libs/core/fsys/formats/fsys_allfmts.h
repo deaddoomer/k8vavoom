@@ -74,6 +74,25 @@ public: // fuck shitpp friend idiocity
 
 
 //==========================================================================
+//  VVWadFile
+//==========================================================================
+class VVWadFile : public VPakFileBase {
+private:
+  void *vw_strm;
+  void *vw_handle;
+
+  // you can pass central dir offset here
+  void OpenArchive (VStream *fstream);
+
+public:
+  VVWadFile (VStream *fstream, VStr name); // takes ownership
+  virtual ~VVWadFile () override;
+
+  virtual VStream *CreateLumpReaderNum (int) override;
+};
+
+
+//==========================================================================
 //  VQuakePakFile
 //==========================================================================
 class VQuakePakFile : public VPakFileBase {
