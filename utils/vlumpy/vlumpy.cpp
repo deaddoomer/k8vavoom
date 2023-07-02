@@ -131,6 +131,8 @@ static int has_privkey = 0;
 static ed25519_secret_key privkey;
 #endif
 
+static uint64_t last_file_time = 0;
+
 
 //==========================================================================
 //
@@ -258,11 +260,9 @@ static vwadwr_result bufiowrite (vwadwr_iostream *strm, const void *buf, int buf
 //  AddToZip
 //
 //==========================================================================
-static void AddToZip (const char *Name, const void *Data, size_t Size) {
+static void AddToZip (const char *Name, const void *Data, size_t Size, uint64_t ftime) {
   #if VAVOOM_VLUMPY_VWAD == 1
   if (wad_dir) {
-    uint64_t ftime = 0;
-
     /*
     struct stat st;
     if (stat(Name, &st) == 0) {
@@ -270,9 +270,11 @@ static void AddToZip (const char *Name, const void *Data, size_t Size) {
     }
     */
     // set file time to current time
+    /*
     time_t CurTime = 0;
     time(&CurTime);
     ftime = CurTime;
+    */
 
     if (verbose) fflush(stderr);
 
@@ -309,9 +311,9 @@ static void AddToZip (const char *Name, const void *Data, size_t Size) {
     memset(&zi, 0, sizeof(zi));
 
     // set file time to current time
-    time_t CurTime = 0;
-    time(&CurTime);
-    struct tm* LTime = localtime(&CurTime);
+    time_t CurTime = (time_t)ftime;
+    if (ftime == 0) time(&CurTime);
+    struct tm *LTime = localtime(&CurTime);
     if (LTime) {
       zi.tmz_date.tm_sec = LTime->tm_sec;
       zi.tmz_date.tm_min = LTime->tm_min;
@@ -449,7 +451,7 @@ static void LoadImage () {
   SC_MustGetString();
   DestroyImage();
   if (verbose) fprintf(stderr, "adding image file '%s'...\n", sc_String);
-  LoadImage(fn(sc_String));
+  XLoadImage(fn(sc_String), &last_file_time);
   rgb_table_created = false;
 }
 
@@ -467,7 +469,7 @@ static void GrabRGBTable () {
   tmp[32*32*32] = 0;
   if (Zip || wad_dir) {
     if (verbose) fprintf(stderr, "adding rgb table '%s'...", sc_String);
-    AddToZip(lumpname, tmp, 32*32*32+1);
+    AddToZip(lumpname, tmp, 32*32*32+1, last_file_time);
   } else {
     outwad.AddLump(lumpname, tmp, 32*32*32+1);
   }
@@ -509,7 +511,7 @@ static void GrabTranslucencyTable () {
 
   if (Zip || wad_dir) {
     if (verbose) fprintf(stderr, "adding translucency table '%s'...", sc_String);
-    AddToZip(lumpname, table, 256*256);
+    AddToZip(lumpname, table, 256*256, last_file_time);
   } else {
     outwad.AddLump(lumpname, table, 256*256);
   }
@@ -541,7 +543,7 @@ static void GrabScaleMap () {
 
   if (Zip || wad_dir) {
     if (verbose) fprintf(stderr, "adding scale map '%s'...", sc_String);
-    AddToZip(lumpname, map, 256);
+    AddToZip(lumpname, map, 256, last_file_time);
   } else {
     outwad.AddLump(lumpname, map, 256);
   }
@@ -577,7 +579,7 @@ static void GrabRaw () {
 
   if (Zip || wad_dir) {
     if (verbose) fprintf(stderr, "adding raw image '%s'...", sc_String);
-    AddToZip(lumpname, data, w*h);
+    AddToZip(lumpname, data, w*h, last_file_time);
   } else {
     outwad.AddLump(lumpname, data, w*h);
   }
@@ -659,7 +661,7 @@ static void GrabPatch () {
 
   if (Zip || wad_dir) {
     if (verbose) fprintf(stderr, "adding patch '%s'...", sc_String);
-    AddToZip(lumpname, Patch, (vuint8*)Col-(vuint8*)Patch);
+    AddToZip(lumpname, Patch, (vuint8*)Col-(vuint8*)Patch, last_file_time);
   } else {
     outwad.AddLump(lumpname, Patch, (vuint8*)Col-(vuint8*)Patch);
   }
@@ -701,7 +703,7 @@ static void GrabPic () {
 
   if (Zip || wad_dir) {
     if (verbose) fprintf(stderr, "adding pic '%s'...", sc_String);
-    AddToZip(lumpname, pic, sizeof(vpic_t)+w*h);
+    AddToZip(lumpname, pic, sizeof(vpic_t)+w*h, last_file_time);
   } else {
     outwad.AddLump(lumpname, pic, sizeof(vpic_t)+w*h);
   }
@@ -753,7 +755,7 @@ static void GrabPic15 () {
 
   if (Zip || wad_dir) {
     if (verbose) fprintf(stderr, "adding pic15 '%s'...", sc_String);
-    AddToZip(lumpname, pic, sizeof(vpic_t)+w*h*2);
+    AddToZip(lumpname, pic, sizeof(vpic_t)+w*h*2, last_file_time);
   } else {
     outwad.AddLump(lumpname, pic, sizeof(vpic_t)+w*h*2);
   }
@@ -833,7 +835,7 @@ static void GrabFon1 () {
   // write lump and free memory
   if (Zip || wad_dir) {
     if (verbose) fprintf(stderr, "adding fon1 font '%s'...", sc_String);
-    AddToZip(lumpname, Font, pDst-(vint8*)Font);
+    AddToZip(lumpname, Font, pDst-(vint8*)Font, last_file_time);
   } else {
     outwad.AddLump(lumpname, Font, pDst-(vint8*)Font);
   }
@@ -1004,7 +1006,7 @@ static void GrabFon2 () {
   // write lump and free memory
   if (Zip || wad_dir) {
     if (verbose) fprintf(stderr, "adding fon2 font '%s'...", sc_String);
-    AddToZip(lumpname, Font, pDst-(vint8*)Font);
+    AddToZip(lumpname, Font, pDst-(vint8*)Font, last_file_time);
   } else {
     outwad.AddLump(lumpname, Font, pDst-(vint8*)Font);
   }
@@ -1267,9 +1269,9 @@ static void ParseScript (const char *name) {
       for (int f = 0; f < flist.length(); ++f) {
         //fprintf(stderr, "  <%s> -> <%s>\n", *flist[f].diskName, *flist[f].zipName);
         void *data;
-        int size = LoadFile(*flist[f].diskName, &data);
+        int size = XLoadFile(*flist[f].diskName, &data, &last_file_time);
         if (verbose) fprintf(stderr, "adding file '%s'...", *flist[f].diskName);
-        AddToZip(*flist[f].zipName, data, size);
+        AddToZip(*flist[f].zipName, data, size, last_file_time);
         Z_Free(data);
       }
       continue;
@@ -1298,8 +1300,8 @@ static void ParseScript (const char *name) {
       strcpy(lumpname, sc_String);
       SC_MustGetString();
       void *data;
-      int size = LoadFile(fn(sc_String), &data);
-      AddToZip(lumpname, data, size);
+      int size = XLoadFile(fn(sc_String), &data, &last_file_time);
+      AddToZip(lumpname, data, size, last_file_time);
       Z_Free(data);
     #if VAVOOM_VLUMPY_VWAD == 1
     } else if (wad_dir) {
@@ -1307,8 +1309,8 @@ static void ParseScript (const char *name) {
       strcpy(lumpname, sc_String);
       SC_MustGetString();
       void *data;
-      int size = LoadFile(fn(sc_String), &data);
-      AddToZip(lumpname, data, size);
+      int size = XLoadFile(fn(sc_String), &data, &last_file_time);
+      AddToZip(lumpname, data, size, last_file_time);
       Z_Free(data);
     #endif
     } else {
@@ -1316,7 +1318,7 @@ static void ParseScript (const char *name) {
       ExtractFileBase(sc_String, lumpname, sizeof(lumpname));
       if (strlen(lumpname) > 8) SC_ScriptError("Lump name too long");
       void *data;
-      int size = LoadFile(fn(sc_String), &data);
+      int size = XLoadFile(fn(sc_String), &data, &last_file_time);
       outwad.AddLump(lumpname, data, size);
       Z_Free(data);
     }

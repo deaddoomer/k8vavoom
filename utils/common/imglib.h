@@ -48,6 +48,7 @@ struct rgba_t
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
 
+void XLoadImage(const char *name, uint64_t *ftime);
 void LoadImage(const char *name);
 void DestroyImage();
 void ConvertImageTo32Bit();

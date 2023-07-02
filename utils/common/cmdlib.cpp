@@ -24,6 +24,10 @@
 //**************************************************************************
 #include "cmdlib.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 namespace VavoomUtils {
 
 
@@ -214,14 +218,15 @@ void FixFileSlashes (char *path) {
 
 //==========================================================================
 //
-//  LoadFile
+//  XLoadFile
 //
 //==========================================================================
-int LoadFile (const char *name, void **bufferptr) {
+int XLoadFile (const char *name, void **bufferptr, uint64_t *ftime) {
   FILE *f;
   int length;
   int count;
   void *buffer;
+  struct stat st;
 
   f = fopen(name, "rb");
   if (!f) Error("Couldn't open file \"%s\".", name);
@@ -240,8 +245,27 @@ int LoadFile (const char *name, void **bufferptr) {
     Error("Couldn't read file \"%s\".", name);
   }
 
+  if (ftime) {
+    if (stat(name, &st) == 0) {
+      *ftime = st.st_mtime;
+    } else {
+      *ftime = 0;
+    }
+  }
+
   *bufferptr = buffer;
   return length;
 }
+
+
+//==========================================================================
+//
+//  LoadFile
+//
+//==========================================================================
+int LoadFile (const char *name, void **bufferptr) {
+  return XLoadFile(name, bufferptr, NULL);
+}
+
 
 } // namespace VavoomUtils

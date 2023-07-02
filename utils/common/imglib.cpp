@@ -28,6 +28,10 @@
 #include "cmdlib.h"
 #include "imglib.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 namespace VavoomUtils {
 
 // MACROS ------------------------------------------------------------------
@@ -540,19 +544,38 @@ static void LoadTGA(const char *filename)
   Z_Free(ImgData);
 }
 
-//==========================================================================
-//
-//  LoadImage
-//
-//==========================================================================
 
-void LoadImage(const char *name) {
+//==========================================================================
+//
+//  XLoadImage
+//
+//==========================================================================
+void XLoadImage (const char *name, uint64_t *ftime) {
   char ext[64];
+  struct stat st;
+  if (ftime) {
+    if (stat(name, &st) == 0) {
+      *ftime = st.st_mtime;
+    } else {
+      *ftime = 0;
+    }
+  }
   ExtractFileExtension(name, ext, sizeof(ext));
        if (stricmp(ext, ".pcx") == 0) LoadPCX(name);
   else if (stricmp(ext, ".tga") == 0) LoadTGA(name);
   else Error("Unknown extension");
 }
+
+
+//==========================================================================
+//
+//  LoadImage
+//
+//==========================================================================
+void LoadImage (const char *name) {
+  XLoadImage(name, NULL);
+}
+
 
 //==========================================================================
 //

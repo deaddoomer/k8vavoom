@@ -49,6 +49,7 @@ void ExtractFileBase (const char *path, char *dest, size_t destsize);
 void ExtractFileExtension (const char *path, char *dest, size_t destsize); // with dot
 void FixFileSlashes (char *path);
 int LoadFile (const char *name, void **bufferptr);
+int XLoadFile (const char *name, void **bufferptr, uint64_t *ftime);
 
 } // namespace VavoomUtils
 
