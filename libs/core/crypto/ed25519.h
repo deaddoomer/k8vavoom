@@ -68,6 +68,18 @@ signing due to both using the same code for the scalar multiply.
 */
 
 
+typedef struct ed25519_iostream_t ed25519_iostream;
+struct ed25519_iostream_t {
+  // return non-zero on failure
+  int (*rewind) (ed25519_iostream *strm);
+  // read up to bufsize bytes; return 0 on EOF, negative on failure
+  // will never be called with 0 or negative `bufsize`
+  int (*read) (ed25519_iostream *strm, void *buf, int bufsize);
+  // user data
+  void *udata;
+};
+
+
 typedef unsigned char ed25519_signature[64];
 typedef unsigned char ed25519_public_key[32];
 typedef unsigned char ed25519_secret_key[32];
@@ -83,6 +95,11 @@ int ed25519_sign_open_batch(const unsigned char **m, size_t *mlen, const unsigne
 void ed25519_randombytes(void *out, size_t count);
 
 void curved25519_scalarmult_basepoint(curved25519_key pk, const curved25519_key e);
+
+// return 0 on success, non-zero on failure
+int ed25519_sign_open_stream (ed25519_iostream *strm, const ed25519_public_key pk, const ed25519_signature RS);
+// return 0 on success, non-zero on failure
+int ed25519_sign_stream (ed25519_iostream *strm, const ed25519_secret_key sk, const ed25519_public_key pk, ed25519_signature RS);
 
 
 #if 0

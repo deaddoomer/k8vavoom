@@ -28,14 +28,14 @@ extern "C" {
 #endif
 
 /* endian */
-static inline void U32TO8_LE(unsigned char *p, const uint32_t v) {
+static DONNA_INLINE void U32TO8_LE(unsigned char *p, const uint32_t v) {
 	p[0] = (unsigned char)(v      );
 	p[1] = (unsigned char)(v >>  8);
 	p[2] = (unsigned char)(v >> 16);
 	p[3] = (unsigned char)(v >> 24);
 }
 
-static inline uint32_t U8TO32_LE(const unsigned char *p) {
+static DONNA_INLINE uint32_t U8TO32_LE(const unsigned char *p) {
 	return
 	(((uint32_t)(p[0])      ) |
 	 ((uint32_t)(p[1]) <<  8) |
@@ -82,6 +82,22 @@ static inline void U64TO8_LE(unsigned char *p, const uint64_t v) {
 void
 ED25519_FN(ed25519_randombytes) (void *p, size_t len) {
 	prng_randombytes(p, len);
+}
+
+
+static size_t hash_stream (ed25519_iostream *strm, ed25519_hash_context *ctx) {
+  size_t mlen = 0;
+  uint8_t buf[1024];
+  int rd;
+  if (strm->rewind(strm) != 0) return 0;
+  do {
+    rd = strm->read(strm, buf, (int)sizeof(buf));
+    if (rd > 0) {
+      ed25519_hash_update(ctx, buf, (size_t)rd);
+      mlen += (size_t)rd;
+    }
+  } while (rd > 0);
+  return (rd < 0 ? 0 : mlen);
 }
 
 
@@ -2010,6 +2026,19 @@ ed25519_hram(hash_512bits hram, const ed25519_signature RS, const ed25519_public
 	ed25519_hash_final(&ctx, hram);
 }
 
+static size_t
+ed25519_hram_stream(hash_512bits hram, const ed25519_signature RS, const ed25519_public_key pk, ed25519_iostream *strm) {
+	ed25519_hash_context ctx;
+	ed25519_hash_init(&ctx);
+	ed25519_hash_update(&ctx, RS, 32);
+	ed25519_hash_update(&ctx, pk, 32);
+	//ed25519_hash_update(&ctx, m, mlen);
+	const size_t mlen = hash_stream(strm, &ctx);
+	if (mlen != 0) ed25519_hash_final(&ctx, hram);
+	return mlen;
+}
+
+
 void
 ED25519_FN(ed25519_publickey) (const ed25519_secret_key sk, ed25519_public_key pk) {
 	bignum256modm a;
@@ -2115,6 +2144,75 @@ ED25519_FN(curved25519_scalarmult_basepoint) (curved25519_key pk, const curved25
 	curve25519_mul(yplusz, yplusz, zminusy);
 	curve25519_contract(pk, yplusz);
 }
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+int
+ED25519_FN(ed25519_sign_stream) (ed25519_iostream *strm, const ed25519_secret_key sk, const ed25519_public_key pk, ed25519_signature RS) {
+	ed25519_hash_context ctx;
+	bignum256modm r, S, a;
+	ge25519 ALIGN(16) R;
+	hash_512bits extsk, hashr, hram;
+
+	ed25519_extsk(extsk, sk);
+
+	/* r = H(aExt[32..64], m) */
+	ed25519_hash_init(&ctx);
+	ed25519_hash_update(&ctx, extsk + 32, 32);
+	const size_t mlen = hash_stream(strm, &ctx);
+	if (mlen == 0) return -1;
+	//ed25519_hash_update(&ctx, m, mlen);
+	ed25519_hash_final(&ctx, hashr);
+	expand256_modm(r, hashr, 64);
+
+	/* R = rB */
+	ge25519_scalarmult_base_niels(&R, ge25519_niels_base_multiples, r);
+	ge25519_pack(RS, &R);
+
+	/* S = H(R,A,m).. */
+	const size_t xmlen = ed25519_hram_stream(hram, RS, pk, strm);
+	if (xmlen == 0 || xmlen != mlen) return -1;
+	expand256_modm(S, hram, 64);
+
+	/* S = H(R,A,m)a */
+	expand256_modm(a, extsk, 32);
+	mul256_modm(S, S, a);
+
+	/* S = (r + H(R,A,m)a) */
+	add256_modm(S, S, r);
+
+	/* S = (r + H(R,A,m)a) mod L */
+	contract256_modm(RS + 32, S);
+
+	return 0;
+}
+
+int
+ED25519_FN(ed25519_sign_open_stream) (ed25519_iostream *strm, const ed25519_public_key pk, const ed25519_signature RS) {
+	ge25519 ALIGN(16) R, A;
+	hash_512bits hash;
+	bignum256modm hram, S;
+	unsigned char checkR[32];
+
+	if ((RS[63] & 224) || !ge25519_unpack_negative_vartime(&A, pk))
+		return -1;
+
+	/* hram = H(R,A,m) */
+	const size_t mlen = ed25519_hram_stream(hash, RS, pk, strm);
+	if (mlen == 0) return -1;
+	expand256_modm(hram, hash, 64);
+
+	/* S */
+	expand256_modm(S, RS + 32, 32);
+
+	/* SB - H(R,A,m)A */
+	ge25519_double_scalarmult_vartime(&R, &A, hram, S);
+	ge25519_pack(checkR, &R);
+
+	/* check that R = SB - H(R,A,m)A */
+	return ed25519_verify(RS, checkR, 32) ? 0 : -1;
+}
+
 
 #if defined(__cplusplus)
 }
