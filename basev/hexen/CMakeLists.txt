@@ -7,7 +7,7 @@ file(GLOB hexen_pak_SRC CONFIGURE_DEPENDS
   )
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3
-  COMMAND ${WINERUN} $<TARGET_FILE:vlumpy> ARGS basepak.ls
+  COMMAND ${WINERUN} $<TARGET_FILE:vlumpy> ARGS --vwad --keyfile ${CMAKE_SOURCE_DIR}/k8_ed25519_priv.key basepak.ls
   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/basepak.ls vlumpy
     graphics/croshai1.lmp
     graphics/croshai2.lmp

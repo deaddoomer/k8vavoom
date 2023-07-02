@@ -1,5 +1,16 @@
 include_directories(../common ${ZLIB_INCLUDE_DIR})
 
+# do not tempt poor things
+if("$ENV{USER}" STREQUAL "ketmar")
+  set(vlumpy_vwad ON)
+  set(vlumpy_vwad_src vwadwrite.c vwadwrite.h)
+  add_definitions(-DVAVOOM_VLUMPY_VWAD=1)
+else()
+  set(vlumpy_vwad OFF)
+  set(vlumpy_vwad_src )
+  add_definitions(-DVAVOOM_VLUMPY_VWAD=0)
+endif()
+
 add_executable(vlumpy
   ../common/cmdlib.cpp
   ../common/cmdlib.h
@@ -43,6 +54,7 @@ add_executable(vlumpy
   vlumpy.cpp
   zip.cpp
   zip.h
+  ${vlumpy_vwad_src}
 )
 target_link_libraries(vlumpy core ${ZLIB_LIBRARIES} ${VAVOOM_SHITDOZE_LIBS})
 set_target_properties(vlumpy PROPERTIES OUTPUT_NAME ../bin/k8vlumpy)

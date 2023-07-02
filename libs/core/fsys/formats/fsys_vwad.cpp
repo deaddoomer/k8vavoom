@@ -66,6 +66,43 @@ static vwad_result ioread (vwad_iostream *strm, void *buf, int bufsize) {
 }
 
 
+static void logger (int type, const char *fmt, ...) {
+  va_list ap;
+  switch (type) {
+    case VWAD_LOG_NOTE:
+      #if 0
+      va_start(ap, fmt);
+      GLog.doWrite(NAME_Init, fmt, ap, true);
+      va_end(ap);
+      #endif
+      return;
+    case VWAD_LOG_WARNING:
+      va_start(ap, fmt);
+      GLog.doWrite(NAME_Warning, fmt, ap, true);
+      va_end(ap);
+      return;
+    case VWAD_LOG_ERROR:
+      va_start(ap, fmt);
+      GLog.doWrite(NAME_Error, fmt, ap, true);
+      va_end(ap);
+      return;
+    case VWAD_LOG_DEBUG:
+      #if 0
+      va_start(ap, fmt);
+      GLog.doWrite(NAME_Debug, fmt, ap, true);
+      #endif
+      va_end(ap);
+      return;
+    default: break;
+  }
+  #if 0
+  va_start(ap, fmt);
+  GLog.doWrite(NAME_Log, fmt, ap, true);
+  va_end(ap);
+  #endif
+}
+
+
 #include "fsys_vwadfread.cpp"
 
 
@@ -79,6 +116,7 @@ static vwad_result ioread (vwad_iostream *strm, void *buf, int bufsize) {
 VVWadFile::VVWadFile (VStream *fstream, VStr name)
   : VPakFileBase(name)
 {
+  vwad_logf = logger;
   OpenArchive(fstream);
   if (fstream->IsError()) Sys_Error("error opening archive \"%s\"", *PakFileName);
 }
@@ -130,14 +168,14 @@ void VVWadFile::OpenArchive (VStream *fstream) {
   type = PAK;
 
   const int maxFIdx = vwad_get_max_fidx(wad);
-  #if 1
+  #if 0
   GLog.Logf(NAME_Debug, "VWAD: %d files...", maxFIdx);
   #endif
   for (int i = 1; i <= maxFIdx; ++i) {
     const char *fname = vwad_get_file_name(wad, i);
     vassert(fname && fname[0] && fname[strlen(fname) - 1] != '/');
 
-    #if 1
+    #if 0
     GLog.Logf(NAME_Debug, "VWAD: %d: '%s' (%d)", i, fname, vwad_get_file_size(wad, i));
     #endif
 
