@@ -1,3 +1,4 @@
+$comment "K8Vavoom: Doom II support"
 $dest basepak.pk3
 
 progs/cgame/classes.vc  @CMAKE_SOURCE_DIR@/progs/doom2/cgame.vc

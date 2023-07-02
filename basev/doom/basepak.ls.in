@@ -1,3 +1,4 @@
+$comment "K8Vavoom: Common Doom & Doom II support"
 $dest basepak.pk3
 
 // sounds

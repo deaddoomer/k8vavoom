@@ -1,3 +1,4 @@
+$comment "K8Vavoom: Heretic support"
 $dest basepak.pk3
 
 // crosshairs

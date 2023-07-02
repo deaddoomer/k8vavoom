@@ -1,3 +1,4 @@
+$comment "K8Vavoom: Strife support"
 $dest basepak.pk3
 
 // automap background

@@ -1,3 +1,4 @@
+$comment "K8Vavoom: Common (shared) data for all games"
 $dest basepak.pk3
 
 // default config files

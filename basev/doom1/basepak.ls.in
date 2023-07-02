@@ -1,3 +1,4 @@
+$comment "K8Vavoom: Doom support"
 $dest basepak.pk3
 
 // additional gfx

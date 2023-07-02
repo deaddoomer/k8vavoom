@@ -1,3 +1,4 @@
+$comment "K8Vavoom: Hexen support"
 $dest basepak.pk3
 
 // crosshairs

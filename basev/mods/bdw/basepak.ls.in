@@ -1,3 +1,4 @@
+$comment "K8Vavoom: BDW mod"
 $dest basepak.pk3
 
 $recursedir sprites/     @CMAKE_CURRENT_SOURCE_DIR@/sprites/

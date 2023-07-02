@@ -1,3 +1,4 @@
+$comment "K8Vavoom: Final Doom: TNT support"
 $dest basepak.pk3
 
 mapinfo.txt  @CMAKE_CURRENT_SOURCE_DIR@/mapinfo.txt

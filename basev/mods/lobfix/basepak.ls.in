@@ -1,3 +1,4 @@
+$comment "K8Vavoom: Legions of Bones support"
 $dest basepak.pk3
 
 $recursedir progs/    @CMAKE_CURRENT_SOURCE_DIR@/progs/
