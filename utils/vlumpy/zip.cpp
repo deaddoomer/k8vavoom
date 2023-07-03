@@ -936,7 +936,8 @@ int ZEXPORT zipWriteWholeFileToZip (zipFile file, const zip_fileinfo *zinfo, con
   if (!useZopfli) {
     // open file
     int clevel;
-    if (zlib_comp_level <= 0) clevel = 0;
+    if (zlib_comp_level < 0) clevel = 0;
+    else if (zlib_comp_level == 0) clevel = 1;
     else if (zlib_comp_level == 1) clevel = 3;
     else if (zlib_comp_level == 2) clevel = 6;
     else /*if (zlib_comp_level >= 3)*/ clevel = Z_BEST_COMPRESSION;

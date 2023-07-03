@@ -1513,6 +1513,7 @@ int main (int argc, char *argv[]) {
         if (strcmp(argv[i], "--fast") == 0) { comp_level = 1; continue; }
         if (strcmp(argv[i], "--medium") == 0) { comp_level = 2; continue; }
         if (strcmp(argv[i], "--max") == 0) { comp_level = 3; continue; }
+        if (strcmp(argv[i], "--no-compression") == 0) { comp_level = -1; continue; }
         if (strcmp(argv[i], "--verbose") == 0) { showPackedSize = true; verbose = true; continue; }
         if (strcmp(argv[i], "--stats") == 0) { showPackedSize = true; continue; }
         if (strcmp(argv[i], "--quiet") == 0) { showPackedSize = false; verbose = false; continue; }

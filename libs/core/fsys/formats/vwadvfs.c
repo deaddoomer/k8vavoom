@@ -51,12 +51,16 @@ static inline uint16_t get_u16 (const void *src) {
 static void decrypt_buffer (const ed25519_public_key seed, uint64_t nonce,
                             void *buf, uint32_t bufsize)
 {
-  // use Mulberry32 PRNG, because i don't need cryptostrong xor at all
-  #define MB32  do { \
-    uint32_t z = (xseed += 0x6D2B79F5U); \
-    z = (z ^ (z >> 15)) * (z | 1U); \
-    z ^= z + (z ^ (z >> 7)) * (z | 61U); \
-    rval = z ^ (z >> 14); \
+  // use Mulberry32-derived PRNG, because i don't need cryptostrong xor at all
+  // this produces each value once
+  #define MB32X  do { \
+    /* 2 to the 32 divided by golden ratio; adding forms a Weyl sequence */ \
+    rval = (xseed += 0x9E3779B9u); \
+    rval ^= rval >> 16; \
+    rval *= 0x21f0aaadu; \
+    rval ^= rval >> 15; \
+    rval *= 0x735a2d97u; \
+    rval ^= rval >> 15; \
   } while (0)
 
   uint32_t xseed = 0x29a, rval;
@@ -64,13 +68,13 @@ static void decrypt_buffer (const ed25519_public_key seed, uint64_t nonce,
 
   uint32_t *b32 = (uint32_t *)buf;
   while (bufsize >= 4) {
-    MB32;
+    MB32X;
     *b32++ ^= rval;
     bufsize -= 4;
   }
   if (bufsize) {
     // final [1..3] bytes
-    MB32;
+    MB32X;
     uint32_t n;
     uint8_t *b = (uint8_t *)b32;
     switch (bufsize) {
