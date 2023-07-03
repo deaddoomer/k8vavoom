@@ -971,15 +971,17 @@ static int hash_with_prefix (uint8_t *out_fp,
 
   const int xxlen = strm->total_size(strm);
   if (xxlen < 0) return -1;
-  size_t len = (size_t)xxlen;
+  const size_t len = (size_t)xxlen;
 
   uint8_t msgblock[SHA512_BLOCK_SIZE];
 
   sha512_init(&s);
 
   if (len < SHA512_BLOCK_SIZE && len + prefix_size < SHA512_BLOCK_SIZE) {
-    if (strm->read(strm, 0, msgblock, len) != 0) return -1;
-    memcpy(init_block + prefix_size, msgblock, len);
+    if (len > 0) {
+      if (strm->read(strm, 0, msgblock, (int)len) != 0) return -1;
+      memcpy(init_block + prefix_size, msgblock, len);
+    }
     sha512_final(&s, init_block, len + prefix_size);
   } else {
     size_t i;
@@ -996,7 +998,7 @@ static int hash_with_prefix (uint8_t *out_fp,
       sha512_block(&s, msgblock);
     }
 
-    const int left = len - (int)i;
+    const int left = (int)len - (int)i;
     if (left < 0) __builtin_trap();
     if (left > 0) {
       if (strm->read(strm, (int)i, msgblock, left) != 0) return -1;
@@ -1499,7 +1501,7 @@ static int ed_read (cc_ed25519_iostream *strm, int startpos, void *buf, int bufs
   EdInfo *nfo = (EdInfo *)strm->udata;
   if (startpos < 0) return -1; // oops
   startpos += 4+64; // skip header
-  if (startpos >= nfo->size) return 0;
+  if (startpos >= nfo->size) return -1;
   const int max = nfo->size - startpos;
   if (bufsize > max) bufsize = max;
   if (nfo->currpos != startpos) {

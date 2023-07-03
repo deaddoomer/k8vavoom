@@ -1223,8 +1223,12 @@ static void ParseScript (const char *name) {
           wad_outstrm = vwadwr_new_file_stream(wad_file_out);
           if (!wad_outstrm) Error("cannot init VWAD");
 
+          if (!has_privkey) {
+            prng_randombytes(privkey, sizeof(ed25519_secret_key));
+          }
           wad_dir = vwadwr_new_dir(NULL, wad_outstrm, destcomment,
-                                   (has_privkey ? privkey : NULL), NULL);
+                                   (has_privkey ? VWADWR_NEW_DEFAULT : VWADWR_NEW_DONT_SIGN),
+                                   privkey, NULL);
           if (!wad_dir) Error("cannot init VWAD");
         } else
         #endif
