@@ -39,11 +39,12 @@ bool VCvar::Cheating = false;
 static bool hostInitComplete = false;
 
 
-#define CVAR_HASH_SIZE  (509)
+//#define CVAR_HASH_SIZE  (509)
+#define CVAR_HASH_SIZE  (1021)
 static VCvar *cvhBuckets[CVAR_HASH_SIZE] = {nullptr};
 
 /*#define CHH(v_)  (foldHash32to8(v_)&(CVAR_HASH_SIZE-1))*/
-#define CHH(v_)  ((v_)%CVAR_HASH_SIZE)
+#define CHH(v_)  ((uint32_t)(v_)%(uint32_t)CVAR_HASH_SIZE)
 
 
 // ////////////////////////////////////////////////////////////////////////// //

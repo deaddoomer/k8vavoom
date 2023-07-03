@@ -73,12 +73,12 @@ static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline uint32_t nextPOTU32 (const 
 
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline uint32_t hashU32 (uint32_t a) noexcept {
   a -= (a<<6);
-  a = a^(a>>17);
+  a ^= (a>>17);
   a -= (a<<9);
-  a = a^(a<<4);
+  a ^= (a<<4);
   a -= (a<<3);
-  a = a^(a<<10);
-  a = a^(a>>15);
+  a ^= (a<<10);
+  a ^= (a>>15);
   return a;
 }
 
@@ -123,6 +123,12 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashBufCI (const
     hash ^= (*s++)|0x20; // this converts ASCII capitals to locase (and destroys other, but who cares)
     hash *= 16777619U; // 32-bit fnv prime
   }
+  // better avalanche
+  hash += hash << 13;
+  hash ^= hash >> 7;
+  hash += hash << 3;
+  hash ^= hash >> 17;
+  hash += hash << 5;
   return hash;
 }
 
@@ -137,6 +143,12 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashBuf (const V
       hash *= 16777619U; // 32-bit fnv prime
     }
   }
+  // better avalanche
+  hash += hash << 13;
+  hash ^= hash >> 7;
+  hash += hash << 3;
+  hash ^= hash >> 17;
+  hash += hash << 5;
   return hash;
 }
 
@@ -151,6 +163,12 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashStr (const V
       hash *= 16777619U; // 32-bit fnv prime
     }
   }
+  // better avalanche
+  hash += hash << 13;
+  hash ^= hash >> 7;
+  hash += hash << 3;
+  hash ^= hash >> 17;
+  hash += hash << 5;
   return hash;
 }
 
@@ -166,6 +184,12 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashStrCI (const
       hash *= 16777619U; // 32-bit fnv prime
     }
   }
+  // better avalanche
+  hash += hash << 13;
+  hash ^= hash >> 7;
+  hash += hash << 3;
+  hash ^= hash >> 17;
+  hash += hash << 5;
   return hash;
 }
 

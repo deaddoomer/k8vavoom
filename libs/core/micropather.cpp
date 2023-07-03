@@ -359,8 +359,43 @@ unsigned PathNodePool::Hash( void* voidval )
   // Time: 512
   // The HashMask() is used as the divisor. h%1024 has lots of common
   // repetitions, but h%1023 will move things out more.
+  /*
   MP_UPTR h = (MP_UPTR)(voidval);
   return h % HashMask();
+  */
+
+  // k8
+  if (sizeof(void *) == 4) {
+    unsigned int h1 = (MP_UPTR)(voidval);
+    h1 -= (h1<<6);
+    h1 ^= (h1>>17);
+    h1 -= (h1<<9);
+    h1 ^= (h1<<4);
+    h1 -= (h1<<3);
+    h1 ^= (h1<<10);
+    h1 ^= (h1>>15);
+    return h1 % HashMask();
+  } else {
+    unsigned int h1 = (unsigned int)(MP_UPTR)(voidval);
+    h1 -= (h1<<6);
+    h1 ^= (h1>>17);
+    h1 -= (h1<<9);
+    h1 ^= (h1<<4);
+    h1 -= (h1<<3);
+    h1 ^= (h1<<10);
+    h1 ^= (h1>>15);
+    unsigned int h2 = (unsigned int)(((unsigned long long)(MP_UPTR)(voidval)) >> 32);
+    h2 -= (h2<<6);
+    h2 ^= (h2>>17);
+    h2 -= (h2<<9);
+    h2 ^= (h2<<4);
+    h2 -= (h2<<3);
+    h2 ^= (h2<<10);
+    h2 ^= (h2>>15);
+    // final fold
+    h1 += h2;
+    return h1 % HashMask();
+  }
 }
 
 

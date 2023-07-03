@@ -19,9 +19,16 @@ extern "C" {
 #endif
 
 
-#define CC25519_INLINE  inline __attribute__((always_inline))
+// ////////////////////////////////////////////////////////////////////////// //
+/* turning off inlining saves ~5kb of binary code on x86 */
+#if 1
+# define CC25519_INLINE  inline __attribute__((always_inline))
+#else
+# define CC25519_INLINE  __attribute__((noinline))
+#endif
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 typedef unsigned char ed25519_signature[64];
 typedef unsigned char ed25519_public_key[32];
 typedef unsigned char ed25519_secret_key[32];
@@ -364,10 +371,6 @@ static void f25519_select (uint8_t *dst,
 
 #define FPRIME_SIZE  (32)
 
-static CC25519_INLINE void fprime_copy (uint8_t *x, const uint8_t *a) {
-  memcpy(x, a, FPRIME_SIZE);
-}
-
 static void fprime_select (uint8_t *dst,
                            const uint8_t *zero, const uint8_t *one,
                            uint8_t condition);
@@ -410,12 +413,6 @@ static const struct ed25519_pt ed25519_neutral = {
 
 #define ED25519_PACK_SIZE  F25519_SIZE
 #define ED25519_EXPONENT_SIZE  32
-
-static CC25519_INLINE void ed25519_prepare (uint8_t *e) {
-  e[0] &= 0xf8;
-  e[31] &= 0x7f;
-  e[31] |= 0x40;
-}
 
 static CC25519_INLINE void ed25519_copy (struct ed25519_pt *dst,
                                          const struct ed25519_pt *src)
@@ -665,17 +662,6 @@ static void f25519_sqrt (uint8_t *r, const uint8_t *a) {
   f25519_mul__distinct(r, x, i);
 }
 
-static void raw_add (uint8_t *x, const uint8_t *p) {
-  uint16_t c = 0;
-  int i;
-
-  for (i = 0; i < FPRIME_SIZE; i++) {
-    c += ((uint16_t)x[i]) + ((uint16_t)p[i]);
-    x[i] = c;
-    c >>= 8;
-  }
-}
-
 static void raw_try_sub (uint8_t *x, const uint8_t *p) {
   uint8_t minusp[FPRIME_SIZE];
   uint16_t c = 0;
@@ -764,11 +750,6 @@ static void fprime_select (uint8_t *dst,
   for (i = 0; i < FPRIME_SIZE; i++) {
     dst[i] = zero[i] ^ (mask & (one[i] ^ zero[i]));
   }
-}
-
-static CC25519_INLINE void fprime_add (uint8_t *r, const uint8_t *a, const uint8_t *modulus) {
-  raw_add(r, a);
-  raw_try_sub(r, modulus);
 }
 
 static CC25519_INLINE void ed25519_project (struct ed25519_pt *p, const uint8_t *x, const uint8_t *y) {
@@ -939,15 +920,6 @@ static const uint8_t ed25519_order[FPRIME_SIZE] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10
 };
 
-static CC25519_INLINE void expand_key (uint8_t *expanded, const uint8_t *secret) {
-  struct sha512_state s;
-
-  sha512_init(&s);
-  sha512_final(&s, secret, EDSIGN_SECRET_KEY_SIZE);
-  sha512_get(&s, expanded, 0, EXPANDED_SIZE);
-  ed25519_prepare(expanded);
-}
-
 static CC25519_INLINE uint8_t upp (struct ed25519_pt *p, const uint8_t *packed) {
   uint8_t x[F25519_SIZE];
   uint8_t y[F25519_SIZE];
@@ -973,8 +945,8 @@ static CC25519_INLINE void sm_pack (uint8_t *r, const uint8_t *k) {
 }
 
 static int hash_with_prefix (uint8_t *out_fp,
-                              uint8_t *init_block, unsigned int prefix_size,
-                              cc_ed25519_iostream *strm)
+                             uint8_t *init_block, unsigned int prefix_size,
+                             cc_ed25519_iostream *strm)
 {
   struct sha512_state s;
 
@@ -1020,14 +992,6 @@ static int hash_with_prefix (uint8_t *out_fp,
   fprime_from_bytes(out_fp, init_block, SHA512_HASH_SIZE, ed25519_order);
 
   return 0;
-}
-
-static CC25519_INLINE int generate_k (uint8_t *k, const uint8_t *kgen_key,
-                                       cc_ed25519_iostream *strm)
-{
-  uint8_t block[SHA512_BLOCK_SIZE];
-  memcpy(block, kgen_key, 32);
-  return hash_with_prefix(k, block, 32, strm);
 }
 
 static int hash_message (uint8_t *z, const uint8_t *r, const uint8_t *a,
@@ -1387,6 +1351,12 @@ static CC25519_INLINE uint32_t fnvHashStrCI (const void *buf) {
     hash ^= ch|0x20; // this converts ASCII capitals to locase (and destroys other, but who cares)
     hash *= 16777619U; // 32-bit fnv prime
   }
+  // better avalanche
+  hash += hash << 13;
+  hash ^= hash >> 7;
+  hash += hash << 3;
+  hash ^= hash >> 17;
+  hash += hash << 5;
   return hash;
 }
 
