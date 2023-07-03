@@ -14,15 +14,6 @@
 extern "C" {
 #endif
 
-// define this to omit ed25519 code.
-// the library will be fully functional, but will not
-// check digital signatures.
-// uncommenting this will save you ~100KB of compiled code.
-// WARNING! do not use this define to check if ed25519 is
-//          enabled, use `vwad_can_check_auth()` API instead!
-// basically, there is no reason to uncomment this thing.
-//#define VWAD_VFS_DISABLE_ED25519_CODE
-
 
 // for self-documentation purposes
 typedef int vwad_bool;
@@ -82,13 +73,6 @@ extern void (*vwad_logf) (int type, const char *fmt, ...);
 
 // assertion; can be NULL, then the lib will simply traps
 extern void (*vwad_assertion_failed) (const char *fmt, ...);
-
-
-// you can use this function to check if digital signature
-// authentication is available. the library can be built
-// without ed25519 authentication code, and this function
-// allows to check signatures availability in runtime.
-vwad_bool vwad_can_check_auth (void);
 
 
 // flags for `vwad_open_stream()`, to be bitwise ORed

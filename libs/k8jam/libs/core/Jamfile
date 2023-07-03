@@ -73,5 +73,7 @@ Library libcore.a :
   src/fsys/formats/fsys_wad.cpp
   src/fsys/formats/fsys_zip.cpp
   src/fsys/formats/fsys_qkpak.cpp
+  src/fsys/formats/fsys_vwad.cpp
+  src/fsys/formats/vwadvfs.c
   #src/fsys/formats/fsys_dfwad.cpp
 ;
