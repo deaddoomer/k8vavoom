@@ -295,7 +295,8 @@ static void AddToZip (const char *Name, const void *Data, size_t Size, uint64_t 
     instrm.write = &bufiowrite;
     instrm.udata = (void *)&nfo;
     vwadwr_result res = vwadwr_pack_file(wad_dir, &instrm, Name,
-                                         ftime, &upksize, &pksize);
+                                         ftime, &upksize, &pksize,
+                                         NULL, NULL);
     if (res != 0) {
       Error("Failed to write file '%s' to VWAD", Name);
     }
