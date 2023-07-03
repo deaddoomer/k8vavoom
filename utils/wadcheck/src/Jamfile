@@ -3,11 +3,13 @@ SubDir TOP src ;
 if ! $(WINDOZE) {
   Main wadcheck :
     wadcheck_posix.cpp
+    xxhash64.c
     wdb.cpp
   ;
 } else {
   Main wadcheck :
     wadcheck_doze.cpp
+    xxhash64.c
     wdb.cpp
     resource.rc
   ;

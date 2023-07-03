@@ -30,6 +30,7 @@
 #include <unistd.h>
 
 #include "libs/core.h"
+#include "xxhash64.h"
 
 
 VStr getBaseWad (const VStr &s);
@@ -57,7 +58,7 @@ struct FileInfo {
 };
 
 
-extern TMapDtor<FileHash, FileInfo> wadlist;
+extern TMap<FileHash, FileInfo> wadlist;
 // all known wad names
 extern TArray<VStr> wadnames;
 extern TMap<VStrCI, int> wadnamesmap;

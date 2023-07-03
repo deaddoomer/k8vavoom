@@ -143,7 +143,7 @@ int main (int argc, char **argv) {
     GLog.Logf("calculating hashes...");
     for (int lump = W_IterateNS(-1, WADNS_Any); lump >= 0; lump = W_IterateNS(lump, WADNS_Any)) {
       if (W_LumpLength(lump) < 8) continue;
-      TArray<vuint8> data;
+      TArrayNC<vuint8> data;
       W_LoadLumpIntoArrayIdx(lump, data);
       XXH64_hash_t hash = XXH64(data.ptr(), data.length(), 0x29a);
       //GLog.Logf("calculated hash for '%s': 0x%16llx", *W_FullLumpName(lump), hash);
@@ -170,7 +170,7 @@ int main (int argc, char **argv) {
       wdbClearResults();
       for (int lump = W_IterateNS(-1, WADNS_Any); lump >= 0; lump = W_IterateNS(lump, WADNS_Any)) {
         if (W_LumpLength(lump) < 8) continue;
-        TArray<vuint8> data;
+        TArrayNC<vuint8> data;
         W_LoadLumpIntoArrayIdx(lump, data);
         XXH64_hash_t hash = XXH64(data.ptr(), data.length(), 0x29a);
         wdbFind(hash, W_FullLumpName(lump), W_LumpLength(lump));

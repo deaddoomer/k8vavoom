@@ -25,7 +25,7 @@
 #include "wdb.h"
 
 
-TMapDtor<FileHash, FileInfo> wadlist;
+TMap<FileHash, FileInfo> wadlist;
 // all known wad names
 TArray<VStr> wadnames;
 TMap<VStrCI, int> wadnamesmap;
@@ -104,7 +104,7 @@ void wdbAppend (XXH64_hash_t hash, VStr fname, vint32 size) {
   }
   FileHash fh;
   fh.hash = hash;
-  auto fip = wadlist.find(fh);
+  auto fip = wadlist.get(fh);
   if (fip) {
     for (int f = 0; f < fip->names.length(); ++f) {
       if (fip->names[f].size != size) continue;
@@ -177,7 +177,7 @@ void wdbFind (XXH64_hash_t hash, VStr fname, vint32 size) {
   fname = normalizeName(fname);
   FileHash fh;
   fh.hash = hash;
-  auto fip = wadlist.find(fh);
+  auto fip = wadlist.get(fh);
   if (!fip) return;
 
   TArray<VStr> hits;
@@ -228,14 +228,14 @@ void wdbWrite (VStream *fo) {
     for (int f = 0; f < fi.names.length(); ++f) {
       VStr s = fi.names[f].name;
       VStr bw = getBaseWad(s); //.toLowerCase();
-      auto ip = spmap.find(bw);
+      auto ip = spmap.get(bw);
       if (!ip) {
         auto idx = strpool.length();
         strpool.append(bw);
         spmap.put(bw, idx);
       }
       bw = getLumpName(s); //.toLowerCase();
-      ip = spmap.find(bw);
+      ip = spmap.get(bw);
       if (!ip) {
         auto idx = strpool.length();
         strpool.append(bw);
@@ -264,11 +264,11 @@ void wdbWrite (VStream *fo) {
     for (int f = 0; f < fi.names.length(); ++f) {
       VStr s = fi.names[f].name;
       VStr bw = getBaseWad(s);
-      auto ip = spmap.find(bw);
+      auto ip = spmap.get(bw);
       vassert(ip);
       *fo << STRM_INDEX(*ip);
       VStr ln = getLumpName(s);
-      ip = spmap.find(ln);
+      ip = spmap.get(ln);
       vassert(ip);
       *fo << STRM_INDEX(*ip);
       // size
