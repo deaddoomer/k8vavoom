@@ -89,7 +89,10 @@ VWadFile *VWadFile::Create (VStr FileName, bool FixVoices, VStream *InStream) {
     wad->archStream = FL_OpenSysFileRead(FileName);
     if (!wad->archStream) { delete wad; Sys_Error("Couldn't open \"%s\"", *FileName); }
   }
-  if (fsys_report_added_paks && !FileName.isEmpty()) GLog.Logf(fsys_report_added_paks_logtype, "Adding wad \"%s\"...", *FileName);
+  if (fsys_report_added_paks && !FileName.isEmpty()) {
+    GLog.Logf(fsys_report_added_paks_logtype, "Adding wad \"%s\"...", *FileName);
+    //vassert(0);
+  }
 
   // WAD file or homebrew levels?
   memset(&header, 0, sizeof(header));

@@ -218,6 +218,8 @@ void VSearchPath::ListPk3Files (TArray<VStr> &/*list*/) {
 static void AddArchiveFile_NoLock (VStr filename, VSearchPath *arc, bool allowpk3) {
   //fsysSearchPaths.Append(Zip); // already done by the caller
 
+  if (fsys_simple_archives) return;
+
   // add all WAD/PK3 files in the root of the archive file
   TArray<VStr> wadlist;
   arc->ListWadFiles(wadlist);

@@ -28,6 +28,7 @@
 
 EName fsys_report_added_paks_logtype = NAME_Init;
 
+bool fsys_simple_archives = false;
 bool fsys_developer_debug = false;
 int fsys_IgnoreZScript = 1;
 bool fsys_DisableBDW = false;

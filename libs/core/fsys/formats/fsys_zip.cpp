@@ -266,6 +266,9 @@ void VZipFile::OpenArchive (VStream *fstream, vuint32 cdofs) {
     }
   }
 
+  // hack for "pk3tovwad"
+  if (fsys_simple_archives) type = PAK;
+
   pakdir.buildLumpNames();
   pakdir.buildNameMaps(false, this);
 }

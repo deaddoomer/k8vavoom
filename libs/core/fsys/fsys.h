@@ -59,6 +59,9 @@ bool FL_IsSafeDiskFileName (VStr fname);
 
 extern EName fsys_report_added_paks_logtype;
 
+// used in various utilities; DO NOT TOUCH!
+extern bool fsys_simple_archives;
+
 extern bool fsys_developer_debug;
 extern int fsys_IgnoreZScript;
 extern bool fsys_DisableBDW;
