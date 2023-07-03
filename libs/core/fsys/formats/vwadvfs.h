@@ -131,6 +131,11 @@ vwad_fidx vwad_get_max_fidx (vwad_handle *wad);
 const char *vwad_get_file_name (vwad_handle *wad, vwad_fidx fidx);
 // returns negative number on error.
 int vwad_get_file_size (vwad_handle *wad, vwad_fidx fidx);
+// returns 0 if there is an error, or the time is not set
+// returned time is in UTC, seconds since Epoch (or 0 if unknown)
+unsigned long long vwad_get_ftime (vwad_handle *wad, vwad_fidx fidx);
+// get crc32 for the whole file
+unsigned vwad_get_fcrc32 (vwad_handle *wad, vwad_fidx fidx);
 
 // find file by name. internally, the library is using a hash
 // table, so this is quite fast.
@@ -139,10 +144,6 @@ int vwad_get_file_size (vwad_handle *wad, vwad_fidx fidx);
 // `name` with a slash, use strictly one slash to separate
 // path parts. "." and ".." pseudodirs are not supported.
 vwad_fidx vwad_find_file (vwad_handle *wad, const char *name);
-
-// returns 0 if there is an error, or the time is not set
-// returned time is in UTC, seconds since Epoch (or 0 if unknown)
-unsigned long long vwad_get_ftime (vwad_handle *wad, vwad_fidx fidx);
 
 // open file for reading using its index
 // (obtained from `vwad_find_file()`, for example).
@@ -159,6 +160,12 @@ vwad_result vwad_seek (vwad_handle *wad, vwad_fd fd, int pos);
 int vwad_tell (vwad_handle *wad, vwad_fd fd);
 // return number of read bytes, or negative on error.
 int vwad_read (vwad_handle *wad, vwad_fd fd, void *buf, int len);
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+unsigned vwad_crc32_init (void);
+unsigned vwad_crc32_part (unsigned crc32, const void *src, size_t len);
+unsigned vwad_crc32_final (unsigned crc32);
 
 
 #if defined(__cplusplus)

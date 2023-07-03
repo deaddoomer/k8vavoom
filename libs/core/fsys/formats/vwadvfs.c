@@ -19,6 +19,9 @@ extern "C" {
 #endif
 
 
+#define CC25519_INLINE  inline __attribute__((always_inline))
+
+
 typedef unsigned char ed25519_signature[64];
 typedef unsigned char ed25519_public_key[32];
 typedef unsigned char ed25519_secret_key[32];
@@ -26,7 +29,15 @@ typedef unsigned char ed25519_random_seed[32];
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static inline uint64_t get_u64 (const void *src) {
+static CC25519_INLINE void put_u32 (void *dest, uint32_t u) {
+  ((uint8_t *)dest)[0] = (uint8_t)u;
+  ((uint8_t *)dest)[1] = (uint8_t)(u>>8);
+  ((uint8_t *)dest)[2] = (uint8_t)(u>>16);
+  ((uint8_t *)dest)[3] = (uint8_t)(u>>24);
+}
+
+
+static CC25519_INLINE uint64_t get_u64 (const void *src) {
   uint64_t res = ((const uint8_t *)src)[0];
   res |= ((uint64_t)((const uint8_t *)src)[1])<<8;
   res |= ((uint64_t)((const uint8_t *)src)[2])<<16;
@@ -38,7 +49,7 @@ static inline uint64_t get_u64 (const void *src) {
   return res;
 }
 
-static inline uint32_t get_u32 (const void *src) {
+static CC25519_INLINE uint32_t get_u32 (const void *src) {
   uint32_t res = ((const uint8_t *)src)[0];
   res |= ((uint32_t)((const uint8_t *)src)[1])<<8;
   res |= ((uint32_t)((const uint8_t *)src)[2])<<16;
@@ -46,7 +57,7 @@ static inline uint32_t get_u32 (const void *src) {
   return res;
 }
 
-static inline uint16_t get_u16 (const void *src) {
+static CC25519_INLINE uint16_t get_u16 (const void *src) {
   uint16_t res = ((const uint8_t *)src)[0];
   res |= ((uint16_t)((const uint8_t *)src)[1])<<8;
   return res;
@@ -75,7 +86,8 @@ static void decrypt_buffer (const ed25519_public_key seed, uint64_t nonce,
   uint32_t *b32 = (uint32_t *)buf;
   while (bufsize >= 4) {
     MB32X;
-    *b32++ ^= rval;
+    put_u32(b32, get_u32(b32) ^ rval);
+    ++b32;
     bufsize -= 4;
   }
   if (bufsize) {
@@ -127,9 +139,6 @@ struct cc_ed25519_iostream_t {
 #define ED25519_PUBLIC_KEY_SIZE (32)
 #define ED25519_PRIVATE_KEY_SIZE (64)
 #define ED25519_SIGNATURE_SIZE (64)
-
-
-#define CC25519_INLINE  inline __attribute__((always_inline))
 
 
 struct sha512_state {
@@ -1093,21 +1102,19 @@ static inline __attribute__((cold)) const char *SkipPathPartCStr (const char *s)
 
 // ////////////////////////////////////////////////////////////////////////// //
 // memory allocation
-static inline void *xalloc (vwad_memman *mman, size_t size) {
+static CC25519_INLINE void *xalloc (vwad_memman *mman, size_t size) {
   vassert(size > 0 && size <= 0x7ffffff0u);
   if (mman != NULL) return mman->alloc(mman, (uint32_t)size); else return malloc(size);
 }
 
-
-static inline void *zalloc (vwad_memman *mman, size_t size) {
+static CC25519_INLINE void *zalloc (vwad_memman *mman, size_t size) {
   vassert(size > 0 && size <= 0x7ffffff0u);
   void *p = (mman != NULL ? mman->alloc(mman, (uint32_t)size) : malloc(size));
   if (p) memset(p, 0, size);
   return p;
 }
 
-
-static inline void xfree (vwad_memman *mman, void *p) {
+static CC25519_INLINE void xfree (vwad_memman *mman, void *p) {
   if (p != NULL) {
     if (mman != NULL) mman->free(mman, p); else free(p);
   }
@@ -1132,7 +1139,7 @@ static const uint32_t crctab[16] = {
 } while (0)
 
 
-static inline uint32_t crc32_part (uint32_t crc32, const void *src, size_t len) {
+static CC25519_INLINE uint32_t crc32_part (uint32_t crc32, const void *src, size_t len) {
   const uint8_t *buf = (const uint8_t *)src;
   while (len--) {
     CRC32BYTE(*buf++);
@@ -1140,13 +1147,19 @@ static inline uint32_t crc32_part (uint32_t crc32, const void *src, size_t len) 
   return crc32;
 }
 
-static inline uint32_t crc32_final (uint32_t crc32) {
+static CC25519_INLINE uint32_t crc32_final (uint32_t crc32) {
   return crc32^0xffffffffU;
 }
 
-static inline uint32_t crc32_buf (const void *src, size_t len) {
+static CC25519_INLINE uint32_t crc32_buf (const void *src, size_t len) {
   return crc32_final(crc32_part(crc32_init, src, len));
 }
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+unsigned vwad_crc32_init (void) { return crc32_init; }
+unsigned vwad_crc32_part (unsigned crc32, const void *src, size_t len) { return crc32_part(crc32, src, len); }
+unsigned vwad_crc32_final (unsigned crc32) { return crc32_final(crc32); }
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -1182,7 +1195,7 @@ typedef struct {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static inline uint8_t DecGetByte (EntDecoder *ee) {
+static CC25519_INLINE uint8_t DecGetByte (EntDecoder *ee) {
   if (ee->spos < ee->send) {
     return ee->src[ee->spos++];
   } else {
@@ -1200,7 +1213,7 @@ static void DecInit (EntDecoder *ee, const void *inbuf, uint32_t insize) {
   ee->x = (ee->x << 8) + DecGetByte(ee);
 }
 
-static inline intbool_t DecDecode (EntDecoder *ee, int p) {
+static CC25519_INLINE intbool_t DecDecode (EntDecoder *ee, int p) {
   uint32_t xmid = ee->x1 + (uint32_t)(((uint64_t)((ee->x2 - ee->x1) & 0xffffffffU) * (uint32_t)p) >> 17);
   intbool_t bit = (ee->x <= xmid);
   if (bit) ee->x2 = xmid; else ee->x1 = xmid + 1;
@@ -1218,11 +1231,11 @@ static void PredInit (Predictor *pp) {
   pp->p1 = 1 << 15; pp->p2 = 1 << 15;
 }
 
-static inline int PredGetP (Predictor *pp) {
+static CC25519_INLINE int PredGetP (Predictor *pp) {
   return (int)((uint32_t)pp->p1 + (uint32_t)pp->p2);
 }
 
-static inline void PredUpdate (Predictor *pp, intbool_t bit) {
+static CC25519_INLINE void PredUpdate (Predictor *pp, intbool_t bit) {
   if (bit) {
     pp->p1 += ((~((uint32_t)pp->p1)) >> 3) & 0b0001111111111111;
     pp->p2 += ((~((uint32_t)pp->p2)) >> 6) & 0b0000001111111111;
@@ -1232,7 +1245,7 @@ static inline void PredUpdate (Predictor *pp, intbool_t bit) {
   }
 }
 
-static inline intbool_t PredGetBitDecodeUpdate (Predictor *pp, EntDecoder *dec) {
+static CC25519_INLINE intbool_t PredGetBitDecodeUpdate (Predictor *pp, EntDecoder *dec) {
   int p = PredGetP(pp);
   intbool_t bit = DecDecode(dec, p);
   PredUpdate(pp, bit);
@@ -1246,7 +1259,7 @@ static void BitPPMInit (BitPPM *ppm) {
   ppm->ctx = 1;
 }
 
-static inline intbool_t BitPPMDecode (BitPPM *ppm, EntDecoder *dec) {
+static CC25519_INLINE intbool_t BitPPMDecode (BitPPM *ppm, EntDecoder *dec) {
   intbool_t bit = PredGetBitDecodeUpdate(&ppm->pred[ppm->ctx], dec);
   if (bit) ppm->ctx = 1; else ppm->ctx = 0;
   return bit;
@@ -1260,7 +1273,7 @@ static void BytePPMInit (BytePPM *ppm) {
   ppm->ctxBits[0] = 0; ppm->ctxBits[1] = 0; ppm->ctxSize = 0;
 }
 
-static inline uint8_t BytePPMDecodeByte (BytePPM *ppm, EntDecoder *dec, int bidx) {
+static CC25519_INLINE uint8_t BytePPMDecodeByte (BytePPM *ppm, EntDecoder *dec, int bidx) {
   uint32_t n = 1;
   int cofs = 512 * bidx + ppm->ctxBits[bidx] * 256;
   do {
@@ -1272,7 +1285,7 @@ static inline uint8_t BytePPMDecodeByte (BytePPM *ppm, EntDecoder *dec, int bidx
   return (uint8_t)n;
 }
 
-static inline int BytePPMDecodeInt (BytePPM *ppm, EntDecoder *dec) {
+static CC25519_INLINE int BytePPMDecodeInt (BytePPM *ppm, EntDecoder *dec) {
   int n = BytePPMDecodeByte(ppm, dec, 0);
   intbool_t bit = PredGetBitDecodeUpdate(&ppm->predSize[ppm->ctxSize], dec);
   if (bit) {
@@ -1365,7 +1378,7 @@ static intbool_t DecompressLZFF3 (const void *src, int srclen, void *dest, int u
 
 // ////////////////////////////////////////////////////////////////////////// //
 // fnv-1a: http://www.isthe.com/chongo/tech/comp/fnv/
-static __attribute__((unused)) inline uint32_t fnvHashStrCI (const void *buf) {
+static CC25519_INLINE uint32_t fnvHashStrCI (const void *buf) {
   uint32_t hash = 2166136261U; // fnv offset basis
   const uint8_t *s = (const uint8_t *)buf;
   while (*s) {
@@ -1412,6 +1425,7 @@ typedef struct __attribute__((packed)) {
   uint32_t nhash;      // name hash
   uint32_t bknext;     // next name in bucket
   uint64_t ftime;      // since Epoch, 0 is "unknown"
+  uint32_t crc32;      // full crc32
   uint32_t upksize;    // unpacked file size
   uint32_t chunkCount; // number of chunks
   uint32_t nameofs;    // name offset in names array
@@ -1817,6 +1831,8 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
       wad->files[0].chunkCount != 0 ||
       wad->files[0].nhash != 0 ||
       wad->files[0].bknext != 0 ||
+      wad->files[0].crc32 != 0 ||
+      wad->files[0].ftime != 0 ||
       wad->files[0].nameofs != 0)
   {
     logf(DEBUG, "invalid file data");
@@ -1888,6 +1904,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     }
 
     fi->ftime = get_u64(&fi->ftime);
+    fi->crc32 = get_u32(&fi->crc32);
     fi->upksize = get_u32(&fi->upksize);
     fi->chunkCount = get_u32(&fi->chunkCount);
     fi->nameofs = get_u32(&fi->nameofs);
@@ -2169,6 +2186,22 @@ unsigned long long vwad_get_ftime (vwad_handle *wad, vwad_fidx fidx) {
   uint64_t res = 0;
   if (wad && fidx > 0 && wad->fileCount > 1 && fidx < wad->fileCount) {
     res = wad->files[fidx].ftime;
+  }
+  return res;
+}
+
+
+//==========================================================================
+//
+//  vwad_get_fcrc32
+//
+//  get crc32 for the whole file
+//
+//==========================================================================
+unsigned vwad_get_fcrc32 (vwad_handle *wad, vwad_fidx fidx) {
+  uint32_t res = 0;
+  if (wad && fidx > 0 && wad->fileCount > 1 && fidx < wad->fileCount) {
+    res = wad->files[fidx].crc32;
   }
   return res;
 }
