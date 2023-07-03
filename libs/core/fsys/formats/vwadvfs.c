@@ -72,8 +72,8 @@ static CC25519_INLINE uint16_t get_u16 (const void *src) {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static void decrypt_buffer (const ed25519_public_key seed, uint64_t nonce,
-                            void *buf, uint32_t bufsize)
+static void crypt_buffer (const ed25519_public_key seed, uint64_t nonce,
+                          void *buf, uint32_t bufsize)
 {
   // use Mulberry32-derived PRNG, because i don't need cryptostrong xor at all
   // this produces each value once
@@ -219,22 +219,14 @@ static CC25519_INLINE uint64_t load64 (const uint8_t *x) {
 }
 
 static CC25519_INLINE void store64 (uint8_t *x, uint64_t v) {
-  x += 7;
-  *(x--) = v;
-  v >>= 8;
-  *(x--) = v;
-  v >>= 8;
-  *(x--) = v;
-  v >>= 8;
-  *(x--) = v;
-  v >>= 8;
-  *(x--) = v;
-  v >>= 8;
-  *(x--) = v;
-  v >>= 8;
-  *(x--) = v;
-  v >>= 8;
-  *(x--) = v;
+  x += 7; *(x--) = v;
+  v >>= 8; *(x--) = v;
+  v >>= 8; *(x--) = v;
+  v >>= 8; *(x--) = v;
+  v >>= 8; *(x--) = v;
+  v >>= 8; *(x--) = v;
+  v >>= 8; *(x--) = v;
+  v >>= 8; *(x--) = v;
 }
 
 static CC25519_INLINE uint64_t rot64 (uint64_t x, int bits) {
@@ -251,7 +243,6 @@ static void sha512_block (struct sha512_state *s, const uint8_t *blk) {
     blk += 8;
   }
 
-  /* Load state */
   a = s->h[0];
   b = s->h[1];
   c = s->h[2];
@@ -334,8 +325,7 @@ static void sha512_get (const struct sha512_state *s, uint8_t *hash,
     uint8_t tmp[8];
     unsigned int c = 8 - offset;
 
-    if (c > len)
-      c = len;
+    if (c > len) c = len;
 
     store64(tmp, s->h[i++]);
     memcpy(hash, tmp + offset, c);
@@ -365,15 +355,7 @@ static CC25519_INLINE void f25519_copy (uint8_t *x, const uint8_t *a) {
   memcpy(x, a, F25519_SIZE);
 }
 
-static void f25519_select (uint8_t *dst,
-                           const uint8_t *zero, const uint8_t *one,
-                           uint8_t condition);
-
 #define FPRIME_SIZE  (32)
-
-static void fprime_select (uint8_t *dst,
-                           const uint8_t *zero, const uint8_t *one,
-                           uint8_t condition);
 
 struct ed25519_pt {
   uint8_t x[F25519_SIZE];
@@ -414,9 +396,7 @@ static const struct ed25519_pt ed25519_neutral = {
 #define ED25519_PACK_SIZE  F25519_SIZE
 #define ED25519_EXPONENT_SIZE  32
 
-static CC25519_INLINE void ed25519_copy (struct ed25519_pt *dst,
-                                         const struct ed25519_pt *src)
-{
+static CC25519_INLINE void ed25519_copy (struct ed25519_pt *dst, const struct ed25519_pt *src) {
   memcpy(dst, src, sizeof(*dst));
 }
 
@@ -433,6 +413,17 @@ static CC25519_INLINE void f25519_load (uint8_t *x, uint32_t c) {
   }
 
   for (; i < F25519_SIZE; i++) x[i] = 0;
+}
+
+static void f25519_select (uint8_t *dst, const uint8_t *zero, const uint8_t *one,
+                           uint8_t condition)
+{
+  const uint8_t mask = -condition;
+  int i;
+
+  for (i = 0; i < F25519_SIZE; i++) {
+    dst[i] = zero[i] ^ (mask & (one[i] ^ zero[i]));
+  }
 }
 
 static void f25519_normalize (uint8_t *x) {
@@ -467,25 +458,13 @@ static CC25519_INLINE uint8_t f25519_eq (const uint8_t *x, const uint8_t *y) {
   uint8_t sum = 0;
   int i;
 
-  for (i = 0; i < F25519_SIZE; i++)
-    sum |= x[i] ^ y[i];
+  for (i = 0; i < F25519_SIZE; i++) sum |= x[i] ^ y[i];
 
   sum |= (sum >> 4);
   sum |= (sum >> 2);
   sum |= (sum >> 1);
 
   return (sum ^ 1) & 1;
-}
-
-static void f25519_select (uint8_t *dst,
-                           const uint8_t *zero, const uint8_t *one,
-                           uint8_t condition)
-{
-  const uint8_t mask = -condition;
-  int i;
-
-  for (i = 0; i < F25519_SIZE; i++)
-    dst[i] = zero[i] ^ (mask & (one[i] ^ zero[i]));
 }
 
 static void f25519_add (uint8_t *r, const uint8_t *a, const uint8_t *b) {
@@ -560,12 +539,14 @@ static void f25519_mul__distinct (uint8_t *r, const uint8_t *a, const uint8_t *b
     int j;
 
     c >>= 8;
-    for (j = 0; j <= i; j++)
+    for (j = 0; j <= i; j++) {
       c += ((uint32_t)a[j]) * ((uint32_t)b[i - j]);
+    }
 
-    for (; j < F25519_SIZE; j++)
+    for (; j < F25519_SIZE; j++) {
       c += ((uint32_t)a[j]) *
            ((uint32_t)b[i + F25519_SIZE - j]) * 38;
+    }
 
     r[i] = c;
   }
@@ -662,6 +643,18 @@ static void f25519_sqrt (uint8_t *r, const uint8_t *a) {
   f25519_mul__distinct(r, x, i);
 }
 
+static void fprime_select (uint8_t *dst,
+                           const uint8_t *zero, const uint8_t *one,
+                           uint8_t condition)
+{
+  const uint8_t mask = -condition;
+  int i;
+
+  for (i = 0; i < FPRIME_SIZE; i++) {
+    dst[i] = zero[i] ^ (mask & (one[i] ^ zero[i]));
+  }
+}
+
 static void raw_try_sub (uint8_t *x, const uint8_t *p) {
   uint8_t minusp[FPRIME_SIZE];
   uint16_t c = 0;
@@ -680,9 +673,9 @@ static int prime_msb (const uint8_t *p) {
   int i;
   uint8_t x;
 
-  for (i = FPRIME_SIZE - 1; i >= 0; i--)
-    if (p[i])
-      break;
+  for (i = FPRIME_SIZE - 1; i >= 0; i--) {
+    if (p[i]) break;
+  }
 
   x = p[i];
   i <<= 3;
@@ -737,18 +730,6 @@ static void fprime_from_bytes (uint8_t *n,
     shift_n_bits(n, 1);
     n[0] |= bit;
     raw_try_sub(n, modulus);
-  }
-}
-
-static void fprime_select (uint8_t *dst,
-                           const uint8_t *zero, const uint8_t *one,
-                           uint8_t condition)
-{
-  const uint8_t mask = -condition;
-  int i;
-
-  for (i = 0; i < FPRIME_SIZE; i++) {
-    dst[i] = zero[i] ^ (mask & (one[i] ^ zero[i]));
   }
 }
 
@@ -981,9 +962,7 @@ static int hash_with_prefix (uint8_t *out_fp,
 
     const int left = (int)len - (int)i;
     if (left < 0) __builtin_trap();
-    if (left > 0) {
-      if (strm->read(strm, (int)i, msgblock, left) != 0) return -1;
-    }
+    if (left > 0 && strm->read(strm, (int)i, msgblock, left) != 0) return -1;
 
     sha512_final(&s, msgblock, len + prefix_size);
   }
@@ -1564,7 +1543,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     return NULL;
   }
 
-  decrypt_buffer(pubkey, 1, &mhdr, (uint32_t)sizeof(mhdr));
+  crypt_buffer(pubkey, 1, &mhdr, (uint32_t)sizeof(mhdr));
   if (mhdr.version != 0) {
     logf(ERROR, "vwad_open_archive: invalid version");
     return NULL;
@@ -1615,7 +1594,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     return NULL;
   }
 
-  decrypt_buffer(pubkey, 0xfffffffeU, &dhdr, (uint32_t)sizeof(dhdr));
+  crypt_buffer(pubkey, 0xfffffffeU, &dhdr, (uint32_t)sizeof(dhdr));
 
   dhdr.pkdir_crc32 = get_u32(&dhdr.pkdir_crc32);
   dhdr.dir_crc32 = get_u32(&dhdr.dir_crc32);
@@ -1689,7 +1668,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     return NULL;
   }
 
-  decrypt_buffer(pubkey, 0xffffffffU, pkdir, dhdr.pkdirsize);
+  crypt_buffer(pubkey, 0xffffffffU, pkdir, dhdr.pkdirsize);
 
   uint32_t crc32 = crc32_buf(pkdir, dhdr.pkdirsize);
   if (crc32 != dhdr.pkdir_crc32) {
@@ -1827,7 +1806,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
           logf(DEBUG, "vwad_open_archive: cannot read comment data");
           goto error;
         }
-        decrypt_buffer(pubkey, 2, wad->comment, mhdr.u_cmt_size);
+        crypt_buffer(pubkey, 2, wad->comment, mhdr.u_cmt_size);
       } else {
         // packed
         uint8_t *ctmp = zalloc(mman, mhdr.p_cmt_size + 1);
@@ -1840,7 +1819,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
           logf(DEBUG, "vwad_open_archive: cannot read packed comment data");
           goto error;
         }
-        decrypt_buffer(pubkey, 2, ctmp, mhdr.p_cmt_size);
+        crypt_buffer(pubkey, 2, ctmp, mhdr.p_cmt_size);
         const intbool_t cupres = DecompressLZFF3(ctmp, (int)mhdr.p_cmt_size,
                                                  wad->comment, (int)mhdr.u_cmt_size);
         xfree(mman, ctmp);
@@ -2301,7 +2280,7 @@ static FileBuffer *ensure_buffer (vwad_handle *wad, vwad_fd fd, uint32_t ofs) {
           logf(DEBUG, "ensure_buffer: cannot read unpacked chunk %u", fi->fchunk + bufofs);
           return NULL;
         }
-        decrypt_buffer(wad->pubkey, nonce, &fl->pkdata[0], cupsize + 4);
+        crypt_buffer(wad->pubkey, nonce, &fl->pkdata[0], cupsize + 4);
         memcpy(res->data, &fl->pkdata[4], cupsize);
       } else {
         // packed
@@ -2309,7 +2288,7 @@ static FileBuffer *ensure_buffer (vwad_handle *wad, vwad_fd fd, uint32_t ofs) {
           logf(DEBUG, "ensure_buffer: cannot read packed chunk %u", fi->fchunk + bufofs);
           return NULL;
         }
-        decrypt_buffer(wad->pubkey, nonce, &fl->pkdata[0], ci->pksize + 4);
+        crypt_buffer(wad->pubkey, nonce, &fl->pkdata[0], ci->pksize + 4);
         if (!DecompressLZFF3(&fl->pkdata[4], ci->pksize, res->data, cupsize)) {
           logf(DEBUG, "ensure_buffer: cannot unpack chunk %u (%u -> %u)", fi->fchunk + bufofs,
                ci->pksize, cupsize);
