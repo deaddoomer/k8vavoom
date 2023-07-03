@@ -196,6 +196,7 @@ void VVWadFile::OpenArchive (VStream *fstream) {
 
     VPakFileInfo fi;
     fi.SetFileName(fname);
+    fi.filetime = vwad_get_ftime(wad, i);
     fi.pakdataofs = i; // index
     fi.filesize = vwad_get_file_size(wad, i);
     pakdir.append(fi);

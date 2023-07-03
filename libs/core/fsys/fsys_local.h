@@ -97,11 +97,15 @@ public:
   virtual VStr LumpFileName (int LumpNum) = 0;
   virtual int IterateNS (int Start, EWadNamespace NS, bool allowEmptyName8=false) = 0;
   virtual VStream *CreateLumpReaderNum (int LumpNum) = 0;
+  virtual vuint64 GetFileTime (int LumpNum) = 0;
   virtual void RenameSprites (const TArray<VSpriteRename> &A, const TArray<VLumpRename> &LA) = 0;
   virtual VStr GetPrefix () = 0; // for logging
   // this is called by various lump methods when `filesize` is -1
   // can be used to cache lump sizes for archives where getting those sizes on open is expensive
   virtual void UpdateLumpLength (int Lump, int len) = 0;
+
+  // may not be avaliable
+  virtual VStr LumpDiskFileName (int LumpNum) = 0;
 
   virtual void ListWadFiles (TArray<VStr> &list);
   virtual void ListPk3Files (TArray<VStr> &list);
@@ -128,6 +132,7 @@ struct VPakFileInfo {
   // for zips
   vuint16 filenamesize; // filename length
   vuint32 pakdataofs; // relative offset of local header
+  vuint64 filetime; // 0 means "unknown", otherwise seconds from Epoch
   // for dirpaks
   VStr diskNameIntr;
 
@@ -147,6 +152,7 @@ struct VPakFileInfo {
     , filesize(0)
     , filenamesize(0)
     , pakdataofs(0)
+    , filetime(0)
     , diskNameIntr()
     , strCopy0()
     , strCopy1()
@@ -251,6 +257,7 @@ public:
   virtual VStr LumpFileName (int) override;
   virtual int IterateNS (int, EWadNamespace, bool allowEmptyName8=false) override;
   //virtual VStream *CreateLumpReaderNum (int) override; // override this!
+  virtual vuint64 GetFileTime (int LumpNum) override;
   virtual void RenameSprites (const TArray<VSpriteRename> &, const TArray<VLumpRename> &) override; // override this if you don't want any renaming
 
   virtual void ListWadFiles (TArray<VStr> &list) override;
@@ -261,6 +268,9 @@ public:
   virtual VStr GetPrefix () override;
 
   virtual void UpdateLumpLength (int Lump, int len) override;
+
+  // may not be avaliable
+  virtual VStr LumpDiskFileName (int LumpNum) override;
 };
 
 

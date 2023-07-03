@@ -152,10 +152,11 @@ void VZipFile::OpenArchive (VStream *fstream, vuint32 cdofs) {
     PakFileName.endsWithCI(".pk3") ||
     PakFileName.endsWithCI(".ipk3") ||
     PakFileName.endsWithCI(".pk7") ||
-    PakFileName.endsWithCI(".ipk7");
+    PakFileName.endsWithCI(".ipk7") ||
+    PakFileName.endsWithCI(".vwad");
   type = (isPK3 ? PAK : OTHER);
   bool canHasPrefix = true;
-  if (isPK3) canHasPrefix = false; // do not remove prefixes in pk3
+  if (isPK3 || fsys_simple_archives) canHasPrefix = false; // do not remove prefixes in pk3
   //GLog.Logf("*** ARK: <%s>:<%s> pfx=%d", *PakFileName, *PakFileName.ExtractFileExtension(), (int)canHasPrefix);
 
   // set the current file of the zipfile to the first file
@@ -169,7 +170,8 @@ void VZipFile::OpenArchive (VStream *fstream, vuint32 cdofs) {
     vuint32 Magic;
     vuint16 version; // version made by
     vuint16 version_needed; // version needed to extract
-    vuint32 dosDate; // last mod file date in Dos fmt
+    vuint16 dosTime; // last mod file date in Dos fmt
+    vuint16 dosDate; // last mod file date in Dos fmt
     vuint16 size_file_extra; // extra field length
     vuint16 size_file_comment; // file comment length
     vuint16 disk_num_start; // disk number start
@@ -183,6 +185,7 @@ void VZipFile::OpenArchive (VStream *fstream, vuint32 cdofs) {
       << version_needed
       << file_info.flag
       << file_info.compression
+      << dosTime
       << dosDate
       << file_info.crc32
       << file_info.packedsize
@@ -201,6 +204,15 @@ void VZipFile::OpenArchive (VStream *fstream, vuint32 cdofs) {
     filename_inzip[file_info.filenamesize] = '\0';
     archStream->Serialise(filename_inzip, file_info.filenamesize);
     VStr zfname = VStr(filename_inzip).ToLower().FixFileSlashes();
+    VStr xxfname;
+
+    // hack for "pk3tovwad"
+    if (fsys_simple_archives) {
+      xxfname = VStr(filename_inzip).FixFileSlashes();
+    } else {
+      xxfname.Clear();
+    }
+
     delete[] filename_inzip;
     filename_inzip = nullptr;
 
@@ -222,6 +234,33 @@ void VZipFile::OpenArchive (VStream *fstream, vuint32 cdofs) {
 
     if (addIt) {
       file_info.SetFileName(zfname);
+      if (fsys_simple_archives) {
+        // fix some idiocity introduced by some shitdoze doom tools
+        for (;;) {
+               if (xxfname.startsWith("./")) xxfname.chopLeft(2);
+          else if (xxfname.startsWith("../")) xxfname.chopLeft(3);
+          else if (xxfname.startsWith("/")) xxfname.chopLeft(1);
+          else break;
+        }
+        file_info.SetDiskName(xxfname);
+      }
+
+      struct tm xtime;
+      xtime.tm_year = ((dosDate >> 9) & 0x7f) + 1980;
+      xtime.tm_mon = (dosDate >> 5) & 0x0f;
+      if (xtime.tm_mon < 1) xtime.tm_mon = 1; else if (xtime.tm_mon > 12) xtime.tm_mon = 12;
+      xtime.tm_mday = dosDate & 0x01f;
+      if (xtime.tm_mday < 1) xtime.tm_mday = 1; else if (xtime.tm_mday > 31) xtime.tm_mday = 31;
+
+      xtime.tm_sec = (dosTime & 0x1f) * 2;
+      if (xtime.tm_sec > 59) xtime.tm_sec = 59;
+      xtime.tm_min = (dosTime >> 5) & 0x3f;
+      if (xtime.tm_min > 59) xtime.tm_min = 50;
+      xtime.tm_hour = (dosTime >> 11) & 0x1f;
+      if (xtime.tm_hour > 23) xtime.tm_hour = 23;
+
+      uint64_t ftime = mktime(&xtime);
+      file_info.filetime = ftime;
 
       if (canHasPrefix && file_info.fileNameIntr.IndexOf('/') == -1) canHasPrefix = false;
 

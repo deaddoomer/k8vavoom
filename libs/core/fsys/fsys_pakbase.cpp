@@ -1300,3 +1300,25 @@ VStream *VPakFileBase::OpenFileRead (VStr fname, int *lump) {
   if (fidx < 0) return nullptr;
   return CreateLumpReaderNum(fidx);
 }
+
+
+//==========================================================================
+//
+//  VPakFileBase::GetFileTime
+//
+//==========================================================================
+vuint64 VPakFileBase::GetFileTime (int LumpNum) {
+  if (LumpNum < 0 || LumpNum >= pakdir.files.length()) return 0;
+  return pakdir.files[LumpNum].filetime;
+}
+
+
+//==========================================================================
+//
+//  VPakFileBase::LumpDiskFileName
+//
+//==========================================================================
+VStr VPakFileBase::LumpDiskFileName (int LumpNum) {
+  if (LumpNum < 0 || LumpNum >= pakdir.files.length()) return VStr::EmptyString;
+  return pakdir.files[LumpNum].diskNameIntr;
+}
