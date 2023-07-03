@@ -1042,7 +1042,10 @@ void VRenderLevelShared::MarkTJFixWholeSeg (seg_t *seg) noexcept {
     MarkTJFixSegPart(ds->top);
     MarkTJFixSegPart(ds->mid);
     MarkTJFixSegPart(ds->bot);
+    #if 0
+    // i'm pretty sure that horizon need not to be fixed
     MarkTJFixSegPart(ds->topsky);
+    #endif
     MarkTJFixSegPart(ds->extra);
   }
 }

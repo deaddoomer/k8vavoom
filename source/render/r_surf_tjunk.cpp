@@ -62,27 +62,6 @@ static inline bool FindSurf (surface_t *surf, surface_t *list, surface_t **pprev
 
 //==========================================================================
 //
-//  VRenderLevelShared::FindWallSurfHead
-//
-//==========================================================================
-surface_t **VRenderLevelShared::FindWallSurfHead (surface_t *surf, seg_t *myseg, surface_t **pprev) {
-  vassert(surf);
-  vassert(myseg);
-  drawseg_t *ds = myseg->drawsegs;
-  if (ds) {
-    if (ds->top && FindSurf(surf, ds->top->surfs, pprev)) return &ds->top->surfs;
-    if (ds->mid && FindSurf(surf, ds->mid->surfs, pprev)) return &ds->mid->surfs;
-    if (ds->bot && FindSurf(surf, ds->bot->surfs, pprev)) return &ds->bot->surfs;
-    if (ds->topsky && FindSurf(surf, ds->topsky->surfs, pprev)) return &ds->topsky->surfs;
-    if (ds->extra && FindSurf(surf, ds->extra->surfs, pprev)) return &ds->extra->surfs;
-  }
-  if (pprev) *pprev = nullptr;
-  return nullptr;
-}
-
-
-//==========================================================================
-//
 //  VRenderLevelShared::FindSubSurfHead
 //
 //==========================================================================
@@ -94,6 +73,44 @@ surface_t **VRenderLevelShared::FindSubSurfHead (surface_t *surf, subsector_t *s
     if (region->realceil && FindSurf(surf, region->realceil->surfs, pprev)) return &region->realceil->surfs;
     if (region->fakefloor && FindSurf(surf, region->fakefloor->surfs, pprev)) return &region->fakefloor->surfs;
     if (region->fakeceil && FindSurf(surf, region->fakeceil->surfs, pprev)) return &region->fakeceil->surfs;
+  }
+  if (pprev) *pprev = nullptr;
+  return nullptr;
+}
+
+
+//==========================================================================
+//
+//  VRenderLevelShared::FindWallSurfHead
+//
+//==========================================================================
+surface_t **VRenderLevelShared::FindWallSurfHead (surface_t *surf, seg_t *myseg, surface_t **pprev) {
+  vassert(surf);
+  vassert(myseg);
+  drawseg_t *ds = myseg->drawsegs;
+  if (ds) {
+    if (ds->top && FindSurf(surf, ds->top->surfs, pprev)) return &ds->top->surfs;
+    if (ds->mid && FindSurf(surf, ds->mid->surfs, pprev)) return &ds->mid->surfs;
+    if (ds->bot && FindSurf(surf, ds->bot->surfs, pprev)) return &ds->bot->surfs;
+    #if 1
+    // still test the hozion, just in case it ends here
+    if (ds->topsky && FindSurf(surf, ds->topsky->surfs, pprev)) return &ds->topsky->surfs;
+    #endif
+    if (ds->extra && FindSurf(surf, ds->extra->surfs, pprev)) return &ds->extra->surfs;
+    #if 0
+    if (ds->HorizonTop && FindSurf(surf, ds->HorizonTop->surfs, pprev)) return &ds->HorizonTop->surfs;
+    if (ds->HorizonBot && FindSurf(surf, ds->HorizonBot->surfs, pprev)) return &ds->HorizonBot->surfs;
+    #endif
+    #if 0
+    if (myseg->frontsub) {
+      surface_t **ss = FindSubSurfHead(surf, myseg->frontsub, pprev);
+      if (ss) return ss;
+    }
+    if (myseg->partner && myseg->partner->frontsub) {
+      surface_t **ss = FindSubSurfHead(surf, myseg->partner->frontsub, pprev);
+      if (ss) return ss;
+    }
+    #endif
   }
   if (pprev) *pprev = nullptr;
   return nullptr;
@@ -395,7 +412,16 @@ surface_t *VRenderLevelShared::FixSegSurfaceTJunctions (surface_t *surf, seg_t *
   surface_t *prev;
   surface_t **surfhead = FindWallSurfHead(surf, myseg, &prev);
   if (!surfhead) {
-    GCon->Log(NAME_Error, "FixSegSurfaceTJunctions: orphaned surface!");
+    drawseg_t *ds = myseg->drawsegs;
+    if (ds) {
+      if ((ds->HorizonTop && (surf == ds->HorizonTop)) ||
+          (ds->HorizonBot && (surf == ds->HorizonBot)))
+      {
+        // nothing
+      } else {
+        GCon->Log(NAME_Error, "FixSegSurfaceTJunctions: orphaned wall surface!");
+      }
+    }
     return surf;
   }
 
@@ -496,7 +522,7 @@ surface_t *VRenderLevelShared::FixSubFlatSurfaceTJunctions (surface_t *surf, sub
   surface_t *prev;
   surface_t **surfhead = FindSubSurfHead(surf, sub, &prev);
   if (!surfhead) {
-    GCon->Log(NAME_Error, "FixSubFlatSurfaceTJunctions: orphaned surface!");
+    GCon->Log(NAME_Error, "FixSubFlatSurfaceTJunctions: orphaned flat surface!");
     return surf;
   }
 
