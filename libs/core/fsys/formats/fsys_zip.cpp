@@ -245,16 +245,17 @@ void VZipFile::OpenArchive (VStream *fstream, vuint32 cdofs) {
         file_info.SetDiskName(xxfname);
 
         struct tm xtime;
-        xtime.tm_year = ((dosDate >> 9) & 0x7f) + 1980;
+        xtime.tm_year = ((dosDate >> 9) & 0x7f) + 1980 - 1900;
         xtime.tm_mon = (dosDate >> 5) & 0x0f;
         if (xtime.tm_mon < 1) xtime.tm_mon = 1; else if (xtime.tm_mon > 12) xtime.tm_mon = 12;
+        xtime.tm_mon -= 1;
         xtime.tm_mday = dosDate & 0x01f;
         if (xtime.tm_mday < 1) xtime.tm_mday = 1; else if (xtime.tm_mday > 31) xtime.tm_mday = 31;
 
         xtime.tm_sec = (dosTime & 0x1f) * 2;
         if (xtime.tm_sec > 59) xtime.tm_sec = 59;
         xtime.tm_min = (dosTime >> 5) & 0x3f;
-        if (xtime.tm_min > 59) xtime.tm_min = 50;
+        if (xtime.tm_min > 59) xtime.tm_min = 59;
         xtime.tm_hour = (dosTime >> 11) & 0x1f;
         if (xtime.tm_hour > 23) xtime.tm_hour = 23;
 
