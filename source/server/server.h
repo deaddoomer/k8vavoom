@@ -72,7 +72,7 @@ void NET_SendNetworkHeartbeat (bool forced=false);
 // `modtypestr` is used to show loading messages
 void G_LoadVCMods (VName modlistfile, const char *modtypestr, bool serveroptions); // in "sv_main.cpp"
 
-vuint32 SV_GetModListHash ();
+vuint64 SV_GetModListHash (vuint32 *old);
 
 extern server_t sv;
 extern server_static_t svs;

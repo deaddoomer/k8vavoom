@@ -314,7 +314,7 @@ void SV_ReplaceCustomDamageFactors () {
 //  SV_GetModListHash
 //
 //==========================================================================
-vuint32 SV_GetModListHash () {
+vuint64 SV_GetModListHash (vuint32 *old) {
   VStr modlist;
   // get list of loaded modules
   auto wadlist = FL_GetWadPk3List();
@@ -330,9 +330,24 @@ vuint32 SV_GetModListHash () {
   // convert to hex
   VStr shahex = VStr::buf2hex(sha256, SHA256_DIGEST_SIZE);
 #else
-  vuint32 xxhashval = XXH32(*modlist, (vint32)modlist.length(), (vuint32)wadlist.length());
-  //VStr shahex = VStr::buf2hex(&xxhashval, 4);
-  return xxhashval;
+  if (old) {
+    *old = XXH32(*modlist, (vint32)modlist.length(), (vuint32)wadlist.length());
+  }
+  RIPEMD160_Ctx ctx;
+  uint8_t hash[RIPEMD160_BYTES];
+  ripemd160_init(&ctx);
+  ripemd160_put(&ctx, *modlist, (unsigned)modlist.length());
+  ripemd160_finish(&ctx, hash);
+  const uint64_t val =
+    ((uint64_t)hash[0])|
+    (((uint64_t)hash[1])<<8)|
+    (((uint64_t)hash[2])<<16)|
+    (((uint64_t)hash[3])<<24)|
+    (((uint64_t)hash[4])<<32)|
+    (((uint64_t)hash[5])<<40)|
+    (((uint64_t)hash[6])<<48)|
+    (((uint64_t)hash[7])<<56);
+  return (vuint64)val;
 #endif
 }
 

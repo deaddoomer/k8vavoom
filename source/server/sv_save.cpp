@@ -579,15 +579,57 @@ static VStr SV_GetSavesDir () {
 
 //==========================================================================
 //
-//  GetSaveSlotDirectoryPrefix
+//  GetSaveSlotDirectoryPrefixOld
 //
 //==========================================================================
-static VStr GetSaveSlotCommonDirectoryPrefix () {
-  vuint32 hash = SV_GetModListHash();
+static VStr GetSaveSlotCommonDirectoryPrefixOld () {
+  vuint32 hash;
+  (void)SV_GetModListHash(&hash);
   VStr pfx = VStr::buf2hex(&hash, 4);
   //GCon->Logf(NAME_Debug, "SAVE PFX: %s", *pfx);
   //pfx += "/";
   return pfx;
+}
+
+
+//==========================================================================
+//
+//  GetSaveSlotDirectoryPrefix
+//
+//==========================================================================
+static VStr GetSaveSlotCommonDirectoryPrefix () {
+  vuint64 hash = SV_GetModListHash(nullptr);
+  VStr pfx = VStr::buf2hex(&hash, 8);
+  //GCon->Logf(NAME_Debug, "SAVE PFX: %s", *pfx);
+  //pfx += "/";
+  return pfx;
+}
+
+
+//==========================================================================
+//
+//  UpgradeSaveDirectory
+//
+//  rename old save directory
+//
+//==========================================================================
+static void UpgradeSaveDirectory (VStr oldpath, VStr newpath) {
+  if (!newpath.IsEmpty() && !oldpath.IsEmpty()) {
+    rename(*oldpath, *newpath);
+  }
+}
+
+
+//==========================================================================
+//
+//  GetDiskSavesPath
+//
+//==========================================================================
+static VStr GetDiskSavesPath () {
+  VStr svdir = SV_GetSavesDir().appendPath(GetSaveSlotCommonDirectoryPrefix());
+  VStr oldpath = SV_GetSavesDir().appendPath(GetSaveSlotCommonDirectoryPrefixOld());
+  UpgradeSaveDirectory(oldpath, svdir);
+  return svdir;
 }
 
 
@@ -624,7 +666,7 @@ static inline bool isBadSlotIndex (int slot) {
 //
 //==========================================================================
 static void UpdateSaveDirWadList () {
-  auto svpfx = SV_GetSavesDir().appendPath(GetSaveSlotCommonDirectoryPrefix());
+  VStr svpfx = GetDiskSavesPath();
   FL_CreatePath(svpfx); // just in case
   //GCon->Logf(NAME_Debug, "UpdateSaveDirWadList: svpfx=<%s>", *svpfx);
   svpfx = svpfx.appendPath("wadlist.txt");
@@ -670,7 +712,7 @@ static VStream *SV_OpenSlotFileRead (int slot) {
   saveFileBase.clear();
   if (isBadSlotIndex(slot)) return nullptr;
   // search save subdir
-  auto svdir = SV_GetSavesDir()+"/"+GetSaveSlotCommonDirectoryPrefix();
+  auto svdir = GetDiskSavesPath();
   auto dir = Sys_OpenDir(svdir);
   if (dir) {
     auto svpfx = GetSaveSlotBaseFileName(slot).extractFileName();
@@ -685,6 +727,7 @@ static VStream *SV_OpenSlotFileRead (int slot) {
     }
     Sys_CloseDir(dir);
   }
+  /*
   // for backwards compatibility, remove after several releases
   svdir = SV_GetSavesDir();
   dir = Sys_OpenDir(svdir);
@@ -702,6 +745,7 @@ static VStream *SV_OpenSlotFileRead (int slot) {
     }
     Sys_CloseDir(dir);
   }
+  */
   return nullptr;
 }
 
@@ -720,7 +764,7 @@ static bool removeSlotSaveFiles (int slot, VStr fignore) {
   VStr fignore2;
   if (fignore.length()) fignore2 = fignore+".lmap";
   // search save subdir
-  auto svdir = SV_GetSavesDir()+"/"+GetSaveSlotCommonDirectoryPrefix();
+  auto svdir = GetDiskSavesPath();
   auto dir = Sys_OpenDir(svdir);
   if (dir) {
     auto svpfx = GetSaveSlotBaseFileName(slot).extractFileName();
@@ -734,6 +778,7 @@ static bool removeSlotSaveFiles (int slot, VStr fignore) {
     }
     Sys_CloseDir(dir);
   }
+  /*
   // for backwards compatibility, remove after several releases
   svdir = SV_GetSavesDir();
   dir = Sys_OpenDir(svdir);
@@ -751,6 +796,7 @@ static bool removeSlotSaveFiles (int slot, VStr fignore) {
     }
     Sys_CloseDir(dir);
   }
+  */
   if (tokill.length() > 4) return false; // something is VERY wrong here!
   for (int f = 0; f < tokill.length(); ++f) Sys_FileDelete(tokill[f]);
   return true;
@@ -2688,8 +2734,8 @@ COMMAND(ShowSavePrefix) {
   GCon->Log("==== MODS ====");
   for (auto &&mname: wadlist) GCon->Logf("  %s", *mname);
   GCon->Log("----");
-  vuint32 hash = SV_GetModListHash();
-  VStr pfx = VStr::buf2hex(&hash, 4);
+  vuint64 hash = SV_GetModListHash(nullptr);
+  VStr pfx = VStr::buf2hex(&hash, 8);
   GCon->Logf("save prefix: %s", *pfx);
 }
 #endif
