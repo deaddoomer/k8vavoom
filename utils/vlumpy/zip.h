@@ -233,6 +233,7 @@ extern int ZEXPORT zipClose OF((zipFile file,
 
 
 extern bool useZopfli;
+extern int zlib_comp_level;
 
 
 #ifdef __cplusplus

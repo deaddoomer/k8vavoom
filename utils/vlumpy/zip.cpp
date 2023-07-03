@@ -29,6 +29,7 @@ Read zip.h for more info
 #endif
 
 bool useZopfli = true;
+int zlib_comp_level = 9;
 static bool zofoptInited = false;
 static ZopfliOptions zofopt;
 
@@ -934,7 +935,12 @@ int ZEXPORT zipWriteWholeFileToZip (zipFile file, const zip_fileinfo *zinfo, con
 
   if (!useZopfli) {
     // open file
-    int res = zipOpenNewFileInZip(file, filename, zinfo, nullptr, 0, nullptr, 0, nullptr, Z_DEFLATED, Z_BEST_COMPRESSION);
+    int clevel;
+    if (zlib_comp_level <= 0) clevel = 0;
+    else if (zlib_comp_level == 1) clevel = 3;
+    else if (zlib_comp_level == 2) clevel = 6;
+    else /*if (zlib_comp_level >= 3)*/ clevel = Z_BEST_COMPRESSION;
+    int res = zipOpenNewFileInZip(file, filename, zinfo, nullptr, 0, nullptr, 0, nullptr, Z_DEFLATED, clevel);
     if (res != ZIP_OK) return res;
     // write to it
     res = zipWriteInFileInZip(file, buf, bufsize);

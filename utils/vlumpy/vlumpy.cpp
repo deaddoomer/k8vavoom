@@ -99,6 +99,7 @@ struct fon2_char_t {
 };
 
 
+static int comp_level = 3;
 static bool useVWAD = false;
 static bool verbose = false;
 static bool showPackedSize = false;
@@ -294,7 +295,7 @@ static void AddToZip (const char *Name, const void *Data, size_t Size, uint64_t 
     instrm.read = &bufioread;
     instrm.write = &bufiowrite;
     instrm.udata = (void *)&nfo;
-    vwadwr_result res = vwadwr_pack_file(wad_dir, &instrm, Name,
+    vwadwr_result res = vwadwr_pack_file(wad_dir, &instrm, comp_level, Name,
                                          ftime, &upksize, &pksize,
                                          NULL, NULL);
     if (res != 0) {
@@ -309,6 +310,7 @@ static void AddToZip (const char *Name, const void *Data, size_t Size, uint64_t 
   } else
   #endif
   {
+    zlib_comp_level = comp_level;
     zip_fileinfo zi;
     memset(&zi, 0, sizeof(zi));
 
@@ -1507,6 +1509,10 @@ int main (int argc, char *argv[]) {
           #endif
           continue;
         }
+        if (strcmp(argv[i], "--fastest") == 0) { comp_level = 0; continue; }
+        if (strcmp(argv[i], "--fast") == 0) { comp_level = 1; continue; }
+        if (strcmp(argv[i], "--medium") == 0) { comp_level = 2; continue; }
+        if (strcmp(argv[i], "--max") == 0) { comp_level = 3; continue; }
         if (strcmp(argv[i], "--verbose") == 0) { showPackedSize = true; verbose = true; continue; }
         if (strcmp(argv[i], "--stats") == 0) { showPackedSize = true; continue; }
         if (strcmp(argv[i], "--quiet") == 0) { showPackedSize = false; verbose = false; continue; }

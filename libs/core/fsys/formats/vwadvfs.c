@@ -48,60 +48,49 @@ static inline uint16_t get_u16 (const void *src) {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-// *Really* minimal PCG32 code / (c) 2014 M.E. O'Neill / pcg-random.org
-// Licensed under Apache License 2.0 (NO WARRANTY, etc. see website)
-typedef struct { uint64_t state, inc; } pcg32_context;
-
-static inline void pcg32_seed (pcg32_context *rng, const ed25519_public_key seed,
-                               uint32_t nonce)
-{
-  // use hash folding to generate seed
-  rng->state = get_u64(&seed[0]) + get_u64(&seed[8]) +
-               get_u64(&seed[16]) + get_u64(&seed[24]);
-  // just in case, it should not be zero
-  if (rng->state == 0) rng->state = 0x29a;
-  rng->inc = (((uint64_t)nonce)<<1)|1;
-}
-
-static inline uint32_t pcg32_next (pcg32_context *rng) {
-  const uint64_t oldstate = rng->state;
-  // advance internal state
-  rng->state = oldstate * 6364136223846793005ULL + (rng->inc/*|1*/);
-  // calculate output function (XSH RR), uses old state for max ILP
-  const uint32_t xorshifted = ((oldstate >> 18u) ^ oldstate) >> 27u;
-  const uint32_t rot = oldstate >> 59u;
-  return (xorshifted >> rot) | (xorshifted << ((-rot) & 31));
-}
-
 static void decrypt_buffer (const ed25519_public_key seed, uint64_t nonce,
                             void *buf, uint32_t bufsize)
 {
-  pcg32_context ctx;
-  pcg32_seed(&ctx, seed, nonce);
+  // use Mulberry32 PRNG, because i don't need cryptostrong xor at all
+  #define MB32  do { \
+    uint32_t z = (xseed += 0x6D2B79F5U); \
+    z = (z ^ (z >> 15)) * (z | 1U); \
+    z ^= z + (z ^ (z >> 7)) * (z | 61U); \
+    rval = z ^ (z >> 14); \
+  } while (0)
+
+  uint32_t xseed = 0x29a, rval;
+  for (unsigned f = 0; f < 32; f++) xseed += seed[f];
+
   uint32_t *b32 = (uint32_t *)buf;
   while (bufsize >= 4) {
-    *b32++ ^= pcg32_next(&ctx);
+    MB32;
+    *b32++ ^= rval;
     bufsize -= 4;
   }
-  uint32_t n;
-  uint8_t *b = (uint8_t *)b32;
-  switch (bufsize) {
-    case 3:
-      n = b[0]|((uint32_t)b[1]<<8)|((uint32_t)b[2]<<16);
-      n ^= pcg32_next(&ctx);
-      b[0] = (uint8_t)n;
-      b[1] = (uint8_t)(n>>8);
-      b[2] = (uint8_t)(n>>16);
-      break;
-    case 2:
-      n = b[0]|((uint32_t)b[1]<<8);
-      n ^= pcg32_next(&ctx);
-      b[0] = (uint8_t)n;
-      b[1] = (uint8_t)(n>>8);
-      break;
-    case 1:
-      b[0] ^= pcg32_next(&ctx);
-      break;
+  if (bufsize) {
+    // final [1..3] bytes
+    MB32;
+    uint32_t n;
+    uint8_t *b = (uint8_t *)b32;
+    switch (bufsize) {
+      case 3:
+        n = b[0]|((uint32_t)b[1]<<8)|((uint32_t)b[2]<<16);
+        n ^= rval;
+        b[0] = (uint8_t)n;
+        b[1] = (uint8_t)(n>>8);
+        b[2] = (uint8_t)(n>>16);
+        break;
+      case 2:
+        n = b[0]|((uint32_t)b[1]<<8);
+        n ^= rval;
+        b[0] = (uint8_t)n;
+        b[1] = (uint8_t)(n>>8);
+        break;
+      case 1:
+        b[0] ^= rval;
+        break;
+    }
   }
 }
 
