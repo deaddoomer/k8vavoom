@@ -1,5 +1,5 @@
 $comment "K8Vavoom: fixed HUD for Skulldash: Expanded Editon"
-$dest basepak.pk3
+$dest basepak.vwad
 
 $recursedir progs/    @CMAKE_CURRENT_SOURCE_DIR@/progs/
 

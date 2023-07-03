@@ -1212,7 +1212,7 @@ static void ParseScript (const char *name) {
       DefaultExtension(destfile, sizeof(destfile), ".wad");
       char Ext[64];
       ExtractFileExtension(destfile, Ext, sizeof(Ext));
-      if (stricmp(Ext, ".zip") == 0 || stricmp(Ext, ".pk3") == 0) {
+      if (stricmp(Ext, ".zip") == 0 || stricmp(Ext, ".pk3") == 0 || stricmp(Ext, ".vwad") == 0) {
         if (stricmp(Ext, ".zip") == 0) {
           if (useVWAD) Error("cannot use ZIP for VWAD");
         }

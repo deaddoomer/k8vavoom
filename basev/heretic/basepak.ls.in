@@ -1,5 +1,5 @@
 $comment "K8Vavoom: Heretic support"
-$dest basepak.pk3
+$dest basepak.vwad
 
 // crosshairs
 graphics/croshai1.lmp  @CMAKE_CURRENT_SOURCE_DIR@/graphics/croshai1.lmp

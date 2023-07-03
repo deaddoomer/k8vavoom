@@ -89,7 +89,8 @@ IMPLEMENT_FREE_FUNCTION(VObject, IsIWadClass) {
   vobjGetParam(Class);
   if (Class) {
     // heuristic; let's assume that IWAD is "basepak" for now
-    RET_BOOL(Class->Loc.GetSourceFile().toLowerCase().indexOf("/basepak.pk3") >= 0);
+    RET_BOOL(Class->Loc.GetSourceFile().toLowerCase().indexOf("/basepak.pk3") >= 0 ||
+             Class->Loc.GetSourceFile().toLowerCase().indexOf("/basepak.vwad") >= 0);
   } else {
     RET_BOOL(false);
   }

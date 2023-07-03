@@ -149,7 +149,7 @@ static VStr getNetPath (VSearchPath *sp) {
   int colidx = bname.lastIndexOf(':');
   if (colidx >= 0) bname = bname.mid(colidx+1, bname.length());
   if (bname.isEmpty()) return VStr::EmptyString;
-  if (bname.strEquCI("basepak.pk3")) {
+  if (bname.strEquCI("basepak.pk3") || bname.strEquCI("basepak.vwad")) {
     while (!fname.isEmpty() && fname[fname.length()-1] != '/' && fname[fname.length()-1] != '\\') fname.chopRight(1);
     fname.chopRight(1);
     VStr xname = fname.extractFileName();
@@ -1361,6 +1361,7 @@ static void AddGameAutoloads (VStr basedir, bool addAutoload=true) {
       VStr ext = test.ExtractFileExtension();
            if (ext.strEquCI(".wad")) WadFiles.Append(test);
       else if (ext.strEquCI(".pk3")) ZipFiles.Append(test);
+      else if (ext.strEquCI(".vwad")) ZipFiles.Append(test);
     }
     Sys_CloseDir(dirit);
     smsort_r(WadFiles.Ptr(), WadFiles.length(), sizeof(VStr), cmpfuncCINoExt, nullptr);
@@ -1408,9 +1409,11 @@ static void AddGameDir (VStr basedir, VStr dir) {
       //fprintf(stderr, "  <%s>\n", *test);
       if (test[0] == '_' || test[0] == '.') continue; // skip it
       if (test.extractFileName().strEquCI("basepak.pk3")) continue; // it will be explicitly added later
+      if (test.extractFileName().strEquCI("basepak.vwad")) continue; // it will be explicitly added later
       VStr ext = test.ExtractFileExtension();
            if (ext.strEquCI(".wad")) WadFiles.Append(test);
       else if (ext.strEquCI(".pk3")) ZipFiles.Append(test);
+      else if (ext.strEquCI(".vwad")) ZipFiles.Append(test);
     }
     Sys_CloseDir(dirit);
     smsort_r(WadFiles.Ptr(), WadFiles.length(), sizeof(VStr), cmpfuncCINoExt, nullptr);
@@ -1418,11 +1421,23 @@ static void AddGameDir (VStr basedir, VStr dir) {
   }
 
   // use `VStdFileStreamRead` so android port can override it
-  auto bps = FL_OpenSysFileRead(bdx.appendPath("basepak.pk3"));
+  auto bps = FL_OpenSysFileRead(bdx.appendPath("basepak.vwad"));
   if (bps) {
     delete bps;
-    ZipFiles.insert(0, "basepak.pk3");
-    GCon->Logf(NAME_Init, "found basepak at '%s'", *bdx.appendPath("basepak.pk3"));
+    ZipFiles.insert(0, "basepak.vwad");
+    GCon->Logf(NAME_Init, "found basepak at '%s'", *bdx.appendPath("basepak.vwad"));
+    bps = FL_OpenSysFileRead(bdx.appendPath("basepak.pk3"));
+    if (bps) {
+      delete bps;
+      Sys_Error("found both PK3 and VWAD basepacks");
+    }
+  } else {
+    bps = FL_OpenSysFileRead(bdx.appendPath("basepak.pk3"));
+    if (bps) {
+      delete bps;
+      ZipFiles.insert(0, "basepak.pk3");
+      GCon->Logf(NAME_Init, "found basepak at '%s'", *bdx.appendPath("basepak.pk3"));
+    }
   }
 
   // add system dir, if it has any files
@@ -1436,7 +1451,8 @@ static void AddGameDir (VStr basedir, VStr dir) {
 
   for (int i = 0; i < ZipFiles.length(); ++i) {
     //if (i == 0) wpkAppend(dir+"/"+ZipFiles[i], true); // system pak
-    bool isBPK = ZipFiles[i].extractFileName().strEquCI("basepak.pk3");
+    bool isBPK = ZipFiles[i].extractFileName().strEquCI("basepak.pk3") ||
+                 ZipFiles[i].extractFileName().strEquCI("basepak.vwad");
     int spl = fsysSearchPaths.length();
     W_AddDiskFile(bdx.appendPath(ZipFiles[i]));
     if (isBPK) {

@@ -4465,7 +4465,8 @@ void ProcessDecorateScripts () {
     for (int f = 0; f < decoLumps.length(); ++f) {
       //GCon->Logf(NAME_Debug, "%d: <%s>; iwad=%d", f, *W_FullLumpName(decoLumps[f]), (int)W_IsIWADLump(decoLumps[f]));
       if (W_IsIWADLump(decoLumps[f])) {
-        if (!W_FullPakNameForLump(decoLumps[f]).endsWithCI("/basepak.pk3")) lastiwad = f+1;
+        if (!W_FullPakNameForLump(decoLumps[f]).endsWithCI("/basepak.pk3") &&
+            !W_FullPakNameForLump(decoLumps[f]).endsWithCI("/basepak.vwad")) lastiwad = f+1;
       }
     }
     // insert additional decorate lumps

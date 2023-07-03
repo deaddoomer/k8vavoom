@@ -1,5 +1,5 @@
 $comment "K8Vavoom: Strife support"
-$dest basepak.pk3
+$dest basepak.vwad
 
 // automap background
 graphics/autopage.lmp @CMAKE_CURRENT_SOURCE_DIR@/graphics/autopage.lmp

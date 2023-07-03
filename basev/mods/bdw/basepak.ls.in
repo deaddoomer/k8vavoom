@@ -1,5 +1,5 @@
 $comment "K8Vavoom: BDW mod"
-$dest basepak.pk3
+$dest basepak.vwad
 
 $recursedir sprites/     @CMAKE_CURRENT_SOURCE_DIR@/sprites/
 $recursedir brightmaps/  @CMAKE_CURRENT_SOURCE_DIR@/brightmaps/

@@ -1,5 +1,5 @@
 $comment "K8Vavoom: Common Doom & Doom II support"
-$dest basepak.pk3
+$dest basepak.vwad
 
 // sounds
 sounds/dssecret.opus  @CMAKE_CURRENT_SOURCE_DIR@/sounds/dssecret.opus

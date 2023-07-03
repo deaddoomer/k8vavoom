@@ -1,5 +1,5 @@
 $comment "K8Vavoom: Chex Quest support"
-$dest basepak.pk3
+$dest basepak.vwad
 
 mapinfo.txt  @CMAKE_CURRENT_SOURCE_DIR@/mapinfo.txt
 language.en  @CMAKE_CURRENT_SOURCE_DIR@/language.en

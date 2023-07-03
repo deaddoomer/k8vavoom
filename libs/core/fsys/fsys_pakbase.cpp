@@ -69,6 +69,7 @@ static const char *PK3IgnoreExts[] = {
   ".dfzip",
   ".zip",
   ".7z",
+  ".vwad",
   ".pk3",
   ".pk7",
   ".pak",
@@ -651,7 +652,10 @@ void VFileDirectory::buildNameMaps (bool rebuilding, VPakFileBase *pak) {
     };
     VStr fn = getArchiveName().ExtractFileBaseName().toLowerCase();
     VStr ext = fn.ExtractFileExtension();
-    if (ext.strEqu(".wad") || ext.strEqu(".iwad") || ext.strEqu(".pk3") || ext.strEqu(".ipk3")) {
+    if (ext.strEqu(".wad") || ext.strEqu(".iwad") ||
+        ext.strEqu(".pk3") || ext.strEqu(".ipk3") ||
+        ext.strEqu(".vwad"))
+    {
       fn = fn.StripExtension();
       for (const char **swnp = specialWadNames; *swnp; ++swnp) {
         const char *wn = *swnp;
@@ -1239,7 +1243,8 @@ void VPakFileBase::ListPk3Files (TArray<VStr> &list) {
     const VPakFileInfo &fi = pakdir.files[i];
     if (fi.fileNameIntr.length() < 5) continue;
     // only .pk3 files
-    if (!fi.fileNameIntr.EndsWith(".pk3")) continue;
+    if (!fi.fileNameIntr.EndsWith(".pk3") &&
+        !fi.fileNameIntr.EndsWith(".vwad")) continue;
     // don't add pk3 files in subdirectories
     if (fi.fileNameIntr.IndexOf('/') != -1) continue;
     if (hits.has(fi.fileNameIntr)) continue;

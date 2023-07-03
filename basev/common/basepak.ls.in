@@ -1,5 +1,5 @@
 $comment "K8Vavoom: Common (shared) data for all games"
-$dest basepak.pk3
+$dest basepak.vwad
 
 // default config files
 k8vavoom_default.cfg  @CMAKE_CURRENT_SOURCE_DIR@/k8vavoom_default.cfg

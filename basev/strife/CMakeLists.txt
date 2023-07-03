@@ -14,7 +14,7 @@ file(GLOB strife_pak_SRC CONFIGURE_DEPENDS
   ${CMAKE_SOURCE_DIR}/progs/strife/game/*.vc
   )
 
-add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3
+add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/basepak.vwad
   COMMAND ${WINERUN} $<TARGET_FILE:vlumpy> ARGS --vwad --keyfile ${CMAKE_SOURCE_DIR}/k8_ed25519_priv.key basepak.ls
   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/basepak.ls vlumpy
     palette.pcx
@@ -25,7 +25,7 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3
 add_custom_target(strife_basepak ALL
   DEPENDS
     #${CMAKE_CURRENT_BINARY_DIR}/strfhelp.o
-    ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3)
+    ${CMAKE_CURRENT_BINARY_DIR}/basepak.vwad)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/basepak.pk3
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/basepak.vwad
   DESTINATION ${DATADIR}/basev/strife)

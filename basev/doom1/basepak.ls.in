@@ -1,5 +1,5 @@
 $comment "K8Vavoom: Doom support"
-$dest basepak.pk3
+$dest basepak.vwad
 
 // additional gfx
 $recursedir graphics/  @CMAKE_CURRENT_SOURCE_DIR@/graphics/
