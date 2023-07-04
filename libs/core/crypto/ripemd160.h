@@ -12,10 +12,13 @@ extern "C" {
 
 
 #define RIPEMD160_BITS   (160)
-
-/* Buffer size for RIPEMD-160 hash, in bytes.
-*/
+/* Buffer size for RIPEMD-160 hash, in bytes. */
 #define RIPEMD160_BYTES  (RIPEMD160_BITS>>3)
+
+
+#define RIPEMD320_BITS   (320)
+/* Buffer size for RIPEMD-320 hash, in bytes. */
+#define RIPEMD320_BYTES  (RIPEMD320_BITS>>3)
 
 
 /* RIPEMD-160 context.
@@ -27,6 +30,17 @@ typedef struct {
   uint32_t total;
   uint32_t totalhi;
 } RIPEMD160_Ctx;
+
+
+/* RIPEMD-3200 context.
+*/
+typedef struct {
+  uint32_t wkbuf[RIPEMD320_BYTES>>2];
+  uint8_t chunkd[64];
+  uint32_t chunkpos;
+  uint32_t total;
+  uint32_t totalhi;
+} RIPEMD320_Ctx;
 
 
 /* Initialize RIPEMD-160 context.
@@ -59,6 +73,38 @@ void ripemd160_finish (const RIPEMD160_Ctx *ctx, void *hash);
 ** If `ctx` is NULL, will return zero.
 */
 int ripemd160_canput (const RIPEMD160_Ctx *ctx, const size_t datasize);
+
+
+/* Initialize RIPEMD-320 context.
+** This also can be used to wipe the context data.
+** If `ctx` is NULL, this will do nothing.
+*/
+void ripemd320_init (RIPEMD320_Ctx *ctx);
+
+/* Update RIPEMD-320 with some data.
+** If either `ctx` or `data` is NULL, this will do nothing.
+**
+** WARNING!
+**   Maximum number of bytes RIPEMD-320 can digest is 2^61.
+**   If you will put more (total) bytes into it, the result
+**   will be a garbage.
+**   You can use `ripemd320_canput()` to check if there is still enough room.
+**   I.e. you can call `ripemd320_canput()` before each call to `ripemd320_put()`
+**   to check if it is safe to continue.
+*/
+void ripemd320_put (RIPEMD320_Ctx *ctx, const void *data, size_t datasize);
+
+/* Calculate final hash value (20 bytes).
+** `hash` must be at least of `ELLE_RIPEMD320_BYTES` size (20 bytes).
+** You can keep putting data to `ctx` after this (hence the `const` here).
+** If either `ctx` or `hash` is NULL, this will do nothing.
+*/
+void ripemd320_finish (const RIPEMD320_Ctx *ctx, void *hash);
+
+/* Check if there is still enough room for `datasize` bytes.
+** If `ctx` is NULL, will return zero.
+*/
+int ripemd320_canput (const RIPEMD320_Ctx *ctx, const size_t datasize);
 
 
 #if defined (__cplusplus)
