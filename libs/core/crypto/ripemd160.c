@@ -1,13 +1,17 @@
-// RIPEMD-160, based on the algorithm description
+// RIPEMD-160/RIPEMD-320, based on the algorithm description
 // public domain
 #include "ripemd160.h"
 #include <string.h>
 
 //#define RIPEMD160_SELFTEST
+//#define RIPEMD320_SELFTEST
+//#define VAVOOM_BIG_ENDIAN_TEST
 
 #if defined (__cplusplus)
 extern "C" {
 #endif
+
+#define RIPEMD_INLINE  inline __attribute__((always_inline))
 
 #if 0
 #ifdef WORDS_BIGENDIAN
@@ -373,7 +377,7 @@ static void ripemd320_compress (uint32_t *wkbuf, const uint32_t *X) {
   RIPEMD160_JJJ(bbb, ccc, ddd, eee, aaa, X[ 3], 12);
   RIPEMD160_JJJ(aaa, bbb, ccc, ddd, eee, X[12],  6);
 
-  /* Swap contents of "a" registers */
+  /* swap contents of "a" registers */
   swap(aa, aaa);
 
   /* round 2: left lane" */
@@ -412,7 +416,7 @@ static void ripemd320_compress (uint32_t *wkbuf, const uint32_t *X) {
   RIPEMD160_III(aaa, bbb, ccc, ddd, eee, X[ 1], 13);
   RIPEMD160_III(eee, aaa, bbb, ccc, ddd, X[ 2], 11);
 
-  /* Swap contents of "b" registers */
+  /* swap contents of "b" registers */
   swap(bb, bbb);
 
   /* round 3: left lane" */
@@ -451,7 +455,7 @@ static void ripemd320_compress (uint32_t *wkbuf, const uint32_t *X) {
   RIPEMD160_HHH(eee, aaa, bbb, ccc, ddd, X[ 4],  7);
   RIPEMD160_HHH(ddd, eee, aaa, bbb, ccc, X[13],  5);
 
-  /* Swap contents of "c" registers */
+  /* swap contents of "c" registers */
   swap(cc, ccc);
 
   /* round 4: left lane" */
@@ -490,7 +494,7 @@ static void ripemd320_compress (uint32_t *wkbuf, const uint32_t *X) {
   RIPEMD160_GGG(ddd, eee, aaa, bbb, ccc, X[10], 15);
   RIPEMD160_GGG(ccc, ddd, eee, aaa, bbb, X[14],  8);
 
-  /* Swap contents of "d" registers */
+  /* swap contents of "d" registers */
   swap(dd, ddd);
 
   /* round 5: left lane" */
@@ -529,7 +533,7 @@ static void ripemd320_compress (uint32_t *wkbuf, const uint32_t *X) {
   RIPEMD160_FFF(ccc, ddd, eee, aaa, bbb, X[ 9] , 11);
   RIPEMD160_FFF(bbb, ccc, ddd, eee, aaa, X[11] , 11);
 
-  /* Swap contents of "e" registers */
+  /* swap contents of "e" registers */
   swap(ee, eee);
 
   #undef swap
@@ -554,7 +558,6 @@ static void ripemd320_compress (uint32_t *wkbuf, const uint32_t *X) {
 //
 //==========================================================================
 void ripemd160_init (RIPEMD160_Ctx *ctx) {
-  if (!ctx) return;
   memset(ctx, 0, sizeof(*ctx));
   ctx->wkbuf[0] = 0x67452301U;
   ctx->wkbuf[1] = 0xefcdab89U;
@@ -569,15 +572,15 @@ void ripemd160_init (RIPEMD160_Ctx *ctx) {
 //  ripemd160_putbyte
 //
 //==========================================================================
-static inline void ripemd160_putbyte (RIPEMD160_Ctx *ctx, uint8_t b) {
-#ifdef VAVOOM_BIG_ENDIAN
+static RIPEMD_INLINE void ripemd160_putbyte (RIPEMD160_Ctx *ctx, uint8_t b) {
+  #if defined(VAVOOM_BIG_ENDIAN) || defined(VAVOOM_BIG_ENDIAN_TEST)
   ((uint32_t *)ctx->chunkd)[ctx->chunkpos>>2] |= ((uint32_t)b)<<((ctx->chunkpos&0x03U)<<3);
-#else
+  #else
   ctx->chunkd[ctx->chunkpos] = b;
-#endif
+  #endif
   if (++ctx->chunkpos == 64U) {
     ripemd160_compress(ctx->wkbuf, (const uint32_t *)ctx->chunkd);
-    #ifdef VAVOOM_BIG_ENDIAN
+    #if defined(VAVOOM_BIG_ENDIAN) || defined(VAVOOM_BIG_ENDIAN_TEST)
     memset(ctx->chunkd, 0, sizeof(ctx->chunkd));
     #endif
     ctx->chunkpos = 0U;
@@ -591,7 +594,7 @@ static inline void ripemd160_putbyte (RIPEMD160_Ctx *ctx, uint8_t b) {
 //
 //==========================================================================
 void ripemd160_put (RIPEMD160_Ctx *ctx, const void *data, size_t datasize) {
-  if (!ctx || !data || !datasize) return;
+  if (!datasize) return;
   #if UINTPTR_MAX <= 0xffffffffU
     if (ctx->total+datasize <= ctx->total) ++ctx->totalhi;
     ctx->total += datasize;
@@ -603,7 +606,7 @@ void ripemd160_put (RIPEMD160_Ctx *ctx, const void *data, size_t datasize) {
   # error "unknown pointer size"
   #endif
   const uint8_t *b = (const uint8_t *)data;
-#ifdef VAVOOM_BIG_ENDIAN
+#if defined(VAVOOM_BIG_ENDIAN) || defined(VAVOOM_BIG_ENDIAN_TEST)
   while (datasize--) ripemd160_putbyte(ctx, *b++);
 #else
   // process full chunks, if possible
@@ -656,30 +659,51 @@ void ripemd160_put (RIPEMD160_Ctx *ctx, const void *data, size_t datasize) {
 //
 //==========================================================================
 void ripemd160_finish (const RIPEMD160_Ctx *ctx, void *hash) {
-  if (!ctx || !hash) return;
   RIPEMD160_Ctx rctx;
   memcpy((void *)&rctx, (void *)ctx, sizeof(RIPEMD160_Ctx));
 
   // padding with `1` bit
   ripemd160_putbyte(&rctx, 0x80);
   // length in bits goes into two last dwords
-#ifdef VAVOOM_BIG_ENDIAN
-  if (64U-rctx.chunkpos < 8U) {
-    while (rctx.chunkpos) ripemd160_putbyte(&rctx, 0);
-    ripemd160_compress(rctx.wkbuf, (const uint32_t *)rctx.chunkd);
+#if defined(VAVOOM_BIG_ENDIAN) || defined(VAVOOM_BIG_ENDIAN_TEST)
+  uint32_t left = 64U-rctx.chunkpos;
+  if (left < 8U) {
+    while (rctx.chunkpos&0x03) ripemd160_putbyte(&rctx, 0);
+    left = 64U-rctx.chunkpos;
+    if (left != 64U) {
+      if (left == 0 || (left&0x03) != 0) __builtin_trap();
+      memset(((uint8_t *)rctx.chunkd)+64U-left, 0, left);
+      ripemd160_compress(rctx.wkbuf, (const uint32_t *)rctx.chunkd);
+    }
+    // just in case
     memset(rctx.chunkd, 0, sizeof(rctx.chunkd));
+  } else {
+    // just in case
+    while (rctx.chunkpos&0x03) ripemd160_putbyte(&rctx, 0);
+    left = 64U-rctx.chunkpos;
+    if (left < 8U || (left&0x03) != 0) __builtin_trap();
+    memset(((uint8_t *)rctx.chunkd)+64U-left, 0, left);
   }
   // chunk is guaranteed to be properly cleared here
   const uint32_t t0 = ctx->total<<3;
-  rctx.chunkd[56U] = t0&0xffU;
-  rctx.chunkd[57U] = (t0>>8)&0xffU;
-  rctx.chunkd[58U] = (t0>>16)&0xffU;
-  rctx.chunkd[59U] = (t0>>24)&0xffU;
+  rctx.chunkd[56U] = (uint8_t)t0;
+  rctx.chunkd[57U] = (uint8_t)(t0>>8);
+  rctx.chunkd[58U] = (uint8_t)(t0>>16);
+  rctx.chunkd[59U] = (uint8_t)(t0>>24);
   const uint32_t t1 = (ctx->total>>29)|(ctx->totalhi<<3);
-  rctx.chunkd[60U] = t1&0xffU;
-  rctx.chunkd[61U] = (t1>>8)&0xffU;
-  rctx.chunkd[62U] = (t1>>16)&0xffU;
-  rctx.chunkd[63U] = (t1>>24)&0xffU;
+  rctx.chunkd[60U] = (uint8_t)t1;
+  rctx.chunkd[61U] = (uint8_t)(t1>>8);
+  rctx.chunkd[62U] = (uint8_t)(t1>>16);
+  rctx.chunkd[63U] = (uint8_t)(t1>>24);
+  ripemd160_compress(rctx.wkbuf, (const uint32_t *)rctx.chunkd);
+  uint8_t *dh = (uint8_t *)hash;
+  for (unsigned f = 0; f < RIPEMD160_BYTES; f += 4) {
+    const uint32_t v = rctx.wkbuf[f>>2];
+    dh[f+0] = (uint8_t)v;
+    dh[f+1] = (uint8_t)(v>>8);
+    dh[f+2] = (uint8_t)(v>>16);
+    dh[f+3] = (uint8_t)(v>>24);
+  }
 #else
   uint32_t left = 64U-rctx.chunkpos;
   if (left < 8U) {
@@ -691,10 +715,9 @@ void ripemd160_finish (const RIPEMD160_Ctx *ctx, void *hash) {
   if (left) memset(((uint8_t *)rctx.chunkd)+64U-8U-left, 0, left);
   ((uint32_t *)rctx.chunkd)[14] = ctx->total<<3;
   ((uint32_t *)rctx.chunkd)[15] = (ctx->total>>29)|(ctx->totalhi<<3);
-#endif
   ripemd160_compress(rctx.wkbuf, (const uint32_t *)rctx.chunkd);
-
   memcpy(hash, (void *)rctx.wkbuf, RIPEMD160_BYTES);
+#endif
 }
 
 
@@ -704,7 +727,6 @@ void ripemd160_finish (const RIPEMD160_Ctx *ctx, void *hash) {
 //
 //==========================================================================
 int ripemd160_canput (const RIPEMD160_Ctx *ctx, const size_t datasize) {
-  if (!ctx) return 0;
   #if UINTPTR_MAX <= 0xffffffffU
     return (ctx->totalhi < 0x1fffffffU+(ctx->total+datasize > ctx->total));
   #elif UINTPTR_MAX == 0xffffffffffffffffU
@@ -796,7 +818,6 @@ void ripemd160_selftest (void) {
 //
 //==========================================================================
 void ripemd320_init (RIPEMD320_Ctx *ctx) {
-  if (!ctx) return;
   memset(ctx, 0, sizeof(*ctx));
   ctx->wkbuf[0] = 0x67452301U;
   ctx->wkbuf[1] = 0xefcdab89U;
@@ -816,15 +837,15 @@ void ripemd320_init (RIPEMD320_Ctx *ctx) {
 //  ripemd320_putbyte
 //
 //==========================================================================
-static inline void ripemd320_putbyte (RIPEMD320_Ctx *ctx, uint8_t b) {
-#ifdef VAVOOM_BIG_ENDIAN
+static RIPEMD_INLINE void ripemd320_putbyte (RIPEMD320_Ctx *ctx, uint8_t b) {
+  #if defined(VAVOOM_BIG_ENDIAN) || defined(VAVOOM_BIG_ENDIAN_TEST)
   ((uint32_t *)ctx->chunkd)[ctx->chunkpos>>2] |= ((uint32_t)b)<<((ctx->chunkpos&0x03U)<<3);
-#else
+  #else
   ctx->chunkd[ctx->chunkpos] = b;
-#endif
+  #endif
   if (++ctx->chunkpos == 64U) {
     ripemd320_compress(ctx->wkbuf, (const uint32_t *)ctx->chunkd);
-    #ifdef VAVOOM_BIG_ENDIAN
+    #if defined(VAVOOM_BIG_ENDIAN) || defined(VAVOOM_BIG_ENDIAN_TEST)
     memset(ctx->chunkd, 0, sizeof(ctx->chunkd));
     #endif
     ctx->chunkpos = 0U;
@@ -838,7 +859,7 @@ static inline void ripemd320_putbyte (RIPEMD320_Ctx *ctx, uint8_t b) {
 //
 //==========================================================================
 void ripemd320_put (RIPEMD320_Ctx *ctx, const void *data, size_t datasize) {
-  if (!ctx || !data || !datasize) return;
+  if (!datasize) return;
   #if UINTPTR_MAX <= 0xffffffffU
     if (ctx->total+datasize <= ctx->total) ++ctx->totalhi;
     ctx->total += datasize;
@@ -850,7 +871,7 @@ void ripemd320_put (RIPEMD320_Ctx *ctx, const void *data, size_t datasize) {
   # error "unknown pointer size"
   #endif
   const uint8_t *b = (const uint8_t *)data;
-#ifdef VAVOOM_BIG_ENDIAN
+#if defined(VAVOOM_BIG_ENDIAN) || defined(VAVOOM_BIG_ENDIAN_TEST)
   while (datasize--) ripemd320_putbyte(ctx, *b++);
 #else
   // process full chunks, if possible
@@ -903,30 +924,51 @@ void ripemd320_put (RIPEMD320_Ctx *ctx, const void *data, size_t datasize) {
 //
 //==========================================================================
 void ripemd320_finish (const RIPEMD320_Ctx *ctx, void *hash) {
-  if (!ctx || !hash) return;
   RIPEMD320_Ctx rctx;
   memcpy((void *)&rctx, (void *)ctx, sizeof(RIPEMD320_Ctx));
 
   // padding with `1` bit
   ripemd320_putbyte(&rctx, 0x80);
   // length in bits goes into two last dwords
-#ifdef VAVOOM_BIG_ENDIAN
-  if (64U-rctx.chunkpos < 8U) {
-    while (rctx.chunkpos) ripemd320_putbyte(&rctx, 0);
-    ripemd320_compress(rctx.wkbuf, (const uint32_t *)rctx.chunkd);
+#if defined(VAVOOM_BIG_ENDIAN) || defined(VAVOOM_BIG_ENDIAN_TEST)
+  uint32_t left = 64U-rctx.chunkpos;
+  if (left < 8U) {
+    while (rctx.chunkpos&0x03) ripemd320_putbyte(&rctx, 0);
+    left = 64U-rctx.chunkpos;
+    if (left != 64U) {
+      if (left == 0 || (left&0x03) != 0) __builtin_trap();
+      memset(((uint8_t *)rctx.chunkd)+64U-left, 0, left);
+      ripemd320_compress(rctx.wkbuf, (const uint32_t *)rctx.chunkd);
+    }
+    // just in case
     memset(rctx.chunkd, 0, sizeof(rctx.chunkd));
+  } else {
+    // just in case
+    while (rctx.chunkpos&0x03) ripemd320_putbyte(&rctx, 0);
+    left = 64U-rctx.chunkpos;
+    if (left < 8U || (left&0x03) != 0) __builtin_trap();
+    memset(((uint8_t *)rctx.chunkd)+64U-left, 0, left);
   }
   // chunk is guaranteed to be properly cleared here
   const uint32_t t0 = ctx->total<<3;
-  rctx.chunkd[56U] = t0&0xffU;
-  rctx.chunkd[57U] = (t0>>8)&0xffU;
-  rctx.chunkd[58U] = (t0>>16)&0xffU;
-  rctx.chunkd[59U] = (t0>>24)&0xffU;
+  rctx.chunkd[56U] = (uint8_t)t0;
+  rctx.chunkd[57U] = (uint8_t)(t0>>8);
+  rctx.chunkd[58U] = (uint8_t)(t0>>16);
+  rctx.chunkd[59U] = (uint8_t)(t0>>24);
   const uint32_t t1 = (ctx->total>>29)|(ctx->totalhi<<3);
-  rctx.chunkd[60U] = t1&0xffU;
-  rctx.chunkd[61U] = (t1>>8)&0xffU;
-  rctx.chunkd[62U] = (t1>>16)&0xffU;
-  rctx.chunkd[63U] = (t1>>24)&0xffU;
+  rctx.chunkd[60U] = (uint8_t)t1;
+  rctx.chunkd[61U] = (uint8_t)(t1>>8);
+  rctx.chunkd[62U] = (uint8_t)(t1>>16);
+  rctx.chunkd[63U] = (uint8_t)(t1>>24);
+  ripemd320_compress(rctx.wkbuf, (const uint32_t *)rctx.chunkd);
+  uint8_t *dh = (uint8_t *)hash;
+  for (unsigned f = 0; f < RIPEMD320_BYTES; f += 4) {
+    const uint32_t v = rctx.wkbuf[f>>2];
+    dh[f+0] = (uint8_t)v;
+    dh[f+1] = (uint8_t)(v>>8);
+    dh[f+2] = (uint8_t)(v>>16);
+    dh[f+3] = (uint8_t)(v>>24);
+  }
 #else
   uint32_t left = 64U-rctx.chunkpos;
   if (left < 8U) {
@@ -938,10 +980,9 @@ void ripemd320_finish (const RIPEMD320_Ctx *ctx, void *hash) {
   if (left) memset(((uint8_t *)rctx.chunkd)+64U-8U-left, 0, left);
   ((uint32_t *)rctx.chunkd)[14] = ctx->total<<3;
   ((uint32_t *)rctx.chunkd)[15] = (ctx->total>>29)|(ctx->totalhi<<3);
-#endif
   ripemd320_compress(rctx.wkbuf, (const uint32_t *)rctx.chunkd);
-
   memcpy(hash, (void *)rctx.wkbuf, RIPEMD320_BYTES);
+#endif
 }
 
 
@@ -951,7 +992,6 @@ void ripemd320_finish (const RIPEMD320_Ctx *ctx, void *hash) {
 //
 //==========================================================================
 int ripemd320_canput (const RIPEMD320_Ctx *ctx, const size_t datasize) {
-  if (!ctx) return 0;
   #if UINTPTR_MAX <= 0xffffffffU
     return (ctx->totalhi < 0x1fffffffU+(ctx->total+datasize > ctx->total));
   #elif UINTPTR_MAX == 0xffffffffffffffffU
