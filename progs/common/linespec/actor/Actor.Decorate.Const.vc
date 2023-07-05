@@ -38,6 +38,7 @@ const [decorate] int CHF_NORANDOMTURN     = 32;
 const [decorate] int CHF_NODIRECTIONTURN  = 64;
 const [decorate] int CHF_NOPOSTATTACKTURN = 128;
 const [decorate] int CHF_STOPIFBLOCKED    = 256;
+const [decorate] int CHF_DONTIDLE         = 512;
 
 const [decorate] int CHF_DONTTURN = CHF_NORANDOMTURN|CHF_NOPOSTATTACKTURN|CHF_STOPIFBLOCKED;
 

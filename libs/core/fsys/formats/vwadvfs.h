@@ -59,6 +59,9 @@ struct vwad_memman_t {
 // Ed25519 public key, 32 bytes
 typedef unsigned char vwad_public_key[32];
 
+// 40 bytes of key, 5 bytes of crc32, plus zero
+typedef char vwad_z85_key[46];
+
 
 enum {
   VWAD_LOG_NOTE,
@@ -75,6 +78,12 @@ extern void (*vwad_logf) (int type, const char *fmt, ...);
 extern void (*vwad_assertion_failed) (const char *fmt, ...);
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+void vwad_z85_encode_key (const vwad_public_key inkey, vwad_z85_key enkey);
+vwad_result vwad_z85_decode_key (const vwad_z85_key enkey, vwad_public_key outkey);
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 // flags for `vwad_open_stream()`, to be bitwise ORed
 #define VWAD_OPEN_DEFAULT          (0u)
 // if you are not interested in archive comment, use this flag.

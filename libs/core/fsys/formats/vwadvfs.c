@@ -125,6 +125,122 @@ static void crypt_buffer (const ed25519_public_key seed, uint64_t nonce,
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+#define crc32_init  (0xffffffffU)
+
+static const uint32_t crctab[16] = {
+  0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac,
+  0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
+  0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c,
+  0x9b64c2b0, 0x86d3d2d4, 0xa00ae278, 0xbdbdf21c,
+};
+
+
+#define CRC32BYTE(bt_)  do { \
+  crc32 ^= (uint8_t)(bt_); \
+  crc32 = crctab[crc32&0x0f]^(crc32>>4); \
+  crc32 = crctab[crc32&0x0f]^(crc32>>4); \
+} while (0)
+
+
+static CC25519_INLINE uint32_t crc32_part (uint32_t crc32, const void *src, size_t len) {
+  const uint8_t *buf = (const uint8_t *)src;
+  while (len--) {
+    CRC32BYTE(*buf++);
+  }
+  return crc32;
+}
+
+static CC25519_INLINE uint32_t crc32_final (uint32_t crc32) {
+  return crc32^0xffffffffU;
+}
+
+static CC25519_INLINE uint32_t crc32_buf (const void *src, size_t len) {
+  return crc32_final(crc32_part(crc32_init, src, len));
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// Z85 codec
+static const char *z85_enc_alphabet =
+  "0123456789abcdefghijklmnopqrstuvwxyzABCDEFG"
+  "HIJKLMNOPQRSTUVWXYZ.-:+=^!/*?&<>()[]{}@%$#";
+
+static const uint8_t z85_dec_alphabet [96] = {
+  0x00, 0x44, 0x00, 0x54, 0x53, 0x52, 0x48, 0x00,
+  0x4B, 0x4C, 0x46, 0x41, 0x00, 0x3F, 0x3E, 0x45,
+  0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+  0x08, 0x09, 0x40, 0x00, 0x49, 0x42, 0x4A, 0x47,
+  0x51, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A,
+  0x2B, 0x2C, 0x2D, 0x2E, 0x2F, 0x30, 0x31, 0x32,
+  0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A,
+  0x3B, 0x3C, 0x3D, 0x4D, 0x00, 0x4E, 0x43, 0x00,
+  0x00, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
+  0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
+  0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,
+  0x21, 0x22, 0x23, 0x4F, 0x00, 0x50, 0x00, 0x00
+};
+
+
+void vwad_z85_encode_key (const vwad_public_key inkey, vwad_z85_key enkey) {
+  uint8_t sdata[32 + 4];
+  memcpy(sdata, inkey, 32);
+  const uint32_t crc32 = crc32_buf(sdata, 32);
+  put_u32(&sdata[32], crc32);
+  unsigned dpos = 0, spos = 0, value = 0;
+  while (spos < 32 + 4) {
+    value = value * 256u + sdata[spos++];
+    if (spos % 4u == 0) {
+      unsigned divisor = 85 * 85 * 85 * 85;
+      while (divisor) {
+        char ech = z85_enc_alphabet[value / divisor % 85u];
+        if (ech == '/') ech = '~';
+        enkey[dpos++] = ech;
+        divisor /= 85u;
+      }
+      value = 0;
+    }
+  }
+  if (dpos != (unsigned)sizeof(vwad_z85_key) - 1u) __builtin_trap();
+  enkey[dpos] = 0;
+}
+
+
+vwad_result vwad_z85_decode_key (const vwad_z85_key enkey, vwad_public_key outkey) {
+  if (enkey == NULL || outkey == NULL) return -1;
+  uint8_t ddata[32 + 4];
+  unsigned dpos = 0, spos = 0, value = 0;
+  while (spos < (unsigned)sizeof(vwad_z85_key) - 1) {
+    char inch = enkey[spos++];
+    switch (inch) {
+      case 0: return -1;
+      case '\\': inch = '/'; break;
+      case '~': inch = '/'; break;
+      case '|': inch = '!'; break;
+      case ',': inch = '.'; break;
+      case ';': inch = ':'; break;
+      default: break;
+    }
+    if (!strchr(z85_enc_alphabet, inch)) return -1;
+    value = value * 85 + z85_dec_alphabet[(uint8_t)inch - 32];
+    if (spos % 5u == 0) {
+      unsigned divisor = 256 * 256 * 256;
+      while (divisor) {
+        ddata[dpos++] = value / divisor % 256u;
+        divisor /= 256u;
+      }
+      value = 0;
+    }
+  }
+  if (dpos != 32 + 4) __builtin_trap();
+  if (enkey[spos] != 0) return -1;
+  const uint32_t crc32 = crc32_buf(ddata, 32);
+  if (crc32 != get_u32(&ddata[32])) return -1; // bad checksum
+  memcpy(outkey, ddata, 32);
+  return 0;
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 // compact25519 dev-version
 // Source: https://github.com/DavyLandman/compact25519
 // Licensed under CC0-1.0
@@ -1061,41 +1177,6 @@ static CC25519_INLINE void xfree (vwad_memman *mman, void *p) {
   if (p != NULL) {
     if (mman != NULL) mman->free(mman, p); else free(p);
   }
-}
-
-
-// ////////////////////////////////////////////////////////////////////////// //
-#define crc32_init  (0xffffffffU)
-
-static const uint32_t crctab[16] = {
-  0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac,
-  0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
-  0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c,
-  0x9b64c2b0, 0x86d3d2d4, 0xa00ae278, 0xbdbdf21c,
-};
-
-
-#define CRC32BYTE(bt_)  do { \
-  crc32 ^= (uint8_t)(bt_); \
-  crc32 = crctab[crc32&0x0f]^(crc32>>4); \
-  crc32 = crctab[crc32&0x0f]^(crc32>>4); \
-} while (0)
-
-
-static CC25519_INLINE uint32_t crc32_part (uint32_t crc32, const void *src, size_t len) {
-  const uint8_t *buf = (const uint8_t *)src;
-  while (len--) {
-    CRC32BYTE(*buf++);
-  }
-  return crc32;
-}
-
-static CC25519_INLINE uint32_t crc32_final (uint32_t crc32) {
-  return crc32^0xffffffffU;
-}
-
-static CC25519_INLINE uint32_t crc32_buf (const void *src, size_t len) {
-  return crc32_final(crc32_part(crc32_init, src, len));
 }
 
 

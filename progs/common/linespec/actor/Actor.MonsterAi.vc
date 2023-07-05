@@ -414,7 +414,8 @@ void doWander (optional int flags) {
 void DoChase (bool FastChase, state AMeleeState, state AMissileState,
               bool NightmareFast, bool PlayActive, bool DontMove,
               optional bool noRandomTurn, optional bool noDirectionTurn,
-              optional bool noPostAttackTurn, optional bool stopIfBlocked)
+              optional bool noPostAttackTurn, optional bool stopIfBlocked,
+              optional bool noIdleNoTarget)
 {
   float delta;
   float dist;
@@ -482,7 +483,7 @@ void DoChase (bool FastChase, state AMeleeState, state AMissileState,
         if (Level.PerfectHatredMode&LevelInfo::PHM_WANDER) {
           A_Wander();
         } else {
-          SetState(IdleState);
+          if (!noIdleNoTarget) SetState(IdleState);
           bInCombat = false;
         }
         return;
@@ -543,7 +544,7 @@ void DoChase (bool FastChase, state AMeleeState, state AMissileState,
       bJustAttacked = true;
       if (NewGoal && Delay != 0) {
         bInCombat = true;
-        SetState(IdleState);
+        if (!noIdleNoTarget) SetState(IdleState);
       }
       Goal = NewGoal;
       return;
@@ -803,7 +804,8 @@ final void DoChasePerfectHatred () {
       noRandomTurn:!!(Flags&CHF_NORANDOMTURN),
       noDirectionTurn:!!(Flags&CHF_NODIRECTIONTURN),
       noPostAttackTurn:!!(Flags&CHF_NOPOSTATTACKTURN),
-      stopIfBlocked:!!(Flags&CHF_STOPIFBLOCKED));
+      stopIfBlocked:!!(Flags&CHF_STOPIFBLOCKED),
+      noIdleNoTarget:!!(Flags&CHF_DONTIDLE));
   }
   // in "perfect hatred" mode, switch target if we haven't seen it for long enough
   if (bMonster && (Level.PerfectHatredMode&LevelInfo::PHM_HUNT_MONSTERS)) DoChasePerfectHatred();
