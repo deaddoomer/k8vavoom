@@ -130,7 +130,7 @@ static bool Fon2ColorsUsed[256] = {0};
 
 #if VAVOOM_VLUMPY_VWAD == 1
 static int has_privkey = 0;
-static ed25519_secret_key privkey;
+static vwadwr_secret_key privkey;
 #endif
 
 static uint64_t last_file_time = 0;
@@ -1224,7 +1224,7 @@ static void ParseScript (const char *name) {
           if (!wad_outstrm) Error("cannot init VWAD");
 
           if (!has_privkey) {
-            prng_randombytes(privkey, sizeof(ed25519_secret_key));
+            prng_randombytes(privkey, sizeof(vwadwr_secret_key));
           }
           wad_dir = vwadwr_new_dir(NULL, wad_outstrm, destcomment,
                                    (has_privkey ? VWADWR_NEW_DEFAULT : VWADWR_NEW_DONT_SIGN),
@@ -1505,7 +1505,7 @@ int main (int argc, char *argv[]) {
           if (!fl) {
             Error("\"--keyfile\" cannot open file \"%s\"", argv[i]);
           }
-          if (fread(privkey, sizeof(ed25519_secret_key), 1, fl) != 1) {
+          if (fread(privkey, sizeof(vwadwr_secret_key), 1, fl) != 1) {
             Error("\"--keyfile\" cannot read file \"%s\"", argv[i]);
           }
           fclose(fl);

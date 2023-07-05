@@ -136,12 +136,21 @@ public:
   typedef uint8_t SHA256Digest[SHA256DigestSize];
   typedef void *SHA256Context;
 
+  /*
   static SHA256Context SHA256Init () noexcept;
   static void SHA256Update (SHA256Context ctx, const void *in, size_t inlen) noexcept;
   // this frees context
   static void SHA256Finish (SHA256Context ctx, SHA256Digest hash) noexcept;
 
   static void SHA256Buffer (SHA256Digest hash, const void *in, size_t inlen) noexcept;
+  */
+
+  static SHA256Context Blake2b256Init () noexcept;
+  static void Blake2b256Update (SHA256Context ctx, const void *in, size_t inlen) noexcept;
+  // this frees context
+  static void Blake2b256Finish (SHA256Context ctx, SHA256Digest hash) noexcept;
+
+  static void Blake2b256Buffer (SHA256Digest hash, const void *in, size_t inlen) noexcept;
 
   // generate ChaCha20 encryption key
   static void GenerateKey (uint8_t key[ChaCha20KeySize]) noexcept;

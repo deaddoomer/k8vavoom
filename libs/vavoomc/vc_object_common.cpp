@@ -23,11 +23,13 @@
 //**
 //**************************************************************************
 #include "vc_object_rtti.cpp"
+/*
 #define CORE_CHACHAPRNG_C
 // it must be disabled, so we can use it in VavoomC
 #define CHACHA_C_DISABLE_SSE
 #include "../core/crypto/chachaprng_c.h"
 static_assert(sizeof(ChaChaR) == 105, "invalid `ChaChaR` size");
+*/
 
 
 //**************************************************************************
@@ -977,7 +979,7 @@ IMPLEMENT_FUNCTION(VObject, IRandomBetween) {
 
 IMPLEMENT_FUNCTION(VObject, GenRandomSeedU32) {
   vint32 rn;
-  do { ed25519_randombytes(&rn, sizeof(rn)); } while (!rn);
+  do { prng_randombytes(&rn, sizeof(rn)); } while (!rn);
   RET_INT(rn);
 }
 
@@ -1004,7 +1006,7 @@ IMPLEMENT_FUNCTION(VObject, bjprngSeedRandom) {
   vobjGetParam(ctx);
   if (ctx) {
     vuint32 rn;
-    do { ed25519_randombytes(&rn, sizeof(rn)); } while (!rn);
+    do { prng_randombytes(&rn, sizeof(rn)); } while (!rn);
     bjprng_raninit(ctx, (vuint32)rn);
   }
 }
@@ -1066,7 +1068,7 @@ IMPLEMENT_FUNCTION(VObject, pcg3264Seed) {
 IMPLEMENT_FUNCTION(VObject, pcg3264SeedRandom) {
   PCG3264_Ctx *ctx;
   vobjGetParam(ctx);
-  if (ctx) ed25519_randombytes(ctx, sizeof(PCG3264_Ctx));
+  if (ctx) prng_randombytes(ctx, sizeof(PCG3264_Ctx));
 }
 
 // full 32-bit value (so it can be negative)
@@ -1114,6 +1116,7 @@ IMPLEMENT_FUNCTION(VObject, pcg3264NextFloatFull) {
 }
 
 
+/*
 // native static final bool chachaIsValid (const ref ChaChaCtx ctx);
 IMPLEMENT_FUNCTION(VObject, chachaIsValid) {
   ChaChaR *ctx;
@@ -1135,8 +1138,8 @@ IMPLEMENT_FUNCTION(VObject, chachaSeedRandom) {
   vobjGetParam(ctx);
   if (ctx) {
     vuint64 seedval, stream;
-    ed25519_randombytes(&seedval, sizeof(seedval));
-    ed25519_randombytes(&stream, sizeof(stream));
+    prng_randombytes(&seedval, sizeof(seedval));
+    prng_randombytes(&stream, sizeof(stream));
     if (chacha_init_ex(ctx, seedval, stream, CHACHA_DEFAULT_ROUNDS) != 0) ctx->rounds = 0;
   }
 }
@@ -1214,6 +1217,7 @@ IMPLEMENT_FUNCTION(VObject, chachaNextFloatFull) {
     RET_FLOAT(0);
   }
 }
+*/
 
 
 //==========================================================================

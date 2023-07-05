@@ -694,12 +694,12 @@ VSocket *VDatagramDriver::Connect (VNetLanDriver *Drv, const char *host) {
     TmpByte = NET_PROTOCOL_VERSION_LO;
     MsgOut << TmpByte;
     // password hash
-    vuint8 cldig[SHA256_DIGEST_SIZE];
+    vuint8 cldig[K8VNET_DIGEST_SIZE];
     // we'll fix it later
     vassert((MsgOut.GetPos()&7) == 0);
     int digpos = MsgOut.GetPos()>>3;
-    memset(cldig, 0, SHA256_DIGEST_SIZE);
-    MsgOut.Serialise(cldig, SHA256_DIGEST_SIZE);
+    memset(cldig, 0, K8VNET_DIGEST_SIZE);
+    MsgOut.Serialise(cldig, K8VNET_DIGEST_SIZE);
     // mod info
     vuint32 modhash = FL_GetNetWadsHash();
     MsgOut << modhash;
@@ -707,17 +707,17 @@ VSocket *VDatagramDriver::Connect (VNetLanDriver *Drv, const char *host) {
     MsgOut << modcount;
 
     // fix hash
-    sha256_ctx shactx;
-    sha256_init(&shactx);
+    crypto_blake2b_ctx hashctx;
+    crypto_blake2b_init(&hashctx, K8VNET_DIGEST_SIZE);
     // hash key
-    sha256_update(&shactx, origkey, VNetUtils::ChaCha20KeySize);
+    crypto_blake2b_update(&hashctx, origkey, VNetUtils::ChaCha20KeySize);
     // hash whole packet
-    sha256_update(&shactx, MsgOut.GetData(), MsgOut.GetNumBytes());
+    crypto_blake2b_update(&hashctx, MsgOut.GetData(), MsgOut.GetNumBytes());
     // hash password
-    sha256_update(&shactx, *net_server_key.asStr(), (unsigned)net_server_key.asStr().length());
-    sha256_final(&shactx, cldig);
+    crypto_blake2b_update(&hashctx, (const uint8_t *)*net_server_key.asStr(), (unsigned)net_server_key.asStr().length());
+    crypto_blake2b_final(&hashctx, cldig);
     // update hash
-    memcpy(MsgOut.GetData()+digpos, cldig, SHA256_DIGEST_SIZE);
+    memcpy(MsgOut.GetData()+digpos, cldig, K8VNET_DIGEST_SIZE);
 
     // encrypt
     int elen = EncryptInfoBitStream(edata, MsgOut, origkey);
@@ -1048,8 +1048,8 @@ VSocket *VDatagramDriver::CheckNewConnections (VNetLanDriver *Drv, bool rconOnly
     // read secret
     vassert((msg.GetPos()&7) == 0);
     int digpos = msg.GetPos()>>3;
-    vuint8 cldig[SHA256_DIGEST_SIZE];
-    msg.Serialise(cldig, SHA256_DIGEST_SIZE);
+    vuint8 cldig[K8VNET_DIGEST_SIZE];
+    msg.Serialise(cldig, K8VNET_DIGEST_SIZE);
     if (msg.IsError()) return nullptr; // do noting
 
     // read command
@@ -1065,20 +1065,20 @@ VSocket *VDatagramDriver::CheckNewConnections (VNetLanDriver *Drv, bool rconOnly
     }
 
     // check secret
-    vuint8 svdig[SHA256_DIGEST_SIZE];
+    vuint8 svdig[K8VNET_DIGEST_SIZE];
     // clear hash buffer
-    memset(msg.GetData()+digpos, 0, SHA256_DIGEST_SIZE);
-    sha256_ctx shactx;
-    sha256_init(&shactx);
+    memset(msg.GetData()+digpos, 0, K8VNET_DIGEST_SIZE);
+    crypto_blake2b_ctx hashctx;
+    crypto_blake2b_init(&hashctx, K8VNET_DIGEST_SIZE);
     // hash key
-    sha256_update(&shactx, clientKey, VNetUtils::ChaCha20KeySize);
+    crypto_blake2b_update(&hashctx, clientKey, VNetUtils::ChaCha20KeySize);
     // hash whole packet
-    sha256_update(&shactx, msg.GetData(), msg.GetNumBytes());
+    crypto_blake2b_update(&hashctx, msg.GetData(), msg.GetNumBytes());
     // hash password
-    sha256_update(&shactx, *mysecret, (unsigned)mysecret.length());
-    sha256_final(&shactx, svdig);
+    crypto_blake2b_update(&hashctx, (const uint8_t *)*mysecret, (unsigned)mysecret.length());
+    crypto_blake2b_final(&hashctx, svdig);
     // compare
-    if (memcmp(cldig, svdig, SHA256_DIGEST_SIZE) != 0) return nullptr; // invalid secret
+    if (memcmp(cldig, svdig, K8VNET_DIGEST_SIZE) != 0) return nullptr; // invalid secret
 
     // check for duplicate command
     if (memcmp(rconLastKey, clientKey, VNetUtils::ChaCha20KeySize) != 0) {
@@ -1142,8 +1142,8 @@ VSocket *VDatagramDriver::CheckNewConnections (VNetLanDriver *Drv, bool rconOnly
   // read auth hash
   vassert((msg.GetPos()&7) == 0);
   int digpos = msg.GetPos()>>3;
-  vuint8 cldig[SHA256_DIGEST_SIZE];
-  msg.Serialise(cldig, SHA256_DIGEST_SIZE);
+  vuint8 cldig[K8VNET_DIGEST_SIZE];
+  msg.Serialise(cldig, K8VNET_DIGEST_SIZE);
   if (msg.IsError()) {
     GCon->Logf(NAME_DevNet, "connection error: no password hash");
     // send reject packet, why not?
@@ -1164,20 +1164,20 @@ VSocket *VDatagramDriver::CheckNewConnections (VNetLanDriver *Drv, bool rconOnly
   }
 
   // fix packet
-  memset(msg.GetData()+digpos, 0, SHA256_DIGEST_SIZE);
+  memset(msg.GetData()+digpos, 0, K8VNET_DIGEST_SIZE);
   // check password
-  vuint8 svdig[SHA256_DIGEST_SIZE];
-  sha256_ctx shactx;
-  sha256_init(&shactx);
+  vuint8 svdig[K8VNET_DIGEST_SIZE];
+  crypto_blake2b_ctx hashctx;
+  crypto_blake2b_init(&hashctx, K8VNET_DIGEST_SIZE);
   // hash key
-  sha256_update(&shactx, clientKey, VNetUtils::ChaCha20KeySize);
+  crypto_blake2b_update(&hashctx, clientKey, VNetUtils::ChaCha20KeySize);
   // hash whole packet
-  sha256_update(&shactx, msg.GetData(), msg.GetNumBytes());
+  crypto_blake2b_update(&hashctx, msg.GetData(), msg.GetNumBytes());
   // hash password
-  sha256_update(&shactx, *net_server_key.asStr(), (unsigned)net_server_key.asStr().length());
-  sha256_final(&shactx, svdig);
+  crypto_blake2b_update(&hashctx, (const uint8_t *)*net_server_key.asStr(), (unsigned)net_server_key.asStr().length());
+  crypto_blake2b_final(&hashctx, svdig);
   // compare
-  if (memcmp(cldig, svdig, SHA256_DIGEST_SIZE) != 0) {
+  if (memcmp(cldig, svdig, K8VNET_DIGEST_SIZE) != 0) {
     GCon->Logf(NAME_DevNet, "connection error: invalid password");
     // send reject packet, why not?
     SendConnectionReject(Drv, clientKey, "invalid password", acceptsock, clientaddr);

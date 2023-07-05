@@ -1211,11 +1211,16 @@ typedef struct {
 } BitPPM;
 
 typedef struct {
-  Predictor predBits[2 * 2 * 256];
-  Predictor predSize[2];
-  int ctxBits[2];
-  int ctxSize;
+  Predictor predBits[2 * 256];
+  int ctxBits;
 } BytePPM;
+
+typedef struct {
+  // 8 bits, twice
+  BytePPM bytes[2];
+  // "second byte" flag
+  BitPPM moreFlag;
+} WordPPM;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -1278,9 +1283,9 @@ static CC25519_INLINE intbool_t PredGetBitDecodeUpdate (Predictor *pp, EntDecode
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static void BitPPMInit (BitPPM *ppm) {
+static void BitPPMInit (BitPPM *ppm, int initstate) {
   for (size_t f = 0; f < sizeof(ppm->pred) / sizeof(ppm->pred[0]); ++f) PredInit(&ppm->pred[f]);
-  ppm->ctx = 1;
+  ppm->ctx = !!initstate;
 }
 
 static CC25519_INLINE intbool_t BitPPMDecode (BitPPM *ppm, EntDecoder *dec) {
@@ -1293,30 +1298,33 @@ static CC25519_INLINE intbool_t BitPPMDecode (BitPPM *ppm, EntDecoder *dec) {
 // ////////////////////////////////////////////////////////////////////////// //
 static void BytePPMInit (BytePPM *ppm) {
   for (size_t f = 0; f < sizeof(ppm->predBits) / sizeof(ppm->predBits[0]); ++f) PredInit(&ppm->predBits[f]);
-  for (size_t f = 0; f < sizeof(ppm->predSize) / sizeof(ppm->predSize[0]); ++f) PredInit(&ppm->predSize[f]);
-  ppm->ctxBits[0] = 0; ppm->ctxBits[1] = 0; ppm->ctxSize = 0;
+  ppm->ctxBits = 0;
 }
 
-static CC25519_INLINE uint8_t BytePPMDecodeByte (BytePPM *ppm, EntDecoder *dec, int bidx) {
+static CC25519_INLINE uint8_t BytePPMDecodeByte (BytePPM *ppm, EntDecoder *dec) {
   uint32_t n = 1;
-  int cofs = 512 * bidx + ppm->ctxBits[bidx] * 256;
+  int cofs = ppm->ctxBits * 256;
   do {
     intbool_t bit = PredGetBitDecodeUpdate(&ppm->predBits[cofs + n], dec);
     n += n; if (bit) ++n;
   } while (n < 0x100);
   n -= 0x100;
-  ppm->ctxBits[bidx] = (n >= 0x80);
+  ppm->ctxBits = (n >= 0x80);
   return (uint8_t)n;
 }
 
-static CC25519_INLINE int BytePPMDecodeInt (BytePPM *ppm, EntDecoder *dec) {
-  int n = BytePPMDecodeByte(ppm, dec, 0);
-  intbool_t bit = PredGetBitDecodeUpdate(&ppm->predSize[ppm->ctxSize], dec);
-  if (bit) {
-    ppm->ctxSize = 1;
-    n += BytePPMDecodeByte(ppm, dec, 1) * 0x100;
-  } else {
-    ppm->ctxSize = 0;
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+static void WordPPMInit (WordPPM *ppm) {
+  BytePPMInit(&ppm->bytes[0]); BytePPMInit(&ppm->bytes[1]);
+  BitPPMInit(&ppm->moreFlag, 0);
+}
+
+static CC25519_INLINE int WordPPMDecodeInt (WordPPM *ppm, EntDecoder *dec) {
+  int n = BytePPMDecodeByte(&ppm->bytes[0], dec);
+  if (BitPPMDecode(&ppm->moreFlag, dec)) {
+    n += BytePPMDecodeByte(&ppm->bytes[1], dec) * 0x100;
   }
   return n;
 }
@@ -1330,7 +1338,8 @@ static CC25519_INLINE int BytePPMDecodeInt (BytePPM *ppm, EntDecoder *dec) {
 static intbool_t DecompressLZFF3 (const void *src, int srclen, void *dest, int unpsize) {
   intbool_t error;
   EntDecoder dec;
-  BytePPM ppmData, ppmMtOfs, ppmMtLen, ppmLitLen;
+  BytePPM ppmData;
+  WordPPM ppmMtOfs, ppmMtLen, ppmLitLen;
   BitPPM ppmLitFlag;
   int litcount, n;
   uint32_t dictpos, spos;
@@ -1350,10 +1359,10 @@ static intbool_t DecompressLZFF3 (const void *src, int srclen, void *dest, int u
   dictpos = 0;
 
   BytePPMInit(&ppmData);
-  BytePPMInit(&ppmMtOfs);
-  BytePPMInit(&ppmMtLen);
-  BytePPMInit(&ppmLitLen);
-  BitPPMInit(&ppmLitFlag);
+  WordPPMInit(&ppmMtOfs);
+  WordPPMInit(&ppmMtLen);
+  WordPPMInit(&ppmLitLen);
+  BitPPMInit(&ppmLitFlag, 1);
 
   DecInit(&dec, src, srclen);
 
@@ -1362,26 +1371,26 @@ static intbool_t DecompressLZFF3 (const void *src, int srclen, void *dest, int u
     uint8_t sch;
     int len, ofs;
 
-    litcount = BytePPMDecodeInt(&ppmLitLen, &dec) + 1;
+    litcount = WordPPMDecodeInt(&ppmLitLen, &dec) + 1;
     while (!error && litcount != 0) {
       litcount -= 1;
-      n = BytePPMDecodeByte(&ppmData, &dec, 0);
+      n = BytePPMDecodeByte(&ppmData, &dec);
       PutByte((uint8_t)n);
       error = error || (dec.spos > dec.send);
     }
 
     while (!error && unpsize != 0) {
       if (BitPPMDecode(&ppmLitFlag, &dec)) {
-        litcount = BytePPMDecodeInt(&ppmLitLen, &dec) + 1;
+        litcount = WordPPMDecodeInt(&ppmLitLen, &dec) + 1;
         while (!error && litcount != 0) {
           litcount -= 1;
-          n = BytePPMDecodeByte(&ppmData, &dec, 0);
+          n = BytePPMDecodeByte(&ppmData, &dec);
           PutByte((uint8_t)n);
           error = error || (dec.spos > dec.send);
         }
       } else {
-        len = BytePPMDecodeInt(&ppmMtLen, &dec) + 3;
-        ofs = BytePPMDecodeInt(&ppmMtOfs, &dec) + 1;
+        len = WordPPMDecodeInt(&ppmMtLen, &dec) + 3;
+        ofs = WordPPMDecodeInt(&ppmMtOfs, &dec) + 1;
         error = error || (dec.spos > dec.send) || (len > unpsize) || (ofs > dictpos);
         if (!error) {
           spos = dictpos - ofs;

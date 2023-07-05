@@ -108,22 +108,8 @@ add_library(core STATIC
 
   crypto/prng_randombytes.h
   crypto/prng_randombytes.c
-  crypto/sha2.h
-  crypto/sha2.c
-  crypto/hmac_sha2.h
-  crypto/hmac_sha2.c
-  crypto/chacha20.h
-  crypto/chacha20.c
-  crypto/poly1305-donna.h
-  crypto/poly1305-donna.c
-  crypto/curve25519-donna.h
-  crypto/curve25519-donna.c
-  crypto/ed25519.h
-  crypto/ed25519.c
-  crypto/chachaprng_c.h
-  crypto/chachaprng_cpp.h
-  crypto/jh32.h
-  crypto/jh32.cpp
+  crypto/monocypher-ama.h
+  crypto/monocypher-ama.c
   crypto/ripemd160.h
   crypto/ripemd160.c
 

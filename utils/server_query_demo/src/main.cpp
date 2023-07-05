@@ -552,16 +552,16 @@ static void sendRConCommand (const char *hostname, const char *rconsecret, const
     }
 
     // write secret
-    VNetChanSocket::SHA256Context ctx = VNetChanSocket::SHA256Init();
+    VNetChanSocket::SHA256Context ctx = VNetChanSocket::Blake2b256Init();
     if (!ctx) abort();
     VNetChanSocket::SHA256Digest dig;
     // hash key
-    VNetChanSocket::SHA256Update(ctx, key, VNetChanSocket::ChaCha20KeySize);
+    VNetChanSocket::Blake2b256Update(ctx, key, VNetChanSocket::ChaCha20KeySize);
     // hash whole packet
-    VNetChanSocket::SHA256Update(ctx, buf, pos);
+    VNetChanSocket::Blake2b256Update(ctx, buf, pos);
     // hash password
-    VNetChanSocket::SHA256Update(ctx, rconsecret, strlen(rconsecret));
-    VNetChanSocket::SHA256Finish(ctx, dig);
+    VNetChanSocket::Blake2b256Update(ctx, rconsecret, strlen(rconsecret));
+    VNetChanSocket::Blake2b256Finish(ctx, dig);
     // copy to buffer
     memcpy(buf+spos, dig, VNetChanSocket::SHA256DigestSize);
 

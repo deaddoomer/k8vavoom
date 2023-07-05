@@ -66,6 +66,249 @@ static TWinSockHelper vnetchanHelper__;
 #endif
 
 
+// taken from Monocypher
+#define FOR_T(type, i, start, end) for (type i = (start); i < (end); i++)
+#define FOR(i, start, end)         FOR_T(size_t, i, start, end)
+#define COPY(dst, src, size)       FOR(_i_, 0, size) (dst)[_i_] = (src)[_i_]
+#define ZERO(buf, size)            FOR(_i_, 0, size) (buf)[_i_] = 0
+#define MIN(a, b)                  ((a) <= (b) ? (a) : (b))
+
+////////////////
+/// BLAKE2 b ///
+////////////////
+// Incremental interface
+typedef struct {
+  // Do not rely on the size or contents of this type,
+  // for they may change without notice.
+  uint64_t hash[8];
+  uint64_t input_offset[2];
+  uint64_t input[16];
+  size_t   input_idx;
+  size_t   hash_size;
+} crypto_blake2b_ctx;
+
+static uint64_t rotr64(uint64_t x, uint64_t n) { return (x >> n) ^ (x << (64 - n)); }
+static size_t gap(size_t x, size_t pow_2)
+{
+  return (~x + 1) & (pow_2 - 1);
+}
+static uint32_t load32_le(const uint8_t s[4])
+{
+  return
+    ((uint32_t)s[0] <<  0) |
+    ((uint32_t)s[1] <<  8) |
+    ((uint32_t)s[2] << 16) |
+    ((uint32_t)s[3] << 24);
+}
+static uint64_t load64_le(const uint8_t s[8])
+{
+  return load32_le(s) | ((uint64_t)load32_le(s+4) << 32);
+}
+static void load64_le_buf (uint64_t *dst, const uint8_t *src, size_t size) {
+  FOR(i, 0, size) { dst[i] = load64_le(src + i*8); }
+}
+
+static void store32_le(uint8_t out[4], uint32_t in)
+{
+  out[0] =  in        & 0xff;
+  out[1] = (in >>  8) & 0xff;
+  out[2] = (in >> 16) & 0xff;
+  out[3] = (in >> 24) & 0xff;
+}
+static void store64_le(uint8_t out[8], uint64_t in)
+{
+  store32_le(out    , (uint32_t)in );
+  store32_le(out + 4, in >> 32);
+}
+static void store64_le_buf(uint8_t *dst, const uint64_t *src, size_t size) {
+  FOR(i, 0, size) { store64_le(dst + i*8, src[i]); }
+}
+
+static const uint64_t iv[8] = {
+  0x6a09e667f3bcc908, 0xbb67ae8584caa73b,
+  0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1,
+  0x510e527fade682d1, 0x9b05688c2b3e6c1f,
+  0x1f83d9abfb41bd6b, 0x5be0cd19137e2179,
+};
+
+static void blake2b_compress(crypto_blake2b_ctx *ctx, int is_last_block)
+{
+  static const uint8_t sigma[12][16] = {
+    {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15 },
+    { 14, 10,  4,  8,  9, 15, 13,  6,  1, 12,  0,  2, 11,  7,  5,  3 },
+    { 11,  8, 12,  0,  5,  2, 15, 13, 10, 14,  3,  6,  7,  1,  9,  4 },
+    {  7,  9,  3,  1, 13, 12, 11, 14,  2,  6,  5, 10,  4,  0, 15,  8 },
+    {  9,  0,  5,  7,  2,  4, 10, 15, 14,  1, 11, 12,  6,  8,  3, 13 },
+    {  2, 12,  6, 10,  0, 11,  8,  3,  4, 13,  7,  5, 15, 14,  1,  9 },
+    { 12,  5,  1, 15, 14, 13,  4, 10,  0,  7,  6,  3,  9,  2,  8, 11 },
+    { 13, 11,  7, 14, 12,  1,  3,  9,  5,  0, 15,  4,  8,  6,  2, 10 },
+    {  6, 15, 14,  9, 11,  3,  0,  8, 12,  2, 13,  7,  1,  4, 10,  5 },
+    { 10,  2,  8,  4,  7,  6,  1,  5, 15, 11,  9, 14,  3, 12, 13,  0 },
+    {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15 },
+    { 14, 10,  4,  8,  9, 15, 13,  6,  1, 12,  0,  2, 11,  7,  5,  3 },
+  };
+
+  // increment input offset
+  uint64_t   *x = ctx->input_offset;
+  size_t y = ctx->input_idx;
+  x[0] += y;
+  if (x[0] < y) {
+    x[1]++;
+  }
+
+  // init work vector
+  uint64_t v0 = ctx->hash[0];  uint64_t v8  = iv[0];
+  uint64_t v1 = ctx->hash[1];  uint64_t v9  = iv[1];
+  uint64_t v2 = ctx->hash[2];  uint64_t v10 = iv[2];
+  uint64_t v3 = ctx->hash[3];  uint64_t v11 = iv[3];
+  uint64_t v4 = ctx->hash[4];  uint64_t v12 = iv[4] ^ ctx->input_offset[0];
+  uint64_t v5 = ctx->hash[5];  uint64_t v13 = iv[5] ^ ctx->input_offset[1];
+  uint64_t v6 = ctx->hash[6];  uint64_t v14 = iv[6] ^ (uint64_t)~(is_last_block - 1);
+  uint64_t v7 = ctx->hash[7];  uint64_t v15 = iv[7];
+
+  // mangle work vector
+  uint64_t *input = ctx->input;
+#define BLAKE2_G(a, b, c, d, x, y)  \
+  a += b + x;  d = rotr64(d ^ a, 32); \
+  c += d;      b = rotr64(b ^ c, 24); \
+  a += b + y;  d = rotr64(d ^ a, 16); \
+  c += d;      b = rotr64(b ^ c, 63)
+#define BLAKE2_ROUND(i) \
+  BLAKE2_G(v0, v4, v8 , v12, input[sigma[i][ 0]], input[sigma[i][ 1]]); \
+  BLAKE2_G(v1, v5, v9 , v13, input[sigma[i][ 2]], input[sigma[i][ 3]]); \
+  BLAKE2_G(v2, v6, v10, v14, input[sigma[i][ 4]], input[sigma[i][ 5]]); \
+  BLAKE2_G(v3, v7, v11, v15, input[sigma[i][ 6]], input[sigma[i][ 7]]); \
+  BLAKE2_G(v0, v5, v10, v15, input[sigma[i][ 8]], input[sigma[i][ 9]]); \
+  BLAKE2_G(v1, v6, v11, v12, input[sigma[i][10]], input[sigma[i][11]]); \
+  BLAKE2_G(v2, v7, v8 , v13, input[sigma[i][12]], input[sigma[i][13]]); \
+  BLAKE2_G(v3, v4, v9 , v14, input[sigma[i][14]], input[sigma[i][15]])
+
+#ifdef BLAKE2_NO_UNROLLING
+  FOR (i, 0, 12) {
+    BLAKE2_ROUND(i);
+  }
+#else
+  BLAKE2_ROUND(0);  BLAKE2_ROUND(1);  BLAKE2_ROUND(2);  BLAKE2_ROUND(3);
+  BLAKE2_ROUND(4);  BLAKE2_ROUND(5);  BLAKE2_ROUND(6);  BLAKE2_ROUND(7);
+  BLAKE2_ROUND(8);  BLAKE2_ROUND(9);  BLAKE2_ROUND(10); BLAKE2_ROUND(11);
+#endif
+
+  // update hash
+  ctx->hash[0] ^= v0 ^ v8;   ctx->hash[1] ^= v1 ^ v9;
+  ctx->hash[2] ^= v2 ^ v10;  ctx->hash[3] ^= v3 ^ v11;
+  ctx->hash[4] ^= v4 ^ v12;  ctx->hash[5] ^= v5 ^ v13;
+  ctx->hash[6] ^= v6 ^ v14;  ctx->hash[7] ^= v7 ^ v15;
+}
+
+static void crypto_blake2b_keyed_init(crypto_blake2b_ctx *ctx, size_t hash_size,
+                                      const uint8_t *key, size_t key_size)
+{
+  // initial hash
+  COPY(ctx->hash, iv, 8);
+  ctx->hash[0] ^= 0x01010000 ^ (key_size << 8) ^ hash_size;
+
+  ctx->input_offset[0] = 0;  // beginning of the input, no offset
+  ctx->input_offset[1] = 0;  // beginning of the input, no offset
+  ctx->hash_size       = hash_size;
+  ctx->input_idx       = 0;
+  ZERO(ctx->input, 16);
+
+  // if there is a key, the first block is that key (padded with zeroes)
+  if (key_size > 0) {
+    uint8_t key_block[128] = {0};
+    COPY(key_block, key, key_size);
+    // same as calling crypto_blake2b_update(ctx, key_block , 128)
+    load64_le_buf(ctx->input, key_block, 16);
+    ctx->input_idx = 128;
+  }
+}
+
+static void crypto_blake2b_init(crypto_blake2b_ctx *ctx, size_t hash_size)
+{
+  crypto_blake2b_keyed_init(ctx, hash_size, 0, 0);
+}
+
+static void crypto_blake2b_update(crypto_blake2b_ctx *ctx,
+                                  const uint8_t *message, size_t message_size)
+{
+  // Avoid undefined NULL pointer increments with empty messages
+  if (message_size == 0) {
+    return;
+  }
+
+  // Align with word boundaries
+  if ((ctx->input_idx & 7) != 0) {
+    size_t nb_bytes = MIN(gap(ctx->input_idx, 8), message_size);
+    size_t word     = ctx->input_idx >> 3;
+    size_t byte     = ctx->input_idx & 7;
+    FOR (i, 0, nb_bytes) {
+      ctx->input[word] |= (uint64_t)message[i] << ((byte + i) << 3);
+    }
+    ctx->input_idx += nb_bytes;
+    message        += nb_bytes;
+    message_size   -= nb_bytes;
+  }
+
+  // Align with block boundaries (faster than byte by byte)
+  if ((ctx->input_idx & 127) != 0) {
+    size_t nb_words = MIN(gap(ctx->input_idx, 128), message_size) >> 3;
+    load64_le_buf(ctx->input + (ctx->input_idx >> 3), message, nb_words);
+    ctx->input_idx += nb_words << 3;
+    message        += nb_words << 3;
+    message_size   -= nb_words << 3;
+  }
+
+  // Process block by block
+  size_t nb_blocks = message_size >> 7;
+  FOR (i, 0, nb_blocks) {
+    if (ctx->input_idx == 128) {
+      blake2b_compress(ctx, 0);
+    }
+    load64_le_buf(ctx->input, message, 16);
+    message += 128;
+    ctx->input_idx = 128;
+  }
+  message_size &= 127;
+
+  if (message_size != 0) {
+    // Compress block & flush input buffer as needed
+    if (ctx->input_idx == 128) {
+      blake2b_compress(ctx, 0);
+      ctx->input_idx = 0;
+    }
+    if (ctx->input_idx == 0) {
+      ZERO(ctx->input, 16);
+    }
+    // Fill remaining words (faster than byte by byte)
+    size_t nb_words = message_size >> 3;
+    load64_le_buf(ctx->input, message, nb_words);
+    ctx->input_idx += nb_words << 3;
+    message        += nb_words << 3;
+    message_size   -= nb_words << 3;
+
+    // Fill remaining bytes
+    FOR (i, 0, message_size) {
+      size_t word = ctx->input_idx >> 3;
+      size_t byte = ctx->input_idx & 7;
+      ctx->input[word] |= (uint64_t)message[i] << (byte << 3);
+      ctx->input_idx++;
+    }
+  }
+}
+
+static void crypto_blake2b_final(crypto_blake2b_ctx *ctx, uint8_t *hash)
+{
+  blake2b_compress(ctx, 1); // compress the last block
+  size_t hash_size = MIN(ctx->hash_size, 64);
+  size_t nb_words  = hash_size >> 3;
+  store64_le_buf(hash, ctx->hash, nb_words);
+  FOR (i, nb_words << 3, hash_size) {
+    hash[i] = (ctx->hash[i >> 3] >> (8 * (i & 7))) & 0xff;
+  }
+  //WIPE_CTX(ctx);
+}
+
+
 static inline uint32_t isaac_rra (uint32_t value, unsigned int count) { return (value>>count)|(value<<(32-count)); }
 static inline uint32_t isaac_rla (uint32_t value, unsigned int count) { return (value<<count)|(value>>(32-count)); }
 
@@ -332,18 +575,19 @@ static inline __attribute__((unused)) uint32_t GenRandomU32 () noexcept { uint32
 // SHA256
 //
 //**************************************************************************
+/*
 #define SHA256PD_HASH_SIZE  (32u)
 
 #define SHA256PD_CHUNK_SIZE     (64u)
 #define SHA256PD_TOTALLEN_SIZE  (8u)
 #define SHA256PD_HACCUM_SIZE    (8u)
 
-/* sha256 context */
+// sha256 context
 typedef struct sha256pd_ctx_t {
-  uint8_t chunk[SHA256PD_CHUNK_SIZE]; /* 512-bit chunks is what we will operate on */
-  size_t chunk_used; /* numbed of bytes used in the current chunk */
-  size_t total_len; /* accumulator */
-  uint32_t h[SHA256PD_HACCUM_SIZE]; /* current hash value */
+  uint8_t chunk[SHA256PD_CHUNK_SIZE]; // 512-bit chunks is what we will operate on
+  size_t chunk_used; // numbed of bytes used in the current chunk
+  size_t total_len; // accumulator
+  uint32_t h[SHA256PD_HACCUM_SIZE]; // current hash value
 } sha256pd_ctx;
 
 static inline uint32_t sha26pd_rra (uint32_t value, unsigned int count) { return value>>count|value<<(32-count); }
@@ -393,7 +637,7 @@ static void sha256pd_round (uint32_t h[SHA256PD_HACCUM_SIZE], const uint8_t *chu
 }
 
 static void sha256pd_init (sha256pd_ctx *state) {
-  /* initial hash values (first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19) */
+  // initial hash values (first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19)
   const uint32_t hinit[SHA256PD_HACCUM_SIZE] = {0x6a09e667u, 0xbb67ae85u, 0x3c6ef372u, 0xa54ff53au, 0x510e527fu, 0x9b05688cu, 0x1f83d9abu, 0x5be0cd19u};
   state->chunk_used = 0;
   state->total_len = 0;
@@ -405,7 +649,7 @@ static void sha256pd_update (sha256pd_ctx *state, const void *input, size_t len)
   if (!len) return;
   const uint8_t *src = (const uint8_t *)input;
   state->total_len += len;
-  /* complete current chunk (if it is not empty) */
+  // complete current chunk (if it is not empty)
   if (state->chunk_used) {
     const size_t cleft = SHA256PD_CHUNK_SIZE-state->chunk_used;
     const size_t ccpy = (len <= cleft ? len : cleft);
@@ -413,46 +657,46 @@ static void sha256pd_update (sha256pd_ctx *state, const void *input, size_t len)
     state->chunk_used += ccpy;
     src += ccpy;
     len -= ccpy;
-    /* process chunk if it is full */
+    // process chunk if it is full
     if (state->chunk_used == SHA256PD_CHUNK_SIZE) {
       sha256pd_round(state->h, state->chunk);
       state->chunk_used = 0;
     }
   }
-  /* process full chunks, if there are any */
+  // process full chunks, if there are any
   while (len >= SHA256PD_CHUNK_SIZE) {
     sha256pd_round(state->h, src);
     src += SHA256PD_CHUNK_SIZE;
     len -= SHA256PD_CHUNK_SIZE;
   }
-  /* save data for next update */
+  // save data for next update
   if (len) {
-    /* if we came here, we have no accumulated chunk data */
+    // if we came here, we have no accumulated chunk data
     memcpy(state->chunk, src, len);
     state->chunk_used = len;
   }
 }
 
 static void sha256pd_finish (const sha256pd_ctx *state, uint8_t hash[SHA256PD_HASH_SIZE]) {
-  uint8_t tmpchunk[SHA256PD_CHUNK_SIZE]; /* we need temporary workspace */
-  uint32_t hh[SHA256PD_HACCUM_SIZE]; /* we don't want to destroy our current hash accumulator */
+  uint8_t tmpchunk[SHA256PD_CHUNK_SIZE]; // we need temporary workspace
+  uint32_t hh[SHA256PD_HACCUM_SIZE]; // we don't want to destroy our current hash accumulator
   memcpy(hh, state->h, sizeof(hh));
   size_t pos = state->chunk_used;
-  /* we need to put 0x80 and 8-byte length */
+  // we need to put 0x80 and 8-byte length
   if (pos) memcpy(tmpchunk, state->chunk, pos);
-  /* put trailing bit (there is always room for at least one byte in the current chunk) */
+  // put trailing bit (there is always room for at least one byte in the current chunk)
   tmpchunk[pos++] = 0x80;
-  /* clear chunk padding */
+  // clear chunk padding
   if (pos < SHA256PD_CHUNK_SIZE) memset(tmpchunk+pos, 0, SHA256PD_CHUNK_SIZE-pos);
-  /* if we don't have enough room for size, flush current chunk */
+  // if we don't have enough room for size, flush current chunk
   if (SHA256PD_CHUNK_SIZE-pos < SHA256PD_TOTALLEN_SIZE) {
-    /* flush it */
+    // flush it
     sha256pd_round(hh, tmpchunk);
-    /* clear chunk, so we may put the length there */
+    // clear chunk, so we may put the length there
     memset(tmpchunk, 0, SHA256PD_CHUNK_SIZE);
   }
-  /* put length (in bits) */
-  /* don't multiply it, so it won't overflow on 32-bit systems */
+  // put length (in bits)
+  // don't multiply it, so it won't overflow on 32-bit systems
   size_t len = state->total_len;
   tmpchunk[SHA256PD_CHUNK_SIZE-1u] = (uint8_t)((len<<3)&0xffu);
   len >>= 5;
@@ -460,9 +704,9 @@ static void sha256pd_finish (const sha256pd_ctx *state, uint8_t hash[SHA256PD_HA
     tmpchunk[SHA256PD_CHUNK_SIZE-2u-i] = (uint8_t)(len&0xffu);
     len >>= 8;
   }
-  /* final round */
+  // final round
   sha256pd_round(hh, tmpchunk);
-  /* produce the final big-endian hash value */
+  // produce the final big-endian hash value
   for (unsigned i = 0; i < 8; ++i) {
     hash[(i<<2)+0] = (uint8_t)((hh[i]>>24)&0xffu);
     hash[(i<<2)+1] = (uint8_t)((hh[i]>>16)&0xffu);
@@ -478,6 +722,7 @@ static void sha256pd_buf (VNetChanSocket::SHA256Digest hash, const void *in, siz
   sha256pd_update(&state, in, inlen);
   sha256pd_finish(&state, hash);
 }
+*/
 
 
 //**************************************************************************
@@ -1154,6 +1399,7 @@ void VNetChanSocket::ChaCha20XCrypt (ChaCha20Ctx *ctx, void *ciphertextdata, con
 }
 
 
+/*
 //==========================================================================
 //
 //  VNetChanSocket::SHA256Init
@@ -1199,6 +1445,106 @@ void VNetChanSocket::SHA256Finish (SHA256Context ctx, SHA256Digest hash) noexcep
 //==========================================================================
 void VNetChanSocket::SHA256Buffer (SHA256Digest hash, const void *in, size_t inlen) noexcept {
   sha256pd_buf(hash, in, inlen);
+}
+
+
+//==========================================================================
+//
+//  VNetChanSocket::SHA256Init
+//
+//==========================================================================
+VNetChanSocket::SHA256Context VNetChanSocket::SHA256Init () noexcept {
+  sha256pd_ctx *ctx = (sha256pd_ctx *)malloc(sizeof(sha256pd_ctx));
+  if (!ctx) return nullptr;
+  sha256pd_init(ctx);
+  return (SHA256Context)ctx;
+}
+
+
+//==========================================================================
+//
+//  VNetChanSocket::SHA256Update
+//
+//==========================================================================
+void VNetChanSocket::SHA256Update (SHA256Context ctx, const void *in, size_t inlen) noexcept {
+  if (!ctx) return;
+  sha256pd_update((sha256pd_ctx *)ctx, in, inlen);
+}
+
+
+//==========================================================================
+//
+//  VNetChanSocket::SHA256Finish
+//
+//  this frees context
+//
+//==========================================================================
+void VNetChanSocket::SHA256Finish (SHA256Context ctx, SHA256Digest hash) noexcept {
+  if (!ctx) { if (hash) memset(hash, 0, SHA256DigestSize); return; }
+  if (hash) sha256pd_finish((sha256pd_ctx *)ctx, hash);
+  free(ctx);
+}
+
+
+//==========================================================================
+//
+//  VNetChanSocket::SHA256Buffer
+//
+//==========================================================================
+void VNetChanSocket::SHA256Buffer (SHA256Digest hash, const void *in, size_t inlen) noexcept {
+  sha256pd_buf(hash, in, inlen);
+}
+*/
+
+
+//==========================================================================
+//
+//  VNetChanSocket::Blake2b256Init
+//
+//==========================================================================
+VNetChanSocket::SHA256Context VNetChanSocket::Blake2b256Init () noexcept {
+  crypto_blake2b_ctx *ctx = (crypto_blake2b_ctx *)malloc(sizeof(crypto_blake2b_ctx));
+  if (!ctx) return nullptr;
+  crypto_blake2b_init(ctx, SHA256DigestSize);
+  return (SHA256Context)ctx;
+}
+
+
+//==========================================================================
+//
+//  VNetChanSocket::Blake2b256Update
+//
+//==========================================================================
+void VNetChanSocket::Blake2b256Update (SHA256Context ctx, const void *in, size_t inlen) noexcept {
+  if (!ctx) return;
+  crypto_blake2b_update((crypto_blake2b_ctx *)ctx, (const uint8_t *)in, inlen);
+}
+
+
+//==========================================================================
+//
+//  VNetChanSocket::Blake2b256Finish
+//
+//  this frees context
+//
+//==========================================================================
+void VNetChanSocket::Blake2b256Finish (SHA256Context ctx, SHA256Digest hash) noexcept {
+  if (!ctx) { if (hash) memset(hash, 0, SHA256DigestSize); return; }
+  if (hash) crypto_blake2b_final((crypto_blake2b_ctx *)ctx, (uint8_t *)hash);
+  free(ctx);
+}
+
+
+//==========================================================================
+//
+//  VNetChanSocket::Blake2b256Buffer
+//
+//==========================================================================
+void VNetChanSocket::Blake2b256Buffer (SHA256Digest hash, const void *in, size_t inlen) noexcept {
+  crypto_blake2b_ctx ctx;
+  crypto_blake2b_init(&ctx, SHA256DigestSize);
+  crypto_blake2b_update(&ctx, (const uint8_t *)in, inlen);
+  if (hash) crypto_blake2b_final(&ctx, (uint8_t *)hash);
 }
 
 

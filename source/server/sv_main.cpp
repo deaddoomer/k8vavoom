@@ -323,13 +323,6 @@ vuint64 SV_GetModListHash (vuint32 *old) {
     modlist += "\n";
   }
   //GCon->Logf(NAME_Debug, "modlist:\n%s", *modlist);
-#if 0
-  // get list hash
-  vuint8 sha256[SHA256_DIGEST_SIZE];
-  sha256_buf(sha256, *modlist, (size_t)modlist.length());
-  // convert to hex
-  VStr shahex = VStr::buf2hex(sha256, SHA256_DIGEST_SIZE);
-#else
   if (old) {
     *old = XXH32(*modlist, (vint32)modlist.length(), (vuint32)wadlist.length());
   }
@@ -348,7 +341,6 @@ vuint64 SV_GetModListHash (vuint32 *old) {
     (((uint64_t)hash[6])<<48)|
     (((uint64_t)hash[7])<<56);
   return (vuint64)val;
-#endif
 }
 
 

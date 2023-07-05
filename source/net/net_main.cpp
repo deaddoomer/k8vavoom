@@ -942,19 +942,6 @@ vuint32 VNetUtils::CRC32C (vuint32 crc32, const void *buf, size_t length) noexce
   return crc32cBuffer(crc32, buf, length);
 }
 
-//==========================================================================
-//
-//  VNetUtils::ChaCha20SetupEx
-//
-//  Key size in bits: either 256 (32 bytes), or 128 (16 bytes)
-//  Nonce size in bits: 64 (8 bytes)
-//  returns 0 on success
-//
-//==========================================================================
-int VNetUtils::ChaCha20SetupEx (ChaCha20Ctx *ctx, const void *keydata, const void *noncedata, vuint32 keybits) noexcept {
-  return chacha20_setup_ex((chacha20_ctx *)ctx, keydata, noncedata, keybits);
-}
-
 
 //==========================================================================
 //
@@ -965,8 +952,18 @@ int VNetUtils::ChaCha20SetupEx (ChaCha20Ctx *ctx, const void *keydata, const voi
 //  can point to the same address
 //
 //==========================================================================
-void VNetUtils::ChaCha20XCrypt (ChaCha20Ctx *ctx, void *ciphertextdata, const void *plaintextdata, vuint32 msglen) noexcept {
-  return chacha20_xcrypt((chacha20_ctx *)ctx, ciphertextdata, plaintextdata, msglen);
+void VNetUtils::ChaCha20XCrypt (const vuint8 keydata[ChaCha20KeySize], const vuint32 nonce,
+                                void *ciphertextdata, const void *plaintextdata, vuint32 msglen) noexcept
+{
+  vuint8 noncebuf[8];
+  memset(noncebuf, 0, sizeof(noncebuf));
+  noncebuf[0] = nonce&0xffu;
+  noncebuf[1] = (nonce>>8)&0xffu;
+  noncebuf[2] = (nonce>>16)&0xffu;
+  noncebuf[3] = (nonce>>24)&0xffu;
+  noncebuf[5] = 0x02;
+  noncebuf[6] = 0x9a;
+  (void)crypto_chacha20_djb((uint8_t *)ciphertextdata, (const uint8_t *)plaintextdata, msglen, keydata, noncebuf, 0/*ctr*/);
 }
 
 
@@ -992,7 +989,8 @@ void VNetUtils::GenerateKey (vuint8 key[ChaCha20KeySize]) noexcept {
 //
 //==========================================================================
 void VNetUtils::DerivePublicKey (vuint8 mypk[ChaCha20KeySize], const vuint8 mysk[ChaCha20KeySize]) {
-  curve25519_donna_public(mypk, mysk);
+  //curve25519_donna_public(mypk, mysk);
+  crypto_x25519_public_key(mypk, mysk);
 }
 
 
@@ -1004,7 +1002,8 @@ void VNetUtils::DerivePublicKey (vuint8 mypk[ChaCha20KeySize], const vuint8 mysk
 //
 //==========================================================================
 void VNetUtils::DeriveSharedKey (vuint8 sharedk[ChaCha20KeySize], const vuint8 mysk[ChaCha20KeySize], const vuint8 theirpk[ChaCha20KeySize]) {
-  curve25519_donna_shared(sharedk, mysk, theirpk);
+  //curve25519_donna_shared(sharedk, mysk, theirpk);
+  crypto_x25519(sharedk, mysk, theirpk);
 }
 
 
@@ -1041,9 +1040,7 @@ int VNetUtils::EncryptInfoPacket (void *destbuf, const void *srcbuf, int srclen,
   // copy data
   if (srclen) memcpy(dest+ChaCha20HeaderSize, srcbuf, (unsigned)srclen);
   // encrypt crc32 and data
-  ChaCha20Ctx cctx;
-  ChaCha20Setup(&cctx, key, nonce);
-  ChaCha20XCrypt(&cctx, dest+ChaCha20KeySize+ChaCha20NonceSize, dest+ChaCha20KeySize+ChaCha20NonceSize, (unsigned)(srclen+ChaCha20CheckSumSize));
+  ChaCha20XCrypt(key, nonce, dest+ChaCha20KeySize+ChaCha20NonceSize, dest+ChaCha20KeySize+ChaCha20NonceSize, (unsigned)(srclen+ChaCha20CheckSumSize));
   return srclen+ChaCha20HeaderSize;
 }
 
@@ -1073,9 +1070,7 @@ int VNetUtils::DecryptInfoPacket (vuint8 key[ChaCha20KeySize], void *destbuf, co
     (((vuint32)src[ChaCha20KeySize+2])<<16)|
     (((vuint32)src[ChaCha20KeySize+3])<<24);
   // decrypt packet
-  ChaCha20Ctx cctx;
-  ChaCha20Setup(&cctx, key, nonce);
-  ChaCha20XCrypt(&cctx, dest, src+ChaCha20KeySize+ChaCha20NonceSize, (unsigned)srclen);
+  ChaCha20XCrypt(key, nonce, dest, src+ChaCha20KeySize+ChaCha20NonceSize, (unsigned)srclen);
   // calculate and check crc32
   srclen -= ChaCha20CheckSumSize;
   vassert(srclen >= 0);

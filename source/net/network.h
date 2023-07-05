@@ -30,6 +30,11 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+// 32 bytes; the actual hash function is BLAKE2b from Monocypher
+#define K8VNET_DIGEST_SIZE  (32)
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 struct VNetUtils {
   static void TVMsecs (timeval *dest, int msecs) noexcept;
 
@@ -42,7 +47,7 @@ struct VNetUtils {
     vuint32 input[16];
   };
   */
-  typedef chacha20_ctx ChaCha20Ctx;
+  //typedef chacha20_ctx ChaCha20Ctx;
 
   enum {
     ChaCha20KeySize = 32,
@@ -54,37 +59,10 @@ struct VNetUtils {
     ChaCha20RealNonceSize = 8,
   };
 
-  /* Key size in bits: either 256 (32 bytes), or 128 (16 bytes) */
-  /* Nonce size in bits: 64 (8 bytes) */
-  /* returns 0 on success */
-  static int ChaCha20SetupEx (ChaCha20Ctx *ctx, const void *keydata, const void *noncedata, vuint32 keybits) noexcept;
-
-  /* chacha setup for 256-bit keys */
-  static inline int ChaCha20Setup32 (ChaCha20Ctx *ctx, const void *keydata, const void *noncedata) noexcept {
-    return ChaCha20SetupEx(ctx, keydata, noncedata, 256);
-  }
-
-  /* chacha setup for 128-bit keys */
-  static inline int ChaCha20Setup16 (ChaCha20Ctx *ctx, const void *keydata, const void *noncedata) noexcept {
-    return ChaCha20SetupEx(ctx, keydata, noncedata, 128);
-  }
-
-  /* chacha setup for 128-bit keys and 32-bit nonce */
-  static inline int ChaCha20Setup (ChaCha20Ctx *ctx, const vuint8 keydata[ChaCha20KeySize], const vuint32 nonce) noexcept {
-    vuint8 noncebuf[8];
-    memset(noncebuf, 0, sizeof(noncebuf));
-    noncebuf[0] = nonce&0xffu;
-    noncebuf[1] = (nonce>>8)&0xffu;
-    noncebuf[2] = (nonce>>16)&0xffu;
-    noncebuf[3] = (nonce>>24)&0xffu;
-    noncebuf[5] = 0x02;
-    noncebuf[6] = 0x9a;
-    return ChaCha20SetupEx(ctx, keydata, noncebuf, 256);
-  }
-
   /* encrypts or decrypts a full message */
   /* cypher is symmetric, so `ciphertextdata` and `plaintextdata` can point to the same address */
-  static void ChaCha20XCrypt (ChaCha20Ctx *ctx, void *ciphertextdata, const void *plaintextdata, vuint32 msglen) noexcept;
+  static void ChaCha20XCrypt (const vuint8 keydata[ChaCha20KeySize], const vuint32 nonce,
+                              void *ciphertextdata, const void *plaintextdata, vuint32 msglen) noexcept;
 
   // generate ChaCha20 encryption key
   static void GenerateKey (vuint8 key[ChaCha20KeySize]) noexcept;
@@ -621,7 +599,7 @@ private:
   bool InitialDataDone;
   vint32 NextNameToSend;
   // for client
-  vuint8 serverReplicationHash[SHA256_DIGEST_SIZE];
+  vuint8 serverReplicationHash[K8VNET_DIGEST_SIZE];
 
 protected:
   void UpdateSendPBar ();
@@ -632,7 +610,7 @@ protected:
   void DecompressNames ();
 
   // this fills
-  void BuildNetFieldsHash (vuint8 hash[SHA256_DIGEST_SIZE]);
+  void BuildNetFieldsHash (vuint8 hash[K8VNET_DIGEST_SIZE]);
 
   // this sends new names
   void LiveUpdate ();

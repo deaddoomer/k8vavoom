@@ -487,9 +487,7 @@ bool VNetConnection::GetMessage (bool asHearbeat) {
   if (IsServer()) nonce |= 1u;
 
   // decrypt data
-  VNetUtils::ChaCha20Ctx cctx;
-  VNetUtils::ChaCha20Setup(&cctx, AuthKey, nonce);
-  VNetUtils::ChaCha20XCrypt(&cctx, msgdata+4, msgdata+4, (unsigned)(msgsize-4));
+  VNetUtils::ChaCha20XCrypt(AuthKey, nonce, msgdata+4, msgdata+4, (unsigned)(msgsize-4));
 
   // check crc32
   vuint32 crc32 =
@@ -1065,9 +1063,7 @@ void VNetConnection::Flush () {
       msgdata[7] = (crc32>>24)&0xffU;
 
       // encrypt data
-      VNetUtils::ChaCha20Ctx cctx;
-      VNetUtils::ChaCha20Setup(&cctx, AuthKey, nonce);
-      VNetUtils::ChaCha20XCrypt(&cctx, msgdata+4, msgdata+4, (unsigned)(msgsize-4));
+      VNetUtils::ChaCha20XCrypt(AuthKey, nonce, msgdata+4, msgdata+4, (unsigned)(msgsize-4));
 
       int res = NetCon->SendMessage(msgdata, (int)msgsize);
       if (res < 0) {

@@ -154,16 +154,8 @@ class VObject;
 # include "hash/SpookyV2.h"
 #endif
 
-#include "crypto/sha2.h"
-#include "crypto/hmac_sha2.h"
-#include "crypto/chacha20.h"
-#include "crypto/poly1305-donna.h"
-#include "crypto/ed25519.h"
-#include "crypto/curve25519-donna.h"
+#include "crypto/monocypher-ama.h"
 #include "crypto/ripemd160.h"
-#ifdef CORE_MORE_HASHES
-# include "crypto/jh32.h"
-#endif
 
 #include "lzmadec/LzmaDec.h"
 #include "miniz/miniz.h"
@@ -243,13 +235,6 @@ VVA_OKUNUSED VVA_FORCEINLINE uint32_t GetTypeHash (const VCustomKeyInfo_NamedVal
 #include "micropather.h"
 
 #include "cvarsys.h"
-
-#ifdef CORE_CHACHAPRNG_C
-# include "crypto/chachaprng_c.h"
-#endif
-#ifdef CORE_CHACHAPRNG_CPP
-# include "crypto/chachaprng_cpp.h"
-#endif
 
 
 #include "fsys/fsys.h"

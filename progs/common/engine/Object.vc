@@ -1168,6 +1168,7 @@ native static final float pcg3264NextFloat (ref PCG3264Ctx ctx);
 // [0..1] (WARNING! not really uniform!)
 native static final float pcg3264NextFloatFull (ref PCG3264Ctx ctx);
 
+/*
 // ////////////////////////////////////////////////////////////////////////// //
 struct ChaChaCtx {
   ubyte[105] state_;
@@ -1192,6 +1193,7 @@ native static final int chachaNextU31 (ref ChaChaCtx ctx);
 native static final float chachaNextFloat (ref ChaChaCtx ctx);
 // [0..1] (WARNING! not really uniform!)
 native static final float chachaNextFloatFull (ref ChaChaCtx ctx);
+*/
 
 
 // ////////////////////////////////////////////////////////////////////////// //
