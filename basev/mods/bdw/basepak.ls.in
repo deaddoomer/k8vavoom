@@ -1,4 +1,5 @@
-$comment "K8Vavoom: BDW mod"
+$author "K8Vavoom developers"
+$title "BDW weapons mod"
 $dest basepak.vwad
 
 $recursedir sprites/     @CMAKE_CURRENT_SOURCE_DIR@/sprites/

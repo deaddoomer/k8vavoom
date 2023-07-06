@@ -1,4 +1,5 @@
-$comment "K8Vavoom: Common (shared) data for all games"
+$author "K8Vavoom developers"
+$title "Common (shared) data for all games"
 $dest basepak.vwad
 
 // default config files

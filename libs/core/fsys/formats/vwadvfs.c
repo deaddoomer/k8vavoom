@@ -1509,6 +1509,8 @@ struct vwad_handle_t {
   uint32_t flags;
   ed25519_public_key pubkey;
   char *comment;       // can be NULL
+  char author[128];    // author string
+  char title[128];     // title string
   uint8_t *updir;      // unpacked directory
   ChunkInfo *chunks;   // points to the unpacked directory
   uint32_t xorRndSeed; // seed for block decryptor
@@ -1626,6 +1628,9 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   MainDirHeader dhdr;
   uint8_t *wadcomment = NULL;
   char sign[4];
+  char author[128];
+  char title[128];
+  uint8_t aslen, tslen;
 
   // file signature
   if (strm->read(strm, sign, 4) != 0) {
@@ -1636,32 +1641,108 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     logf(ERROR, "vwad_open_archive: invalid signature");
     return NULL;
   }
-
+  // digital signature
   if (strm->read(strm, &edsign, (uint32_t)sizeof(edsign)) != 0) {
     logf(ERROR, "vwad_open_archive: cannot read edsign");
     return NULL;
   }
-
+  // public key
   if (strm->read(strm, &pubkey, (uint32_t)sizeof(pubkey)) != 0) {
     logf(ERROR, "vwad_open_archive: cannot read pubkey");
     return NULL;
   }
 
+  // lengthes
+  if (strm->read(strm, &aslen, 1) != 0) {
+    logf(ERROR, "vwad_open_archive: cannot read author length");
+    return NULL;
+  }
+  if (strm->read(strm, &tslen, 1) != 0) {
+    logf(ERROR, "vwad_open_archive: cannot read title length");
+    return NULL;
+  }
+
+  // read author
+  if (strm->read(strm, sign, 2) != 0) {
+    logf(ERROR, "vwad_open_archive: cannot read author padding");
+    return NULL;
+  }
+  if (memcmp(sign, "\x0d\x0a", 2) != 0) {
+    logf(ERROR, "vwad_open_archive: invalid author padding");
+    return NULL;
+  }
+  if (aslen != 0 && strm->read(strm, author, (int)aslen) != 0) {
+    logf(ERROR, "vwad_open_archive: cannot read author");
+    return NULL;
+  }
+  if (aslen > 127) {
+    logf(ERROR, "vwad_open_archive: invalid author string length");
+    return NULL;
+  }
+  author[aslen] = 0;
+
+  // read title
+  if (strm->read(strm, sign, 2) != 0) {
+    logf(ERROR, "vwad_open_archive: cannot read title padding");
+    return NULL;
+  }
+  if (memcmp(sign, "\x0d\x0a", 2) != 0) {
+    logf(ERROR, "vwad_open_archive: invalid title padding");
+    return NULL;
+  }
+  if (tslen != 0 && strm->read(strm, title, (int)tslen) != 0) {
+    logf(ERROR, "vwad_open_archive: cannot read title");
+    return NULL;
+  }
+  if (tslen > 127) {
+    logf(ERROR, "vwad_open_archive: invalid title string length");
+    return NULL;
+  }
+  title[tslen] = 0;
+
+  // read final padding
+  if (strm->read(strm, sign, 4) != 0) {
+    logf(ERROR, "vwad_open_archive: cannot read title padding");
+    return NULL;
+  }
+  if (memcmp(sign, "\x0d\x0a\x1b\x00", 4) != 0) {
+    logf(ERROR, "vwad_open_archive: invalid final padding");
+    return NULL;
+  }
+
+  // read main header
   if (strm->read(strm, &mhdr, (uint32_t)sizeof(mhdr)) != 0) {
     logf(ERROR, "vwad_open_archive: cannot read main header");
     return NULL;
   }
 
-  // decrypt public key
-  crypt_buffer(deriveSeed(0xa29, edsign, (uint32_t)sizeof(ed25519_signature)),
-               0x29a, pubkey, (uint32_t)sizeof(ed25519_public_key));
+  //uint32_t chunkOfs = 4+32+64+(uint32_t)sizeof(mhdr);
+  uint32_t fcofs = 4 + (uint32_t)sizeof(edsign) + (uint32_t)sizeof(pubkey) +
+                   1+1+2 + aslen + 2 + tslen + 4 +
+                   (uint32_t)sizeof(mhdr);
 
-  // create initial seed from pubkey
-  uint32_t seed = deriveSeed(0, pubkey, sizeof(ed25519_public_key));
-  #if 1
-  logf(DEBUG, "pkseed: 0x%08x", seed);
+  uint32_t pkseed, seed;
+
+  // decrypt public key
+  #if 0
+  logf(DEBUG, "author: %s", author);
+  logf(DEBUG, "title: %s", title);
   #endif
-  const uint32_t pkseed = seed;
+  pkseed = deriveSeed(0xa29, edsign, (uint32_t)sizeof(ed25519_signature));
+  pkseed = deriveSeed(pkseed, (const uint8_t *)author, strlen(author));
+  pkseed = deriveSeed(pkseed, (const uint8_t *)title, strlen(title));
+  #if 0
+  logf(DEBUG, "kkseed: 0x%08x", pkseed);
+  #endif
+  crypt_buffer(pkseed, 0x29a, pubkey, (uint32_t)sizeof(ed25519_public_key));
+
+  // create initial seed from pubkey, author, and title
+  pkseed = deriveSeed(0x29c, pubkey, sizeof(ed25519_public_key));
+  pkseed = deriveSeed(pkseed, (const uint8_t *)author, strlen(author));
+  pkseed = deriveSeed(pkseed, (const uint8_t *)title, strlen(title));
+  #if 0
+  logf(DEBUG, "pkseed: 0x%08x", pkseed);
+  #endif
   crypt_buffer(pkseed, 1, &mhdr, (uint32_t)sizeof(mhdr));
   if (mhdr.version != 0) {
     logf(ERROR, "vwad_open_archive: invalid version");
@@ -1704,6 +1785,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   if (mhdr.u_cmt_size != 0) {
     if (mhdr.p_cmt_size == 0) {
       // not packed
+      fcofs += mhdr.u_cmt_size;
       wadcomment = zalloc(mman, mhdr.u_cmt_size + 1); // +1 for reusing
       if (wadcomment == NULL) {
         logf(DEBUG, "vwad_open_archive: cannot allocate buffer for comment");
@@ -1715,9 +1797,10 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
         goto error;
       }
       // update seed
-      seed = deriveSeed(seed, wadcomment, mhdr.u_cmt_size);
+      seed = deriveSeed(pkseed, wadcomment, mhdr.u_cmt_size);
     } else {
       // packed
+      fcofs += mhdr.p_cmt_size;
       wadcomment = zalloc(mman, mhdr.p_cmt_size);
       if (wadcomment == NULL) {
         logf(DEBUG, "vwad_open_archive: cannot allocate buffer for comment");
@@ -1729,16 +1812,15 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
         goto error;
       }
       // update seed
-      seed = deriveSeed(seed, wadcomment, mhdr.p_cmt_size);
+      seed = deriveSeed(pkseed, wadcomment, mhdr.p_cmt_size);
     }
   } else {
     // still seed
-    seed = deriveSeed(seed, wadcomment, 0);
+    seed = deriveSeed(pkseed, wadcomment, 0);
   }
-  #if 1
+  #if 0
   logf(DEBUG, "xnseed: 0x%08x", seed);
   #endif
-
 
   // determine file size
   if (strm->seek(strm, mhdr.dirofs) != 0) {
@@ -1889,6 +1971,9 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     wad->haspubkey = 0;
   }
 
+  strcpy(wad->author, author);
+  strcpy(wad->title, title);
+
   // setup and check chunks
   memcpy(&wad->chunkCount, wad->updir, 4);
   uint32_t upofs = 4;
@@ -2005,8 +2090,9 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     xfree(mman, wadcomment);
   }
 
-  uint32_t chunkOfs = 4+32+64+(uint32_t)sizeof(mhdr);
-  if (mhdr.p_cmt_size != 0) chunkOfs += mhdr.p_cmt_size; else chunkOfs += mhdr.u_cmt_size;
+  //uint32_t chunkOfs = 4+32+64+(uint32_t)sizeof(mhdr);
+  uint32_t chunkOfs = fcofs;
+  //if (mhdr.p_cmt_size != 0) chunkOfs += mhdr.p_cmt_size; else chunkOfs += mhdr.u_cmt_size;
   uint32_t currChunk = 0;
 
   for (uint32_t fidx = 1; fidx < wad->fileCount; ++fidx) {
@@ -2152,6 +2238,26 @@ void vwad_close_archive (vwad_handle **wadp) {
 //==========================================================================
 const char *vwad_get_archive_comment (vwad_handle *wad) {
   return (wad ? wad->comment : NULL);
+}
+
+
+//==========================================================================
+//
+//  vwad_get_archive_author
+//
+//==========================================================================
+const char *vwad_get_archive_author (vwad_handle *wad) {
+  return (wad ? wad->author : "");
+}
+
+
+//==========================================================================
+//
+//  vwad_get_archive_title
+//
+//==========================================================================
+const char *vwad_get_archive_title (vwad_handle *wad) {
+  return (wad ? wad->title : "");
 }
 
 
@@ -2651,7 +2757,7 @@ vwad_result vwad_wildmatch (const char *pat, size_t plen, const char *str, size_
         case '\\':
           if (patpos == plen) error = 1; // malformed pattern
           else {
-            c0 = pat[patpos]; GM_UPCASE(c0);
+            c0 = pat[patpos++]; GM_UPCASE(c0);
             dostar = (sch != c0);
           }
           break;

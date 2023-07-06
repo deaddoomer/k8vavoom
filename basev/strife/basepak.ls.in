@@ -1,4 +1,5 @@
-$comment "K8Vavoom: Strife support"
+$author "K8Vavoom developers"
+$title "Strife support"
 $dest basepak.vwad
 
 // automap background

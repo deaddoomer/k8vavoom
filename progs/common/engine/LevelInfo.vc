@@ -32,7 +32,8 @@
 //
 class LevelInfo : Thinker native abstract;
 
-const int TID_HASH_SIZE = 1021;
+//const int TID_HASH_SIZE = 1021;
+const int TID_HASH_SIZE = 1024;
 
 /* in Object
 struct VMapSpecialAction {

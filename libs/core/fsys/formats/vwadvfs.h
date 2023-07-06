@@ -112,6 +112,10 @@ void vwad_close_archive (vwad_handle **wadp);
 
 // can return NULL if there is no comment, or `VWAD_OPEN_NO_MAIN_COMMENT` passed
 const char *vwad_get_archive_comment (vwad_handle *wad);
+// never returns NULL
+const char *vwad_get_archive_author (vwad_handle *wad);
+// never returns NULL
+const char *vwad_get_archive_title (vwad_handle *wad);
 
 // forget main archive comment and free its memory.
 // WARNING! `vwad_get_archive_comment()` result will be undefined!

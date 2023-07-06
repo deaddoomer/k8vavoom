@@ -1,4 +1,5 @@
-$comment "K8Vavoom: Doom support"
+$author "K8Vavoom developers"
+$title "Doom support"
 $dest basepak.vwad
 
 // additional gfx

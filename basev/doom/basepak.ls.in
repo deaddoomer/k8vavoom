@@ -1,4 +1,5 @@
-$comment "K8Vavoom: Common Doom & Doom II support"
+$author "K8Vavoom developers"
+$title "Common Doom & Doom II support"
 $dest basepak.vwad
 
 // sounds

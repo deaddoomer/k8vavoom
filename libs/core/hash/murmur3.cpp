@@ -58,6 +58,7 @@ static VVA_FORCEINLINE VVA_CONST uint32_t fmix32 (uint32_t h) noexcept {
 #define c1_32  0xcc9e2d51U
 #define c2_32  0x1b873593U
 
+
 //==========================================================================
 //
 //  murmurHash3Buf
@@ -89,6 +90,46 @@ uint32_t murmurHash3Buf (const VVA_MAYALIAS void *key, size_t len, uint32_t seed
     case 3: k1 ^= tail[2]<<16; /* fallthrough */
     case 2: k1 ^= tail[1]<<8; /* fallthrough */
     case 1: k1 ^= tail[0]; k1 *= c1_32; k1 = rotl32(k1,15); k1 *= c2_32; h1 ^= k1; /* fallthrough */
+  }
+
+  // finalization
+  h1 ^= len;
+  return fmix32(h1);
+}
+
+
+//==========================================================================
+//
+//  murmurHash3BufCI
+//
+//==========================================================================
+uint32_t murmurHash3BufCI (const VVA_MAYALIAS void *key, size_t len, uint32_t seed) noexcept {
+  const VVA_MAYALIAS uint8_t *data = (const VVA_MAYALIAS uint8_t *)key;
+  const size_t nblocks = len/4U;
+
+  uint32_t h1 = seed;
+
+  // body
+  const VVA_MAYALIAS uint32_t *blocks = (const VVA_MAYALIAS uint32_t *)data;
+  size_t i = nblocks;
+  while (i--) {
+    uint32_t k1 = *blocks++; //getblock32(blocks,i);
+    k1 |= 0x20202020u; // ignore case
+    k1 *= c1_32;
+    k1 = rotl32(k1,15);
+    k1 *= c2_32;
+    h1 ^= k1;
+    h1 = rotl32(h1,13);
+    h1 = h1*5U+0xe6546b64U;
+  }
+
+  // tail
+  const VVA_MAYALIAS uint8_t *tail = (const VVA_MAYALIAS uint8_t *)(data+nblocks*4U);
+  uint32_t k1 = 0u;
+  switch (len&3U) {
+    case 3: k1 ^= (tail[2]|0x20u)<<16; /* fallthrough */
+    case 2: k1 ^= (tail[1]|0x20u)<<8; /* fallthrough */
+    case 1: k1 ^= (tail[0]|0x20u); k1 *= c1_32; k1 = rotl32(k1,15); k1 *= c2_32; h1 ^= k1; /* fallthrough */
   }
 
   // finalization

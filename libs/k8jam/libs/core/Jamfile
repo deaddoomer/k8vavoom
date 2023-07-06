@@ -39,6 +39,7 @@ Library libcore.a :
 
   src/textparser.cpp
 
+  src/hash/lookup2.cpp
   src/hash/lookup3.cpp
   src/hash/murmur3.cpp
   src/hash/halfsiphash.cpp

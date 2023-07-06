@@ -125,6 +125,8 @@ static bool rgb_table_created = false;
 static char lumpname[256];
 static char destfile[4096];
 static char *destcomment = NULL;
+static char *destauthor = NULL;
+static char *desttitle = NULL;
 
 static bool Fon2ColorsUsed[256] = {0};
 
@@ -1114,6 +1116,8 @@ static void SortFileList (TArray<DiskFile> &flist) {
 //==========================================================================
 static void ParseScript (const char *name) {
   if (destcomment) { free(destcomment); destcomment = NULL; }
+  if (destauthor) { free(destauthor); destauthor = NULL; }
+  if (desttitle) { free(desttitle); desttitle = NULL; }
 
   ExtractFilePath(name, basepath, sizeof(basepath));
   if (strlen(basepath)+1 > sizeof(srcpath)) Error("Path too long");
@@ -1164,8 +1168,31 @@ static void ParseScript (const char *name) {
       SC_MustGetString();
       const size_t crd = strlen(sc_String);
       if (crd > 32767) Error("comment too big");
+      if (destcomment) free(destcomment);
       destcomment = (char *)calloc(1, crd + 1);
       strcpy(destcomment, sc_String);
+      continue;
+    }
+
+    if (SC_Compare("$author")) {
+      if (OutputOpened) SC_ScriptError("Output should not be opened");
+      SC_MustGetString();
+      const size_t crd = strlen(sc_String);
+      if (crd > 127) Error("author too big");
+      if (destauthor) free(destauthor);
+      destauthor = (char *)calloc(1, crd + 1);
+      strcpy(destauthor, sc_String);
+      continue;
+    }
+
+    if (SC_Compare("$title")) {
+      if (OutputOpened) SC_ScriptError("Output should not be opened");
+      SC_MustGetString();
+      const size_t crd = strlen(sc_String);
+      if (crd > 127) Error("title too big");
+      if (desttitle) free(desttitle);
+      desttitle = (char *)calloc(1, crd + 1);
+      strcpy(desttitle, sc_String);
       continue;
     }
 
@@ -1224,12 +1251,15 @@ static void ParseScript (const char *name) {
           if (!wad_outstrm) Error("cannot init VWAD");
 
           if (!has_privkey) {
-            prng_randombytes(privkey, sizeof(vwadwr_secret_key));
+            do {
+              prng_randombytes(privkey, sizeof(vwadwr_secret_key));
+            } while (!vwadwr_is_good_privkey(privkey));
           }
-          wad_dir = vwadwr_new_dir(NULL, wad_outstrm, destcomment,
+          int werr;
+          wad_dir = vwadwr_new_dir(NULL, wad_outstrm, destauthor, desttitle, destcomment,
                                    (has_privkey ? VWADWR_NEW_DEFAULT : VWADWR_NEW_DONT_SIGN),
-                                   privkey, NULL);
-          if (!wad_dir) Error("cannot init VWAD");
+                                   privkey, NULL, &werr);
+          if (!wad_dir) Error("cannot init VWAD (%d)", werr);
         } else
         #endif
         {
@@ -1430,14 +1460,27 @@ static void showHelp () {
 
 
 #if VAVOOM_VLUMPY_VWAD == 1
+//# define ALL_LOGS
 static void logger (int type, const char *fmt, ...) {
   fflush(stdout); fflush(stderr);
   FILE *fo = stdout;
   switch (type) {
-    case VWADWR_LOG_NOTE: /*fprintf(fo, "NOTE: ");*/ return; break;
+    case VWADWR_LOG_NOTE:
+      #ifdef ALL_LOGS
+      fprintf(fo, "NOTE: ");
+      break;
+      #else
+      return;
+      #endif
     case VWADWR_LOG_WARNING: fprintf(fo, "WARNING: "); break;
     case VWADWR_LOG_ERROR: fprintf(fo, "ERROR: "); break;
-    case VWADWR_LOG_DEBUG: /*fo = stderr; fprintf(fo, "DEBUG: ");*/ return; break;
+    case VWADWR_LOG_DEBUG:
+      #ifdef ALL_LOGS
+      fo = stderr; fprintf(fo, "DEBUG: ");
+      break;
+      #else
+      return;
+      #endif
     default: fprintf(fo, "WUTAFUCK: "); break;
   }
   va_list ap;
@@ -1510,6 +1553,34 @@ int main (int argc, char *argv[]) {
           }
           fclose(fl);
           has_privkey = 1;
+          #endif
+          continue;
+        }
+        if (strcmp(argv[i], "--key") == 0) {
+          ++i;
+          if (i >= argc) {
+            Error("\"--key\" expects a key");
+          }
+          #if VAVOOM_VLUMPY_VWAD == 1
+          if (vwadwr_z85_decode_key(argv[i], privkey) != 0) {
+            Error("cannot decode private key");
+          }
+          has_privkey = 1;
+          #endif
+          continue;
+        }
+        if (strcmp(argv[i], "--newkey") == 0) {
+          #if VAVOOM_VLUMPY_VWAD == 1
+          do {
+            prng_randombytes(privkey, sizeof(privkey));
+          } while (!vwadwr_is_good_privkey(privkey));
+          has_privkey = 1;
+          #endif
+          continue;
+        }
+        if (strcmp(argv[i], "--nokey") == 0) {
+          #if VAVOOM_VLUMPY_VWAD == 1
+          has_privkey = 0;
           #endif
           continue;
         }

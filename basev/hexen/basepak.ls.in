@@ -1,4 +1,5 @@
-$comment "K8Vavoom: Hexen support"
+$author "K8Vavoom developers"
+$title "Hexen support"
 $dest basepak.vwad
 
 // crosshairs

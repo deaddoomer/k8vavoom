@@ -1,4 +1,5 @@
-$comment "K8Vavoom: Chex Quest support"
+$author "K8Vavoom developers"
+$title "Chex Quest support"
 $dest basepak.vwad
 
 mapinfo.txt  @CMAKE_CURRENT_SOURCE_DIR@/mapinfo.txt

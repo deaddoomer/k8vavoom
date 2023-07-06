@@ -606,7 +606,9 @@ public:
   };
 
 private:
-  enum { HASH_SIZE = 4093 };
+  //enum { HASH_SIZE = 4093 };
+  //enum { HASH_SIZE = 4096 };
+  enum { HASH_SIZE = 2048 };
   enum { FirstMapTextureIndex = 1000000 };
 
   TArray<VTexture *> Textures;

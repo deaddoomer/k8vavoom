@@ -1,4 +1,5 @@
-$comment "K8Vavoom: Heretic support"
+$author "K8Vavoom developers"
+$title "Heretic support"
 $dest basepak.vwad
 
 // crosshairs

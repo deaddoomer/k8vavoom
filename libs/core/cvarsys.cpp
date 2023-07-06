@@ -40,7 +40,9 @@ static bool hostInitComplete = false;
 
 
 //#define CVAR_HASH_SIZE  (509)
-#define CVAR_HASH_SIZE  (1021)
+//#define CVAR_HASH_SIZE  (1021)
+#define CVAR_HASH_SIZE  (1024)
+//#define CVAR_HASH_SIZE  (2048)
 static VCvar *cvhBuckets[CVAR_HASH_SIZE] = {nullptr};
 
 /*#define CHH(v_)  (foldHash32to8(v_)&(CVAR_HASH_SIZE-1))*/
@@ -52,7 +54,12 @@ static inline vuint32 cvnamehash (const char *buf) {
   if (!buf || !buf[0]) return 1;
 #ifdef USE_SIMPLE_HASHFN
   //return djbHashBufCI(buf, strlen(buf));
-  return fnvHashBufCI(buf, strlen(buf));
+  //return fnvHashBufCI(buf, strlen(buf));
+  //return joaatHashBufCI(buf, strlen(buf));
+  //return bjLookup2BufCI(buf, strlen(buf));
+  //return bjHashBufCI(buf, strlen(buf));
+  // murmur seems to be better
+  return murmurHash3BufCI(buf, strlen(buf));
 #else
   return vvHashBufCI(buf, strlen(buf));
 #endif
@@ -703,7 +710,8 @@ void VCvar::DumpHashStats () {
       if (chlen > maxchain) maxchain = chlen;
       vcount += chlen;
     }
-    GLog.Logf("CVAR statistics: %u cvars, %u buckets used, %u items in longest chain, %u items average", vcount, bkused, maxchain, (bkused ? vcount/bkused+(vcount%bkused >= bkused/2) : 0));
+    GLog.Logf("CVAR statistics: %u cvars, %u of %u buckets used, %u items in longest chain, %u items average",
+              vcount, bkused, CVAR_HASH_SIZE, maxchain, (bkused ? vcount/bkused+(vcount%bkused >= bkused/2) : 0));
   }
 }
 

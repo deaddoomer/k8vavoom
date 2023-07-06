@@ -318,14 +318,18 @@ void VTextureManager::Shutdown () {
 void VTextureManager::DumpHashStats (EName logName) {
   int maxBucketLen = 0;
   int usedBuckets = 0;
+  int vcount = 0;
   for (unsigned bidx = 0; bidx < HASH_SIZE; ++bidx) {
     if (TextureHash[bidx] < 0) continue;
     ++usedBuckets;
     int blen = 0;
     for (int i = TextureHash[bidx]; i >= 0; i = getTxByIndex(i)->HashNext) ++blen;
+    vcount += blen;
     if (maxBucketLen < blen) maxBucketLen = blen;
   }
-  GCon->Logf(logName, "TextureManager: maximum %d textures in bucket, used %d out of %d buckets", maxBucketLen, usedBuckets, HASH_SIZE-1);
+  GCon->Logf(logName, "TextureManager: maximum %d textures in bucket, used %d out of %d buckets, %u items average",
+             maxBucketLen, usedBuckets, HASH_SIZE-1,
+             (usedBuckets ? vcount/usedBuckets+(vcount%usedBuckets >= usedBuckets/2) : 0));
 }
 
 

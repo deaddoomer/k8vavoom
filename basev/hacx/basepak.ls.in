@@ -1,4 +1,5 @@
-$comment "K8Vavoom: HacX support"
+$author "K8Vavoom developers"
+$title "HacX support"
 $dest basepak.vwad
 
 after_iwad/decorate.txt  @CMAKE_CURRENT_SOURCE_DIR@/after_iwad/decorate.txt

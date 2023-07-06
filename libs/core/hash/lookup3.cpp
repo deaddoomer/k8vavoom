@@ -410,6 +410,172 @@ uint32_t bjHashBuf (const __attribute__((__may_alias__)) void *key, size_t lengt
 }
 
 
+/* the same as bjHashBufCI, but can be used for case-insensitive search */
+uint32_t bjHashBufCI (const __attribute__((__may_alias__)) void *key, size_t length, uint32_t initval) noexcept {
+  #define KK(n_)  (k[n_]|0x20202020u)
+  #define K8(n_)  (k8[n_]|0x20u)
+  #define K6(n_)  (k6[n_]|0x2020u)
+
+  uint32_t a, b, c; // internal state
+
+  // set up the internal state
+  a = b = c = 0xdeadbeefU+((uint32_t)length)+initval;
+
+  if ((((uintptr_t)key)&0x03u) == 0) {
+    // aligned by 4 bytes; process by 32-bit chunks
+    const __attribute__((__may_alias__)) uint32_t *k = (const __attribute__((__may_alias__)) uint32_t *)key;
+
+    // all but last block: aligned reads and affect 32 bits of (a,b,c)
+    while (length > 12) {
+      a += KK(0);
+      b += KK(1);
+      c += KK(2);
+      mix(a, b, c);
+      length -= 12;
+      k += 3;
+    }
+
+    // handle the last (probably partial) block
+    /*
+     * "k[2]&0xffffff" actually reads beyond the end of the string, but
+     * then masks off the part it's not allowed to read.  Because the
+     * string is aligned, the masked-off tail is in the same word as the
+     * rest of the string.  Every machine with memory protection I've seen
+     * does it on word boundaries, so is OK with this.  But VALGRIND will
+     * still catch it and complain.  The masking trick does make the hash
+     * noticably faster for short strings (like English words).
+     */
+#ifndef VALGRIND
+    switch (length) {
+      case 12: c += KK(2); b += KK(1); a += KK(0); break;
+      case 11: c += KK(2)&0xffffffU; b += KK(1); a += KK(0); break;
+      case 10: c += KK(2)&0xffffU; b += KK(1); a += KK(0); break;
+      case 9: c += KK(2)&0xffU; b += KK(1); a += KK(0); break;
+      case 8: b += KK(1); a += KK(0); break;
+      case 7: b += KK(1)&0xffffffU; a += KK(0); break;
+      case 6: b += KK(1)&0xffffU; a += KK(0); break;
+      case 5: b += KK(1)&0xffU; a += KK(0); break;
+      case 4: a += KK(0); break;
+      case 3: a += KK(0)&0xffffffU; break;
+      case 2: a += KK(0)&0xffffU; break;
+      case 1: a += KK(0)&0xffU; break;
+      case 0: return c; // zero length strings require no mixing
+    }
+#else /* make valgrind happy */
+    const __attribute__((__may_alias__)) uint8_t *k8 = (const __attribute__((__may_alias__)) uint8_t *)k;
+    switch (length) {
+      case 12: c += KK(2); b += KK(1); a += KK(0); break;
+      case 11: c += ((uint32_t)K8(10))<<16; /* fall through */
+      case 10: c += ((uint32_t)K8(9))<<8; /* fall through */
+      case 9: c += K8(8); /* fall through */
+      case 8: b += KK(1); a += KK(0); break;
+      case 7: b += ((uint32_t)K8(6))<<16; /* fall through */
+      case 6: b += ((uint32_t)K8(5))<<8; /* fall through */
+      case 5: b += K8(4); /* fall through */
+      case 4: a += KK(0); break;
+      case 3: a += ((uint32_t)K8(2))<<16; /* fall through */
+      case 2: a += ((uint32_t)K8(1))<<8; /* fall through */
+      case 1: a += K8(0); break;
+      case 0: return c;
+    }
+#endif /* !valgrind */
+  } else if ((((uintptr_t)key)&0x01u) == 0) {
+    // aligned by 2 bytes; process by 16-bit chunks
+    const __attribute__((__may_alias__)) uint16_t *k6 = (const __attribute__((__may_alias__)) uint16_t *)key; /* read 16-bit chunks */
+
+    // all but last block: aligned reads and different mixing
+    while (length > 12) {
+      a += K6(0)+(((uint32_t)K6(1))<<16);
+      b += K6(2)+(((uint32_t)K6(3))<<16);
+      c += K6(4)+(((uint32_t)K6(5))<<16);
+      mix(a, b, c);
+      length -= 12;
+      k6 += 6;
+    }
+
+    // handle the last (probably partial) block
+    const __attribute__((__may_alias__)) uint8_t *k8 = (const __attribute__((__may_alias__)) uint8_t *)k6;
+    switch (length) {
+      case 12:
+        c += K6(4)+(((uint32_t)K6(5))<<16);
+        b += K6(2)+(((uint32_t)K6(3))<<16);
+        a += K6(0)+(((uint32_t)K6(1))<<16);
+        break;
+      case 11: c += ((uint32_t)K8(10))<<16; /* fall through */
+      case 10:
+        c += K6(4);
+        b += K6(2)+(((uint32_t)K6(3))<<16);
+        a += K6(0)+(((uint32_t)K6(1))<<16);
+        break;
+      case 9: c += K8(8); /* fall through */
+      case 8:
+        b += K6(2)+(((uint32_t)K6(3))<<16);
+        a += K6(0)+(((uint32_t)K6(1))<<16);
+        break;
+      case 7: b += ((uint32_t)K8(6))<<16; /* fall through */
+      case 6:
+        b += K6(2);
+        a += K6(0)+(((uint32_t)K6(1))<<16);
+        break;
+      case 5: b += K8(4); /* fall through */
+      case 4:
+        a += K6(0)+(((uint32_t)K6(1))<<16);
+        break;
+      case 3: a += ((uint32_t)K8(2))<<16; /* fall through */
+      case 2: a += K6(0); break;
+      case 1: a += K8(0); break;
+      case 0: return c; /* zero length requires no mixing */
+    }
+  } else {
+    // need to read the key one byte at a time
+    const __attribute__((__may_alias__)) uint8_t *k8 = (const __attribute__((__may_alias__)) uint8_t *)key;
+
+    // all but the last block: affect some 32 bits of (a,b,c)
+    while (length > 12) {
+      a += K8(0);
+      a += ((uint32_t)K8(1))<<8;
+      a += ((uint32_t)K8(2))<<16;
+      a += ((uint32_t)K8(3))<<24;
+      b += K8(4);
+      b += ((uint32_t)K8(5))<<8;
+      b += ((uint32_t)K8(6))<<16;
+      b += ((uint32_t)K8(7))<<24;
+      c += K8(8);
+      c += ((uint32_t)K8(9))<<8;
+      c += ((uint32_t)K8(10))<<16;
+      c += ((uint32_t)K8(11))<<24;
+      mix(a, b, c);
+      length -= 12;
+      k8 += 12;
+    }
+
+    // last block: affect all 32 bits of (c)
+    switch (length) {
+      case 12: c += ((uint32_t)K8(11))<<24; /* fall through */
+      case 11: c += ((uint32_t)K8(10))<<16; /* fall through */
+      case 10: c += ((uint32_t)K8(9))<<8; /* fall through */
+      case 9: c += K8(8); /* fall through */
+      case 8: b += ((uint32_t)K8(7))<<24; /* fall through */
+      case 7: b += ((uint32_t)K8(6))<<16; /* fall through */
+      case 6: b += ((uint32_t)K8(5))<<8; /* fall through */
+      case 5: b += K8(4); /* fall through */
+      case 4: a += ((uint32_t)K8(3))<<24; /* fall through */
+      case 3: a += ((uint32_t)K8(2))<<16; /* fall through */
+      case 2: a += ((uint32_t)K8(1))<<8; /* fall through */
+      case 1: a += K8(0); break;
+      case 0: return c;
+    }
+  }
+
+  final(a, b, c);
+  return c;
+
+  #undef KK
+  #undef K8
+  #undef K6
+}
+
+
 /*
  * hashlittle2: return 2 32-bit hash values
  *

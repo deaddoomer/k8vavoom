@@ -92,6 +92,7 @@ add_library(core STATIC
 
 
   hash/hashfunc.h
+  hash/lookup2.cpp
   hash/lookup3.cpp
   hash/halfsiphash.cpp
   hash/murmur3.cpp

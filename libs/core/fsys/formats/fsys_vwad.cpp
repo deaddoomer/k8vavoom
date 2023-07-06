@@ -150,7 +150,7 @@ void VVWadFile::OpenArchive (VStream *fstream) {
   iostrm->udata = (void *)fstream;
   vw_strm = iostrm;
 
-  vwad_handle *wad = vwad_open_archive(iostrm, VWAD_OPEN_DEFAULT, &memman);
+  vwad_handle *wad = vwad_open_archive(iostrm, VWAD_OPEN_DEFAULT|VWAD_OPEN_NO_MAIN_COMMENT, &memman);
   if (!wad) {
     Sys_Error("cannot load vwad file \"%s\"", *PakFileName);
   }
@@ -160,11 +160,20 @@ void VVWadFile::OpenArchive (VStream *fstream) {
     vwad_public_key pubkey;
     if (vwad_get_pubkey(wad, pubkey) == 0) {
       if (memcmp(pubkey, k8PubKey, sizeof(pubkey)) == 0) {
-        GLog.Logf(NAME_Init, "CREATOR: Ketmar Dark");
+        GLog.Logf(NAME_Init, "SIGNED BY: Ketmar Dark");
+      } else {
+        GLog.Logf(NAME_Init, "SIGNED ARCHIVE");
       }
     }
   }
 
+  const char *author = vwad_get_archive_author(wad);
+  if (author[0]) GLog.Logf(NAME_Init, "AUTHOR(S): %s", author);
+
+  const char *title = vwad_get_archive_title(wad);
+  if (title[0]) GLog.Logf(NAME_Init, "TITLE: %s", title);
+
+  /*
   const char *comment = vwad_get_archive_comment(wad);
   if (comment) {
     char cmt[64];
@@ -179,6 +188,7 @@ void VVWadFile::OpenArchive (VStream *fstream) {
     }
   }
   vwad_free_archive_comment(wad);
+  */
 
   type = PAK;
 

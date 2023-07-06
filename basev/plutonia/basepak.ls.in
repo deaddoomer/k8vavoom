@@ -1,4 +1,5 @@
-$comment "K8Vavoom: Final Doom: Plutonia support"
+$author "K8Vavoom developers"
+$title "Final Doom: Plutonia support"
 $dest basepak.vwad
 
 mapinfo.txt  @CMAKE_CURRENT_SOURCE_DIR@/mapinfo.txt

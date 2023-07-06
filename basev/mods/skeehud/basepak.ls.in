@@ -1,4 +1,5 @@
-$comment "K8Vavoom: fixed HUD for Skulldash: Expanded Editon"
+$author "K8Vavoom developers"
+$title "Fixed HUD for Skulldash: Expanded Editon"
 $dest basepak.vwad
 
 $recursedir progs/    @CMAKE_CURRENT_SOURCE_DIR@/progs/

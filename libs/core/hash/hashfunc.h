@@ -57,6 +57,7 @@ static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline char locase1251 (const char
 }
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 // if `x` is already POT, returns `x`
 static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline uint32_t nextPOTU32 (const uint32_t x) noexcept {
   uint32_t res = x;
@@ -71,7 +72,21 @@ static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline uint32_t nextPOTU32 (const 
 }
 
 
-static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline uint32_t hashU32 (uint32_t a) noexcept {
+// ////////////////////////////////////////////////////////////////////////// //
+// 16-bit integer hashes
+// https://github.com/skeeto/hash-prospector
+// bias = 0.023840118344741465
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT uint16_t hashU16 (uint16_t x) noexcept {
+  x += x<<7; x ^= x>>8;
+  x += x<<3; x ^= x>>2;
+  x += x<<4; x ^= x>>8;
+  return x;
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// 32-bit integer hashes
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline uint32_t hashU32bj (uint32_t a) noexcept {
   a -= (a<<6);
   a ^= (a>>17);
   a -= (a<<9);
@@ -80,15 +95,6 @@ static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline uint32_t hashU32 (uint32_t 
   a ^= (a<<10);
   a ^= (a>>15);
   return a;
-}
-
-// https://github.com/skeeto/hash-prospector
-// bias = 0.023840118344741465
-static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT uint16_t hashU16 (uint16_t x) noexcept {
-  x += x<<7; x ^= x>>8;
-  x += x<<3; x ^= x>>2;
-  x += x<<4; x ^= x>>8;
-  return x;
 }
 
 // https://github.com/skeeto/hash-prospector
@@ -114,6 +120,51 @@ static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline uint32_t permuteU32Inv (uin
 }
 
 
+// // [16 21f0aaad 15 d35a2d97 15] = 0.10760229515479501
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline uint32_t hash32UPro107 (uint32_t x) noexcept {
+  x ^= x >> 16;
+  x *= 0x21f0aaadU;
+  x ^= x >> 15;
+  x *= 0xd35a2d97U;
+  x ^= x >> 15;
+  return x;
+}
+
+
+// exact bias: 0.020888578919738908
+//It's statistically indistinguishable from a random permutation of all 32-bit integers.
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline uint32_t hash32UPro3 (uint32_t x) noexcept {
+  x ^= x >> 17;
+  x *= 0xed5ad4bbU;
+  x ^= x >> 11;
+  x *= 0xac4c1b51U;
+  x ^= x >> 15;
+  x *= 0x31848babU;
+  x ^= x >> 14;
+  return x;
+}
+
+
+static VVA_OKUNUSED VVA_CONST VVA_CHECKRESULT inline uint32_t hash32Ubj3 (uint32_t x) noexcept {
+  #define BJX_ROT(x,k) (((x)<<(k))|((x)>>(32-(k))))
+  uint32_t a, b, c;
+  a = b = c = 0xdeadbeefU+(((uint32_t)1u/*count*/)<<2)+/*initval*/0x29aU;
+  a += x;
+  // final(a, b, c)
+  c ^= b; c -= BJX_ROT(b,14);
+  a ^= c; a -= BJX_ROT(c,11);
+  b ^= a; b -= BJX_ROT(a,25);
+  c ^= b; c -= BJX_ROT(b,16);
+  a ^= c; a -= BJX_ROT(c, 4);
+  b ^= a; b -= BJX_ROT(a,14);
+  c ^= b; c -= BJX_ROT(b,24);
+  //
+  return c;
+  #undef BJX_ROT
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 // fnv-1a: http://www.isthe.com/chongo/tech/comp/fnv/
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashBufCI (const VVA_MAYALIAS void *buf, size_t len) noexcept {
   uint32_t hash = 2166136261U; // fnv offset basis
@@ -194,6 +245,7 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t fnvHashStrCI (const
 }
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 // djb
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t djbHashBufCI (const VVA_MAYALIAS void *buf, size_t len) noexcept {
   uint32_t hash = 5381;
@@ -213,6 +265,8 @@ static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t djbHashBuf (const V
 }
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+// joaat
 static VVA_OKUNUSED VVA_PURE VVA_CHECKRESULT inline uint32_t joaatHashBuf (const VVA_MAYALIAS void *buf, size_t len, uint32_t seed=0u) noexcept {
   uint32_t hash = seed;
   const VVA_MAYALIAS uint8_t *s = (const uint8_t *)buf;
@@ -272,7 +326,7 @@ static VVA_FORCEINLINE VVA_PURE uint32_t joaatHashFinalize (uint32_t hash) {
 VVA_CHECKRESULT uint32_t bjHashU32v (
   const VVA_MAYALIAS uint32_t *k, /* the key, an array of uint32_t values */
   size_t count, /* the length of the key, in uint32_ts */
-  uint32_t initval=0u) noexcept; /* the previous hash, or an arbitrary value */
+  uint32_t initval=0x29aU) noexcept; /* the previous hash, or an arbitrary value */
 
 // hash `count` 32-bit integers into 2 32-bit values
 void bjHashU32v64P (
@@ -281,7 +335,18 @@ void bjHashU32v64P (
   uint32_t *pc, /* IN: seed OUT: primary hash value */
   uint32_t *pb) noexcept; /* IN: more seed OUT: secondary hash value */
 
-VVA_CHECKRESULT uint32_t bjHashBuf (const VVA_MAYALIAS void *key, size_t length, uint32_t initval=0u) noexcept;
+VVA_CHECKRESULT uint32_t bjHashBuf (const VVA_MAYALIAS void *key, size_t length, uint32_t initval=0x29aU) noexcept;
+VVA_CHECKRESULT uint32_t bjHashBufCI (const __attribute__((__may_alias__)) void *key, size_t length, uint32_t initval=0x29aU) noexcept;
+
+static VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT
+uint32_t bjHashStr (const VVA_MAYALIAS void *str) noexcept {
+  return (str ? bjHashBuf(str, strlen((const char *)str)) : 0u);
+}
+
+static VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT
+uint32_t bjHashStrCI (const VVA_MAYALIAS void *str) noexcept {
+  return (str ? bjHashBufCI(str, strlen((const char *)str)) : 0u);
+}
 
 void bjHashBuf64P (
   const VVA_MAYALIAS void *key, /* the key to hash */
@@ -289,19 +354,16 @@ void bjHashBuf64P (
   uint32_t *pc, /* IN: primary initval, OUT: primary hash */
   uint32_t *pb) noexcept; /* IN: secondary initval, OUT: secondary hash */
 
-VVA_CHECKRESULT uint64_t bjHashBuf64 (const VVA_MAYALIAS void *key, size_t length, uint64_t initval=0u) noexcept;
-VVA_CHECKRESULT uint64_t bjHashU32v64 (const VVA_MAYALIAS uint32_t *k, size_t count, uint64_t initval=0u) noexcept;
+VVA_CHECKRESULT uint64_t bjHashBuf64 (const VVA_MAYALIAS void *key, size_t length, uint64_t initval=0x29aU) noexcept;
+VVA_CHECKRESULT uint64_t bjHashU32v64 (const VVA_MAYALIAS uint32_t *k, size_t count, uint64_t initval=0x29aU) noexcept;
 
 // hash one 32-bit value
-VVA_CHECKRESULT uint32_t bjHashU32 (uint32_t k, uint32_t initval=0u) noexcept;
+VVA_CHECKRESULT uint32_t bjHashU32 (uint32_t k, uint32_t initval=0x29aU) noexcept;
 // hash one 32-bit value into two 32-bit values
 void bjHashU3264P (const uint32_t k, uint32_t *pc, uint32_t *pb) noexcept;
 
 // hash one 32-bit value into two 32-bit values
-VVA_CHECKRESULT uint64_t bjHashU3264 (const uint32_t k, uint64_t initval=0u) noexcept;
-
-
-static VVA_FORCEINLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t bjHashStr (const VVA_MAYALIAS void *str) noexcept { return (str ? bjHashBuf(str, strlen((const char *)str)) : 0u); }
+VVA_CHECKRESULT uint64_t bjHashU3264 (const uint32_t k, uint64_t initval=0x29aU) noexcept;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -315,7 +377,19 @@ static VVA_FORCEINLINE VVA_OKUNUSED VVA_CHECKRESULT uint32_t halfsip24HashStrCI 
 
 // ////////////////////////////////////////////////////////////////////////// //
 // murmur3
-VVA_CHECKRESULT uint32_t murmurHash3Buf (const VVA_MAYALIAS void *key, size_t len, uint32_t seed) noexcept;
+VVA_CHECKRESULT uint32_t murmurHash3Buf (const VVA_MAYALIAS void *key, size_t len, uint32_t seed=0x29aU) noexcept;
+VVA_CHECKRESULT uint32_t murmurHash3BufCI (const VVA_MAYALIAS void *key, size_t len, uint32_t seed=0x29aU) noexcept;
+
+static VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT
+uint32_t murmurHash3Str (const VVA_MAYALIAS void *str) noexcept {
+  return (str ? murmurHash3Buf(str, strlen((const char *)str)) : 0u);
+}
+
+static VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT
+uint32_t murmurHash3StrCI (const VVA_MAYALIAS void *str) noexcept {
+  return (str ? murmurHash3BufCI(str, strlen((const char *)str)) : 0u);
+}
+
 
 #define MURMUR3_128_HASH_SIZE  16
 
@@ -338,12 +412,42 @@ uint32_t murmurHash3Final (const Murmur3Ctx *ctx) noexcept;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+// bj's lookup2
+uint32_t bjLookup2Buf (const void *data, size_t length, uint32_t initval=0x29aU);
+uint32_t bjLookup2BufCI (const void *data, size_t length, uint32_t initval=0x29aU);
+
+
+static VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT
+uint32_t bjLookup2HashStr (const VVA_MAYALIAS void *str) noexcept {
+  return (str ? bjLookup2Buf(str, strlen((const char *)str)) : 0u);
+}
+
+static VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT
+uint32_t bjLookup2HashStrCI (const VVA_MAYALIAS void *str) noexcept {
+  return (str ? bjLookup2BufCI(str, strlen((const char *)str)) : 0u);
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// hash functin to use with 32-bit integers
+// Bob Jenkins' hash, no muls
+//#define hashU32     hashU32bj
+// prospector, 2 muls
+//#define hashU32     hash32UPro107
+// prospector, 3 muls
+//#define hashU32     hash32UPro3
+// BJ's lookup3, quite heavy, but meh
+#define hashU32     hash32Ubj3
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// used for hash tables
 VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint8_t n) noexcept { return hashU32((const uint32_t)n); }
-VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint16_t n) noexcept { return hashU32((const uint32_t)n); }
-VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint32_t n) noexcept { return hashU32(n); }
+VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint16_t n) noexcept { return hashU16((const uint16_t)n); }
+VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint32_t n) noexcept { return hashU32((const uint32_t)n); }
 VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const uint64_t n) noexcept { return hashU32((const uint32_t)n)+hashU32((const uint32_t)(n>>32)); }
 VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const int8_t n) noexcept { return hashU32((const uint32_t)n); }
-VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const int16_t n) noexcept { return hashU32((const uint32_t)n); }
+VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const int16_t n) noexcept { return hashU16((const uint16_t)n); }
 VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const int32_t n) noexcept { return hashU32((const uint32_t)n); }
 VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const int64_t n) noexcept { return hashU32((const uint32_t)n)+hashU32((const uint32_t)(n>>32)); }
 VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const void *n) noexcept { return GetTypeHash((uintptr_t)n); }
@@ -359,14 +463,25 @@ VVA_FORCEINLINE VVA_PURE VVA_CHECKRESULT uint32_t GetTypeHash (const void *n) no
 //#define vvHashStrZ    bjHashStr
 //#define vvHashStrZCI  fnvHashStrCI
 
-#define vvHashStrZ    bjHashStr
-#define vvHashStrZCI  halfsip24HashStrCI
+//#define vvHashStrZ    bjHashStr
+//#define vvHashStrZCI  halfsip24HashStrCI
+
+//#define vvHashStrZ    bjLookup2HashStr
+//#define vvHashStrZCI  bjLookup2HashStrCI
+
+#define vvHashStrZ    murmurHash3Str
+#define vvHashStrZCI  murmurHash3StrCI
+
+//#define vvHashStrZ    bjHashStr
+//#define vvHashStrZCI  bjHashStrCI
 
 
 // used in cvarsys
 //#define vvHashBufCI   fnvHashBufCI
-
-#define vvHashBufCI   halfsip24HashBufCI
+//#define vvHashBufCI   halfsip24HashBufCI
+//#define vvHashBufCI   bjLookup2HashBufCI
+//#define vvHashBufCI   murmurHash3BufCI
+#define vvHashBufCI   bjHashBufCI
 
 
 #endif
