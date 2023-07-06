@@ -177,6 +177,19 @@ unsigned vwad_crc32_part (unsigned crc32, const void *src, size_t len);
 unsigned vwad_crc32_final (unsigned crc32);
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+// case-insensitive wildcard matching
+// returns:
+//   -1: malformed pattern
+//    0: equal
+//    1: not equal
+vwad_result vwad_wildmatch (const char *pat, size_t plen, const char *str, size_t slen);
+
+// this matches individual path parts
+// exception: if `pat` contains no slashes, match only the name
+vwad_result vwad_wildmatch_path (const char *pat, size_t plen, const char *str, size_t slen);
+
+
 #if defined(__cplusplus)
 }
 #endif

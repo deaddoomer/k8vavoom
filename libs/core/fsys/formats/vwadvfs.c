@@ -13,6 +13,9 @@
 
 #include "vwadvfs.h"
 
+//#define VWAD_DEBUG_WILDPATH
+
+
 // ////////////////////////////////////////////////////////////////////////// //
 #if defined(__cplusplus)
 extern "C" {
@@ -72,23 +75,37 @@ static CC25519_INLINE uint16_t get_u16 (const void *src) {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static void crypt_buffer (const ed25519_public_key seed, uint64_t nonce,
-                          void *buf, uint32_t bufsize)
-{
+static CC25519_INLINE uint32_t hashU32 (uint32_t v) {
+  v ^= v >> 16;
+  v *= 0x21f0aaadu;
+  v ^= v >> 15;
+  v *= 0x735a2d97u;
+  v ^= v >> 15;
+  return v;
+}
+
+static uint32_t deriveSeed (uint32_t seed, const uint8_t *buf, size_t buflen) {
+  if (!seed) seed = 0x29aU;
+  for (uint32_t f = 0; f < buflen; f += 1) {
+    seed = hashU32(seed ^ buf[f]);
+    if (seed == 0) seed = 0x29aU;
+  }
+  // hash it again
+  seed = hashU32(seed);
+  if (seed == 0) seed = 0x29aU;
+  return seed;
+}
+
+static void crypt_buffer (uint32_t xseed, uint64_t nonce, void *buf, uint32_t bufsize) {
   // use Mulberry32-derived PRNG, because i don't need cryptostrong xor at all
   // this produces each value once
   #define MB32X  do { \
     /* 2 to the 32 divided by golden ratio; adding forms a Weyl sequence */ \
-    rval = (xseed += 0x9E3779B9u); \
-    rval ^= rval >> 16; \
-    rval *= 0x21f0aaadu; \
-    rval ^= rval >> 15; \
-    rval *= 0x735a2d97u; \
-    rval ^= rval >> 15; \
+    rval = hashU32(xseed += 0x9E3779B9u); \
   } while (0)
 
-  uint32_t xseed = 0x29a, rval;
-  for (unsigned f = 0; f < 32; f++) xseed += seed[f];
+  xseed += nonce;
+  uint32_t rval;
 
   uint32_t *b32 = (uint32_t *)buf;
   while (bufsize >= 4) {
@@ -1494,6 +1511,7 @@ struct vwad_handle_t {
   char *comment;       // can be NULL
   uint8_t *updir;      // unpacked directory
   ChunkInfo *chunks;   // points to the unpacked directory
+  uint32_t xorRndSeed; // seed for block decryptor
   uint32_t chunkCount; // number of elements in `chunks` array
   // files (0 is unused)
   FileInfo *files;     // points to the unpacked directory
@@ -1541,7 +1559,7 @@ typedef struct {
 //==========================================================================
 static int ed_total_size (cc_ed25519_iostream *strm) {
   EdInfo *nfo = (EdInfo *)strm->udata;
-  return nfo->size - (4+64); // without header
+  return nfo->size - (4+64+32); // without header
 }
 
 
@@ -1553,7 +1571,7 @@ static int ed_total_size (cc_ed25519_iostream *strm) {
 static int ed_read (cc_ed25519_iostream *strm, int startpos, void *buf, int bufsize) {
   EdInfo *nfo = (EdInfo *)strm->udata;
   if (startpos < 0) return -1; // oops
-  startpos += 4+64; // skip header
+  startpos += 4+64+32; // skip header
   if (startpos >= nfo->size) return -1;
   const int max = nfo->size - startpos;
   if (bufsize > max) bufsize = max;
@@ -1606,6 +1624,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   ed25519_signature edsign;
   MainFileHeader mhdr;
   MainDirHeader dhdr;
+  uint8_t *wadcomment = NULL;
   char sign[4];
 
   // file signature
@@ -1633,7 +1652,17 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     return NULL;
   }
 
-  crypt_buffer(pubkey, 1, &mhdr, (uint32_t)sizeof(mhdr));
+  // decrypt public key
+  crypt_buffer(deriveSeed(0xa29, edsign, (uint32_t)sizeof(ed25519_signature)),
+               0x29a, pubkey, (uint32_t)sizeof(ed25519_public_key));
+
+  // create initial seed from pubkey
+  uint32_t seed = deriveSeed(0, pubkey, sizeof(ed25519_public_key));
+  #if 1
+  logf(DEBUG, "pkseed: 0x%08x", seed);
+  #endif
+  const uint32_t pkseed = seed;
+  crypt_buffer(pkseed, 1, &mhdr, (uint32_t)sizeof(mhdr));
   if (mhdr.version != 0) {
     logf(ERROR, "vwad_open_archive: invalid version");
     return NULL;
@@ -1671,8 +1700,49 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     return NULL;
   }
 
+  // read comment, because we need it for seed generation
+  if (mhdr.u_cmt_size != 0) {
+    if (mhdr.p_cmt_size == 0) {
+      // not packed
+      wadcomment = zalloc(mman, mhdr.u_cmt_size + 1); // +1 for reusing
+      if (wadcomment == NULL) {
+        logf(DEBUG, "vwad_open_archive: cannot allocate buffer for comment");
+        goto error;
+      }
+      if (strm->read(strm, wadcomment, mhdr.u_cmt_size) != 0) {
+        xfree(mman, wadcomment);
+        logf(DEBUG, "vwad_open_archive: cannot read comment data");
+        goto error;
+      }
+      // update seed
+      seed = deriveSeed(seed, wadcomment, mhdr.u_cmt_size);
+    } else {
+      // packed
+      wadcomment = zalloc(mman, mhdr.p_cmt_size);
+      if (wadcomment == NULL) {
+        logf(DEBUG, "vwad_open_archive: cannot allocate buffer for comment");
+        goto error;
+      }
+      if (strm->read(strm, wadcomment, mhdr.p_cmt_size) != 0) {
+        xfree(mman, wadcomment);
+        logf(DEBUG, "vwad_open_archive: cannot read comment data");
+        goto error;
+      }
+      // update seed
+      seed = deriveSeed(seed, wadcomment, mhdr.p_cmt_size);
+    }
+  } else {
+    // still seed
+    seed = deriveSeed(seed, wadcomment, 0);
+  }
+  #if 1
+  logf(DEBUG, "xnseed: 0x%08x", seed);
+  #endif
+
+
   // determine file size
   if (strm->seek(strm, mhdr.dirofs) != 0) {
+    xfree(mman, wadcomment);
     logf(ERROR, "vwad_open_archive: cannot seek to directory");
     return NULL;
   }
@@ -1680,11 +1750,12 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   logf(DEBUG, "vwad_open_archive: dirofs=0x%08x", mhdr.dirofs);
 
   if (strm->read(strm, &dhdr, (uint32_t)sizeof(dhdr)) != 0) {
+    xfree(mman, wadcomment);
     logf(ERROR, "vwad_open_archive: cannot read directory header");
     return NULL;
   }
 
-  crypt_buffer(pubkey, 0xfffffffeU, &dhdr, (uint32_t)sizeof(dhdr));
+  crypt_buffer(seed, 0xfffffffeU, &dhdr, (uint32_t)sizeof(dhdr));
 
   dhdr.pkdir_crc32 = get_u32(&dhdr.pkdir_crc32);
   dhdr.dir_crc32 = get_u32(&dhdr.dir_crc32);
@@ -1694,14 +1765,17 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   logf(DEBUG, "vwad_open_archive: pkdirsize=0x%08x", dhdr.pkdirsize);
   logf(DEBUG, "vwad_open_archive: upkdirsize=0x%08x", dhdr.upkdirsize);
   if (dhdr.pkdirsize == 0 || dhdr.pkdirsize > 0xffffff) {
+    xfree(mman, wadcomment);
     logf(ERROR, "vwad_open_archive: invalid directory size");
     return NULL;
   }
   if (dhdr.upkdirsize <= 4*11 || dhdr.upkdirsize > 0xffffff) {
+    xfree(mman, wadcomment);
     logf(ERROR, "vwad_open_archive: invalid directory size");
     return NULL;
   }
   if (0x7fffffffU - mhdr.dirofs < dhdr.pkdirsize) {
+    xfree(mman, wadcomment);
     logf(ERROR, "vwad_open_archive: invalid directory size");
     return NULL;
   }
@@ -1724,6 +1798,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
       logf(NOTE, "checking digital signature...");
       int sres = edsign_verify_stream(edsign, pubkey, &edstrm);
       if (sres != 0) {
+        xfree(mman, wadcomment);
         logf(ERROR, "vwad_open_archive: invalid digital signature");
         return NULL;
       }
@@ -1733,12 +1808,14 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
 
   // read and unpack directory
   if (strm->seek(strm, mhdr.dirofs + (int)sizeof(dhdr)) != 0) {
+    xfree(mman, wadcomment);
     logf(ERROR, "vwad_open_archive: cannot seek to directory data");
     return NULL;
   }
 
   void *unpkdir = xalloc(mman, dhdr.upkdirsize + 1); // always end it with 0
   if (!unpkdir) {
+    xfree(mman, wadcomment);
     logf(ERROR, "vwad_open_archive: cannot allocate memory for unpacked directory");
     return NULL;
   }
@@ -1746,22 +1823,25 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
 
   void *pkdir = xalloc(mman, dhdr.pkdirsize);
   if (!pkdir) {
+    xfree(mman, wadcomment);
     xfree(mman, unpkdir);
     logf(ERROR, "vwad_open_archive: cannot allocate memory for packed directory");
     return NULL;
   }
 
   if (strm->read(strm, pkdir, dhdr.pkdirsize) != 0) {
+    xfree(mman, wadcomment);
     xfree(mman, pkdir);
     xfree(mman, unpkdir);
     logf(ERROR, "vwad_open_archive: cannot read directory data");
     return NULL;
   }
 
-  crypt_buffer(pubkey, 0xffffffffU, pkdir, dhdr.pkdirsize);
+  crypt_buffer(seed, 0xffffffffU, pkdir, dhdr.pkdirsize);
 
   uint32_t crc32 = crc32_buf(pkdir, dhdr.pkdirsize);
   if (crc32 != dhdr.pkdir_crc32) {
+    xfree(mman, wadcomment);
     xfree(mman, pkdir);
     xfree(mman, unpkdir);
     logf(DEBUG, "vwad_open_archive: pkcrc: file=0x%08x; real=0x%08x", dhdr.pkdir_crc32, crc32);
@@ -1770,6 +1850,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   }
 
   if (!DecompressLZFF3(pkdir, dhdr.pkdirsize, unpkdir, dhdr.upkdirsize)) {
+    xfree(mman, wadcomment);
     xfree(mman, pkdir);
     xfree(mman, unpkdir);
     logf(ERROR, "vwad_open_archive: cannot decompress directory");
@@ -1779,6 +1860,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
 
   crc32 = crc32_buf(unpkdir, dhdr.upkdirsize);
   if (crc32 != dhdr.dir_crc32) {
+    xfree(mman, wadcomment);
     xfree(mman, unpkdir);
     logf(DEBUG, "vwad_open_archive: upkcrc: file=0x%08x; real=0x%08x", dhdr.dir_crc32, crc32);
     logf(ERROR, "vwad_open_archive: corrupted unpacked directory data");
@@ -1788,6 +1870,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
 
   vwad_handle *wad = zalloc(mman, sizeof(vwad_handle));
   if (wad == NULL) {
+    xfree(mman, wadcomment);
     xfree(mman, unpkdir);
     logf(ERROR, "vwad_open_archive: cannot allocate memory for vwad handle");
     return NULL;
@@ -1796,6 +1879,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   wad->mman = mman;
   wad->flags = (uint32_t)flags;
   wad->updir = unpkdir;
+  wad->xorRndSeed = seed;
   if (haspubkey) {
     vassert(sizeof(wad->pubkey) == sizeof(pubkey));
     memcpy(wad->pubkey, pubkey, sizeof(wad->pubkey));
@@ -1878,41 +1962,28 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     goto error;
   }
 
-  // read and unpack comment
+  // unpack comment
   if ((flags & VWAD_OPEN_NO_MAIN_COMMENT) == 0) {
     if (mhdr.u_cmt_size != 0) {
-      if (strm->seek(strm, 4+32+64+(uint32_t)sizeof(mhdr)) != 0) {
-        logf(DEBUG, "vwad_open_archive: cannot seek to comment data");
-        goto error;
-      }
-      wad->comment = zalloc(mman, mhdr.u_cmt_size + 1);
-      if (wad->comment == NULL) {
-        logf(DEBUG, "vwad_open_archive: out of memory for comment data");
-        goto error;
-      }
       if (mhdr.p_cmt_size == 0) {
-        // unpacked
-        if (strm->read(strm, wad->comment, mhdr.u_cmt_size) != 0) {
-          logf(DEBUG, "vwad_open_archive: cannot read comment data");
-          goto error;
-        }
-        crypt_buffer(pubkey, 2, wad->comment, mhdr.u_cmt_size);
+        // unpacked, just use it as is
+        wad->comment = (char *)wadcomment;
+        wadcomment = NULL;
+        // decrypt comment with pk-seed
+        crypt_buffer(pkseed, 2, wad->comment, mhdr.u_cmt_size);
       } else {
         // packed
-        uint8_t *ctmp = zalloc(mman, mhdr.p_cmt_size + 1);
-        if (ctmp == NULL) {
-          logf(DEBUG, "vwad_open_archive: out of memory for packed comment data");
+        wad->comment = zalloc(mman, mhdr.u_cmt_size + 1);
+        if (wad->comment == NULL) {
+          xfree(mman, wadcomment);
+          logf(DEBUG, "vwad_open_archive: out of memory for comment data");
           goto error;
         }
-        if (strm->read(strm, ctmp, mhdr.p_cmt_size) != 0) {
-          xfree(mman, ctmp);
-          logf(DEBUG, "vwad_open_archive: cannot read packed comment data");
-          goto error;
-        }
-        crypt_buffer(pubkey, 2, ctmp, mhdr.p_cmt_size);
-        const intbool_t cupres = DecompressLZFF3(ctmp, (int)mhdr.p_cmt_size,
+        // decrypt comment with pk-seed
+        crypt_buffer(pkseed, 2, wadcomment, mhdr.p_cmt_size);
+        const intbool_t cupres = DecompressLZFF3(wadcomment, (int)mhdr.p_cmt_size,
                                                  wad->comment, (int)mhdr.u_cmt_size);
-        xfree(mman, ctmp);
+        xfree(mman, wadcomment);
         if (!cupres) {
           logf(DEBUG, "vwad_open_archive: cannot decompress packed comment data");
           goto error;
@@ -1927,7 +1998,11 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
         xfree(mman, wad->comment);
         wad->comment = NULL;
       }
+    } else {
+      vassert(wadcomment == NULL);
     }
+  } else {
+    xfree(mman, wadcomment);
   }
 
   uint32_t chunkOfs = 4+32+64+(uint32_t)sizeof(mhdr);
@@ -2370,7 +2445,7 @@ static FileBuffer *ensure_buffer (vwad_handle *wad, vwad_fd fd, uint32_t ofs) {
           logf(DEBUG, "ensure_buffer: cannot read unpacked chunk %u", fi->fchunk + bufofs);
           return NULL;
         }
-        crypt_buffer(wad->pubkey, nonce, &fl->pkdata[0], cupsize + 4);
+        crypt_buffer(wad->xorRndSeed, nonce, &fl->pkdata[0], cupsize + 4);
         memcpy(res->data, &fl->pkdata[4], cupsize);
       } else {
         // packed
@@ -2378,7 +2453,7 @@ static FileBuffer *ensure_buffer (vwad_handle *wad, vwad_fd fd, uint32_t ofs) {
           logf(DEBUG, "ensure_buffer: cannot read packed chunk %u", fi->fchunk + bufofs);
           return NULL;
         }
-        crypt_buffer(wad->pubkey, nonce, &fl->pkdata[0], ci->pksize + 4);
+        crypt_buffer(wad->xorRndSeed, nonce, &fl->pkdata[0], ci->pksize + 4);
         if (!DecompressLZFF3(&fl->pkdata[4], ci->pksize, res->data, cupsize)) {
           logf(DEBUG, "ensure_buffer: cannot unpack chunk %u (%u -> %u)", fi->fchunk + bufofs,
                ci->pksize, cupsize);
@@ -2539,6 +2614,184 @@ int vwad_read (vwad_handle *wad, vwad_fd fd, void *dest, int len) {
     }
   }
   return read;
+}
+
+
+//==========================================================================
+//
+//  vwad_wildmatch
+//
+//  returns:
+//    -1: malformed pattern
+//     0: equal
+//     1: not equal
+//
+//==========================================================================
+vwad_result vwad_wildmatch (const char *pat, size_t plen, const char *str, size_t slen) {
+  #define GM_UPCASE(ch_)  do { \
+    if ((ch_) >= 'A' && (ch_) <= 'Z') (ch_) = (ch_) - 'A' + 'a'; \
+  } while (0)
+
+  // fuckin' stupid, but no UB
+  #define C2U(ch_)  ((uint32_t)((ch_) + 256) - 256u)
+
+  char sch, c0, c1;
+  vwad_bool hasMatch, inverted;
+  vwad_bool star = 0, dostar = 0;
+  size_t patpos = 0, spos = 0;
+  int error = 0;
+
+  while (!error && !dostar && spos < slen) {
+    if (patpos == plen) {
+      dostar = 1;
+    } else {
+      sch = str[spos++]; GM_UPCASE(sch);
+      c0 = pat[patpos++]; GM_UPCASE(c0);
+      switch (c0) {
+        case '\\':
+          if (patpos == plen) error = 1; // malformed pattern
+          else {
+            c0 = pat[patpos]; GM_UPCASE(c0);
+            dostar = (sch != c0);
+          }
+          break;
+        case '?': // match anything except '.'
+          dostar = (sch == '.');
+          break;
+        case '*':
+          star = 1;
+          --spos; // otherwise "*abc" will not match "abc"
+          slen -= spos; str += spos;
+          plen -= patpos; pat += patpos;
+          while (plen != 0 && *pat == '*') { --plen; ++pat; }
+          // restart the loop
+          spos = 0; patpos = 0;
+          break;
+        case '[':
+          hasMatch = 0;
+          inverted = 0;
+          if (patpos == plen) error = 1; // malformed pattern
+          else if (pat[patpos] == '^') {
+            inverted = 1;
+            ++patpos;
+            error = (patpos == plen); // malformed pattern?
+          }
+          if (!error) {
+            do {
+              c0 = pat[patpos++]; GM_UPCASE(c0);
+              if (patpos != plen && pat[patpos] == '-') {
+                // char range
+                ++patpos; // skip '-'
+                if (patpos == plen) { c1 = c0; error = 1; } // malformed pattern
+                else { c1 = pat[patpos++]; GM_UPCASE(c1); }
+              } else {
+                c1 = c0;
+              }
+              // casts are UB, hence the stupid macro
+              hasMatch = hasMatch || (C2U(sch) >= C2U(c0) && C2U(sch) <= C2U(c1));
+            } while (!error && patpos != plen && pat[patpos] != ']');
+          }
+          error = error || (patpos == plen) || (pat[patpos] != ']'); // malformed pattern?
+          dostar = !error && (hasMatch != inverted);
+          break;
+        default:
+          dostar = (sch != c0);
+          break;
+      }
+    }
+    // star check
+    if (dostar) {
+      // `error` is always zero here
+      if (!star) {
+        // not equal, do not reset "dostar"
+        spos = slen;
+      } else {
+        dostar = 0;
+        if (plen == 0) {
+          // equal
+          spos = slen;
+        } else {
+          --slen; ++str; // slen is never zero here
+          spos = 0; patpos = 0;
+        }
+      }
+    }
+  }
+
+  int res;
+  if (error) res = -1; // malformed pattern
+  else if (dostar) res = 1; // not equal
+  else {
+    plen -= patpos; pat += patpos;
+    while (plen != 0 && *pat == '*') { --plen; ++pat; }
+    if (plen == 0) res = 0; else res = 1;
+  }
+  return res;
+}
+
+
+//==========================================================================
+//
+//  vwad_wildmatch_path
+//
+//  this matches individual path parts
+//  exception: if `pat` contains no slashes, match only the name
+//
+//==========================================================================
+#ifdef VWAD_DEBUG_WILDPATH
+#include <stdio.h>
+#endif
+vwad_result vwad_wildmatch_path (const char *pat, size_t plen, const char *str, size_t slen) {
+  size_t ppos, spos;
+  vwad_bool pat_has_slash = 0;
+  vwad_result res;
+
+  while (plen && pat[0] == '/') { pat_has_slash = 1; --plen; ++pat; }
+  // look for slashes
+  if (!pat_has_slash) {
+    ppos = 0; while (ppos < plen && pat[ppos] != '/') ++ppos;
+    pat_has_slash = (ppos < plen);
+  }
+
+  // if no slashes in pattern, match only filename
+  if (!pat_has_slash) {
+    spos = slen; while (spos != 0 && str[spos - 1] != '/') --spos;
+    slen -= spos; str += spos;
+    res = vwad_wildmatch(pat, plen, str, slen);
+  } else {
+    // match by path parts
+    #ifdef VWAD_DEBUG_WILDPATH
+    fprintf(stderr, "=== pat:<%.*s>; str:<%.*s> ===\n",
+            (unsigned)plen, pat, (unsigned)slen, str);
+    #endif
+    while (slen && str[0] == '/') { --slen; ++str; }
+    res = 0;
+    while (res == 0 && plen != 0 && slen != 0) {
+      // find slash in pat and in str
+      ppos = 0; while (ppos != plen && pat[ppos] != '/') ++ppos;
+      spos = 0; while (spos != slen && str[spos] != '/') ++spos;
+      #ifdef VWAD_DEBUG_WILDPATH
+      fprintf(stderr, "  MT: ppos=%u; spos=%u; pat=<%.*s>; str=<%.*s> (ex: %d)\n",
+              (unsigned)ppos, (unsigned)spos,
+              (unsigned)ppos, pat, (unsigned)spos, str,
+              ((ppos == plen) != (spos == slen)));
+      #endif
+      if ((ppos == plen) != (spos == slen)) {
+        res = 1;
+      } else {
+        res = vwad_wildmatch(pat, ppos, str, spos);
+        plen -= ppos; pat += ppos;
+        slen -= spos; str += spos;
+        while (plen && pat[0] == '/') { --plen; ++pat; }
+        while (slen && str[0] == '/') { --slen; ++str; }
+      }
+    }
+    #ifdef VWAD_DEBUG_WILDPATH
+    fprintf(stderr, " res: %d\n", res);
+    #endif
+  }
+
+  return res;
 }
 
 
