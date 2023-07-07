@@ -429,8 +429,8 @@ override void Init () {
   CreateCvarBool('warn_a_weaponready_recurse', false, "Show warnings if `A_WeaponReady()` called more than once per tic?", CVAR_ARCHIVE);
 
   // UI font options
-  CreateCvarStr('ui_font_helptext', "smallfont", "UI Help Text Font.", CVAR_ARCHIVE);
-  CreateCvarStr('ui_font_menuitems', "smallfont", "UI Menu Items Text Font.", CVAR_ARCHIVE);
+  CreateCvarStr('ui_font_helptext', "consolefont", "UI Help Text Font ('smallfont' or 'consolefont').", CVAR_ARCHIVE);
+  CreateCvarStr('ui_font_menuitems', "consolefont", "UI Menu Items Text Font ('smallfont' or 'consolefont').", CVAR_ARCHIVE);
 
   foreach (ref auto b; kkWeaponSlotCopy) b = true;
 

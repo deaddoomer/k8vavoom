@@ -108,7 +108,9 @@ menudef VideoOptions {
     help =
       "Very experimental CAS filtering.",
       "If you prefer to play with bilinear texture filtering,",
-      "try to turn this on, it may make distant textures less blurry.";
+      "try to turn this on, it may make distant textures less",
+      "blurry. This also helps to get better details for",
+      "\"Nearest with mipmaps\" texture filtering mode.";
   }
 
   option slider [gl_can_cas_filter > 0] {
@@ -223,7 +225,7 @@ menudef VideoOptions {
     title = "Fix Face Visibility";
     cvar = vox_fix_faces;
     help =
-      "Some KVX models contains invalid visibility info.",
+      "Some KVX models contain invalid visibility info.",
       "The engine can recalculate it for better conversion."
       "This is fast, so if in doubt, leave this '\c[WHITE]ON\c-'.";
   }
@@ -246,7 +248,13 @@ menudef VideoOptions {
   option bool {
     title = "Cache converted voxels";
     cvar = vox_cache_enabled;
-    help = "Enable caching of converted voxel models?";
+    help =
+      "Enable caching of converted voxel models?",
+      "",
+      "Converting voxels to 3D models can take a long time",
+      "for big voxel packs, so the engine can cache converted",
+      "models, and simply load them instead of voxels next time.",
+      "Leave this 'ON' if in doubt, it is safe.";
   }
 
   option bool {
@@ -265,12 +273,13 @@ menudef VideoOptions {
     min = 1;
     max = [gl_max_anisotropy];
     help =
-      "Setting this to something greater than '1' will tell GPU to peform",
-      "some filtering on far-away textures, so they will less likely be turned",
-      "into pixel mess.",
-      "Please, note that this requires at least 'Nearest Mipmap' texture filtering.",
-      "If your GPU supports high values here, you can stop at '8'. Higher values",
-      "are slower, and usually won't improve the picture.";
+      "Setting this to something greater than '1' will tell GPU to",
+      "peform some filtering on far-away textures, so they will less",
+      "likely be turned into pixel mess.",
+      "Please, note that this requires at least 'Nearest Mipmap'",
+      "texture filtering. If your GPU supports high values here,",
+      "you can stop at '8'. Higher values are slower, and usually",
+      "won't improve the picture.";
   }
 
   option enum {
