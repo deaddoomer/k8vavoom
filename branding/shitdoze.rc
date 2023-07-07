@@ -20,7 +20,7 @@ BEGIN
             VALUE "FileDescription", "k8vavoom Game Engine"
             VALUE "FileVersion", "2,1,0,666"
             VALUE "InternalName", "k8vavoom"
-            VALUE "LegalCopyright", "Copyright © 1993-1996 id Software, 1999-2017 Jānis Legzdiņš., 2018-2022 Ketmar Dark, id0."
+            VALUE "LegalCopyright", "Copyright © 1993-1996 id Software, 1999-2017 Jānis Legzdiņš., 2018-2023 Ketmar Dark, id0."
             VALUE "LegalTrademarks", "Doom® is a Registered Trademark of id Software, Inc."
             VALUE "OriginalFilename", "k8vavoom.exe"
             VALUE "ProductName", "k8vavoom: The Most^2 Advanced Doom Source Port."

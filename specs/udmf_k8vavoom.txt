@@ -2,7 +2,7 @@
 Universal Doom Map Format k8vavoom extensions v1.0 - 06-Apr-2021
 
 
-    Copyright (c) 2021-2022 Ketmar Dark.
+    Copyright (c) 2021-2023 Ketmar Dark.
     Permission is granted to copy, distribute and/or modify this document
     under the terms of the GNU Free Documentation License, Version 1.2
     or any later version published by the Free Software Foundation;
