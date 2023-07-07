@@ -133,7 +133,9 @@ static bool Fon2ColorsUsed[256] = {0};
 
 #if VAVOOM_VLUMPY_VWAD == 1
 static int has_privkey = 0;
+static int has_pubkey = 0;
 static vwadwr_secret_key privkey;
+static vwadwr_public_key pubkey;
 #endif
 
 static uint64_t last_file_time = 0;
@@ -1266,7 +1268,7 @@ static void ParseScript (const char *name) {
           wad_outstrm = vwadwr_new_file_stream(wad_file_out);
           if (!wad_outstrm) Error("cannot init VWAD");
 
-          if (!has_privkey) {
+          if (has_privkey == 0) {
             do {
               prng_randombytes(privkey, sizeof(vwadwr_secret_key));
             } while (!vwadwr_is_good_privkey(privkey));
@@ -1274,8 +1276,9 @@ static void ParseScript (const char *name) {
           int werr;
           wad_dir = vwadwr_new_dir(NULL, wad_outstrm, destauthor, desttitle, destcomment,
                                    (has_privkey ? VWADWR_NEW_DEFAULT : VWADWR_NEW_DONT_SIGN),
-                                   privkey, NULL, &werr);
+                                   privkey, pubkey, &werr);
           if (!wad_dir) Error("cannot init VWAD (%d)", werr);
+          has_pubkey = 1;
         } else
         #endif
         {
@@ -1464,11 +1467,22 @@ static void showHelp () {
     "  --zopfli[=yes|=no]    use zopfli compressor (slow)\n"
     "  --verbose             become verbose (useless)\n"
     "  --stats               show packed file sizes (boring)\n"
-    #if VAVOOM_VLUMPY_VWAD == 1
-    "  --vwad[=yes|=no]      use VWAD instead of PK3\n"
-    "  --keyfile <fname>     read private signing key from the given file\n"
-    #endif
     "  -Dfname               override output file name\n"
+    #if VAVOOM_VLUMPY_VWAD == 1
+    "VWAD options:\n"
+    "  --vwad[=yes|=no]      use VWAD instead of PK3\n"
+    "  --pk3[=yes|=no]       use PK3 instead of VWAD\n"
+    "  --keyfile <fname>     read private signing key from the given file\n"
+    "  --key <asciikey>      use provided Z85-encoded private key\n"
+    "  --newkey              generate new private key (it will be printed with the public key)\n"
+    "  --nokey               do not use digital signing\n"
+    "VWAD compression:\n"
+    "  --fastest             fastest compression\n"
+    "  --fast                fast compression\n"
+    "  --medium              medium compression\n"
+    "  --max                 best compression\n"
+    "  --no-compression      no compression\n"
+    #endif
     ""
   );
   exit(1);
@@ -1555,13 +1569,10 @@ int main (int argc, char *argv[]) {
         if (strcmp(argv[i], "--zopfli=yes") == 0) { useZopfli = true; continue; }
         if (strcmp(argv[i], "--zopfli=no") == 0) { useZopfli = false; continue; }
         if (strcmp(argv[i], "--vwad=no") == 0) { useVWAD = false; continue; }
-        if (strcmp(argv[i], "--vwad=yes") == 0) {
-          #if VAVOOM_VLUMPY_VWAD == 1
-          useVWAD = true;
-          #endif
-          continue;
-        }
-        if (strcmp(argv[i], "--vwad") == 0) {
+        if (strcmp(argv[i], "--pk3") == 0) { useVWAD = false; continue; }
+        if (strcmp(argv[i], "--pk3=yes") == 0) { useVWAD = false; continue; }
+        if (strcmp(argv[i], "--pk3=no") == 0) { useVWAD = true; continue; }
+        if (strcmp(argv[i], "--vwad=yes") == 0 || strcmp(argv[i], "--vwad") == 0) {
           #if VAVOOM_VLUMPY_VWAD == 1
           useVWAD = true;
           #endif
@@ -1574,14 +1585,15 @@ int main (int argc, char *argv[]) {
           }
           #if VAVOOM_VLUMPY_VWAD == 1
           FILE *fl = fopen(argv[i], "rb");
-          if (!fl) {
-            Error("\"--keyfile\" cannot open file \"%s\"", argv[i]);
+          if (fl) {
+            if (fread(privkey, sizeof(vwadwr_secret_key), 1, fl) != 1) {
+              Error("\"--keyfile\" cannot read file \"%s\"", argv[i]);
+            }
+            fclose(fl);
+            has_privkey = 1;
+          } else {
+            fprintf(stderr, "WARNING: no key file \"%s\".\n", argv[i]);
           }
-          if (fread(privkey, sizeof(vwadwr_secret_key), 1, fl) != 1) {
-            Error("\"--keyfile\" cannot read file \"%s\"", argv[i]);
-          }
-          fclose(fl);
-          has_privkey = 1;
           #endif
           continue;
         }
@@ -1603,7 +1615,7 @@ int main (int argc, char *argv[]) {
           do {
             prng_randombytes(privkey, sizeof(privkey));
           } while (!vwadwr_is_good_privkey(privkey));
-          has_privkey = 1;
+          has_privkey = -1;
           #endif
           continue;
         }
@@ -1633,6 +1645,18 @@ int main (int argc, char *argv[]) {
     }
   } catch (WadLibError &E) {
     Error("%s", E.message);
+  }
+
+  if (has_privkey != 0) {
+    vwadwr_z85_key enkey;
+    if (has_privkey == -1) {
+      vwadwr_z85_encode_key(privkey, enkey);
+      printf("private key: %s\n", enkey);
+    }
+    if (has_pubkey != 0) {
+      vwadwr_z85_encode_key(pubkey, enkey);
+      printf("public key: %s\n", enkey);
+    }
   }
 
   Z_ShuttingDown();

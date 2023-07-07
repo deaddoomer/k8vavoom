@@ -14,7 +14,6 @@
 extern "C" {
 #endif
 
-
 // for self-documentation purposes
 typedef int vwad_bool;
 
@@ -110,17 +109,28 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
 // will free handle memory, and clean handle pointer.
 void vwad_close_archive (vwad_handle **wadp);
 
-// can return NULL if there is no comment, or `VWAD_OPEN_NO_MAIN_COMMENT` passed
-const char *vwad_get_archive_comment (vwad_handle *wad);
+#define VWAD_MAX_COMMENT_SIZE  (65535)
+
+// get size of the comment, without the trailing zero byte.
+// returns 0 on error, or on empty comment.
+unsigned int vwad_get_archive_comment_size (vwad_handle *wad);
+// can return empty string if there is no comment,
+// or `VWAD_OPEN_NO_MAIN_COMMENT` passed,
+// or if `vwad_free_archive_comment()` was called.
+// WARNING! `dest` must be at least `vwad_get_archive_comment_size()` + 1 bytes!
+//          this is because the comment is terminated with zero byte.
+// will truncate comment if destination buffer is not big enough (with zero byte).
+void vwad_get_archive_comment (vwad_handle *wad, char *dest, unsigned int destsize);
+
 // never returns NULL
 const char *vwad_get_archive_author (vwad_handle *wad);
 // never returns NULL
 const char *vwad_get_archive_title (vwad_handle *wad);
 
 // forget main archive comment and free its memory.
-// WARNING! `vwad_get_archive_comment()` result will be undefined!
 void vwad_free_archive_comment (vwad_handle *wad);
 
+// check if the given archive has any files opened with `vwad_fopen()`.
 vwad_bool vwad_has_opened_files (vwad_handle *wad);
 
 // check if opened wad is authenticated. if the library was
@@ -156,6 +166,16 @@ int vwad_get_file_size (vwad_handle *wad, vwad_fidx fidx);
 unsigned long long vwad_get_ftime (vwad_handle *wad, vwad_fidx fidx);
 // get crc32 for the whole file
 unsigned vwad_get_fcrc32 (vwad_handle *wad, vwad_fidx fidx);
+
+// normalize file name: remove "/./", resolve "/../", remove
+// double slashes, etc. it should be safe to pass the result
+// to `vwad_find_file()`. if the result is longer than 255
+// chars, returns error, and `res` contents are undefined.
+// also, converts backslashes to proper forward slashes.
+// please note that last slash will NOT be removed, but
+// such file name is invalid.
+// starting "/" will be retained, though.
+vwad_result vwad_normalize_file_name (const char *fname, char res[256]);
 
 // find file by name. internally, the library is using a hash
 // table, so this is quite fast.
@@ -196,8 +216,11 @@ unsigned vwad_crc32_final (unsigned crc32);
 //    1: not equal
 vwad_result vwad_wildmatch (const char *pat, size_t plen, const char *str, size_t slen);
 
-// this matches individual path parts
-// exception: if `pat` contains no slashes, match only the name
+// this matches individual path parts.
+// exception: if `pat` contains no slashes, match only the name.
+// if `pat` is like "/mask", match only root dir files.
+// masks like "/*/*/" will match anything 2 subdirs or deeper.
+// masks like "/*/*" will match exactly the one subdir.
 vwad_result vwad_wildmatch_path (const char *pat, size_t plen, const char *str, size_t slen);
 
 

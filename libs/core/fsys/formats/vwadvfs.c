@@ -1486,11 +1486,11 @@ static int nameEqu (const char *s0, const char *s1) {
   if (!s0 || !s1) return 0;
   while (*s0 && *s1) {
     uint8_t c0 = *s0++;
-    if (c0 == '\\') c0 = '/';
-    else if (c0 >= 'A' && c0 <= 'Z') c0 = c0 - 'A' + 'a';
+    //if (c0 == '\\') c0 = '/'; else
+    if (c0 >= 'A' && c0 <= 'Z') c0 = c0 - 'A' + 'a';
     uint8_t c1 = *s1++;
-    if (c1 == '\\') c1 = '/';
-    else if (c1 >= 'A' && c1 <= 'Z') c1 = c1 - 'A' + 'a';
+    //if (c1 == '\\') c1 = '/'; else
+    if (c1 >= 'A' && c1 <= 'Z') c1 = c1 - 'A' + 'a';
     if (c0 != c1) return 0;
   }
   return (!s0[0] && !s1[0]);
@@ -1620,6 +1620,51 @@ static int ed_read (cc_ed25519_iostream *strm, int startpos, void *buf, int bufs
     nfo->currpos += bufsize;
   }
   return nfo->strm->read(nfo->strm, buf, bufsize);
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+static CC25519_INLINE vwad_bool is_path_delim (char ch) {
+  return (ch == '/' || ch == '\\');
+}
+
+
+vwad_result vwad_normalize_file_name (const char *fname, char res[256]) {
+  if (fname == NULL || res == NULL) return -1;
+  size_t spos = 0, dpos = 0;
+  if (fname[0] == '.' && is_path_delim(fname[1])) ++fname;
+  else if (is_path_delim(fname[0])) { res[0] = '/'; dpos = 1; }
+  while (dpos <= 255 && fname[spos]) {
+    char ch = fname[spos++];
+    if (ch < 32 || ch >= 127) {
+      dpos = 256;
+    } else if (ch == '/' || ch == '\\') {
+      if (dpos != 0 && res[dpos - 1] != '/') res[dpos++] = '/';
+      // skip "." and ".."
+      while (is_path_delim(fname[spos])) ++spos;
+      if (fname[spos] == '.' && fname[spos + 1] == '.' && is_path_delim(fname[spos + 2])) {
+        spos += 2;
+        if (dpos <= 1) dpos = 256;
+        else {
+          // remove last directory
+          vassert(res[dpos - 1] == '/');
+          --dpos;
+          while (dpos > 0 && res[dpos - 1] != '/') --dpos;
+        }
+      } else if (fname[spos] == '.' && is_path_delim(fname[spos + 1])) {
+        spos += 1;
+      }
+    } else {
+      res[dpos++] = ch;
+    }
+  }
+  if (dpos == 0 || dpos > 255) {
+    res[0] = 0; // why not
+    return -1;
+  } else {
+    res[dpos] = 0;
+    return 0;
+  }
 }
 
 
@@ -2348,11 +2393,27 @@ void vwad_close_archive (vwad_handle **wadp) {
 
 //==========================================================================
 //
+//  vwad_get_archive_comment_size
+//
+//==========================================================================
+unsigned int vwad_get_archive_comment_size (vwad_handle *wad) {
+  return (wad && wad->comment ? (unsigned int)strlen(wad->comment) : 0);
+}
+
+
+//==========================================================================
+//
 //  vwad_get_archive_comment
 //
 //==========================================================================
-const char *vwad_get_archive_comment (vwad_handle *wad) {
-  return (wad ? wad->comment : NULL);
+void vwad_get_archive_comment (vwad_handle *wad, char *dest, unsigned int destsize) {
+  if (!wad || !wad->comment || destsize < 2 || !dest) {
+    if (dest && destsize) dest[0] = 0;
+  }
+  unsigned int csize = (unsigned int)strlen(wad->comment);
+  if (csize > destsize) csize = destsize;
+  if (csize) memcpy(dest, wad->comment, csize);
+  dest[csize] = 0;
 }
 
 
@@ -2492,8 +2553,8 @@ int vwad_get_file_size (vwad_handle *wad, vwad_fidx fidx) {
 static vwad_fidx find_file (vwad_handle *wad, const char *name) {
   if (name) {
     for (;;) {
-      if (name[0] == '/' || name[0] == '\\') ++name;
-      else if (name[0] == '.' && (name[1] == '/' || name[1] == '\\')) name += 2;
+      if (name[0] == '/') ++name;
+      else if (name[0] == '.' && name[1] == '/') name += 2;
       else break;
     }
   }
