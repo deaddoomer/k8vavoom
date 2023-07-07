@@ -2,18 +2,26 @@ $author "K8Vavoom developers"
 $title "BDW weapons mod"
 $dest basepak.vwad
 
+$filegroup "graphics"
 $recursedir sprites/     @CMAKE_CURRENT_SOURCE_DIR@/sprites/
 $recursedir brightmaps/  @CMAKE_CURRENT_SOURCE_DIR@/brightmaps/
-$recursedir sounds/      @CMAKE_CURRENT_SOURCE_DIR@/sounds/
 $recursedir actors/      @CMAKE_CURRENT_SOURCE_DIR@/actors/
 $recursedir models/      @CMAKE_CURRENT_SOURCE_DIR@/models/
 
+$filegroup "sounds"
+$recursedir sounds/      @CMAKE_CURRENT_SOURCE_DIR@/sounds/
+
 
 // scripts
-decaldef.txt  @CMAKE_CURRENT_SOURCE_DIR@/decaldef.txt
+$filegroup "decorate scripts"
 decorate.txt  @CMAKE_CURRENT_SOURCE_DIR@/decorate.txt
+
+$filegroup "various definitions"
+decaldef.txt  @CMAKE_CURRENT_SOURCE_DIR@/decaldef.txt
 gldefs.txt    @CMAKE_CURRENT_SOURCE_DIR@/gldefs.txt
 sndinfo.txt   @CMAKE_CURRENT_SOURCE_DIR@/sndinfo.txt
 cvarinfo.txt  @CMAKE_CURRENT_SOURCE_DIR@/cvarinfo.txt
 modmenu.txt   @CMAKE_CURRENT_SOURCE_DIR@/modmenu.txt
+
+$filegroup "credits"
 credits.txt   @CMAKE_CURRENT_SOURCE_DIR@/credits.txt

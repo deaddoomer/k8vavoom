@@ -2,6 +2,9 @@ $author "K8Vavoom developers"
 $title "Doom II support"
 $dest basepak.vwad
 
+$filegroup "progs"
 progs/cgame/classes.vc  @CMAKE_SOURCE_DIR@/progs/doom2/cgame.vc
+
+$filegroup "various definitions"
 mapinfo.txt             @CMAKE_CURRENT_SOURCE_DIR@/mapinfo.txt
 sprofs.txt              @CMAKE_CURRENT_SOURCE_DIR@/sprofs.txt

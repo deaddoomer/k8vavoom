@@ -1427,26 +1427,61 @@ static intbool_t DecompressLZFF3 (const void *src, int srclen, void *dest, int u
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-// fnv-1a: http://www.isthe.com/chongo/tech/comp/fnv/
-static CC25519_INLINE uint32_t fnvHashStrCI (const void *buf) {
-  uint32_t hash = 2166136261U; // fnv offset basis
-  const uint8_t *s = (const uint8_t *)buf;
-  while (*s) {
-    uint8_t ch = *s++;
-    if (ch == '\\') ch = '/';
-    hash ^= ch|0x20; // this converts ASCII capitals to locase (and destroys other, but who cares)
-    hash *= 16777619U; // 32-bit fnv prime
+static uint32_t murmurHash3BufCI (const void *key, size_t len, uint32_t seed) {
+  #define rotl32(x_,r_) (((x_)<<(r_))|((x_)>>(32u-(r_))))
+
+  enum {
+    c1_32 = 0xcc9e2d51U,
+    c2_32 = 0x1b873593U,
+  };
+
+  const uint8_t *data = (const uint8_t *)key;
+  const size_t nblocks = len/4U;
+
+  uint32_t h1 = seed;
+
+  // body
+  const uint32_t *blocks = (const uint32_t *)data;
+  size_t i = nblocks;
+  while (i--) {
+    uint32_t k1 = *blocks++; //getblock32(blocks,i);
+    k1 |= 0x20202020u; // ignore case
+    k1 *= c1_32;
+    k1 = rotl32(k1,15);
+    k1 *= c2_32;
+    h1 ^= k1;
+    h1 = rotl32(h1,13);
+    h1 = h1*5U+0xe6546b64U;
   }
-  // better avalanche
-  hash += hash << 13;
-  hash ^= hash >> 7;
-  hash += hash << 3;
-  hash ^= hash >> 17;
-  hash += hash << 5;
-  return hash;
+
+  // tail
+  const uint8_t *tail = (const uint8_t *)(data+nblocks*4U);
+  uint32_t k1 = 0u;
+  switch (len&3U) {
+    case 3: k1 ^= (tail[2]|0x20u)<<16; /* fallthrough */
+    case 2: k1 ^= (tail[1]|0x20u)<<8; /* fallthrough */
+    case 1: k1 ^= (tail[0]|0x20u); k1 *= c1_32; k1 = rotl32(k1,15); k1 *= c2_32; h1 ^= k1; /* fallthrough */
+  }
+
+  // finalization mix - force all bits of a hash block to avalanche
+  h1 ^= len;
+  h1 ^= h1>>16;
+  h1 *= 0x85ebca6b;
+  h1 ^= h1>>13;
+  h1 *= 0xc2b2ae35;
+  h1 ^= h1>>16;
+
+  return h1;
+
+  #undef rotl32
+}
+
+static CC25519_INLINE uint32_t hashStrCI (const void *buf) {
+  return (buf ? murmurHash3BufCI(buf, strlen(buf), 0x29aU) : 0u);
 }
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 static int nameEqu (const char *s0, const char *s1) {
   if (!s0 || !s1) return 0;
   while (*s0 && *s1) {
@@ -1480,6 +1515,7 @@ typedef struct __attribute__((packed)) {
   uint32_t fchunk;     // first chunk
   uint32_t nhash;      // name hash
   uint32_t bknext;     // next name in bucket
+  uint32_t gnameofs;   // group name offset
   uint64_t ftime;      // since Epoch, 0 is "unknown"
   uint32_t crc32;      // full crc32
   uint32_t upksize;    // unpacked file size
@@ -1609,6 +1645,56 @@ static vwad_bool is_valid_comment (const char *cmt, uint32_t cmtlen) {
 
 //==========================================================================
 //
+//  is_valid_file_name
+//
+//==========================================================================
+static vwad_bool is_valid_file_name (const char *str) {
+  if (!str || !str[0] || str[0] == '/') return 0;
+  if ((uintptr_t)str&0x03) return 0; // it should be aligned
+  const size_t slen = strlen(str);
+  if (slen > 255) return 0; // too long
+  if (str[slen - 1] == '/') return 0; // should not end with a slash
+  size_t eofs = slen;
+  do {
+    if (str[eofs]) return 0;
+    ++eofs;
+  } while ((eofs&0x03) != 0);
+  // check chars
+  for (size_t f = 0; f < slen; ++f) {
+    char ch = str[f];
+    if (ch < 32 || ch >= 127) return 0;
+    if (ch == '/' && f != 0 && str[f - 1] == '/') return 0;
+  }
+  return 1;
+}
+
+
+//==========================================================================
+//
+//  is_valid_group_name
+//
+//==========================================================================
+static vwad_bool is_valid_group_name (const char *str) {
+  if (!str) return 0;
+  if ((uintptr_t)str&0x03) return 0; // it should be aligned
+  const size_t slen = strlen(str);
+  if (slen > 255) return 0; // too long
+  size_t eofs = slen;
+  do {
+    if (str[eofs]) return 0;
+    ++eofs;
+  } while ((eofs&0x03) != 0);
+  // check chars
+  for (size_t f = 0; f < slen; ++f) {
+    uint8_t ch = ((const uint8_t *)str)[f];
+    if (ch < 32) return 0;
+  }
+  return 1;
+}
+
+
+//==========================================================================
+//
 //  vwad_open_archive
 //
 //==========================================================================
@@ -1716,7 +1802,6 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     return NULL;
   }
 
-  //uint32_t chunkOfs = 4+32+64+(uint32_t)sizeof(mhdr);
   uint32_t fcofs = 4 + (uint32_t)sizeof(edsign) + (uint32_t)sizeof(pubkey) +
                    1+1+2 + aslen + 2 + tslen + 4 +
                    (uint32_t)sizeof(mhdr);
@@ -1895,13 +1980,13 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     return NULL;
   }
 
-  void *unpkdir = xalloc(mman, dhdr.upkdirsize + 1); // always end it with 0
+  void *unpkdir = xalloc(mman, dhdr.upkdirsize + 4); // always end it with 0
   if (!unpkdir) {
     xfree(mman, wadcomment);
     logf(ERROR, "vwad_open_archive: cannot allocate memory for unpacked directory");
     return NULL;
   }
-  ((uint8_t *)unpkdir)[dhdr.upkdirsize] = 0;
+  put_u32(unpkdir + dhdr.upkdirsize, 0);
 
   void *pkdir = xalloc(mman, dhdr.pkdirsize);
   if (!pkdir) {
@@ -2022,7 +2107,8 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     goto error;
   }
   memcpy(&wad->namesSize, wad->updir + upofs, 4); upofs += 4;
-  if (wad->namesSize < 2 || wad->namesSize > 0x3fffffffU ||
+  if (wad->namesSize < 8 || wad->namesSize > 0x3fffffffU ||
+      (wad->namesSize&0x03) != 0 ||
       wad->namesSize >= dhdr.upkdirsize ||
       wad->namesSize != dhdr.upkdirsize - upofs)
   {
@@ -2090,16 +2176,14 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     xfree(mman, wadcomment);
   }
 
-  //uint32_t chunkOfs = 4+32+64+(uint32_t)sizeof(mhdr);
   uint32_t chunkOfs = fcofs;
-  //if (mhdr.p_cmt_size != 0) chunkOfs += mhdr.p_cmt_size; else chunkOfs += mhdr.u_cmt_size;
   uint32_t currChunk = 0;
 
   for (uint32_t fidx = 1; fidx < wad->fileCount; ++fidx) {
     FileInfo *fi = &wad->files[fidx];
 
     if (fi->nhash != 0 || fi->bknext != 0 || fi->fchunk != 0) {
-      logf(DEBUG, "invalid file data");
+      logf(DEBUG, "invalid file data (zero fields are non-zero)");
       goto error;
     }
 
@@ -2108,37 +2192,68 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     fi->upksize = get_u32(&fi->upksize);
     fi->chunkCount = get_u32(&fi->chunkCount);
     fi->nameofs = get_u32(&fi->nameofs);
+    fi->gnameofs = get_u32(&fi->gnameofs);
 
     if (fi->chunkCount == 0) {
       if (fi->upksize != 0) {
-        logf(DEBUG, "invalid file data");
+        logf(DEBUG, "invalid file data (file size, !0)");
         goto error;
       }
     } else {
       if (fi->upksize == 0) {
-        logf(DEBUG, "invalid file data");
+        logf(DEBUG, "invalid file data (file size, 0");
         goto error;
       }
     }
+
     if (fi->upksize > 0x7fffffffU || fi->nameofs >= wad->namesSize) {
-      logf(DEBUG, "invalid file data");
+      logf(DEBUG, "invalid file data (name offset)");
       goto error;
     }
+
     // should be aligned
-    if (fi->nameofs&0x03) {
-      logf(DEBUG, "invalid file data");
+    if (fi->nameofs < 4 || (fi->nameofs&0x03) != 0) {
+      logf(DEBUG, "invalid file data (name align)");
       goto error;
     }
 
     const char *name = wad->names + fi->nameofs;
-    if (!name[0]) {
-      logf(DEBUG, "invalid file data");
+    if (!is_valid_file_name(name)) {
+      logf(DEBUG, "invalid file data (file name) (%s)", name);
       goto error;
     }
 
-    // insert name into hash table
-    fi->nhash = fnvHashStrCI(name);
+    if (fi->upksize > 0x7fffffffU || fi->gnameofs >= wad->namesSize) {
+      logf(DEBUG, "invalid file data (group name offset)");
+      goto error;
+    }
+
+    // should be aligned
+    if (fi->gnameofs&0x03) {
+      logf(DEBUG, "invalid file data (group name align)");
+      goto error;
+    }
+
+    if (!is_valid_group_name(wad->names + fi->gnameofs)) {
+      logf(DEBUG, "invalid file data (group name)");
+      goto error;
+    }
+
+    // insert name into hash table (also, check for duplicates)
+    fi->nhash = hashStrCI(name);
     const uint32_t bkt = fi->nhash % HASH_BUCKETS;
+
+    if (wad->buckets[bkt]) {
+      FileInfo *bkfi = &wad->files[wad->buckets[bkt]];
+      while (bkfi != NULL && !nameEqu(name, wad->names + bkfi->nameofs)) {
+        if (bkfi->bknext) bkfi = &wad->files[bkfi->bknext]; else bkfi = NULL;
+      }
+      if (bkfi != NULL) {
+        logf(DEBUG, "duplicate file name (%s)", name);
+        goto error;
+      }
+    }
+
     fi->bknext = wad->buckets[bkt];
     wad->buckets[bkt] = fidx;
 
@@ -2343,6 +2458,20 @@ const char *vwad_get_file_name (vwad_handle *wad, vwad_fidx fidx) {
 
 //==========================================================================
 //
+//  vwad_get_file_group_name
+//
+//==========================================================================
+const char *vwad_get_file_group_name (vwad_handle *wad, vwad_fidx fidx) {
+  if (wad && fidx > 0 && wad->fileCount > 1 && fidx < wad->fileCount) {
+    return wad->names + wad->files[fidx].gnameofs;
+  } else {
+    return NULL;
+  }
+}
+
+
+//==========================================================================
+//
 //  vwad_get_file_size
 //
 //==========================================================================
@@ -2369,7 +2498,7 @@ static vwad_fidx find_file (vwad_handle *wad, const char *name) {
     }
   }
   if (wad && wad->fileCount > 1 && name && name[0]) {
-    const uint32_t hash = fnvHashStrCI(name);
+    const uint32_t hash = hashStrCI(name);
     const uint32_t bkt = hash % HASH_BUCKETS;
     uint32_t fidx = wad->buckets[bkt];
     while (fidx != 0) {

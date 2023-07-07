@@ -2,4 +2,5 @@ $author "K8Vavoom developers"
 $title "Doom: No Rest For The Living support"
 $dest basepak.vwad
 
+$filegroup "various definitions"
 mapinfo.txt  @CMAKE_CURRENT_SOURCE_DIR@/mapinfo.txt

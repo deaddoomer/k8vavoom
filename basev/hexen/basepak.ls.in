@@ -3,19 +3,23 @@ $title "Hexen support"
 $dest basepak.vwad
 
 // crosshairs
+$filegroup "crosshairs"
 graphics/croshai1.lmp  @CMAKE_CURRENT_SOURCE_DIR@/graphics/croshai1.lmp
 graphics/croshai2.lmp  @CMAKE_CURRENT_SOURCE_DIR@/graphics/croshai2.lmp
 graphics/croshai3.lmp  @CMAKE_CURRENT_SOURCE_DIR@/graphics/croshai3.lmp
 
 // some missing characters in small font
+$filegroup "SmallFont: missing chars"
 graphics/fonta30.lmp  @CMAKE_CURRENT_SOURCE_DIR@/graphics/fonta30.lmp
 graphics/fonta63.lmp  @CMAKE_CURRENT_SOURCE_DIR@/graphics/fonta63.lmp
 
 // progs
+$filegroup "progs"
 $recursedirext|.vc|  progs/cgame/  @CMAKE_SOURCE_DIR@/progs/hexen/cgame/
 $recursedirext|.vc|  progs/game/  @CMAKE_SOURCE_DIR@/progs/hexen/game/
 
 // various definitions
+$filegroup "various definitions"
 animdefs.txt        @CMAKE_CURRENT_SOURCE_DIR@/animdefs.txt
 lockdefs.txt        @CMAKE_CURRENT_SOURCE_DIR@/lockdefs.txt
 mapinfo.txt         @CMAKE_CURRENT_SOURCE_DIR@/mapinfo.txt
@@ -25,5 +29,6 @@ sprite_rename.txt   @CMAKE_CURRENT_SOURCE_DIR@/sprite_rename.txt
 terrain.txt         @CMAKE_CURRENT_SOURCE_DIR@/terrain.txt
 sprofs.txt          @CMAKE_CURRENT_SOURCE_DIR@/sprofs.txt
 
+$filegroup "palette translation tables"
 $load @CMAKE_CURRENT_SOURCE_DIR@/palette.pcx
 translat.dat  raw 0 1 256 7

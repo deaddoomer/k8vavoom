@@ -2,5 +2,6 @@ $author "K8Vavoom developers"
 $title "Chex Quest support"
 $dest basepak.vwad
 
+$filegroup "various definitions"
 mapinfo.txt  @CMAKE_CURRENT_SOURCE_DIR@/mapinfo.txt
 language.en  @CMAKE_CURRENT_SOURCE_DIR@/language.en

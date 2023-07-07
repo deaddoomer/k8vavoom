@@ -2,7 +2,9 @@ $author "K8Vavoom developers"
 $title "HacX support"
 $dest basepak.vwad
 
+$filegroup "decorate scripts"
 after_iwad/decorate.txt  @CMAKE_CURRENT_SOURCE_DIR@/after_iwad/decorate.txt
 
 // lights
+$filegroup "light definitions"
 vfxdefs.txt  @CMAKE_CURRENT_SOURCE_DIR@/vfxdefs.txt

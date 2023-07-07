@@ -127,6 +127,7 @@ static char destfile[4096];
 static char *destcomment = NULL;
 static char *destauthor = NULL;
 static char *desttitle = NULL;
+static char *currgroup = NULL;
 
 static bool Fon2ColorsUsed[256] = {0};
 
@@ -297,7 +298,8 @@ static void AddToZip (const char *Name, const void *Data, size_t Size, uint64_t 
     instrm.read = &bufioread;
     instrm.write = &bufiowrite;
     instrm.udata = (void *)&nfo;
-    vwadwr_result res = vwadwr_pack_file(wad_dir, &instrm, comp_level, Name,
+    vwadwr_result res = vwadwr_pack_file(wad_dir, &instrm, comp_level,
+                                         Name, currgroup,
                                          ftime, &upksize, &pksize,
                                          NULL, NULL);
     if (res != 0) {
@@ -1118,6 +1120,7 @@ static void ParseScript (const char *name) {
   if (destcomment) { free(destcomment); destcomment = NULL; }
   if (destauthor) { free(destauthor); destauthor = NULL; }
   if (desttitle) { free(desttitle); desttitle = NULL; }
+  if (currgroup) { free(currgroup); currgroup = NULL; }
 
   ExtractFilePath(name, basepath, sizeof(basepath));
   if (strlen(basepath)+1 > sizeof(srcpath)) Error("Path too long");
@@ -1208,6 +1211,19 @@ static void ParseScript (const char *name) {
         strcpy(destfile, /*fn*/(sc_String));
       }
       fprintf(stderr, "creating '%s' from script '%s'...\n", destfile, name);
+      continue;
+    }
+
+    if (SC_Compare("$filegroup")) {
+      SC_MustGetString();
+      #if VAVOOM_VLUMPY_VWAD == 1
+      if (!vwadwr_is_valid_group_name(sc_String)) Error("invalid group name: \"%s\"", sc_String);
+      #endif
+      const size_t crd = strlen(sc_String);
+      if (crd > 255) Error("group too big");
+      if (currgroup) free(currgroup);
+      currgroup = (char *)calloc(1, crd + 1);
+      strcpy(currgroup, sc_String);
       continue;
     }
 
@@ -1489,6 +1505,18 @@ static void logger (int type, const char *fmt, ...) {
   va_end(ap);
   fputc('\n', fo);
 }
+
+
+static void assertion_failed (const char *fmt, ...) {
+  fflush(stderr); fflush(stdout);
+  fprintf(stderr, "\nASSERTION FAILED!\n");
+  va_list ap;
+  va_start(ap, fmt);
+  vfprintf(stderr, fmt, ap);
+  va_end(ap);
+  fputc('\n', stderr);
+  exit(1);
+}
 #endif
 
 
@@ -1502,6 +1530,7 @@ int main (int argc, char *argv[]) {
 
   #if VAVOOM_VLUMPY_VWAD == 1
   vwadwr_logf = logger;
+  vwadwr_assertion_failed = assertion_failed;
   #if VAVOOM_VLUMPY_VWAD_K8 == 1
   useVWAD = true;
   #endif

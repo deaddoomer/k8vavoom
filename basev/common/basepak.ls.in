@@ -3,14 +3,18 @@ $title "Common (shared) data for all games"
 $dest basepak.vwad
 
 // default config files
+$filegroup "default configs"
 k8vavoom_default.cfg  @CMAKE_CURRENT_SOURCE_DIR@/k8vavoom_default.cfg
 k8vavoom_startup.vs   @CMAKE_CURRENT_SOURCE_DIR@/k8vavoom_startup.vs
 
 // native engine classes, common engine classes, UI
+$filegroup "progs"
 $recursedirext| .vc| progs/  @CMAKE_SOURCE_DIR@/progs/common/
+$filegroup "UI definition"
 $recursedirext|.txt| uidef/  @CMAKE_CURRENT_SOURCE_DIR@/uidef/
 
 // graphics
+$filegroup "graphics"
 $recursedir graphics/  @CMAKE_CURRENT_SOURCE_DIR@/graphics/
 
 // default texture
@@ -19,25 +23,31 @@ textures/-noflat-.png @CMAKE_CURRENT_SOURCE_DIR@/textures/-noflat-.png
 // common sprites
 $recursedir sprites/  @CMAKE_CURRENT_SOURCE_DIR@/sprites/
 
-// debug movels
+// debug models
+$filegroup "debug"
 $recursedir models/  @CMAKE_CURRENT_SOURCE_DIR@/models/
 
 // sounds
+$filegroup "sounds"
 $recursedir sounds/  @CMAKE_CURRENT_SOURCE_DIR@/sounds/
 
 // color names
+$filegroup "color names"
 x11r6rgb.txt      @CMAKE_CURRENT_SOURCE_DIR@/x11r6rgb.txt
 
 // language strings
+$filegroup "languages"
 language.en       @CMAKE_CURRENT_SOURCE_DIR@/language.en
 
 // base scripts
+$filegroup "various definitions"
 terrain.txt       @CMAKE_CURRENT_SOURCE_DIR@/terrain.txt
 lockdefs.txt      @CMAKE_CURRENT_SOURCE_DIR@/lockdefs.txt
 reverbs.txt       @CMAKE_CURRENT_SOURCE_DIR@/reverbs.txt
 textcolo.txt      @CMAKE_CURRENT_SOURCE_DIR@/textcolo.txt
 
 // intermission scripts
+$filegroup "intermission scripts"
 in_epi1.txt       @CMAKE_CURRENT_SOURCE_DIR@/in_epi1.txt
 in_epi2.txt       @CMAKE_CURRENT_SOURCE_DIR@/in_epi2.txt
 in_epi3.txt       @CMAKE_CURRENT_SOURCE_DIR@/in_epi3.txt
@@ -66,21 +76,26 @@ k8_decaldef_test.txt  @CMAKE_CURRENT_SOURCE_DIR@/k8_decaldef_test.txt
 k8_decaldef_gore.txt  @CMAKE_CURRENT_SOURCE_DIR@/k8_decaldef_gore.txt
 
 // decorate scripts
+$filegroup "decorate scripts"
 decorate.txt                  @CMAKE_CURRENT_SOURCE_DIR@/decorate.txt
 $recursedirext|.txt| actors/  @CMAKE_CURRENT_SOURCE_DIR@/actors/
 
 // effect scripts
+$filegroup "effect scripts"
 vfxdefs.txt                   @CMAKE_CURRENT_SOURCE_DIR@/vfxdefs.txt
 $recursedirext|.txt| fxdefs/  @CMAKE_CURRENT_SOURCE_DIR@/fxdefs/
 gldefs.txt                    @CMAKE_CURRENT_SOURCE_DIR@/gldefs.txt
 
+$filegroup "sound info"
 sndinfo.txt  @CMAKE_CURRENT_SOURCE_DIR@/sndinfo.txt
 
 // GLSL shaders
+$filegroup "GLSL shaders"
 $recursedirext| .fs| glshaders/  @CMAKE_CURRENT_SOURCE_DIR@/glshaders/
 $recursedirext| .vs| glshaders/  @CMAKE_CURRENT_SOURCE_DIR@/glshaders/
 $recursedirext|.inc| glshaders/  @CMAKE_CURRENT_SOURCE_DIR@/glshaders/
 
+$filegroup "fonts"
 // console font
 $load @CMAKE_CURRENT_SOURCE_DIR@/confont.pcx
 // this will be used by k8vavoom
@@ -92,5 +107,6 @@ confont.lmp  fon1
 $load @CMAKE_CURRENT_SOURCE_DIR@/dbigfont.pcx
 dbigfont.lmp  fon2
 
+$filegroup "credits"
 // credits for various things
 $recursedirext|.txt| credits/  @CMAKE_CURRENT_SOURCE_DIR@/credits/

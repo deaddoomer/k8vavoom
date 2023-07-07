@@ -139,8 +139,15 @@ vwad_result vwad_get_pubkey (vwad_handle *wad, vwad_public_key pubkey);
 // avaliable files are [1..res] (i.e. including the returned value).
 // on error, returns 0.
 vwad_fidx vwad_get_max_fidx (vwad_handle *wad);
+
 // first index is 1, last is `vwad_get_file_count() - 1`.
 // i.e. index 0 is unused (it usually means "no file").
+// returns NULL on invalid `fidx`; group name can be empty string
+const char *vwad_get_file_group_name (vwad_handle *wad, vwad_fidx fidx);
+
+// first index is 1, last is `vwad_get_file_count() - 1`.
+// i.e. index 0 is unused (it usually means "no file").
+// returns NULL on invalid `fidx`
 const char *vwad_get_file_name (vwad_handle *wad, vwad_fidx fidx);
 // returns negative number on error.
 int vwad_get_file_size (vwad_handle *wad, vwad_fidx fidx);
