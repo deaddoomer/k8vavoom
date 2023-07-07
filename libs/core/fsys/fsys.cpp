@@ -24,6 +24,7 @@
 //**
 //**************************************************************************
 #include "fsys_local.h"
+#include "formats/vwadvfs.h"
 
 
 EName fsys_report_added_paks_logtype = NAME_Init;
@@ -52,6 +53,124 @@ TArray<VStr> fsysWadFileNames;
 TArray<VStr> fsys_game_filters;
 
 mythread_mutex fsys_glock;
+
+
+struct KnownKey {
+  FSysPublicKey key;
+  char *signer;
+  KnownKey *next;
+};
+
+
+static KnownKey *knownKeyList;
+
+
+//==========================================================================
+//
+//  FSYS_DecodePublicKey
+//
+//==========================================================================
+bool FSYS_DecodePublicKey (const char *asciikeystr, FSysPublicKey key) {
+  if (!key || !asciikeystr || !asciikeystr[0]) return false;
+  vwad_z85_key kstr;
+  size_t dpos = 0;
+  char ch;
+  do {
+    ch = *asciikeystr++;
+    if (ch > 32 && ch < 127) {
+      if (dpos == sizeof(kstr)) return false;
+      kstr[dpos++] = ch;
+    }
+  } while (ch != 0);
+  if (dpos != sizeof(kstr) - 1u) return false;
+  kstr[dpos] = 0;
+  if (vwad_z85_decode_key(kstr, key) != 0) return false;
+  return true;
+}
+
+
+//==========================================================================
+//
+//  FSYS_FindPublicKey
+//
+//  returns NULL for unknown key
+//
+//==========================================================================
+const char *FSYS_FindPublicKey (const FSysPublicKey key) {
+  if (key != nullptr) {
+    for (KnownKey *k = knownKeyList; k != nullptr; k = k->next) {
+      if (memcmp(k->key, key, 32) == 0) return k->signer;
+    }
+  }
+  return NULL;
+}
+
+
+//==========================================================================
+//
+//  FSYS_RegisterPublicKey
+//
+//  empty/NULL `signer` means "unknown signer"
+//
+//==========================================================================
+void FSYS_RegisterPublicKey (const char *signer, const FSysPublicKey key) {
+  KnownKey *k;
+  KnownKey *p;
+
+  if (!key) return;
+  if (signer == nullptr) signer = "";
+
+  while (signer[0] && (uint8_t)signer[0] <= 32) ++signer;
+
+  size_t slen = strlen(signer);
+  char *sgn;
+  if (slen > 127) {
+    slen = 127;
+    sgn = (char *)Z_Malloc(slen + 16);
+    if (sgn == nullptr) return;
+    memcpy(sgn, signer, slen);
+    sgn[slen] = 0; strcat(sgn, "...");
+  } else {
+    sgn = (char *)Z_Malloc(slen + 1);
+    if (sgn == nullptr) return;
+    strcpy(sgn, signer);
+  }
+
+  slen = strlen(sgn);
+  while (slen != 0 && (uint8_t)sgn[slen - 1] <= 32) --slen;
+  sgn[slen] = 0;
+
+  if (!sgn[slen]) {
+    Z_Free(sgn);
+    p = nullptr;
+    k = knownKeyList;
+    while (k != nullptr && memcmp(k->key, key, 32) != 0) {
+      p = k; k = k->next;
+    }
+    if (k != nullptr) {
+      if (p != nullptr) p->next = k->next; else knownKeyList = k->next;
+      Z_Free(k->signer);
+      Z_Free(k);
+    }
+  } else {
+    for (size_t f = 0; f < slen; ++f) {
+      if (sgn[f] < 32 || sgn[f] >= 127) sgn[f] = '?';
+    }
+    k = knownKeyList;
+    while (k != nullptr && memcmp(k->key, key, 32) != 0) k = k->next;
+    if (k) {
+      Z_Free(k->signer);
+      k->signer = sgn;
+    } else {
+      k = (KnownKey *)Z_Calloc(sizeof(KnownKey));
+      if (k == nullptr) { Z_Free(sgn); return; }
+      memcpy(k->key, key, 32);
+      k->signer = sgn;
+      k->next = knownKeyList;
+      knownKeyList = k;
+    }
+  }
+}
 
 
 //==========================================================================

@@ -597,3 +597,66 @@ bool FL_IsIgnoredPlayerClass (VStr cname) {
   if (cname.length() == 0) return true;
   return ignoredPlayerClassesMap.has(cname);
 }
+
+
+//==========================================================================
+//
+//  ParseDetectors
+//
+//==========================================================================
+static void ParseVWadKeys (VStr name, bool inHomeDir) {
+  if (name.isEmpty()) return;
+
+  //GCon->Logf(NAME_Debug, "===<%s> : <%s>===", *name, *fl_configdir);
+  if (name.isAbsolutePath()) {
+    if (!Sys_FileExists(name)) return;
+  } else {
+    if (inHomeDir) {
+      if (fl_configdir.IsNotEmpty() && Sys_FileExists(fl_configdir+"/"+name)) {
+        name = fl_configdir+"/"+name;
+      } else {
+        return;
+      }
+    } else {
+      if (Sys_FileExists(fl_basedir+"/"+name)) {
+        name = fl_basedir+"/"+name;
+      } else {
+        return;
+      }
+    }
+  }
+
+  GCon->Logf(NAME_Init, "Parsing public keys file \"%s\"", *name);
+  VScriptParser *sc = new VScriptParser(name, FL_OpenSysFileRead(name));
+  sc->SetCMode(true);
+  for (;;) {
+    if (sc->Check("public_keys_for")) {
+      sc->ExpectString();
+      VStr signer = sc->String;
+      sc->Expect("{");
+      while (!sc->Check("}")) {
+        if (sc->Check("key")) {
+          if (!sc->Check("=")) {
+            sc->Error("expecting '='");
+          }
+          if (!sc->GetString()) {
+            sc->Error("expecting key string");
+          }
+          FSysPublicKey key;
+          if (!FSYS_DecodePublicKey(*sc->String, key)) {
+            sc->Error(va("cannot decode key string \"%s\"", *sc->String));
+          }
+          FSYS_RegisterPublicKey(*signer, key);
+          if (!sc->Check(";")) {
+            sc->Error("expecting ';'");
+          }
+        } else {
+          sc->Error(va("unknown key option '%s'", *sc->String));
+        }
+      }
+    } else {
+      if (!sc->GetString()) break;
+      sc->Error(va("unknown key section '%s'", *sc->String));
+    }
+  }
+}

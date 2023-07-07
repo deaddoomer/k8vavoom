@@ -2701,6 +2701,11 @@ void FL_Init () {
   ParseDetectors("basev/detectors.txt", false);
   // parse detectors from home directory
   ParseDetectors("detectors.rc", true);
+
+  ParseVWadKeys("basev/vwad_known_keys.txt", false);
+  // parse keys from home directory
+  ParseVWadKeys("vwad_known_keys.rc", true);
+
   #ifndef _WIN32
   /*
   {

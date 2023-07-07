@@ -36,6 +36,17 @@
 // these days too; so i opted to exclude GWA support.
 // i had a define to turn GWA support on, but now i removed it completely.
 
+typedef unsigned char FSysPublicKey[32];
+
+
+// empty/NULL `signer` means "unknown signer"
+void FSYS_RegisterPublicKey (const char *signer, const FSysPublicKey key);
+
+// returns NULL for unknown key
+const char *FSYS_FindPublicKey (const FSysPublicKey key);
+
+bool FSYS_DecodePublicKey (const char *asciikeystr, FSysPublicKey key);
+
 void FSYS_Shutdown ();
 
 void FSYS_InitOptions (VParsedArgs &pargs);

@@ -1,0 +1,3 @@
+public_keys_for "Ketmar Dark" {
+  key = "mHYS^gckt0?f&7663u!Zz=zcNkFZPtFxEl*7Dh(4>?N^>";
+}

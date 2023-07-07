@@ -70,7 +70,7 @@ static void logger (int type, const char *fmt, ...) {
   va_list ap;
   switch (type) {
     case VWAD_LOG_NOTE:
-      #if 0
+      #if 1
       va_start(ap, fmt);
       GLog.doWrite(NAME_Init, fmt, ap, true);
       va_end(ap);
@@ -103,6 +103,16 @@ static void logger (int type, const char *fmt, ...) {
 }
 
 
+static void assertion_failed (const char *fmt, ...) {
+  static char msgbuf[1024];
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(msgbuf, sizeof(msgbuf), fmt, ap);
+  va_end(ap);
+  Sys_Error("%s", msgbuf);
+}
+
+
 #include "fsys_vwadfread.cpp"
 
 
@@ -117,6 +127,7 @@ VVWadFile::VVWadFile (VStream *fstream, VStr name)
   : VPakFileBase(name)
 {
   vwad_logf = logger;
+  vwad_assertion_failed = assertion_failed;
   OpenArchive(fstream);
   if (fstream->IsError()) Sys_Error("error opening archive \"%s\"", *PakFileName);
 }
@@ -162,7 +173,12 @@ void VVWadFile::OpenArchive (VStream *fstream) {
       if (memcmp(pubkey, k8PubKey, sizeof(pubkey)) == 0) {
         GLog.Logf(NAME_Init, "SIGNED BY: Ketmar Dark");
       } else {
-        GLog.Logf(NAME_Init, "SIGNED ARCHIVE");
+        const char *signer = FSYS_FindPublicKey(pubkey);
+        if (signer) {
+          GLog.Logf(NAME_Init, "SIGNED BY: %s", signer);
+        } else {
+          GLog.Logf(NAME_Init, "SIGNED ARCHIVE");
+        }
       }
     }
   }
