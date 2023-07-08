@@ -17,7 +17,8 @@
 // to test the code
 //#define VWAD_COMPILE_DECOMPRESSOR
 
-#define VWADWR_FILE_ENTRY_SIZE  (4 * 10)
+#define VWADWR_FILE_ENTRY_SIZE   (4 * 10)
+#define VWADWR_CHUNK_ENTRY_SIZE  (4 + 2 + 2)
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -1941,8 +1942,7 @@ static char *normalize_name (vwadwr_memman *mman, const char *s) {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-// it MUST be a prime
-#define HASH_BUCKETS  (1021)
+#define HASH_BUCKETS  (1024)
 
 typedef struct ChunkInfo_t ChunkInfo;
 struct ChunkInfo_t {
@@ -2530,8 +2530,8 @@ vwadwr_bool vwadwr_is_valid_dir (const vwadwr_dir *dir) {
     dir != NULL &&
     dir->namesSize >= 8 &&
     (dir->namesSize&0x03) == 0 &&
-    dir->chunkCount > 0 && dir->chunkCount < 0x3ffffff &&
-    dir->fileCount > 1 && dir->fileCount < 0x1ffffff;
+    dir->chunkCount > 0 && dir->chunkCount <= 0x1fffffffU &&
+    dir->fileCount > 1 && dir->fileCount <= 0xffffU;
 }
 
 
@@ -2545,9 +2545,9 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
   if (!vwadwr_is_valid_dir(dir)) return -666;
 
   // calculate directory size
-  const uint64_t dirsz64 = 4+(uint64_t)dir->namesSize+
+  const uint64_t dirsz64 = (uint64_t)dir->namesSize+
                            4+(uint64_t)dir->fileCount*VWADWR_FILE_ENTRY_SIZE+
-                           4+(uint64_t)dir->chunkCount*(4+2+2);
+                           4+(uint64_t)dir->chunkCount*VWADWR_CHUNK_ENTRY_SIZE;
 
   if (dirsz64 > 0xffffff + 1) {
     logf(ERROR, "directory too big");
@@ -2563,26 +2563,28 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
   }
 
   // create names table
-  uint32_t namesStart = 4 + 4+dir->fileCount*VWADWR_FILE_ENTRY_SIZE +
-                            4+dir->chunkCount*(4+2+2);
+  uint32_t namesStart = 4+dir->fileCount*VWADWR_FILE_ENTRY_SIZE +
+                        4+dir->chunkCount*VWADWR_CHUNK_ENTRY_SIZE;
   uint32_t fdirofs = 0;
   const uint32_t z32 = 0;
   const uint16_t z16 = 0;
 
-  // put chunks
+  // put counters
   put_u32(fdir + fdirofs, dir->chunkCount); fdirofs += 4;
+  put_u32(fdir + fdirofs, dir->fileCount); fdirofs += 4;
+
+  // put chunks
   for (ChunkInfo *ci = dir->chunksHead; ci; ci = ci->next) {
     memcpy(fdir + fdirofs, &z32, 4); fdirofs += 4;
     memcpy(fdir + fdirofs, &z16, 2); fdirofs += 2;
     put_u16(fdir + fdirofs, ci->pksize); fdirofs += 2;
   }
-  vassert(fdirofs = 4+dir->chunkCount*(4+2+2));
+  vassert(fdirofs = 4+4 + dir->chunkCount*VWADWR_CHUNK_ENTRY_SIZE);
 
   // put files, and fill names table
-  put_u32(fdir + fdirofs, dir->fileCount); fdirofs += 4;
   // first element is unused
   memset(fdir + fdirofs, 0, VWADWR_FILE_ENTRY_SIZE); fdirofs += VWADWR_FILE_ENTRY_SIZE;
-  uint32_t nameOfs = 4;
+  uint32_t nameOfs = 4; // first string is always empty
   for (FileInfo *fi = dir->filesHead->next; fi; fi = fi->next) {
     memcpy(fdir + fdirofs, &z32, 4); fdirofs += 4; // first chunk will be calculated
     memcpy(fdir + fdirofs, &z32, 4); fdirofs += 4;
@@ -2615,11 +2617,12 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
     vassert(nameOfs + namesStart <= dirsz);
   }
   vassert(nameOfs == dir->namesSize);
-  vassert(fdirofs = 4+dir->chunkCount*(4+2+2) + 4+dir->fileCount*VWADWR_FILE_ENTRY_SIZE);
-  vassert(fdirofs = namesStart - 4);
+  vassert(fdirofs = 4+dir->chunkCount*VWADWR_CHUNK_ENTRY_SIZE +
+                    4+dir->fileCount*VWADWR_FILE_ENTRY_SIZE);
+  vassert(fdirofs = namesStart);
 
   // names
-  put_u32(fdir + fdirofs, dir->namesSize); fdirofs += 4;
+  //put_u32(fdir + fdirofs, dir->namesSize); fdirofs += 4;
   fdirofs += nameOfs;
   vassert(fdirofs == dirsz);
 

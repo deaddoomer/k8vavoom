@@ -2111,7 +2111,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     return NULL;
   }
 
-
+  // allocate wad handle
   vwad_handle *wad = zalloc(mman, sizeof(vwad_handle));
   if (wad == NULL) {
     xfree(mman, wadcomment);
@@ -2136,10 +2136,13 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   strcpy(wad->author, author);
   strcpy(wad->title, title);
 
+  // get counters
+  wad->chunkCount = get_u32(wad->updir + 0);
+  wad->fileCount = get_u32(wad->updir + 4);
+
   // setup and check chunks
-  memcpy(&wad->chunkCount, wad->updir, 4);
-  uint32_t upofs = 4;
-  if (wad->chunkCount == 0 || wad->chunkCount > 0x3fffffffU/(uint32_t)sizeof(ChunkInfo) ||
+  uint32_t upofs = 4+4;
+  if (wad->chunkCount == 0 || wad->chunkCount > 0x1fffffffU ||
       wad->chunkCount*(uint32_t)sizeof(ChunkInfo) >= dhdr.upkdirsize ||
       wad->chunkCount*(uint32_t)sizeof(ChunkInfo) >= dhdr.upkdirsize - upofs)
   {
@@ -2162,12 +2165,12 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   }
 
   // files
-  if (upofs >= dhdr.upkdirsize || dhdr.upkdirsize - upofs < 4 + (uint32_t)sizeof(FileInfo)) {
+  if (upofs >= dhdr.upkdirsize || dhdr.upkdirsize - upofs < (uint32_t)sizeof(FileInfo) + 8) {
     logf(DEBUG, "invalid directory data (files, 0)");
     goto error;
   }
-  memcpy(&wad->fileCount, wad->updir + upofs, 4); upofs += 4;
-  if (wad->fileCount < 2 || wad->fileCount > 0x3fffffffU/(uint32_t)sizeof(FileInfo) ||
+
+  if (wad->fileCount < 2 || wad->fileCount > 0xffffU ||
       wad->fileCount * (uint32_t)sizeof(FileInfo) >= dhdr.upkdirsize ||
       wad->fileCount * (uint32_t)sizeof(FileInfo) >= dhdr.upkdirsize - upofs)
   {
@@ -2179,16 +2182,12 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   upofs += wad->fileCount * (uint32_t)sizeof(FileInfo);
 
   // names
-  if (upofs >= dhdr.upkdirsize || dhdr.upkdirsize - upofs < 4 + 2) {
+  if (upofs >= dhdr.upkdirsize || dhdr.upkdirsize - upofs < 8) {
     logf(DEBUG, "invalid directory data (names, 0)");
     goto error;
   }
-  memcpy(&wad->namesSize, wad->updir + upofs, 4); upofs += 4;
-  if (wad->namesSize < 8 || wad->namesSize > 0x3fffffffU ||
-      (wad->namesSize&0x03) != 0 ||
-      wad->namesSize >= dhdr.upkdirsize ||
-      wad->namesSize != dhdr.upkdirsize - upofs)
-  {
+  wad->namesSize = dhdr.upkdirsize - upofs;
+  if (wad->namesSize < 8 || wad->namesSize > 0x3fffffffU || (wad->namesSize&0x03) != 0) {
     logf(DEBUG, "invalid names size (%u)", wad->namesSize);
     goto error;
   }
