@@ -4,9 +4,47 @@
  * This program is free software. It comes without any warranty, to
  * the extent permitted by applicable law. You can redistribute it
  * and/or modify it under the terms of the Do What The Fuck You Want
- * To Public License, Version 2, as published by Sam Hocevar. See
- * http://sam.zoy.org/wtfpl/COPYING for more details.
+ * To Public License, Version 2, as published by Sam Hocevar.
+ * See http://www.wtfpl.net/ for more details.
  */
+/*
+  VWADs are chunked archives with zlib-comparable compression ratio.
+  usually VWAD size on max copression level is little lesser than
+  the corresponding ZIP file. the most useful feature of VWAD is the
+  ability to read files non-sequentially without unpacking the whole
+  file first. i.e. seeking in archive files is quite cheap, and can
+  be used freely.
+
+  any archive can be signed with Ed25519 digital signature. please,
+  note that you have to provide good cryptographically strong PRNG
+  by yourself (actually, you should use it to generate a private key,
+  the library itself doesn't need any external PRNG generator).
+
+  note that while archive chunks are "encrypted", this "encryption"
+  is not cryptographically strong, and used mostly to hide non-compressed
+  data from simple viewing tools.
+
+  archived files can be annotated with arbitrary "group name". this can
+  be used in various content creation tools. group tags are not used
+  by the library itself. ASCII chars in group name are case-insensitive.
+
+  also, archived files can have a 64-bit last modification timestamp
+  (seconds since Unix Epoch). you can use zero as timestamp if you
+  don't care.
+
+  file names can contain only ASCII chars, and names are case-insensitive.
+  path delimiter is "/". this limitation is because i don't want to
+  include unicode translation tables, or enforce any one-byte encoding.
+  this may be changed in the future.
+
+  archive can be tagged with author name, short description, and a comment.
+  author name and description can contain only ASCII chars in range [32..127).
+  comments can be multiline (only "\x0a" is allowed as a newline char), but
+  still limited to ASCII.
+
+  ASCII limitation may be relaxed in next library versions (i will prolly
+  enable some unicode plane 1 chars, encoded as UTF-8).
+*/
 #ifndef VWADWRITER_HEADER
 #define VWADWRITER_HEADER
 
