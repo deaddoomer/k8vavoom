@@ -2479,11 +2479,12 @@ unsigned int vwad_get_archive_comment_size (vwad_handle *wad) {
 void vwad_get_archive_comment (vwad_handle *wad, char *dest, unsigned int destsize) {
   if (!wad || !wad->comment || destsize < 2 || !dest) {
     if (dest && destsize) dest[0] = 0;
+  } else {
+    unsigned int csize = (unsigned int)strlen(wad->comment);
+    if (csize > destsize) csize = destsize;
+    if (csize) memcpy(dest, wad->comment, csize);
+    dest[csize] = 0;
   }
-  unsigned int csize = (unsigned int)strlen(wad->comment);
-  if (csize > destsize) csize = destsize;
-  if (csize) memcpy(dest, wad->comment, csize);
-  dest[csize] = 0;
 }
 
 
