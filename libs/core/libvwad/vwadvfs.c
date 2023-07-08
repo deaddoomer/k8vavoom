@@ -1828,6 +1828,20 @@ vwad_result vwad_normalize_file_name (const char *fname, char res[256]) {
 
 //==========================================================================
 //
+//  is_valid_string
+//
+//==========================================================================
+static vwad_bool is_valid_string (const char *str) {
+  if (!str) return 1;
+  // check chars
+  uint16_t ch;
+  do { ch = utf_decode(&str); } while (ch >= 32 && ch != VWAD_REPLACEMENT_CHAR);
+  return (ch == 0);
+}
+
+
+//==========================================================================
+//
 //  is_valid_comment
 //
 //==========================================================================
@@ -1965,6 +1979,10 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     return NULL;
   }
   author[aslen] = 0;
+  if (!is_valid_string(author)) {
+    logf(WARNING, "vwad_open_archive: invalid author string contents, discarded");
+    memset(author, 0, sizeof(author));
+  }
 
   // read title
   if (strm->read(strm, sign, 2) != 0) {
@@ -1984,6 +2002,10 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     return NULL;
   }
   title[tslen] = 0;
+  if (!is_valid_string(title)) {
+    logf(WARNING, "vwad_open_archive: invalid title string contents, discarded");
+    memset(title, 0, sizeof(title));
+  }
 
   // read final padding
   if (strm->read(strm, sign, 4) != 0) {
