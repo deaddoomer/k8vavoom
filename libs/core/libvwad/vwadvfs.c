@@ -85,23 +85,22 @@ static CC25519_INLINE uint32_t hashU32 (uint32_t v) {
 }
 
 static uint32_t deriveSeed (uint32_t seed, const uint8_t *buf, size_t buflen) {
-  if (!seed) seed = 0x29aU;
   for (uint32_t f = 0; f < buflen; f += 1) {
-    seed = hashU32(seed ^ buf[f]);
-    if (seed == 0) seed = 0x29aU;
+    seed = hashU32((seed + 0x9E3779B9u) ^ buf[f]);
   }
   // hash it again
-  seed = hashU32(seed);
-  if (seed == 0) seed = 0x29aU;
-  return seed;
+  return hashU32(seed + 0x9E3779B9u);
 }
 
 static void crypt_buffer (uint32_t xseed, uint64_t nonce, void *buf, uint32_t bufsize) {
-  // use Mulberry32-derived PRNG, because i don't need cryptostrong xor at all
-  // this produces each value once
+  // use xoroshiro-derived PRNG, because i don't need cryptostrong xor at all
   #define MB32X  do { \
     /* 2 to the 32 divided by golden ratio; adding forms a Weyl sequence */ \
-    rval = hashU32(xseed += 0x9E3779B9u); \
+    rval = (xseed += 0x9E3779B9u); \
+    rval ^= rval << 13; \
+    rval ^= rval >> 17; \
+    rval ^= rval << 5; \
+    /*rval = hashU32(xseed += 0x9E3779B9u); -- mulberry32*/ \
   } while (0)
 
   xseed += nonce;
@@ -2910,6 +2909,65 @@ int vwad_read (vwad_handle *wad, vwad_fd fd, void *dest, int len) {
     }
   }
   return read;
+}
+
+
+//==========================================================================
+//
+//  vwad_get_file_chunk_count
+//
+//  this is used in creator, to copy raw chunks
+//
+//==========================================================================
+int vwad_get_file_chunk_count (vwad_handle *wad, vwad_fidx fidx) {
+  if (wad && fidx > 0 && wad->fileCount > 1 && fidx < wad->fileCount) {
+    return (int)wad->files[fidx].chunkCount;
+  }
+  return -1;
+}
+
+
+//==========================================================================
+//
+//  vwad_get_file_chunk_size
+//
+//  this is used in creator, to copy raw chunks
+//
+//==========================================================================
+int vwad_get_file_chunk_size (vwad_handle *wad, vwad_fidx fidx, int chunkidx, int *upksz) {
+  if (wad && fidx > 0 && wad->fileCount > 1 && fidx < wad->fileCount &&
+      chunkidx >= 0 && chunkidx < (int)wad->files[fidx].chunkCount)
+  {
+    const ChunkInfo *ci = &wad->chunks[wad->files[fidx].fchunk + (uint32_t)chunkidx];
+    if (upksz) *upksz = (int)ci->upksize + 4;
+    return (int)(ci->pksize == 0 ? ci->upksize : ci->pksize) + 4; /* with CRC32 */
+  }
+  return -1;
+}
+
+
+//==========================================================================
+//
+//  vwad_read_raw_file_chunk
+//
+//  this is used in creator, to copy raw chunks
+//
+//==========================================================================
+vwad_result vwad_read_raw_file_chunk (vwad_handle *wad, vwad_fidx fidx, int chunkidx, void *buf) {
+  if (wad && fidx > 0 && wad->fileCount > 1 && fidx < wad->fileCount &&
+      chunkidx >= 0 && chunkidx < (int)wad->files[fidx].chunkCount && buf != NULL)
+  {
+    const FileInfo *fi = &wad->files[fidx];
+    const ChunkInfo *ci = &wad->chunks[fi->fchunk + (uint32_t)chunkidx];
+    const uint32_t csize = (ci->pksize == 0 ? ci->upksize : ci->pksize) + 4u; /* with CRC32 */
+    if (wad->strm->seek(wad->strm, ci->ofs) != 0) return -1;
+    if (wad->strm->read(wad->strm, buf, (int)csize) != 0) return -1;
+    // decrypt chunk
+    const uint32_t nonce = 4 + fi->fchunk + (uint32_t)chunkidx;
+    crypt_buffer(wad->xorRndSeed, nonce, buf, csize);
+    return 0;
+  }
+  return -1;
 }
 
 

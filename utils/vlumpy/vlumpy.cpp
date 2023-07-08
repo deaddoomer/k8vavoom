@@ -31,7 +31,8 @@
 #include "imglib.h"
 
 #if VAVOOM_VLUMPY_VWAD == 1
-# include "vwadwrite.h"
+# include "../../libs/core/libvwad/vwadvfs.h"
+# include "../../libs/core/libvwad/vwadwrite.h"
 #endif
 
 #include "../../libs/core/core.h"

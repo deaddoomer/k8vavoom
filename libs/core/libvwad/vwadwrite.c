@@ -893,23 +893,22 @@ static CC25519_INLINE uint32_t hashU32 (uint32_t v) {
 }
 
 static uint32_t deriveSeed (uint32_t seed, const uint8_t *buf, size_t buflen) {
-  if (!seed) seed = 0x29aU;
   for (uint32_t f = 0; f < buflen; f += 1) {
-    seed = hashU32(seed ^ buf[f]);
-    if (seed == 0) seed = 0x29aU;
+    seed = hashU32((seed + 0x9E3779B9u) ^ buf[f]);
   }
   // hash it again
-  seed = hashU32(seed);
-  if (seed == 0) seed = 0x29aU;
-  return seed;
+  return hashU32(seed + 0x9E3779B9u);
 }
 
 static void crypt_buffer (uint32_t xseed, uint64_t nonce, void *buf, uint32_t bufsize) {
-  // use Mulberry32-derived PRNG, because i don't need cryptostrong xor at all
-  // this produces each value once
+  // use xoroshiro-derived PRNG, because i don't need cryptostrong xor at all
   #define MB32X  do { \
     /* 2 to the 32 divided by golden ratio; adding forms a Weyl sequence */ \
-    rval = hashU32(xseed += 0x9E3779B9u); \
+    rval = (xseed += 0x9E3779B9u); \
+    rval ^= rval << 13; \
+    rval ^= rval >> 17; \
+    rval ^= rval << 5; \
+    /*rval = hashU32(xseed += 0x9E3779B9u); -- mulberry32*/ \
   } while (0)
 
   xseed += nonce;
@@ -2687,7 +2686,7 @@ vwadwr_result vwadwr_pack_file (vwadwr_dir *dir, vwadwr_iostream *instrm,
                                 int *upksizep, int *pksizep,
                                 vwadwr_pack_progress progcb, void *progudata)
 {
-  if (instrm == NULL || pkfname == NULL) return -1;
+  if (dir == NULL || instrm == NULL || pkfname == NULL) return -1;
   if (pksizep) *pksizep = 0;
   if (upksizep) *upksizep = 0;
 
@@ -2708,7 +2707,7 @@ vwadwr_result vwadwr_pack_file (vwadwr_dir *dir, vwadwr_iostream *instrm,
   buf = xalloc(dir->mman, 65536);
   if (buf == NULL) {
     logf(ERROR, "out of memory");
-    return -1;
+    goto error;
   }
   dest = xalloc(dir->mman, 65536 + 4);
   if (dest == NULL) {
@@ -2789,7 +2788,7 @@ vwadwr_result vwadwr_pack_file (vwadwr_dir *dir, vwadwr_iostream *instrm,
     ccnum += 1;
     total_size += rd;
     if (progcb) {
-      if (!progcb(dir, instrm, total_size, res_pksize, progudata)) {
+      if (!progcb(dir, total_size, res_pksize, progudata)) {
         logf(ERROR, "user abort");
         goto error;
       }
@@ -2831,6 +2830,120 @@ error:
   xfree(dir->mman, buf);
   return -1;
 }
+
+
+#ifndef VWADWR_DISABLE_COPY_FILES
+//==========================================================================
+//
+//  vwadwr_copy_file
+//
+//  used to copy file from the existing archive without repacking
+//  comment may contain only ASCII chars, spaces, tabs, and '\x0a' for newlines.
+//  group name may contain chars in range [32..255]. ASCII is case-insensitive.
+//  file name may contain only ASCII chars.
+//
+//==========================================================================
+vwadwr_result vwadwr_copy_file (vwadwr_dir *dir,
+                                vwad_handle *srcwad, vwad_fidx fidx,
+                                const char *pkfname, /* new name; can be NULL to retain */
+                                const char *groupname, /* can be NULL to retain */
+                                unsigned long long ftime, /* can be 0 to retain */
+                                int *upksizep, int *pksizep,
+                                vwadwr_pack_progress progcb, void *progudata)
+{
+  if (dir == NULL || srcwad == NULL || pkfname == NULL) return -1;
+  if (pksizep) *pksizep = 0;
+  if (upksizep) *upksizep = 0;
+
+  const int chunkCount = vwad_get_file_chunk_count(srcwad, fidx);
+  if (chunkCount < 0) return -1;
+
+  if (groupname == NULL) groupname = vwad_get_file_group_name(srcwad, fidx);
+  if (pkfname == NULL) pkfname = vwad_get_file_name(srcwad, fidx);
+  if (ftime == 0) ftime = vwad_get_ftime(srcwad, fidx);
+
+  if (!vwadwr_is_valid_group_name(groupname)) return -1;
+
+  if (pkfname == NULL || !pkfname[0]) return -1;
+  char *xname = normalize_name(dir->mman, pkfname);
+  if (xname == NULL) return -1;
+
+  if (!vwadwr_is_valid_file_name(xname)) { xfree(dir->mman, xname); return -1; }
+
+  uint8_t *buf = NULL;
+
+  buf = xalloc(dir->mman, 65536 + 4);
+  if (buf == NULL) {
+    xfree(dir->mman, xname);
+    logf(ERROR, "out of memory");
+    return -1;
+  }
+
+  uint32_t fullcrc32 = vwad_get_fcrc32(srcwad, fidx);
+  int res_pksize = 0;
+  int total_size = 0;
+  for (int ccidx = 0; ccidx < chunkCount; ++ccidx) {
+    int upksz;
+    const int csz = vwad_get_file_chunk_size(srcwad, fidx, ccidx, &upksz);
+    if (csz < 0) {
+      xfree(dir->mman, xname);
+      xfree(dir->mman, buf);
+      logf(ERROR, "cannot read source chunk");
+      return -1;
+    }
+    const uint32_t nonce = 4 + dir->chunkCount;
+    if (upksz == csz) {
+      // raw chunk
+      if (vwadwr_append_chunk(dir, 0) != 0) {
+        xfree(dir->mman, xname);
+        xfree(dir->mman, buf);
+        logf(ERROR, "cannot append chunk info");
+        return -1;
+      }
+    } else {
+      // packed chunk
+      if (vwadwr_append_chunk(dir, (uint32_t)csz) != 0) {
+        xfree(dir->mman, xname);
+        xfree(dir->mman, buf);
+        logf(ERROR, "cannot append chunk info");
+        return -1;
+      }
+    }
+    crypt_buffer(dir->xorRndSeed, nonce, buf, csz);
+    if (dir->outstrm->write(dir->outstrm, buf, csz) != 0) {
+      xfree(dir->mman, xname);
+      xfree(dir->mman, buf);
+      logf(ERROR, "write error");
+      return -1;
+    }
+    res_pksize += csz;
+    total_size += upksz;
+    if (progcb) {
+      if (!progcb(dir, total_size, res_pksize, progudata)) {
+        xfree(dir->mman, xname);
+        xfree(dir->mman, buf);
+        logf(ERROR, "user abort");
+        return -1;
+      }
+    }
+  }
+
+  xfree(dir->mman, buf);
+
+  if (vwadwr_append_file_info(dir, xname, groupname, (uint32_t)chunkCount,
+                              (uint32_t)total_size, fullcrc32, ftime) != 0)
+  {
+    xfree(dir->mman, xname);
+    logf(ERROR, "cannot append file info");
+    return -1;
+  }
+  xfree(dir->mman, xname);
+
+  if (pksizep) *pksizep = res_pksize;
+  if (upksizep) *upksizep = total_size;
+  return 0;
+}
+#endif
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -2952,13 +3065,11 @@ vwadwr_result vwadwr_finish (vwadwr_dir **dirp) {
     }
   } else {
     // fill signature with file-dependent gibberish
-    uint32_t xseed = 0xa28;
+    uint32_t xseed = dir->fileCount;
     for (FileInfo *fi = dir->filesHead; fi != NULL; fi = fi->next) {
-      xseed += 1;
       xseed = hashU32(xseed ^ fi->upksize);
       xseed = hashU32(xseed ^ fi->chunkCount);
       xseed = hashU32(xseed ^ fi->crc32);
-      xseed += 1;
     }
     if (xseed == 0) xseed = deriveSeed(0xa27, NULL, 0);
     memset(edsign, 0, sizeof(ed25519_signature));

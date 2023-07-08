@@ -39,6 +39,11 @@ Library libcore.a :
 
   src/textparser.cpp
 
+  src/libvwad/vwadvfs.c
+  src/libvwad/vwadvfs.h
+  src/libvwad/vwadwrite.c
+  src/libvwad/vwadwrite.h
+
   src/hash/lookup2.cpp
   src/hash/lookup3.cpp
   src/hash/murmur3.cpp
@@ -69,6 +74,5 @@ Library libcore.a :
   src/fsys/formats/fsys_zip.cpp
   src/fsys/formats/fsys_qkpak.cpp
   src/fsys/formats/fsys_vwad.cpp
-  src/fsys/formats/vwadvfs.c
   #src/fsys/formats/fsys_dfwad.cpp
 ;

@@ -10,9 +10,18 @@
 #ifndef VWADWRITER_HEADER
 #define VWADWRITER_HEADER
 
+// uncomment to turn off copying from the existing archive
+// if uncommented, will remove dependency to "vwadvfs"
+//#define VWADWR_DISABLE_COPY_FILES
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifndef VWADWR_DISABLE_COPY_FILES
+# include "vwadvfs.h"
+#endif
+
 
 #if defined(__cplusplus)
 extern "C" {
@@ -145,8 +154,7 @@ vwadwr_bool vwadwr_is_valid_dir (const vwadwr_dir *dir);
 vwadwr_result vwadwr_finish (vwadwr_dir **dirp);
 
 // return 0 to stop
-typedef vwadwr_bool vwadwr_pack_progress (vwadwr_dir *dir, vwadwr_iostream *instrm,
-                                          int read, int written, void *udata);
+typedef vwadwr_bool vwadwr_pack_progress (vwadwr_dir *dir, int read, int written, void *udata);
 
 
 enum {
@@ -172,7 +180,19 @@ vwadwr_result vwadwr_pack_file (vwadwr_dir *dir, vwadwr_iostream *instrm,
                                 int *upksizep, int *pksizep,
                                 vwadwr_pack_progress progcb, void *progudata);
 
-
+#ifndef VWADWR_DISABLE_COPY_FILES
+// used to copy file from the existing archive without repacking
+// comment may contain only ASCII chars, spaces, tabs, and '\x0a' for newlines.
+// group name may contain chars in range [32..255]. ASCII is case-insensitive.
+// file name may contain only ASCII chars.
+vwadwr_result vwadwr_copy_file (vwadwr_dir *dir,
+                                vwad_handle *srcwad, vwad_fidx fidx,
+                                const char *pkfname, /* new name; can be NULL to retain */
+                                const char *groupname, /* can be NULL to retain */
+                                unsigned long long ftime, /* can be 0 to retain */
+                                int *upksizep, int *pksizep,
+                                vwadwr_pack_progress progcb, void *progudata);
+#endif
 
 
 // ////////////////////////////////////////////////////////////////////////// //

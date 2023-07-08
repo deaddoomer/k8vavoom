@@ -1,8 +1,5 @@
 include_directories(../common ${ZLIB_INCLUDE_DIR})
 
-# do not tempt poor things
-set(vlumpy_vwad ON)
-set(vlumpy_vwad_src vwadwrite.c vwadwrite.h)
 add_definitions(-DVAVOOM_VLUMPY_VWAD=1)
 add_definitions(-DVAVOOM_VLUMPY_VWAD_K8=1)
 
@@ -49,7 +46,6 @@ add_executable(vlumpy
   vlumpy.cpp
   zip.cpp
   zip.h
-  ${vlumpy_vwad_src}
 )
 target_link_libraries(vlumpy core ${ZLIB_LIBRARIES} ${VAVOOM_SHITDOZE_LIBS})
 set_target_properties(vlumpy PROPERTIES OUTPUT_NAME ../bin/k8vlumpy)

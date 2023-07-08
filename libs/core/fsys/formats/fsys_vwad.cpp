@@ -25,7 +25,7 @@
 //**************************************************************************
 #include "../fsys_local.h"
 
-#include "vwadvfs.h"
+#include "../../libvwad/vwadvfs.h"
 
 
 static const uint8_t k8PubKey[32] = {

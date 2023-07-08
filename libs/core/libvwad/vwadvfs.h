@@ -203,6 +203,20 @@ int vwad_read (vwad_handle *wad, vwad_fd fd, void *buf, int len);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+#define VWAD_MAX_RAW_CHUNK_SIZE  (65536 + 4)
+
+// this is used in creator, to copy raw chunks
+// returns -1 on error
+int vwad_get_file_chunk_count (vwad_handle *wad, vwad_fidx fidx);
+// this is used in creator, to copy raw chunks
+// returns -1 on error
+// if `*upksz` is equal to returned value, the chunk is not packed
+int vwad_get_file_chunk_size (vwad_handle *wad, vwad_fidx fidx, int chunkidx, int *upksz);
+// this is used in creator, to copy raw chunks
+vwad_result vwad_read_raw_file_chunk (vwad_handle *wad, vwad_fidx fidx, int chunkidx, void *buf);
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 unsigned vwad_crc32_init (void);
 unsigned vwad_crc32_part (unsigned crc32, const void *src, size_t len);
 unsigned vwad_crc32_final (unsigned crc32);

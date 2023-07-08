@@ -91,6 +91,12 @@ add_library(core STATIC
   rawtty.cpp
 
 
+  libvwad/vwadvfs.c
+  libvwad/vwadvfs.h
+  libvwad/vwadwrite.c
+  libvwad/vwadwrite.h
+
+
   hash/hashfunc.h
   hash/lookup2.cpp
   hash/lookup3.cpp
@@ -137,7 +143,6 @@ add_library(core STATIC
   fsys/formats/fsys_zip.cpp
   fsys/formats/fsys_qkpak.cpp
   fsys/formats/fsys_vwad.cpp
-  fsys/formats/vwadvfs.c
   #fsys/formats/fsys_dfwad.cpp
   # included directly in "fsys.cpp", otherwise "smart" linker will throw it away
   #fsys/fsys_register.cpp
