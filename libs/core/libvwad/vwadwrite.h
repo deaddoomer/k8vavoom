@@ -26,24 +26,27 @@
 
   archived files can be annotated with arbitrary "group name". this can
   be used in various content creation tools. group tags are not used
-  by the library itself. ASCII chars in group name are case-insensitive.
+  by the library itself. group names are case-insensitive.
 
   also, archived files can have a 64-bit last modification timestamp
   (seconds since Unix Epoch). you can use zero as timestamp if you
   don't care.
 
-  file names can contain only ASCII chars, and names are case-insensitive.
-  path delimiter is "/". this limitation is because i don't want to
-  include unicode translation tables, or enforce any one-byte encoding.
-  this may be changed in the future.
+  file names can printable unicode chars, and names are case-insensitive.
+  path delimiter is "/".
 
   archive can be tagged with author name, short description, and a comment.
-  author name and description can contain only ASCII chars in range [32..127).
-  comments can be multiline (only "\x0a" is allowed as a newline char), but
-  still limited to ASCII.
+  author name and description can contain unicode chars >= 32.
+  comments can be multiline (only "\x0a" is allowed as a newline char).
 
-  ASCII limitation may be relaxed in next library versions (i will prolly
-  enable some unicode plane 1 chars, encoded as UTF-8).
+  currently, only limited subset of the first unicode plane is supported.
+  this limitation will prolly not be lifted. deal with it.
+
+  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!
+  the reader is not thread-safe. i.e. you cannot use opened handle to
+  read different files in different threads without locking. but different
+  handles for different threads are allowed.
+  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!
 */
 #ifndef VWADWRITER_HEADER
 #define VWADWRITER_HEADER
@@ -257,6 +260,18 @@ unsigned vwadwr_crc32_final (unsigned crc32);
 //    1: not equal
 vwadwr_result vwadwr_wildmatch (const char *pat, size_t plen, const char *str, size_t slen);
 vwadwr_result vwadwr_wildmatch_path (const char *pat, size_t plen, const char *str, size_t slen);
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// "invalid char" unicode code
+#define VWADWR_REPLACEMENT_CHAR  (0x0FFFD)
+
+uint32_t vwadwr_utf_char_len (const void *str);
+vwadwr_bool vwadwr_is_uni_printable (uint16_t ch);
+// advances `strp` at least by one byte
+// returns `VWADWR_REPLACEMENT_CHAR` on invalid char
+uint16_t vwadwr_utf_decode (const char **strp);
+uint16_t vwadwr_uni_tolower (uint16_t ch);
 
 
 #if defined(__cplusplus)

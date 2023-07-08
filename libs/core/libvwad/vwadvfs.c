@@ -1451,73 +1451,194 @@ static intbool_t DecompressLZFF3 (const void *src, int srclen, void *dest, int u
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static uint32_t murmurHash3BufCI (const void *key, size_t len, uint32_t seed) {
-  #define rotl32(x_,r_) (((x_)<<(r_))|((x_)>>(32u-(r_))))
-
-  enum {
-    c1_32 = 0xcc9e2d51U,
-    c2_32 = 0x1b873593U,
-  };
-
-  const uint8_t *data = (const uint8_t *)key;
-  const size_t nblocks = len/4U;
-
-  uint32_t h1 = seed;
-
-  // body
-  const uint32_t *blocks = (const uint32_t *)data;
-  size_t i = nblocks;
-  while (i--) {
-    uint32_t k1 = *blocks++; //getblock32(blocks,i);
-    k1 |= 0x20202020u; // ignore case
-    k1 *= c1_32;
-    k1 = rotl32(k1,15);
-    k1 *= c2_32;
-    h1 ^= k1;
-    h1 = rotl32(h1,13);
-    h1 = h1*5U+0xe6546b64U;
-  }
-
-  // tail
-  const uint8_t *tail = (const uint8_t *)(data+nblocks*4U);
-  uint32_t k1 = 0u;
-  switch (len&3U) {
-    case 3: k1 ^= (tail[2]|0x20u)<<16; /* fallthrough */
-    case 2: k1 ^= (tail[1]|0x20u)<<8; /* fallthrough */
-    case 1: k1 ^= (tail[0]|0x20u); k1 *= c1_32; k1 = rotl32(k1,15); k1 *= c2_32; h1 ^= k1; /* fallthrough */
-  }
-
-  // finalization mix - force all bits of a hash block to avalanche
-  h1 ^= len;
-  h1 ^= h1>>16;
-  h1 *= 0x85ebca6b;
-  h1 ^= h1>>13;
-  h1 *= 0xc2b2ae35;
-  h1 ^= h1>>16;
-
-  return h1;
-
-  #undef rotl32
+/* is the given codepoint considered printable?
+i restrict it to some useful subset.
+unifuck is unifucked, but i hope that i sorted out all idiotic diactritics and control chars. */
+static CC25519_INLINE vwad_bool is_uni_printable (uint16_t ch) {
+  return
+    (ch >= 0x0001 && ch <= 0x024F) || // basic latin
+    (ch >= 0x0390 && ch <= 0x0482) || // some greek, and cyrillic w/o combiners
+    (ch >= 0x048A && ch <= 0x052F) ||
+    (ch >= 0x1E00 && ch <= 0x1EFF) || // latin extended additional
+    (ch >= 0x2000 && ch <= 0x2C7F) || // some general punctuation, extensions, etc.
+    (ch >= 0x2E00 && ch <= 0x2E42) || // supplemental punctuation
+    (ch >= 0xAB30 && ch <= 0xAB65);   // more latin extended
 }
 
-static CC25519_INLINE uint32_t hashStrCI (const void *buf) {
-  return (buf ? murmurHash3BufCI(buf, strlen(buf), 0x29aU) : 0u);
+
+/* determine utf-8 sequence length (in bytes) by its first char.
+returns length (up to 4) or 0 on invalid first char
+doesn't allow overlongs */
+static CC25519_INLINE uint32_t utf_char_len (const void *str) {
+  const uint8_t ch = *((const uint8_t *)str);
+  if (ch < 0x80) return 1;
+  else if ((ch&0x0E0) == 0x0C0) return (ch != 0x0C0 && ch != 0x0C1 ? 2 : 0);
+  else if ((ch&0x0F0) == 0x0E0) return 3;
+  else if ((ch&0x0F8) == 0x0F0) return 4;
+  else return 0;
+}
+
+
+static CC25519_INLINE uint16_t utf_decode (const char **strp) {
+  const uint8_t *bp = (const uint8_t *)*strp;
+  uint16_t res = (uint16_t)utf_char_len(bp);
+  uint8_t ch = *bp;
+  if (res < 1 || res > 3) {
+    res = VWAD_REPLACEMENT_CHAR;
+    *strp += 1;
+  } else if (ch < 0x80) {
+    res = ch;
+    *strp += 1;
+  } else if ((ch&0x0E0) == 0x0C0) {
+    if (ch == 0x0C0 || ch == 0x0C1) {
+      res = VWAD_REPLACEMENT_CHAR;
+      *strp += 1;
+    } else {
+      res = ch - 0x0C0;
+      ch = bp[1];
+      if ((ch&0x0C0) != 0x80) {
+        res = VWAD_REPLACEMENT_CHAR;
+        *strp += 1;
+      } else {
+        res = res * 64 + ch - 128;
+        *strp += 2;
+      }
+    }
+  } else if ((ch&0x0F0) == 0x0E0) {
+    res = ch - 0x0E0;
+    ch = bp[1];
+    if ((ch&0x0C0) != 0x80) {
+      res = VWAD_REPLACEMENT_CHAR;
+      *strp += 1;
+    } else {
+      res = res * 64 + ch - 128;
+      ch = bp[2];
+      if ((ch&0x0C0) != 0x80) {
+        res = VWAD_REPLACEMENT_CHAR;
+        *strp += 1;
+      } else {
+        res = res * 64 + ch - 128;
+        *strp += 3;
+      }
+    }
+  } else {
+    res = VWAD_REPLACEMENT_CHAR;
+  }
+  if (res && !is_uni_printable(res)) res = VWAD_REPLACEMENT_CHAR;
+  return res;
+}
+
+
+static CC25519_INLINE uint16_t unilower (uint16_t ch) {
+  if ((ch >= 'A' && ch <= 'Z') ||
+      (ch >= 0x00C0 && ch <= 0x00D6) ||
+      (ch >= 0x00D8 && ch <= 0x00DE) ||
+      (ch >= 0x0410 && ch <= 0x042F))
+  {
+    return ch + 0x20;
+  }
+  if (ch == 0x0178) return 0x00FF;
+  if (ch >= 0x0400 && ch <= 0x040F) return ch + 0x50;
+  if ((ch >= 0x1E00 && ch <= 0x1E95) ||
+      (ch >= 0x1EA0 && ch <= 0x1EFF))
+  {
+    return ch|0x01;
+  }
+  if (ch == 0x1E9E) return 0x00DF;
+  return ch;
+}
+
+
+//==========================================================================
+//
+//  vwad_utf_char_len
+//
+//==========================================================================
+uint32_t vwad_utf_char_len (const void *str) {
+  return (str ? utf_char_len(str) : 0);
+}
+
+
+//==========================================================================
+//
+//  vwad_is_uni_printable
+//
+//==========================================================================
+vwad_bool vwad_is_uni_printable (uint16_t ch) {
+  return is_uni_printable(ch);
+}
+
+
+//==========================================================================
+//
+//  vwad_utf_decode
+//
+//  advances `strp` at least by one byte
+//
+//==========================================================================
+uint16_t vwad_utf_decode (const char **strp) {
+  return utf_decode(strp);
+}
+
+
+//==========================================================================
+//
+//  vwad_uni_tolower
+//
+//==========================================================================
+uint16_t vwad_uni_tolower (uint16_t ch) {
+  return unilower(ch);
 }
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static int nameEqu (const char *s0, const char *s1) {
-  if (!s0 || !s1) return 0;
-  while (*s0 && *s1) {
-    uint8_t c0 = *s0++;
-    //if (c0 == '\\') c0 = '/'; else
-    if (c0 >= 'A' && c0 <= 'Z') c0 = c0 - 'A' + 'a';
-    uint8_t c1 = *s1++;
-    //if (c1 == '\\') c1 = '/'; else
-    if (c1 >= 'A' && c1 <= 'Z') c1 = c1 - 'A' + 'a';
-    if (c0 != c1) return 0;
+static uint32_t joaatHashStrCI (const char *key) {
+  uint32_t hash = 0x29a;
+  uint32_t len = 0;
+  while (*key) {
+    uint16_t ch = unilower(utf_decode(&key));
+    hash += (uint8_t)ch;
+    hash += hash<<10;
+    hash ^= hash>>6;
+    if (ch >= 0x100) {
+      hash += (uint8_t)(ch>>8);
+      hash += hash<<10;
+      hash ^= hash>>6;
+    }
+    ++len;
   }
-  return (!s0[0] && !s1[0]);
+  // mix length
+  hash += (uint8_t)len;
+  hash += hash<<10;
+  hash ^= hash>>6;
+  if (len >= 0x100) {
+    hash += (uint8_t)(len>>8);
+    hash += hash<<10;
+    hash ^= hash>>6;
+  }
+  // finalize
+  hash += hash<<3;
+  hash ^= hash>>11;
+  hash += hash<<15;
+  return hash;
+}
+
+static CC25519_INLINE uint32_t hashStrCI (const void *buf) {
+  return (buf ? joaatHashStrCI((const char *)buf) : 0u);
+}
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+static vwad_bool strEquCI (const char *s0, const char *s1) {
+  if (!s0 || !s1) return 0;
+  uint16_t c0 = unilower(utf_decode(&s0));
+  uint16_t c1 = unilower(utf_decode(&s1));
+  while (c0 && c1 && c0 == c1) {
+    if (c0 == VWAD_REPLACEMENT_CHAR || c1 == VWAD_REPLACEMENT_CHAR) return 0;
+    c0 = unilower(utf_decode(&s0));
+    c1 = unilower(utf_decode(&s1));
+  }
+  return (c0 == 0 && c1 == 0);
 }
 
 
@@ -1661,6 +1782,11 @@ static CC25519_INLINE vwad_bool is_path_delim (char ch) {
 }
 
 
+//==========================================================================
+//
+//  vwad_normalize_file_name
+//
+//==========================================================================
 vwad_result vwad_normalize_file_name (const char *fname, char res[256]) {
   if (fname == NULL || res == NULL) return -1;
   size_t spos = 0, dpos = 0;
@@ -1708,11 +1834,12 @@ vwad_result vwad_normalize_file_name (const char *fname, char res[256]) {
 static vwad_bool is_valid_comment (const char *cmt, uint32_t cmtlen) {
   vwad_bool res = 1;
   if (cmt != NULL) {
-    for (uint32_t pos = 0; pos < cmtlen; ++pos) {
-      const unsigned char ch = ((const unsigned char *)cmt)[pos];
-      if (ch == 0) return 0;
-      if (ch >= 0x7f || (ch < 32 && ch != 9 && ch != 10)) return 0;
-    }
+    uint16_t ch;
+    do {
+      ch = utf_decode(&cmt);
+      if (ch < 32 && (ch != 9 && ch != 10)) ch = VWAD_REPLACEMENT_CHAR;
+    } while (ch != 0 && ch != VWAD_REPLACEMENT_CHAR);
+    return (ch == 0);
   } else {
     res = (cmtlen == 0);
   }
@@ -1737,12 +1864,9 @@ static vwad_bool is_valid_file_name (const char *str) {
     ++eofs;
   } while ((eofs&0x03) != 0);
   // check chars
-  for (size_t f = 0; f < slen; ++f) {
-    char ch = str[f];
-    if (ch < 32 || ch >= 127) return 0;
-    if (ch == '/' && f != 0 && str[f - 1] == '/') return 0;
-  }
-  return 1;
+  uint16_t ch;
+  do { ch = utf_decode(&str); } while (ch >= 32 && ch != VWAD_REPLACEMENT_CHAR);
+  return (ch == 0);
 }
 
 
@@ -1762,11 +1886,9 @@ static vwad_bool is_valid_group_name (const char *str) {
     ++eofs;
   } while ((eofs&0x03) != 0);
   // check chars
-  for (size_t f = 0; f < slen; ++f) {
-    uint8_t ch = ((const uint8_t *)str)[f];
-    if (ch < 32) return 0;
-  }
-  return 1;
+  uint16_t ch;
+  do { ch = utf_decode(&str); } while (ch >= 32 && ch != VWAD_REPLACEMENT_CHAR);
+  return (ch == 0);
 }
 
 
@@ -2321,7 +2443,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
 
     if (wad->buckets[bkt]) {
       FileInfo *bkfi = &wad->files[wad->buckets[bkt]];
-      while (bkfi != NULL && !nameEqu(name, wad->names + bkfi->nameofs)) {
+      while (bkfi != NULL && !strEquCI(name, wad->names + bkfi->nameofs)) {
         if (bkfi->bknext) bkfi = &wad->files[bkfi->bknext]; else bkfi = NULL;
       }
       if (bkfi != NULL) {
@@ -2635,7 +2757,7 @@ static vwad_fidx find_file (vwad_handle *wad, const char *name) {
     uint32_t fidx = wad->buckets[bkt];
     while (fidx != 0) {
       if (wad->files[fidx].nhash == hash &&
-          nameEqu(wad->names + wad->files[fidx].nameofs, name))
+          strEquCI(wad->names + wad->files[fidx].nameofs, name))
       {
         return (vwad_fidx)fidx;
       }
@@ -3202,14 +3324,29 @@ vwad_result vwad_read_raw_file_chunk (vwad_handle *wad, vwad_fidx fidx, int chun
 //
 //==========================================================================
 vwad_result vwad_wildmatch (const char *pat, size_t plen, const char *str, size_t slen) {
-  #define GM_UPCASE(ch_)  do { \
-    if ((ch_) >= 'A' && (ch_) <= 'Z') (ch_) = (ch_) - 'A' + 'a'; \
+  #define GETSCH(dst_)  do { \
+    const char *stmp = &str[spos]; \
+    const uint32_t uclen = utf_char_len(stmp); \
+    if (error || uclen == 0 || uclen > 3 || slen - spos < uclen) { error = 1; (dst_) = VWAD_REPLACEMENT_CHAR; } \
+    else { \
+      (dst_) = unilower(utf_decode(&stmp)); \
+      if ((dst_) < 32 || (dst_) == VWAD_REPLACEMENT_CHAR) error = 1; \
+      spos += uclen; \
+    } \
   } while (0)
 
-  // fuckin' stupid, but no UB
-  #define C2U(ch_)  ((uint32_t)((ch_) + 256) - 256u)
+  #define GETPCH(dst_)  do { \
+    const char *stmp = &pat[patpos]; \
+    const uint32_t uclen = utf_char_len(stmp); \
+    if (error || uclen == 0 || uclen > 3 || plen - patpos < uclen) { error = 1; (dst_) = VWAD_REPLACEMENT_CHAR; } \
+    else { \
+      (dst_) = unilower(utf_decode(&stmp)); \
+      if ((dst_) < 32 || (dst_) == VWAD_REPLACEMENT_CHAR) error = 1; \
+      else patpos += uclen; \
+    } \
+  } while (0)
 
-  char sch, c0, c1;
+  uint16_t sch, c0, c1;
   vwad_bool hasMatch, inverted;
   vwad_bool star = 0, dostar = 0;
   size_t patpos = 0, spos = 0;
@@ -3219,62 +3356,59 @@ vwad_result vwad_wildmatch (const char *pat, size_t plen, const char *str, size_
     if (patpos == plen) {
       dostar = 1;
     } else {
-      sch = str[spos++]; GM_UPCASE(sch);
-      c0 = pat[patpos++]; GM_UPCASE(c0);
-      switch (c0) {
-        case '\\':
-          if (patpos == plen) error = 1; // malformed pattern
-          else {
-            c0 = pat[patpos++]; GM_UPCASE(c0);
+      GETSCH(sch); GETPCH(c0);
+      if (!error) {
+        switch (c0) {
+          case '\\':
+            GETPCH(c0);
             dostar = (sch != c0);
-          }
-          break;
-        case '?': // match anything except '.'
-          dostar = (sch == '.');
-          break;
-        case '*':
-          star = 1;
-          --spos; // otherwise "*abc" will not match "abc"
-          slen -= spos; str += spos;
-          plen -= patpos; pat += patpos;
-          while (plen != 0 && *pat == '*') { --plen; ++pat; }
-          // restart the loop
-          spos = 0; patpos = 0;
-          break;
-        case '[':
-          hasMatch = 0;
-          inverted = 0;
-          if (patpos == plen) error = 1; // malformed pattern
-          else if (pat[patpos] == '^') {
-            inverted = 1;
-            ++patpos;
-            error = (patpos == plen); // malformed pattern?
-          }
-          if (!error) {
-            do {
-              c0 = pat[patpos++]; GM_UPCASE(c0);
-              if (patpos != plen && pat[patpos] == '-') {
-                // char range
-                ++patpos; // skip '-'
-                if (patpos == plen) { c1 = c0; error = 1; } // malformed pattern
-                else { c1 = pat[patpos++]; GM_UPCASE(c1); }
-              } else {
-                c1 = c0;
-              }
-              // casts are UB, hence the stupid macro
-              hasMatch = hasMatch || (C2U(sch) >= C2U(c0) && C2U(sch) <= C2U(c1));
-            } while (!error && patpos != plen && pat[patpos] != ']');
-          }
-          error = error || (patpos == plen) || (pat[patpos] != ']'); // malformed pattern?
-          dostar = !error && (hasMatch != inverted);
-          break;
-        default:
-          dostar = (sch != c0);
-          break;
+            break;
+          case '?': // match anything except '.'
+            dostar = (sch == '.');
+            break;
+          case '*':
+            star = 1;
+            --spos; // otherwise "*abc" will not match "abc"
+            slen -= spos; str += spos;
+            plen -= patpos; pat += patpos;
+            while (plen != 0 && *pat == '*') { --plen; ++pat; }
+            // restart the loop
+            spos = 0; patpos = 0;
+            break;
+          case '[':
+            hasMatch = 0;
+            inverted = 0;
+            if (patpos == plen) error = 1; // malformed pattern
+            else if (pat[patpos] == '^') {
+              inverted = 1;
+              ++patpos;
+              error = (patpos == plen); // malformed pattern?
+            }
+            if (!error) {
+              do {
+                GETPCH(c0);
+                if (!error && patpos != plen && pat[patpos] == '-') {
+                  // char range
+                  ++patpos; // skip '-'
+                  GETPCH(c1);
+                } else {
+                  c1 = c0;
+                }
+                // casts are UB, hence the stupid macro
+                hasMatch = hasMatch || (sch >= c0 && sch <= c1);
+              } while (!error && patpos != plen && pat[patpos] != ']');
+            }
+            error = error || (patpos == plen) || (pat[patpos] != ']'); // malformed pattern?
+            dostar = !error && (hasMatch != inverted);
+            break;
+          default:
+            dostar = (sch != c0);
+            break;
+        }
       }
     }
     // star check
-    if (dostar) {
+    if (dostar && !error) {
       // `error` is always zero here
       if (!star) {
         // not equal, do not reset "dostar"
