@@ -190,7 +190,10 @@ VVWadFileReader::~VVWadFileReader() {
 //
 //==========================================================================
 VStream *VVWadFileReader::CloneSelf () {
+  #if 1
+  // no need to clone it, because we are using global cache anyway
   return nullptr;
+  #else
   VVWadFileReader *res = new VVWadFileReader(this);
   if (res->fd < 0) {
     #ifdef VAVOOM_FSYS_VWAD_CLONE_DEBUG
@@ -207,6 +210,7 @@ VStream *VVWadFileReader::CloneSelf () {
     #endif
     return res;
   }
+  #endif
 }
 
 
