@@ -1680,7 +1680,7 @@ void VCheckedStream::openStreamAndCopy (VStream *st, CopyMode mode) {
       mode = VCStrmForceCopy;
     }
   }
-  if (mode == VCStrmNoCopy || ssize <= 0 || ssize > 1024*1024*4/*was 64*/) {
+  if (mode == VCStrmNoCopy || ssize <= 0 || ssize > 1024*1024*64) {
     // direct
     srcStream = st;
     bError = st->IsError();
