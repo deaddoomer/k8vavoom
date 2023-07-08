@@ -24,10 +24,28 @@ extern "C" {
 
 // ////////////////////////////////////////////////////////////////////////// //
 /* turning off inlining saves ~5kb of binary code on x86 */
-#if 1
+#ifdef _MSC_VER
 # define CC25519_INLINE  inline __attribute__((always_inline))
 #else
-# define CC25519_INLINE  __attribute__((noinline))
+/* dunno, let's hope this works */
+# define CC25519_INLINE  inline
+#endif
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// M$VC support modelled after Dasho code, thank you!
+#ifdef _MSC_VER
+# define vwad__builtin_expect(cond_val_,exp_val_)  (cond_val_)
+# define vwad__builtin_trap  abort
+# define vwad_packed_struct
+# define vwad_push_pack  __pragma(pack(push, 1))
+# define vwad_pop_pack   __pragma(pack(pop))
+#else
+# define vwad__builtin_expect  __builtin_expect
+# define vwad__builtin_trap    __builtin_trap
+# define vwad_packed_struct  __attribute__((packed))
+# define vwad_push_pack
+# define vwad_pop_pack
 #endif
 
 
@@ -216,7 +234,7 @@ void vwad_z85_encode_key (const vwad_public_key inkey, vwad_z85_key enkey) {
       value = 0;
     }
   }
-  if (dpos != (unsigned)sizeof(vwad_z85_key) - 1u) __builtin_trap();
+  if (dpos != (unsigned)sizeof(vwad_z85_key) - 1u) vwad__builtin_trap();
   enkey[dpos] = 0;
 }
 
@@ -247,7 +265,7 @@ vwad_result vwad_z85_decode_key (const vwad_z85_key enkey, vwad_public_key outke
       value = 0;
     }
   }
-  if (dpos != 32 + 4) __builtin_trap();
+  if (dpos != 32 + 4) vwad__builtin_trap();
   if (enkey[spos] != 0) return -1;
   const uint32_t crc32 = crc32_buf(ddata, 32);
   if (crc32 != get_u32(&ddata[32])) return -1; // bad checksum
@@ -1093,7 +1111,7 @@ static int hash_with_prefix (uint8_t *out_fp,
     }
 
     const int left = (int)len - (int)i;
-    if (left < 0) __builtin_trap();
+    if (left < 0) vwad__builtin_trap();
     if (left > 0 && strm->read(strm, (int)i, msgblock, left) != 0) return -1;
 
     sha512_final(&s, msgblock, len + prefix_size);
@@ -1152,7 +1170,7 @@ void (*vwad_logf) (int type, const char *fmt, ...) = NULL;
 // ////////////////////////////////////////////////////////////////////////// //
 void (*vwad_assertion_failed) (const char *fmt, ...) = NULL;
 
-static inline __attribute__((cold)) const char *SkipPathPartCStr (const char *s) {
+static inline const char *SkipPathPartCStr (const char *s) {
   const char *lastSlash = NULL;
   for (const char *t = s; *t; ++t) {
     if (*t == '/') lastSlash = t+1;
@@ -1163,13 +1181,13 @@ static inline __attribute__((cold)) const char *SkipPathPartCStr (const char *s)
   return (lastSlash ? lastSlash : s);
 }
 
-#define vassert(cond_)  do { if (__builtin_expect((!(cond_)), 0)) { const int line__assf = __LINE__; \
+#define vassert(cond_)  do { if (vwad__builtin_expect((!(cond_)), 0)) { const int line__assf = __LINE__; \
     if (vwad_assertion_failed) { \
       vwad_assertion_failed("%s:%d: Assertion in `%s` failed: %s\n", \
         SkipPathPartCStr(__FILE__), line__assf, __PRETTY_FUNCTION__, #cond_); \
-      __builtin_trap(); /* just in case */ \
+      vwad__builtin_trap(); /* just in case */ \
     } else { \
-      __builtin_trap(); \
+      vwad__builtin_trap(); \
     } \
   } \
 } while (0)
@@ -1504,13 +1522,14 @@ static int nameEqu (const char *s0, const char *s1) {
 #define MAX_BUFFERS       (2)
 
 
-typedef struct __attribute__((packed)) {
+vwad_push_pack
+typedef struct vwad_packed_struct {
   uint32_t ofs;     // offset in stream
   uint16_t upksize; // unpacked chunk size-1
   uint16_t pksize;  // packed chunk size (0 means "unpacked")
 } ChunkInfo;
 
-typedef struct __attribute__((packed)) {
+typedef struct vwad_packed_struct {
   uint32_t fchunk;     // first chunk
   uint32_t nhash;      // name hash
   uint32_t bknext;     // next name in bucket
@@ -1521,6 +1540,24 @@ typedef struct __attribute__((packed)) {
   uint32_t chunkCount; // number of chunks
   uint32_t nameofs;    // name offset in names array
 } FileInfo;
+
+typedef struct vwad_packed_struct {
+  uint32_t crc32;
+  uint16_t version;
+  uint16_t flags;
+  uint32_t dirofs;
+  uint16_t u_cmt_size;
+  uint16_t p_cmt_size;
+  uint32_t cmt_crc32;
+} MainFileHeader;
+
+typedef struct vwad_packed_struct {
+  uint32_t pkdir_crc32;
+  uint32_t dir_crc32;
+  uint32_t pkdirsize;
+  uint32_t upkdirsize;
+} MainDirHeader;
+vwad_pop_pack
 
 typedef struct {
   uint32_t fofs; // virtual file offset, aligned to 65536
@@ -1563,24 +1600,6 @@ struct vwad_handle_t {
   // opened files
   OpenedFile *fds[MAX_OPENED_FILES];
 };
-
-
-typedef struct __attribute__((packed)) {
-  uint32_t crc32;
-  uint16_t version;
-  uint16_t flags;
-  uint32_t dirofs;
-  uint16_t u_cmt_size;
-  uint16_t p_cmt_size;
-  uint32_t cmt_crc32;
-} MainFileHeader;
-
-typedef struct __attribute__((packed)) {
-  uint32_t pkdir_crc32;
-  uint32_t dir_crc32;
-  uint32_t pkdirsize;
-  uint32_t upkdirsize;
-} MainDirHeader;
 
 
 typedef struct {
