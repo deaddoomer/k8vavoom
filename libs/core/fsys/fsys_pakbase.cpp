@@ -296,7 +296,6 @@ VSearchPath::~VSearchPath () {
 }
 
 
-
 //==========================================================================
 //
 //  VFileDirectory::VFileDirectory
@@ -1030,6 +1029,18 @@ void VPakFileBase::RenameSprites (const TArray<VSpriteRename> &A, const TArray<V
     }
   }
   if (wasRename) pakdir.buildNameMaps(true);
+}
+
+
+//==========================================================================
+//
+//  VPakFileBase::IsFastSeek
+//
+//  checks if the "seek" operation on the given lump is fast
+//
+//==========================================================================
+bool VPakFileBase::IsFastSeek (int lump) noexcept {
+  return (lump >= 0 && lump < pakdir.files.length() ? pakdir.files[lump].fastseek : false);
 }
 
 

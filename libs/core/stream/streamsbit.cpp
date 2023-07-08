@@ -43,6 +43,7 @@ VBitStreamWriter::VBitStreamWriter (vint32 AMax, bool allowExpand)
   , bAllowExpand(allowExpand)
 {
   bLoading = false;
+  SetFastSeek(false);
   int sz = (AMax+7)/8+(allowExpand ? 256 : 0);
   Data.setLength(sz);
   if (sz > 0) memset(Data.Ptr(), 0, sz);
@@ -286,6 +287,7 @@ VBitStreamReader::VBitStreamReader (vuint8 *Src, vint32 Length)
   , Pos(0)
 {
   bLoading = true;
+  SetFastSeek(false);
   Data.setLength((Length+7)>>3);
   if (Src) memcpy(Data.Ptr(), Src, (Length+7)>>3);
 }

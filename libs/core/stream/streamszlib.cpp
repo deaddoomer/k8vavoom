@@ -393,6 +393,7 @@ bool VZLibStreamReader::resetZStream () {
 //
 //==========================================================================
 void VZLibStreamReader::initialize () {
+  SetFastSeek(false);
   bLoading = true;
 
   if (wholeBuf) { Z_Free(wholeBuf); wholeBuf = nullptr; }
@@ -751,6 +752,7 @@ VZLibStreamWriter::VZLibStreamWriter (VStream *ADstStream, int clevel, Type atyp
   , doCrcCalc(false)
 {
   bLoading = false;
+  SetFastSeek(false);
 
   // initialise zip stream structure
   memset((void *)&zStream, 0, sizeof(zStream));

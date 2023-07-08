@@ -81,6 +81,9 @@ public:
 
   inline bool HadFilters () const noexcept { return hadfilters; }
 
+  // checks if the "seek" operation on the given lump is fast
+  virtual bool IsFastSeek (int lump) = 0;
+
   // all following methods are supposed to be called with global mutex protection
   // (i.e. they should not be called from multiple threads simultaneously)
   // if `lump` is not `nullptr`, sets it to file lump or to -1
@@ -117,6 +120,7 @@ public:
 //==========================================================================
 // information about a file in the zipfile
 // also used for "pakdir", and "wad"
+// default is "fast seek"
 struct VPakFileInfo {
   VStr fileNameIntr; // name of the file (i.e. full name, lowercased)
   VName lumpName;
@@ -135,6 +139,8 @@ struct VPakFileInfo {
   vuint64 filetime; // 0 means "unknown", otherwise seconds from Epoch
   // for dirpaks
   VStr diskNameIntr;
+  // common flag
+  bool fastseek;
 
   // so our strings will have rc at least 2
   VStr strCopy0, strCopy1;
@@ -154,10 +160,14 @@ struct VPakFileInfo {
     , pakdataofs(0)
     , filetime(0)
     , diskNameIntr()
+    , fastseek(true)
     , strCopy0()
     , strCopy1()
   {
   }
+
+  inline bool IsFastSeek () const noexcept { return fastseek; }
+  inline void SetFastSeek (bool value) noexcept { fastseek = value; }
 
   inline VStr GetFileName () const noexcept { return fileNameIntr; }
   inline VStr GetDiskName () const noexcept { return diskNameIntr; }
@@ -243,6 +253,10 @@ public:
   virtual ~VPakFileBase () override;
 
   virtual void Close () override;
+
+  // checks if the "seek" operation on the given lump is fast
+  // default is `true`
+  virtual bool IsFastSeek (int lump) noexcept override;
 
   // if `lump` is not `nullptr`, sets it to file lump or to -1
   virtual bool FileExists (VStr fname, int *lump) override;

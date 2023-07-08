@@ -212,7 +212,7 @@ static void InitPalette () {
   //
   // k8: color 0 is not guaranteed to be black; map it to the actual palette color instead
   VStream *lumpstream = W_CreateLumpReaderNum(pplump);
-  VCheckedStream Strm(lumpstream, true); // load to memory
+  VCheckedStream Strm(lumpstream);
   // load it
   rgba_t *pal = r_palette;
   for (unsigned i = 0; i < 256; ++i) {
@@ -325,7 +325,7 @@ static void InitTranslationTables () {
     if (tlump >= 0) {
       GCon->Logf(NAME_Init, "using translation table from '%s'", *W_FullLumpName(tlump));
       VStream *lumpstream = W_CreateLumpReaderNum(tlump);
-      VCheckedStream Strm(lumpstream, true); // load to memory
+      VCheckedStream Strm(lumpstream);
       NumTranslationTables = Strm.TotalSize()/256;
       if (NumTranslationTables > 0 && Strm.TotalSize()%256 == 0) {
         TranslationTables = new VTextureTranslation*[NumTranslationTables];

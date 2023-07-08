@@ -30,6 +30,7 @@
 #include "fsys_local.h"
 
 //#define VAVOOM_FSYS_DEBUG_OPENERS
+//#define VAVOOM_FSYS_DEBUG_FAST_SEEK
 
 
 #define GET_LUMP_FILE(num)    (fsysSearchPaths[((num)>>16)&0xffff])
@@ -229,9 +230,25 @@ static void AddArchiveFile_NoLock (VStr filename, VSearchPath *arc, bool allowpk
     VStream *WadStrm = arc->OpenFileRead(wadname, nullptr);
     if (!WadStrm) continue;
     if (WadStrm->TotalSize() > 0x1fffffff) { delete WadStrm; continue; } // file is too big (arbitrary limit)
-    // decompress WAD file into a memory stream, since reading from ZIP will be very slow
-    VStream *MemStrm = new VMemoryStream(filename+":"+wadname, WadStrm);
-    delete WadStrm;
+
+    VStream *MemStrm;
+    if (WadStrm->IsFastSeek()) {
+      MemStrm = WadStrm;
+      WadStrm = nullptr;
+      #ifdef VAVOOM_FSYS_DEBUG_FAST_SEEK
+      GLog.Logf(NAME_Debug, "FAST(AAF): %s:%s", *filename, *wadname);
+      #endif
+    } else {
+      // decompress WAD file into a memory stream, since reading from ZIP will be very slow
+      MemStrm = new VMemoryStream(filename+":"+wadname, WadStrm);
+      bool err = WadStrm->IsError();
+      delete WadStrm;
+      WadStrm = nullptr;
+      #ifdef VAVOOM_FSYS_DEBUG_FAST_SEEK
+      GLog.Logf(NAME_Debug, "SLOW(AAF): %s:%s", *filename, *wadname);
+      #endif
+      if (err) { delete MemStrm; Sys_Error("cannot open WAD: \"%s:%s\"", *filename, *wadname); }
+    }
 
     VSearchPath *wad = FArchiveReaderInfo::OpenArchive(MemStrm, filename+":"+wadname, false); // don't fix voices
     if (!wad) { delete MemStrm; continue; } // unknown format
@@ -493,10 +510,23 @@ static void zipAddWads (VSearchPath *zip, VStr zipName) {
     VStream *wadstrm = zip->OpenFileRead(wadname, nullptr);
     if (!wadstrm) continue;
     if (wadstrm->TotalSize() < 16) { delete wadstrm; continue; }
-    VStream *memstrm = new VMemoryStream(zip->GetPrefix()+":"+wadname, wadstrm);
-    bool err = wadstrm->IsError();
-    delete wadstrm;
-    if (err) { delete memstrm; continue; }
+    VStream *memstrm;
+    if (wadstrm->IsFastSeek()) {
+      memstrm = wadstrm;
+      wadstrm = nullptr;
+      #ifdef VAVOOM_FSYS_DEBUG_FAST_SEEK
+      GLog.Logf(NAME_Debug, "FAST(ZAW): %s:%s", *zip->GetPrefix(), *wadname);
+      #endif
+    } else {
+      memstrm = new VMemoryStream(zip->GetPrefix()+":"+wadname, wadstrm);
+      bool err = wadstrm->IsError();
+      delete wadstrm;
+      wadstrm = nullptr;
+      if (err) { delete memstrm; continue; }
+      #ifdef VAVOOM_FSYS_DEBUG_FAST_SEEK
+      GLog.Logf(NAME_Debug, "SLOW(ZAW): %s:%s", *zip->GetPrefix(), *wadname);
+      #endif
+    }
     char sign[4];
     memstrm->Serialise(sign, 4);
     if (memcmp(sign, "PWAD", 4) != 0 && memcmp(sign, "IWAD", 4) != 0) { delete memstrm; continue; }
@@ -537,19 +567,34 @@ int W_AddAuxiliaryStream (VStream *strm, WAuxFileType ftype) {
         VStream *zipstrm = zip->OpenFileRead(pk3name, nullptr);
         if (!zipstrm) continue;
         if (zipstrm->TotalSize() < 16) { delete zipstrm; continue; }
-        VStream *memstrm = new VMemoryStream(zip->GetPrefix()+":"+pk3name, zipstrm);
-        bool err = zipstrm->IsError();
-        delete zipstrm;
-        if (err) { delete memstrm; continue; }
-        //GLog.Logf("AUX: %s", *(strm->GetName()+":"+wadname));
+        VSearchPath *pk3;
+        VStream *memstrm;
+        if (zipstrm->IsFastSeek()) {
+          memstrm = zipstrm;
+          zipstrm = nullptr;
+          #ifdef VAVOOM_FSYS_DEBUG_FAST_SEEK
+          GLog.Logf(NAME_Debug, "FAST(AAS): %s:%s", *zip->GetPrefix(), *pk3name);
+          #endif
+        } else {
+          memstrm = new VMemoryStream(zip->GetPrefix()+":"+pk3name, zipstrm);
+          bool err = zipstrm->IsError();
+          delete zipstrm;
+          zipstrm = nullptr;
+          if (err) { delete memstrm; continue; }
+          //GLog.Logf("AUX: %s", *(strm->GetName()+":"+wadname));
+          #ifdef VAVOOM_FSYS_DEBUG_FAST_SEEK
+          GLog.Logf(NAME_Debug, "SLOW(AAS): %s:%s", *zip->GetPrefix(), *pk3name);
+          #endif
+        }
         // guess
-        VSearchPath *pk3 = FArchiveReaderInfo::OpenArchive(memstrm, zip->GetPrefix()+":"+pk3name);
+        pk3 = FArchiveReaderInfo::OpenArchive(memstrm, zip->GetPrefix()+":"+pk3name);
         if (pk3) {
           //VZipFile *pk3 = new VZipFile(memstrm, strm->GetName()+":"+wadname);
           fsysSearchPaths.Append(pk3);
           zipAddWads(pk3, pk3->GetPrefix());
         } else {
           delete memstrm;
+          delete zipstrm;
         }
       }
     }
@@ -1440,7 +1485,7 @@ bool W_IsAuxFile (int fidx) {
 //==========================================================================
 bool W_IsWADLump (int lump) {
   if (lump < 0) return false;
-  int fidx = FILE_INDEX(lump);
+  const int fidx = FILE_INDEX(lump);
   return W_IsWADFile(fidx);
 }
 
@@ -1452,7 +1497,7 @@ bool W_IsWADLump (int lump) {
 //==========================================================================
 bool W_IsIWADLump (int lump) {
   if (lump < 0) return false;
-  int fidx = FILE_INDEX(lump);
+  const int fidx = FILE_INDEX(lump);
   return W_IsIWADFile(fidx);
 }
 
@@ -1465,7 +1510,7 @@ bool W_IsIWADLump (int lump) {
 bool W_IsAuxLump (int lump) {
   MyThreadLocker glocker(&fsys_glock);
   if (lump < 0 || AuxiliaryIndex < 0) return false;
-  int fidx = FILE_INDEX(lump);
+  const int fidx = FILE_INDEX(lump);
   return (fidx >= AuxiliaryIndex && fidx < fsysSearchPaths.length());
 }
 
@@ -1489,6 +1534,22 @@ bool W_IsUserWadFile (int fidx) {
 //==========================================================================
 bool W_IsUserWadLump (int lump) {
   if (lump < 0) return false;
-  int fidx = FILE_INDEX(lump);
+  const int fidx = FILE_INDEX(lump);
   return W_IsUserWadFile(fidx);
+}
+
+
+//==========================================================================
+//
+//  W_IsFastSeekLump
+//
+//==========================================================================
+bool W_IsFastSeekLump (int lump) {
+  if (lump < 0) return false;
+  const int fidx = FILE_INDEX(lump);
+  if (fidx < 0) return false;
+  MyThreadLocker glocker(&fsys_glock);
+  return (fidx >= 0 && fidx < fsysSearchPaths.length()
+          ? fsysSearchPaths[fidx]->IsFastSeek(LUMP_INDEX(fidx))
+          : false);
 }

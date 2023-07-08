@@ -108,6 +108,7 @@ class VStream {
 protected:
   bool bLoading; // are we loading or saving?
   bool bError; // did we have any errors?
+  bool bFastSeek;
 
 public:
   VStreamIOMapper *Mapper;
@@ -116,13 +117,20 @@ public:
 public:
   VV_DISABLE_COPY(VStream)
 
-  VVA_FORCEINLINE VStream () : bLoading(true), bError(false), Mapper(nullptr), version(0) {}
+  VVA_FORCEINLINE VStream () : bLoading(true), bError(false), bFastSeek(true), Mapper(nullptr), version(0) {}
   virtual ~VStream ();
 
   // status requests
   VVA_FORCEINLINE VVA_CHECKRESULT VVA_PURE bool IsLoading () const noexcept { return bLoading; }
   VVA_FORCEINLINE VVA_CHECKRESULT VVA_PURE bool IsSaving () const noexcept { return !bLoading; }
   virtual bool IsError () const noexcept;
+
+  virtual bool IsFastSeek () const noexcept;
+  virtual void SetFastSeek (bool value) noexcept;
+
+  // not all streams can be cloned; returns `nullptr` if cannot (default option)
+  // CANNOT simply return `this`!
+  virtual VStream *CloneSelf ();
 
   // call this to mark the stream as invalid
   virtual void SetError ();

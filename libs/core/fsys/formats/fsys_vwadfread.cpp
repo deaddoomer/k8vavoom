@@ -24,6 +24,8 @@
 //**
 //**************************************************************************
 // directly included from "fsys_vwad.cpp"
+//#define VAVOOM_FSYS_VWAD_READER_SEEK_DEBUG
+//#define VAVOOM_FSYS_VWAD_CLONE_DEBUG
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -36,6 +38,12 @@ private:
   vwad_iostream *vw_strm;
   vwad_fd fd;
   int total_size;
+  #ifdef VAVOOM_FSYS_VWAD_CLONE_DEBUG
+  bool cloned;
+  #endif
+
+private:
+  explicit VVWadFileReader (VVWadFileReader *src);
 
 public:
   VV_DISABLE_COPY(VVWadFileReader)
@@ -51,7 +59,34 @@ public:
   virtual int TotalSize () override;
   virtual bool AtEnd () override;
   virtual bool Close () override;
+
+  // not all streams can be cloned; returns `nullptr` if cannot (default option)
+  // CANNOT simply return `this`!
+  virtual VStream *CloneSelf () override;
 };
+
+
+#ifdef VAVOOM_FSYS_VWAD_READER_SEEK_DEBUG
+static void debug_read_chunk (vwad_handle *wad, int bidx, vwad_fidx fidx, vwad_fd fd, int chunkidx) {
+  GLog.Logf(NAME_Debug, "VWAD READ CHUNK: wad=%p; fidx=%d; fd=%d; bidx=%d; chunkidx=%d (%s)",
+            wad, fidx, fd, bidx, chunkidx, vwad_get_file_name(wad, fidx));
+}
+
+static void debug_flush_chunk (vwad_handle *wad, int bidx, vwad_fidx fidx, vwad_fd fd, int chunkidx) {
+  GLog.Logf(NAME_Debug, "VWAD FLUSH CHUNK: wad=%p; fidx=%d; fd=%d; bidx=%d; chunkidx=%d (%s)",
+            wad, fidx, fd, bidx, chunkidx, vwad_get_file_name(wad, fidx));
+}
+
+static void debug_open_file (vwad_handle *wad, vwad_fidx fidx, vwad_fd fd) {
+  GLog.Logf(NAME_Debug, "VWAD OPEN: wad=%p; fidx=%d; fd=%d; (%s)",
+            wad, fidx, fd, vwad_get_file_name(wad, fidx));
+}
+
+static void debug_close_file (vwad_handle *wad, vwad_fidx fidx, vwad_fd fd) {
+  GLog.Logf(NAME_Debug, "VWAD CLOSE: wad=%p; fidx=%d; fd=%d; (%s)",
+            wad, fidx, fd, vwad_get_file_name(wad, fidx));
+}
+#endif
 
 
 //==========================================================================
@@ -67,6 +102,9 @@ VVWadFileReader::VVWadFileReader (VStr afname, const VPakFileInfo &aInfo,
   , Info(aInfo)
   , vw_handle(a_vw_handle)
   , vw_strm(a_vw_strm)
+  #ifdef VAVOOM_FSYS_VWAD_CLONE_DEBUG
+  , cloned(false)
+  #endif
 {
   // `rdlock` is not locked here
 
@@ -74,6 +112,12 @@ VVWadFileReader::VVWadFileReader (VStr afname, const VPakFileInfo &aInfo,
 
   {
     MyThreadLocker locker(rdlock);
+    #ifdef VAVOOM_FSYS_VWAD_READER_SEEK_DEBUG
+    vwad_debug_open_file = &debug_open_file;
+    vwad_debug_close_file = &debug_close_file;
+    vwad_debug_read_chunk = &debug_read_chunk;
+    vwad_debug_flush_chunk = &debug_flush_chunk;
+    #endif
     fd = vwad_fopen(vw_handle, aInfo.pakdataofs);
   }
 
@@ -95,12 +139,74 @@ VVWadFileReader::VVWadFileReader (VStr afname, const VPakFileInfo &aInfo,
 
 //==========================================================================
 //
+//  VVWadFileReader::VVWadFileReader
+//
+//==========================================================================
+VVWadFileReader::VVWadFileReader (VVWadFileReader *src)
+  : rdlock(src->rdlock)
+  , fname(src->fname)
+  , Info(src->Info)
+  , vw_handle(src->vw_handle)
+  , vw_strm(src->vw_strm)
+  , fd(-1)
+  , total_size(src->total_size)
+  #ifdef VAVOOM_FSYS_VWAD_CLONE_DEBUG
+  , cloned(true)
+  #endif
+{
+  vassert(src->fd >= 0);
+  vwad_fidx fidx = vwad_fdfidx(vw_handle, src->fd);
+  fd = vwad_fopen(vw_handle, fidx);
+  if (fd >= 0) {
+    (void)vwad_seek(vw_handle, fd, vwad_tell(vw_handle, src->fd));
+  }
+}
+
+
+//==========================================================================
+//
 //  VVWadFileReader::~VVWadFileReader
 //
 //==========================================================================
 VVWadFileReader::~VVWadFileReader() {
+  #ifdef VAVOOM_FSYS_VWAD_CLONE_DEBUG
+  if (fd >= 0 && cloned) {
+    GLog.Logf(NAME_Debug, "VWAD DEAD CLONE:  wad=%p; fidx=%d; fd=%d; (%s)",
+            vw_handle, vwad_fdfidx(vw_handle, fd), fd,
+            vwad_get_file_name(vw_handle, vwad_fdfidx(vw_handle, fd)));
+  }
+  #endif
   vwad_fclose(vw_handle, fd); fd = -1;
   Close();
+}
+
+
+//==========================================================================
+//
+//  VVWadFileReader::CloneSelf
+//
+//  not all streams can be cloned
+//  returns `nullptr` if cannot (default option)
+//
+//==========================================================================
+VStream *VVWadFileReader::CloneSelf () {
+  return nullptr;
+  VVWadFileReader *res = new VVWadFileReader(this);
+  if (res->fd < 0) {
+    #ifdef VAVOOM_FSYS_VWAD_CLONE_DEBUG
+    res->cloned = false;
+    #endif
+    delete res;
+    return nullptr;
+  } else {
+    vassert(vwad_fdfidx(vw_handle, res->fd) == vwad_fdfidx(vw_handle, fd));
+    #ifdef VAVOOM_FSYS_VWAD_CLONE_DEBUG
+    GLog.Logf(NAME_Debug, "VWAD CLONED:  wad=%p; fidx=%d; fd=%d; newfd=%d (%s)",
+            vw_handle, vwad_fdfidx(vw_handle, fd), fd, res->fd,
+            vwad_get_file_name(vw_handle, vwad_fdfidx(vw_handle, fd)));
+    #endif
+    return res;
+  }
 }
 
 
@@ -131,6 +237,13 @@ void VVWadFileReader::SetError () {
 //
 //==========================================================================
 bool VVWadFileReader::Close () {
+  #ifdef VAVOOM_FSYS_VWAD_CLONE_DEBUG
+  if (fd >= 0 && cloned) {
+    GLog.Logf(NAME_Debug, "VWAD CLOSE CLONE:  wad=%p; fidx=%d; fd=%d; (%s)",
+            vw_handle, vwad_fdfidx(vw_handle, fd), fd,
+            vwad_get_file_name(vw_handle, vwad_fdfidx(vw_handle, fd)));
+  }
+  #endif
   #if 0
   GLog.Logf(NAME_Debug, "VWAD: closed file '%s'", *fname);
   #endif

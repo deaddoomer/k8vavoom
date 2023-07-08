@@ -278,6 +278,7 @@ void VZipFile::OpenArchive (VStream *fstream, vuint32 cdofs) {
           }
         }
 
+        file_info.SetFastSeek(file_info.compression == Z_STORE);
         pakdir.append(file_info);
       }
     }

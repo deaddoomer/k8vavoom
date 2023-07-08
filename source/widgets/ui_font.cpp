@@ -1627,7 +1627,7 @@ VFon1Font::VFon1Font (VName AName, int LumpNum) :
   RegisterFont(this, AName);
 
   VStream *lumpstream = W_CreateLumpReaderNum(LumpNum);
-  VCheckedStream Strm(lumpstream, true); // load to memory
+  VCheckedStream Strm(lumpstream);
   // skip ID
   Strm.Seek(4);
   vuint16 w;
@@ -1699,7 +1699,7 @@ VFon2Font::VFon2Font (VName AName, int LumpNum) {
   RegisterFont(this, AName);
 
   VStream *lumpstream = W_CreateLumpReaderNum(LumpNum);
-  VCheckedStream Strm(lumpstream, true); // load to memory
+  VCheckedStream Strm(lumpstream);
   // skip ID
   Strm.Seek(4);
 

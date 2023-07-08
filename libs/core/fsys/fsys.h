@@ -221,6 +221,9 @@ bool W_IsAuxLump (int lump); // -1 is not aux ;-)
 bool W_IsUserWadFile (int file);
 bool W_IsUserWadLump (int lump);
 
+// checks if the "seek" operation on the given lump is fast
+bool W_IsFastSeekLump (int lump);
+
 void W_ReadFromLump (int lump, void *dest, int pos, int size);
 VStr W_LoadTextLump (VName name);
 void W_LoadLumpIntoArray (VName Lump, TArrayNC<vuint8>& Array);

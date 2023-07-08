@@ -211,6 +211,8 @@ VZipFileReader::VZipFileReader (VStr afname, VStream *InStream, vuint32 BytesBef
   lzmastream = LZMA_STREAM_INIT;
   #endif
 
+  SetFastSeek(Info.compression == Z_STORE);
+
   if (Info.compression != Z_STORE && Info.compression != MZ_DEFLATED && Info.compression != Z_LZMA) {
     SetError();
     GLog.Logf(NAME_Error, "Compression method %d is not supported for file '%s'", Info.compression, *afname);

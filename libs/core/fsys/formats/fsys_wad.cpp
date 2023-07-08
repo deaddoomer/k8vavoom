@@ -391,7 +391,9 @@ VStream *VWadFile::CreateLumpReaderNum (int lump) {
   VStream *S = new VPartialStreamRO(GetPrefix()+":"+fi.fileNameIntr, archStream, fi.pakdataofs, fi.filesize, &rdlock);
 #endif
 
-  //GLog.Logf("WAD<%s>: lump=%d; name=<%s>; size=(%d:%d); ofs=0x%08x", *PakFileName, lump, *fi.lumpName, fi.filesize, S->TotalSize(), fi.pakdataofs);
+  #if 0
+  GLog.Logf("WAD<%s>: lump=%d; name=<%s>; size=(%d:%d); ofs=0x%08x", *PakFileName, lump, *fi.lumpName, fi.filesize, S->TotalSize(), fi.pakdataofs);
+  #endif
   //Z_Free(ptr);
   return S;
 }

@@ -34,6 +34,9 @@
 #endif
 
 
+//#define VAVOOM_DEBUG_FAST_SEEK
+
+
 #if defined(ANDROID) || defined(VV_ANDROID_TEST)
 
 // note that some code copypasted from syslow.cpp
@@ -1129,7 +1132,8 @@ VPartialStreamRO::VPartialStreamRO (VStream *ASrcStream, int astpos, int apartle
 //  VPartialStreamRO::VPartialStreamRO
 //
 //==========================================================================
-VPartialStreamRO::VPartialStreamRO (VStr aname, VStream *ASrcStream, int astpos, int apartlen, mythread_mutex *alockptr)
+VPartialStreamRO::VPartialStreamRO (VStr aname, VStream *ASrcStream, int astpos,
+                                    int apartlen, mythread_mutex *alockptr, int allowClone)
   : lockptr(alockptr)
   , srcStream(ASrcStream)
   , stpos(astpos)
@@ -1147,6 +1151,13 @@ VPartialStreamRO::VPartialStreamRO (VStr aname, VStream *ASrcStream, int astpos,
   if (partlen < 0 || !srcStream) { bError = true; return; }
   {
     MyThreadLocker locker(lockptr);
+    if (allowClone >= 0) {
+      VStream *xclone = srcStream->CloneSelf();
+      if (xclone != nullptr) {
+        srcStream = xclone;
+        srcOwned = true;
+      }
+    }
     if (srcStream->IsError() || !srcStream->IsLoading()) { bError = true; return; }
   }
 }
@@ -1184,6 +1195,26 @@ bool VPartialStreamRO::Close () {
     }
   }
   return !bError;
+}
+
+
+//==========================================================================
+//
+//  VPartialStreamRO::IsFastSeek
+//
+//==========================================================================
+bool VPartialStreamRO::IsFastSeek () const noexcept {
+  MyThreadLocker locker(lockptr);
+  return (srcStream ? srcStream->IsFastSeek() : false);
+}
+
+
+//==========================================================================
+//
+//  VPartialStreamRO::SetFastSeek
+//
+//==========================================================================
+void VPartialStreamRO::SetFastSeek (bool value) noexcept {
 }
 
 
@@ -1543,11 +1574,27 @@ VCheckedStream::VCheckedStream (VStream *ASrcStream)
 //  VCheckedStream::VCheckedStream
 //
 //==========================================================================
-VCheckedStream::VCheckedStream (VStream *ASrcStream, bool doCopy)
+VCheckedStream::VCheckedStream (VStream *ASrcStream, CopyMode mode)
   : srcStream(nullptr)
   , abortFn(nullptr)
 {
-  openStreamAndCopy(ASrcStream, doCopy);
+  openStreamAndCopy(ASrcStream, mode);
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::VCheckedStream
+//
+//==========================================================================
+VCheckedStream::VCheckedStream (int LumpNum)
+  : srcStream(nullptr)
+  , abortFn(nullptr)
+{
+  if (LumpNum < 0) FatalError(va("invalid lump number (%d) in VCheckedStream::VCheckedStream", LumpNum));
+  VStream *lst = W_CreateLumpReaderNum(LumpNum);
+  if (!lst) FatalError(va("cannot read lump (%d) in VCheckedStream::VCheckedStream", LumpNum));
+  openStreamAndCopy(lst, VCStrmAutoCopy);
 }
 
 
@@ -1558,12 +1605,13 @@ VCheckedStream::VCheckedStream (VStream *ASrcStream, bool doCopy)
 //==========================================================================
 VCheckedStream::VCheckedStream (int LumpNum, bool aUseSysError)
   : srcStream(nullptr)
-  , abortFn(&StreamHostSysError)
+  , abortFn(nullptr)
 {
+  if (aUseSysError) abortFn = &StreamHostSysError;
   if (LumpNum < 0) FatalError(va("invalid lump number (%d) in VCheckedStream::VCheckedStream", LumpNum));
   VStream *lst = W_CreateLumpReaderNum(LumpNum);
   if (!lst) FatalError(va("cannot read lump (%d) in VCheckedStream::VCheckedStream", LumpNum));
-  openStreamAndCopy(lst, true);
+  openStreamAndCopy(lst, VCStrmAutoCopy);
 }
 
 
@@ -1592,18 +1640,57 @@ __attribute__((noreturn)) void VCheckedStream::FatalError (const char *msg) cons
 
 //==========================================================================
 //
+//  VCheckedStream::IsFastSeek
+//
+//==========================================================================
+bool VCheckedStream::IsFastSeek () const noexcept {
+  return (srcStream ? srcStream->IsFastSeek() : false);
+}
+
+
+//==========================================================================
+//
+//  VCheckedStream::SetFastSeek
+//
+//==========================================================================
+void VCheckedStream::SetFastSeek (bool value) noexcept {
+}
+
+
+//==========================================================================
+//
 //  VCheckedStream::openStreamAndCopy
 //
 //==========================================================================
-void VCheckedStream::openStreamAndCopy (VStream *st, bool doCopy) {
+void VCheckedStream::openStreamAndCopy (VStream *st, CopyMode mode) {
   if (!st) FatalError("source stream is null");
   if (!st->IsLoading()) { VStream::Destroy(st); FatalError("source stream must be for reading"); }
   const int ssize = st->TotalSize();
-  if (!doCopy || ssize <= 0 || ssize > 1024*1024*64) {
+  if (mode == VCStrmAutoCopy) {
+    if (st->IsFastSeek()) {
+      #if 0
+      if (ssize <= 1024*128) {
+        mode = VCStrmForceCopy;
+      } else
+      #endif
+      {
+        mode = VCStrmNoCopy;
+      }
+    } else {
+      mode = VCStrmForceCopy;
+    }
+  }
+  if (mode == VCStrmNoCopy || ssize <= 0 || ssize > 1024*1024*4/*was 64*/) {
     // direct
     srcStream = st;
     bError = st->IsError();
+    #ifdef VAVOOM_DEBUG_FAST_SEEK
+    GLog.Logf(NAME_Debug, "FAST(VCS): %s", *st->GetName());
+    #endif
   } else {
+    #ifdef VAVOOM_DEBUG_FAST_SEEK
+    GLog.Logf(NAME_Debug, "SLOW(VCS): %s", *st->GetName());
+    #endif
     // load to memory stream
     VMemoryStream *ms = new VMemoryStream(st->GetName());
     TArrayNC<vuint8> &arr = ms->GetArray();

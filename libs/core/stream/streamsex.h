@@ -236,9 +236,16 @@ public:
 
   // doesn't own passed stream
   VPartialStreamRO (VStream *ASrcStream, int astpos, int apartlen=-1, bool aOwnSrc=false);
-  VPartialStreamRO (VStr aname, VStream *ASrcStream, int astpos, int apartlen, mythread_mutex *alockptr);
+  // allowClone:
+  //   <0: never
+  //    0: auto
+  //   >0: always
+  VPartialStreamRO (VStr aname, VStream *ASrcStream, int astpos, int apartlen, mythread_mutex *alockptr, int allowClone=0);
   // will free source stream if necessary
   virtual ~VPartialStreamRO () override;
+
+  virtual bool IsFastSeek () const noexcept;
+  virtual void SetFastSeek (bool value) noexcept;
 
   // stream interface
   virtual VStr GetName () const override;
@@ -275,6 +282,14 @@ extern VCheckedStreamAbortFn VCheckedStreamAbortFnDefault; // set this to someth
 // will throw `Host_Error()` on any error
 // should not be used with `new`
 class VCheckedStream : public VStream {
+public:
+  // automatically copies streams without a fast seek
+  enum CopyMode {
+    VCStrmNoCopy = -1,
+    VCStrmAutoCopy = 0,
+    VCStrmForceCopy = 1,
+  };
+
 private:
   mutable VStream *srcStream;
 
@@ -289,16 +304,20 @@ private:
   void checkValidityCond (bool mustBeTrue);
   inline void checkValidity () { checkValidityCond(true); }
 
-  void openStreamAndCopy (VStream *st, bool doCopy);
+  void openStreamAndCopy (VStream *st, CopyMode mode);
 
 public:
   VV_DISABLE_COPY(VCheckedStream)
 
-  VCheckedStream (VStream *ASrcStream); // this should not be used with `new`
+  explicit VCheckedStream (VStream *ASrcStream); // this should not be used with `new`; does not copy
   // this seeks to 0
-  VCheckedStream (VStream *ASrcStream, bool doCopy); // this should not be used with `new`
-  VCheckedStream (int LumpNum, bool aUseSysError=false); // this should not be used with `new`; copies into memory
+  explicit VCheckedStream (VStream *ASrcStream, CopyMode mode/*=VCStrmAutoCopy*/); // this should not be used with `new`
+  explicit VCheckedStream (int LumpNum); // this should not be used with `new`; auto mode; doesn't use `Sys_Error()`
+  explicit VCheckedStream (int LumpNum, bool aUseSysError); // this should not be used with `new`; auto mode
   virtual ~VCheckedStream () override;
+
+  virtual bool IsFastSeek () const noexcept;
+  virtual void SetFastSeek (bool value) noexcept;
 
   // stream interface
   virtual VStr GetName () const override;

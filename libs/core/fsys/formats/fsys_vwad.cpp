@@ -206,6 +206,9 @@ void VVWadFile::OpenArchive (VStream *fstream) {
   vwad_free_archive_comment(wad);
   */
 
+  // global cache size, speedups WAD reading
+  vwad_set_archive_cache(wad, 8); //~512KB
+
   type = PAK;
 
   const int maxFIdx = vwad_get_max_fidx(wad);

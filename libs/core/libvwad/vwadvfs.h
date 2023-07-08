@@ -44,6 +44,12 @@
 
   ASCII limitation may be relaxed in next library versions (i will prolly
   enable some unicode plane 1 chars, encoded as UTF-8).
+
+  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!
+  the reader is not thread-safe. i.e. you cannot use opened handle to
+  read different files in different threads without locking. but different
+  handles for different threads are allowed.
+  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!
 */
 #ifndef VWADVFS_HEADER
 #define VWADVFS_HEADER
@@ -114,6 +120,11 @@ extern void (*vwad_logf) (int type, const char *fmt, ...);
 // assertion; can be NULL, then the lib will simply traps
 extern void (*vwad_assertion_failed) (const char *fmt, ...);
 
+extern void (*vwad_debug_open_file) (vwad_handle *wad, vwad_fidx fidx, vwad_fd fd);
+extern void (*vwad_debug_close_file) (vwad_handle *wad, vwad_fidx fidx, vwad_fd fd);
+extern void (*vwad_debug_read_chunk) (vwad_handle *wad, int bidx, vwad_fidx fidx, vwad_fd fd, int chunkidx);
+extern void (*vwad_debug_flush_chunk) (vwad_handle *wad, int bidx, vwad_fidx fidx, vwad_fd fd, int chunkidx);
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 void vwad_z85_encode_key (const vwad_public_key inkey, vwad_z85_key enkey);
@@ -146,6 +157,15 @@ vwad_result vwad_z85_decode_key (const vwad_z85_key enkey, vwad_public_key outke
 vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman *mman);
 // will free handle memory, and clean handle pointer.
 void vwad_close_archive (vwad_handle **wadp);
+
+// set global chunk cache for the archive, in chunks. each chunk is ~64KB.
+// by default, there is no such cache.
+// this can speedup Doom WAD reading, for example, when the caller is
+// often open/close the same files.
+// this is advice, not a demand.
+// <0 means "disable global cache"
+void vwad_set_archive_cache (vwad_handle *wad, int chunkCount);
+
 
 #define VWAD_MAX_COMMENT_SIZE  (65535)
 
