@@ -461,7 +461,8 @@ public:
     if (fo && s && s[0]) fwrite(s, strlen(s), 1, fo);
   }
 
-  void printEvent (EName event) noexcept {
+  bool printEvent (EName event) noexcept {
+    bool res = false;
     if (event == NAME_None) event = NAME_Log;
     lastEvent = event;
     FILE *fo = outfile();
@@ -488,8 +489,10 @@ public:
           snprintf(buf, sizeof(buf), "%u:", msecs);
           xprintStr(buf, fo);
         }
+        res = true;
       }
     }
+    return res;
   }
 
   virtual void Serialise (const char *Text, EName Event) noexcept override {
@@ -514,9 +517,9 @@ public:
             xprintStr("\n", folog);
             if (folog && Event == NAME_Error) fflush(folog);
           }
-          printEvent(Event);
+          const bool printed = printEvent(Event);
           folog = outfile();
-          if (!GLogSkipLogTypeName) xprintStr(" ", folog);
+          if (printed) xprintStr(" ", folog);
         }
         lastWasNL = false;
         printStr(Text, (size_t)(ptrdiff_t)(eol-Text), folog);
