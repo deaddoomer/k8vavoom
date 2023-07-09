@@ -1510,7 +1510,6 @@ int main (int argc, char *argv[]) {
   if (argc < 2) showHelp();
 
   showPackedSize = true;
-  useZopfli = false;
 
   #if 0
   showPackedSize = true;
@@ -1522,10 +1521,10 @@ int main (int argc, char *argv[]) {
     for (int i = 1; i < argc; ++i) {
       if (inopt) {
         if (strcmp(argv[i], "--") == 0) { inopt = false; continue; }
-        if (strcmp(argv[i], "--zopfli") == 0) { useZopfli = true; continue; }
-        if (strcmp(argv[i], "--no-zopfli") == 0) { useZopfli = false; continue; }
-        if (strcmp(argv[i], "--zopfli=yes") == 0) { useZopfli = true; continue; }
-        if (strcmp(argv[i], "--zopfli=no") == 0) { useZopfli = false; continue; }
+        if (strcmp(argv[i], "--zopfli") == 0) { continue; }
+        if (strcmp(argv[i], "--no-zopfli") == 0) { continue; }
+        if (strcmp(argv[i], "--zopfli=yes") == 0) { continue; }
+        if (strcmp(argv[i], "--zopfli=no") == 0) { continue; }
         if (strcmp(argv[i], "--vwad=no") == 0) { useVWAD = false; continue; }
         if (strcmp(argv[i], "--pk3") == 0) { useVWAD = false; continue; }
         if (strcmp(argv[i], "--pk3=yes") == 0) { useVWAD = false; continue; }
