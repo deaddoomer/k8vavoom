@@ -24,6 +24,7 @@ extern "C" {
 
 // ////////////////////////////////////////////////////////////////////////// //
 #define VWAD_NOFIDX  ((uint32_t)0xffffffffU)
+#define VWAD_UNONE   ((uint32_t)0xffffffffU)
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -1095,14 +1096,14 @@ static int hash_with_prefix (uint8_t *out_fp,
 
   if (len < SHA512_BLOCK_SIZE && len + prefix_size < SHA512_BLOCK_SIZE) {
     if (len > 0) {
-      if (strm->read(strm, 0, msgblock, (int)len) != 0) return -1;
+      if (strm->read(strm, 0, msgblock, (int)len) != VWAD_OK) return -1;
       memcpy(init_block + prefix_size, msgblock, len);
     }
     sha512_final(&s, init_block, len + prefix_size);
   } else {
     size_t i;
 
-    if (strm->read(strm, 0, msgblock, SHA512_BLOCK_SIZE - prefix_size) != 0) return -1;
+    if (strm->read(strm, 0, msgblock, SHA512_BLOCK_SIZE - prefix_size) != VWAD_OK) return -1;
     memcpy(init_block + prefix_size, msgblock, SHA512_BLOCK_SIZE - prefix_size);
     sha512_block(&s, init_block);
 
@@ -1110,13 +1111,13 @@ static int hash_with_prefix (uint8_t *out_fp,
          i + SHA512_BLOCK_SIZE <= len;
          i += SHA512_BLOCK_SIZE)
     {
-      if (strm->read(strm, (int)i, msgblock, SHA512_BLOCK_SIZE) != 0) return -1;
+      if (strm->read(strm, (int)i, msgblock, SHA512_BLOCK_SIZE) != VWAD_OK) return -1;
       sha512_block(&s, msgblock);
     }
 
     const int left = (int)len - (int)i;
     if (left < 0) vwad__builtin_trap();
-    if (left > 0 && strm->read(strm, (int)i, msgblock, left) != 0) return -1;
+    if (left > 0 && strm->read(strm, (int)i, msgblock, left) != VWAD_OK) return -1;
 
     sha512_final(&s, msgblock, len + prefix_size);
   }
@@ -1662,9 +1663,9 @@ typedef struct vwad_packed_struct {
 } ChunkInfo;
 
 typedef struct vwad_packed_struct {
-  uint32_t fchunk;     // first chunk
-  uint32_t nhash;      // name hash
-  uint32_t bknext;     // next name in bucket
+  uint32_t firstChunk; // first chunk
+  uint32_t nameHash;   // name hash
+  uint32_t hcNext;     // next name in bucket chain
   uint32_t gnameofs;   // group name offset
   uint64_t ftime;      // since Epoch, 0 is "unknown"
   uint32_t crc32;      // full crc32
@@ -1767,7 +1768,7 @@ static int ed_read (cc_ed25519_iostream *strm, int startpos, void *buf, int bufs
   const int max = nfo->size - startpos;
   if (bufsize > max) bufsize = max;
   if (nfo->currpos != startpos) {
-    if (nfo->strm->seek(nfo->strm, startpos) != 0) return -1;
+    if (nfo->strm->seek(nfo->strm, startpos) != VWAD_OK) return -1;
     nfo->currpos = startpos + bufsize;
   } else {
     nfo->currpos += bufsize;
@@ -1916,7 +1917,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     logf(ERROR, "vwad_open_archive: invalid stream");
     return NULL;
   }
-  if (strm->seek(strm, 0) != 0) {
+  if (strm->seek(strm, 0) != VWAD_OK) {
     logf(ERROR, "vwad_open_archive: cannot seek to 0");
     return NULL;
   }
@@ -1932,7 +1933,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   uint8_t aslen, tslen;
 
   // file signature
-  if (strm->read(strm, sign, 4) != 0) {
+  if (strm->read(strm, sign, 4) != VWAD_OK) {
     logf(ERROR, "vwad_open_archive: cannot read signature");
     return NULL;
   }
@@ -1941,28 +1942,43 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     return NULL;
   }
   // digital signature
-  if (strm->read(strm, &edsign, (uint32_t)sizeof(edsign)) != 0) {
+  if (strm->read(strm, &edsign, (uint32_t)sizeof(edsign)) != VWAD_OK) {
     logf(ERROR, "vwad_open_archive: cannot read edsign");
     return NULL;
   }
+
+  aslen = 0;
+  for (size_t f = 0; f < sizeof(edsign); ++f) aslen |= edsign[f];
+  if (aslen == 0) {
+    logf(ERROR, "vwad_open_archive: invalid edsign");
+    return NULL;
+  }
+
   // public key
-  if (strm->read(strm, &pubkey, (uint32_t)sizeof(pubkey)) != 0) {
+  if (strm->read(strm, &pubkey, (uint32_t)sizeof(pubkey)) != VWAD_OK) {
     logf(ERROR, "vwad_open_archive: cannot read pubkey");
     return NULL;
   }
 
+  aslen = 0;
+  for (size_t f = 0; f < sizeof(pubkey); ++f) aslen |= pubkey[f];
+  if (aslen == 0) {
+    logf(ERROR, "vwad_open_archive: invalid public key");
+    return NULL;
+  }
+
   // lengthes
-  if (strm->read(strm, &aslen, 1) != 0) {
+  if (strm->read(strm, &aslen, 1) != VWAD_OK) {
     logf(ERROR, "vwad_open_archive: cannot read author length");
     return NULL;
   }
-  if (strm->read(strm, &tslen, 1) != 0) {
+  if (strm->read(strm, &tslen, 1) != VWAD_OK) {
     logf(ERROR, "vwad_open_archive: cannot read title length");
     return NULL;
   }
 
   // read author
-  if (strm->read(strm, sign, 2) != 0) {
+  if (strm->read(strm, sign, 2) != VWAD_OK) {
     logf(ERROR, "vwad_open_archive: cannot read author padding");
     return NULL;
   }
@@ -1970,7 +1986,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     logf(ERROR, "vwad_open_archive: invalid author padding");
     return NULL;
   }
-  if (aslen != 0 && strm->read(strm, author, (int)aslen) != 0) {
+  if (aslen != 0 && strm->read(strm, author, (int)aslen) != VWAD_OK) {
     logf(ERROR, "vwad_open_archive: cannot read author");
     return NULL;
   }
@@ -1985,7 +2001,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   }
 
   // read title
-  if (strm->read(strm, sign, 2) != 0) {
+  if (strm->read(strm, sign, 2) != VWAD_OK) {
     logf(ERROR, "vwad_open_archive: cannot read title padding");
     return NULL;
   }
@@ -1993,7 +2009,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     logf(ERROR, "vwad_open_archive: invalid title padding");
     return NULL;
   }
-  if (tslen != 0 && strm->read(strm, title, (int)tslen) != 0) {
+  if (tslen != 0 && strm->read(strm, title, (int)tslen) != VWAD_OK) {
     logf(ERROR, "vwad_open_archive: cannot read title");
     return NULL;
   }
@@ -2008,7 +2024,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   }
 
   // read final padding
-  if (strm->read(strm, sign, 4) != 0) {
+  if (strm->read(strm, sign, 4) != VWAD_OK) {
     logf(ERROR, "vwad_open_archive: cannot read title padding");
     return NULL;
   }
@@ -2018,7 +2034,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   }
 
   // read main header
-  if (strm->read(strm, &mhdr, (uint32_t)sizeof(mhdr)) != 0) {
+  if (strm->read(strm, &mhdr, (uint32_t)sizeof(mhdr)) != VWAD_OK) {
     logf(ERROR, "vwad_open_archive: cannot read main header");
     return NULL;
   }
@@ -2097,7 +2113,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
         logf(DEBUG, "vwad_open_archive: cannot allocate buffer for comment");
         goto error;
       }
-      if (strm->read(strm, wadcomment, mhdr.u_cmt_size) != 0) {
+      if (strm->read(strm, wadcomment, mhdr.u_cmt_size) != VWAD_OK) {
         xfree(mman, wadcomment);
         logf(DEBUG, "vwad_open_archive: cannot read comment data");
         goto error;
@@ -2112,7 +2128,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
         logf(DEBUG, "vwad_open_archive: cannot allocate buffer for comment");
         goto error;
       }
-      if (strm->read(strm, wadcomment, mhdr.p_cmt_size) != 0) {
+      if (strm->read(strm, wadcomment, mhdr.p_cmt_size) != VWAD_OK) {
         xfree(mman, wadcomment);
         logf(DEBUG, "vwad_open_archive: cannot read comment data");
         goto error;
@@ -2129,7 +2145,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   #endif
 
   // determine file size
-  if (strm->seek(strm, mhdr.dirofs) != 0) {
+  if (strm->seek(strm, mhdr.dirofs) != VWAD_OK) {
     xfree(mman, wadcomment);
     logf(ERROR, "vwad_open_archive: cannot seek to directory");
     return NULL;
@@ -2137,7 +2153,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
 
   logf(DEBUG, "vwad_open_archive: dirofs=0x%08x", mhdr.dirofs);
 
-  if (strm->read(strm, &dhdr, (uint32_t)sizeof(dhdr)) != 0) {
+  if (strm->read(strm, &dhdr, (uint32_t)sizeof(dhdr)) != VWAD_OK) {
     xfree(mman, wadcomment);
     logf(ERROR, "vwad_open_archive: cannot read directory header");
     return NULL;
@@ -2195,7 +2211,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   }
 
   // read and unpack directory
-  if (strm->seek(strm, mhdr.dirofs + (int)sizeof(dhdr)) != 0) {
+  if (strm->seek(strm, mhdr.dirofs + (int)sizeof(dhdr)) != VWAD_OK) {
     xfree(mman, wadcomment);
     logf(ERROR, "vwad_open_archive: cannot seek to directory data");
     return NULL;
@@ -2217,7 +2233,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     return NULL;
   }
 
-  if (strm->read(strm, pkdir, dhdr.pkdirsize) != 0) {
+  if (strm->read(strm, pkdir, dhdr.pkdirsize) != VWAD_OK) {
     xfree(mman, wadcomment);
     xfree(mman, pkdir);
     xfree(mman, unpkdir);
@@ -2279,6 +2295,9 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
 
   strcpy(wad->author, author);
   strcpy(wad->title, title);
+
+  // init hash buckets
+  for (unsigned f = 0; f < HASH_BUCKETS; ++f) wad->buckets[f] = VWAD_UNONE;
 
   // get counters
   wad->chunkCount = get_u32(wad->updir + 0);
@@ -2387,7 +2406,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   for (uint32_t fidx = 0; fidx < wad->fileCount; ++fidx) {
     FileInfo *fi = &wad->files[fidx];
 
-    if (fi->nhash != 0 || fi->bknext != 0 || fi->fchunk != 0) {
+    if (fi->nameHash != 0 || fi->hcNext != 0 || fi->firstChunk != 0) {
       logf(DEBUG, "invalid file data (zero fields are non-zero)");
       goto error;
     }
@@ -2445,13 +2464,13 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     }
 
     // insert name into hash table (also, check for duplicates)
-    fi->nhash = hashStrCI(name);
-    const uint32_t bkt = fi->nhash % HASH_BUCKETS;
+    fi->nameHash = hashStrCI(name);
+    const uint32_t bkt = fi->nameHash % HASH_BUCKETS;
 
-    if (wad->buckets[bkt]) {
+    if (wad->buckets[bkt] != VWAD_UNONE) {
       FileInfo *bkfi = &wad->files[wad->buckets[bkt]];
       while (bkfi != NULL && !strEquCI(name, wad->names + bkfi->nameofs)) {
-        if (bkfi->bknext) bkfi = &wad->files[bkfi->bknext]; else bkfi = NULL;
+        if (bkfi->hcNext != VWAD_UNONE) bkfi = &wad->files[bkfi->hcNext]; else bkfi = NULL;
       }
       if (bkfi != NULL) {
         logf(DEBUG, "duplicate file name (%s)", name);
@@ -2459,13 +2478,13 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
       }
     }
 
-    fi->bknext = wad->buckets[bkt];
+    fi->hcNext = wad->buckets[bkt];
     wad->buckets[bkt] = fidx;
 
     // fix chunks
     uint32_t left = fi->upksize;
     if (left != 0) {
-      fi->fchunk = currChunk;
+      fi->firstChunk = currChunk;
       for (uint32_t cnn = 0; cnn < fi->chunkCount; ++cnn) {
         if (left == 0) {
           logf(DEBUG, "invalid file data (out of chunks)");
@@ -2753,13 +2772,13 @@ static vwad_fidx find_file (vwad_handle *wad, const char *name) {
     const uint32_t hash = hashStrCI(name);
     const uint32_t bkt = hash % HASH_BUCKETS;
     uint32_t fidx = wad->buckets[bkt];
-    while (fidx != 0) {
-      if (wad->files[fidx].nhash == hash &&
+    while (fidx != VWAD_UNONE) {
+      if (wad->files[fidx].nameHash == hash &&
           strEquCI(wad->names + wad->files[fidx].nameofs, name))
       {
         return (vwad_fidx)fidx;
       }
-      fidx = wad->files[fidx].bknext;
+      fidx = wad->files[fidx].hcNext;
     }
   }
   return 0;
@@ -2889,7 +2908,7 @@ static vwad_result read_chunk (vwad_handle *wad, OpenedFile *fl, FileBuffer *buf
   //vassert(cupsize > 0 && cupsize <= 65536);
 
   // seek to chunk
-  if (wad->strm->seek(wad->strm, ci->ofs) != 0) {
+  if (wad->strm->seek(wad->strm, ci->ofs) != VWAD_OK) {
     logf(ERROR, "read_chunk: cannot seek to chunk %u", cidx);
     return -1;
   }
@@ -2897,7 +2916,7 @@ static vwad_result read_chunk (vwad_handle *wad, OpenedFile *fl, FileBuffer *buf
   // read data
   if (ci->pksize == 0) {
     // unpacked
-    if (wad->strm->read(wad->strm, &wad->pkdata[0], cupsize + 4) != 0) {
+    if (wad->strm->read(wad->strm, &wad->pkdata[0], cupsize + 4) != VWAD_OK) {
       buf->size = 0;
       logf(ERROR, "read_chunk: cannot read unpacked chunk %u", cidx);
       return -1;
@@ -2906,7 +2925,7 @@ static vwad_result read_chunk (vwad_handle *wad, OpenedFile *fl, FileBuffer *buf
     memcpy(buf->data, &wad->pkdata[4], cupsize);
   } else {
     // packed
-    if (wad->strm->read(wad->strm, &wad->pkdata[0], ci->pksize + 4) != 0) {
+    if (wad->strm->read(wad->strm, &wad->pkdata[0], ci->pksize + 4) != VWAD_OK) {
       buf->size = 0;
       logf(ERROR, "read_chunk: cannot read packed chunk %u", cidx);
       return -1;
@@ -2951,8 +2970,8 @@ static FileBuffer *ensure_buffer (vwad_handle *wad, vwad_fd fd, uint32_t ofs) {
   const FileInfo *fi = &wad->files[fl->fidx];
   if (ofs >= fi->upksize) return NULL;
 
-  const uint32_t cidx = fi->fchunk + ofs / 65536;
-  vassert(cidx >= fi->fchunk && cidx < fi->fchunk + fi->chunkCount);
+  const uint32_t cidx = fi->firstChunk + ofs / 65536;
+  vassert(cidx >= fi->firstChunk && cidx < fi->firstChunk + fi->chunkCount);
   vassert(fl->bidx < MAX_GLOB_BUFFERS);
   FileBuffer *res = wad->globCache[fl->bidx];
 
@@ -2962,7 +2981,7 @@ static FileBuffer *ensure_buffer (vwad_handle *wad, vwad_fd fd, uint32_t ofs) {
     const uint32_t gbcSize = wad->globCacheSize;
     uint32_t bidx;
     FileBuffer *gb;
-    uint32_t ggevict = ~0u;
+    uint32_t ggevict = VWAD_UNONE;
     uint32_t goodera = 0xffffffffU;
     vwad_bool gfound = 0;
     vwad_bool ggevict_empty = 0;
@@ -2986,11 +3005,11 @@ static FileBuffer *ensure_buffer (vwad_handle *wad, vwad_fd fd, uint32_t ofs) {
     if (gfound == 0) {
       if (gbcSize == 0) {
         // local cache
-        vassert(ggevict == ~0u);
+        vassert(ggevict == VWAD_UNONE);
         ggevict = (uint32_t)fd;
       } else {
         // global cache
-        vassert(ggevict != ~0u);
+        vassert(ggevict != VWAD_UNONE);
       }
       gb = wad->globCache[ggevict];
       if (vwad_debug_flush_chunk && gb && gb->size != 0) {
@@ -3012,7 +3031,7 @@ static FileBuffer *ensure_buffer (vwad_handle *wad, vwad_fd fd, uint32_t ofs) {
         vwad_debug_read_chunk(wad, (int)ggevict, fl->fidx, fd, (int)cidx);
       }
       // we need to read the chunk
-      if (read_chunk(wad, fl, gb, cidx) != 0) {
+      if (read_chunk(wad, fl, gb, cidx) != VWAD_OK) {
         return NULL;
       }
       fl->bidx = ggevict;
@@ -3068,7 +3087,7 @@ int vwad_read (vwad_handle *wad, vwad_fd fd, void *dest, int len) {
           uint32_t rd = (uint32_t)len;
           if (rd > left) rd = left;
           vassert(fbuf->size > 0 && fbuf->size <= 65536);
-          const uint32_t bufskip = fl->fofs - (fbuf->cidx - fi->fchunk) * 65536;
+          const uint32_t bufskip = fl->fofs - (fbuf->cidx - fi->firstChunk) * 65536;
           vassert(bufskip <= fbuf->size);
           const uint32_t bufleft = fbuf->size - bufskip;
           vassert(bufleft > 0);
@@ -3171,7 +3190,7 @@ int vwad_get_file_chunk_size (vwad_handle *wad, vwad_fidx fidx, int chunkidx, in
   if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount &&
       chunkidx >= 0 && chunkidx < (int)wad->files[fidx].chunkCount)
   {
-    const ChunkInfo *ci = &wad->chunks[wad->files[fidx].fchunk + (uint32_t)chunkidx];
+    const ChunkInfo *ci = &wad->chunks[wad->files[fidx].firstChunk + (uint32_t)chunkidx];
     if (upksz) *upksz = (int)ci->upksize + 4;
     return (int)(ci->pksize == 0 ? ci->upksize : ci->pksize) + 4; /* with CRC32 */
   }
@@ -3191,12 +3210,12 @@ vwad_result vwad_read_raw_file_chunk (vwad_handle *wad, vwad_fidx fidx, int chun
       chunkidx >= 0 && chunkidx < (int)wad->files[fidx].chunkCount && buf != NULL)
   {
     const FileInfo *fi = &wad->files[fidx];
-    const ChunkInfo *ci = &wad->chunks[fi->fchunk + (uint32_t)chunkidx];
+    const ChunkInfo *ci = &wad->chunks[fi->firstChunk + (uint32_t)chunkidx];
     const uint32_t csize = (ci->pksize == 0 ? ci->upksize : ci->pksize) + 4u; /* with CRC32 */
-    if (wad->strm->seek(wad->strm, ci->ofs) != 0) return -1;
-    if (wad->strm->read(wad->strm, buf, (int)csize) != 0) return -1;
+    if (wad->strm->seek(wad->strm, ci->ofs) != VWAD_OK) return -1;
+    if (wad->strm->read(wad->strm, buf, (int)csize) != VWAD_OK) return -1;
     // decrypt chunk
-    const uint32_t nonce = 4 + fi->fchunk + (uint32_t)chunkidx;
+    const uint32_t nonce = 4 + fi->firstChunk + (uint32_t)chunkidx;
     crypt_buffer(wad->xorRndSeed, nonce, buf, csize);
     return 0;
   }

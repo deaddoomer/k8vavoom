@@ -68,6 +68,9 @@ typedef int vwad_fd;
 // 0 is success, negative value is error
 typedef int vwad_result;
 
+// for `vwad_result`
+#define VWAD_OK  (0)
+
 // opaque handle
 typedef struct vwad_handle_t vwad_handle;
 

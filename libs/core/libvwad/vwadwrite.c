@@ -3218,7 +3218,7 @@ vwadwr_result vwadwr_finish (vwadwr_dir **dirp) {
   }
 
   // re-encrypt public key
-  // create initial seed from pubkey, author, and title
+  // create initial seed from signature, author, and title
   uint32_t pkxseed;
   pkxseed = deriveSeed(0xa29, edsign, (uint32_t)sizeof(ed25519_signature));
   pkxseed = deriveSeed(pkxseed, (const uint8_t *)dir->author, strlen(dir->author));
