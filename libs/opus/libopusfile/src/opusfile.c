@@ -931,7 +931,7 @@ static int op_find_initial_pcm_offset(OggOpusFile *_of,
   prev_packet_gp=pcm_start;
   for(pi=0;pi<op_count;pi++){
     if(cur_page_eos){
-      ogg_int64_t diff;
+      ogg_int64_t diff = 0; /*k8: shut up, gcc!*/
       OP_ALWAYS_TRUE(!op_granpos_diff(&diff,cur_page_gp,prev_packet_gp));
       diff=durations[pi]-diff;
       /*If we have samples to trim...*/
@@ -2179,7 +2179,7 @@ int op_raw_seek(OggOpusFile *_of,opus_int64 _pos){
 static ogg_int64_t op_get_granulepos(const OggOpusFile *_of,
  ogg_int64_t _pcm_offset,int *_li){
   const OggOpusLink *links;
-  ogg_int64_t        duration;
+  ogg_int64_t        duration = 0; /*k8: shut up, gcc!*/
   ogg_int64_t        pcm_start;
   opus_int32         pre_skip;
   int                nlinks;
@@ -2258,11 +2258,11 @@ static int op_pcm_seek_page(OggOpusFile *_of,
  ogg_int64_t _target_gp,int _li){
   const OggOpusLink *link;
   ogg_page           og;
-  ogg_int64_t        pcm_pre_skip;
+  ogg_int64_t        pcm_pre_skip = 0; /*k8: shut up, gcc!*/
   ogg_int64_t        pcm_start;
   ogg_int64_t        pcm_end;
   ogg_int64_t        best_gp;
-  ogg_int64_t        diff;
+  ogg_int64_t        diff = 0; /*k8: shut up, gcc!*/
   ogg_uint32_t       serialno;
   opus_int32         pre_skip;
   opus_int64         begin;
@@ -2346,7 +2346,7 @@ static int op_pcm_seek_page(OggOpusFile *_of,
             }
           }
           else{
-            ogg_int64_t prev_page_gp;
+            ogg_int64_t prev_page_gp = 0; /*k8: shut up, gcc!*/
             /*We might get lucky and already have the packet with the target
                buffered.
               Worth checking.
@@ -2400,7 +2400,7 @@ static int op_pcm_seek_page(OggOpusFile *_of,
       d2=end-begin>>1;
       if(force_bisect)bisect=begin+(end-begin>>1);
       else{
-        ogg_int64_t diff2;
+        ogg_int64_t diff2 = 0; /*k8: shut up, gcc!*/
         OP_ALWAYS_TRUE(!op_granpos_diff(&diff,_target_gp,pcm_start));
         OP_ALWAYS_TRUE(!op_granpos_diff(&diff2,pcm_end,pcm_start));
         /*Take a (pretty decent) guess.*/
