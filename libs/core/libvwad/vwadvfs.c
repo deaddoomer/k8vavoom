@@ -23,6 +23,10 @@ extern "C" {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+#define VWAD_NOFIDX  ((uint32_t)0xffffffffU)
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 /* turning off inlining saves ~5kb of binary code on x86 */
 #ifdef _MSC_VER
 # define CC25519_INLINE  inline __attribute__((always_inline))
@@ -1646,8 +1650,8 @@ static vwad_bool strEquCI (const char *s0, const char *s1) {
 #define HASH_BUCKETS  (1024)
 
 #define MAX_OPENED_FILES  (128)
-#define MAX_FILE_BUFFERS  (2)
-#define MAX_GLOB_BUFFERS  (256)
+// it must be at least not less than max opened files
+#define MAX_GLOB_BUFFERS  MAX_OPENED_FILES
 
 
 vwad_push_pack
@@ -1688,19 +1692,16 @@ typedef struct vwad_packed_struct {
 vwad_pop_pack
 
 typedef struct {
-  uint32_t bofs; // chunk numbef in file
+  uint32_t cidx; // chunk number in file
   uint32_t size; // 0: the buffer is not used
   uint32_t era;
   uint8_t data[65536];
 } FileBuffer;
 
 typedef struct {
-  uint32_t fidx;  // 0: unused
+  uint32_t fidx;  // file index for this fd; 0 means "unused"
   uint32_t fofs;  // virtual file offset, in bytes
-  uint32_t lastera;
-  uint32_t bidx;
-  // either allocated per-file, or in global cache
-  FileBuffer *bufs[MAX_FILE_BUFFERS];
+  uint32_t bidx;  // current cache buffer index (in `globCache`)
 } OpenedFile;
 
 struct vwad_handle_t {
@@ -1720,18 +1721,17 @@ struct vwad_handle_t {
   uint32_t fileCount;  // number of elements in `files` array
   // file names (0-terminated)
   const char *names;   // points to the unpacked directory
-  uint32_t namesSize;  // number of bytes in `names` array
   // directory hash table
   uint32_t buckets[HASH_BUCKETS];
   // public key
   uint32_t haspubkey; // bit 0: has key; bit 1: authenticated
   // opened files
-  OpenedFile *fds[MAX_OPENED_FILES];
+  OpenedFile fds[MAX_OPENED_FILES];
   int fdsUsed; // to avoid excessive scans
   // temporary buffer to unpack chunks (data + crc32)
   uint8_t pkdata[65536 + 4];
   // global cache
-  uint32_t globCacheSize;
+  uint32_t globCacheSize; // 0 means "each opened file owns exactly one buffer"
   FileBuffer *globCache[MAX_GLOB_BUFFERS];
   uint32_t lastera;
 };
@@ -2314,7 +2314,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     goto error;
   }
 
-  if (wad->fileCount < 2 || wad->fileCount > 0xffffU ||
+  if (wad->fileCount < 1 || wad->fileCount > 0xffffU ||
       wad->fileCount * (uint32_t)sizeof(FileInfo) >= dhdr.upkdirsize ||
       wad->fileCount * (uint32_t)sizeof(FileInfo) >= dhdr.upkdirsize - upofs)
   {
@@ -2330,28 +2330,13 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     logf(DEBUG, "invalid directory data (names, 0)");
     goto error;
   }
-  wad->namesSize = dhdr.upkdirsize - upofs;
-  if (wad->namesSize < 8 || wad->namesSize > 0x3fffffffU || (wad->namesSize&0x03) != 0) {
-    logf(DEBUG, "invalid names size (%u)", wad->namesSize);
+  const uint32_t namesSize = dhdr.upkdirsize - upofs;
+  if (namesSize < 8 || namesSize > 0x3fffffffU || (namesSize&0x03) != 0) {
+    logf(DEBUG, "invalid names size (%u)", namesSize);
     goto error;
   }
-  logf(DEBUG, "name table size: %u", wad->namesSize);
+  logf(DEBUG, "name table size: %u", namesSize);
   wad->names = (char *)(wad->updir + upofs);
-
-  // check if files are ok, and setup chunk info
-  // 0th is unused, and should be zeroed
-  if (wad->files[0].upksize != 0 ||
-      wad->files[0].fchunk != 0 ||
-      wad->files[0].chunkCount != 0 ||
-      wad->files[0].nhash != 0 ||
-      wad->files[0].bknext != 0 ||
-      wad->files[0].crc32 != 0 ||
-      wad->files[0].ftime != 0 ||
-      wad->files[0].nameofs != 0)
-  {
-    logf(DEBUG, "invalid file data");
-    goto error;
-  }
 
   // unpack comment
   if ((flags & VWAD_OPEN_NO_MAIN_COMMENT) == 0) {
@@ -2399,7 +2384,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   uint32_t chunkOfs = fcofs;
   uint32_t currChunk = 0;
 
-  for (uint32_t fidx = 1; fidx < wad->fileCount; ++fidx) {
+  for (uint32_t fidx = 0; fidx < wad->fileCount; ++fidx) {
     FileInfo *fi = &wad->files[fidx];
 
     if (fi->nhash != 0 || fi->bknext != 0 || fi->fchunk != 0) {
@@ -2426,7 +2411,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
       }
     }
 
-    if (fi->upksize > 0x7fffffffU || fi->nameofs >= wad->namesSize) {
+    if (fi->upksize > 0x7fffffffU || fi->nameofs >= namesSize) {
       logf(DEBUG, "invalid file data (name offset)");
       goto error;
     }
@@ -2443,7 +2428,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
       goto error;
     }
 
-    if (fi->upksize > 0x7fffffffU || fi->gnameofs >= wad->namesSize) {
+    if (fi->upksize > 0x7fffffffU || fi->gnameofs >= namesSize) {
       logf(DEBUG, "invalid file data (group name offset)");
       goto error;
     }
@@ -2530,6 +2515,14 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     goto error;
   }
 
+  wad->lastera = 1;
+
+  // mark everything as unused
+  for (unsigned f = 0; f < MAX_OPENED_FILES; ++f) wad->fds[f].fidx = VWAD_NOFIDX;
+
+  // default cache settings
+  vwad_set_archive_cache(wad, 4);
+
   return wad;
 
 error:
@@ -2554,16 +2547,13 @@ void vwad_close_archive (vwad_handle **wadp) {
     if (wad) {
       *wadp = NULL;
       vwad_memman *mman = wad->mman;
-      for (vwad_fd fd = 0; fd < MAX_OPENED_FILES; ++fd) {
-        vwad_fclose(wad, fd);
-      }
-      for (unsigned c = 0; c < wad->globCacheSize; ++c) {
+      // there is no need to close opened files, nothing is allocated for them
+      for (unsigned c = 0; c < MAX_GLOB_BUFFERS; ++c) {
         xfree(mman, wad->globCache[c]);
-        wad->globCache[c] = NULL;
       }
       xfree(mman, wad->updir);
       xfree(mman, wad->comment);
-      memset(wad, 0, sizeof(vwad_handle));
+      memset(wad, 0, sizeof(vwad_handle)); // just in case
       xfree(mman, wad);
     }
   }
@@ -2580,26 +2570,16 @@ void vwad_set_archive_cache (vwad_handle *wad, int chunkCount) {
     if (chunkCount < 0) chunkCount = 0;
     else if (chunkCount > MAX_GLOB_BUFFERS) chunkCount = MAX_GLOB_BUFFERS;
     if (wad->globCacheSize != (uint32_t)chunkCount) {
-      // flush file buffers
-      for (vwad_fd fd = 0; fd < wad->fdsUsed; ++fd) {
-        OpenedFile *fl = wad->fds[fd];
-        if (fl) {
-          for (unsigned c = 0; c < MAX_FILE_BUFFERS; ++c) {
-            if (wad->globCacheSize == 0) {
-              xfree(wad->mman, fl->bufs[c]);
-            }
-            fl->bufs[c] = NULL;
-          }
-        }
-      }
-      // simply flush it
-      for (unsigned c = 0; c < wad->globCacheSize; ++c) {
+      // file reader will check and invalidate buffers
+      // there is no need to flush the cache, file reader will do the trick
+      // but we need to free extra unused buffers
+      // free extra buffers
+      // for local caching, we may have duplicate buffers in global cache; just free 'em all!
+      for (int c = chunkCount; c < MAX_GLOB_BUFFERS; ++c) {
         xfree(wad->mman, wad->globCache[c]);
         wad->globCache[c] = NULL;
       }
-      for (unsigned c = 0; c < (unsigned)chunkCount; ++c) wad->globCache[c] = NULL;
       wad->globCacheSize = (uint32_t)chunkCount;
-      wad->lastera = 1;
     }
   }
 }
@@ -2706,15 +2686,11 @@ vwad_result vwad_get_pubkey (vwad_handle *wad, vwad_public_key pubkey) {
 
 //==========================================================================
 //
-//  vwad_get_max_fidx
+//  vwad_get_archive_file_count
 //
 //==========================================================================
-vwad_fidx vwad_get_max_fidx (vwad_handle *wad) {
-  if (wad && wad->fileCount > 1) {
-    return wad->fileCount - 1;
-  } else {
-    return 0;
-  }
+vwad_fidx vwad_get_archive_file_count (vwad_handle *wad) {
+  return (wad ? (vwad_fidx)wad->fileCount : 0);
 }
 
 
@@ -2724,7 +2700,7 @@ vwad_fidx vwad_get_max_fidx (vwad_handle *wad) {
 //
 //==========================================================================
 const char *vwad_get_file_name (vwad_handle *wad, vwad_fidx fidx) {
-  if (wad && fidx > 0 && wad->fileCount > 1 && fidx < wad->fileCount) {
+  if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount) {
     return wad->names + wad->files[fidx].nameofs;
   } else {
     return NULL;
@@ -2738,7 +2714,7 @@ const char *vwad_get_file_name (vwad_handle *wad, vwad_fidx fidx) {
 //
 //==========================================================================
 const char *vwad_get_file_group_name (vwad_handle *wad, vwad_fidx fidx) {
-  if (wad && fidx > 0 && wad->fileCount > 1 && fidx < wad->fileCount) {
+  if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount) {
     return wad->names + wad->files[fidx].gnameofs;
   } else {
     return NULL;
@@ -2752,7 +2728,7 @@ const char *vwad_get_file_group_name (vwad_handle *wad, vwad_fidx fidx) {
 //
 //==========================================================================
 int vwad_get_file_size (vwad_handle *wad, vwad_fidx fidx) {
-  if (wad && fidx > 0 && wad->fileCount > 1 && fidx < wad->fileCount) {
+  if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount) {
     return wad->files[fidx].upksize;
   } else {
     return -1;
@@ -2766,14 +2742,14 @@ int vwad_get_file_size (vwad_handle *wad, vwad_fidx fidx) {
 //
 //==========================================================================
 static vwad_fidx find_file (vwad_handle *wad, const char *name) {
-  if (name) {
+  if (name != NULL) {
     for (;;) {
       if (name[0] == '/') ++name;
       else if (name[0] == '.' && name[1] == '/') name += 2;
       else break;
     }
   }
-  if (wad && wad->fileCount > 1 && name && name[0]) {
+  if (wad && wad->fileCount > 0 && name != NULL && name[0]) {
     const uint32_t hash = hashStrCI(name);
     const uint32_t bkt = hash % HASH_BUCKETS;
     uint32_t fidx = wad->buckets[bkt];
@@ -2809,7 +2785,7 @@ vwad_fidx vwad_find_file (vwad_handle *wad, const char *name) {
 //==========================================================================
 unsigned long long vwad_get_ftime (vwad_handle *wad, vwad_fidx fidx) {
   uint64_t res = 0;
-  if (wad && fidx > 0 && wad->fileCount > 1 && fidx < wad->fileCount) {
+  if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount) {
     res = wad->files[fidx].ftime;
   }
   return res;
@@ -2825,7 +2801,7 @@ unsigned long long vwad_get_ftime (vwad_handle *wad, vwad_fidx fidx) {
 //==========================================================================
 unsigned vwad_get_fcrc32 (vwad_handle *wad, vwad_fidx fidx) {
   uint32_t res = 0;
-  if (wad && fidx > 0 && wad->fileCount > 1 && fidx < wad->fileCount) {
+  if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount) {
     res = wad->files[fidx].crc32;
   }
   return res;
@@ -2841,24 +2817,19 @@ unsigned vwad_get_fcrc32 (vwad_handle *wad, vwad_fidx fidx) {
 //
 //==========================================================================
 vwad_fd vwad_fopen (vwad_handle *wad, vwad_fidx fidx) {
-  if (wad && fidx > 0 && wad->fileCount > 1 && fidx < wad->fileCount) {
+  if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount) {
     // find free fd
     vwad_fd fd = 0;
-    while (fd < MAX_OPENED_FILES && wad->fds[fd] != NULL) fd += 1;
+    while (fd < MAX_OPENED_FILES && wad->fds[fd].fidx != VWAD_NOFIDX) fd += 1;
     if (fd != MAX_OPENED_FILES) {
       // i found her!
-      OpenedFile *fl = zalloc(wad->mman, sizeof(OpenedFile));
-      if (fl != NULL) {
-        wad->fds[fd] = fl;
-        fl->fidx = fidx;
-        fl->fofs = 0;
-        fl->lastera = 1;
-        fl->bidx = 0;
-        for (unsigned bidx = 0; bidx < MAX_FILE_BUFFERS; ++bidx) fl->bufs[bidx] = NULL;
-        if (wad->fdsUsed < fd) wad->fdsUsed = fd;
-        if (vwad_debug_open_file) vwad_debug_open_file(wad, fidx, fd);
-        return fd;
-      }
+      OpenedFile *fl = &wad->fds[fd];
+      fl->fidx = fidx;
+      fl->fofs = 0;
+      fl->bidx = 0;
+      if (wad->fdsUsed < fd) wad->fdsUsed = fd;
+      if (vwad_debug_open_file) vwad_debug_open_file(wad, fidx, fd);
+      return fd;
     } else {
       return -2;
     }
@@ -2873,20 +2844,19 @@ vwad_fd vwad_fopen (vwad_handle *wad, vwad_fidx fidx) {
 //
 //==========================================================================
 void vwad_fclose (vwad_handle *wad, vwad_fd fd) {
-  if (wad && fd >= 0 && fd < MAX_OPENED_FILES && wad->fileCount > 1) {
-    OpenedFile *fl = wad->fds[fd];
-    if (fl) {
+  if (wad && fd >= 0 && fd < MAX_OPENED_FILES) {
+    OpenedFile *fl = &wad->fds[fd];
+    if (fl->fidx != VWAD_NOFIDX) {
       if (vwad_debug_close_file) vwad_debug_close_file(wad, fl->fidx, fd);
+      fl->fidx = VWAD_NOFIDX;
+      // in local cache mode, free the corresponding buffer
       if (wad->globCacheSize == 0) {
-        for (unsigned c = 0; c < MAX_FILE_BUFFERS; ++c) {
-          xfree(wad->mman, fl->bufs[c]);
-        }
+        xfree(wad->mman, wad->globCache[fd]);
+        wad->globCache[fd] = NULL;
       }
-      xfree(wad->mman, fl);
-      wad->fds[fd] = NULL;
       // fix max fd
       if (fd == wad->fdsUsed) {
-        while (fd >= 0 && wad->fds[fd] == NULL) --fd;
+        while (fd >= 0 && wad->fds[fd].fidx == VWAD_NOFIDX) --fd;
         wad->fdsUsed = fd + 1;
       }
     }
@@ -2959,31 +2929,10 @@ static vwad_result read_chunk (vwad_handle *wad, OpenedFile *fl, FileBuffer *buf
     }
   }
 
-  buf->bofs = cidx;
+  buf->cidx = cidx;
   buf->size = cupsize;
 
   return 0;
-}
-
-
-//==========================================================================
-//
-//  find_local_buffer_to_evict
-//
-//==========================================================================
-static inline int find_local_buffer_to_evict (OpenedFile *fl) {
-  int bidx = 0;
-  int goodidx = -1;
-  uint32_t goodera = 0xffffffffU;
-  while (bidx < MAX_FILE_BUFFERS) {
-    FileBuffer *buf = fl->bufs[bidx];
-    if (buf == NULL) return bidx;
-    if (buf->size == 0) return bidx;
-    if (buf->era < goodera) { goodidx = bidx; goodera = buf->era; }
-    ++bidx;
-  }
-  vassert(goodidx != -1);
-  return goodidx;
 }
 
 
@@ -2995,169 +2944,97 @@ static inline int find_local_buffer_to_evict (OpenedFile *fl) {
 static FileBuffer *ensure_buffer (vwad_handle *wad, vwad_fd fd, uint32_t ofs) {
   vassert(wad != NULL);
   vassert(fd >= 0 && fd < MAX_OPENED_FILES);
-  vassert(wad->fds[fd] != NULL);
 
-  OpenedFile *fl = wad->fds[fd];
+  OpenedFile *fl = &wad->fds[fd];
+  vassert(fl->fidx != VWAD_NOFIDX);
+
   const FileInfo *fi = &wad->files[fl->fidx];
   if (ofs >= fi->upksize) return NULL;
 
   const uint32_t cidx = fi->fchunk + ofs / 65536;
   vassert(cidx >= fi->fchunk && cidx < fi->fchunk + fi->chunkCount);
-  FileBuffer *res = fl->bufs[fl->bidx];
+  vassert(fl->bidx < MAX_GLOB_BUFFERS);
+  FileBuffer *res = wad->globCache[fl->bidx];
 
-  // do we have this buffer?
-  if (!res || res->bofs != cidx || res->size == 0) {
-    int bidx = 0;
-    while (bidx < MAX_FILE_BUFFERS) {
-      res = fl->bufs[fl->bidx];
-      if (res && res->bofs == cidx && res->size != 0) break; else bidx += 1;
+  // is buffer valid?
+  if (!res || res->cidx != cidx || res->size == 0) {
+    // no, check if we already have the chunk buffered
+    const uint32_t gbcSize = wad->globCacheSize;
+    uint32_t bidx;
+    FileBuffer *gb;
+    uint32_t ggevict = ~0u;
+    uint32_t goodera = 0xffffffffU;
+    vwad_bool gfound = 0;
+    vwad_bool ggevict_empty = 0;
+
+    // for local cache, `gbcSize` is 0, so it is ok
+    for (bidx = 0; !gfound && bidx < gbcSize; ++bidx) {
+      gb = wad->globCache[bidx];
+      if (gb != NULL && gb->size != 0 && gb->cidx == cidx) {
+        // i found her!
+        fl->bidx = bidx;
+        gfound = 1;
+      } else if (gb == NULL || gb->size == 0) {
+        // empty global buffer
+        if (!ggevict_empty) { ggevict = bidx; ggevict_empty = 1; }
+      } else if (!ggevict_empty && gb != NULL && gb->era < goodera) {
+        // non-empty global buffer, good for eviction
+        ggevict = bidx; goodera = gb->era;
+      }
     }
-    if (bidx != MAX_FILE_BUFFERS) {
-      vassert(fl->bufs[bidx]->bofs == cidx && fl->bufs[bidx]->size != 0);
-      fl->bidx = (uint32_t)bidx;
-    } else {
-      // need new buffer
-      const uint32_t gbcSize = wad->globCacheSize;
-      if (gbcSize != 0) {
-        // use global cache
-        int ggevict = -1;
-        vwad_bool gfound = 0;
-        vwad_bool ggevict_empty = 0;
-        uint32_t goodera = 0xffffffffU;
-        for (bidx = 0; !gfound && bidx < (int)gbcSize; ++bidx) {
-          FileBuffer *gb = wad->globCache[bidx];
-          if (gb != NULL && gb->bofs == cidx && gb->size != 0) {
-            // found in global cache
-            bidx = find_local_buffer_to_evict(fl);
-            fl->bufs[bidx] = gb;
-            fl->bidx = (uint32_t)bidx;
-            gfound = 1;
-          } else if (gb == NULL || gb->size == 0) {
-            // empty global buffer
-            if (!ggevict_empty) { ggevict = bidx; ggevict_empty = 1; }
-          } else if (!ggevict_empty && gb != NULL && gb->era < goodera) {
-            // non-empty global buffer, may be good for eviction
-            // check if any opened file has this buffer queued
-            const uint32_t xbofs = gb->bofs;
-            vwad_bool ok = 1;
-            int fdx = 0;
-            while (ok && fdx < wad->fdsUsed) {
-              OpenedFile *xof = wad->fds[fdx];
-              if (xof && fdx != fd) {
-                unsigned cc = 0;
-                while (ok && cc < MAX_FILE_BUFFERS) {
-                  if (xof->bufs[cc] && xof->bufs[cc]->size != 0 &&
-                      xof->bufs[cc]->bofs == xbofs)
-                  {
-                    ok = 0;
-                  }
-                  ++cc;
-                }
-              }
-              ++fdx;
-            }
-            if (ok) {
-              ggevict = bidx; goodera = gb->era;
-            }
-          }
-        }
 
-        if (gfound == 0) {
-          FileBuffer *gb;
-          if (ggevict == -1) {
-            vassert(goodera == 0xffffffffU);
-            for (bidx = 0; !gfound && bidx < (int)gbcSize; ++bidx) {
-              gb = wad->globCache[bidx];
-              vassert(gb != NULL && gb->size != 0);
-              if (gb->era < goodera) {
-                ggevict = bidx; goodera = gb->era;
-              }
-            }
-            vassert(ggevict != -1);
-          }
-          gb = wad->globCache[ggevict];
-          if (vwad_debug_flush_chunk && gb && gb->size != 0) {
-            vwad_debug_flush_chunk(wad, ggevict, fl->fidx, fd, (int)gb->bofs);
-          }
-          if (gb == NULL) {
-            // new buffer
-            gb = xalloc(wad->mman, (uint32_t)sizeof(FileBuffer));
-            if (gb == NULL) {
-              logf(ERROR, "ensure_buffer: cannot allocate memory for chunk cache");
-              return NULL;
-            }
-            gb->bofs = 0;
-            gb->size = 0;
-            gb->era = 0;
-            wad->globCache[ggevict] = gb;
-          }
-          if (vwad_debug_read_chunk) {
-            vwad_debug_read_chunk(wad, ggevict, fl->fidx, fd, (int)cidx);
-          }
-          // we need to read the chunk
-          if (read_chunk(wad, fl, gb, cidx) != 0) {
-            return NULL;
-          }
-          bidx = find_local_buffer_to_evict(fl);
-          fl->bufs[bidx] = gb;
-          fl->bidx = (uint32_t)bidx;
-        }
+    if (gfound == 0) {
+      if (gbcSize == 0) {
+        // local cache
+        vassert(ggevict == ~0u);
+        ggevict = (uint32_t)fd;
       } else {
-        // use local cache
-        bidx = find_local_buffer_to_evict(fl);
-        if (fl->bufs[bidx] == NULL) {
-          res = xalloc(wad->mman, (uint32_t)sizeof(FileBuffer));
-          if (res == NULL) {
-            logf(ERROR, "ensure_buffer: cannot allocate memory for chunk cache");
-            return NULL;
-          }
-          res->bofs = 0;
-          res->size = 0;
-          res->era = 0;
-          fl->bufs[bidx] = res;
-        }
-
-        if (vwad_debug_flush_chunk && fl->bufs[bidx]->size != 0) {
-          vwad_debug_flush_chunk(wad, bidx, fl->fidx, fd, (int)fl->bufs[bidx]->bofs);
-        }
-        if (vwad_debug_read_chunk) {
-          vwad_debug_read_chunk(wad, bidx, fl->fidx, fd, (int)cidx);
-        }
-        if (read_chunk(wad, fl, fl->bufs[bidx], cidx) != 0) {
+        // global cache
+        vassert(ggevict != ~0u);
+      }
+      gb = wad->globCache[ggevict];
+      if (vwad_debug_flush_chunk && gb && gb->size != 0) {
+        vwad_debug_flush_chunk(wad, (int)ggevict, fl->fidx, fd, (int)gb->cidx);
+      }
+      if (gb == NULL) {
+        // new buffer
+        gb = xalloc(wad->mman, (uint32_t)sizeof(FileBuffer));
+        if (gb == NULL) {
+          logf(ERROR, "ensure_buffer: cannot allocate memory for chunk cache");
           return NULL;
         }
-
-        fl->bidx = (uint32_t)bidx;
+        gb->cidx = 0;
+        gb->size = 0;
+        gb->era = 0;
+        wad->globCache[ggevict] = gb;
       }
+      if (vwad_debug_read_chunk) {
+        vwad_debug_read_chunk(wad, (int)ggevict, fl->fidx, fd, (int)cidx);
+      }
+      // we need to read the chunk
+      if (read_chunk(wad, fl, gb, cidx) != 0) {
+        return NULL;
+      }
+      fl->bidx = ggevict;
     }
   }
 
   // i found her!
-  res = fl->bufs[fl->bidx];
-  vassert(res->bofs == cidx);
+  res = wad->globCache[fl->bidx];
+  vassert(res != NULL);
+  vassert(res->cidx == cidx);
   vassert(res->size == wad->chunks[cidx].upksize + 1);
 
   // fix buffer era
-  if (wad->globCacheSize != 0) {
-    if (res->era != wad->lastera) {
-      if (wad->lastera == 0xffffffffU) {
-        wad->lastera = 1;
-        for (int f = 0; f < wad->globCacheSize; ++f) {
-          if (wad->globCache[f] != NULL) wad->globCache[f]->era = 0;
-        }
-      }
-      res->era = wad->lastera;
-      ++wad->lastera;
-    }
-  } else if (res->era != fl->lastera) {
-    if (fl->lastera == 0xffffffffU) {
-      fl->lastera = 1;
-      for (int f = 0; f < MAX_FILE_BUFFERS; ++f) {
-        if (fl->bufs[f] != NULL) fl->bufs[f]->era = 0;
+  if (res->era != wad->lastera) {
+    if (wad->lastera == 0xffffffffU) {
+      wad->lastera = 1;
+      for (uint32_t f = 0; f < wad->globCacheSize; ++f) {
+        if (wad->globCache[f] != NULL) wad->globCache[f]->era = 0;
       }
     }
-    res->era = fl->lastera;
-    ++fl->lastera;
+    res->era = wad->lastera;
+    ++wad->lastera;
   }
 
   // done
@@ -3174,9 +3051,9 @@ static FileBuffer *ensure_buffer (vwad_handle *wad, vwad_fd fd, uint32_t ofs) {
 //==========================================================================
 int vwad_read (vwad_handle *wad, vwad_fd fd, void *dest, int len) {
   int read = -1;
-  if (wad && len >= 0 && fd >= 0 && fd < MAX_OPENED_FILES && wad->fileCount > 1) {
-    OpenedFile *fl = wad->fds[fd];
-    if (fl) {
+  if (wad && len >= 0 && fd >= 0 && fd < MAX_OPENED_FILES) {
+    OpenedFile *fl = &wad->fds[fd];
+    if (fl->fidx != VWAD_NOFIDX) {
       vassert(len == 0 || dest != NULL);
       const FileInfo *fi = &wad->files[fl->fidx];
       read = 0;
@@ -3191,7 +3068,7 @@ int vwad_read (vwad_handle *wad, vwad_fd fd, void *dest, int len) {
           uint32_t rd = (uint32_t)len;
           if (rd > left) rd = left;
           vassert(fbuf->size > 0 && fbuf->size <= 65536);
-          const uint32_t bufskip = fl->fofs - (fbuf->bofs - fi->fchunk) * 65536;
+          const uint32_t bufskip = fl->fofs - (fbuf->cidx - fi->fchunk) * 65536;
           vassert(bufskip <= fbuf->size);
           const uint32_t bufleft = fbuf->size - bufskip;
           vassert(bufleft > 0);
@@ -3220,13 +3097,9 @@ int vwad_read (vwad_handle *wad, vwad_fd fd, void *dest, int len) {
 //
 //==========================================================================
 vwad_fidx vwad_fdfidx (vwad_handle *wad, vwad_fd fd) {
-  if (wad && fd >= 0 && fd < MAX_OPENED_FILES && wad->fileCount > 1) {
-    OpenedFile *fl = wad->fds[fd];
-    if (fl) {
-      return (vwad_fidx)fl->fidx;
-    } else {
-      return 0;
-    }
+  if (wad && fd >= 0 && fd < MAX_OPENED_FILES) {
+    OpenedFile *fl = &wad->fds[fd];
+    if (fl->fidx != VWAD_NOFIDX) return (vwad_fidx)fl->fidx;
   }
   return -1;
 }
@@ -3241,9 +3114,9 @@ vwad_fidx vwad_fdfidx (vwad_handle *wad, vwad_fd fd) {
 //==========================================================================
 vwad_result vwad_seek (vwad_handle *wad, vwad_fd fd, int pos) {
   int res = -1;
-  if (wad && pos >= 0 && fd >= 0 && fd < MAX_OPENED_FILES && wad->fileCount > 1) {
-    OpenedFile *fl = wad->fds[fd];
-    if (fl) {
+  if (wad && pos >= 0 && fd >= 0 && fd < MAX_OPENED_FILES) {
+    OpenedFile *fl = &wad->fds[fd];
+    if (fl->fidx != VWAD_NOFIDX) {
       if ((uint32_t)pos <= wad->files[fl->fidx].upksize) {
         fl->fofs = (uint32_t)pos;
         res = 0;
@@ -3264,13 +3137,9 @@ vwad_result vwad_seek (vwad_handle *wad, vwad_fd fd, int pos) {
 //
 //==========================================================================
 int vwad_tell (vwad_handle *wad, vwad_fd fd) {
-  if (wad && fd >= 0 && fd < MAX_OPENED_FILES && wad->fileCount > 1) {
-    OpenedFile *fl = wad->fds[fd];
-    if (fl) {
-      return (int)fl->fofs;
-    } else {
-      return -4;
-    }
+  if (wad && fd >= 0 && fd < MAX_OPENED_FILES) {
+    OpenedFile *fl = &wad->fds[fd];
+    if (fl->fidx != VWAD_NOFIDX) return (int)fl->fofs;
   }
   return -1;
 }
@@ -3284,7 +3153,7 @@ int vwad_tell (vwad_handle *wad, vwad_fd fd) {
 //
 //==========================================================================
 int vwad_get_file_chunk_count (vwad_handle *wad, vwad_fidx fidx) {
-  if (wad && fidx > 0 && wad->fileCount > 1 && fidx < wad->fileCount) {
+  if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount) {
     return (int)wad->files[fidx].chunkCount;
   }
   return -1;
@@ -3299,7 +3168,7 @@ int vwad_get_file_chunk_count (vwad_handle *wad, vwad_fidx fidx) {
 //
 //==========================================================================
 int vwad_get_file_chunk_size (vwad_handle *wad, vwad_fidx fidx, int chunkidx, int *upksz) {
-  if (wad && fidx > 0 && wad->fileCount > 1 && fidx < wad->fileCount &&
+  if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount &&
       chunkidx >= 0 && chunkidx < (int)wad->files[fidx].chunkCount)
   {
     const ChunkInfo *ci = &wad->chunks[wad->files[fidx].fchunk + (uint32_t)chunkidx];
@@ -3318,7 +3187,7 @@ int vwad_get_file_chunk_size (vwad_handle *wad, vwad_fidx fidx, int chunkidx, in
 //
 //==========================================================================
 vwad_result vwad_read_raw_file_chunk (vwad_handle *wad, vwad_fidx fidx, int chunkidx, void *buf) {
-  if (wad && fidx > 0 && wad->fileCount > 1 && fidx < wad->fileCount &&
+  if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount &&
       chunkidx >= 0 && chunkidx < (int)wad->files[fidx].chunkCount && buf != NULL)
   {
     const FileInfo *fi = &wad->files[fidx];

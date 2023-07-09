@@ -2268,13 +2268,7 @@ vwadwr_dir *vwadwr_new_dir (vwadwr_memman *mman, vwadwr_iostream *outstrm,
   res->mman = mman;
   res->outstrm = outstrm;
   res->namesSize = 4; // first string is always empty
-
-  FileInfo *fi = zalloc(mman, sizeof(FileInfo));
-  if (fi == NULL) goto error;
-
-  res->filesHead = fi;
-  res->filesTail = fi;
-  res->fileCount = 1;
+  res->fileCount = 0;
 
   // public key
   logf(NOTE, "generating public key");
@@ -2617,7 +2611,8 @@ static vwadwr_result vwadwr_append_file_info (vwadwr_dir *dir,
     // align
     if (dir->namesSize&0x03) dir->namesSize = (dir->namesSize|0x03)+1;
     fi->name = fname;
-    dir->filesTail->next = fi;
+
+    if (dir->filesTail) dir->filesTail->next = fi; else dir->filesHead = fi;
     dir->filesTail = fi;
 
     ++dir->fileCount;
@@ -2642,7 +2637,7 @@ vwadwr_bool vwadwr_is_valid_dir (const vwadwr_dir *dir) {
     dir->namesSize >= 8 &&
     (dir->namesSize&0x03) == 0 &&
     dir->chunkCount > 0 && dir->chunkCount <= 0x1fffffffU &&
-    dir->fileCount > 1 && dir->fileCount <= 0xffffU;
+    dir->fileCount > 0 && dir->fileCount <= 0xffffU;
 }
 
 
@@ -2693,10 +2688,8 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
   vassert(fdirofs = 4+4 + dir->chunkCount*VWADWR_CHUNK_ENTRY_SIZE);
 
   // put files, and fill names table
-  // first element is unused
-  memset(fdir + fdirofs, 0, VWADWR_FILE_ENTRY_SIZE); fdirofs += VWADWR_FILE_ENTRY_SIZE;
   uint32_t nameOfs = 4; // first string is always empty
-  for (FileInfo *fi = dir->filesHead->next; fi; fi = fi->next) {
+  for (FileInfo *fi = dir->filesHead; fi; fi = fi->next) {
     memcpy(fdir + fdirofs, &z32, 4); fdirofs += 4; // first chunk will be calculated
     memcpy(fdir + fdirofs, &z32, 4); fdirofs += 4;
     memcpy(fdir + fdirofs, &z32, 4); fdirofs += 4;

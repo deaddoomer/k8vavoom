@@ -58,7 +58,7 @@ extern "C" {
 // for self-documentation purposes
 typedef int vwad_bool;
 
-// file index; 0 means "no file", otherwise positive
+// file index; <0 means "no file"
 typedef int vwad_fidx;
 
 // file descriptor; negative means "invalid", zero or positive is ok
@@ -151,17 +151,18 @@ vwad_result vwad_z85_decode_key (const vwad_z85_key enkey, vwad_public_key outke
 // on success, will copy stream pointer and memman pointer
 // (i.e. they should be alive until `vwad_close()`).
 // if `mman` is `NULL`, use libc memory manager.
+// default cache settings is "global cache, 256KB" (4 buffers)
 vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman *mman);
 // will free handle memory, and clean handle pointer.
 void vwad_close_archive (vwad_handle **wadp);
 
-// set global chunk cache for the archive, in chunks. each chunk is ~64KB.
-// by default, there is no such cache.
+// setup global chunk cache for the archive, in chunks. each chunk is ~64KB.
+// by default, there is 4-chunk cache.
 // this can speedup Doom WAD reading, for example, when the caller is
 // often open/close the same files.
-// this is advice, not a demand.
-// <0 means "disable global cache"
-void vwad_set_archive_cache (vwad_handle *wad, int chunkCount);
+// this is an advice, not a demand.
+// <=0 means "disable global cache" (each opened file will use one local buffer).
+void vwad_set_archive_cache (vwad_handle *wad, int bufferCount);
 
 
 #define VWAD_MAX_COMMENT_SIZE  (65535)
@@ -201,17 +202,14 @@ vwad_bool vwad_has_pubkey (vwad_handle *wad);
 vwad_result vwad_get_pubkey (vwad_handle *wad, vwad_public_key pubkey);
 
 // return maximum fidx in this wad.
-// avaliable files are [1..res] (i.e. including the returned value).
+// avaliable files are [0..res).
 // on error, returns 0.
-vwad_fidx vwad_get_max_fidx (vwad_handle *wad);
+vwad_fidx vwad_get_archive_file_count (vwad_handle *wad);
 
-// first index is 1, last is `vwad_get_file_count() - 1`.
-// i.e. index 0 is unused (it usually means "no file").
 // returns NULL on invalid `fidx`; group name can be empty string
 const char *vwad_get_file_group_name (vwad_handle *wad, vwad_fidx fidx);
 
-// first index is 1, last is `vwad_get_file_count() - 1`.
-// i.e. index 0 is unused (it usually means "no file").
+// first index is 0, last is `vwad_get_file_count() - 1`.
 // returns NULL on invalid `fidx`
 const char *vwad_get_file_name (vwad_handle *wad, vwad_fidx fidx);
 // returns negative number on error.
@@ -238,6 +236,7 @@ vwad_result vwad_normalize_file_name (const char *fname, char res[256]);
 // use slashes ("/") to separate directories. do not start
 // `name` with a slash, use strictly one slash to separate
 // path parts. "." and ".." pseudodirs are not supported.
+// returns negative number if no file found.
 vwad_fidx vwad_find_file (vwad_handle *wad, const char *name);
 
 // open file for reading using its index

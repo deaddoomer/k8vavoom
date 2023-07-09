@@ -207,15 +207,15 @@ void VVWadFile::OpenArchive (VStream *fstream) {
   */
 
   // global cache size, speedups WAD reading
-  vwad_set_archive_cache(wad, 8); //~512KB
+  //vwad_set_archive_cache(wad, 8); //~512KB
 
   type = PAK;
 
-  const int maxFIdx = vwad_get_max_fidx(wad);
+  const int maxFIdx = vwad_get_archive_file_count(wad);
   #if 0
   GLog.Logf(NAME_Debug, "VWAD: %d files...", maxFIdx);
   #endif
-  for (int i = 1; i <= maxFIdx; ++i) {
+  for (int i = 0; i < maxFIdx; ++i) {
     const char *fname = vwad_get_file_name(wad, i);
     vassert(fname && fname[0] && fname[strlen(fname) - 1] != '/');
 
