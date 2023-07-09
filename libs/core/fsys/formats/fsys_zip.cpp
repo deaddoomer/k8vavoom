@@ -156,7 +156,7 @@ void VZipFile::OpenArchive (VStream *fstream, vuint32 cdofs) {
     PakFileName.endsWithCI(".vwad");
   type = (isPK3 ? PAK : OTHER);
   bool canHasPrefix = true;
-  if (isPK3 || fsys_simple_archives) canHasPrefix = false; // do not remove prefixes in pk3
+  if (isPK3 || (fsys_simple_archives == FSYS_ARCHIVES_SIMPLE_KEEP_PREFIX)) canHasPrefix = false; // do not remove prefixes in pk3
   //GLog.Logf("*** ARK: <%s>:<%s> pfx=%d", *PakFileName, *PakFileName.ExtractFileExtension(), (int)canHasPrefix);
 
   // set the current file of the zipfile to the first file
@@ -207,7 +207,7 @@ void VZipFile::OpenArchive (VStream *fstream, vuint32 cdofs) {
     VStr xxfname;
 
     // hack for "pk3tovwad"
-    if (fsys_simple_archives) {
+    if (fsys_simple_archives != FSYS_ARCHIVES_NORMAL) {
       xxfname = VStr(filename_inzip).FixFileSlashes();
     } else {
       xxfname.Clear();
@@ -234,7 +234,7 @@ void VZipFile::OpenArchive (VStream *fstream, vuint32 cdofs) {
 
     if (addIt) {
       file_info.SetFileName(zfname);
-      if (fsys_simple_archives) {
+      if (fsys_simple_archives != FSYS_ARCHIVES_NORMAL) {
         // fix some idiocity introduced by some shitdoze doom tools
         for (;;) {
                if (xxfname.startsWith("./")) xxfname.chopLeft(2);
@@ -308,7 +308,7 @@ void VZipFile::OpenArchive (VStream *fstream, vuint32 cdofs) {
   }
 
   // hack for "pk3tovwad"
-  if (fsys_simple_archives) type = PAK;
+  if (fsys_simple_archives != FSYS_ARCHIVES_NORMAL) type = PAK;
 
   pakdir.buildLumpNames();
   pakdir.buildNameMaps(false, this);
