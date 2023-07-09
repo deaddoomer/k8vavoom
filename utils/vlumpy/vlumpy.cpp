@@ -1506,11 +1506,7 @@ static void assertion_failed (const char *fmt, ...) {
 int main (int argc, char *argv[]) {
   vwadwr_logf = logger;
   vwadwr_assertion_failed = assertion_failed;
-  #if VAVOOM_VLUMPY_VWAD_K8 == 1
   useVWAD = true;
-  #else
-  useVWAD = false;
-  #endif
   if (argc < 2) showHelp();
 
   showPackedSize = true;

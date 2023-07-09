@@ -1,8 +1,5 @@
 include_directories(../common ${ZLIB_INCLUDE_DIR})
 
-add_definitions(-DVAVOOM_VLUMPY_VWAD=1)
-add_definitions(-DVAVOOM_VLUMPY_VWAD_K8=1)
-
 add_executable(vlumpy
   ../common/cmdlib.cpp
   ../common/cmdlib.h
