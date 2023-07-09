@@ -2080,6 +2080,7 @@ static void FindDehackedLumps (TArray<int> &lumplist) {
     int wadfidx;
     int dlump;
     bool isbex;
+    bool disabled;
   };
 
   TArray<WadInfo> wadlist;
@@ -2109,12 +2110,23 @@ static void FindDehackedLumps (TArray<int> &lumplist) {
       wnfo.wadfidx = fnum;
       wnfo.dlump = -1;
       wnfo.isbex = false;
+      wnfo.disabled = false;
       //GCon->Logf(NAME_Debug, "WAD: name=<%s>; deh=<%s>; fidx=%d", *wnfo.wadname, *wnfo.dehname, wnfo.wadfidx);
     }
   }
 
+  VName name_dehsupp("dehsupp");
+
   // scan all files, put "dehacked" lumps, and "wadname.deh" lumps
   for (auto &&it : WadNSIterator(WADNS_Global)) {
+    if (it.getName() == name_dehsupp) {
+      for (int wx = 0; wx < wadlist.length(); ++wx) {
+        if (wadlist[wx].wadfidx == it.getFile()) {
+          wadlist[wx].disabled = true;
+        }
+      }
+      continue;
+    }
     // normal dehacked lump?
     if (it.getName() == NAME_dehacked) {
       //GCon->Logf(NAME_Debug, "dehacked lump: <%s>", *it.getFullName());
@@ -2179,6 +2191,20 @@ static void FindDehackedLumps (TArray<int> &lumplist) {
           }
         } else {
           //GCon->Logf(NAME_Debug, "skipped named deh lump <%s>", *it.getFullName());
+        }
+      }
+    }
+  }
+
+  // now loop yet again, and remove all lumps from "disabled" archives
+  for (int wx = 0; wx < wadlist.length(); ++wx) {
+    if (wadlist[wx].disabled && wadlist[wx].dlump >= 0) {
+      int llidx = 0;
+      while (llidx < lumplist.length()) {
+        if (lumplist[llidx] == wadlist[wx].dlump) {
+          lumplist.removeAt(llidx);
+        } else {
+          ++llidx;
         }
       }
     }
