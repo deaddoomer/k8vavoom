@@ -506,6 +506,52 @@ void VRenderLevelShared::CreateWorldSurfaces () {
   GCon->Log(NAME_Debug, "performing initial world update...");
   InitialWorldUpdate();
 
+  // update t-junctions, to avoid hiccups
+  for (auto &&it : Level->allSubsectorsIdx()) {
+    subsector_t *sub = it.value();
+    if (sub->isAnyPObj()) continue;
+    // subregion count
+    for (subregion_t *region = sub->regions; region; region = region->next) {
+      surface_t *surf;
+      if (region->realfloor) {
+        surf = region->realfloor->surfs; while (surf) { SurfaceFixTJunctions(surf); surf = surf->next; }
+      }
+      if (region->realceil) {
+        surf = region->realceil->surfs; while (surf) { SurfaceFixTJunctions(surf); surf = surf->next; }
+      }
+      if (region->fakefloor) {
+        surf = region->fakefloor->surfs; while (surf) { SurfaceFixTJunctions(surf); surf = surf->next; }
+      }
+      if (region->fakeceil) {
+        surf = region->fakeceil->surfs; while (surf) { SurfaceFixTJunctions(surf); surf = surf->next; }
+      }
+    }
+    // segpart and drawseg count
+    for (int j = 0; j < sub->numlines; ++j) {
+      const seg_t *seg = &Level->Segs[sub->firstline+j];
+      if (!seg->linedef || seg->pobj) continue; // miniseg has no drawsegs/segparts
+      drawseg_t *ds = seg->drawsegs;
+      if (ds) {
+        surface_t *surf;
+        if (ds->top) {
+          surf = ds->top->surfs; while (surf) { SurfaceFixTJunctions(surf); surf = surf->next; }
+        }
+        if (ds->mid) {
+          surf = ds->mid->surfs; while (surf) { SurfaceFixTJunctions(surf); surf = surf->next; }
+        }
+        if (ds->bot) {
+          surf = ds->bot->surfs; while (surf) { SurfaceFixTJunctions(surf); surf = surf->next; }
+        }
+        if (ds->topsky) {
+          surf = ds->topsky->surfs; while (surf) { SurfaceFixTJunctions(surf); surf = surf->next; }
+        }
+        if (ds->extra) {
+          surf = ds->extra->surfs; while (surf) { SurfaceFixTJunctions(surf); surf = surf->next; }
+        }
+      }
+    }
+  }
+
   if (inWorldCreation) R_PBarUpdate("Surfaces", Level->NumSubsectors, Level->NumSubsectors, true);
 
   inWorldCreation = oldIWC;

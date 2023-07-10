@@ -162,17 +162,15 @@ vwadwr_result vwadwr_z85_decode_key (const vwadwr_z85_key enkey, vwadwr_public_k
 
 vwadwr_bool vwadwr_is_good_privkey (const vwadwr_secret_key privkey);
 
-// use this to check if archive file name is valid.
+// use this to check if archived file name is valid.
 // archive file name should not start with slash,
 // should not end with slash, should not be empty,
 // should not be longer than 255 chars, and
 // should not contain double slashes.
-// allowed chars: [32..127]
 vwadwr_bool vwadwr_is_valid_file_name (const char *str);
 
-// use this to check if archive group name is valid.
+// use this to check if archived group name is valid.
 // group name not be longer than 255 chars.
-// allowed chars: [32..255]
 vwadwr_bool vwadwr_is_valid_group_name (const char *str);
 
 
@@ -210,9 +208,9 @@ enum {
   VADWR_COMP_BEST = 3,
 };
 
-// comment may contain only ASCII chars, spaces, tabs, and '\x0a' for newlines.
-// group name may contain chars in range [32..255]. ASCII is case-insensitive.
-// file name may contain only ASCII chars.
+// group name is case-insensitive.
+// file name is case-insensitive.
+// both strings should be valid utf-8 strings (check with `vwadwr_is_valid_XXX()`)
 vwadwr_result vwadwr_pack_file (vwadwr_dir *dir, vwadwr_iostream *instrm,
                                 int level, /* VADWR_COMP_xxx */
                                 const char *pkfname,
@@ -223,9 +221,9 @@ vwadwr_result vwadwr_pack_file (vwadwr_dir *dir, vwadwr_iostream *instrm,
 
 #ifndef VWADWR_DISABLE_COPY_FILES
 // used to copy file from the existing archive without repacking
-// comment may contain only ASCII chars, spaces, tabs, and '\x0a' for newlines.
-// group name may contain chars in range [32..255]. ASCII is case-insensitive.
-// file name may contain only ASCII chars.
+// group name is case-insensitive.
+// file name is case-insensitive.
+// both strings should be valid utf-8 strings (check with `vwadwr_is_valid_XXX()`)
 vwadwr_result vwadwr_copy_file (vwadwr_dir *dir,
                                 vwad_handle *srcwad, vwad_fidx fidx,
                                 const char *pkfname, /* new name; can be NULL to retain */

@@ -359,7 +359,7 @@ load_again:
   ripemd160_init(&ripectx);
   md5ctx.Init();
 
-  //sha224: k8vavoom hash
+  //ripemd-160: k8vavoom hash
   //md5: gzdoom-compatible hash (only for non-UDMF, UDMF hashes are not compatible)
 
   bool mapHashValid = false;

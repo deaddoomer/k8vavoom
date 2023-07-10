@@ -1598,29 +1598,22 @@ uint16_t vwad_uni_tolower (uint16_t ch) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 static uint32_t joaatHashStrCI (const char *key) {
+  #define JOAAT_MIX(b_)  do { \
+    hash += (uint8_t)(b_); \
+    hash += hash<<10; \
+    hash ^= hash>>6; \
+  } while (0)
+
   uint32_t hash = 0x29a;
   uint32_t len = 0;
   while (*key) {
     uint16_t ch = unilower(utf_decode(&key));
-    hash += (uint8_t)ch;
-    hash += hash<<10;
-    hash ^= hash>>6;
-    if (ch >= 0x100) {
-      hash += (uint8_t)(ch>>8);
-      hash += hash<<10;
-      hash ^= hash>>6;
-    }
+    JOAAT_MIX(ch);
+    if (ch >= 0x100) JOAAT_MIX(ch>>8);
     ++len;
   }
-  // mix length
-  hash += (uint8_t)len;
-  hash += hash<<10;
-  hash ^= hash>>6;
-  if (len >= 0x100) {
-    hash += (uint8_t)(len>>8);
-    hash += hash<<10;
-    hash ^= hash>>6;
-  }
+  // mix length (it should not be greater than 255)
+  JOAAT_MIX(len);
   // finalize
   hash += hash<<3;
   hash ^= hash>>11;
@@ -1628,9 +1621,7 @@ static uint32_t joaatHashStrCI (const char *key) {
   return hash;
 }
 
-static CC25519_INLINE uint32_t hashStrCI (const void *buf) {
-  return (buf ? joaatHashStrCI((const char *)buf) : 0u);
-}
+#define hashStrCI joaatHashStrCI
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -2904,8 +2895,7 @@ static vwad_result read_chunk (vwad_handle *wad, OpenedFile *fl, FileBuffer *buf
 
   const uint32_t nonce = 4 + cidx;
   const ChunkInfo *ci = &wad->chunks[cidx];
-  uint32_t cupsize = ci->upksize + 1;
-  //vassert(cupsize > 0 && cupsize <= 65536);
+  const uint32_t cupsize = ci->upksize + 1;
 
   // seek to chunk
   if (wad->strm->seek(wad->strm, ci->ofs) != VWAD_OK) {
@@ -3191,8 +3181,8 @@ int vwad_get_file_chunk_size (vwad_handle *wad, vwad_fidx fidx, int chunkidx, in
       chunkidx >= 0 && chunkidx < (int)wad->files[fidx].chunkCount)
   {
     const ChunkInfo *ci = &wad->chunks[wad->files[fidx].firstChunk + (uint32_t)chunkidx];
-    if (upksz) *upksz = (int)ci->upksize + 4;
-    return (int)(ci->pksize == 0 ? ci->upksize : ci->pksize) + 4; /* with CRC32 */
+    if (upksz) *upksz = (int)ci->upksize + 1 + 4; /* with CRC32 */
+    return (int)(ci->pksize == 0 ? (int)ci->upksize + 1 : ci->pksize) + 4; /* with CRC32 */
   }
   return -1;
 }
@@ -3211,7 +3201,7 @@ vwad_result vwad_read_raw_file_chunk (vwad_handle *wad, vwad_fidx fidx, int chun
   {
     const FileInfo *fi = &wad->files[fidx];
     const ChunkInfo *ci = &wad->chunks[fi->firstChunk + (uint32_t)chunkidx];
-    const uint32_t csize = (ci->pksize == 0 ? ci->upksize : ci->pksize) + 4u; /* with CRC32 */
+    const uint32_t csize = (ci->pksize == 0 ? ci->upksize + 1 : ci->pksize) + 4u; /* with CRC32 */
     if (wad->strm->seek(wad->strm, ci->ofs) != VWAD_OK) return -1;
     if (wad->strm->read(wad->strm, buf, (int)csize) != VWAD_OK) return -1;
     // decrypt chunk

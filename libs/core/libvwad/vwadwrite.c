@@ -1383,6 +1383,12 @@ static VWAD_OKUNUSED CC25519_INLINE int WordPPMDecodeInt (WordPPM *ppm, EntDecod
 #define LZFF_OFS_LIMIT    LZFF_NUM_LIMIT
 #define LZFF_NUM_BUCKETS  (LZFF_OFS_LIMIT * 2)
 
+typedef struct {
+  uint32_t sptr;
+  uint32_t bytes4;
+  uint32_t prev;
+} LZFFHashEntry;
+
 
 //==========================================================================
 //
@@ -1393,114 +1399,111 @@ static int CompressLZFF3 (vwadwr_memman *mman, const void *source, int srclen,
                           void *dest, int dstlen,
                           vwadwr_bool allow_lazy)
 {
-  typedef struct {
-    uint32_t sptr;
-    uint32_t bytes4;
-    uint32_t prev;
-  } HashEntry;
-
+  uint32_t bestofs, bestlen, he, b4, lp, wr;
+  uint32_t mmax, mlen, cpp, pos;
+  uint32_t mtbestofs, mtbestlen;
+  uint32_t ssizemax;
   uint32_t srcsize;
   uint32_t litcount, litpos, spos;
-  uint32_t hfree;
+  uint32_t hfree, heidx, ntidx;
   uint32_t dict[LZFF_HASH_SIZE];
   const uint8_t *src;
   EntEncoder enc;
   BytePPM ppmData;
   WordPPM ppmMtOfs, ppmMtLen, ppmLitLen;
   BitPPM ppmLitFlag;
-  HashEntry *htbl;
+  LZFFHashEntry *htbl;
 
-  CC25519_INLINE void FlushLit () {
-    uint32_t lp = litpos;
-    while (litcount != 0) {
-      BitPPMEncode(&ppmLitFlag, &enc, int_true);
-      uint32_t wr = litcount; if (wr > LZFF_NUM_LIMIT) wr = LZFF_NUM_LIMIT;
-      litcount -= wr;
-      WordPPMEncodeInt(&ppmLitLen, &enc, wr - 1);
-      while (wr != 0) {
-        BytePPMEncodeByte(&ppmData, &enc, src[lp]);
-        lp += 1; wr -= 1;
-      }
-    }
-  }
+  #define FlushLit()  do { \
+    lp = litpos; \
+    while (litcount != 0) { \
+      BitPPMEncode(&ppmLitFlag, &enc, int_true); \
+      wr = litcount; if (wr > LZFF_NUM_LIMIT) wr = LZFF_NUM_LIMIT; \
+      litcount -= wr; \
+      WordPPMEncodeInt(&ppmLitLen, &enc, wr - 1); \
+      while (wr != 0) { \
+        BytePPMEncodeByte(&ppmData, &enc, src[lp]); \
+        lp += 1; wr -= 1; \
+      } \
+    } \
+  } while (0)
 
   // repopulate hash buckets; this helps with huge files
-  void Rehash (uint32_t spos) {
-    memset(dict, -1, sizeof(dict));
-    hfree = 0;
-    uint32_t pos = (spos > LZFF_OFS_LIMIT + 1 ? spos - LZFF_OFS_LIMIT - 1 : 0);
-    if (pos >= spos) vwad__builtin_trap();
-    uint32_t b4 =
-      (uint32_t)src[pos] +
-      ((uint32_t)src[pos + 1] << 8) +
-      ((uint32_t)src[pos + 2] << 16) +
-      ((uint32_t)src[pos + 3] << 24);
-    do {
-      const uint32_t heidx = (b4 * 0x9E3779B1u) % LZFF_HASH_SIZE;
-      const uint32_t he = dict[heidx];
-      const uint32_t ntidx = hfree++;
-      htbl[ntidx].sptr = pos;
-      htbl[ntidx].bytes4 = b4;
-      htbl[ntidx].prev = he;
-      dict[heidx] = ntidx;
-      ++pos;
-      // update bytes
-      b4 = (b4 >> 8) + ((uint32_t)src[pos + 3] << 24);
-    } while (pos != spos);
-  }
+  #define Rehash()  do { \
+    memset(dict, -1, sizeof(dict)); \
+    hfree = 0; \
+    pos = (spos > LZFF_OFS_LIMIT + 1 ? spos - LZFF_OFS_LIMIT - 1 : 0); \
+    if (pos >= spos) vwad__builtin_trap(); \
+    b4 = \
+      (uint32_t)src[pos] + \
+      ((uint32_t)src[pos + 1] << 8) + \
+      ((uint32_t)src[pos + 2] << 16) + \
+      ((uint32_t)src[pos + 3] << 24); \
+    do { \
+      heidx = (b4 * 0x9E3779B1u) % LZFF_HASH_SIZE; \
+      he = dict[heidx]; \
+      ntidx = hfree++; \
+      htbl[ntidx].sptr = pos; \
+      htbl[ntidx].bytes4 = b4; \
+      htbl[ntidx].prev = he; \
+      dict[heidx] = ntidx; \
+      ++pos; \
+      /* update bytes */ \
+      b4 = (b4 >> 8) + ((uint32_t)src[pos + 3] << 24); \
+    } while (pos != spos); \
+  } while (0)
 
-  CC25519_INLINE uint32_t AddHashAt (uint32_t pos, uint32_t *bytes4) {
-    if (hfree == LZFF_NUM_BUCKETS) Rehash(pos);
-    const uint32_t b4 =
-      src[pos] +
-      (src[pos + 1] << 8) +
-      (src[pos + 2] << 16) +
-      (src[pos + 3] << 24);
-    *bytes4 = b4;
-    const uint32_t heidx = (b4 * 0x9E3779B1u) % LZFF_HASH_SIZE;
-    const uint32_t he = dict[heidx];
-    const uint32_t ntidx = hfree++;
-    htbl[ntidx].sptr = pos;
-    htbl[ntidx].bytes4 = b4;
-    htbl[ntidx].prev = he;
-    dict[heidx] = ntidx;
-    return he;
-  }
+  #define AddHashAt()  do { \
+    if (hfree == LZFF_NUM_BUCKETS) Rehash(); \
+    b4 = \
+      src[spos] + \
+      (src[spos + 1] << 8) + \
+      (src[spos + 2] << 16) + \
+      (src[spos + 3] << 24); \
+    heidx = (b4 * 0x9E3779B1u) % LZFF_HASH_SIZE; \
+    he = dict[heidx]; \
+    ntidx = hfree++; \
+    htbl[ntidx].sptr = spos; \
+    htbl[ntidx].bytes4 = b4; \
+    htbl[ntidx].prev = he; \
+    dict[heidx] = ntidx; \
+    /*return he;*/ \
+  } while (0)
 
-  void FindMatch (uint32_t *pbestofs, uint32_t *pbestlen) {
-    uint32_t b4, mmax, mlen, cpp;
-    uint32_t bestofs = 0, bestlen = 3; // we want matches of at least 4 bytes
-    uint32_t currsrc = spos, send = srcsize, ssizemax = send - currsrc;
-    uint32_t he = AddHashAt(currsrc, &b4);
-    while (he != ~0) {
-      cpp = htbl[he].sptr;
-      if (currsrc - cpp > LZFF_OFS_LIMIT) he = ~0;
-      else {
-        mmax = send - spos;
-        if (ssizemax < mmax) mmax = ssizemax;
-        if (LZFF_OFS_LIMIT < mmax) mmax = LZFF_OFS_LIMIT;
-        if (mmax > bestlen && htbl[he].bytes4 == b4) {
-          // fast reject based on the last byte
-          if (bestlen == 3 || src[currsrc + bestlen] == src[cpp + bestlen]) {
-            // yet another fast reject
-            if (bestlen <= 4 ||
-                (src[currsrc + (bestlen>>1)] == src[cpp + (bestlen>>1)] &&
-                 (bestlen < 8 || src[currsrc + bestlen - 1] == src[cpp + bestlen - 1])))
-            {
-              mlen = 4;
-              while (mlen < mmax && src[currsrc + mlen] == src[cpp + mlen]) ++mlen;
-              if (mlen > bestlen) {
-                bestofs = currsrc - cpp;
-                bestlen = mlen;
-              }
-            }
-          }
-        }
-        he = htbl[he].prev;
-      }
-    }
-    *pbestofs = bestofs; *pbestlen = bestlen;
-  }
+  //void FindMatch (uint32_t *pbestofs, uint32_t *pbestlen)
+  #define FindMatch(pbestofs, pbestlen)  do { \
+    mtbestofs = 0; mtbestlen = 3; /* we want matches of at least 4 bytes */ \
+    ssizemax = srcsize - spos; \
+    AddHashAt(); \
+    while (he != ~0) { \
+      cpp = htbl[he].sptr; \
+      if (spos - cpp > LZFF_OFS_LIMIT) he = ~0; \
+      else { \
+        mmax = srcsize - spos; \
+        if (ssizemax < mmax) mmax = ssizemax; \
+        if (LZFF_OFS_LIMIT < mmax) mmax = LZFF_OFS_LIMIT; \
+        if (mmax > mtbestlen && htbl[he].bytes4 == b4) { \
+          /* fast reject based on the last byte */ \
+          if (mtbestlen == 3 || src[spos + mtbestlen] == src[cpp + mtbestlen]) { \
+            /* yet another fast reject */ \
+            if (mtbestlen <= 4 || \
+                (src[spos + (mtbestlen>>1)] == src[cpp + (mtbestlen>>1)] && \
+                 (mtbestlen < 8 || src[spos + mtbestlen - 1] == src[cpp + mtbestlen - 1]))) \
+            { \
+              mlen = 4; \
+              while (mlen < mmax && src[spos + mlen] == src[cpp + mlen]) ++mlen; \
+              if (mlen > mtbestlen) { \
+                mtbestofs = spos - cpp; \
+                mtbestlen = mlen; \
+              } \
+            } \
+          } \
+        } \
+        he = htbl[he].prev; \
+      } \
+    } \
+    pbestofs = mtbestofs; pbestlen = mtbestlen; \
+  } while (0)
 
 
   if (srclen < 1 || srclen > 0x1fffffff) return -1;
@@ -1531,8 +1534,7 @@ static int CompressLZFF3 (vwadwr_memman *mman, const void *source, int srclen,
     litcount = 1;
     spos = 1;
     while (spos < srcsize - 3) {
-      uint32_t bestofs, bestlen;
-      FindMatch(&bestofs, &bestlen);
+      FindMatch(bestofs, bestlen);
       //ProgReport();
       if (bestofs == 0) {
         if (litcount == 0) litpos = spos;
@@ -1546,7 +1548,7 @@ static int CompressLZFF3 (vwadwr_memman *mman, const void *source, int srclen,
           int doagain;
           do {
             uint32_t bestofs1, bestlen1;
-            spos += 1; FindMatch(&bestofs1, &bestlen1);
+            spos += 1; FindMatch(bestofs1, bestlen1);
             if (bestlen1 >= bestlen + 2) {
               if (litcount == 0) litpos = spos - 1;
               ++litcount;
@@ -1566,9 +1568,9 @@ static int CompressLZFF3 (vwadwr_memman *mman, const void *source, int srclen,
         spos += 1; bestlen -= xdiff;
         if (spos + bestlen < srcsize - 3) {
           while (bestlen != 0) {
-            uint32_t b4;
+            uint32_t b4, he;
             bestlen -= 1;
-            (void)AddHashAt(spos, &b4);
+            AddHashAt();
             spos += 1;
           }
         } else {
@@ -1942,29 +1944,22 @@ uint16_t vwadwr_uni_tolower (uint16_t ch) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 static uint32_t joaatHashStrCI (const char *key) {
+  #define JOAAT_MIX(b_)  do { \
+    hash += (uint8_t)(b_); \
+    hash += hash<<10; \
+    hash ^= hash>>6; \
+  } while (0)
+
   uint32_t hash = 0x29a;
   uint32_t len = 0;
   while (*key) {
     uint16_t ch = unilower(utf_decode(&key));
-    hash += (uint8_t)ch;
-    hash += hash<<10;
-    hash ^= hash>>6;
-    if (ch >= 0x100) {
-      hash += (uint8_t)(ch>>8);
-      hash += hash<<10;
-      hash ^= hash>>6;
-    }
+    JOAAT_MIX(ch);
+    if (ch >= 0x100) JOAAT_MIX(ch>>8);
     ++len;
   }
-  // mix length
-  hash += (uint8_t)len;
-  hash += hash<<10;
-  hash ^= hash>>6;
-  if (len >= 0x100) {
-    hash += (uint8_t)(len>>8);
-    hash += hash<<10;
-    hash ^= hash>>6;
-  }
+  // mix length (it should not be greater than 255)
+  JOAAT_MIX(len);
   // finalize
   hash += hash<<3;
   hash ^= hash>>11;
@@ -1972,9 +1967,7 @@ static uint32_t joaatHashStrCI (const char *key) {
   return hash;
 }
 
-static CC25519_INLINE uint32_t hashStrCI (const void *buf) {
-  return (buf ? joaatHashStrCI((const char *)buf) : 0u);
-}
+#define hashStrCI joaatHashStrCI
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -2967,9 +2960,6 @@ error:
 //  vwadwr_copy_file
 //
 //  used to copy file from the existing archive without repacking
-//  comment may contain only ASCII chars, spaces, tabs, and '\x0a' for newlines.
-//  group name may contain chars in range [32..255]. ASCII is case-insensitive.
-//  file name may contain only ASCII chars.
 //
 //==========================================================================
 vwadwr_result vwadwr_copy_file (vwadwr_dir *dir,
@@ -3031,7 +3021,7 @@ vwadwr_result vwadwr_copy_file (vwadwr_dir *dir,
       }
     } else {
       // packed chunk
-      if (vwadwr_append_chunk(dir, (uint32_t)csz) != 0) {
+      if (vwadwr_append_chunk(dir, (uint32_t)(csz - 4)) != 0) {
         xfree(dir->mman, xname);
         xfree(dir->mman, buf);
         logf(ERROR, "cannot append chunk info");
@@ -3045,8 +3035,8 @@ vwadwr_result vwadwr_copy_file (vwadwr_dir *dir,
       logf(ERROR, "write error");
       return -1;
     }
-    res_pksize += csz;
-    total_size += upksz;
+    res_pksize += csz - 4;
+    total_size += upksz - 4;
     if (progcb) {
       if (!progcb(dir, total_size, res_pksize, progudata)) {
         xfree(dir->mman, xname);
@@ -3058,6 +3048,8 @@ vwadwr_result vwadwr_copy_file (vwadwr_dir *dir,
   }
 
   xfree(dir->mman, buf);
+
+  vassert(vwad_get_file_size(srcwad, fidx) == total_size);
 
   if (vwadwr_append_file_info(dir, xname, groupname, (uint32_t)chunkCount,
                               (uint32_t)total_size, fullcrc32, ftime) != 0)

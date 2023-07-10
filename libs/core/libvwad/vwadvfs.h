@@ -267,9 +267,11 @@ int vwad_read (vwad_handle *wad, vwad_fd fd, void *buf, int len);
 int vwad_get_file_chunk_count (vwad_handle *wad, vwad_fidx fidx);
 // this is used in creator, to copy raw chunks
 // returns -1 on error
-// if `*upksz` is equal to returned value, the chunk is not packed
+// 4 bytes of CRC32 are counted too
+// if returned value is equal to `*upksz`, the chunk is not packed
 int vwad_get_file_chunk_size (vwad_handle *wad, vwad_fidx fidx, int chunkidx, int *upksz);
 // this is used in creator, to copy raw chunks
+// reads chunk WITH CRC32!
 vwad_result vwad_read_raw_file_chunk (vwad_handle *wad, vwad_fidx fidx, int chunkidx, void *buf);
 
 
