@@ -442,17 +442,19 @@ void VFileDirectory::buildLumpNames () {
 
   TMap<VStr, bool> fnamedelmap; // files to delete, from filters
 
-  // build "files to remove" list from filters
-  for (auto &&fi : files) {
-    VStr fn(fi.fileNameIntr);
-    if (!fn.startsWith("filter/")) continue;
-    if (owner) owner->hadfilters = true;
-    if (!FL_CheckFilterName(fn)) continue;
-    //GLog.Logf(NAME_Debug, "FILTER FILE: <%s> -> <%s>", *fi.fileNameIntr, *fn);
-    // special extensions ".hide" and ".remove" will hide the file
-    (void)IsHideRemoveFilterFileName(fn);
-    // put everything in "hide map", becase the corresponding files will be hard-replaced
-    if (!fn.isEmpty() && !fn.endsWith("/")) fnamedelmap.put(fn, true);
+  if (fsys_simple_archives == FSYS_ARCHIVES_NORMAL) {
+    // build "files to remove" list from filters
+    for (auto &&fi : files) {
+      VStr fn(fi.fileNameIntr);
+      if (!fn.startsWith("filter/")) continue;
+      if (owner) owner->hadfilters = true;
+      if (!FL_CheckFilterName(fn)) continue;
+      //GLog.Logf(NAME_Debug, "FILTER FILE: <%s> -> <%s>", *fi.fileNameIntr, *fn);
+      // special extensions ".hide" and ".remove" will hide the file
+      (void)IsHideRemoveFilterFileName(fn);
+      // put everything in "hide map", becase the corresponding files will be hard-replaced
+      if (!fn.isEmpty() && !fn.endsWith("/")) fnamedelmap.put(fn, true);
+    }
   }
 
   // we need index too, so let's do it without iterator
@@ -468,7 +470,9 @@ void VFileDirectory::buildLumpNames () {
       if (fi.fileNameIntr.isEmpty() || fi.fileNameIntr.endsWith("/")) continue;
 
       // filtering
-      if (fi.fileNameIntr.startsWith("filter/")) {
+      if (fsys_simple_archives == FSYS_ARCHIVES_NORMAL &&
+          fi.fileNameIntr.startsWith("filter/"))
+      {
         VStr fn(fi.fileNameIntr);
         if (!FL_CheckFilterName(fn)) {
           //GLog.Logf(NAME_Init, "FILTER CHECK: dropped '%s'", *fi.fileNameIntr);
