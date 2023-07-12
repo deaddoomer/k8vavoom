@@ -289,19 +289,40 @@ void VZipFile::OpenArchive (VStream *fstream, vuint32 cdofs) {
 
   // find and remove common prefix
   if (canHasPrefix && pakdir.files.length() > 0) {
-    VStr xpfx = pakdir.files[0].fileNameIntr;
-    const int sli = xpfx.IndexOf('/');
-    if (sli > 0 && !xpfx.startsWithCI("filter/")) {
-      xpfx = VStr(xpfx, 0, sli+1); // extract prefix
-      for (int i = 0; i < pakdir.files.length(); ++i) {
-        if (!pakdir.files[i].fileNameIntr.StartsWith(xpfx)) { canHasPrefix = false; break; }
-      }
-      if (canHasPrefix) {
-        // remove prefix
-        //GLog.Logf("*** ARK: <%s>:<%s> pfx=<%s>", *PakFileName, *PakFileName.ExtractFileExtension(), *xpfx);
+    if (fsys_simple_archives == FSYS_ARCHIVES_NORMAL) {
+      VStr xpfx = pakdir.files[0].fileNameIntr;
+      const int sli = xpfx.IndexOf('/');
+      if (sli > 0 && !xpfx.startsWithCI("filter/")) {
+        xpfx = VStr(xpfx, 0, sli+1); // extract prefix
         for (int i = 0; i < pakdir.files.length(); ++i) {
-          pakdir.files[i].SetFileName(VStr(pakdir.files[i].fileNameIntr, sli+1, pakdir.files[i].fileNameIntr.length()-sli-1));
-          //printf("new: <%s>\n", *Files[i].Name);
+          if (!pakdir.files[i].fileNameIntr.StartsWith(xpfx)) { canHasPrefix = false; break; }
+        }
+        if (canHasPrefix) {
+          // remove prefix
+          //GLog.Logf("*** ARK: <%s>:<%s> pfx=<%s>", *PakFileName, *PakFileName.ExtractFileExtension(), *xpfx);
+          for (int i = 0; i < pakdir.files.length(); ++i) {
+            pakdir.files[i].SetFileName(VStr(pakdir.files[i].fileNameIntr, sli+1, pakdir.files[i].fileNameIntr.length()-sli-1));
+            //printf("new: <%s>\n", *Files[i].Name);
+          }
+        }
+      }
+    } else if (fsys_simple_archives == FSYS_ARCHIVES_SIMPLE) {
+      VStr xpfx = pakdir.files[0].diskNameIntr;
+      const int sli = xpfx.IndexOf('/');
+      if (sli > 0 && !xpfx.startsWithCI("filter/")) {
+        xpfx = VStr(xpfx, 0, sli+1); // extract prefix
+        for (int i = 0; i < pakdir.files.length(); ++i) {
+          if (!pakdir.files[i].diskNameIntr.StartsWith(xpfx)) { canHasPrefix = false; break; }
+        }
+        if (canHasPrefix) {
+          // remove prefix
+          //GLog.Logf("*** ARK: <%s>:<%s> pfx=<%s>", *PakFileName, *PakFileName.ExtractFileExtension(), *xpfx);
+          for (int i = 0; i < pakdir.files.length(); ++i) {
+            VStr fn = VStr(pakdir.files[i].diskNameIntr, sli+1, pakdir.files[i].diskNameIntr.length()-sli-1);
+            pakdir.files[i].SetDiskName(fn);
+            pakdir.files[i].SetFileName(fn);
+            //printf("new: <%s>\n", *Files[i].Name);
+          }
         }
       }
     }
