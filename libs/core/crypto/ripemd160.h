@@ -22,7 +22,7 @@ extern "C" {
 
 
 typedef uint8_t RIPEMD160_hash[RIPEMD160_BYTES];
-typedef uint8_t RIPEMD320_hash[RIPEMD160_BYTES];
+typedef uint8_t RIPEMD320_hash[RIPEMD320_BYTES];
 
 
 // RIPEMD-160 context
