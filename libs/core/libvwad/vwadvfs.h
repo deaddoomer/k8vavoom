@@ -200,8 +200,12 @@ vwad_bool vwad_is_authenticated (vwad_handle *wad);
 // check if the wad has a ed25519 public key. it doesn't matter
 // if the wad was authenticated or not, the key is always avaliable
 // (if the wad contains it, of course).
+// i.e. you can turn off auth check, and use this function to
+// detect if there is a digital signature without actually checking it.
 vwad_bool vwad_has_pubkey (vwad_handle *wad);
-// on failure, `pubkey` content is undefined.
+// on failure, `pubkey` content is zeroed.
+// if there is no digital signature, there is no pubkey.
+// it doesn't matter if the archive was authenticated or not.
 vwad_result vwad_get_pubkey (vwad_handle *wad, vwad_public_key pubkey);
 
 // return maximum fidx in this wad.
@@ -282,6 +286,8 @@ unsigned vwad_crc32_final (unsigned crc32);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+vwad_bool vwad_str_equ_ci (const char *s0, const char *s1);
+
 // case-insensitive wildcard matching
 // returns:
 //   -1: malformed pattern

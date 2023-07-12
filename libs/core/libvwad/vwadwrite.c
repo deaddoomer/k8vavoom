@@ -2970,7 +2970,7 @@ vwadwr_result vwadwr_copy_file (vwadwr_dir *dir,
                                 int *upksizep, int *pksizep,
                                 vwadwr_pack_progress progcb, void *progudata)
 {
-  if (dir == NULL || srcwad == NULL || pkfname == NULL) return -1;
+  if (dir == NULL || srcwad == NULL) return -1;
   if (pksizep) *pksizep = 0;
   if (upksizep) *upksizep = 0;
 
@@ -3005,6 +3005,12 @@ vwadwr_result vwadwr_copy_file (vwadwr_dir *dir,
     int upksz;
     const int csz = vwad_get_file_chunk_size(srcwad, fidx, ccidx, &upksz);
     if (csz < 0) {
+      xfree(dir->mman, xname);
+      xfree(dir->mman, buf);
+      logf(ERROR, "cannot get source chunk size");
+      return -1;
+    }
+    if (vwad_read_raw_file_chunk(srcwad, fidx, ccidx, buf) != 0) {
       xfree(dir->mman, xname);
       xfree(dir->mman, buf);
       logf(ERROR, "cannot read source chunk");

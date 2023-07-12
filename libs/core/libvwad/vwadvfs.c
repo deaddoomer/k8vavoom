@@ -1638,6 +1638,9 @@ static vwad_bool strEquCI (const char *s0, const char *s1) {
 }
 
 
+vwad_bool vwad_str_equ_ci (const char *s0, const char *s1) { return strEquCI(s0, s1); }
+
+
 // ////////////////////////////////////////////////////////////////////////// //
 #define HASH_BUCKETS  (1024)
 
@@ -2681,14 +2684,13 @@ vwad_bool vwad_has_pubkey (vwad_handle *wad) {
 //
 //  vwad_get_pubkey
 //
-//  return 0 on success, otherwise `pubkey` content is undefined
-//
 //==========================================================================
 vwad_result vwad_get_pubkey (vwad_handle *wad, vwad_public_key pubkey) {
   if (wad && wad->haspubkey) {
-    if (pubkey) memcpy(pubkey, wad->pubkey, sizeof(wad->pubkey));
+    if (pubkey) memcpy(pubkey, wad->pubkey, sizeof(vwad_public_key));
     return 0;
   } else {
+    if (pubkey) memset(pubkey, 0, sizeof(vwad_public_key));
     return -1;
   }
 }
