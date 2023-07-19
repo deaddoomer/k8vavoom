@@ -3178,13 +3178,17 @@ int vwad_get_file_chunk_count (vwad_handle *wad, vwad_fidx fidx) {
 //  this is used in creator, to copy raw chunks
 //
 //==========================================================================
-int vwad_get_file_chunk_size (vwad_handle *wad, vwad_fidx fidx, int chunkidx, int *upksz) {
+vwad_result vwad_get_file_chunk_size (vwad_handle *wad, vwad_fidx fidx, int chunkidx,
+                                      int *pksz, int *upksz, vwad_bool *packed)
+{
   if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount &&
       chunkidx >= 0 && chunkidx < (int)wad->files[fidx].chunkCount)
   {
     const ChunkInfo *ci = &wad->chunks[wad->files[fidx].firstChunk + (uint32_t)chunkidx];
-    if (upksz) *upksz = (int)ci->upksize + 1 + 4; /* with CRC32 */
-    return (int)(ci->pksize == 0 ? (int)ci->upksize + 1 : ci->pksize) + 4; /* with CRC32 */
+    if (upksz) *upksz = (int)ci->upksize + 1; /* with CRC32 */
+    if (pksz) *pksz = (int)(ci->pksize == 0 ? (int)ci->upksize + 1 : ci->pksize); /* with CRC32 */
+    if (packed) *packed = (ci->pksize != 0);
+    return 0;
   }
   return -1;
 }
@@ -3203,7 +3207,7 @@ vwad_result vwad_read_raw_file_chunk (vwad_handle *wad, vwad_fidx fidx, int chun
   {
     const FileInfo *fi = &wad->files[fidx];
     const ChunkInfo *ci = &wad->chunks[fi->firstChunk + (uint32_t)chunkidx];
-    const uint32_t csize = (ci->pksize == 0 ? ci->upksize + 1 : ci->pksize) + 4u; /* with CRC32 */
+    const uint32_t csize = (ci->pksize == 0 ? ci->upksize + 1u : ci->pksize) + 4u; /* with CRC32 */
     if (wad->strm->seek(wad->strm, ci->ofs) != VWAD_OK) return -1;
     if (wad->strm->read(wad->strm, buf, (int)csize) != VWAD_OK) return -1;
     // decrypt chunk

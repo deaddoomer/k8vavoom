@@ -3002,9 +3002,8 @@ vwadwr_result vwadwr_copy_file (vwadwr_dir *dir,
   int res_pksize = 0;
   int total_size = 0;
   for (int ccidx = 0; ccidx < chunkCount; ++ccidx) {
-    int upksz;
-    const int csz = vwad_get_file_chunk_size(srcwad, fidx, ccidx, &upksz);
-    if (csz < 0) {
+    int csz, upksz, packed;
+    if (vwad_get_file_chunk_size(srcwad, fidx, ccidx, &csz, &upksz, &packed) != 0) {
       xfree(dir->mman, xname);
       xfree(dir->mman, buf);
       logf(ERROR, "cannot get source chunk size");
@@ -3017,7 +3016,7 @@ vwadwr_result vwadwr_copy_file (vwadwr_dir *dir,
       return -1;
     }
     const uint32_t nonce = 4 + dir->chunkCount;
-    if (upksz == csz) {
+    if (!packed) {
       // raw chunk
       if (vwadwr_append_chunk(dir, 0) != 0) {
         xfree(dir->mman, xname);
@@ -3027,13 +3026,14 @@ vwadwr_result vwadwr_copy_file (vwadwr_dir *dir,
       }
     } else {
       // packed chunk
-      if (vwadwr_append_chunk(dir, (uint32_t)(csz - 4)) != 0) {
+      if (vwadwr_append_chunk(dir, (uint32_t)csz) != 0) {
         xfree(dir->mman, xname);
         xfree(dir->mman, buf);
         logf(ERROR, "cannot append chunk info");
         return -1;
       }
     }
+    csz += 4; /* crc32 */
     crypt_buffer(dir->xorRndSeed, nonce, buf, csz);
     if (dir->outstrm->write(dir->outstrm, buf, csz) != 0) {
       xfree(dir->mman, xname);
@@ -3041,8 +3041,9 @@ vwadwr_result vwadwr_copy_file (vwadwr_dir *dir,
       logf(ERROR, "write error");
       return -1;
     }
-    res_pksize += csz - 4;
-    total_size += upksz - 4;
+    csz -= 4; /* crc32 */
+    res_pksize += csz;
+    total_size += upksz;
     if (progcb) {
       if (!progcb(dir, total_size, res_pksize, progudata)) {
         xfree(dir->mman, xname);
