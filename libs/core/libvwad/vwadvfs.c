@@ -1492,7 +1492,7 @@ static CC25519_INLINE uint16_t utf_decode (const char **strp) {
     res = VWAD_REPLACEMENT_CHAR;
     *strp += 1;
   } else if (ch < 0x80) {
-    res = ch;
+    if (ch == 0x7f) res = VWAD_REPLACEMENT_CHAR; else res = ch;
     *strp += 1;
   } else if ((ch&0x0E0) == 0x0C0) {
     if (ch == 0x0C0 || ch == 0x0C1) {
@@ -1629,7 +1629,7 @@ static vwad_bool strEquCI (const char *s0, const char *s1) {
   if (!s0 || !s1) return 0;
   uint16_t c0 = unilower(utf_decode(&s0));
   uint16_t c1 = unilower(utf_decode(&s1));
-  while (c0 && c1 && c0 == c1) {
+  while (c0 != 0 && c1 != 0 && c0 == c1) {
     if (c0 == VWAD_REPLACEMENT_CHAR || c1 == VWAD_REPLACEMENT_CHAR) return 0;
     c0 = unilower(utf_decode(&s0));
     c1 = unilower(utf_decode(&s1));
@@ -1846,7 +1846,7 @@ static vwad_bool is_valid_comment (const char *cmt, uint32_t cmtlen) {
     uint16_t ch;
     do {
       ch = utf_decode(&cmt);
-      if (ch < 32 && (ch != 9 && ch != 10)) ch = VWAD_REPLACEMENT_CHAR;
+      if (ch < 32 && (ch != 0 && ch != 9 && ch != 10)) ch = VWAD_REPLACEMENT_CHAR;
     } while (ch != 0 && ch != VWAD_REPLACEMENT_CHAR);
     return (ch == 0);
   } else {
