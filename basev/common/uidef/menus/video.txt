@@ -175,6 +175,9 @@ menudef VideoOptions {
   option bool {
     title = "Lightmap Overbright";
     cvar = r_lmap_overbright;
+    help =
+      "Overbright support for Lightmaps.",
+      "This is cheap, and there is no reason to turn it off.";
   }
 
   option bool {
@@ -182,8 +185,12 @@ menudef VideoOptions {
     cvar = r_adv_overbright;
     help =
       "Overbright support for Shadow Maps and Shadow Volumes.",
-      "\c[WHITE]WARNING! While this makes the picture better, it can eat 10 or more FPS!\c-",
-      "\c[WHITE]Turn this 'OFF' for weaker CPUs or complex maps.";
+      "\c[WHITE]WARNING! While this makes the picture better",
+      "\c[WHITE]it can eat 10 or more FPS!\c-",
+      "\c[WHITE]Turn this 'OFF' for weaker GPUs.",
+      "",
+      "Technically, this uses floating-point render buffer to",
+      "implement HDR, that's why it is such an FPS-eater.";
   }
 
   option slider {
