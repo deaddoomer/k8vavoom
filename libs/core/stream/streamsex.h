@@ -244,8 +244,8 @@ public:
   // will free source stream if necessary
   virtual ~VPartialStreamRO () override;
 
-  virtual bool IsFastSeek () const noexcept;
-  virtual void SetFastSeek (bool value) noexcept;
+  virtual bool IsFastSeek () const noexcept override;
+  virtual void SetFastSeek (bool value) noexcept override;
 
   // stream interface
   virtual VStr GetName () const override;
@@ -316,8 +316,8 @@ public:
   explicit VCheckedStream (int LumpNum, bool aUseSysError); // this should not be used with `new`; auto mode
   virtual ~VCheckedStream () override;
 
-  virtual bool IsFastSeek () const noexcept;
-  virtual void SetFastSeek (bool value) noexcept;
+  virtual bool IsFastSeek () const noexcept override;
+  virtual void SetFastSeek (bool value) noexcept override;
 
   // stream interface
   virtual VStr GetName () const override;

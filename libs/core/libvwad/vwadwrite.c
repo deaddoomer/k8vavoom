@@ -1568,7 +1568,6 @@ static int CompressLZFF3 (vwadwr_memman *mman, const void *source, int srclen,
         spos += 1; bestlen -= xdiff;
         if (spos + bestlen < srcsize - 3) {
           while (bestlen != 0) {
-            uint32_t b4, he;
             bestlen -= 1;
             AddHashAt();
             spos += 1;

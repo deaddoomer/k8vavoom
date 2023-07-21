@@ -2105,12 +2105,12 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
       wadcomment = zalloc(mman, mhdr.u_cmt_size + 1); // +1 for reusing
       if (wadcomment == NULL) {
         logf(DEBUG, "vwad_open_archive: cannot allocate buffer for comment");
-        goto error;
+        return NULL;
       }
       if (strm->read(strm, wadcomment, mhdr.u_cmt_size) != VWAD_OK) {
         xfree(mman, wadcomment);
         logf(DEBUG, "vwad_open_archive: cannot read comment data");
-        goto error;
+        return NULL;
       }
       // update seed
       seed = deriveSeed(pkseed, wadcomment, mhdr.u_cmt_size);
@@ -2120,12 +2120,12 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
       wadcomment = zalloc(mman, mhdr.p_cmt_size);
       if (wadcomment == NULL) {
         logf(DEBUG, "vwad_open_archive: cannot allocate buffer for comment");
-        goto error;
+        return NULL;
       }
       if (strm->read(strm, wadcomment, mhdr.p_cmt_size) != VWAD_OK) {
         xfree(mman, wadcomment);
         logf(DEBUG, "vwad_open_archive: cannot read comment data");
-        goto error;
+        return NULL;
       }
       // update seed
       seed = deriveSeed(pkseed, wadcomment, mhdr.p_cmt_size);
@@ -3185,9 +3185,9 @@ vwad_result vwad_get_file_chunk_size (vwad_handle *wad, vwad_fidx fidx, int chun
       chunkidx >= 0 && chunkidx < (int)wad->files[fidx].chunkCount)
   {
     const ChunkInfo *ci = &wad->chunks[wad->files[fidx].firstChunk + (uint32_t)chunkidx];
-    if (upksz) *upksz = (int)ci->upksize + 1; /* with CRC32 */
-    if (pksz) *pksz = (int)(ci->pksize == 0 ? (int)ci->upksize + 1 : ci->pksize); /* with CRC32 */
-    if (packed) *packed = (ci->pksize != 0);
+    if (upksz != NULL) *upksz = (int)ci->upksize + 1;
+    if (pksz != NULL) *pksz = (int)(ci->pksize == 0 ? (int)ci->upksize + 1 : ci->pksize);
+    if (packed != NULL) *packed = (ci->pksize != 0);
     return 0;
   }
   return -1;

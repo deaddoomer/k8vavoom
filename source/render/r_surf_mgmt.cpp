@@ -348,6 +348,7 @@ void surface_t::RemoveCentroid () noexcept {
 //  surface_t::RemoveTJVerts
 //
 //  remove all vertices with tjflags > 0
+//  (-1 is centroid, 0 is original)
 //
 //==========================================================================
 void surface_t::RemoveTJVerts () noexcept {
@@ -360,13 +361,14 @@ void surface_t::RemoveTJVerts () noexcept {
                verts[0].tjflags, allocflags);
     #endif
     if (isCentroidCreated()) RemoveCentroid();
-    int idx = 0;
+    idx = 0;
     while (idx < count) {
       #if 0
       if (verts[idx].tjflags < 0) {
         GCon->Logf(NAME_Debug, "RemoveTJVerts: %08XH (%d)", (uintptr_t)this, idx);
       }
       #endif
+      // there should be no centroids
       vassert(verts[idx].tjflags >= 0);
       if (verts[idx].tjflags != 0) RemoveVertexAt(idx); else ++idx;
     }
