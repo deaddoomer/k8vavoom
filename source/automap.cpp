@@ -265,6 +265,7 @@ static VCvarB minimap_rotate("minimap_rotate", false, "Rotate minimap?", CVAR_Ar
 static VCvarB minimap_draw_keys("minimap_draw_keys", true, "Draw seen keys on minimap?", CVAR_Archive|CVAR_NoShadow);
 static VCvarB minimap_draw_player("minimap_draw_player", true, "Draw player arrow on minimap?", CVAR_Archive|CVAR_NoShadow);
 static VCvarB minimap_draw_border("minimap_draw_border", false, "Draw minimap border rectangle?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB minimap_draw_blocking_things("minimap_draw_blocking_things", false, "Draw minimap blocking things?", CVAR_Archive|CVAR_NoShadow);
 static VCvarF minimap_scale("minimap_scale", "8", "Minimap scale (inverted).", CVAR_Archive|CVAR_NoShadow);
 static VCvarF minimap_darken("minimap_darken", "0.4", "Minimap widget darkening.", CVAR_Archive|CVAR_NoShadow);
 static VCvarF minimap_alpha("minimap_alpha", "0.6", "Minimap opacity.", CVAR_Archive|CVAR_NoShadow);
@@ -298,6 +299,7 @@ static VCvarS am_color_monster("am_color_monster", "ff 00 00", "Automap color: m
 static VCvarS am_color_missile("am_color_missile", "cf 4f 00", "Automap color: missile.", CVAR_Archive|CVAR_NoShadow);
 static VCvarS am_color_dead("am_color_dead", "80 80 80", "Automap color: dead thing.", CVAR_Archive|CVAR_NoShadow);
 static VCvarS am_color_invisible("am_color_invisible", "f0 00 f0", "Automap color: invisible thing.", CVAR_Archive|CVAR_NoShadow);
+static VCvarS am_color_mmap_blocking_thing("am_color_mmap_blocking_thing", "90 90 90", "Minimap color: blocking thing.", CVAR_Archive|CVAR_NoShadow);
 
 static VCvarS am_color_current_mark("am_color_current_mark", "00 ff 00", "Automap color: current map mark.", CVAR_Archive|CVAR_NoShadow);
 static VCvarS am_color_mark_blink("am_color_mark_blink", "df 5f 00", "Automap color: mark blink color.", CVAR_Archive|CVAR_NoShadow);
@@ -361,6 +363,7 @@ static ColorCV GridColor(&am_color_grid, &am_overlay_alpha);
 static ColorCV ThingColor(&am_color_thing, &am_overlay_alpha);
 static ColorCV InvisibleThingColor(&am_color_invisible, &am_overlay_alpha);
 static ColorCV SolidThingColor(&am_color_solid, &am_overlay_alpha);
+static ColorCV MMapBlockThingColor(&am_color_mmap_blocking_thing, &am_overlay_alpha);
 static ColorCV MonsterColor(&am_color_monster, &am_overlay_alpha);
 static ColorCV MissileColor(&am_color_missile, &am_overlay_alpha);
 static ColorCV DeadColor(&am_color_dead, &am_overlay_alpha);
@@ -2716,15 +2719,25 @@ static void AM_Minimap_DrawPlayer (VWidget *w, float /*xc*/, float /*yc*/, float
 //  AM_Minimap_DrawOneThing
 //
 //==========================================================================
-static void AM_Minimap_DrawOneThing (VWidget *w, VEntity *mobj, float xc, float yc, float scale, float angle, float alpha) {
+static void AM_Minimap_DrawOneThing (VWidget *w, VEntity *mobj, float xc, float yc,
+                                     float scale, float angle, float alpha,
+                                     bool onlyBlock)
+{
   if (!mobj) return;
   if (!mobj->State || mobj->IsGoingToDie()) return;
-  bool invisible = ((mobj->EntityFlags&(VEntity::EF_NoSector|VEntity::EF_Invisible|VEntity::EF_NoBlockmap)) || mobj->RenderStyle == STYLE_None);
+
+  const bool invisible = ((mobj->EntityFlags&(VEntity::EF_NoSector|VEntity::EF_Invisible|VEntity::EF_NoBlockmap)) ||
+                          mobj->RenderStyle == STYLE_None);
   if (invisible && am_cheating != 3) {
     if (!mobj->IsMissile()) return;
     if (am_cheating < 3) return;
   }
   //if (!(mobj->FlagsEx&VEntity::EFEX_Rendered)) return;
+
+  const bool block = onlyBlock && mobj->IsSolid() && mobj->GetMoveRadius() > 0 &&
+                     !mobj->IsPlayerOrMissileOrMonster() && !mobj->IsAnyCorpse();
+
+  if (onlyBlock && !block) return;
 
   vuint32 color;
        if (invisible) color = InvisibleThingColor;
@@ -2741,6 +2754,29 @@ static void AM_Minimap_DrawOneThing (VWidget *w, VEntity *mobj, float xc, float 
 
   const float halfwdt = w->GetWidth()*0.5f;
   const float halfhgt = w->GetHeight()*0.5f;
+
+  // only box
+  if (am_cheating < 1 && block) {
+    float s, c;
+    msincos(angle, &s, &c);
+
+    color = MMapBlockThingColor;
+    color |= 0xff000000u;
+
+    const float morgx = (morg.x-xc)*scale;
+    const float morgy = -(morg.y-yc)*scale;
+
+    const float mcx = (morgx*c-morgy*s)+halfwdt;
+    const float mcy = (morgy*c+morgx*s)+halfhgt;
+
+    const float rad = max2(1.0f, mobj->GetMoveRadius()*scale);
+    if (mcx+rad <= 0.0 || mcy+rad <= 0.0f || mcx-rad >= w->GetWidth() || mcy-rad >= w->GetHeight()) return;
+
+    //FIXME: rotate rect too
+    const float sz = max2(1.0f, mobj->GetMoveRadius()*scale);
+    w->DrawRectF(mcx-sz, mcy-sz, sz*2, sz*2, color, alpha);
+    return;
+  }
 
   /*
   if (sprIdx > 0) {
@@ -2805,11 +2841,14 @@ static void AM_Minimap_DrawOneThing (VWidget *w, VEntity *mobj, float xc, float 
 //
 //==========================================================================
 static void AM_Minimap_DrawThings (VWidget *w, float xc, float yc, float scale, float angle, float alpha) {
-  if (am_cheating < 2 && (cl->PlayerFlags&VBasePlayer::PF_AutomapShowThings) == 0) return;
+  bool onlyBlock = minimap_draw_blocking_things.asBool();
+
+  if (am_cheating < 2 && (cl->PlayerFlags&VBasePlayer::PF_AutomapShowThings) == 0 && !onlyBlock) return;
+  if (am_cheating >= 2) onlyBlock = false;
 
   if (am_cheating >= 3) {
     for (TThinkerIterator<VEntity> Ent(GClLevel); Ent; ++Ent) {
-      AM_Minimap_DrawOneThing(w, *Ent, xc, yc, scale, angle, alpha);
+      AM_Minimap_DrawOneThing(w, *Ent, xc, yc, scale, angle, alpha, onlyBlock);
     }
   } else {
     int bx0, by0, bx1, by1;
@@ -2818,7 +2857,7 @@ static void AM_Minimap_DrawThings (VWidget *w, float xc, float yc, float scale, 
     for (int bx = bx0; bx <= bx1; ++bx) {
       for (int by = by0; by <= by1; ++by) {
         for (auto &&it : GClLevel->allBlockThings(bx, by)) {
-          AM_Minimap_DrawOneThing(w, it.entity(), xc, yc, scale, angle, alpha);
+          AM_Minimap_DrawOneThing(w, it.entity(), xc, yc, scale, angle, alpha, onlyBlock);
         }
       }
     }

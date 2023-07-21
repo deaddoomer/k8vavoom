@@ -28,15 +28,28 @@ menudef MinimapOptions {
   }
 
   option bool {
+    title = "Draw Blocking Things";
+    cvar = minimap_draw_blocking_things;
+    help = "Draw things that could block path on the minimap?";
+  }
+
+  option bool {
     title = "Draw Border Rectangle";
     cvar = minimap_draw_border;
     help = "Draw minimap border rectangle?";
   }
 
+
   option color {
     title = "Border Color";
     cvar = minimap_color_border;
     help = "Minimap border color.";
+  }
+
+  option color {
+    title = "Blocking Things Color";
+    cvar = am_color_mmap_blocking_thing;
+    help = "Minimap blocking things color.";
   }
 
 
