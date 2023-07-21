@@ -32,7 +32,8 @@
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-VCvarI r_light_mode("r_light_mode", "1", "Lighting mode (0:Vavoom; 1:Dark; 2:DarkBanded)?", CVAR_Archive);
+VCvarI r_light_mode("r_light_mode", "1", "Lighting mode (0:Vavoom; 1:Doom; 2:DoomBanded)?", CVAR_Archive);
+VCvarF r_doomlight_min("r_doomlight_min", "0", "Doom Lighting mode minimum lighting, [0..31]?", CVAR_Archive);
 VCvarF r_light_globvis("r_light_globvis", "8", "Dark lighting mode visibility.", CVAR_Archive|CVAR_NoShadow);
 
 VCvarB r_darken("r_darken", true, "Darken level to better match original Doom?", CVAR_Archive);
@@ -1158,7 +1159,8 @@ static inline float DoomLightingEquation (float llev, float zdist) {
 
   if (r_light_mode.asInt() >= 2) lightscale = (-floorf(-lightscale*31.0f)-0.5f)/31.0f; // banded
 
-  lightscale = clampval(lightscale, 0.0f, 31.0f/32.0f);
+  const float lmin = 31.0f-clampval(r_doomlight_min.asFloat(), 0.0f, 31.0f);
+  lightscale = clampval(lightscale, 0.0f, /*31.0f*/lmin/32.0f);
   // `lightscale` is the normalized colormap index (0 bright .. 1 dark)
 
   return 255.0f*(1.0f-lightscale);

@@ -146,6 +146,20 @@ menudef VideoOptions {
       "transition between them is not smoothed in any way.";
   }
 
+  option slider {
+    title = "Min. Vanilla Lighting Level";
+    cvar = r_doomlight_min;
+    min = 0;
+    max = 31;
+    step = 0.2;
+    help =
+      "Minimum lighting level for Vanilla-like lighting mode.",
+      "Some maps created for GZDoom (and other sourceports with",
+      "different lighting models) could be too dark sometimes.",
+      "You can use this slider to set minimum lighting value for",
+      "Vanilla-like mode to make dark areas brighter.";
+  }
+
   option slider [k8vavoom_developer_version > 0] {
     title = "Minimum Vanilla-like Visibility";
     cvar = r_light_globvis;

@@ -107,6 +107,7 @@ extern VCvarB gl_enable_clip_control;
 extern VCvarB gl_use_srgb;
 
 extern VCvarI r_light_mode;
+extern VCvarF r_doomlight_min;
 
 
 // ////////////////////////////////////////////////////////////////////////// //

@@ -480,6 +480,7 @@ extern int screenblocks; // viewport size
 extern vuint8 light_remap[256];
 extern VCvarB r_darken;
 extern VCvarI r_light_mode;
+extern VCvarF r_doomlight_min;
 extern VCvarF r_light_globvis;
 extern VCvarB r_allow_ambient;
 extern VCvarI r_ambient_min;

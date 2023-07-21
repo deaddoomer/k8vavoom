@@ -91,6 +91,7 @@ void VOpenGLDrawer::DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additi
 
     SurfMaskedPolyBrightmapGlow.SetLightGlobVis(globVis);
     SurfMaskedPolyBrightmapGlow.SetLightMode(lightMode);
+    SurfMaskedPolyBrightmapGlow.SetLightModeMin(r_doomlight_min.asFloat());
     SurfMaskedPolyBrightmapGlow.SetAlpha(Alpha);
 
     SurfMaskedPolyBrightmapGlow.SetLight(
@@ -123,6 +124,7 @@ void VOpenGLDrawer::DrawMaskedPolygon (surface_t *surf, float Alpha, bool Additi
 
     SurfMaskedPolyGlow.SetLightGlobVis(globVis);
     SurfMaskedPolyGlow.SetLightMode(lightMode);
+    SurfMaskedPolyGlow.SetLightModeMin(r_doomlight_min.asFloat());
     SurfMaskedPolyGlow.SetAlpha(Alpha);
     SurfMaskedPolyGlow.SetLight(
       ((surf->Light>>16)&255)/255.0f,
@@ -233,6 +235,7 @@ void VOpenGLDrawer::DrawSpritePolygon (float time, const TVec *cv, VTexture *Tex
       /*
       SurfMasked.SetLightGlobVis(globVis);
       SurfMasked.SetLightMode(lightMode);
+      SurfMasked.SetLightModeMin(r_doomlight_min.asFloat());
       SurfMasked.SetAlpha(ri.alpha);
       SurfMasked.SetLight(
         ((ri.light>>16)&255)/255.0f,
@@ -259,6 +262,7 @@ void VOpenGLDrawer::DrawSpritePolygon (float time, const TVec *cv, VTexture *Tex
       /*
       SurfMaskedBrightmap.SetLightGlobVis(globVis);
       SurfMaskedBrightmap.SetLightMode(lightMode);
+      SurfMaskedBrightmap.SetLightModeMin(r_doomlight_min.asFloat());
       SurfMaskedBrightmap.SetAlpha(ri.alpha);
       SurfMaskedBrightmap.SetLight(
         ((ri.light>>16)&255)/255.0f,
@@ -284,6 +288,7 @@ void VOpenGLDrawer::DrawSpritePolygon (float time, const TVec *cv, VTexture *Tex
       /*
       SurfMaskedStencil.SetLightGlobVis(globVis);
       SurfMaskedStencil.SetLightMode(lightMode);
+      SurfMaskedStencil.SetLightModeMin(r_doomlight_min.asFloat());
       SurfMaskedStencil.SetAlpha(ri.alpha);
       SurfMaskedStencil.SetLight(
         ((ri.light>>16)&255)/255.0f,
@@ -305,6 +310,7 @@ void VOpenGLDrawer::DrawSpritePolygon (float time, const TVec *cv, VTexture *Tex
       /*
       SurfMaskedFakeShadow.SetLightGlobVis(globVis);
       SurfMaskedFakeShadow.SetLightMode(lightMode);
+      SurfMaskedFakeShadow.SetLightModeMin(r_doomlight_min.asFloat());
       SurfMaskedFakeShadow.SetAlpha(ri.alpha);
       SurfMaskedFakeShadow.SetLight(
         ((ri.light>>16)&255)/255.0f,

@@ -1,6 +1,7 @@
 // this code is based on GZDoom lighting shader
 uniform float LightGlobVis;
-uniform int LightMode; // 0: Vavoom; 1: Dark; 2: DarkBanded
+uniform int LightMode; // 0: Vavoom; 1: Doom; 2: DoomBanded
+uniform float LightModeMin; // [0..31]
 
 
 //===========================================================================
@@ -25,7 +26,8 @@ float DoomLightingEquation (float llev) {
 
   if (LightMode >= 2) lightscale = (-floor(-lightscale*31.0)-0.5)/31.0; // banded
 
-  lightscale = clamp(lightscale, 0.0, 31.0/32.0);
+  //lightscale = clamp(lightscale, 0.0, 31.0/32.0);
+  lightscale = clamp(lightscale, 0.0, (31.0-clamp(LightModeMin, 0.0, 31.0))/32.0);
   // `lightscale` is the normalized colormap index (0 bright .. 1 dark)
 
   return 1.0-lightscale;

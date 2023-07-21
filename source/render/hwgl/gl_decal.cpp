@@ -166,6 +166,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         CALC_LMODE_VARS
         SurfDecalNoLMap.SetLightGlobVis(globVis);
         SurfDecalNoLMap.SetLightMode(lightMode);
+        SurfDecalNoLMap.SetLightModeMin(r_doomlight_min.asFloat());
         SurfDecalNoLMap.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, llev);
         SurfDecalNoLMap.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
         if (gp.isActive()) {
@@ -183,6 +184,7 @@ bool VOpenGLDrawer::RenderFinishShaderDecals (DecalType dtype, surface_t *surf, 
         CALC_LMODE_VARS
         SurfDecalLMapOverbright.SetLightGlobVis(globVis);
         SurfDecalLMapOverbright.SetLightMode(lightMode);
+        SurfDecalLMapOverbright.SetLightModeMin(r_doomlight_min.asFloat());
         SurfDecalLMapOverbright.SetLight(((surf->Light>>16)&255)/255.0f, ((surf->Light>>8)&255)/255.0f, (surf->Light&255)/255.0f, llev);
         SurfDecalLMapOverbright.SetFogFade((fogAllowed ? surf->Fade : 0), 1.0f);
         if (gp.isActive()) {

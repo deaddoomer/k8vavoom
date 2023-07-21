@@ -133,6 +133,7 @@ void VOpenGLDrawer::DrawWorldAmbientPass () {
         prevlight = surf->Light; \
         (shader_).SetLightGlobVis(globVis); \
         (shader_).SetLightMode(surf->Fade == FADE_LIGHT ? r_light_mode.asInt() : 0); \
+        (shader_).SetLightModeMin(r_doomlight_min.asFloat()); \
         (shader_).SetLight( \
           ((prevlight>>16)&255)/255.0f, \
           ((prevlight>>8)&255)/255.0f, \
