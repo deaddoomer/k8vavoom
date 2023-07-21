@@ -999,12 +999,13 @@ override void SB_DrawFullscreenStats () {
   if (GetCvarB('r_hud_draw_fs_powerup_timers')) {
     SetTextAlign(hleft, vtop);
     int py = ovh-56;
-    int px = 16;
+    //int px = 16;
     for (Inventory inv = EntityEx(cl.MO).Inventory; inv; inv = inv.Inventory) {
       auto pup = Powerup(inv);
       if (!pup || !pup.bShowTimer || !pup.PowerupTimerName || pup.EffectTime <= 0) continue;
       //DrawText(px, py, va("%s: \c+%s\c- 0x%x", pup.PowerupTimerName, Seconds2Str(pup.EffectTime), int(pup.EffectTime)), CR_GREEN, CR_WHITE, fsalpha);
       // some stupid mods (like legenshit) does this
+      int px = (ovw - TextWidth(pup.PowerupTimerName)) / 2;
       if (pup.EffectTime > 60*30) { //~30 minutes
         DrawText(px, py, va("%s: \c+INF\c-", pup.PowerupTimerName), CR_GOLD, CR_WHITE, fsalpha);
       } else {
