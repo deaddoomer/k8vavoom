@@ -2465,7 +2465,17 @@ final bool common_k8JumpIfLiquidFloor (EntityEx tgt, state label) {
 //==========================================================================
 [decorate] final float decorate_IsPlayerRunning () {
   PlayerEx pex = (bIsPlayer ? PlayerEx(Player) : none);
+  if (pex && (pex.Buttons&BT_SPEED) && pex.IsRunEnabled() && pex.IsWeaponRunEnabled() && pex.MO) {
+    PlayerPawn pawn = PlayerPawn(pex.MO);
+    if (pawn) {
+      return (pawn.GetMoveSpeedType() == PlayerPawn::PMT_Running);
+    }
+    return (pex.ForwardMove || pex.SideMove);
+  }
+  return false;
+  /*
   return (pex ? (pex.Buttons&BT_SPEED) && pex.IsRunEnabled() && pex.IsWeaponRunEnabled() &&
                 (pex.ForwardMove || pex.SideMove)
               : false);
+  */
 }
