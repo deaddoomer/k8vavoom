@@ -68,7 +68,7 @@ menudef AdvVideoOptions {
     help =
       "*Disable* overbright lightmaps?"
       "Setting this to 'ON' (i.e. disabling) may be useful for complex",
-      "maps with alot of visible geometry and lighting. Overbrighting",
+      "maps with a lot of visible geometry and lighting. Overbrighting",
       "requires one more texture sampler, and this can cause some",
       "slowdowns.",
       "\cJIf unsure, leave it as 'OFF'.";
@@ -90,7 +90,7 @@ menudef AdvVideoOptions {
     cvar = r_thing_faster_collect;
     help =
       "Should renderer collect only things from sectors it marked as visible?",
-      "This *may* speedup rendering of maps with alot of things, but disables",
+      "This *may* speedup rendering of maps with a lot of things, but disables",
       "the next option (i.e. when this option is turned on, the next one does",
       "nothing).";
   }
@@ -268,7 +268,7 @@ menudef AdvVideoOptions {
       "Currently, translucent walls are not affected by dynamic"
       "lighting. You can use this option to estimate lighting in"
       "such cases."
-      "Note that this can slow down rendering for maps with alot of"
+      "Note that this can slow down rendering for maps with a lot of"
       "translucent walls.";
   }
   */
@@ -351,8 +351,8 @@ menudef AdvVideoOptions {
     help =
       "Precalculate static lights for lightmapped renderer?"
       "For most maps this takes a little time, but there can be maps"
-      "with alot of lighting decorations, and preprocessing those can take"
-      "alot of time too. Note that the engine is able to cache calculated"
+      "with a lot of lighting decorations, and preprocessing those can take"
+      "a lot of time too. Note that the engine is able to cache calculated"
       "lightmaps, so most of the time full calculation will be perfromed"
       "only once per map."
       "\cJIf in doubt, leave this 'ON'.\c-";

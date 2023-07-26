@@ -39,7 +39,7 @@ menudef DecalOptions {
     help =
       "Maximum number of relatively big decals on one wall segment.",
       "Keep this number small if you're playing with Gore mod, because",
-      "alot of big blood decals can slow down rendering when you're",
+      "a lot of big blood decals can slow down rendering when you're",
       "looking at a wall from a close distance.",
       "",
       "0 means 'no limit'.";

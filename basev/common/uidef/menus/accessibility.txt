@@ -285,7 +285,7 @@ menudef AccessibilityOptions {
     step = 0.1;
     help =
       "Maximum time for bonus flash.",
-      "If too high, picking up alot of bonuses can be annoying.",
+      "If too high, picking up a lot of bonuses can be annoying.",
       "One bonus lasts 0.2 seconds. Use 0 for unlimited time.";
   }
 
@@ -297,7 +297,7 @@ menudef AccessibilityOptions {
     step = 0.02;
     help =
       "Maximum intensity for damage screen tint.",
-      "Getting alot of damage in a short time turns screen to",
+      "Getting a lot of damage in a short time turns screen to",
       "almost completely red. You can decrease this value to",
       "avoid this. But beware! This is very close to cheating.";
   }

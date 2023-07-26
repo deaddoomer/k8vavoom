@@ -39,7 +39,7 @@ menudef PrecacheVideoOptions {
       "This scans spawned level things, and precaches most of their sprites.",
       "Usually this has a medium impact on GPU and loading times.",
       "Turning this 'ON' may help if the game is 'stuttering' upon seeing new monster.",
-      "\cJWARNING: DO NOT turn this on for huge gameplay mod with alot of new monsters/weapons!.";
+      "\cJWARNING: DO NOT turn this on for huge gameplay mod with a lot of new monsters/weapons!.";
   }
 
   option bool /*[k8vavoom_developer_version > 0]*/ {
@@ -71,7 +71,7 @@ menudef PrecacheVideoOptions {
     cvar = r_precache_all_sprite_textures;
     help =
       "Precache *ALL* sprite textures (upload them to GPU) on level loading?"
-      "This has *HUGE* impact on loading times, and requires *ALOT* of GPU memory."
+      "This has *HUGE* impact on loading times, and requires A *LOT* of GPU memory."
       "Better leave this 'OFF'.";
   }
 
@@ -115,7 +115,7 @@ menudef PrecacheVideoOptions {
     help =
       "All loaded and decoded texture images are kept in RAM, to allow",
       "faster uploading to GPU.",
-      "If you're playing some PWADs with alot of textures, or using some",
+      "If you're playing some PWADs with a lot of textures, or using some",
       "hires texture pack, or just want to have more free RAM, you can",
       "tell the engine when it should release RAM images.";
   }
@@ -131,7 +131,7 @@ menudef PrecacheVideoOptions {
     help =
       "All loaded and decoded sprite texture images are kept in RAM, to allow",
       "faster uploading to GPU.",
-      "If you're playing some mods with alot of texture translations",
+      "If you're playing some mods with a lot of texture translations",
       "you can tell the engine to keep sprite textures (because they are required",
       "to perform translations). Otherwise, there is no need to keep them in RAM.";
   }

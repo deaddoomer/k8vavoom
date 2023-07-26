@@ -195,7 +195,7 @@ menudef AdvRenderOptions {
       "shadow anything, but it is still rendered to stencil buffer, wasting bandwidth.",
       "",
       "This option should not produce false positives (I hope), and can win 1-3 FPS on",
-      "maps with alot of huge light sources, like outdoor maps, for example.";
+      "maps with a lot of huge light sources, like outdoor maps, for example.";
   }
 
   option bool [k8vavoom_developer_version > 0] {

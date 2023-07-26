@@ -113,8 +113,8 @@ menudef SoundOptions {
     max = 16;
     help =
       "Maxumum number of same sound, playing simultaneously."
-      "This is used to prevent ear-ripping when alot of monsters of"
-      "the same type are active."
+      "This is used to prevent ear-ripping when a lot of"
+      "monsters of the same type are active."
       ""
       "Set to 0 to use sounddef default (4 if not specified in SNDDEF),"
       "and -1 means 'no limits at all'.";
