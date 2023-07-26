@@ -945,6 +945,93 @@ void VoxelData::optimise (bool doHollowFill) {
 }
 
 
+//==========================================================================
+//
+//  VoxelData::createMip2
+//
+//  try to create model of size 1/2 of this one; can be used for LOD
+//  returns `false` on error
+//
+//==========================================================================
+bool VoxelData::createMip2 (VoxelData &src, float scale,
+                            float *xscale, float *yscale, float *zscale)
+{
+  if ((void *)&src == (void *)this || scale <= 0.0f || scale > 1.0f) return false;
+  if (src.xsize == 0 || src.ysize == 0 || src.zsize == 0) return false;
+
+  uint32_t nsx = (uint32_t)(src.xsize*scale); if (nsx < 1) nsx = 1;
+  uint32_t nsy = (uint32_t)(src.ysize*scale); if (nsy < 1) nsy = 1;
+  uint32_t nsz = (uint32_t)(src.zsize*scale); if (nsz < 1) nsz = 1;
+
+  setSize(nsx, nsy, nsz);
+
+  // fixme: write better algo!
+  const float xstep = (float)nsx/(float)src.xsize;
+  const float ystep = (float)nsy/(float)src.ysize;
+  const float zstep = (float)nsz/(float)src.zsize;
+
+  if (xscale) *xscale = xstep;
+  if (yscale) *yscale = ystep;
+  if (zscale) *zscale = zstep;
+
+  cx = src.cx*xstep;
+  cy = src.cy*ystep;
+  cz = src.cz*zstep;
+
+  for (int x = 0; x < (int)src.xsize; x += 1) {
+    for (int y = 0; y < (int)src.ysize; y += 1) {
+      for (int z = 0; z < (int)src.zsize; z += 1) {
+        uint32_t ovx = src.query(x, y, z);
+        if (ovx != 0) {
+          int nx = (int)(x*xstep);
+          int ny = (int)(y*ystep);
+          int nz = (int)(z*zstep);
+          if (nx < (int)nsx && ny < (int)nsy && nz < (int)nsz) {
+            uint32_t nvx = query(nx, ny, nz);
+            if (nvx == 0) {
+              addVoxel(nx, ny, nz, ovx&0xffffffU, 0x3f);
+            } else {
+              uint32_t r = ((ovx&0xffU)+(nvx&0xffU))/2; if (r > 255) r = 255;
+              uint32_t g = (((ovx>>8)&0xffU)+((nvx>>8)&0xffU))/2; if (g > 255) g = 255;
+              uint32_t b = (((ovx>>16)&0xffU)+((nvx>>16)&0xffU))/2; if (b > 255) b = 255;
+              addVoxel(nx, ny, nz, r|(g<<8)|(b<<16), 0x3f);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  //optimise(true);
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VoxelData::copyFrom
+//
+//==========================================================================
+void VoxelData::copyFrom (VoxelData &src) {
+  if ((void *)&src != (void *)this) {
+    setSize(src.xsize, src.ysize, src.zsize);
+    cx = src.cx;
+    cy = src.cy;
+    cz = src.cz;
+    for (int x = 0; x < (int)src.xsize; x += 1) {
+      for (int y = 0; y < (int)src.ysize; y += 1) {
+        for (int z = 0; z < (int)src.zsize; z += 1) {
+          uint32_t vx = src.query(x, y, z);
+          if (vx != 0) {
+            addVoxel(x, y, z, vx&0xffffffU, (vx>>25)&0x3f);
+          }
+        }
+      }
+    }
+  }
+}
+
+
 // ////////////////////////////////////////////////////////////////////////// //
 /*
   voxel data optimised for queries
@@ -1930,7 +2017,7 @@ void GLVoxelMesh::clear () {
   so i simply created a bitmap that tells if there is any vertex
   at the given grid coords, and then walk over the edge, checking
   the bitmap, and adding the vertices. this is easy too, because
-  all vertices are parallel to one of the coordinate axes. so no
+  all vertices are parallel to one of the coordinate axes; so no
   complex math required at all.
 
   another somewhat complex piece of code is triangle fan creator.
@@ -1948,7 +2035,7 @@ void GLVoxelMesh::clear () {
 
   fourth: no above conditions are satisfied.
   this is the most complex case: to create a fan without degenerate triangles,
-  we have to add a vertex in the center of the quad, and used it as a start of
+  we have to add a vertex in the center of the quad, and use it as a start of
   a triangle fan.
 
   note that we can always convert our triangle fans into triangle soup, so i
@@ -2047,7 +2134,11 @@ void GLVoxelMesh::createEdges () {
     uqcount += unitquad;
   }
   vassert(eidx == (uint32_t)edges.length());
-  //conwriteln(uqcount, " unit quad", (uqcount != 1 ? "s" : ""), " found.");
+  #if 1
+  vox_logf(VoxLibMsg_Debug, "%u unit quad%s found (%d inds, %d edges).",
+           uqcount, (uqcount != 1 ? "s" : ""),
+           indices.length(), edges.length());
+  #endif
 }
 
 
@@ -2099,12 +2190,24 @@ void GLVoxelMesh::fixEdgeNew (uint32_t eidx) {
   float gxyz[3];
   for (uint32_t f = 0; f < 3; ++f) gxyz[f] = vertices[edge.v0].get(f);
   const float step = (edge.dir < 0.0f ? -1.0f : +1.0f);
-  gxyz[edge.axis] += step;
-  while (gxyz[edge.axis] != edge.chi) {
-    if (hasVertexAt(gxyz[0], gxyz[1], gxyz[2])) {
-      fixEdgeWithVert(edge, gxyz[edge.axis]);
-    }
+  #if 0
+  vox_logf(VoxLibMsg_Debug, "fixEdgeNew: eidx=%u; gxyz:(%g,%g,%g); step=%g; chi=%g"
+                            "; axis=%d; ndiff=%g",
+           eidx, gxyz[0], gxyz[1], gxyz[2], step, edge.chi, edge.axis,
+           gxyz[edge.axis]-edge.chi);
+  #endif
+  if (fabs(gxyz[edge.axis]-edge.chi) > 0.00001f) {
     gxyz[edge.axis] += step;
+    while (fabs(gxyz[edge.axis]-edge.chi) > 0.00001f) {
+      #if 0
+      vox_logf(VoxLibMsg_Debug, "fixEdgeNew:   gxyz:(%g,%g,%g); ndiff=%g",
+               gxyz[0], gxyz[1], gxyz[2], gxyz[edge.axis]-edge.chi);
+      #endif
+      if (hasVertexAt(gxyz[0], gxyz[1], gxyz[2])) {
+        fixEdgeWithVert(edge, gxyz[edge.axis]);
+      }
+      gxyz[edge.axis] += step;
+    }
   }
 }
 
@@ -2489,10 +2592,14 @@ void GLVoxelMesh::create (VoxelMesh &vox, bool tjfix, uint32_t BreakIndex) {
   }
 
   if (tjfix) {
-    fixTJunctions();
-    if (voxlib_verbose) {
-      vox_logf(VoxLibMsg_Normal, "OpenGL: with fixed t-junctions: %s tris",
-               vox_comatoze(countTris()));
+    /*if (vertices.length() > 4 &&
+        (vmax[0]-vmin[0] > 2 || vmax[1]-vmin[1] > 2 || vmax[2]-vmin[2] > 2))*/
+    {
+      fixTJunctions();
+      if (voxlib_verbose) {
+        vox_logf(VoxLibMsg_Normal, "OpenGL: with fixed t-junctions: %s tris",
+                 vox_comatoze(countTris()));
+      }
     }
   }
 

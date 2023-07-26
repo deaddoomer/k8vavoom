@@ -889,6 +889,14 @@ public:
   // main voxel optimisation entry point
   void optimise (bool doHollowFill);
 
+  // try to create model of smaller size; can be used for LOD
+  // returns `false` on error
+  // note that this cannot enlarge models
+  // returns real scales in `[xyz]scale`
+  bool createMip2 (VoxelData &src, float scale, float *xscale, float *yscale, float *zscale);
+
+  void copyFrom (VoxelData &src);
+
 public:
   static const int cullofs[6][3];
 };
@@ -1143,10 +1151,58 @@ private:
   }
 
 private:
+  #define VOXELIB_XDUMP  do { \
+    snprintf(msg, sizeof(msg), "f:(%g,%g,%g); v:(%d,%d,%d)", fx, fy, fz, vx, vy, vz); \
+    voxlib_message(VoxLibMsg_Debug, msg); \
+    snprintf(msg, sizeof(msg), "gridmin:(%d,%d,%d); gridmax:(%d,%d,%d)", \
+             gridmin[0], gridmin[1], gridmin[2], \
+             gridmax[0], gridmax[1], gridmax[2]); \
+    voxlib_message(VoxLibMsg_Debug, msg); \
+    snprintf(msg, sizeof(msg), "vmin:(%g,%g,%g); vmax:(%g,%g,%g)", \
+             vmin[0], vmin[1], vmin[2], \
+             vmax[0], vmax[1], vmax[2]); \
+    voxlib_message(VoxLibMsg_Debug, msg); \
+  } while (0);
+
   inline void gridCoords (float fx, float fy, float fz, int *gx, int *gy, int *gz) const {
     int vx = (int)fx;
     int vy = (int)fy;
     int vz = (int)fz;
+    #if 1
+    if (voxlib_message) {
+      static char msg[512];
+      if (vx < gridmin[0]) {
+        snprintf(msg, sizeof(msg), "fx:%g; vx:%d; gridmin[0]:%d", fx, vx, gridmin[0]);
+        voxlib_message(VoxLibMsg_Debug, msg);
+        VOXELIB_XDUMP
+      }
+      if (vy < gridmin[1]) {
+        snprintf(msg, sizeof(msg), "fy:%g; vy:%d; gridmin[1]:%d", fy, vy, gridmin[1]);
+        voxlib_message(VoxLibMsg_Debug, msg);
+        VOXELIB_XDUMP
+      }
+      if (vz < gridmin[2]) {
+        snprintf(msg, sizeof(msg), "fz:%g; vz:%d; gridmin[2]:%d", fz, vz, gridmin[2]);
+        voxlib_message(VoxLibMsg_Debug, msg);
+        VOXELIB_XDUMP
+      }
+      if (vx > gridmax[0]) {
+        snprintf(msg, sizeof(msg), "fx:%g; vx:%d; gridmin[0]:%d", fx, vx, gridmax[0]);
+        voxlib_message(VoxLibMsg_Debug, msg);
+        VOXELIB_XDUMP
+      }
+      if (vy > gridmax[1]) {
+        snprintf(msg, sizeof(msg), "fy:%g; vy:%d; gridmin[1]:%d", fy, vy, gridmax[1]);
+        voxlib_message(VoxLibMsg_Debug, msg);
+        VOXELIB_XDUMP
+      }
+      if (vz > gridmax[2]) {
+        snprintf(msg, sizeof(msg), "fz:%g; vz:%d; gridmin[2]:%d", fz, vz, gridmax[2]);
+        voxlib_message(VoxLibMsg_Debug, msg);
+        VOXELIB_XDUMP
+      }
+    }
+    #endif
     vassert(vx >= gridmin[0] && vy >= gridmin[1] && vz >= gridmin[2]);
     vassert(vx <= gridmax[0] && vy <= gridmax[1] && vz <= gridmax[2]);
     *gx = vx-gridmin[0];
@@ -1162,8 +1218,21 @@ private:
 
   inline uint32_t hasVertexAt (float fx, float fy, float fz) const {
     int vx, vy, vz;
+    #if 1
     gridCoords(fx, fy, fz, &vx, &vy, &vz);
     return gridbmp.getPixel(vx, vy, vz);
+    #else
+    vx = (int)fx;
+    vy = (int)fy;
+    vz = (int)fz;
+    if (vx < gridmin[0] || vy < gridmin[1] || vz < gridmin[2] ||
+        vx > gridmax[0] || vy > gridmax[1] || vz > gridmax[2])
+    {
+      return 1;
+    } else {
+      return gridbmp.getPixel(vx, vy, vz);
+    }
+    #endif
   }
 
   inline void putEdgeToGrid (uint32_t eidx) {
