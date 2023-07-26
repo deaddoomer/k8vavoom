@@ -2612,23 +2612,6 @@ static inline bool readBuf (VoxByteStream &strm, void *buf, uint32_t len, uint32
 }
 
 
-//==========================================================================
-//
-//  vox_detectFormat
-//
-//  detect voxel file format by the first 4 file bytes
-//  KVX format has no signature, so it cannot be reliably detected
-//
-//==========================================================================
-VoxFmt vox_detectFormat (const uint8_t bytes[4]) {
-  if (!bytes) return VoxFmt_Unknown;
-  if (memcmp(bytes, "Kvxl", 4) == 0) return VoxFmt_KV6;
-  if (memcmp(bytes, "VOX ", 4) == 0) return VoxFmt_Magica;
-  if (memcmp(bytes, "\x00\x20\x07\x09", 4) == 0) return VoxFmt_Vxl;
-  return VoxFmt_Unknown;
-}
-
-
 #define CHECK_STRM()  \
   if (!strm.readBuf || !strm.seek || !strm.totalSize) return false; \
   uint32_t cpos = 0; \
@@ -2640,7 +2623,9 @@ VoxFmt vox_detectFormat (const uint8_t bytes[4]) {
 //  vox_loadKVX
 //
 //==========================================================================
-bool vox_loadKVX (VoxByteStream &strm, VoxelData &vox, const uint8_t defpal[768]) {
+bool vox_loadKVX (VoxByteStream &strm, VoxelData &vox, const uint8_t defpal[768],
+                  const uint8_t sign[4])
+{
   CHECK_STRM();
 
   if (tsize < 28 || tsize > 0x00ffffffU) {
@@ -2648,7 +2633,12 @@ bool vox_loadKVX (VoxByteStream &strm, VoxelData &vox, const uint8_t defpal[768]
     return false;
   }
 
-  uint32_t fsize = readULong(strm, &cpos);
+  uint32_t fsize;
+  if (sign == NULL) {
+    fsize = readULong(strm, &cpos);
+  } else {
+    memcpy(&fsize, (const void *)sign, 4);
+  }
   if (WASERR() || fsize < 4*6 || fsize > 0x00ffffffU || fsize > tsize) {
     vox_logf(VoxLibMsg_Error, "invalid voxel data (kvx) (fsize=%u)", fsize);
     return false;
@@ -2771,7 +2761,7 @@ bool vox_loadKVX (VoxByteStream &strm, VoxelData &vox, const uint8_t defpal[768]
 //  vox_loadKV6
 //
 //==========================================================================
-bool vox_loadKV6 (VoxByteStream &strm, VoxelData &vox) {
+bool vox_loadKV6 (VoxByteStream &strm, VoxelData &vox, const uint8_t bsign[4]) {
   struct KVox {
     uint32_t rgb;
     uint16_t z;
@@ -2786,7 +2776,12 @@ bool vox_loadKV6 (VoxByteStream &strm, VoxelData &vox) {
     return false;
   }
 
-  uint32_t sign = readULong(strm, &cpos); CHECKERR();
+  uint32_t sign;
+  if (bsign == NULL) {
+    sign = readULong(strm, &cpos); CHECKERR();
+  } else {
+    memcpy(&sign, (const void *)bsign, 4);
+  }
   if (sign != 0x6c78764bU) {
     vox_logf(VoxLibMsg_Error, "invalid voxel data signature (kv6)");
     return false;
@@ -2885,7 +2880,9 @@ bool vox_loadKV6 (VoxByteStream &strm, VoxelData &vox) {
 //  vox_loadVox
 //
 //==========================================================================
-bool vox_loadVox (VoxByteStream &strm, VoxelData &vox, const uint8_t defpal[768]) {
+bool vox_loadVox (VoxByteStream &strm, VoxelData &vox, const uint8_t defpal[768],
+                  const uint8_t sign[4])
+{
   CHECK_STRM();
 
   if (tsize < 16 || tsize > 0x03ffffffU) {
@@ -2893,7 +2890,12 @@ bool vox_loadVox (VoxByteStream &strm, VoxelData &vox, const uint8_t defpal[768]
     return false;
   }
 
-  int32_t xsiz = readILong(strm, &cpos); CHECKERR();
+  int32_t xsiz;
+  if (sign == NULL) {
+    xsiz = readILong(strm, &cpos); CHECKERR();
+  } else {
+    memcpy(&xsiz, (const void *)sign, 4);
+  }
   int32_t ysiz = readILong(strm, &cpos); CHECKERR();
   int32_t zsiz = readILong(strm, &cpos); CHECKERR();
   if (voxlib_verbose) vox_logf(VoxLibMsg_Normal, "voxel size: %dx%dx%d", xsiz, ysiz, zsiz);
@@ -2962,7 +2964,7 @@ bool vox_loadVox (VoxByteStream &strm, VoxelData &vox, const uint8_t defpal[768]
 //  vox_loadVxl
 //
 //==========================================================================
-bool vox_loadVxl (VoxByteStream &strm, VoxelData &vox) {
+bool vox_loadVxl (VoxByteStream &strm, VoxelData &vox, const uint8_t bsign[4]) {
   CHECK_STRM();
 
   if (tsize < 32 || tsize > 0x00ffffffU) {
@@ -2970,7 +2972,12 @@ bool vox_loadVxl (VoxByteStream &strm, VoxelData &vox) {
     return false;
   }
 
-  uint32_t sign = readULong(strm, &cpos); CHECKERR();
+  uint32_t sign;
+  if (bsign == NULL) {
+    sign = readULong(strm, &cpos); CHECKERR();
+  } else {
+    memcpy(&sign, (const void *)bsign, 4);
+  }
   if (sign != 0x09072000U) {
     vox_logf(VoxLibMsg_Error, "invalid voxel data signature (vxl)");
     return false;
@@ -3070,7 +3077,7 @@ bool vox_loadVxl (VoxByteStream &strm, VoxelData &vox) {
 //  Magica Voxel (only first model)
 //
 //==========================================================================
-bool vox_loadMagica (VoxByteStream &strm, VoxelData &vox) {
+bool vox_loadMagica (VoxByteStream &strm, VoxelData &vox, const uint8_t bsign[4]) {
   struct XYZI {
     uint8_t x;
     uint8_t y;
@@ -3087,7 +3094,12 @@ bool vox_loadMagica (VoxByteStream &strm, VoxelData &vox) {
   }
 
   // check signature
-  uint32_t sign = readULong(strm, &cpos); CHECKERR();
+  uint32_t sign;
+  if (bsign == NULL) {
+    sign = readULong(strm, &cpos); CHECKERR();
+  } else {
+    memcpy(&sign, (const void *)bsign, 4);
+  }
   if (sign != 0x20584f56U) {
     vox_logf(VoxLibMsg_Error, "invalid magica signature (0x%08x)", sign);
     return false;
@@ -3293,4 +3305,59 @@ bool vox_loadMagica (VoxByteStream &strm, VoxelData &vox) {
   vox.cz = pz;
 
   return true;
+}
+
+
+//==========================================================================
+//
+//  vox_detectFormat
+//
+//  detect voxel file format by the first 4 file bytes
+//  KVX format has no signature, so it cannot be reliably detected
+//
+//==========================================================================
+VoxFmt vox_detectFormat (const uint8_t bytes[4]) {
+  if (!bytes) return VoxFmt_Unknown;
+  if (memcmp(bytes, "Kvxl", 4) == 0) return VoxFmt_KV6;
+  if (memcmp(bytes, "VOX ", 4) == 0) return VoxFmt_Magica;
+  if (memcmp(bytes, "\x00\x20\x07\x09", 4) == 0) return VoxFmt_Vxl;
+  return VoxFmt_Unknown;
+}
+
+
+//==========================================================================
+//
+//  vox_loadModel
+//
+//  this tries to detect model format
+//
+//==========================================================================
+bool vox_loadModel (VoxByteStream &strm, VoxelData &vox, const uint8_t defpal[768]) {
+  uint8_t sign[4];
+  if (!strm.readBuf || !strm.seek || !strm.totalSize) return false;
+  const uint32_t tsize = strm.totalSize(&strm);
+  if (tsize < 8) return false;
+  if (!strm.readBuf(sign, 4, &strm)) return false;
+  const VoxFmt fmt = vox_detectFormat(sign);
+  bool ok = false;
+  switch (fmt) {
+    case VoxFmt_Unknown: // assume KVX
+      vox_logf(VoxLibMsg_Debug, "loading KVX...");
+      ok = vox_loadKVX(strm, vox, defpal, sign);
+      break;
+    case VoxFmt_KV6:
+      vox_logf(VoxLibMsg_Debug, "loading KV6...");
+      ok = vox_loadKV6(strm, vox, sign);
+      break;
+    case VoxFmt_Magica:
+      vox_logf(VoxLibMsg_Debug, "loading Magica...");
+      ok = vox_loadMagica(strm, vox, sign);
+      break;
+    case VoxFmt_Vxl:
+      vox_logf(VoxLibMsg_Error, "cannot load voxel model in VXL format");
+      break;
+    default:
+      break;
+  }
+  return ok;
 }

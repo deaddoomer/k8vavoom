@@ -348,8 +348,9 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
     }
 
     VoxelData vox;
-    const VoxFmt vfmt = vox_detectFormat((const uint8_t *)Data);
     bool ok = false;
+    #if 0
+    const VoxFmt vfmt = vox_detectFormat((const uint8_t *)Data);
     switch (vfmt) {
       case VoxFmt_Unknown: // assume KVX
         if (vox_verbose_conversion.asBool()) GCon->Logf(NAME_Init, "  loading KVX...");
@@ -369,6 +370,9 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
       default:
         break;
     }
+    #else
+    ok = vox_loadModel(*xst, vox, defpal);
+    #endif
     if (!ok) Sys_Error("cannot load voxel model '%s'", *this->Name);
 
     vox.optimise(this->voxHollowFill);
