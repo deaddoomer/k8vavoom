@@ -47,6 +47,11 @@ static VCvarB r_model_autorotating("r_model_autorotating", true, "Allow model au
 static VCvarB r_model_autobobbing("r_model_autobobbing", true, "Allow model autobobbing?", CVAR_Archive);
 static VCvarB r_model_ignore_missing_textures("r_model_ignore_missing_textures", false, "Do not render models with missing textures (if `false`, renders with checkerboards)?", CVAR_Archive|CVAR_NoShadow);
 
+static VCvarB r_model_lod_enabled("r_model_lod_enabled", true, "Enable voxel model LOD?", CVAR_Archive|CVAR_NoShadow);
+static VCvarF r_model_lod_mindist("r_model_lod_mindist", "666", "Minimal distance for model LOD.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF r_model_lod_adddist("r_model_lod_adddist", "580", "Start with this decrement.", CVAR_Archive|CVAR_NoShadow);
+static VCvarF r_model_lod_lvlmult("r_model_lod_lvlmult", "1.7", "Multiple decrement by this on each step.", CVAR_Archive|CVAR_NoShadow);
+
 
 static TMap<VStr, VModel *> GFixedModelMap;
 
@@ -311,6 +316,8 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
     }
   }
 
+  const bool doLOD = r_model_lod_enabled.asBool();
+
   int submodindex = -1;
   for (auto &&SubMdl : ScMdl.SubModels) {
     ++submodindex;
@@ -380,6 +387,34 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
     //FIXME: this should be done earilier
     //!if (SubMdl.Model->HadErrors) SubMdl.NoShadow = true;
 
+    VMeshModel *mesh = SubMdl.Model;
+
+    // calculate mip level
+    if (doLOD && mesh->nextMip != nullptr) {
+      // has mip levels
+      const float mdist = r_model_lod_mindist.asFloat();
+      if (mdist > 0.0f) {
+        #if 0
+        float dist = fabs(Drawer->vieworg.x - nfo.Org.x);
+        dist = max2(dist, fabs(Drawer->vieworg.y - nfo.Org.y));
+        dist = max2(dist, fabs(Drawer->vieworg.z - nfo.Org.z));
+        #else
+        float dist = Drawer->vieworg.distanceTo(nfo.Org);
+        #endif
+        if (dist >= mdist) {
+          const float lvlmult = clampval(r_model_lod_lvlmult.asFloat(), 0.0f, 16.0f);
+          float adddist = clampval(r_model_lod_adddist.asFloat(), 1.0f, 32700.0f);
+          mesh = mesh->nextMip;
+          dist -= mdist;
+          while (mesh->nextMip != nullptr && dist >= adddist) {
+            mesh = mesh->nextMip;
+            dist -= adddist;
+            adddist *= lvlmult;
+          }
+        }
+      }
+    }
+
     // skin animations
     int Md2SkinIdx = 0;
     if (F.SkinIndex >= 0) {
@@ -394,8 +429,8 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
     if (SubMdl.Skins.length()) {
       // skins defined in definition file override all skins in MD2 file
       if (Md2SkinIdx < 0 || Md2SkinIdx >= SubMdl.Skins.length()) {
-        if (SubMdl.Skins.length() == 0) Sys_Error("model '%s' has no skins", *SubMdl.Model->Name);
-        //if (SubMdl.SkinShades.length() == 0) Sys_Error("model '%s' has no skin shades", *SubMdl.Model->Name);
+        if (SubMdl.Skins.length() == 0) Sys_Error("model '%s' has no skins", *mesh->Name);
+        //if (SubMdl.SkinShades.length() == 0) Sys_Error("model '%s' has no skin shades", *mesh->Name);
         Md2SkinIdx = 0;
       }
       SkinID = SubMdl.Skins[Md2SkinIdx].textureId;
@@ -404,14 +439,14 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
         SubMdl.Skins[Md2SkinIdx].textureId = SkinID;
       }
     } else {
-      if (SubMdl.Model->Skins.length() == 0) Sys_Error("model '%s' has no skins", *SubMdl.Model->Name);
-      Md2SkinIdx = Md2SkinIdx%SubMdl.Model->Skins.length();
-      if (Md2SkinIdx < 0) Md2SkinIdx = (Md2SkinIdx+SubMdl.Model->Skins.length())%SubMdl.Model->Skins.length();
-      SkinID = SubMdl.Model->Skins[Md2SkinIdx].textureId;
+      if (mesh->Skins.length() == 0) Sys_Error("model '%s' has no skins", *mesh->Name);
+      Md2SkinIdx = Md2SkinIdx%mesh->Skins.length();
+      if (Md2SkinIdx < 0) Md2SkinIdx = (Md2SkinIdx+mesh->Skins.length())%mesh->Skins.length();
+      SkinID = mesh->Skins[Md2SkinIdx].textureId;
       if (SkinID < 0) {
-        //SkinID = GTextureManager.AddFileTexture(SubMdl.Model->Skins[Md2SkinIdx%SubMdl.Model->Skins.length()], TEXTYPE_Skin);
-        SkinID = GTextureManager.AddFileTextureShaded(SubMdl.Model->Skins[Md2SkinIdx].fileName, TEXTYPE_Skin, SubMdl.Model->Skins[Md2SkinIdx].shade);
-        SubMdl.Model->Skins[Md2SkinIdx].textureId = SkinID;
+        //SkinID = GTextureManager.AddFileTexture(mesh->Skins[Md2SkinIdx%mesh->Skins.length()], TEXTYPE_Skin);
+        SkinID = GTextureManager.AddFileTextureShaded(mesh->Skins[Md2SkinIdx].fileName, TEXTYPE_Skin, mesh->Skins[Md2SkinIdx].shade);
+        mesh->Skins[Md2SkinIdx].textureId = SkinID;
       }
     }
     if (SkinID < 0) SkinID = GTextureManager.DefaultTexture;
@@ -426,9 +461,9 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
 
     // get and verify frame number
     int Md2Frame = F.Index;
-    if ((unsigned)Md2Frame >= (unsigned)SubMdl.Model->Frames.length()) {
-      if (developer) GCon->Logf(NAME_Dev, "no such frame %d in model '%s'", Md2Frame, *SubMdl.Model->Name);
-      Md2Frame = (Md2Frame <= 0 ? 0 : SubMdl.Model->Frames.length()-1);
+    if ((unsigned)Md2Frame >= (unsigned)mesh->Frames.length()) {
+      if (developer) GCon->Logf(NAME_Dev, "no such frame %d in model '%s'", Md2Frame, *mesh->Name);
+      Md2Frame = (Md2Frame <= 0 ? 0 : mesh->Frames.length()-1);
       // stop further warnings
       F.Index = Md2Frame;
     }
@@ -437,9 +472,9 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
     int Md2NextFrame = Md2Frame;
     if (DoInterp) {
       Md2NextFrame = NF.Index;
-      if ((unsigned)Md2NextFrame >= (unsigned)SubMdl.Model->Frames.length()) {
-        if (developer) GCon->Logf(NAME_Dev, "no such next frame %d in model '%s'", Md2NextFrame, *SubMdl.Model->Name);
-        Md2NextFrame = (Md2NextFrame <= 0 ? 0 : SubMdl.Model->Frames.length()-1);
+      if ((unsigned)Md2NextFrame >= (unsigned)mesh->Frames.length()) {
+        if (developer) GCon->Logf(NAME_Dev, "no such next frame %d in model '%s'", Md2NextFrame, *mesh->Name);
+        Md2NextFrame = (Md2NextFrame <= 0 ? 0 : mesh->Frames.length()-1);
         // stop further warnings
         NF.Index = Md2NextFrame;
       }
@@ -465,7 +500,7 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
       }
       GCon->Logf("000: MODEL(%s): class='%s'; model='%s':%d alpha=%f; noshadow=%d; usedepth=%d",
                  passname, *nfo.Cls->Name,
-                 *SubMdl.Model->Name, submodindex,
+                 *mesh->Name, submodindex,
                  Md2Alpha, (int)SubMdl.NoShadow, (int)SubMdl.UseDepth);
     }
 
@@ -480,7 +515,7 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
         break;
       case RPASS_ShadowVolumes:
         //if (nfo.ri.isFuzzy()) GCon->Log(NAME_Debug, "SVOL: fuzzy!");
-        if (Md2Alpha < 1.0f || SubMdl.NoShadow || SubMdl.Model->HadErrors) continue;
+        if (Md2Alpha < 1.0f || SubMdl.NoShadow || mesh->HadErrors) continue;
         break;
       case RPASS_ShadowMaps:
         //if (nfo.ri.isFuzzy()) GCon->Log(NAME_Debug, "SMAP: fuzzy!");
@@ -555,12 +590,15 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
     }
 
     if (!Transform.gzdoom) {
+      if (mesh->mipXScale != 1.0f && mesh->mipYScale != 1.0f && mesh->mipZScale != 1.0f) {
+        Transform.MatTrans.scaleXYZ(mesh->mipXScale, mesh->mipYScale, mesh->mipZScale);
+      }
       Transform.MatTrans.scaleXY(nfo.ScaleX, nfo.ScaleY);
     } else {
       // done in renderer
-      Transform.gzScale.x *= nfo.ScaleX;
-      Transform.gzScale.y *= nfo.ScaleX;
-      Transform.gzScale.z *= nfo.ScaleY;
+      Transform.gzScale.x *= nfo.ScaleX*mesh->mipXScale;
+      Transform.gzScale.y *= nfo.ScaleX*mesh->mipYScale;
+      Transform.gzScale.z *= nfo.ScaleY*mesh->mipZScale;
     }
 
     if (!nfo.IsViewModel) {
@@ -639,7 +677,7 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
           }
           if (gl_dbg_log_model_rendering) GCon->Logf("       RENDER!");
           Drawer->DrawAliasModel(Md2Org, Md2Angle, Transform,
-            SubMdl.Model, Md2Frame, Md2NextFrame, SkinTex,
+            mesh, Md2Frame, Md2NextFrame, SkinTex,
             nfo.Trans, nfo.ColorMap,
             newri,
             nfo.IsViewModel, smooth_inter, DoInterp, SubMdl.UseDepth,
@@ -651,35 +689,35 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
       case RPASS_Ambient:
         if (!SubMdl.AllowTransparency) {
           Drawer->DrawAliasModelAmbient(Md2Org, Md2Angle, Transform,
-            SubMdl.Model, Md2Frame, Md2NextFrame, SkinTex,
+            mesh, Md2Frame, Md2NextFrame, SkinTex,
             Md2Light, Md2Alpha, smooth_inter, DoInterp, SubMdl.UseDepth,
             SubMdl.AllowTransparency);
         }
         break;
       case RPASS_ShadowVolumes:
         Drawer->DrawAliasModelShadow(Md2Org, Md2Angle, Transform,
-          SubMdl.Model, Md2Frame, Md2NextFrame, smooth_inter, DoInterp,
+          mesh, Md2Frame, Md2NextFrame, smooth_inter, DoInterp,
           nfo.LightPos, nfo.LightRadius);
         break;
       case RPASS_ShadowMaps:
         Drawer->DrawAliasModelShadowMap(Md2Org, Md2Angle, Transform,
-          SubMdl.Model, Md2Frame, Md2NextFrame, SkinTex,
+          mesh, Md2Frame, Md2NextFrame, SkinTex,
           Md2Alpha, smooth_inter, DoInterp, SubMdl.AllowTransparency);
         break;
       case RPASS_Light:
         Drawer->DrawAliasModelLight(Md2Org, Md2Angle, Transform,
-          SubMdl.Model, Md2Frame, Md2NextFrame, SkinTex,
+          mesh, Md2Frame, Md2NextFrame, SkinTex,
           Md2Alpha, smooth_inter, DoInterp, SubMdl.AllowTransparency);
         break;
       case RPASS_Textures:
         Drawer->DrawAliasModelTextures(Md2Org, Md2Angle, Transform,
-          SubMdl.Model, Md2Frame, Md2NextFrame, SkinTex,
+          mesh, Md2Frame, Md2NextFrame, SkinTex,
           nfo.Trans, nfo.ColorMap, nfo.ri, smooth_inter, DoInterp, SubMdl.UseDepth,
           SubMdl.AllowTransparency);
         break;
       case RPASS_Fog:
         Drawer->DrawAliasModelFog(Md2Org, Md2Angle, Transform,
-          SubMdl.Model, Md2Frame, Md2NextFrame, SkinTex,
+          mesh, Md2Frame, Md2NextFrame, SkinTex,
           nfo.ri.fade, Md2Alpha, smooth_inter, DoInterp, SubMdl.AllowTransparency);
         break;
     }

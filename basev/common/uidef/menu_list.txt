@@ -12,6 +12,7 @@ menus {
   "menus/options.txt",
   "menus/sound.txt",
   "menus/video.txt",
+  "menus/voxels.txt",
 
   "menus/controls_main.txt",
   "menus/controls_joy.txt",

@@ -1,0 +1,119 @@
+menudef VoxelModelOptions {
+  //selector = MenuSelector_SmallRight;
+  Title = "VOXELS OPTIONS";
+
+  option enum {
+    title = "Voxel Optimisation";
+    cvar = vox_optimisation;
+    list {
+      "Normal",
+      "Better",
+      "Maximum",
+      "Ultra",
+    }
+    help =
+      "Voxel models must be converted to polygonal models for",
+      "GPU rendering. The converter can use various optimisation",
+      "methods for this conversion.",
+      "",
+      "\c[Cyan]Normal\c- The fastest one, creates less 'Space Ants'.",
+      "\c[Cyan]Better\c- Slightly slower, but produces better models.",
+      "\c[Cyan]Maximum\c- Evenslowest one, but gives better results.",
+      "\c[Cyan]Ultra\c- The slowest one, but gives the best results.",
+      "If in doubt, choose '\c[WHITE]Ultra\c-'.",
+      "",
+      "Note that all methods will create 'Space Ants', but"
+      "you may trade some rendering speed for visual quality",
+      "by turning '\c[WHITE]Fix T-Junctions\c-' option '\c[WHITE]ON\c-'.";
+  }
+
+  option bool {
+    title = "Fix Face Visibility";
+    cvar = vox_fix_faces;
+    help =
+      "Some KVX models contain invalid visibility info.",
+      "The engine can recalculate it for better conversion."
+      "This is fast, so if in doubt, leave this '\c[WHITE]ON\c-'.";
+  }
+
+  option bool {
+    title = "Fix T-Junctions";
+    cvar = vox_fix_tjunctions;
+    help =
+      "Fix T-Junctions in converted voxel models?",
+      "Voxel conversion introduces T-Junctions (you may"
+      "know them as 'Space Ants').",
+      "By default this option is turned off, but if you",
+      "want to trade some rendering speed for slightly",
+      "better visual quality, you can turn this on.",
+      "",
+      "\c[!Red]WARNING! Turning this 'ON' \c[!WHITE]DRAMATICALLY\c[!Red] increases",
+      "\c[!Red]triangle count (i.e. slows down the rendering)!";
+  }
+
+  option bool {
+    title = "Cache converted voxels";
+    cvar = vox_cache_enabled;
+    help =
+      "Enable caching of converted voxel models?",
+      "",
+      "Converting voxels to 3D models can take a long time",
+      "for big voxel packs, so the engine can cache converted",
+      "models, and simply load them instead of voxels next time.",
+      "Leave this 'ON' if in doubt, it is safe.";
+  }
+
+  option bool {
+    title = "Verbose conversion";
+    cvar = vox_verbose_conversion;
+    help = "Show some informational messages from voxel converter?";
+  }
+
+
+  header "LOD Setup";
+
+  option bool {
+    title = "Enable LOD";
+    cvar = r_model_lod_enabled;
+    help =
+      "Voxel models could be quite complex. The engine can use",
+      "smaller models with less details for faraway objects.",
+      "This can significantly improve FPS for monster voxel packs,",
+      "but there will be inevitable 'model popping'.",
+      "Adjust the following parameters until you're ok with them.",
+      "Note that you can restore default values by pressing BACKSPACE";
+  }
+
+  option slider {
+    title = "Distance to start using LOD";
+    cvar = r_model_lod_mindist;
+    step = 20;
+    min = 40;
+    max = 2000;
+    help =
+      "The engine will start applying LOD at this distance.",
+      "I.e. first LOD level will be applied starting from",
+      "this 3D distance to the object.";
+  }
+
+  option slider {
+    title = "Step for LOD level increment";
+    cvar = r_model_lod_adddist;
+    step = 20;
+    min = 40;
+    max = 1000;
+    help =
+      "The engine will use this distance increment for each",
+      "successive LOD level.";
+  }
+
+  option slider {
+    title = "Step multiplier";
+    cvar = r_model_lod_lvlmult;
+    step = 0.2;
+    min = 0.2;
+    max = 16;
+    help =
+      "After applying the increment, it will be multplied by this.";
+  }
+}

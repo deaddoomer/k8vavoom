@@ -475,6 +475,27 @@ public:
       m[3][2] *= ScaleY;
     }
   }
+
+  inline void scaleXYZ (const float ScaleX, const float ScaleY, const float ScaleZ) noexcept {
+    if (ScaleX != 1.0f) {
+      m[0][0] *= ScaleX;
+      m[1][0] *= ScaleX;
+      m[2][0] *= ScaleX;
+      m[3][0] *= ScaleX;
+    }
+    if (ScaleY != 1.0f) {
+      m[0][1] *= ScaleY;
+      m[1][1] *= ScaleY;
+      m[2][1] *= ScaleY;
+      m[3][1] *= ScaleY;
+    }
+    if (ScaleZ != 1.0f) {
+      m[0][2] *= ScaleZ;
+      m[1][2] *= ScaleZ;
+      m[2][2] *= ScaleZ;
+      m[3][2] *= ScaleZ;
+    }
+  }
 };
 
 

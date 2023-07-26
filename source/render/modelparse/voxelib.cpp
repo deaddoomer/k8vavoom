@@ -2592,8 +2592,8 @@ void GLVoxelMesh::create (VoxelMesh &vox, bool tjfix, uint32_t BreakIndex) {
   }
 
   if (tjfix) {
-    /*if (vertices.length() > 4 &&
-        (vmax[0]-vmin[0] > 2 || vmax[1]-vmin[1] > 2 || vmax[2]-vmin[2] > 2))*/
+    if (vertices.length() > 4 &&
+        (vmax[0]-vmin[0] > 1 || vmax[1]-vmin[1] > 1 || vmax[2]-vmin[2] > 1))
     {
       fixTJunctions();
       if (voxlib_verbose) {

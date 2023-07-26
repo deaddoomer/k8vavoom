@@ -146,13 +146,17 @@ bool VMeshModel::IsKnownModelFormat (VStream *strm) {
 
 //==========================================================================
 //
-//  VMeshModel::LoadFromWad
+//  VMeshModel::ClearData
 //
 //==========================================================================
-void VMeshModel::LoadFromWad () {
+void VMeshModel::ClearData () {
+  if (nextMip != nullptr) {
+    nextMip->ClearData();
+    delete nextMip;
+    nextMip = nullptr;
+  }
+
   if (loaded) {
-    if (!isVoxel) return;
-    if (!VoxNeedReload()) return;
     if (Drawer) Drawer->UnloadAliasModel(this);
   }
 
@@ -169,7 +173,26 @@ void VMeshModel::LoadFromWad () {
   GlMode = GlNone;
   vassert(!Uploaded);
   HadErrors = false;
+  nextMip = nullptr;
+  mipXScale = mipYScale = mipZScale = 1.0f;
+
   VertsBuffer = IndexBuffer = 0;
+}
+
+
+//==========================================================================
+//
+//  VMeshModel::LoadFromWad
+//
+//==========================================================================
+void VMeshModel::LoadFromWad () {
+  if (loaded) {
+    if (!isVoxel) return;
+    if (!VoxNeedReload()) return;
+    //if (Drawer) Drawer->UnloadAliasModel(this);
+  }
+
+  ClearData();
 
   // load the file
   VStream *Strm = FL_OpenFileRead(Name);

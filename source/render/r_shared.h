@@ -898,6 +898,11 @@ struct VMeshModel {
   vuint32 VertsBuffer;
   vuint32 IndexBuffer;
 
+  // next mipmap level, or NULL
+  VMeshModel *nextMip;
+  float mipXScale, mipYScale, mipZScale;
+
+public:
   // does nothing if `loaded` is `true`
   // bombs out on invalid model data
   void LoadFromData (const vuint8 *Data, int DataSize);
@@ -910,6 +915,13 @@ private:
   void Load_MD2 (const vuint8 *Data, int DataSize);
   void Load_MD3 (const vuint8 *Data, int DataSize);
   void Load_KVX (const vuint8 *Data, int DataSize);
+
+  void PrepareMip (VMeshModel &src);
+  void SetupMip (void *voxdata);
+  void ClearData ();
+
+  bool Load_KVXCacheMdl (VStream *st);
+  void Save_KVXCacheMdl (VStream *st);
 
   bool Load_KVXCache (VStream *st);
   void Save_KVXCache (VStream *st);
