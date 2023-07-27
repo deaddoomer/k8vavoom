@@ -222,7 +222,10 @@ protected:
 //==========================================================================
 class VScalarToFloat : public VCastExpressionBase {
 public:
-  VScalarToFloat (VExpression *AOp);
+  bool implicit;
+
+public:
+  VScalarToFloat (VExpression *AOp, bool AImplicit);
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
@@ -231,6 +234,7 @@ public:
 
 protected:
   VScalarToFloat () {}
+  virtual void DoSyntaxCopyTo (VExpression *e) override;
 };
 
 
@@ -241,7 +245,10 @@ protected:
 //==========================================================================
 class VScalarToInt : public VCastExpressionBase {
 public:
-  VScalarToInt (VExpression *AOp);
+  bool implicit;
+
+public:
+  VScalarToInt (VExpression *AOp, bool AImplicit);
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
@@ -250,6 +257,7 @@ public:
 
 protected:
   VScalarToInt () {}
+  virtual void DoSyntaxCopyTo (VExpression *e) override;
 };
 
 

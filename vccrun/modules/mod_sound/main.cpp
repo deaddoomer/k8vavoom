@@ -516,7 +516,7 @@ void VAudioPublic::UnlockUpdates () {
 
 static float RandomFloat () {
   vuint32 rn;
-  ed25519_randombytes(&rn, sizeof(rn));
+  prng_randombytes(&rn, sizeof(rn));
   float res = float(rn&0x3ffff)/(float)0x3ffff;
   return res;
 }

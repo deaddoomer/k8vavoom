@@ -316,7 +316,12 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
     }
   }
 
-  const bool doLOD = r_model_lod_enabled.asBool();
+  const float mdist = r_model_lod_mindist.asFloat();
+  const float mdistSq = mdist*mdist;
+  const bool doLOD = (r_model_lod_enabled.asBool() && mdist > 0.0f && mdist < 32760.0f);
+  const TVec vvdist = (Drawer->vieworg - nfo.Org);
+  const float dvdistSq = vvdist.dot(vvdist);
+  float dvdist = -1.0f;
 
   int submodindex = -1;
   for (auto &&SubMdl : ScMdl.SubModels) {
@@ -390,28 +395,17 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
     VMeshModel *mesh = SubMdl.Model;
 
     // calculate mip level
-    if (doLOD && mesh->nextMip != nullptr) {
-      // has mip levels
-      const float mdist = r_model_lod_mindist.asFloat();
-      if (mdist > 0.0f) {
-        #if 0
-        float dist = fabs(Drawer->vieworg.x - nfo.Org.x);
-        dist = max2(dist, fabs(Drawer->vieworg.y - nfo.Org.y));
-        dist = max2(dist, fabs(Drawer->vieworg.z - nfo.Org.z));
-        #else
-        float dist = Drawer->vieworg.distanceTo(nfo.Org);
-        #endif
-        if (dist >= mdist) {
-          const float lvlmult = clampval(r_model_lod_lvlmult.asFloat(), 0.0f, 16.0f);
-          float adddist = clampval(r_model_lod_adddist.asFloat(), 1.0f, 32700.0f);
-          mesh = mesh->nextMip;
-          dist -= mdist;
-          while (mesh->nextMip != nullptr && dist >= adddist) {
-            mesh = mesh->nextMip;
-            dist -= adddist;
-            adddist *= lvlmult;
-          }
-        }
+    if (doLOD && mesh->nextMip != nullptr && dvdistSq >= mdistSq) {
+      // has mip levels, and far enough
+      const float lvlmult = clampval(r_model_lod_lvlmult.asFloat(), 0.0f, 16.0f);
+      float adddist = clampval(r_model_lod_adddist.asFloat(), 1.0f, 32700.0f);
+      mesh = mesh->nextMip;
+      if (dvdist < 0.0f) dvdist = sqrtf(dvdistSq);
+      float dist = dvdist - mdist;
+      while (mesh->nextMip != nullptr && dist >= adddist) {
+        mesh = mesh->nextMip;
+        dist -= adddist;
+        adddist *= lvlmult;
       }
     }
 

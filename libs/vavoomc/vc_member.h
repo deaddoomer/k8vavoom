@@ -71,6 +71,7 @@ public:
   // some global options
   static int optDeprecatedLaxOverride; // true: don't require `override` on overriden methods
   static int optDeprecatedLaxStates; // true: ignore missing states in state resolver
+  static int optDeprecatedLaxConversions; // true: allow silent int<->float conversions
   static int unsafeCodeAllowed; // true by default
   static int unsafeCodeWarning; // true by default
   static int koraxCompatibility; // false by default

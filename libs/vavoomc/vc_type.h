@@ -310,6 +310,25 @@ VStream &operator << (VStream &strm, VScriptDict &dc);
 VStream &operator << (VStream &, VFieldType &);
 
 
+static VVA_CHECKRESULT VVA_FORCEINLINE bool VIsGoodFloatAsInt (float fv) {
+  if (isFiniteF(fv)) {
+    const int ival = (int)fv;
+    return (fabs(truncf(fv)-(float)ival) <= 4.0f);
+  } else {
+    return false;
+  }
+}
+
+static VVA_CHECKRESULT VVA_FORCEINLINE bool VIsGoodIntAsFloat (int iv) {
+  const float fval = (float)iv;
+  if (isFiniteF(fval)) {
+    return (abs((int)truncf(fval)-iv) <= 4);
+  } else {
+    return false;
+  }
+}
+
+
 // ////////////////////////////////////////////////////////////////////////// //
 struct FReplacedString {
   int Index;

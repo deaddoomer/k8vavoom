@@ -267,41 +267,56 @@ VExpression *VExpression::ResolveBoolean (VEmitContext &ec) {
 //==========================================================================
 VExpression *VExpression::CoerceToBool (VEmitContext &ec) {
   vassert(IsResolved());
+  VExpression *xrv = nullptr;
+  bool doResolve = true;
   switch (Type.Type) {
     case TYPE_Int:
     case TYPE_Byte:
     case TYPE_Bool:
+      doResolve = false;
       break;
     case TYPE_Float:
-      return (new VFloatToBool(this))->Resolve(ec);
+      xrv = new VFloatToBool(this);
+      break;
     case TYPE_Name:
-      return (new VNameToBool(this))->Resolve(ec);
+      xrv = new VNameToBool(this);
+      break;
     case TYPE_Pointer:
     case TYPE_Reference:
     case TYPE_Class:
     case TYPE_State:
-      return (new VPointerToBool(this))->Resolve(ec);
+      xrv = new VPointerToBool(this);
+      break;
     case TYPE_String:
-      return (new VStringToBool(this))->Resolve(ec);
+      xrv = new VStringToBool(this);
       break;
     case TYPE_Delegate:
-      return (new VDelegateToBool(this))->Resolve(ec);
+      xrv = new VDelegateToBool(this);
       break;
     case TYPE_Vector:
-      return (new VVectorToBool(this))->Resolve(ec);
+      xrv = new VVectorToBool(this);
+      break;
     case TYPE_DynamicArray:
-      return (new VDynArrayToBool(this))->Resolve(ec);
+      xrv = new VDynArrayToBool(this);
+      break;
     case TYPE_Dictionary:
-      return (new VDictToBool(this))->Resolve(ec);
+      xrv = new VDictToBool(this);
+      break;
     case TYPE_SliceArray:
       ParseWarning(Loc, "Coercing slice to boolean is not tested yet");
-      return (new VSliceToBool(this))->Resolve(ec);
+      xrv = new VSliceToBool(this);
+      break;
     default:
       ParseError(Loc, "Expression type mismatch, boolean expression expected, got `%s`", *Type.GetName());
       delete this;
       return nullptr;
   }
-  return this;
+  if (doResolve) {
+    if (xrv) xrv = xrv->Resolve(ec);
+    return xrv;
+  } else {
+    return this;
+  }
 }
 
 
@@ -337,12 +352,13 @@ VExpression *VExpression::ResolveFloat (VEmitContext &ec) {
     case TYPE_Int:
     case TYPE_Byte:
     //case TYPE_Bool:
-      e = (new VScalarToFloat(e))->Resolve(ec);
+      e = new VScalarToFloat(e, true);
+      if (e) e = e->Resolve(ec);
       break;
     case TYPE_Float:
       break;
     default:
-      ParseError(e->Loc, "Expression type mismatch, float expression expected");
+      ParseError(e->Loc, "Expression type mismatch, float expression expected (resolve)");
       delete e;
       return nullptr;
   }
@@ -357,18 +373,29 @@ VExpression *VExpression::ResolveFloat (VEmitContext &ec) {
 //  Expression MUST be already resolved here.
 //
 //==========================================================================
-VExpression *VExpression::CoerceToFloat (VEmitContext &ec) {
+VExpression *VExpression::CoerceToFloat (VEmitContext &ec, bool implicit) {
   vassert(IsResolved());
   if (Type.Type == TYPE_Float) return this; // nothing to do
   if (Type.Type == TYPE_Int || Type.Type == TYPE_Byte) {
     if (IsIntConst()) {
-      VExpression *e = new VFloatLiteral((float)GetIntConst(), Loc);
-      delete this;
-      return e->Resolve(ec);
+      const float fval = (float)GetIntConst();
+      if (!VMemberBase::optDeprecatedLaxConversions && !VIsGoodIntAsFloat(GetIntConst())) {
+        ParseError(Loc, "Expression type mismatch, float expression expected (coerce); "
+                   "ival=%d; fval=%g; ifval=%d", GetIntConst(), fval, (int)fval);
+        delete this;
+        return nullptr;
+      } else {
+        VExpression *e = new VFloatLiteral(fval, Loc);
+        delete this;
+        return e->Resolve(ec);
+      }
+    } else {
+      VExpression *e = new VScalarToFloat(this, implicit);
+      if (e) e = e->Resolve(ec);
+      return e;
     }
-    return (new VScalarToFloat(this))->Resolve(ec);
   }
-  ParseError(Loc, "Expression type mismatch, float expression expected");
+  ParseError(Loc, "Expression type mismatch, float expression expected (coerce)");
   delete this;
   return nullptr;
 }
@@ -436,11 +463,11 @@ void VExpression::CoerceTypes (VEmitContext &ec, VExpression *&op1, VExpression 
   // if one operand is vector, and other operand is integer, coerce integer to float
   // this is required for float vs scalar operators
   if (op1->Type.Type == TYPE_Vector && (op2->Type.Type == TYPE_Int || op2->Type.Type == TYPE_Byte)) {
-    op2 = op2->CoerceToFloat(ec);
+    op2 = op2->CoerceToFloat(ec, true);
     return;
   }
   if (op2->Type.Type == TYPE_Vector && (op1->Type.Type == TYPE_Int || op1->Type.Type == TYPE_Byte)) {
-    op1 = op1->CoerceToFloat(ec);
+    op1 = op1->CoerceToFloat(ec, true);
     return;
   }
   // coerce to float
@@ -448,8 +475,8 @@ void VExpression::CoerceTypes (VEmitContext &ec, VExpression *&op1, VExpression 
       (op1->Type.Type == TYPE_Int || op2->Type.Type == TYPE_Int ||
        op1->Type.Type == TYPE_Byte || op2->Type.Type == TYPE_Byte))
   {
-    op1 = op1->CoerceToFloat(ec);
-    op2 = op2->CoerceToFloat(ec);
+    op1 = op1->CoerceToFloat(ec, true);
+    op2 = op2->CoerceToFloat(ec, true);
     return;
   }
   // coerce `none`

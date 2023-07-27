@@ -2683,7 +2683,7 @@ VExpression *VDictFind::DoResolve (VEmitContext &ec) {
   keyexpr = keyexpr->Resolve(ec);
   if (!keyexpr) { delete this; return nullptr; }
 
-  if (sexpr->Type.GetDictKeyType().Type == TYPE_Float) keyexpr = keyexpr->CoerceToFloat(ec);
+  if (sexpr->Type.GetDictKeyType().Type == TYPE_Float) keyexpr = keyexpr->CoerceToFloat(ec, false);
   if (!keyexpr->Type.Equals(sexpr->Type.GetDictKeyType())) {
     ParseError(Loc, "expected key type `%s`, but got `%s`", *sexpr->Type.GetDictKeyType().GetName(), *keyexpr->Type.GetName());
     delete this;
@@ -2794,7 +2794,7 @@ VExpression *VDictDelete::DoResolve (VEmitContext &ec) {
   keyexpr = keyexpr->Resolve(ec);
   if (!keyexpr) { delete this; return nullptr; }
 
-  if (sexpr->Type.GetDictKeyType().Type == TYPE_Float) keyexpr = keyexpr->CoerceToFloat(ec);
+  if (sexpr->Type.GetDictKeyType().Type == TYPE_Float) keyexpr = keyexpr->CoerceToFloat(ec, false);
   if (!keyexpr->Type.Equals(sexpr->Type.GetDictKeyType())) {
     ParseError(Loc, "expected key type `%s`, but got `%s`", *sexpr->Type.GetDictKeyType().GetName(), *keyexpr->Type.GetName());
     delete this;
@@ -2911,7 +2911,7 @@ VExpression *VDictPut::DoResolve (VEmitContext &ec) {
   valexpr = valexpr->Resolve(ec);
   if (!keyexpr || !valexpr) { delete this; return nullptr; }
 
-  if (sexpr->Type.GetDictKeyType().Type == TYPE_Float) keyexpr = keyexpr->CoerceToFloat(ec);
+  if (sexpr->Type.GetDictKeyType().Type == TYPE_Float) keyexpr = keyexpr->CoerceToFloat(ec, false);
   //if (!keyexpr->Type.Equals(sexpr->Type.GetDictKeyType()))
   if (!keyexpr->Type.CheckMatch(true, Loc, sexpr->Type.GetDictKeyType(), false))
   {
@@ -2920,7 +2920,7 @@ VExpression *VDictPut::DoResolve (VEmitContext &ec) {
     return nullptr;
   }
 
-  if (sexpr->Type.GetDictValueType().Type == TYPE_Float) valexpr = valexpr->CoerceToFloat(ec);
+  if (sexpr->Type.GetDictValueType().Type == TYPE_Float) valexpr = valexpr->CoerceToFloat(ec, true);
   //if (!valexpr->Type.Equals(sexpr->Type.GetDictValueType()))
   if (!valexpr->Type.CheckMatch(true, Loc, sexpr->Type.GetDictValueType(), false))
   {

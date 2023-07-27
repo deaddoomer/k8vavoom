@@ -192,9 +192,11 @@ VExpression *VUnary::DoResolve (VEmitContext &ec) {
       if (!M) M = ec.SelfClass->FindAccessibleMethod(((VSingleName *)op)->Name, ec.SelfClass, &Loc);
       if (M && (M->Flags&FUNC_Iterator) == 0) {
         //fprintf(stderr, "SINGLE NAME GETADDR! <%s>\n", *((VSingleName *)op)->Name);
-        VExpression *e = new VDelegateVal((new VSelf(Loc))->Resolve(ec), M, Loc);
+        VExpression *e = new VSelf(Loc);
+        if (e) e = e->Resolve(ec);
+        if (e) e = new VDelegateVal(e, M, Loc);
         delete this;
-        return e->Resolve(ec);
+        return (e ? e->Resolve(ec) : nullptr);
       }
     } else if (op->IsDotField()) {
       VExpression *xop = ((VDotField *)op)->op;
@@ -254,7 +256,8 @@ VExpression *VUnary::DoResolve (VEmitContext &ec) {
       break;
     case BitInvert:
       if (FromDecorate && op->Type.Type == TYPE_Float) {
-        op = (new VScalarToInt(op))->Resolve(ec);
+        op = new VScalarToInt(op, false);
+        if (op) op = op->Resolve(ec);
         if (!op) { delete this; return nullptr; }
       }
       if (op->Type.Type != TYPE_Int) {
@@ -742,11 +745,13 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
       case Or:
         // convert both operands to ints
         if (op1->Type.Type == TYPE_Float) {
-          op1 = (new VScalarToInt(op1))->Resolve(ec);
+          op1 = new VScalarToInt(op1, false);
+          if (op1) op1 = op1->Resolve(ec);
           if (!op1) { delete this; return nullptr; }
         }
         if (op2->Type.Type == TYPE_Float) {
-          op2 = (new VScalarToInt(op2))->Resolve(ec);
+          op2 = new VScalarToInt(op2, false);
+          if (op2) op2 = op2->Resolve(ec);
           if (!op2) { delete this; return nullptr; }
         }
       default:

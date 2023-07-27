@@ -3653,7 +3653,7 @@ VStatement *VReturn::DoResolve (VEmitContext &ec) {
         ParseError(Loc, "void function cannot return a value");
         wasError = true;
       }
-    } else if (Expr->Type.GetStackSize() == 1 || Expr->Type.Type == TYPE_Vector) {
+    } else if (!wasError && (Expr->Type.GetStackSize() == 1 || Expr->Type.Type == TYPE_Vector)) {
       const bool res = Expr->Type.CheckMatch(false, Expr->Loc, ec.FuncRetType);
       if (!res) wasError = true;
     } else {

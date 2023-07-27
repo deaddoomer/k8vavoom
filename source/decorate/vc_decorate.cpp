@@ -2990,7 +2990,7 @@ static void ParseActor (VScriptParser *sc, TArray<VClassFixup> &ClassFixups, TAr
             } else {
               //int GetMissileDamageIntr (int Mask, int Add); -- EntityEx.Misc.vc
               // default: ((random(0, 255)&Mask)+Add)*MissileDamage
-              Expr = new VScalarToInt(Expr); // not resolved
+              Expr = new VScalarToInt(Expr, false); // not resolved
               VMethod *M = new VMethod("GetMissileDamageIntr", Class, sc->GetVCLoc());
               M->Flags = FUNC_Override;
               M->ReturnTypeExpr = new VTypeExprSimple(TYPE_Int, sc->GetVCLoc());

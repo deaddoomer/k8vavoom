@@ -417,6 +417,9 @@ static inline VCvar *GetRTCVar (const vuint8 *ip, int nameidx, bool allownull=fa
 }
 
 
+static char runerrmsgbuf[1024]; // sorry!
+
+
 //==========================================================================
 //
 //  RunFunction
@@ -2248,16 +2251,35 @@ func_loop:
         ++ip;
         {
           const float fv = (float)sp[-1].i;
-          if (!isFiniteF(fv)) { cstDump(ip); VPackage::InternalFatalError("Invalid int->float conversion"); }
-          sp[-1].f = fv;
+          if (!isFiniteF(fv)) {
+            cstDump(ip);
+            VPackage::InternalFatalError("Invalid int->float conversion");
+          } else {
+            if (!VMemberBase::optDeprecatedLaxConversions && !VIsGoodIntAsFloat(sp[-1].i)) {
+              snprintf(runerrmsgbuf, sizeof(runerrmsgbuf),
+                       "Invalid int->float conversion (overflow or underflow): i=%d",
+                       sp[-1].i);
+              cstDump(ip);
+              VPackage::InternalFatalError(runerrmsgbuf);
+            }
+            sp[-1].f = fv;
+          }
         }
         PR_VM_BREAK;
 
       PR_VM_CASE(OPC_FloatToInt)
         ++ip;
-        if (!isFiniteFI32(sp[-1].i)) { cstDump(ip); VPackage::InternalFatalError("Invalid float->int conversion"); }
-        {
-          const vint32 itemp = (vint32)sp[-1].f;
+        if (!isFiniteFI32(sp[-1].i)) {
+          cstDump(ip); VPackage::InternalFatalError("Invalid float->int conversion");
+        } else {
+          const vint32 itemp = (vint32)truncf(sp[-1].f);
+          if (!VMemberBase::optDeprecatedLaxConversions && !VIsGoodFloatAsInt(sp[-1].f)) {
+            snprintf(runerrmsgbuf, sizeof(runerrmsgbuf),
+                     "Invalid float->int conversion (overflow or underflow): f=%g",
+                     sp[-1].f);
+            cstDump(ip);
+            VPackage::InternalFatalError(runerrmsgbuf);
+          }
           sp[-1].i = itemp;
         }
         PR_VM_BREAK;

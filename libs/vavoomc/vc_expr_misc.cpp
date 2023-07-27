@@ -295,9 +295,11 @@ VExpression *VSingleName::InternalResolve (VEmitContext &ec, VSingleName::AssTyp
         delete this;
         return nullptr;
       }
-      VExpression *e = new VFieldAccess((new VSelf(Loc))->Resolve(ec), field, Loc, (isRO ? FIELD_ReadOnly : 0));
+      VExpression *e = new VSelf(Loc);
+      if (e) e = e->Resolve(ec);
+      if (e) e = new VFieldAccess(e, field, Loc, (isRO ? FIELD_ReadOnly : 0));
       delete this;
-      return e->Resolve(ec);
+      return (e ? e->Resolve(ec) : nullptr);
     }
     // method
     VMethod *M = ec.SelfStruct->FindAccessibleMethod(Name, ec.SelfStruct, &Loc);
@@ -344,10 +346,12 @@ VExpression *VSingleName::InternalResolve (VEmitContext &ec, VSingleName::AssTyp
       /*if (assType == AssType::Normal && field->Type.Type == TYPE_Delegate && field->Func && field->Func->NumParams == 0) {
         e = new VInvocation(nullptr, field->Func, field, false, false, Loc, 0, nullptr);
       } else*/ {
-        e = new VFieldAccess((new VSelf(Loc))->Resolve(ec), field, Loc, (isRO ? FIELD_ReadOnly : 0));
+        e = new VSelf(Loc);
+        if (e) e = e->Resolve(ec);
+        if (e) e = new VFieldAccess(e, field, Loc, (isRO ? FIELD_ReadOnly : 0));
       }
       delete this;
-      return e->Resolve(ec);
+      return (e ? e->Resolve(ec) : nullptr);
     }
 
     // built-in object properties
@@ -366,9 +370,11 @@ VExpression *VSingleName::InternalResolve (VEmitContext &ec, VSingleName::AssTyp
             delete this;
             return nullptr;
           }
-          VExpression *e = new VFieldAccess((new VSelf(Loc))->Resolve(ec), Prop->DefaultField, Loc, 0);
+          VExpression *e = new VSelf(Loc);
+          if (e) e = e->Resolve(ec);
+          if (e) e = new VFieldAccess(e, Prop->DefaultField, Loc, 0);
           delete this;
-          return e->Resolve(ec);
+          return (e ? e->Resolve(ec) : nullptr);
           //return e->ResolveAssignmentTarget(ec); //k8:??? why not this?
         } else {
           if (Prop->SetFunc) {
@@ -376,7 +382,9 @@ VExpression *VSingleName::InternalResolve (VEmitContext &ec, VSingleName::AssTyp
             if ((Prop->SetFunc->Flags&FUNC_Static) != 0) {
               e = new VPropertyAssign(nullptr, Prop->SetFunc, false, Loc);
             } else {
-              e = new VPropertyAssign((new VSelf(Loc))->Resolve(ec), Prop->SetFunc, true, Loc);
+              e = new VSelf(Loc);
+              if (e) e = e->Resolve(ec);
+              if (e) e = new VPropertyAssign(e, Prop->SetFunc, true, Loc);
             }
             delete this;
             // assignment will call resolve
@@ -389,10 +397,12 @@ VExpression *VSingleName::InternalResolve (VEmitContext &ec, VSingleName::AssTyp
               delete this;
               return nullptr;
             } else {
-              e = new VFieldAccess((new VSelf(Loc))->Resolve(ec), Prop->WriteField, Loc, 0);
+              e = new VSelf(Loc);
+              if (e) e = e->Resolve(ec);
+              if (e) e = new VFieldAccess(e, Prop->WriteField, Loc, 0);
             }
             delete this;
-            return e->ResolveAssignmentTarget(ec);
+            return (e ? e->ResolveAssignmentTarget(ec) : nullptr);
           } else {
             ParseError(Loc, "Property `%s` cannot be set", *Name);
             delete this;
@@ -405,10 +415,12 @@ VExpression *VSingleName::InternalResolve (VEmitContext &ec, VSingleName::AssTyp
           if ((Prop->GetFunc->Flags&FUNC_Static) != 0) {
             e = new VInvocation(nullptr, Prop->GetFunc, nullptr, false, false, Loc, 0, nullptr);
           } else {
-            e = new VInvocation((new VSelf(Loc))->Resolve(ec), Prop->GetFunc, nullptr, true, false, Loc, 0, nullptr);
+            e = new VSelf(Loc);
+            if (e) e = e->Resolve(ec);
+            if (e) e = new VInvocation(e, Prop->GetFunc, nullptr, true, false, Loc, 0, nullptr);
           }
           delete this;
-          return e->Resolve(ec);
+          return (e ? e->Resolve(ec) : nullptr);
         } else if (Prop->ReadField) {
           VExpression *e;
           if (ec.SelfClass && ec.CurrentFunc && (ec.CurrentFunc->Flags&FUNC_Static) != 0) {
@@ -417,10 +429,12 @@ VExpression *VSingleName::InternalResolve (VEmitContext &ec, VSingleName::AssTyp
             delete this;
             return nullptr;
           } else {
-            e = new VFieldAccess((new VSelf(Loc))->Resolve(ec), Prop->ReadField, Loc, 0);
+            e = new VSelf(Loc);
+            if (e) e = e->Resolve(ec);
+            if (e) e = new VFieldAccess(e, Prop->ReadField, Loc, 0);
           }
           delete this;
-          return e->Resolve(ec);
+          return (e ? e->Resolve(ec) : nullptr);
         } else {
           ParseError(Loc, "Property `%s` cannot be read", *Name);
           delete this;
@@ -1153,7 +1167,11 @@ void VCommaExprRetOp0::DoSyntaxCopyTo (VExpression *e) {
 //==========================================================================
 VExpression *VCommaExprRetOp0::DoResolve (VEmitContext &ec) {
   if (op0) op0 = op0->Resolve(ec);
-  if (op1) op1 = (new VDropResult(op1))->Resolve(ec); // automatically add result drop
+  if (op1) {
+    // automatically add result drop
+    op1 = new VDropResult(op1);
+    if (op1) op1 = op1->Resolve(ec);
+  }
   if (!op0 || !op1) {
     delete this;
     return nullptr;

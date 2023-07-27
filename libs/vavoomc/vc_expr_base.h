@@ -104,23 +104,23 @@ protected:
 public:
   VExpression (const TLocation &ALoc);
   virtual ~VExpression ();
-  virtual VExpression *SyntaxCopy () = 0; // this should be called on *UNRESOLVED* expression
-  virtual VExpression *DoResolve (VEmitContext &ec) = 0; // tho shon't call this twice, neither thrice!
-  VExpression *Resolve (VEmitContext &ec); // this will usually just call `DoResolve()`
-  VExpression *ResolveBoolean (VEmitContext &ec); // actually, *TO* boolean
-  VExpression *CoerceToBool (VEmitContext &ec); // expression *MUST* be already resolved
-  VExpression *ResolveFloat (VEmitContext &ec); // actually, *TO* float
-  VExpression *CoerceToFloat (VEmitContext &ec); // expression *MUST* be already resolved
+  virtual VVA_CHECKRESULT VExpression *SyntaxCopy () = 0; // this should be called on *UNRESOLVED* expression
+  virtual VVA_CHECKRESULT VExpression *DoResolve (VEmitContext &ec) = 0; // tho shon't call this twice, neither thrice!
+  VVA_CHECKRESULT VExpression *Resolve (VEmitContext &ec); // this will usually just call `DoResolve()`
+  VVA_CHECKRESULT VExpression *ResolveBoolean (VEmitContext &ec); // actually, *TO* boolean
+  VVA_CHECKRESULT VExpression *CoerceToBool (VEmitContext &ec); // expression *MUST* be already resolved
+  VVA_CHECKRESULT VExpression *ResolveFloat (VEmitContext &ec); // actually, *TO* float
+  VVA_CHECKRESULT VExpression *CoerceToFloat (VEmitContext &ec, bool implicit); // expression *MUST* be already resolved
   // returns -1 if cannot determine, or 0/1
-  int IsBoolLiteral (VEmitContext &ec) const;
-  virtual VTypeExpr *ResolveAsType (VEmitContext &ec);
-  virtual VExpression *ResolveAssignmentTarget (VEmitContext &ec);
-  virtual VExpression *ResolveAssignmentValue (VEmitContext &ec);
-  virtual VExpression *ResolveIterator (VEmitContext &ec);
+  VVA_CHECKRESULT int IsBoolLiteral (VEmitContext &ec) const;
+  VVA_CHECKRESULT virtual VTypeExpr *ResolveAsType (VEmitContext &ec);
+  VVA_CHECKRESULT virtual VExpression *ResolveAssignmentTarget (VEmitContext &ec);
+  VVA_CHECKRESULT virtual VExpression *ResolveAssignmentValue (VEmitContext &ec);
+  VVA_CHECKRESULT virtual VExpression *ResolveIterator (VEmitContext &ec);
   // this will be called before actual assign resolving
   // return `nullptr` to indicate error, or consume `val` and set `resolved` to `true` if resolved
   // if `nullptr` is returned, both `this` and `val` should be destroyed
-  virtual VExpression *ResolveCompleteAssign (VEmitContext &ec, VExpression *val, bool &resolved);
+  VVA_CHECKRESULT virtual VExpression *ResolveCompleteAssign (VEmitContext &ec, VExpression *val, bool &resolved);
   // this coerces ints to floats, and fixes `none`\`nullptr` type
   static void CoerceTypes (VEmitContext &ec, VExpression *&op1, VExpression *&op2, bool coerceNoneDelegate); // expression *MUST* be already resolved
   virtual void RequestAddressOf ();
@@ -205,11 +205,13 @@ public:
   // `CallerState` can be `nullptr`
   // `argnum` is 1-based!
   // `invokation` can be `nullptr` for custom calls (and `CallerState` too)
+  VVA_CHECKRESULT
   VExpression *MassageDecorateArg (VEmitContext &ec, VInvocation *invokation, VState *CallerState, const char *funcName,
                                    int argnum, const VFieldType &destType, bool isOptional, const TLocation *aloc=nullptr,
                                    bool *massaged=nullptr);
 
   // this resolves one-char strings and names to int literals too
+  VVA_CHECKRESULT
   VExpression *ResolveToIntLiteralEx (VEmitContext &ec, bool allowFloatTrunc=false);
 
   static void *operator new (size_t size);

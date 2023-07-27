@@ -35,12 +35,22 @@ VCastExpressionBase::VCastExpressionBase (VExpression *AOp) : VExpression(AOp->L
 VCastExpressionBase::VCastExpressionBase (const TLocation &ALoc) : VExpression(ALoc), op(nullptr) {}
 VCastExpressionBase::~VCastExpressionBase () { if (op) { delete op; op = nullptr; } }
 
+//==========================================================================
+//
+//  VCastExpressionBase::DoSyntaxCopyTo
+//
+//==========================================================================
 void VCastExpressionBase::DoSyntaxCopyTo (VExpression *e) {
   VExpression::DoSyntaxCopyTo(e);
   auto res = (VCastExpressionBase *)e;
   res->op = (op ? op->SyntaxCopy() : nullptr);
 }
 
+//==========================================================================
+//
+//  VCastExpressionBase::DoResolve
+//
+//==========================================================================
 VExpression *VCastExpressionBase::DoResolve (VEmitContext &ec) {
   if (op && !op->IsResolved()) {
     op = op->Resolve(ec);
@@ -502,10 +512,23 @@ VStr VPointerToBool::toString () const {
 //  VScalarToFloat::VScalarToFloat
 //
 //==========================================================================
-VScalarToFloat::VScalarToFloat (VExpression *AOp)
+VScalarToFloat::VScalarToFloat (VExpression *AOp, bool AImplicit)
   : VCastExpressionBase(AOp)
+  , implicit(AImplicit)
 {
   Type = TYPE_Float;
+}
+
+
+//==========================================================================
+//
+//  VScalarToFloat::DoSyntaxCopyTo
+//
+//==========================================================================
+void VScalarToFloat::DoSyntaxCopyTo (VExpression *e) {
+  VCastExpressionBase::DoSyntaxCopyTo(e);
+  auto res = (VScalarToFloat *)e;
+  res->implicit = implicit;
 }
 
 
@@ -534,9 +557,17 @@ VExpression *VScalarToFloat::DoResolve (VEmitContext &ec) {
     case TYPE_Byte:
     case TYPE_Bool:
       if (op->IsIntConst()) {
-        VExpression *e = new VFloatLiteral((float)op->GetIntConst(), op->Loc);
+        const float fval = (float)op->GetIntConst();
+        if (!VMemberBase::optDeprecatedLaxConversions && !VIsGoodIntAsFloat(op->GetIntConst())) {
+          ParseError(Loc, "cannot convert type `%s` to `float`", *op->Type.GetName());
+        }
+        VExpression *e = new VFloatLiteral(fval, op->Loc);
         delete this;
         return e->Resolve(ec);
+      } else {
+        if (implicit && !VMemberBase::optDeprecatedLaxConversions) {
+          ParseError(Loc, "cannot implicitly convert type `%s` to `float`", *op->Type.GetName());
+        }
       }
       break;
     case TYPE_Float:
@@ -596,10 +627,23 @@ VStr VScalarToFloat::toString () const {
 //  VScalarToInt::VScalarToInt
 //
 //==========================================================================
-VScalarToInt::VScalarToInt (VExpression *AOp)
+VScalarToInt::VScalarToInt (VExpression *AOp, bool AImplicit)
   : VCastExpressionBase(AOp)
+  , implicit(AImplicit)
 {
   Type = TYPE_Int;
+}
+
+
+//==========================================================================
+//
+//  VScalarToInt::DoSyntaxCopyTo
+//
+//==========================================================================
+void VScalarToInt::DoSyntaxCopyTo (VExpression *e) {
+  VCastExpressionBase::DoSyntaxCopyTo(e);
+  auto res = (VScalarToInt *)e;
+  res->implicit = implicit;
 }
 
 
@@ -637,9 +681,17 @@ VExpression *VScalarToInt::DoResolve (VEmitContext &ec) {
       break;
     case TYPE_Float:
       if (op->IsFloatConst()) {
-        VExpression *e = new VIntLiteral((vint32)op->GetFloatConst(), op->Loc);
+        const int ival = (vint32)op->GetFloatConst();
+        if (!VMemberBase::optDeprecatedLaxConversions && !VIsGoodFloatAsInt(op->GetFloatConst())) {
+          ParseError(Loc, "cannot convert type `%s` to `int`", *op->Type.GetName());
+        }
+        VExpression *e = new VIntLiteral(ival, op->Loc);
         delete this;
         return e->Resolve(ec);
+      } else {
+        if (implicit && !VMemberBase::optDeprecatedLaxConversions) {
+          ParseError(Loc, "cannot implicitly convert type `%s` to `int`", *op->Type.GetName());
+        }
       }
       break;
     default:
@@ -727,7 +779,8 @@ VExpression *VCastToString::DoResolve (VEmitContext &ec) {
         // do it inplace
         VStr ns = VStr(op->GetNameConst());
         int val = ec.Package->FindString(*ns);
-        VExpression *e = (new VStringLiteral(ns, val, Loc))->Resolve(ec);
+        VExpression *e = new VStringLiteral(ns, val, Loc);
+        if (e) e = e->Resolve(ec);
         delete this;
         return e;
       }
@@ -811,7 +864,8 @@ VExpression *VCastToName::DoResolve (VEmitContext &ec) {
       if (op->IsStrConst()) {
         // do it inplace
         VStr s = op->GetStrConst(ec.Package);
-        VExpression *e = (new VNameLiteral(VName(*s), Loc))->Resolve(ec);
+        VExpression *e = new VNameLiteral(VName(*s), Loc);
+        if (e) e = e->Resolve(ec);
         delete this;
         return e;
       }

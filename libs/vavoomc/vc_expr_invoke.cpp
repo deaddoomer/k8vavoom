@@ -672,10 +672,15 @@ VExpression *VCastOrInvocation::DoResolve (VEmitContext &ec) {
           delete this;
           return nullptr;
         }
-        VExpression *e = new VDynCastWithVar(Args[0], new VFieldAccess((new VSelf(Loc))->Resolve(ec), field, Loc, 0), Loc);
+        VExpression *e = new VSelf(Loc);
+        if (e) e = e->Resolve(ec);
+        if (e) {
+          e = new VFieldAccess(e, field, Loc, 0);
+          e = new VDynCastWithVar(Args[0], e, Loc);
+        }
         NumArgs = 0;
         delete this;
-        return e->Resolve(ec);
+        return (e ? e->Resolve(ec) : nullptr);
       }
     }
 
@@ -1388,11 +1393,18 @@ VExpression *VDotInvocation::DoResolve (VEmitContext &ec) {
           if (SelfExpr->Type.Type != TYPE_Pointer) SelfExpr->RequestAddressOf();
           VExpression *fldAccess = new VFieldAccess(SelfExpr, field, Loc, 0);
           fldAccess->RequestAddressOf();
-          VInvocation *e = new VInvocation((new VSelfClass(Loc))->Resolve(ec), fldAccess, field->Func, Loc, NumArgs, Args);
-          SelfExpr = nullptr;
-          NumArgs = 0;
-          delete this;
-          return e->Resolve(ec);
+          VExpression *xe = new VSelfClass(Loc);
+          if (xe) xe = xe->Resolve(ec);
+          if (xe) {
+            VInvocation *e = new VInvocation(xe, fldAccess, field->Func, Loc, NumArgs, Args);
+            SelfExpr = nullptr;
+            NumArgs = 0;
+            delete this;
+            return e->Resolve(ec);
+          } else {
+            delete this;
+            return nullptr;
+          }
         }
       }
     }
@@ -1677,13 +1689,15 @@ VExpression *VTypeInvocation::DoResolve (VEmitContext &ec) {
   if (TypeExpr->Type.Type == TYPE_Int) {
     if (MethodName == "min") {
       if (NumArgs != 0) { ParseError(Loc, "`int.%s` cannot have arguments", *MethodName); delete this; return nullptr; }
-      VExpression *e = (new VIntLiteral((int)0x80000000, Loc))->Resolve(ec);
+      VExpression *e = new VIntLiteral((int)0x80000000, Loc);
+      if (e) e = e->Resolve(ec);
       delete this;
       return e;
     }
     if (MethodName == "max") {
       if (NumArgs != 0) { ParseError(Loc, "`int.%s` cannot have arguments", *MethodName); delete this; return nullptr; }
-      VExpression *e = (new VIntLiteral((int)0x7fffffff, Loc))->Resolve(ec);
+      VExpression *e = new VIntLiteral((int)0x7fffffff, Loc);
+      if (e) e = e->Resolve(ec);
       delete this;
       return e;
     }
@@ -1696,31 +1710,50 @@ VExpression *VTypeInvocation::DoResolve (VEmitContext &ec) {
   if (TypeExpr->Type.Type == TYPE_Float) {
     if (MethodName == "min") {
       if (NumArgs != 0) { ParseError(Loc, "`float.%s` cannot have arguments", *MethodName); delete this; return nullptr; }
-      VExpression *e = (new VFloatLiteral(-FLT_MAX, Loc))->Resolve(ec);
+      VExpression *e = new VFloatLiteral(-FLT_MAX, Loc);
+      if (e) e = e->Resolve(ec);
+      delete this;
+      return e;
+    }
+    if (MethodName == "min_int") {
+      if (NumArgs != 0) { ParseError(Loc, "`float.%s` cannot have arguments", *MethodName); delete this; return nullptr; }
+      VExpression *e = new VFloatLiteral(-0x3fffffff, Loc);
+      if (e) e = e->Resolve(ec);
       delete this;
       return e;
     }
     if (MethodName == "max") {
       if (NumArgs != 0) { ParseError(Loc, "`float.%s` cannot have arguments", *MethodName); delete this; return nullptr; }
-      VExpression *e = (new VFloatLiteral(FLT_MAX, Loc))->Resolve(ec);
+      VExpression *e = new VFloatLiteral(FLT_MAX, Loc);
+      if (e) e = e->Resolve(ec);
+      delete this;
+      return e;
+    }
+    if (MethodName == "max_int") {
+      if (NumArgs != 0) { ParseError(Loc, "`float.%s` cannot have arguments", *MethodName); delete this; return nullptr; }
+      VExpression *e = new VFloatLiteral(0x3fffffff, Loc); /* 2147483520 */
+      if (e) e = e->Resolve(ec);
       delete this;
       return e;
     }
     if (MethodName == "min_norm" || MethodName == "min_normal" || MethodName == "min_normalized") {
       if (NumArgs != 0) { ParseError(Loc, "`float.%s` cannot have arguments", *MethodName); delete this; return nullptr; }
-      VExpression *e = (new VFloatLiteral(FLT_MIN, Loc))->Resolve(ec);
+      VExpression *e = new VFloatLiteral(FLT_MIN, Loc);
+      if (e) e = e->Resolve(ec);
       delete this;
       return e;
     }
     if (MethodName == "nan") {
       if (NumArgs != 0) { ParseError(Loc, "`float.%s` cannot have arguments", *MethodName); delete this; return nullptr; }
-      VExpression *e = (new VFloatLiteral(NAN, Loc))->Resolve(ec);
+      VExpression *e = new VFloatLiteral(NAN, Loc);
+      if (e) e = e->Resolve(ec);
       delete this;
       return e;
     }
     if (MethodName == "inf" || MethodName == "infinity") {
       if (NumArgs != 0) { ParseError(Loc, "`float.%s` cannot have arguments", *MethodName); delete this; return nullptr; }
-      VExpression *e = (new VFloatLiteral(INFINITY, Loc))->Resolve(ec);
+      VExpression *e = new VFloatLiteral(INFINITY, Loc);
+      if (e) e = e->Resolve(ec);
       delete this;
       return e;
     }
@@ -1757,7 +1790,8 @@ VExpression *VTypeInvocation::DoResolve (VEmitContext &ec) {
   if (TypeExpr->Type.Type == TYPE_Name) {
     if (MethodName == "none" || MethodName == "empty") {
       if (NumArgs != 0) { ParseError(Loc, "`name.%s` cannot have arguments", *MethodName); delete this; return nullptr; }
-      VExpression *e = (new VNameLiteral(NAME_None, Loc))->Resolve(ec);
+      VExpression *e = new VNameLiteral(NAME_None, Loc);
+      if (e) e = e->Resolve(ec);
       delete this;
       return e;
     }
@@ -3118,26 +3152,35 @@ void VInvocation::CheckParams (VEmitContext &ec) {
           switch (Func->ParamTypes[i].Type) {
             case TYPE_Int:
               if (Args[i]->IsFloatConst()) {
-                int Val = (int)(Args[i]->GetFloatConst());
                 TLocation Loc = Args[i]->Loc;
+                const int Val = (int)(Args[i]->GetFloatConst());
+                if (!VMemberBase::optDeprecatedLaxConversions && !VIsGoodFloatAsInt(Args[i]->GetFloatConst())) {
+                  ParseError(Loc, "Invalid float->int cast for arg #%d", i+1);
+                }
                 delete Args[i];
                 Args[i] = nullptr;
                 Args[i] = new VIntLiteral(Val, Loc);
                 Args[i] = Args[i]->Resolve(ec);
               } else if (Args[i]->Type.Type == TYPE_Float) {
-                Args[i] = (new VScalarToInt(Args[i]))->Resolve(ec);
+                Args[i] = new VScalarToInt(Args[i], true);
+                if (Args[i]) Args[i] = Args[i]->Resolve(ec);
               }
               break;
             case TYPE_Float:
               if (Args[i]->IsIntConst()) {
-                int Val = Args[i]->GetIntConst();
                 TLocation Loc = Args[i]->Loc;
+                const int Val = Args[i]->GetIntConst();
+                const float fval = (float)Val;
+                if (Val != (int)fval) {
+                  ParseError(Loc, "Invalid int->float cast for arg #%d", i+1);
+                }
                 delete Args[i];
                 Args[i] = nullptr;
                 Args[i] = new VFloatLiteral(Val, Loc);
                 Args[i] = Args[i]->Resolve(ec);
               } else if (Args[i]->Type.Type == TYPE_Int) {
-                Args[i] = (new VScalarToFloat(Args[i]))->Resolve(ec);
+                Args[i] = new VScalarToFloat(Args[i], true);
+                if (Args[i]) Args[i] = Args[i]->Resolve(ec);
               }
               break;
           }
@@ -3189,13 +3232,19 @@ void VInvocation::CheckParams (VEmitContext &ec) {
           // normal args: do int->float conversion
           if (Func->ParamTypes[i].Type == TYPE_Float) {
             if (Args[i]->IsIntConst()) {
-              int val = Args[i]->GetIntConst();
               TLocation Loc = Args[i]->Loc;
+              const int val = Args[i]->GetIntConst();
+              const float fval = (float)val;
+              if (!VMemberBase::optDeprecatedLaxConversions && !VIsGoodIntAsFloat(val)) {
+                ParseError(Loc, "Cannot convert argument to float for arg #%d", i+1);
+              }
               delete Args[i];
-              Args[i] = (new VFloatLiteral(val, Loc))->Resolve(ec); // literal's `Reslove()` does nothing, but...
+              Args[i] = new VFloatLiteral(fval, Loc);
+              if (Args[i]) Args[i] = Args[i]->Resolve(ec); // literal's `Reslove()` does nothing, but...
             } else if (Args[i]->Type.Type == TYPE_Int || Args[i]->Type.Type == TYPE_Byte) {
               auto erloc = Args[i]->Loc;
-              Args[i] = (new VScalarToFloat(Args[i]))->Resolve(ec);
+              Args[i] = new VScalarToFloat(Args[i], true);
+              if (Args[i]) Args[i] = Args[i]->Resolve(ec);
               if (!Args[i]) ParseError(erloc, "Cannot convert argument to float for arg #%d", i+1);
             }
           }
@@ -3229,8 +3278,10 @@ void VInvocation::CheckParams (VEmitContext &ec) {
 
   if (Func->Flags&FUNC_VarArgs) {
     int argc = NumArgs-requiredParams;
-    Args[NumArgs++] = (new VIntLiteral(argc, Loc))->Resolve(ec);
-    vassert(Args[NumArgs-1]);
+    Args[NumArgs] = new VIntLiteral(argc, Loc);
+    if (Args[NumArgs]) Args[NumArgs] = Args[NumArgs]->Resolve(ec);
+    vassert(Args[NumArgs]);
+    ++NumArgs;
   }
 }
 

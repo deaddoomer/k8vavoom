@@ -714,7 +714,7 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
               TmpArgs[0] = this->SyntaxCopy();
               if (lx->Type.Type == TYPE_Float) {
                 ParseWarningAsError(ALoc, "jump offset argument #%d for `%s` should be integer, not float! PLEASE, FIX THE CODE!", argnum, funcName);
-                TmpArgs[0] = new VScalarToInt(TmpArgs[0]); // not resolved
+                TmpArgs[0] = new VScalarToInt(TmpArgs[0], false); // not resolved
               }
               VExpression *eres = new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, ALoc, 1, TmpArgs);
               //GCon->Logf("   NEW: type=%s; expr=<%s>", *lbl->Type.GetName(), *lbl->toString());
@@ -1733,13 +1733,15 @@ VExpression *VDecorateRndPick::DoResolve (VEmitContext &ec) {
 
     if (lbl->Type.Type == TYPE_Int || lbl->Type.Type == TYPE_Byte) {
       if (asFloat) {
-        numbers[lbidx] = (new VScalarToFloat(lbl))->Resolve(ec);
+        numbers[lbidx] = new VScalarToFloat(lbl, false);
+        if (numbers[lbidx]) numbers[lbidx] = numbers[lbidx]->Resolve(ec);
         if (!numbers[lbidx]) { delete this; return nullptr; }
       }
     } else if (lbl->Type.Type == TYPE_Float) {
       if (!asFloat) {
         ParseWarning(Loc, "`%srandompick()` argument #%d must be int", (asFloat ? "f" : ""), lbidx+1);
-        numbers[lbidx] = (new VScalarToInt(lbl))->Resolve(ec);
+        numbers[lbidx] = new VScalarToInt(lbl, false);
+        if (numbers[lbidx]) numbers[lbidx] = numbers[lbidx]->Resolve(ec);
         if (!numbers[lbidx]) { delete this; return nullptr; }
       }
     } else {

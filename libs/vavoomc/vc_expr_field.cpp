@@ -470,7 +470,8 @@ VExpression *VDotField::InternalResolve (VEmitContext &ec, VDotField::AssType as
       auto loc = op->Loc;
       delete op;
       op = nullptr;
-      op = (new VPushPointed(opcopy.SyntaxCopy(), loc))->Resolve(ec);
+      op = new VPushPointed(opcopy.SyntaxCopy(), loc);
+      if (op) op = op->Resolve(ec);
       if (!op) { delete this; return nullptr; }
       op->Flags |= oldflags&FIELD_ReadOnly;
     } else {

@@ -185,7 +185,7 @@ VExpression *VAssignment::DoResolve (VEmitContext &ec) {
         case TYPE_Byte:
         case TYPE_Float:
           if (Oper == MultiplyAssign || Oper == DivideAssign) {
-            op2 = op2->CoerceToFloat(ec);
+            op2 = op2->CoerceToFloat(ec, true);
           } else {
             goto dodefvec;
           }

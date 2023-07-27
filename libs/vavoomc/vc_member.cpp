@@ -29,6 +29,7 @@
 // ////////////////////////////////////////////////////////////////////////// //
 int VMemberBase::optDeprecatedLaxOverride = 0;
 int VMemberBase::optDeprecatedLaxStates = 0;
+int VMemberBase::optDeprecatedLaxConversions = 1;
 vuint32 VMemberBase::lastUsedMemberId = 0; // monotonically increasing
 
 

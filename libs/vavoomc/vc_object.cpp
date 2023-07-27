@@ -462,6 +462,9 @@ void VObject::StaticInitOptions (VParsedArgs &pargs) {
   pargs.RegisterFlagSet("-vc-lax-override", "!allow omiting `override` keyword for methods", &VMemberBase::optDeprecatedLaxOverride);
   pargs.RegisterFlagSet("-vc-lax-states", "!missing actor state is not an error", &VMemberBase::optDeprecatedLaxStates);
 
+  pargs.RegisterFlagSet("-vc-lax-conversions", "!allow silent int<->float conversions", &VMemberBase::optDeprecatedLaxConversions);
+  pargs.RegisterFlagReset("-vc-no-lax-conversions", "!do not allow silent int<->float conversions", &VMemberBase::optDeprecatedLaxConversions);
+
   pargs.RegisterFlagSet("-vc-allow-unsafe", "!allow unsafe VC operations", &VMemberBase::unsafeCodeAllowed);
   pargs.RegisterFlagReset("-vc-disable-unsafe", "!do not allow unsafe VC operations", &VMemberBase::unsafeCodeAllowed);
 
