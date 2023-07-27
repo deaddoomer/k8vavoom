@@ -52,6 +52,8 @@ static VCvarF r_model_lod_mindist("r_model_lod_mindist", "666", "Minimal distanc
 static VCvarF r_model_lod_adddist("r_model_lod_adddist", "580", "Start with this decrement.", CVAR_Archive|CVAR_NoShadow);
 static VCvarF r_model_lod_lvlmult("r_model_lod_lvlmult", "1.7", "Multiple decrement by this on each step.", CVAR_Archive|CVAR_NoShadow);
 
+static VCvarI r_model_lod_shadow("r_model_lod_shadow", "1", "Always try to use next LOD for shadowmaps.", CVAR_Archive|CVAR_NoShadow);
+
 
 static TMap<VStr, VModel *> GFixedModelMap;
 
@@ -321,6 +323,7 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
   const bool doLOD = (r_model_lod_enabled.asBool() && mdist > 0.0f && mdist < 32760.0f);
   const TVec vvdist = (Drawer->vieworg - nfo.Org);
   const float dvdistSq = vvdist.dot(vvdist);
+  const int shadowLOD = r_model_lod_shadow.asInt();
   float dvdist = -1.0f;
 
   int submodindex = -1;
@@ -406,6 +409,17 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
         mesh = mesh->nextMip;
         dist -= adddist;
         adddist *= lvlmult;
+      }
+    }
+    // for shadowmaps, always try the next LOD (if cvar allows this)
+    if ((Pass == RPASS_ShadowMaps || Pass == RPASS_ShadowVolumes) &&
+        shadowLOD > 0 && mesh->nextMip != nullptr)
+    {
+      //GCon->Logf(NAME_Debug, "SHADOW MIP: %s", *mesh->Name);
+      int left = shadowLOD;
+      while (left != 0 && mesh->nextMip != nullptr) {
+        mesh = mesh->nextMip;
+        left -= 1;
       }
     }
 

@@ -116,4 +116,16 @@ menudef VoxelModelOptions {
     help =
       "After applying the increment, it will be multplied by this.";
   }
+
+  option slider {
+    title = "Next LOD for shadows";
+    cvar = r_model_lod_shadow;
+    step = 1;
+    min = 0;
+    max = 8;
+    help =
+      "Always try to use next LOD for shadows?",
+      "Shadows need not to be pixel-precise, so switching to the",
+      "lower LOD could help to boost FPS without degrading visuals.";
+  }
 }
