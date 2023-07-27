@@ -685,7 +685,7 @@ native void UpdateVelocity (float DeltaTime, bool allowSlopeFriction);
 void OnMapSpawn (mthing_t *mthing) {
   if (mthing && mthing./*health*/bUseHealth) {
     // per specs
-    Health = int((mthing.health < 0 ? -1 : Health)*mthing.health);
+    Health = int((mthing.health < 0.0 ? -1.0 : float(Health))*mthing.health);
     // overflow protection
     if (Health < 0) Health = int.max/8;
     Health = min(Health, int.max/8);
@@ -955,7 +955,7 @@ float GetStateTime (state AState, float AStateTime) {
       a1 = max(0, GetStateArgN(AState, 1));
            if (a0 > a1) { t = a0; a0 = a1; a1 = t; }
       else if (a0 == a1) return float(a0)/35.0f;
-      return float(a0+trunci(Random()*(a1-a0+1)))/35.0f;
+      return float(a0+trunci(Random()*float(a1-a0+1)))/35.0f;
     default: return AStateTime;
   }
 }

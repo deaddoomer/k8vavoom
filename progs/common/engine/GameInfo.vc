@@ -425,7 +425,7 @@ defaultproperties {
   FloatBobOffsets[60] = -3.061477661; FloatBobOffsets[61] = -2.322280884; FloatBobOffsets[62] = -1.56072998; FloatBobOffsets[63] = -0.7841339111;
   */
   // this is sin table, multiplied by 8
-  foreach (int phase; 0..64) FloatBobOffsets[phase] = sin(phase*(360.0/64.0))*8;
+  foreach (int phase; 0..64) FloatBobOffsets[phase] = sin(float(phase)*(360.0/64.0))*8;
 
   PhaseTable[0] = 128; PhaseTable[1] = 112; PhaseTable[2] = 96; PhaseTable[3] = 80; PhaseTable[4] = 64; PhaseTable[5] = 48; PhaseTable[6] = 32; PhaseTable[7] = 32;
   PhaseTable[8] = 16; PhaseTable[9] = 16; PhaseTable[10] = 16; //0, 0, 0, 0, 0,

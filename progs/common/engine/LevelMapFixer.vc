@@ -528,7 +528,7 @@ void KnownMapBugFixer () {
     foreach (ref auto th; Things) {
       if (th.type == 9001 && th.tid == 55) {
         printwarn("MAPFIX: Silent Steel: Remastered v1.%s MAP05 detected and fixed", (isV11 ? 1 : 0));
-        th.y += (isV11 ? -1 : 1); // move this mapspot down a little, so it ends up in back sector
+        th.y += (isV11 ? -1.0 : 1.0); // move this mapspot down a little, so it ends up in back sector
         break;
       }
     }
