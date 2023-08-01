@@ -1140,8 +1140,10 @@ static void ParseModelXml (int lump, VModel *Mdl, VXmlDocument *Doc, bool isGZDo
       }
       //GCon->Logf(NAME_Debug, "%s: found 3d model for class `%s`", *ClassDefNode->Loc.toStringNoCol(), xcls->GetName());
     } else {
-      GCon->Logf(NAME_Init, "%s: found 3d model for unknown class `%s`",
-                 *ClassDefNode->Loc.toStringNoCol(), *vcClassName);
+      if (vcClassName != "BDW_RifleClip" && vcClassName != "BDW_RifleClipBox") {
+        GCon->Logf(NAME_Init, "%s: found 3d model for unknown class `%s`",
+                   *ClassDefNode->Loc.toStringNoCol(), *vcClassName);
+      }
     }
 
     VClassModelScript *Cls = new VClassModelScript();
