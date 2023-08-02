@@ -245,6 +245,7 @@ void VZipFile::OpenArchive (VStream *fstream, vuint32 cdofs) {
         file_info.SetDiskName(xxfname);
 
         struct tm xtime;
+        memset((void *)&xtime, 0, sizeof(xtime));
         xtime.tm_year = ((dosDate >> 9) & 0x7f) + 1980 - 1900;
         xtime.tm_mon = (dosDate >> 5) & 0x0f;
         if (xtime.tm_mon < 1) xtime.tm_mon = 1; else if (xtime.tm_mon > 12) xtime.tm_mon = 12;
