@@ -1543,12 +1543,13 @@ static int CompressLZFF3 (vwadwr_memman *mman, const void *source, int srclen,
       } else {
         // try match with the next char
         uint32_t xdiff;
-        if (allow_lazy && spos != srcsize - 3) {
+        if (allow_lazy && spos < srcsize - 4) {
           xdiff = 2;
           int doagain;
           do {
             uint32_t bestofs1, bestlen1;
-            spos += 1; FindMatch(bestofs1, bestlen1);
+            spos += 1;
+            FindMatch(bestofs1, bestlen1);
             if (bestlen1 >= bestlen + 2) {
               if (litcount == 0) litpos = spos - 1;
               ++litcount;
