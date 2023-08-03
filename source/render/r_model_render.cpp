@@ -54,6 +54,8 @@ static VCvarF r_model_lod_lvlmult("r_model_lod_lvlmult", "1.7", "Multiple decrem
 
 static VCvarI r_model_lod_shadow("r_model_lod_shadow", "1", "Always try to use next LOD for shadowmaps.", CVAR_Archive|CVAR_NoShadow);
 
+static VCvarI dbg_model_force_lod("dbg_model_force_lod", "-1", "Force model LOD (debug).", CVAR_NoShadow);
+
 
 static TMap<VStr, VModel *> GFixedModelMap;
 
@@ -324,6 +326,7 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
   const TVec vvdist = (Drawer->vieworg - nfo.Org);
   const float dvdistSq = vvdist.dot(vvdist);
   const int shadowLOD = r_model_lod_shadow.asInt();
+  const int forceLOD = dbg_model_force_lod.asInt();
   float dvdist = -1.0f;
 
   int submodindex = -1;
@@ -397,29 +400,37 @@ static void DrawModel (const VRenderLevelShared::MdlDrawInfo &nfo,
 
     VMeshModel *mesh = SubMdl.Model;
 
-    // calculate mip level
-    if (doLOD && mesh->nextMip != nullptr && dvdistSq >= mdistSq) {
-      // has mip levels, and far enough
-      const float lvlmult = clampval(r_model_lod_lvlmult.asFloat(), 0.0f, 16.0f);
-      float adddist = clampval(r_model_lod_adddist.asFloat(), 1.0f, 32700.0f);
-      mesh = mesh->nextMip;
-      if (dvdist < 0.0f) dvdist = sqrtf(dvdistSq);
-      float dist = dvdist - mdist;
-      while (mesh->nextMip != nullptr && dist >= adddist) {
+    if (forceLOD >= 0 && Pass != RPASS_ShadowMaps && Pass != RPASS_ShadowVolumes) {
+      int ll = forceLOD;
+      while (ll != 0 && mesh->nextMip) {
         mesh = mesh->nextMip;
-        dist -= adddist;
-        adddist *= lvlmult;
+        ll -= 1;
       }
-    }
-    // for shadowmaps, always try the next LOD (if cvar allows this)
-    if ((Pass == RPASS_ShadowMaps || Pass == RPASS_ShadowVolumes) &&
-        shadowLOD > 0 && mesh->nextMip != nullptr)
-    {
-      //GCon->Logf(NAME_Debug, "SHADOW MIP: %s", *mesh->Name);
-      int left = shadowLOD;
-      while (left != 0 && mesh->nextMip != nullptr) {
+    } else {
+      // calculate mip level
+      if (doLOD && mesh->nextMip != nullptr && dvdistSq >= mdistSq) {
+        // has mip levels, and far enough
+        const float lvlmult = clampval(r_model_lod_lvlmult.asFloat(), 0.0f, 16.0f);
+        float adddist = clampval(r_model_lod_adddist.asFloat(), 1.0f, 32700.0f);
         mesh = mesh->nextMip;
-        left -= 1;
+        if (dvdist < 0.0f) dvdist = sqrtf(dvdistSq);
+        float dist = dvdist - mdist;
+        while (mesh->nextMip != nullptr && dist >= adddist) {
+          mesh = mesh->nextMip;
+          dist -= adddist;
+          adddist *= lvlmult;
+        }
+      }
+      // for shadowmaps, always try the next LOD (if cvar allows this)
+      if ((Pass == RPASS_ShadowMaps || Pass == RPASS_ShadowVolumes) &&
+          shadowLOD > 0 && mesh->nextMip != nullptr)
+      {
+        //GCon->Logf(NAME_Debug, "SHADOW MIP: %s", *mesh->Name);
+        int left = shadowLOD;
+        while (left != 0 && mesh->nextMip != nullptr) {
+          mesh = mesh->nextMip;
+          left -= 1;
+        }
       }
     }
 

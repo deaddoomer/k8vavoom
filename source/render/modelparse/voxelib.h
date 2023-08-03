@@ -893,7 +893,8 @@ public:
   // returns `false` on error
   // note that this cannot enlarge models
   // returns real scales in `[xyz]scale`
-  bool createMip2 (VoxelData &src, float scale, float *xscale, float *yscale, float *zscale);
+  bool createMip2 (VoxelData &src, float scale, bool lowDetails,
+                   float *xscale, float *yscale, float *zscale);
 
   void copyFrom (VoxelData &src);
 

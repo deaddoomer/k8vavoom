@@ -34,6 +34,7 @@ static VCvarB vox_verbose_conversion("vox_verbose_conversion", false, "Show info
 static VCvarI vox_optimisation("vox_optimisation", "3", "Voxel loader optimisation (higher is better, but with space ants) [0..3].", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 static VCvarB vox_fix_faces("vox_fix_faces", true, "Fix voxel face visibility info?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
 static VCvarB vox_fix_tjunctions("vox_fix_tjunctions", true, "Fix voxel t-junctions?", CVAR_PreInit|CVAR_Archive|CVAR_NoShadow);
+static VCvarB vox_mip_lowquality("vox_mip_lowquality", false, "Lower quality for mipmaps?", CVAR_PreInit|/*CVAR_Archive|*/CVAR_NoShadow);
 
 // useful for debugging, but not really needed
 #define VOX_ENABLE_INVARIANT_CHECK
@@ -479,7 +480,9 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
       GCon->Logf(NAME_Init, "failed to load cached voxel model '%s', regenerating...", *this->Name);
     } else {
       VStream::Destroy(strm);
+      #if 0
       Sys_FileDelete(cacheFileName);
+      #endif
     }
   }
 
@@ -625,7 +628,7 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
     scale = scale/2.0f;
     float xscale, yscale, zscale;
     VoxelData mip;
-    if (mip.createMip2(vox, scale, &xscale, &yscale, &zscale)) {
+    if (mip.createMip2(vox, scale, vox_mip_lowquality.asBool(), &xscale, &yscale, &zscale)) {
       #if 1
       GCon->Logf(NAME_Debug, "VX mip #%d: '%s': %ux%ux%u -> %ux%ux%u",
                  f, *this->Name,

@@ -598,6 +598,8 @@ void VoxelData::setSize (uint32_t xs, uint32_t ys, uint32_t zs) {
 //
 //==========================================================================
 void VoxelData::removeVoxel (int x, int y, int z) {
+  if (x < 0 || y < 0 || z < 0) return;
+  if ((uint32_t)x >= xsize || (uint32_t)y >= ysize || (uint32_t)z >= zsize) return;
   uint32_t dofs = getDOfs(x, y);
   uint32_t prevdofs = 0;
   while (dofs) {
@@ -947,18 +949,29 @@ void VoxelData::optimise (bool doHollowFill) {
 
 //==========================================================================
 //
+//  frac
+//
+//==========================================================================
+static inline float frac (float f) {
+  return f - truncf(f);
+}
+
+
+//==========================================================================
+//
 //  VoxelData::createMip2
 //
 //  try to create model of size 1/2 of this one; can be used for LOD
 //  returns `false` on error
 //
 //==========================================================================
-bool VoxelData::createMip2 (VoxelData &src, float scale,
+bool VoxelData::createMip2 (VoxelData &src, float scale, bool lowDetails,
                             float *xscale, float *yscale, float *zscale)
 {
   if ((void *)&src == (void *)this || scale <= 0.0f || scale > 1.0f) return false;
   if (src.xsize == 0 || src.ysize == 0 || src.zsize == 0) return false;
 
+  bool vadded = false;
   uint32_t nsx = (uint32_t)(src.xsize*scale); if (nsx < 1) nsx = 1;
   uint32_t nsy = (uint32_t)(src.ysize*scale); if (nsy < 1) nsy = 1;
   uint32_t nsz = (uint32_t)(src.zsize*scale); if (nsz < 1) nsz = 1;
@@ -981,26 +994,55 @@ bool VoxelData::createMip2 (VoxelData &src, float scale,
   for (int x = 0; x < (int)src.xsize; x += 1) {
     for (int y = 0; y < (int)src.ysize; y += 1) {
       for (int z = 0; z < (int)src.zsize; z += 1) {
-        uint32_t ovx = src.query(x, y, z);
-        if (ovx != 0) {
-          int nx = (int)(x*xstep);
-          int ny = (int)(y*ystep);
-          int nz = (int)(z*zstep);
-          if (nx < (int)nsx && ny < (int)nsy && nz < (int)nsz) {
-            uint32_t nvx = query(nx, ny, nz);
-            if (nvx == 0) {
-              addVoxel(nx, ny, nz, ovx&0xffffffU, 0x3f);
-            } else {
-              uint32_t r = ((ovx&0xffU)+(nvx&0xffU))/2; if (r > 255) r = 255;
-              uint32_t g = (((ovx>>8)&0xffU)+((nvx>>8)&0xffU))/2; if (g > 255) g = 255;
-              uint32_t b = (((ovx>>16)&0xffU)+((nvx>>16)&0xffU))/2; if (b > 255) b = 255;
-              addVoxel(nx, ny, nz, r|(g<<8)|(b<<16), 0x3f);
+        if (!lowDetails ||
+            (frac(z*zstep) < 0.5f && frac(x*xstep) < 0.5f && frac(y*ystep) < 0.5f))
+        {
+          uint32_t ovx = src.query(x, y, z);
+          if (ovx != 0) {
+            int nx = (int)(x*xstep);
+            int ny = (int)(y*ystep);
+            int nz = (int)(z*zstep);
+            if (nx < (int)nsx && ny < (int)nsy && nz < (int)nsz) {
+              uint32_t nvx = query(nx, ny, nz);
+              if (nvx == 0) {
+                addVoxel(nx, ny, nz, ovx&0xffffffU, 0x3f);
+              } else {
+                uint32_t r = ((ovx&0xffU)+(nvx&0xffU))/2; if (r > 255) r = 255;
+                uint32_t g = (((ovx>>8)&0xffU)+((nvx>>8)&0xffU))/2; if (g > 255) g = 255;
+                uint32_t b = (((ovx>>16)&0xffU)+((nvx>>16)&0xffU))/2; if (b > 255) b = 255;
+                addVoxel(nx, ny, nz, r|(g<<8)|(b<<16), 0x3f);
+                vadded = true;
+              }
             }
           }
         }
       }
     }
   }
+
+  if (!vadded) {
+    for (int x = 0; !vadded && x < (int)src.xsize; x += 1) {
+      for (int y = 0; !vadded && y < (int)src.ysize; y += 1) {
+        for (int z = 0; !vadded && z < (int)src.zsize; z += 1) {
+          uint32_t ovx = src.query(x, y, z);
+          if (ovx != 0) {
+            addVoxel(0, 0, 0, ovx&0xffffffU, 0x3f);
+            vadded = true;
+          }
+        }
+      }
+    }
+  }
+
+  #if 0
+  for (int z = 0; z < 3; z += 1) {
+    for (int x = 0; x < (int)nsx; x += 1) {
+      for (int y = 0; y < (int)nsy; y += 1) {
+        removeVoxel(x, y, z);
+      }
+    }
+  }
+  #endif
 
   //optimise(true);
   return true;
