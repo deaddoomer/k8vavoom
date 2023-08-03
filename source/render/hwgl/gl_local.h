@@ -1451,7 +1451,7 @@ public:
   GLhandleARB CreateProgram (VGLShader *gls, const char *progname, GLhandleARB VertexShader, GLhandleARB FragmentShader);
 
   virtual void UnloadAliasModel (VMeshModel *Mdl) override;
-  void UploadModel (VMeshModel *Mdl);
+  virtual void UploadModel (VMeshModel *Mdl) override;
   void UnloadModels ();
 
   void SetupBlending (const RenderStyleInfo &ri);

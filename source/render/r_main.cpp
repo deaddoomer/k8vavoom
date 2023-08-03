@@ -2333,7 +2333,11 @@ int VRenderLevelShared::CollectSpriteTextures (TMapNC<vint32, vint32> &texturety
     if (th->IsGoingToDie()) continue;
     if (!th->IsA(eexCls)) continue;
     if (pawnCls && th->IsA(pawnCls)) continue;
-    ProcessSpriteClass(th->GetClass(), ssi);
+    // do not load textures for sprites with 3d models
+    VEntity *ee = (VEntity *)th; // safe due to `eexCls` check above
+    if (!HasEntityAliasModel(ee)) {
+      ProcessSpriteClass(th->GetClass(), ssi);
+    }
   }
 
   return ssi.sprtexcount;
@@ -2394,6 +2398,7 @@ void VRenderLevelShared::PrecacheLevel () {
   }
 
   // models
+  /*
   if (r_precache_model_textures && AllModelTextures.length() > 0) {
     const int oldcount = texturetype.count();
     for (auto &&mtid : AllModelTextures) {
@@ -2403,6 +2408,66 @@ void VRenderLevelShared::PrecacheLevel () {
     // informational message
     const int mdltexcount = texturetype.count()-oldcount;
     if (mdltexcount) GCon->Logf("found %d alias model textures", mdltexcount);
+  }
+  */
+
+  if (r_precache_model_textures) {
+    VClass *eexCls = VClass::FindClass("EntityEx");
+    VClass *pawnCls = VClass::FindClass("PlayerPawn");
+    vassert(eexCls);
+
+    int totalmodels = 0;
+    TMapNC<VMeshModel *, bool> mmhash;
+    for (VThinker *th = Level->ThinkerHead; th; th = th->Next) {
+      if (th->IsGoingToDie()) continue;
+      if (!th->IsA(eexCls)) continue;
+      if (pawnCls && th->IsA(pawnCls)) continue;
+      VEntity *ee = (VEntity *)th; // safe due to `eexCls` check above
+      if (!HasEntityAliasModel(ee)) continue;
+      VClassModelScript *mscript = RM_FindClassModelByName(GetClassNameForModel(ee));
+      if (!mscript) continue;
+      VModel *mdl = mscript->Model;
+      if (!mdl) continue;
+      for (auto &&ScMdl : mdl->Models) {
+        for (auto &&SubMdl : ScMdl.SubModels) {
+          if (!SubMdl.Model->Uploaded) {
+            if (!mmhash.put<false>(SubMdl.Model, true)) {
+              totalmodels += 1;
+            }
+          }
+        }
+      }
+    }
+
+    if (totalmodels != 0) {
+      GCon->Logf("found %d alias model%s", totalmodels, (totalmodels != 1 ? "s" :""));
+      R_OSDMsgShowSecondary("UPLOADING MODELS");
+      R_PBarReset();
+      R_PBarUpdate("Models", 0, totalmodels);
+      int emodels = 0;
+      for (VThinker *th = Level->ThinkerHead; th; th = th->Next) {
+        if (th->IsGoingToDie()) continue;
+        if (!th->IsA(eexCls)) continue;
+        if (pawnCls && th->IsA(pawnCls)) continue;
+        VEntity *ee = (VEntity *)th; // safe due to `eexCls` check above
+        if (!HasEntityAliasModel(ee)) continue;
+        VClassModelScript *mscript = RM_FindClassModelByName(GetClassNameForModel(ee));
+        if (!mscript) continue;
+        VModel *mdl = mscript->Model;
+        if (!mdl) continue;
+        for (auto &&ScMdl : mdl->Models) {
+          for (auto &&SubMdl : ScMdl.SubModels) {
+            if (!SubMdl.Model->Uploaded) {
+              SubMdl.Model->LoadFromWad();
+              Drawer->UploadModel(SubMdl.Model);
+              ++emodels;
+              R_PBarUpdate("Models", emodels, totalmodels);
+            }
+          }
+        }
+      }
+      R_PBarUpdate("Models", totalmodels, totalmodels, true); // final update
+    }
   }
 
   // sprites

@@ -597,6 +597,7 @@ public:
   virtual void ReportGPUMemoryUse (const char *infomsg) = 0;
 
   virtual void UnloadAliasModel (VMeshModel *Mdl) = 0;
+  virtual void UploadModel (VMeshModel *Mdl) = 0;
 
   // recreate FBOs with fp/int formats (alpha is not guaranteed)
   // used for overbright
