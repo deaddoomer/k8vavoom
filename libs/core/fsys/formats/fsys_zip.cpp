@@ -47,6 +47,9 @@
 //**
 //**************************************************************************
 #include "../fsys_local.h"
+#ifdef _WIN32
+# include <time.h>
+#endif
 
 #ifdef VAVOOM_USE_LIBLZMA
 # error "using liblzma is deprecated"
