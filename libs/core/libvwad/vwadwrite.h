@@ -197,6 +197,9 @@ typedef vwadwr_bool vwadwr_pack_progress (vwadwr_dir *dir, int read, int written
 
 
 enum {
+  /* literal-only more (silly!) */
+  VADWR_COMP_SILLY = -666,
+  /* no compression */
   VADWR_COMP_DISABLE = -1,
   /* no literal-only, no lazy matching */
   VADWR_COMP_FASTEST = 0,

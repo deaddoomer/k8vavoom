@@ -1572,6 +1572,7 @@ int main (int argc, char *argv[]) {
           has_privkey = 0;
           continue;
         }
+        if (strcmp(argv[i], "--silly") == 0) { comp_level = VADWR_COMP_SILLY; continue; }
         if (strcmp(argv[i], "--fastest") == 0) { comp_level = 0; continue; }
         if (strcmp(argv[i], "--fast") == 0) { comp_level = 1; continue; }
         if (strcmp(argv[i], "--medium") == 0) { comp_level = 2; continue; }

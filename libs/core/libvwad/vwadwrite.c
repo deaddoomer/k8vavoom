@@ -2979,7 +2979,12 @@ vwadwr_result vwadwr_pack_file (vwadwr_dir *dir, vwadwr_iostream *instrm,
     const uint32_t crc32 = crc32_buf(buf, (unsigned)rd);
     int pks;
     if (level < 0) {
-      pks = -1;
+      if (level == VADWR_COMP_SILLY) {
+        pks = CompressLZFF3LitOnly(buf, rd, dest + 4, 65535);
+        if (pks < 1) pks = -1;
+      } else {
+        pks = -1;
+      }
     } else {
       pks = CompressLZFF3(dir->mman, buf, rd, dest + 4, 65535, allow_lazy);
       if (pks == -666) {
