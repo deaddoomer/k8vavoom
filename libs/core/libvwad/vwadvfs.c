@@ -2060,14 +2060,6 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   logf(DEBUG, "pkseed: 0x%08x", pkseed);
   #endif
   crypt_buffer(pkseed, 1, &mhdr, (uint32_t)sizeof(mhdr));
-  if (mhdr.version != 0) {
-    logf(ERROR, "vwad_open_archive: invalid version");
-    return NULL;
-  }
-  if (mhdr.flags != 0 && mhdr.flags != 1) {
-    logf(ERROR, "vwad_open_archive: invalid flags");
-    return NULL;
-  }
 
   mhdr.crc32 = get_u32(&mhdr.crc32);
   mhdr.version = get_u16(&mhdr.version);
@@ -2076,6 +2068,15 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
   mhdr.u_cmt_size = get_u16(&mhdr.u_cmt_size);
   mhdr.p_cmt_size = get_u16(&mhdr.p_cmt_size);
   mhdr.cmt_crc32 = get_u32(&mhdr.cmt_crc32);
+
+  if (mhdr.version != 0) {
+    logf(ERROR, "vwad_open_archive: invalid version");
+    return NULL;
+  }
+  if (mhdr.flags > 0x03) {
+    logf(ERROR, "vwad_open_archive: invalid flags");
+    return NULL;
+  }
 
   if (mhdr.u_cmt_size == 0 && mhdr.cmt_crc32 != 0) {
     logf(ERROR, "vwad_open_archive: corrupted header data");
@@ -2411,6 +2412,12 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     fi->chunkCount = get_u32(&fi->chunkCount);
     fi->nameofs = get_u32(&fi->nameofs);
     fi->gnameofs = get_u32(&fi->gnameofs);
+
+    // lengthes?
+    if (fidx != 0 && (mhdr.flags & 0x02) != 0) {
+      // convert to offsets
+      fi->nameofs += wad->files[fidx - 1].nameofs;
+    }
 
     if (fi->chunkCount == 0) {
       if (fi->upksize != 0) {

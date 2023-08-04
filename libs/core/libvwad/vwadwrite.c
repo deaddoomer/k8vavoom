@@ -17,6 +17,13 @@
 // to test the code
 //#define VWAD_COMPILE_DECOMPRESSOR
 
+#define VWAD_USE_NAME_LENGTHES
+//#define VWAD_SORT_NAME_TABLE
+
+#if defined(VWAD_USE_NAME_LENGTHES) && defined(VWAD_SORT_NAME_TABLE)
+# error "cannot both sort names and use lengthes"
+#endif
+
 #define VWADWR_FILE_ENTRY_SIZE   (4 * 10)
 #define VWADWR_CHUNK_ENTRY_SIZE  (4 + 2 + 2)
 
@@ -2058,6 +2065,12 @@ struct GroupName_t {
   GroupName *next;
 };
 
+typedef struct FileName_t FileName;
+struct FileName_t {
+  uint32_t nameofs;
+  char *name;
+};
+
 typedef struct FileInfo_t FileInfo;
 struct FileInfo_t {
   uint32_t upksize;    // unpacked file size
@@ -2068,7 +2081,8 @@ struct FileInfo_t {
   uint64_t ftime;      // file time since Epoch
   FileInfo *bknext;    // next name in bucket
   //uint32_t nameofs;    // name offset in names array
-  char *name;
+  //char *name;
+  FileName *fname;
   GroupName *group; // points to some struct in dir
   FileInfo *next;
 };
@@ -2174,7 +2188,8 @@ void vwadwr_free_dir (vwadwr_dir **dirp) {
       FileInfo *fi = dir->filesHead;
       while (fi != NULL) {
         FileInfo *fx = fi; fi = fi->next;
-        xfree(mman, fx->name);
+        xfree(mman, fx->fname->name);
+        xfree(mman, fx->fname);
         xfree(mman, fx);
       }
       GroupName *gi = dir->groupNames;
@@ -2362,7 +2377,11 @@ vwadwr_dir *vwadwr_new_dir (vwadwr_memman *mman, vwadwr_iostream *outstrm,
   // now create header fields
   put_u32(&res->mhdr.crc32, 0);
   put_u16(&res->mhdr.version, 0);
-  put_u16(&res->mhdr.flags, (res->has_privkey ? 0x00 : 0x01));
+  #ifdef VWAD_USE_NAME_LENGTHES
+    put_u16(&res->mhdr.flags, (res->has_privkey ? 0x00 : 0x01)|0x02);
+  #else
+    put_u16(&res->mhdr.flags, (res->has_privkey ? 0x00 : 0x01));
+  #endif
   // unpacked comment size
   const uint32_t u_csz = (comment ? (uint32_t)strlen(comment) : 0);
   vassert(u_csz < 65556);
@@ -2566,8 +2585,8 @@ static vwadwr_result vwadwr_append_file_info (vwadwr_dir *dir,
   const uint32_t bkt = hash % HASH_BUCKETS;
   FileInfo *fi = dir->buckets[bkt];
   while (fi != NULL) {
-    if (fi->nhash == hash && strEquCI(fi->name, fname)) {
-      logf(ERROR, "duplicate file name: \"%s\" and \"%s\"", fname, fi->name);
+    if (fi->nhash == hash && strEquCI(fi->fname->name, fname)) {
+      logf(ERROR, "duplicate file name: \"%s\" and \"%s\"", fname, fi->fname->name);
       xfree(dir->mman, fname);
       return -2;
     }
@@ -2590,6 +2609,16 @@ static vwadwr_result vwadwr_append_file_info (vwadwr_dir *dir,
       fi->group = NULL;
     }
 
+    FileName *nn = zalloc(dir->mman, sizeof(FileName));
+    if (nn == NULL) {
+      xfree(dir->mman, fname);
+      xfree(dir->mman, fi);
+      logf(ERROR, "error allocating group info");
+      return -2;
+    }
+    nn->nameofs = 0;
+    nn->name = fname;
+
     fi->upksize = upksize;
     fi->chunkCount = chunkCount;
     fi->nhash = hash;
@@ -2602,7 +2631,7 @@ static vwadwr_result vwadwr_append_file_info (vwadwr_dir *dir,
     dir->namesSize += fnlen + 1;
     // align
     if (dir->namesSize&0x03) dir->namesSize = (dir->namesSize|0x03)+1;
-    fi->name = fname;
+    fi->fname = nn;
     fi->next = NULL;
 
     if (dir->filesTail) dir->filesTail->next = fi; else dir->filesHead = fi;
@@ -2634,6 +2663,23 @@ vwadwr_bool vwadwr_is_valid_dir (const vwadwr_dir *dir) {
 }
 
 
+#ifdef VWAD_SORT_NAME_TABLE
+//==========================================================================
+//
+//  qsnamecmp
+//
+//==========================================================================
+static int qsnamecmp (const void *aa, const void *bb) {
+  const FileName *fa = *(const FileName **)aa;
+  const FileName *fb = *(const FileName **)bb;
+  int sc0 = 0; for (const char *s = fa->name; *s; ++s) if (*s == '/') ++sc0;
+  int sc1 = 0; for (const char *s = fb->name; *s; ++s) if (*s == '/') ++sc1;
+  if (sc0 != sc1) return (sc0 < sc1 ? -1 : 1);
+  return strcmp(fa->name, fb->name);
+}
+#endif
+
+
 //==========================================================================
 //
 //  vwadwr_write_directory
@@ -2661,6 +2707,28 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
     return -669;
   }
 
+  uint32_t nidx;
+  #ifdef VWAD_SORT_NAME_TABLE
+    // sort names
+    FileName **narr = zalloc(dir->mman, sizeof(FileName *)*dir->fileCount);
+    if (narr == NULL) {
+      xfree(dir->mman, narr);
+      xfree(dir->mman, fdir);
+      logf(ERROR, "cannot allocate name array");
+      return -669;
+    }
+    nidx = 0;
+    for (FileInfo *fi = dir->filesHead; fi; fi = fi->next) {
+      vassert(nidx != dir->fileCount);
+      vassert(fi->fname != NULL);
+      vassert(fi->fname->name != NULL);
+      narr[nidx] = fi->fname;
+      nidx += 1;
+    }
+    vassert(nidx == dir->fileCount);
+    qsort(narr, dir->fileCount, sizeof(narr[0]), qsnamecmp);
+  #endif
+
   // create names table
   uint32_t namesStart = 4+dir->fileCount*VWADWR_FILE_ENTRY_SIZE +
                         4+dir->chunkCount*VWADWR_CHUNK_ENTRY_SIZE;
@@ -2682,7 +2750,8 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
 
   // put files, and fill names table
   uint32_t nameOfs = 4; // first string is always empty
-  // append groups
+
+  // put group names
   for (FileInfo *fi = dir->filesHead; fi; fi = fi->next) {
     if (fi->group != NULL && fi->group->gnameofs == 0) {
       // store group name
@@ -2694,8 +2763,44 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
       vassert(nameOfs + namesStart <= dirsz);
     }
   }
-  // append names
+
+  // put file names, and assign offsets
+  #ifdef VWAD_SORT_NAME_TABLE
+    for (nidx = 0; nidx < dir->fileCount; nidx += 1) {
+      narr[nidx]->nameofs = nameOfs;
+      strcpy((char *)(fdir + namesStart + nameOfs), narr[nidx]->name);
+      nameOfs += (uint32_t)strlen(narr[nidx]->name) + 1;
+      // align
+      if (nameOfs&0x03) nameOfs = (nameOfs|0x03)+1;
+      vassert(nameOfs + namesStart <= dirsz);
+      nidx += 1;
+    }
+    xfree(dir->mman, narr);
+  #else
+    nidx = 0;
+    for (FileInfo *fi = dir->filesHead; fi; fi = fi->next) {
+      vassert(nidx != dir->fileCount);
+      vassert(fi->fname != NULL);
+      vassert(fi->fname->name != NULL);
+      // remember offset
+      fi->fname->nameofs = nameOfs;
+      strcpy((char *)(fdir + namesStart + nameOfs), fi->fname->name);
+      nameOfs += (uint32_t)strlen(fi->fname->name) + 1;
+      // align
+      if (nameOfs&0x03) nameOfs = (nameOfs|0x03)+1;
+      vassert(nameOfs + namesStart <= dirsz);
+      nidx += 1;
+    }
+    vassert(nidx == dir->fileCount);
+  #endif
+  vassert(nameOfs == dir->namesSize);
+
+  // put file info
+  #ifdef VWAD_USE_NAME_LENGTHES
+  uint32_t pnofs = 0;
+  #endif
   for (FileInfo *fi = dir->filesHead; fi; fi = fi->next) {
+    vassert(fi->fname->nameofs != 0);
     memcpy(fdir + fdirofs, &z32, 4); fdirofs += 4; // first chunk will be calculated
     memcpy(fdir + fdirofs, &z32, 4); fdirofs += 4;
     memcpy(fdir + fdirofs, &z32, 4); fdirofs += 4;
@@ -2709,15 +2814,19 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
     put_u32(fdir + fdirofs, fi->crc32); fdirofs += 4;
     put_u32(fdir + fdirofs, fi->upksize); fdirofs += 4;
     put_u32(fdir + fdirofs, fi->chunkCount); fdirofs += 4;
-    put_u32(fdir + fdirofs, nameOfs); fdirofs += 4;
-    // store name
-    strcpy((char *)(fdir + namesStart + nameOfs), fi->name);
-    nameOfs += (uint32_t)strlen(fi->name) + 1;
-    // align
-    if (nameOfs&0x03) nameOfs = (nameOfs|0x03)+1;
-    vassert(nameOfs + namesStart <= dirsz);
+    #ifdef VWAD_USE_NAME_LENGTHES
+    if (pnofs == 0) {
+      put_u32(fdir + fdirofs, fi->fname->nameofs);
+    } else {
+      vassert(pnofs < fi->fname->nameofs);
+      put_u32(fdir + fdirofs, fi->fname->nameofs - pnofs);
+    }
+    pnofs = fi->fname->nameofs;
+    #else
+    put_u32(fdir + fdirofs, fi->fname->nameofs);
+    #endif
+    fdirofs += 4;
   }
-  vassert(nameOfs == dir->namesSize);
   vassert(fdirofs = 4+dir->chunkCount*VWADWR_CHUNK_ENTRY_SIZE +
                     4+dir->fileCount*VWADWR_FILE_ENTRY_SIZE);
   vassert(fdirofs = namesStart);
@@ -2747,6 +2856,7 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
     xfree(dir->mman, pkdir1);
   }
   logf(NOTE, "dir: packed from %u to %d", dirsz, pks);
+  xfree(dir->mman, fdir);
 
 
   uint8_t dirheader[4 * 4];
