@@ -203,7 +203,7 @@ VTextureTranslation *PlayerTranslations[MAXPLAYERS+1];
 static VCvarB r_dbg_disable_all_precaching("r_dbg_disable_all_precaching", false, "Disable all texture precaching?", CVAR_PreInit|CVAR_NoShadow);
 static VCvarB r_reupload_level_textures("r_reupload_level_textures", true, "Reupload level textures to GPU when new map is loaded?", CVAR_Archive|CVAR_NoShadow);
 static VCvarB r_precache_textures("r_precache_textures", true, "Precache level textures?", CVAR_Archive|CVAR_NoShadow);
-static VCvarB r_precache_model_textures("r_precache_model_textures", true, "Precache alias model textures?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB r_precache_models("r_precache_models", true, "Precache alias model textures?", CVAR_Archive|CVAR_NoShadow);
 static VCvarB r_precache_sprite_textures("r_precache_sprite_textures", true, "Precache sprite textures?", CVAR_Archive|CVAR_NoShadow);
 static VCvarB r_precache_weapon_sprite_textures("r_precache_weapon_sprite_textures", true, "Precache weapon textures?", CVAR_Archive|CVAR_NoShadow);
 static VCvarB r_precache_ammo_sprite_textures("r_precache_ammo_sprite_textures", true, "Precache ammo textures?", CVAR_Archive|CVAR_NoShadow);
@@ -821,7 +821,7 @@ VRenderLevelShared::VRenderLevelShared (VLevel *ALevel)
   // preload graphics
   // r_precache_textures_override<0: not set; otherwise it is zero
   if (r_precache_textures_override > 0 || (r_precache_textures && r_precache_textures_override != 0) ||
-      r_precache_model_textures || r_precache_sprite_textures || r_precache_all_sprite_textures)
+      r_precache_models || r_precache_sprite_textures || r_precache_all_sprite_textures)
   {
     PrecacheLevel();
   }
@@ -2398,41 +2398,30 @@ void VRenderLevelShared::PrecacheLevel () {
   }
 
   // models
-  /*
-  if (r_precache_model_textures && AllModelTextures.length() > 0) {
-    const int oldcount = texturetype.count();
-    for (auto &&mtid : AllModelTextures) {
-      if (mtid < 1) continue;
-      if (!texturetype.has(mtid)) texturetype.put(mtid, TType_Model);
-    }
-    // informational message
-    const int mdltexcount = texturetype.count()-oldcount;
-    if (mdltexcount) GCon->Logf("found %d alias model textures", mdltexcount);
-  }
-  */
+  if (r_precache_models) {
+    VClass *actorCls = VClass::FindClass("Actor");
 
-  if (r_precache_model_textures) {
-    VClass *eexCls = VClass::FindClass("EntityEx");
-    VClass *pawnCls = VClass::FindClass("PlayerPawn");
-    vassert(eexCls);
+    const bool doLods = (r_model_lod_enabled.asBool() || r_model_lod_shadow.asInt() > 0);
 
     int totalmodels = 0;
     TMapNC<VMeshModel *, bool> mmhash;
     for (VThinker *th = Level->ThinkerHead; th; th = th->Next) {
-      if (th->IsGoingToDie()) continue;
-      if (!th->IsA(eexCls)) continue;
-      if (pawnCls && th->IsA(pawnCls)) continue;
-      VEntity *ee = (VEntity *)th; // safe due to `eexCls` check above
-      if (!HasEntityAliasModel(ee)) continue;
+      if (th->IsGoingToDie() || !th->IsA(actorCls)) continue;
+      VEntity *ee = (VEntity *)th; // safe due to `actorCls` check above
+      if (!IsAliasModelAllowedFor(ee)) continue;
       VClassModelScript *mscript = RM_FindClassModelByName(GetClassNameForModel(ee));
       if (!mscript) continue;
       VModel *mdl = mscript->Model;
       if (!mdl) continue;
       for (auto &&ScMdl : mdl->Models) {
         for (auto &&SubMdl : ScMdl.SubModels) {
-          if (!SubMdl.Model->Uploaded) {
-            if (!mmhash.put<false>(SubMdl.Model, true)) {
-              totalmodels += 1;
+          VMeshModel *mesh = SubMdl.Model;
+          if (!mesh->Uploaded) {
+            if (!mmhash.putNoReplace(mesh, true)) {
+              do {
+                if (!mesh->Uploaded) totalmodels += 1;
+                mesh = mesh->nextMip;
+              } while (doLods && mesh != nullptr);
             }
           }
         }
@@ -2445,26 +2434,19 @@ void VRenderLevelShared::PrecacheLevel () {
       R_PBarReset();
       R_PBarUpdate("Models", 0, totalmodels);
       int emodels = 0;
-      for (VThinker *th = Level->ThinkerHead; th; th = th->Next) {
-        if (th->IsGoingToDie()) continue;
-        if (!th->IsA(eexCls)) continue;
-        if (pawnCls && th->IsA(pawnCls)) continue;
-        VEntity *ee = (VEntity *)th; // safe due to `eexCls` check above
-        if (!HasEntityAliasModel(ee)) continue;
-        VClassModelScript *mscript = RM_FindClassModelByName(GetClassNameForModel(ee));
-        if (!mscript) continue;
-        VModel *mdl = mscript->Model;
-        if (!mdl) continue;
-        for (auto &&ScMdl : mdl->Models) {
-          for (auto &&SubMdl : ScMdl.SubModels) {
-            if (!SubMdl.Model->Uploaded) {
-              SubMdl.Model->LoadFromWad();
-              Drawer->UploadModel(SubMdl.Model);
-              ++emodels;
-              R_PBarUpdate("Models", emodels, totalmodels);
-            }
-          }
+      for (auto &&kv : mmhash.first()) {
+        VMeshModel *mesh = kv.key();
+        if (!mesh->Uploaded) {
+          mesh->LoadFromWad();
+          Drawer->UploadModel(mesh);
+          emodels += 1;
+          R_PBarUpdate("Models", emodels, totalmodels);
         }
+      }
+      if (totalmodels != emodels) {
+        GCon->Logf(NAME_Debug, "OOPS! model count wrong; emodels=%d; totalmodels=%d (this is harmless)",
+                   emodels, totalmodels);
+        if (totalmodels < emodels) totalmodels = emodels;
       }
       R_PBarUpdate("Models", totalmodels, totalmodels, true); // final update
     }

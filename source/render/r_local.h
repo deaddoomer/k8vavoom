@@ -537,6 +537,9 @@ extern VCvarF r_dbg_lightbulbs_zofs_static;
 extern VCvarF r_dbg_lightbulbs_zofs_dynamic;
 extern VCvarB r_dbg_force_world_update;
 
+extern VCvarB r_model_lod_enabled;
+extern VCvarI r_model_lod_shadow;
+
 extern VTextureTranslation **TranslationTables;
 extern int NumTranslationTables;
 extern VTextureTranslation IceTranslation;

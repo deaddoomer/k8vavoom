@@ -34,7 +34,7 @@ extern VCvarB vox_cache_enabled;
 
 
 static VCvarI mdl_verbose_loading("mdl_verbose_loading", "0", "Verbose alias model loading?", CVAR_NoShadow/*|CVAR_Archive*/);
-static VCvarB r_preload_alias_models("r_preload_alias_models", true, "Preload all alias models and their skins?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
+static VCvarB r_preload_alias_models("r_preload_alias_models", false, "Preload all alias models and their skins?", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
 static VCvarI dbg_dump_gzmodels("dbg_dump_gzmodels", "0", "Dump xml files for gz modeldefs (1:final;2:all)?", /*CVAR_Archive|*/CVAR_PreInit|CVAR_NoShadow);
 static VCvarB mdl_debug_md3("mdl_debug_md3", false, "Show 'automatic submodels' for MD3?", CVAR_PreInit|CVAR_NoShadow|CVAR_Archive);
 

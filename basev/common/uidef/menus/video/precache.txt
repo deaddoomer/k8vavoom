@@ -14,19 +14,19 @@ menudef PrecacheVideoOptions {
   }
 
   option bool {
+    title = "Precache 3D Models";
+    cvar = r_precache_models;
+    help =
+      "Precache 3D models (upload them to GPU) on level loading?"
+      "This has relatively low impact on most level loading times,"
+      "and the game will stutter less on entering new areas.";
+  }
+
+  option bool {
     title = "Precache Level Textures";
     cvar = r_precache_textures;
     help =
       "Precache level textures (upload them to GPU) on level loading?"
-      "This has relatively low impact on most level loading times, and"
-      "the game will stutter less on entering new areas.";
-  }
-
-  option bool {
-    title = "Precache Alias Model Textures";
-    cvar = r_precache_model_textures;
-    help =
-      "Precache alias model textures (upload them to GPU) on level loading?"
       "This has relatively low impact on most level loading times, and"
       "the game will stutter less on entering new areas.";
   }
@@ -39,7 +39,7 @@ menudef PrecacheVideoOptions {
       "This scans spawned level things, and precaches most of their sprites.",
       "Usually this has a medium impact on GPU and loading times.",
       "Turning this 'ON' may help if the game is 'stuttering' upon seeing new monster.",
-      "\cJWARNING: DO NOT turn this on for huge gameplay mod with a lot of new monsters/weapons!.";
+      "\cJWARNING: DO NOT turn this on for huge gameplay mod with a lot of new monsters/weapons!";
   }
 
   option bool /*[k8vavoom_developer_version > 0]*/ {
@@ -96,7 +96,7 @@ menudef PrecacheVideoOptions {
   }
 
   option bool {
-    title = "Reupload Textures On Level Change";
+    title = "Reupload Textures On Map Change";
     cvar = r_reupload_textures;
     help =
       "If this option is turned on, the engine will reupload all cached textures"
@@ -104,8 +104,11 @@ menudef PrecacheVideoOptions {
       "precaching, to release GPU memory.";
   }
 
+
+  header "Texture Releasing";
+
   option enum {
-    title = "RAM Texture Image Releasing";
+    title = "RAM Texture";
     cvar = gl_release_ram_textures_mode;
     list {
       "Never",
@@ -121,7 +124,7 @@ menudef PrecacheVideoOptions {
   }
 
   option enum {
-    title = "RAM Sprite Texture Image Releasing";
+    title = "RAM Sprite Texture";
     cvar = gl_release_ram_textures_mode_sprite;
     list {
       "Never",

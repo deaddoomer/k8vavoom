@@ -47,12 +47,13 @@ static VCvarB r_model_autorotating("r_model_autorotating", true, "Allow model au
 static VCvarB r_model_autobobbing("r_model_autobobbing", true, "Allow model autobobbing?", CVAR_Archive);
 static VCvarB r_model_ignore_missing_textures("r_model_ignore_missing_textures", false, "Do not render models with missing textures (if `false`, renders with checkerboards)?", CVAR_Archive|CVAR_NoShadow);
 
-static VCvarB r_model_lod_enabled("r_model_lod_enabled", true, "Enable voxel model LOD?", CVAR_Archive|CVAR_NoShadow);
+// doesn't depend on model LOD
+VCvarI r_model_lod_shadow("r_model_lod_shadow", "1", "Always try to use next LOD for shadowmaps.", CVAR_Archive|CVAR_NoShadow);
+
+VCvarB r_model_lod_enabled("r_model_lod_enabled", true, "Enable voxel model LOD?", CVAR_Archive|CVAR_NoShadow);
 static VCvarF r_model_lod_mindist("r_model_lod_mindist", "666", "Minimal distance for model LOD.", CVAR_Archive|CVAR_NoShadow);
 static VCvarF r_model_lod_adddist("r_model_lod_adddist", "580", "Start with this decrement.", CVAR_Archive|CVAR_NoShadow);
 static VCvarF r_model_lod_lvlmult("r_model_lod_lvlmult", "1.7", "Multiple decrement by this on each step.", CVAR_Archive|CVAR_NoShadow);
-
-static VCvarI r_model_lod_shadow("r_model_lod_shadow", "1", "Always try to use next LOD for shadowmaps.", CVAR_Archive|CVAR_NoShadow);
 
 static VCvarI dbg_model_force_lod("dbg_model_force_lod", "-1", "Force model LOD (debug).", CVAR_NoShadow);
 
