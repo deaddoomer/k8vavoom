@@ -1548,8 +1548,7 @@ static int CompressLZFF3 (vwadwr_memman *mman, const void *source, int srclen,
           int doagain;
           do {
             uint32_t bestofs1, bestlen1;
-            spos += 1;
-            FindMatch(bestofs1, bestlen1);
+            spos += 1; FindMatch(bestofs1, bestlen1);
             if (bestlen1 >= bestlen + 2) {
               if (litcount == 0) litpos = spos - 1;
               ++litcount;
@@ -2054,7 +2053,7 @@ struct ChunkInfo_t {
 
 typedef struct GroupName_t GroupName;
 struct GroupName_t {
-  uint32_t nameofs;
+  uint32_t gnameofs; // !0: this group already registered
   char *name;
   GroupName *next;
 };
@@ -2068,9 +2067,9 @@ struct FileInfo_t {
   uint32_t crc32;      // full crc32
   uint64_t ftime;      // file time since Epoch
   FileInfo *bknext;    // next name in bucket
-  uint32_t nameofs;    // name offset in names array
+  //uint32_t nameofs;    // name offset in names array
   char *name;
-  const GroupName *group; // points to some struct in dir
+  GroupName *group; // points to some struct in dir
   FileInfo *next;
 };
 
@@ -2492,9 +2491,9 @@ vwadwr_bool vwadwr_is_valid_group_name (const char *str) {
 //  vwadwr_register_group
 //
 //==========================================================================
-static const GroupName *vwadwr_register_group (vwadwr_dir *dir, const char *grpname, int *err) {
+static GroupName *vwadwr_register_group (vwadwr_dir *dir, const char *grpname, int *err) {
   *err = 0;
-  if (grpname == NULL) return NULL;
+  vassert(grpname != NULL && grpname[0]);
   GroupName *gi = dir->groupNames;
   while (gi != NULL && !strEquCI(grpname, gi->name)) gi = gi->next;
   if (gi == NULL) {
@@ -2504,7 +2503,7 @@ static const GroupName *vwadwr_register_group (vwadwr_dir *dir, const char *grpn
     gi->name = zalloc(dir->mman, slen + 1);
     if (gi->name == NULL) { xfree(dir->mman, gi); *err = -1; return NULL; }
     strcpy(gi->name, grpname);
-    gi->nameofs = dir->namesSize;
+    gi->gnameofs = 0; // not registered yet
     dir->namesSize += slen + 1;
     // align
     if (dir->namesSize&0x03) dir->namesSize = (dir->namesSize|0x03)+1;
@@ -2599,11 +2598,12 @@ static vwadwr_result vwadwr_append_file_info (vwadwr_dir *dir,
     fi->crc32 = crc32;
     dir->buckets[bkt] = fi;
 
-    fi->nameofs = dir->namesSize;
+    //fi->nameofs = dir->namesSize;
     dir->namesSize += fnlen + 1;
     // align
     if (dir->namesSize&0x03) dir->namesSize = (dir->namesSize|0x03)+1;
     fi->name = fname;
+    fi->next = NULL;
 
     if (dir->filesTail) dir->filesTail->next = fi; else dir->filesHead = fi;
     dir->filesTail = fi;
@@ -2682,25 +2682,29 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
 
   // put files, and fill names table
   uint32_t nameOfs = 4; // first string is always empty
+  // append groups
+  for (FileInfo *fi = dir->filesHead; fi; fi = fi->next) {
+    if (fi->group != NULL && fi->group->gnameofs == 0) {
+      // store group name
+      fi->group->gnameofs = nameOfs;
+      strcpy((char *)(fdir + namesStart + nameOfs), fi->group->name);
+      nameOfs += (uint32_t)strlen(fi->group->name) + 1;
+      // align
+      if (nameOfs&0x03) nameOfs = (nameOfs|0x03)+1;
+      vassert(nameOfs + namesStart <= dirsz);
+    }
+  }
+  // append names
   for (FileInfo *fi = dir->filesHead; fi; fi = fi->next) {
     memcpy(fdir + fdirofs, &z32, 4); fdirofs += 4; // first chunk will be calculated
     memcpy(fdir + fdirofs, &z32, 4); fdirofs += 4;
     memcpy(fdir + fdirofs, &z32, 4); fdirofs += 4;
     if (fi->group != NULL) {
-      // append name?
-      if (fi->group->nameofs == nameOfs) {
-        // store name
-        strcpy((char *)(fdir + namesStart + nameOfs), fi->group->name);
-        nameOfs += (uint32_t)strlen(fi->group->name) + 1;
-        // align
-        if (nameOfs&0x03) nameOfs = (nameOfs|0x03)+1;
-        vassert(nameOfs + namesStart <= dirsz);
-      }
-      put_u32(fdir + fdirofs, fi->group->nameofs); fdirofs += 4; // gnameofs
+      vassert(fi->group->gnameofs != 0);
+      put_u32(fdir + fdirofs, fi->group->gnameofs); fdirofs += 4; // gnameofs
     } else {
       put_u32(fdir + fdirofs, 0); fdirofs += 4; // gnameofs
     }
-    vassert(fi->nameofs == nameOfs);
     put_u64(fdir + fdirofs, fi->ftime); fdirofs += 8;
     put_u32(fdir + fdirofs, fi->crc32); fdirofs += 4;
     put_u32(fdir + fdirofs, fi->upksize); fdirofs += 4;
