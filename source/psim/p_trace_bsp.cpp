@@ -267,22 +267,42 @@ static bool BSPCrossSubsector (TBSPTrace &trace, int num, float tmin, float tmax
 //
 //==========================================================================
 static bool CrossBSPNode (TBSPTrace &trace, int bspnum, float tmin, float tmax) {
+  while (BSPIDX_IS_NON_LEAF(bspnum)) {
+    const node_t *node = &trace.Level->Nodes[bspnum];
+    //if (!node.containsBox2D(tr.swbbmin, tr.swbbmax)) return;
+
+    // decide which side the start point is on
+    int side = node->PointOnSide2(trace.Start);
+
+    // cross the starting side
+    if (!CrossBSPNode(trace, node->children[side&1], tmin, tmax)) return false;
+
+    if (side != 2 && side == node->PointOnSide2(trace.End)) return true;
+
+    // cross the ending side
+    bspnum = node->children[(side&1)^1];
+  }
+  return BSPCrossSubsector(trace, BSPIDX_LEAF_SUBSECTOR(bspnum), tmin, tmax);
+
+#if 0
   if (BSPIDX_IS_NON_LEAF(bspnum)) {
     const node_t *node = &trace.Level->Nodes[bspnum];
     // decide which side the start point is on
+    #if 0
     const float denom = node->normal.dot(trace.Delta);
     const float dist = node->dist-node->normal.dot(trace.Start);
     unsigned nearIndex = (unsigned)(dist > 0.0f);
     // if denom is zero, ray runs parallel to the plane
     // in this case, just fall through to visit the near side (the one p lies on)
     if (denom != 0.0f) {
-      const float t = dist/denom;
+      const float t = dist/denom; // intersection time
       if (t > 0.0f && t <= tmax) {
         if (t >= tmin) {
           // visit near side first
-          if (!CrossBSPNode(trace, node->children[nearIndex], tmin, t)) return false;
-          // then visit the far side
-          return CrossBSPNode(trace, node->children[1u^nearIndex], t, tmax);
+          return
+            !CrossBSPNode(trace, node->children[nearIndex], tmin, t)) ||
+            // then visit the far side
+            CrossBSPNode(trace, node->children[1u^nearIndex], t, tmax);
         } else {
           // 0 <= t < tmin, visit far side
           //nearIndex ^= 1u;
@@ -291,6 +311,20 @@ static bool CrossBSPNode (TBSPTrace &trace, int bspnum, float tmin, float tmax) 
       }
     }
     return CrossBSPNode(trace, node->children[nearIndex], tmin, tmax);
+
+    #else
+
+    /*
+    const TVec dif = p1-p0;
+    const float dv = normal.dot(dif);
+    const float t = (fabsf(dv) > eps ? (dist-normal.dot(p0))/dv : 0.0f);
+    return p0+(dif*t);
+    */
+    unsigned side = (unsigned)(trace.Start.dot(node->normal)-node->dist < 0.0f);
+    if (!CrossBSPNode(trace, node->children[side], tmin, tmax)) return false;
+    // then visit the far side
+    return CrossBSPNode(trace, node->children[1u^side], tmin, tmax);
+    #endif
     /*
     // if bit 1 is set (i.e. `(side&2) != 0`), the point lies on the plane
     const int side = node->PointOnSide2(trace.Start);
@@ -310,6 +344,7 @@ static bool CrossBSPNode (TBSPTrace &trace, int bspnum, float tmin, float tmax) 
   } else {
     return BSPCrossSubsector(trace, BSPIDX_LEAF_SUBSECTOR(bspnum), tmin, tmax);
   }
+#endif
 }
 
 
@@ -356,7 +391,7 @@ static void FillLineTrace (linetrace_t &trace, const TBSPTrace &btr) noexcept {
 //  VLevel::TraceLine
 //
 //  returns `true` if the line is not blocked
-//  returns `fales` if the line was blocked, and sets hit normal/point
+//  returns `false` if the line was blocked, and sets hit normal/point
 //
 //==========================================================================
 bool VLevel::TraceLine (linetrace_t &trace, const TVec &Start, const TVec &End, unsigned PlaneNoBlockFlags, unsigned moreLineBlockFlags) {
@@ -395,7 +430,7 @@ bool VLevel::TraceLine (linetrace_t &trace, const TVec &Start, const TVec &End, 
       return true;
     }
     const bool pores = CheckStartingPObj(btr);
-    const bool plres = CheckPlanes(btr, btr.EndSubsector->sector, 0.0f, btr.HitTime);
+    const bool plres = CheckPlanes(btr, btr.EndSubsector->sector, 0.0f, 1.0f);
     FillLineTrace(trace, btr);
     return (pores && plres);
   } else {
@@ -404,13 +439,13 @@ bool VLevel::TraceLine (linetrace_t &trace, const TVec &Start, const TVec &End, 
     // the head node is the last node output
     if (NumSubsectors > 1) {
       const bool pores = CheckStartingPObj(btr);
-      const bool plres = CrossBSPNode(btr, NumNodes-1, 0.0f, btr.HitTime);
+      const bool plres = CrossBSPNode(btr, NumNodes-1, 0.0f, 1.0f);
       FillLineTrace(trace, btr);
       return (pores && plres);
     } else if (NumSubsectors == 1) {
       btr.EndSubsector = &Subsectors[0];
       const bool pores = CheckStartingPObj(btr);
-      const bool plres = BSPCrossSubsector(btr, 0, 0.0f, btr.HitTime);
+      const bool plres = BSPCrossSubsector(btr, 0, 0.0f, 1.0f);
       FillLineTrace(trace, btr);
       return (pores && plres);
     }
