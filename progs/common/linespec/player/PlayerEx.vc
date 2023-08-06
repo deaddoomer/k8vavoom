@@ -28,6 +28,7 @@
 //#define CALCLIGHT_TEST
 
 //#define DEBUG_3DPOBJ_JUMPS
+//#define DEBUG_WATER_JUMPS
 
 
 class PlayerEx : BasePlayer abstract;
@@ -130,6 +131,8 @@ transient bool bButton5Down; // `true` if button was down last tic
 transient bool bButton6Down; // `true` if button was down last tic
 transient bool bButton7Down; // `true` if button was down last tic
 transient bool bButton8Down; // `true` if button was down last tic
+// for water jumps
+transient bool bWaterThrusted;
 
 int PoisonCount; // screen flash for poison damage
 float LastPoisonTime;
@@ -1027,64 +1030,150 @@ void MovePlayer (float deltaTime) {
 
 //==========================================================================
 //
+//  CheckCanMoveTo
+//
+//  check for a jump-out-of-water
+//
+//==========================================================================
+final bool CheckCanMoveTo (TVec org) {
+  EntityEx mo = EntityEx(MO);
+  Entity::tmtrace_t tmt;
+  if (!mo.CheckRelPosition(out tmt, org, noPickups:true, ignoreMonsters:true, ignorePlayers:true)) {
+    return false;
+  } else {
+    return (org.z >= tmt.FloorZ && org.z+mo.Height < tmt.CeilingZ);
+  }
+}
+
+
+//==========================================================================
+//
+//  CheckWaterJumpThrust
+//
+//==========================================================================
+void CheckWaterJumpThrust () {
+  EntityEx mo = EntityEx(MO);
+  TVec vforward, start;
+
+  // thrust
+  #ifdef DEBUG_WATER_JUMPS
+  printdebug("%C: CWJT: vel=%s : %s : rt=%s; wlev=%s; wtr=%B", self, mo.Velocity, mo.Velocity.xy.length,
+             mo.ReactionTime, mo.WaterLevel, bWaterThrusted);
+  #endif
+  if (!bWaterThrusted && mo.WaterLevel < 2) {
+    vforward = (AngleYawVector(mo.Angles.yaw)*ForwardMove+YawVectorRight(mo.Angles.yaw)*SideMove).Normalise;
+    start = mo.Origin;
+    if (CheckCanMoveTo(start)) {
+      bWaterThrusted = true;
+      mo.bWaterJump = false;
+      mo.ReactionTime = 0.0;
+      float hlen = mo.Velocity.xy.length;
+      if (hlen < 50) {
+        mo.Velocity += vforward*(60-hlen);
+        #ifdef DEBUG_WATER_JUMPS
+        printdebug("%C: TH0: vel=%s : %s", self, mo.Velocity, mo.Velocity.xy.length);
+        #endif
+      }
+      #if 0
+      else if (hlen > 70*7) {
+        mo.Velocity -= vforward*(hlen-60*6);
+        #ifdef DEBUG_WATER_JUMPS
+        printdebug("%C: TH1: vel=%s : %s", self, mo.Velocity, mo.Velocity.xy.length);
+        #endif
+      }
+      #endif
+    }
+    #ifdef DEBUG_WATER_JUMPS
+    else {
+      printdebug("%C: NO-TH: vel=%s : %s", self, mo.Velocity, mo.Velocity.xy.length);
+    }
+    #endif
+  }
+}
+
+
+//==========================================================================
+//
 //  CheckWaterJump
 //
 //  check for a jump-out-of-water
 //
 //==========================================================================
 void CheckWaterJump (optional bool asStep) {
-  if (EntityEx(MO).bWaterJump && EntityEx(MO).ReactionTime > 0) return;
+  EntityEx mo = EntityEx(MO);
+  TVec vforward, start;
 
-  //TVec vforward, vright;
-  //AngleVectors(MO.Angles, out vforward, out vright, out vup);
-  //TVec fwdvel = vforward.xy;
-  //vforward = (vforward*ForwardMove+vright*SideMove).Normalise;
-  //vforward.z = 0.0;
-  //vforward = Normalise(vforward);
+  if (mo.bWaterJump && mo.ReactionTime > 0) {
+    CheckWaterJumpThrust();
+    return;
+  }
 
-  TVec vforward = (AngleYawVector(MO.Angles.yaw)*ForwardMove+YawVectorRight(MO.Angles.yaw)*SideMove).Normalise;
+  // do not jump out if fully submerged
+  if (MO.WaterLevel > 2) return;
 
-  TVec start = MO.Origin;
-  start.z += (!asStep ? MO.Height*0.5+8.0 : MO.MaxStepHeight);
-  TVec end = start+vforward*24.0;
+  // not moving?
+  if (ForwardMove < 100 && SideMove < 100) return;
 
-  VLevel::linetrace_t tm;
-  if (!Level.XLevel.BSPTraceLineEx(start, end, out trace:tm, noBlockFlags:SPF_NOBLOCKING|SPF_PLAYER|SPF_HITINFO)) {
-    // solid at waist
-    start.z = MO.Origin.z+MO.Height;
-    end = start+vforward*24.0;
-    //MoveDir = HitNormal*(-50.0);
-    if (Level.XLevel.BSPTraceLine(start, end, noBlockFlags:SPF_NOBLOCKING|SPF_PLAYER)) {
-      // open at eye level
-      //printdebug("%C: vel=%s : %s -- %s", self, MO.Velocity, MO.Velocity.xy.length, vforward);
-      EntityEx(MO).bWaterJump = true;
-      MO.Velocity.z = 350.0;
-      // add some horizontal velocity
-      float hlen = MO.Velocity.xy.length;
-      if (hlen < 40) {
-        MO.Velocity += vforward*(60-hlen);
-        //printdebug("%C: vel=%s : %s", self, MO.Velocity, MO.Velocity.xy.length);
-      } else if (hlen > 70) {
-        MO.Velocity -= vforward*(hlen-60);
-        //printdebug("%C: vel=%s : %s", self, MO.Velocity, MO.Velocity.xy.length);
-      }
-      // try to move slightly away from hitline, to make a better jump
-      if (tm.HitLine) {
-        //printdebug("%C: water line=%s (%s); dist=%s", self, tm.HitLine-&Level.XLevel.Lines[0], tm.HitLine.normal, PlanePointDistance(ref *tm.HitLine, MO.Origin));
-        float wdist = PlanePointDistance(ref *tm.HitLine, MO.Origin);
-        if (wdist > 0 && wdist < 24) {
-          float mdist = 24-wdist;
-          if (MO.Radius-4 >= mdist) {
-            //printdebug("%C:000: water line=%s (%s); wdist=%s; mdist=%s; org=%s", self, tm.HitLine-&Level.XLevel.Lines[0], tm.HitLine.normal, wdist, mdist, MO.Origin);
-            MO.TryMove(MO.Origin+tm.HitLine.normal*mdist, AllowDropOff:false);
-            //printdebug("%C:001: water line=%s (%s); wdist=%s; mdist=%s; org=%s; newdist=%s", self, tm.HitLine-&Level.XLevel.Lines[0], tm.HitLine.normal, wdist, mdist, MO.Origin, PlanePointDistance(ref *tm.HitLine, MO.Origin));
-          }
-        }
-      }
-      //MoveDir = fwdvel*ForwardMove;
-      EntityEx(MO).ReactionTime = 2.0; // safety net
-      MO.PlaySound('*jump', CHAN_VOICE); //FIXME
+  if (mo.Angles.pitch >= 0) return; // we're looking down
+  //printdebug("p:%s", mo.Angles.pitch);
+  //printdebug("wl:%s", mo.WaterLevel);
+
+  vforward = (AngleYawVector(mo.Angles.yaw)*ForwardMove+YawVectorRight(mo.Angles.yaw)*SideMove).Normalise;
+  start = mo.Origin + vforward*2;
+
+  // if we cannot move forward...
+  if (!CheckCanMoveTo(start)) {
+    // ...but can do it when we're higher...
+    start.z += (asStep ? mo.MaxStepHeight : mo.Height);
+    if (CheckCanMoveTo(start)) {
+      // ...then this is water jump
+      #ifdef DEBUG_WATER_JUMPS
+      printdebug("%C: EYEOPEN: vel=%s : %s -- %s", self, mo.Velocity, mo.Velocity.xy.length, vforward);
+      #endif
+      bWaterThrusted = false;
+      mo.bWaterJump = true;
+      mo.Velocity.z = 350.0;
+      mo.ReactionTime = 2.0; // safety net
+      mo.PlaySound('*jump', CHAN_VOICE); //FIXME
+    } else {
+      #ifdef DEBUG_WATER_JUMPS
+      printdebug("%C: EYECLOSE: vel=%s : %s -- %s", self, mo.Velocity, mo.Velocity.xy.length, vforward);
+      #endif
     }
+  } else {
+    #ifdef DEBUG_WATER_JUMPS
+    printdebug("%C: CANMOVE: vel=%s : %s -- %s", self, mo.Velocity, mo.Velocity.xy.length, vforward);
+    #endif
+  }
+}
+
+
+//==========================================================================
+//
+//  WaterJump
+//
+//==========================================================================
+void WaterJump () {
+  EntityEx mo = EntityEx(MO);
+
+  /*
+  #ifdef DEBUG_WATER_JUMPS
+  printdebug("%C: WJ: vel=%s : %s : rt=%s; wlev=%s; wjump=%B; wt=%B", self, mo.Velocity, mo.Velocity.xy.length,
+             mo.ReactionTime, mo.WaterLevel, mo.bWaterJump, bWaterThrusted);
+  #endif
+  */
+
+  if (mo.bWaterJump) {
+    if (!mo.ReactionTime) {
+      mo.bWaterJump = false;
+      bWaterThrusted = false;
+    } else if (mo.WaterLevel < 2) {
+      //mo.bWaterJump = false;
+      //mo.ReactionTime = 0.0;
+      if (!bWaterThrusted) CheckWaterJumpThrust();
+    }
+  } else {
+    bWaterThrusted = false;
   }
 }
 
@@ -1197,33 +1286,6 @@ void WaterMove (float deltaTime) {
     EntityEx(MO).bOnMobj = false;
     //JumpTime = 0.5;
   }
-}
-
-
-//==========================================================================
-//
-//  WaterJump
-//
-//==========================================================================
-void WaterJump () {
-  if (!EntityEx(MO).ReactionTime || !MO.WaterLevel) {
-    EntityEx(MO).bWaterJump = false;
-    EntityEx(MO).ReactionTime = 0.0;
-  }
-  /*
-  TVec xdir = MoveDir;
-  /+k8 added
-  if (!xdir) return;
-  printdebug("WATERJUMP: 000: vel=%s; dir=%s; xdir=%s; vl2d=%s; xdl2d=%s (%s)", MO.Velocity, MoveDir, xdir, MO.Velocity.length2D, xdir.length2D, xdir.length2D/8);
-  if (MO.Velocity.length2D >= xdir.length2D/8) {
-    MoveDir = vector(0, 0, 0);
-    return;
-  }
-  printdebug("WATERJUMP: 001: vel=%s; dir=%s; xdir=%s", MO.Velocity, MoveDir, xdir);
-  +/
-  MO.Velocity.x = xdir.x;
-  MO.Velocity.y = xdir.y;
-  */
 }
 
 
@@ -4909,8 +4971,7 @@ void SimulatedPlayerTick (float deltaTime) {
   // move around
   // ReactionTime is used to prevent movement for a bit after a teleport (or water jump)
   if (Actor(MO).ReactionTime) {
-    Actor(MO).ReactionTime -= deltaTime;
-    if (Actor(MO).ReactionTime <= 0.0) Actor(MO).ReactionTime = 0.0;
+    Actor(MO).ReactionTime = fmax(0.0, Actor(MO).ReactionTime-deltaTime);
     if (Actor(MO).bWaterJump) WaterJump();
   } else {
     if (MO.WaterLevel > 1) {
@@ -5151,8 +5212,7 @@ override void PlayerTick (float deltaTime) {
   // move around
   // ReactionTime is used to prevent movement for a bit after a teleport (or water jump)
   if (Actor(MO).ReactionTime) {
-    Actor(MO).ReactionTime -= deltaTime;
-    if (Actor(MO).ReactionTime <= 0.0) Actor(MO).ReactionTime = 0.0;
+    Actor(MO).ReactionTime = fmax(0.0, Actor(MO).ReactionTime-deltaTime);
     if (Actor(MO).bWaterJump) WaterJump();
   } else {
     if (MO.WaterLevel > 1) {
