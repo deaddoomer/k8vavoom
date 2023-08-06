@@ -250,9 +250,9 @@ public:
     const TVec dif = p1-p0;
     const float dv = normal.dot(dif);
     if (fabsf(dv) > eps) {
-      const float t = (dist-normal.dot(p0))/normal.dot(dif);
-      if (t < 0.0f) { res = p0; return false; }
-      if (t > 1.0f) { res = p1; return false; }
+      const float t = (dist-normal.dot(p0))/dv;
+      if (t <= 0.0f) { res = p0; return (t == 0.0f); }
+      if (t >= 1.0f) { res = p1; return (t == 1.0f); }
       res = p0+(dif*t);
       return true;
     } else {
