@@ -77,12 +77,20 @@ menudef GameplayOptions {
 
   option enum {
     title = "Slide Bodies";
-    cvar = g_slide_bodies;
+    cvar = gm_slide_bodies;
     list { "No", "Yes" };
     help =
       "Slide bodies that may hang on ledges?",
       "The algorithm is very experimental, and some bodies may",
       "slide in a fancy ways. But this should not affect gameplay.";
+  }
+
+  option bool {
+    title = "Bodies Wall Slide";
+    cvar = gm_corpse_slidemove;
+    help =
+      "Should bodies use a sliding movement?",
+      "This helps with bodies sliding off the ledges.";
   }
 
 /*

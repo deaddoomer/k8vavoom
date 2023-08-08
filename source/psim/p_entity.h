@@ -401,6 +401,7 @@ class VEntity : public VThinker {
   float NetLastOrgUpdateTime;
 
   float CorpseSlideCheckDelay;
+  vint32 CorpseSlideFailCount;
 
 protected:
   //VEntity () : SoundClass(E_NoInit), SoundGender(E_NoInit), DecalName(E_NoInit) {}

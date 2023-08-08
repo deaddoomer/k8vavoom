@@ -58,7 +58,8 @@ static VCvarB vm_optimise_statics("vm_optimise_statics", true, "Try to detect so
 
 extern VCvarB dbg_vm_show_tick_stats;
 
-VCvarI g_slide_bodies("g_slide_bodies", "1", "Slide bodies hanging from ledges and such? (0:no;1:yes)", CVAR_Archive);
+static VCvarI gm_slide_bodies("gm_slide_bodies", "1", "Slide bodies hanging from ledges and such? (0:no;1:yes)", CVAR_Archive);
+static VCvarB gm_corpse_slidemove("gm_corpse_slidemove", true, "Should corpses use sliding movement?", CVAR_Archive);
 
 // k8gore cvars
 VCvarB k8gore_enabled("k8GoreOpt_Enabled", true, "Enable extra blood and gore?", CVAR_Archive);
@@ -678,13 +679,12 @@ void VEntity::Tick (float deltaTime) {
   PrevTickOrigin = Origin;
 
   //HACK: slide dead bodies away if their center of mass is out of the good sector
-  if (g_slide_bodies.asInt() > 0 &&
+  if (gm_slide_bodies.asInt() > 0 &&
       (EntityFlags&(EF_Corpse|EF_Missile|EF_Invisible|EF_ActLikeBridge)) == EF_Corpse &&
       (FlagsEx&EFEX_Monster))
   {
     CorpseSlideCheckDelay -= deltaTime;
     if (CorpseSlideCheckDelay <= 0.0f) {
-      CorpseSlideCheckDelay = 1.2f+FRandom();
       /*
       if ((FlagsEx&EFEX_SomeSectorMoved) != 0) {
         FlagsEx &= ~EFEX_SomeSectorMoved;
@@ -743,8 +743,21 @@ void VEntity::Tick (float deltaTime) {
             #if 0
             GCon->Logf("CORPSE SLIDE: %s", GetClass()->GetName());
             #endif
+            CorpseSlideFailCount = 0;
+            CorpseSlideCheckDelay = 0.4f+FRandom()*0.2f;
+          }
+        } else {
+          CorpseSlideFailCount += 1;
+          if (CorpseSlideFailCount > 15) {
+            CorpseSlideFailCount = 16;
+            CorpseSlideCheckDelay = 3.2f+FRandom()*2.0f;
+          } else {
+            CorpseSlideCheckDelay = 0.2f+FRandom()*0.2f;
           }
         }
+      } else {
+        // still moving
+        CorpseSlideCheckDelay = 0.2f+FRandom()*0.2f;
       }
     }
   }

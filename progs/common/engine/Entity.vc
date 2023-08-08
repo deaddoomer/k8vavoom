@@ -462,6 +462,7 @@ transient float DataGameTime;
 transient float NetLastOrgUpdateTime;
 
 transient float CorpseSlideCheckDelay;
+transient float CorpseSlideFailCount;
 
 
 replication {
