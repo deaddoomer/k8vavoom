@@ -58,6 +58,8 @@ static VCvarB vm_optimise_statics("vm_optimise_statics", true, "Try to detect so
 
 extern VCvarB dbg_vm_show_tick_stats;
 
+VCvarI g_slide_bodies("g_slide_bodies", "1", "Slide bodies hanging from ledges and such? (0:no;1:yes)", CVAR_Archive);
+
 // k8gore cvars
 VCvarB k8gore_enabled("k8GoreOpt_Enabled", true, "Enable extra blood and gore?", CVAR_Archive);
 VCvarI k8gore_enabled_override("k8GoreOpt_Enabled_Override", "0", "-1: disable; 0: default; 1: enable.", CVAR_Hidden|CVAR_NoShadow);
@@ -676,7 +678,8 @@ void VEntity::Tick (float deltaTime) {
   PrevTickOrigin = Origin;
 
   //HACK: slide dead bodies away if their center of mass is out of the good sector
-  if ((EntityFlags&(EF_Corpse|EF_Missile|EF_Invisible|EF_ActLikeBridge)) == EF_Corpse &&
+  if (g_slide_bodies.asInt() > 0 &&
+      (EntityFlags&(EF_Corpse|EF_Missile|EF_Invisible|EF_ActLikeBridge)) == EF_Corpse &&
       (FlagsEx&EFEX_Monster))
   {
     CorpseSlideCheckDelay -= deltaTime;
