@@ -1131,7 +1131,7 @@ bool IsNormalLikeDamage (name DmgType) {
 //  isZanCloudHack
 //
 //  hack for Zan Toxic Cloud
-//  (so it shouldn't block revenant missiles, for examle)
+//  (so it wouldn't block revenant missiles, for examle)
 //  set +GHOST +NOTARGET (but *never* +PROJECTILE) and
 //  `DamageFactor "Normal", -667.0` to disable projectile blocking
 //
