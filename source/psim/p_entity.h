@@ -296,6 +296,8 @@ class VEntity : public VThinker {
     // is this a "gore mod" entity (blood, etc)?
     // WARNING! this is not saved, so it should be restored in `SerialiseOther()`
     EFEX_GoreModEntity     = 1u<<18u,
+    // forced sliding
+    EFEX_CorpseSliding     = 1u<<19u,
   };
   vuint32 FlagsEx;
 
@@ -397,6 +399,8 @@ class VEntity : public VThinker {
 
   // used in network code; set to `Ent->XLevel->Time` when we got a new origin
   float NetLastOrgUpdateTime;
+
+  float CorpseSlideCheckDelay;
 
 protected:
   //VEntity () : SoundClass(E_NoInit), SoundGender(E_NoInit), DecalName(E_NoInit) {}
@@ -502,8 +506,17 @@ public:
     #endif
   }
 
+  bool IsValidPlayerPawn () const noexcept;
+
   // corpses could have smaller radius
-  float GetMoveRadius () const noexcept;
+  // disabled, see "p_entity_misc.cpp" for the old code
+  inline float GetMoveRadius () const noexcept {
+    if ((EntityFlags&EF_IsPlayer) != 0 && Radius > 0.0f && IsValidPlayerPawn()) {
+      return Radius+0.2f; // so the player won't fit into the exact-sized passages
+    } else {
+      return max2(0.0f, Radius);
+    }
+  }
 
   inline VEntity *GetTopOwner () {
     VEntity *Ret = this;

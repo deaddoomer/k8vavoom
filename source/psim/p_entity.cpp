@@ -675,6 +675,78 @@ void VEntity::Tick (float deltaTime) {
 
   PrevTickOrigin = Origin;
 
+  //HACK: slide dead bodies away if their center of mass is out of the good sector
+  if ((EntityFlags&(EF_Corpse|EF_Missile|EF_Invisible|EF_ActLikeBridge)) == EF_Corpse &&
+      (FlagsEx&EFEX_Monster))
+  {
+    CorpseSlideCheckDelay -= deltaTime;
+    if (CorpseSlideCheckDelay <= 0.0f) {
+      CorpseSlideCheckDelay = 1.2f+FRandom();
+      /*
+      if ((FlagsEx&EFEX_SomeSectorMoved) != 0) {
+        FlagsEx &= ~EFEX_SomeSectorMoved;
+        CorpseSlideCheckDelay = 0.0f;
+      }
+      */
+      if (Velocity.x == 0.0f && Velocity.y == 0.0f && Velocity.z >= 0.0f) {
+        tmtrace_t tm;
+        CheckRelPositionPoint(tm, Origin);
+        FlagsEx &= ~EFEX_CorpseSliding;
+        if (tm.FloorZ < Origin.z) {
+          #if 0
+          GCon->Logf("CORPSE CHECK: %s: fz=%g; oz=%g", GetClass()->GetName(), tm.FloorZ, Origin.z);
+          #endif
+          float mybbox[4];
+          Create2DBox(mybbox);
+          DeclareMakeBlockMapCoordsBBox2D(mybbox, xl, yl, xh, yh);
+          XLevel->IncrementValidCount(); // used to make sure we only process a line once
+          TVec snorm = TVec(0.0f, 0.0f, 0.0f);
+          for (int bx = xl; bx <= xh; ++bx) {
+            for (int by = yl; by <= yh; ++by) {
+              for (auto &&it : XLevel->allBlockLines(bx, by)) {
+                line_t *ld = it.line();
+                if ((ld->flags&ML_TWOSIDED) == 0) continue;
+                if (!LineIntersects(ld)) continue;
+                bool ok = false, high = false;
+                for (int snum = 0; snum < 2 && !high; snum += 1) {
+                  const sector_t *sec = (snum ? ld->backsector : ld->frontsector);
+                  vassert(sec);
+                  const float fz = sec->floor.GetPointZClamped(Origin);
+                  const float zdiff = fz-Origin.z;
+                  ok = ok || (zdiff == 0.0f);
+                  high = (zdiff > 0.0f);
+                }
+                if (high) continue;
+                if (ok) {
+                  const int side = ld->PointOnSide(Origin);
+                  #if 0
+                  GCon->Logf("  line: side=%d; norm:(%g,%g,%g)",
+                             side, ld->normal.x, ld->normal.y, ld->normal.z);
+                  #endif
+                  snorm += (side ? -ld->normal : ld->normal);
+                  snorm = snorm.normalise();
+                  #if 0
+                  GCon->Logf("  snorm: (%g,%g,%g)", snorm.x, snorm.y, snorm.z);
+                  #endif
+                }
+              }
+            }
+          }
+          if (snorm.x != 0.0f || snorm.y != 0.0f) {
+            const float speed = 15.0f; //10.0f+5.0f*FRandom();
+            Velocity.x = snorm.x*speed;
+            Velocity.y = snorm.y*speed;
+            FlagsEx |= EFEX_CorpseSliding;
+            #if 0
+            GCon->Logf("CORPSE SLIDE: %s", GetClass()->GetName());
+            #endif
+          }
+        }
+      }
+    }
+  }
+
+
   // reset 'in chase' (we can do it before ticker instead of after it, it doesn't matter)
   if (eflagsex&EFEX_IsEntityEx) fldbInChase->SetBool(this, false);
 

@@ -73,6 +73,7 @@ menudef GameplayOptions {
   }
 
 
+/*
   header "Corpses";
 
   option bool {
@@ -96,6 +97,7 @@ menudef GameplayOptions {
     help =
       "If 'smaller corpses' is active, monster corpse radius will be multiplied by this.";
   }
+*/
 
 
   header "Player Movement";

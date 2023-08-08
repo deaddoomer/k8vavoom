@@ -45,8 +45,8 @@
 // ////////////////////////////////////////////////////////////////////////// //
 // this may create stuck monsters on Arch-Vile revival and such, but meh...
 // i REALLY HATE hanging corpses
-static VCvarB gm_smaller_corpses("gm_smaller_corpses", false, "Make corpses smaller, so they will not hang on ledges?", CVAR_Archive|CVAR_NoShadow);
-static VCvarF gm_corpse_radius_mult("gm_corpse_radius_mult", "0.4", "Corpse radius multiplier for 'smaller corpese' mode.", CVAR_Archive|CVAR_NoShadow);
+//static VCvarB gm_smaller_corpses("gm_smaller_corpses", false, "Make corpses smaller, so they will not hang on ledges?", CVAR_Archive|CVAR_NoShadow);
+//static VCvarF gm_corpse_radius_mult("gm_corpse_radius_mult", "0.4", "Corpse radius multiplier for 'smaller corpese' mode.", CVAR_Archive|CVAR_NoShadow);
 #ifdef CLIENT
 VCvarB r_interpolate_thing_movement("r_interpolate_thing_movement", true, "Interpolate mobj movement?", CVAR_Archive|CVAR_NoShadow);
 VCvarB r_interpolate_thing_angles_models("r_interpolate_thing_angles_models", true, "Interpolate mobj rotation for 3D models?", CVAR_Archive|CVAR_NoShadow);
@@ -306,6 +306,16 @@ TVec VEntity::GetDrawOrigin () {
 
 //==========================================================================
 //
+//  VEntity::IsValidPlayerPawn
+//
+//==========================================================================
+bool VEntity::IsValidPlayerPawn () const noexcept {
+  return ((EntityFlags&EF_IsPlayer) != 0 && Player && Player->MO == this);
+}
+
+
+//==========================================================================
+//
 //  VEntity::GetMoveRadius
 //
 //  corpses could have smaller radius
@@ -313,6 +323,7 @@ TVec VEntity::GetDrawOrigin () {
 //  TODO: return real radius in nightmare?
 //
 //==========================================================================
+/*
 float VEntity::GetMoveRadius () const noexcept {
   if ((EntityFlags&(EF_Corpse|EF_Missile|EF_Invisible|EF_ActLikeBridge)) == EF_Corpse && (FlagsEx&EFEX_Monster)) {
     // monster corpse
@@ -327,6 +338,7 @@ float VEntity::GetMoveRadius () const noexcept {
   }
   return max2(0.0f, Radius);
 }
+*/
 
 
 //==========================================================================

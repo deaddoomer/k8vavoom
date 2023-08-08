@@ -1833,6 +1833,7 @@ override void ApplyFriction (float DeltaTime) {
   float vy = Velocity.y;
 
   if (bCorpse) {
+    //if (bCorpseSliding) return; // forced sliding by C++ physics code
     // don't stop sliding if halfway off a step with some momentum
     // but do this only for sectors without 3d floors, and not 3d pobjs
     // (otherwise the body will slide off from any 3d floor/pobj)

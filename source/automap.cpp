@@ -2042,6 +2042,74 @@ static void AM_drawOneThing (VEntity *mobj, bool &inSpriteMode) {
     //AM_DrawBox(mobj->Origin.x-mobj->Radius, mobj->Origin.y-mobj->Radius, mobj->Origin.x+mobj->Radius, mobj->Origin.y+mobj->Radius, color);
     const float rad = mobj->GetMoveRadius();
     AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, color);
+    #if 1
+    // DEBUG: draw slide force
+    if (mobj->IsRealCorpse() &&
+        /*((mobj->FlagsEx&VEntity::EFEX_SomeSectorMoved) != 0 ||
+         (mobj->FlagsEx&VEntity::EFEX_CorpseSlideChecked) == 0) &&*/
+        mobj->Velocity.x == 0.0f && mobj->Velocity.y == 0.0f && mobj->Velocity.z >= 0.0f)
+    {
+      tmtrace_t tm;
+      mobj->CheckRelPositionPoint(tm, mobj->Origin);
+      if (tm.FloorZ < mobj->Origin.z) {
+        //if (strcmp(mobj->GetClass()->GetName(), "DoomImp") != 0) return;
+        //GCon->Logf("%s: fz=%g; oz=%g", mobj->GetClass()->GetName(), tm.FloorZ, mobj->Origin.z);
+        AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, 0xFFFF0000);
+        //
+        float mybbox[4];
+        VLevel *XLevel = mobj->XLevel;
+        mobj->Create2DBox(mybbox);
+        DeclareMakeBlockMapCoordsBBox2D(mybbox, xl, yl, xh, yh);
+        //GCon->Logf(" rad=%g; xl=%d; yl=%d; xh=%d; yh=%d", rad, xl, yl, xh, yh);
+        XLevel->IncrementValidCount(); // used to make sure we only process a line once
+        TVec snorm = TVec(0.0f, 0.0f, 0.0f);
+        for (int bx = xl; bx <= xh; ++bx) {
+          for (int by = yl; by <= yh; ++by) {
+            //GCon->Logf("  bx=%d; by=%d", bx, by);
+            for (auto &&it : XLevel->allBlockLines(bx, by)) {
+              line_t *ld = it.line();
+              if ((ld->flags&ML_TWOSIDED) == 0) continue;
+              if (!mobj->LineIntersects(ld)) continue;
+              bool ok = false, high = false;
+              for (int snum = 0; snum < 2 && !high; snum += 1) {
+                const sector_t *sec = (snum ? ld->backsector : ld->frontsector);
+                vassert(sec);
+                const float fz = sec->floor.GetPointZClamped(mobj->Origin);
+                const float zdiff = fz-mobj->Origin.z;
+                ok = ok || (zdiff == 0.0f);
+                high = (zdiff > 0.0f);
+              }
+              if (high) continue;
+              const int side = ld->PointOnSide(mobj->Origin);
+              #if 0
+              GCon->Logf("  line: side=%d; norm:(%g,%g,%g)",
+                         side, ld->normal.x, ld->normal.y, ld->normal.z);
+              #endif
+              snorm += (side ? -ld->normal : ld->normal);
+              snorm = snorm.normalise();
+              #if 0
+              GCon->Logf("  snorm: (%g,%g,%g)", snorm.x, snorm.y, snorm.z);
+              #endif
+            }
+          }
+        }
+        if (snorm.x != 0.0f || snorm.y != 0.0f) {
+          mline_t l;
+          l.a.x = morg.x;
+          l.a.y = morg.y;
+          l.b.x = (morg + snorm*40).x;
+          l.b.y = (morg + snorm*40).y;
+          if (am_rotate) {
+            AM_rotatePoint(&l.a.x, &l.a.y);
+            AM_rotatePoint(&l.b.x, &l.b.y);
+          }
+          AM_drawMline(&l, 0xFFFFFF00);
+        }
+        mobj->Velocity.x = snorm.x*15;
+        mobj->Velocity.y = snorm.y*15;
+      }
+    }
+    #endif
   }
 }
 
