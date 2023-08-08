@@ -279,7 +279,15 @@ bool Physics (float DeltaTime) {
   float oldfloorz = FloorZ;
   float oldFloorNZ = EFloor.spGetNormalZ;
   sector_t *oldSector = Sector;
-  XYMovement(DeltaTime, CummX, CummY, oldSector);
+  if (bCorpse && bCorpseSliding) {
+    // this is to prevent corpses to clib up the stairs
+    float ohh = MaxStepHeight;
+    MaxStepHeight = 0;
+    XYMovement(DeltaTime, CummX, CummY, oldSector);
+    MaxStepHeight = ohh;
+  } else {
+    XYMovement(DeltaTime, CummX, CummY, oldSector);
+  }
   if (IsDestroyed) return false; // mobj was removed
 
   #ifdef FLOAT_BOB_IN_PHYSICS
