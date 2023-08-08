@@ -5057,7 +5057,7 @@ override void PlayerTick (float deltaTime) {
     }
   }
 
-  // chainsaw (and other "pull-in") attacks sets this flag
+  // chainsaw (and other "pull-in") attacks set this flag
   // this code does "pulling in"
   if (Actor(MO).bJustAttacked) {
     ForwardMove = 100.0;
@@ -6082,6 +6082,8 @@ void PlayerImpulse () {
 
   // weapon slot 11 is used for weapons without explicit slot
   if (Impulse <= PlayerPawn::NUM_WEAPON_SLOTS) { ChangeWeapon(Impulse); Impulse = 0; return; }
+
+  //printdebug("%C: impulse=%s", self, Impulse);
 
   switch (Impulse) {
     //^C test:case 222: for (;;) { /*print("boo");*/ } return;

@@ -616,7 +616,9 @@ final int do_simple_A_Explode (optional int damage, optional float aradius, opti
                                optional class!EntityEx PuffType, optional name dmgType)
 {
   /*
-    XF_NOTMISSILE -- Not a missile: if set, the calling actor is considered to be the source. By default, the calling actor is assumed to be a projectile, and the source is therefore considered to be the calling actor's target.
+    XF_NOTMISSILE -- Not a missile: if set, the calling actor is considered to be the source.
+                     By default, the calling actor is assumed to be a projectile, and the
+                     source is therefore considered to be the calling actor's target.
     XF_EXPLICITDAMAGETYPE -- The damagetype parameter will never change to the actor's damagetype.
     XF_NOSPLASH -- No splash: if set, the explosion does not create any terrain splashes.
   */
