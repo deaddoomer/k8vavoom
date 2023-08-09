@@ -2462,6 +2462,8 @@ final bool common_k8JumpIfLiquidFloor (EntityEx tgt, state label) {
 //
 //  decorate_IsPlayerRunning
 //
+//  running with run button on
+//
 //==========================================================================
 [decorate] final float decorate_IsPlayerRunning () {
   PlayerEx pex = (bIsPlayer ? PlayerEx(Player) : none);
@@ -2478,4 +2480,61 @@ final bool common_k8JumpIfLiquidFloor (EntityEx tgt, state label) {
                 (pex.ForwardMove || pex.SideMove)
               : false);
   */
+}
+
+
+//==========================================================================
+//
+//  decorate_IsPlayerWalking
+//
+//==========================================================================
+[decorate] final float decorate_IsPlayerWalking () {
+  PlayerEx pex = (bIsPlayer ? PlayerEx(Player) : none);
+  if (pex && pex.MO) {
+    PlayerPawn pawn = PlayerPawn(pex.MO);
+    if (pawn) {
+      switch (pawn.GetMoveSpeedType()) {
+        case PlayerPawn::PMT_Walking:
+        case PlayerPawn::PMT_Crouching:
+          return true;
+      }
+    }
+    return !(pex.ForwardMove || pex.SideMove);
+  }
+  return false;
+}
+
+
+//==========================================================================
+//
+//  decorate_IsPlayerCrouching
+//
+//  fully crouching
+//
+//==========================================================================
+[decorate] final float decorate_IsPlayerCrouching () {
+  PlayerEx pex = (bIsPlayer ? PlayerEx(Player) : none);
+  if (pex && pex.MO) {
+    PlayerPawn pawn = PlayerPawn(pex.MO);
+    if (pawn) return (pawn.crouchfactor <= 0.52); // 0.5 is the limit
+  }
+  return false;
+}
+
+
+//==========================================================================
+//
+//  decorate_IsPlayerStanding
+//
+//==========================================================================
+[decorate] final float decorate_IsPlayerStanding () {
+  PlayerEx pex = (bIsPlayer ? PlayerEx(Player) : none);
+  if (pex && pex.MO) {
+    PlayerPawn pawn = PlayerPawn(pex.MO);
+    if (pawn) {
+      return (pawn.GetMoveSpeedType() == PlayerPawn::PMT_Standing);
+    }
+    return !(pex.ForwardMove || pex.SideMove);
+  }
+  return true;
 }
