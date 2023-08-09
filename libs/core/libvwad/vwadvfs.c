@@ -30,10 +30,9 @@ extern "C" {
 // ////////////////////////////////////////////////////////////////////////// //
 /* turning off inlining saves ~5kb of binary code on x86 */
 #ifdef _MSC_VER
-# define CC25519_INLINE  inline __attribute__((always_inline))
+# define CC25519_INLINE  __forceinline
 #else
-/* dunno, let's hope this works */
-# define CC25519_INLINE  inline
+# define CC25519_INLINE  inline __attribute__((always_inline))
 #endif
 
 
@@ -48,7 +47,7 @@ extern "C" {
 #else
 # define vwad__builtin_expect  __builtin_expect
 # define vwad__builtin_trap    __builtin_trap
-# define vwad_packed_struct  __attribute__((packed))
+# define vwad_packed_struct    __attribute__((packed))
 # define vwad_push_pack
 # define vwad_pop_pack
 #endif
@@ -1186,6 +1185,18 @@ static inline const char *SkipPathPartCStr (const char *s) {
   return (lastSlash ? lastSlash : s);
 }
 
+#ifdef _MSC_VER
+#define vassert(cond_)  do { if (vwad__builtin_expect((!(cond_)), 0)) { const int line__assf = __LINE__; \
+    if (vwad_assertion_failed) { \
+      vwad_assertion_failed("%s:%d: Assertion in `%s` failed: %s\n", \
+        SkipPathPartCStr(__FILE__), line__assf, __FUNCSIG__, #cond_); \
+      vwad__builtin_trap(); /* just in case */ \
+    } else { \
+      vwad__builtin_trap(); \
+    } \
+  } \
+} while (0)
+#else
 #define vassert(cond_)  do { if (vwad__builtin_expect((!(cond_)), 0)) { const int line__assf = __LINE__; \
     if (vwad_assertion_failed) { \
       vwad_assertion_failed("%s:%d: Assertion in `%s` failed: %s\n", \
@@ -1196,6 +1207,7 @@ static inline const char *SkipPathPartCStr (const char *s) {
     } \
   } \
 } while (0)
+#endif
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -2218,7 +2230,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     logf(ERROR, "vwad_open_archive: cannot allocate memory for unpacked directory");
     return NULL;
   }
-  put_u32(unpkdir + dhdr.upkdirsize, 0);
+  put_u32((char *)unpkdir + dhdr.upkdirsize, 0);
 
   void *pkdir = xalloc(mman, dhdr.pkdirsize);
   if (!pkdir) {
