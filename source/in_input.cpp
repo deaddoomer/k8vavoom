@@ -41,7 +41,7 @@
 #include "client/client.h"
 
 
-static VCvarB allow_vanilla_cheats("allow_vanilla_cheats", true, "Allow vanilla keyboard cheat codes?", CVAR_Archive|CVAR_NoShadow);
+static VCvarB allow_vanilla_cheats("allow_vanilla_cheats", false, "Allow vanilla keyboard cheat codes?", CVAR_Archive|CVAR_NoShadow);
 static VCvarB mn_eat_all_buttons("mn_eat_all_buttons", true, "Should active menu eat all buttons?", CVAR_Archive|CVAR_NoShadow);
 
 extern void UnpressAllButtons ();

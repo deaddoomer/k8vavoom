@@ -77,8 +77,8 @@ static VCvarB k8GoreOpt_CeilBlood("k8GoreOpt_CeilBlood", true, "Spawn blood spla
 static VCvarB k8GoreOpt_CeilBloodDrip("k8GoreOpt_CeilBloodDrip", true, "Should ceiling blood spots drip some blood?", CVAR_Archive);
 static VCvarB k8GoreOpt_FloorBlood("k8GoreOpt_FloorBlood", true, "Spawn blood splats on floor?", CVAR_Archive);
 static VCvarB k8GoreOpt_FlatDecals("k8GoreOpt_FlatDecals", true, "Use decals instead of sprites for floor/ceiling blood?", CVAR_Archive);
-static VCvarB k8GoreOpt_ExtraFlatDecals("k8GoreOpt_ExtraFlatDecals", false, "Add more floor/ceiling decals?", CVAR_Archive);
-static VCvarI k8GoreOpt_BloodAmount("k8GoreOpt_BloodAmount", "2", "Blood amount: [0..3] (some, normal, a lot, bloodbath).", CVAR_Archive);
+static VCvarB k8GoreOpt_ExtraFlatDecals("k8GoreOpt_ExtraFlatDecals", true, "Add more floor/ceiling decals?", CVAR_Archive);
+static VCvarI k8GoreOpt_BloodAmount("k8GoreOpt_BloodAmount", "3", "Blood amount: [0..3] (some, normal, a lot, bloodbath).", CVAR_Archive);
 static VCvarI k8GoreOpt_MaxBloodEntities("k8GoreOpt_MaxBloodEntities", "3500", "Limit number of spawned blood actors. It is recommended to keep this under 4000.", CVAR_Archive);
 static VCvarI k8GoreOpt_MaxBloodSplatEntities("k8GoreOpt_MaxBloodSplatEntities", "2200", "Limit number of spawned blood splats.", CVAR_Archive);
 static VCvarI k8GoreOpt_MaxCeilBloodSplatEntities("k8GoreOpt_MaxCeilBloodSplatEntities", "250", "Limit number of spawned ceiling blood splats sprites.", CVAR_Archive);
