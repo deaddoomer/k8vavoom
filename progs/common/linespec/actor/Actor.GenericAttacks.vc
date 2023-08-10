@@ -494,7 +494,8 @@ final void DoAttack (bool DoMelee, bool DoMissile, int aMeleeDamage,
 //
 //==========================================================================
 final int DoExplode (int damage, float distance, bool damageSelf, optional int dmgdistance,
-                      optional EntityEx dmgsource, optional name dmgtype)
+                     optional EntityEx dmgsource, optional name dmgtype,
+                     optional bool thrustless, optional bool noAllies)
 {
   if (!Level.Game.IsAuthority) return 0;
 
@@ -515,9 +516,12 @@ final int DoExplode (int damage, float distance, bool damageSelf, optional int d
   int res;
 
   if (specified_dmgdistance && dmgdistance > 0) {
-    res = RadiusAttack(dmgsource, damage, distance, damageSelf, dmgtype, DoDamage:true, damagedistance:dmgdistance);
+    res = RadiusAttack(dmgsource, damage, distance, damageSelf, dmgtype,
+                       DoDamage:true, damagedistance:dmgdistance,
+                       thrustless:thrustless!optional, noAllies:noAllies!optional);
   } else {
-    res = RadiusAttack(dmgsource, damage, distance, damageSelf, dmgtype);
+    res = RadiusAttack(dmgsource, damage, distance, damageSelf, dmgtype,
+                       thrustless:thrustless!optional, noAllies:noAllies!optional);
   }
 
   if (Origin.z <= FloorZ+distance) HitFloorType();
@@ -672,9 +676,11 @@ final int do_simple_A_Explode (optional int damage, optional float aradius, opti
 
   if (specified_dmgdistance && dmgdistance > 0) {
     //printdebug("%C: damage=%s; distance=%s; damageSelf=%B; src=%C; type=%s", self, damage, distance, damageSelf, dmgsource, dmgType);
-    res = DoExplode(damage, distance, damageSelf, dmgdistance, dmgsource:dmgsource, dmgtype:dmgType);
+    res = DoExplode(damage, distance, damageSelf, dmgdistance, dmgsource:dmgsource, dmgtype:dmgType,
+                    thrustless:!!(flags&XF_THRUSTLESS), noAllies:!!(flags&XF_NOALLIES));
   } else {
-    res = DoExplode(damage, distance, damageSelf, dmgsource:dmgsource, dmgtype:dmgType);
+    res = DoExplode(damage, distance, damageSelf, dmgsource:dmgsource, dmgtype:dmgType,
+                    thrustless:!!(flags&XF_THRUSTLESS), noAllies:!!(flags&XF_NOALLIES));
   }
 
   if (!(flags&XF_NOSPLASH)) CheckSplash(float(distance));
@@ -732,7 +738,7 @@ final int do_simple_A_Explode (optional int damage, optional float aradius, opti
 //==========================================================================
 [decorate] final int A_Detonate () {
   int damage = GetMissileDamage(0, 1);
-  return DoExplode(damage, float(damage), true);
+  return DoExplode(damage, float(damage), damageSelf:true);
 }
 
 

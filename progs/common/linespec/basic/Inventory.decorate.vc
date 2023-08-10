@@ -775,7 +775,7 @@
   if (Wpn) {
     if (!Wpn.DepleteAmmo(Wpn.FireMode, default, 1)) return;
     Player.SetViewObject(Wpn);
-    if (Player.ViewStates[PS_WEAPON].State == Wpn.GetAttackState(false)) {
+    if (Player.ViewStates[PS_WEAPON].State == Wpn.GetAttackState(0)) {
       Player.SetViewState(PS_FLASH, Wpn.FindState('Flash'));
     } else {
       Player.SetViewState(PS_FLASH, GetStatePlus(Wpn.FindState('Flash'), 1));

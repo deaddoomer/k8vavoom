@@ -255,6 +255,8 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
 [decorate] final float decorate_deg2rad (float angle) { return deg2rad(angle); }
 [decorate] final float decorate_rad2deg (float angle) { return rad2deg(angle); }
 [decorate] final int decorate_sign (float v) { return int(fsign(v)); }
+[decorate] final float decorate_VectorAngle (float x, float y) { return VectorAngleYaw(vector(x, y)); }
+
 
 
 // ////////////////////////////////////////////////////////////////////////// //

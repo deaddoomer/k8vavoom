@@ -61,7 +61,7 @@ override state GetReadyState () {
 //  GetAttackState
 //
 //==========================================================================
-override state GetAttackState (bool Hold) {
+override state GetAttackState (int Hold) {
   return (Ammo1.Amount > 0 ? FindState('GlowFire') /* glowing axe */ : ::GetAttackState(Hold));
 }
 

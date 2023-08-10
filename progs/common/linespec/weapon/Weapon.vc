@@ -634,8 +634,10 @@ state GetInstaReadyState () {
 //
 //  GetAttackState
 //
+//  arg is actually refire counter
+//
 //==========================================================================
-state GetAttackState (bool Hold) {
+state GetAttackState (int Hold) {
   state S = none;
   if (Hold) S = FindState('Hold');
   if (!S) S = FindState('Fire');
@@ -647,8 +649,10 @@ state GetAttackState (bool Hold) {
 //
 //  GetAltAttackState
 //
+//  arg is actually refire counter
+//
 //==========================================================================
-state GetAltAttackState (bool Hold) {
+state GetAltAttackState (int Hold) {
   state S = none;
   if (Hold) S = FindState('AltHold');
   if (!S) S = FindState('AltFire');

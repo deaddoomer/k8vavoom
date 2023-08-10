@@ -299,7 +299,8 @@ final int RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
                         bool DamageSource, optional name BombDmgType, optional bool DoDamage,
                         optional int damagedistance, optional bool thrustZ,
                         optional float fullthrustdistance, optional bool NoImpactDamage,
-                        optional name onlyThisSpecie)
+                        optional name onlyThisSpecie, optional bool noAllies,
+                        optional bool thrustless)
 {
   EntityEx Other;
 
@@ -307,6 +308,7 @@ final int RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
 
   if (!specified_thrustZ) thrustZ = DoDamage; //k8: see below
   if (!specified_DoDamage) DoDamage = true;
+  if (!specified_noAllies) noAllies = false; // just in case
 
   if (onlyThisSpecie && nameEquCI(onlyThisSpecie, 'None')) onlyThisSpecie = '';
 
@@ -333,6 +335,8 @@ final int RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
 
     //printdebug("%C:000: Other=%C", self, Other);
     if (!DamageSource && (Other == Source || Other == self)) continue; // don't damage the source of the explosion
+
+    if (noAllies && Source && Source.IsFriend(Other)) continue;
 
     //printdebug("%C:001: Other=%C", self, Other);
     if (specified_onlyThisSpecie && !nameEquCI(onlyThisSpecie, Other.GetSpecies())) continue;
@@ -419,7 +423,7 @@ final int RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
         //if (!bDontThrust) Other.bBlasted = true; //k8: old code
       }
 
-      if (!bDontThrust && !Other.bIceCorpse && (!DoDamage || !bNoDamageThrust)) {
+      if (!thrustless && !bDontThrust && !Other.bIceCorpse && (!DoDamage || !bNoDamageThrust)) {
         float Thrust = dmgfloat*0.5;
         if (specified_fullthrustdistance && fullthrustdistance != 0 && dist <= fullthrustdistance) {
           Thrust = BombDamage*Other.RDFactor*0.5;
