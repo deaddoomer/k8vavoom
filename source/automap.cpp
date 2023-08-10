@@ -2042,7 +2042,7 @@ static void AM_drawOneThing (VEntity *mobj, bool &inSpriteMode) {
     //AM_DrawBox(mobj->Origin.x-mobj->Radius, mobj->Origin.y-mobj->Radius, mobj->Origin.x+mobj->Radius, mobj->Origin.y+mobj->Radius, color);
     const float rad = mobj->GetMoveRadius();
     AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, color);
-    #if 1
+    #if 0
     // DEBUG: draw slide force
     if (mobj->IsRealCorpse() &&
         /*((mobj->FlagsEx&VEntity::EFEX_SomeSectorMoved) != 0 ||

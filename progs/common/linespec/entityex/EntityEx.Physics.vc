@@ -280,7 +280,7 @@ bool Physics (float DeltaTime) {
   float oldFloorNZ = EFloor.spGetNormalZ;
   sector_t *oldSector = Sector;
   if (bCorpse && bCorpseSliding) {
-    // this is to prevent corpses to clib up the stairs
+    // this is to prevent corpses to climb up the stairs
     float ohh = MaxStepHeight;
     MaxStepHeight = 0;
     XYMovement(DeltaTime, CummX, CummY, oldSector);

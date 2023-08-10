@@ -683,18 +683,17 @@ void VEntity::Tick (float deltaTime) {
       (EntityFlags&(EF_Corpse|EF_Missile|EF_Invisible|EF_ActLikeBridge)) == EF_Corpse &&
       (FlagsEx&EFEX_Monster))
   {
+    if ((FlagsEx&EFEX_SomeSectorMoved) != 0) {
+      //FlagsEx &= ~EFEX_SomeSectorMoved;
+      if (CorpseSlideCheckDelay >= 1.0f) CorpseSlideCheckDelay = 0.8f;
+    }
     CorpseSlideCheckDelay -= deltaTime;
     if (CorpseSlideCheckDelay <= 0.0f) {
-      /*
-      if ((FlagsEx&EFEX_SomeSectorMoved) != 0) {
-        FlagsEx &= ~EFEX_SomeSectorMoved;
-        CorpseSlideCheckDelay = 0.0f;
-      }
-      */
-      if (Velocity.x == 0.0f && Velocity.y == 0.0f && Velocity.z >= 0.0f) {
+      FlagsEx &= ~EFEX_SomeSectorMoved;
+      if (Velocity.isZero2D() && Velocity.z >= 0.0f) {
         tmtrace_t tm;
         CheckRelPositionPoint(tm, Origin);
-        FlagsEx &= ~EFEX_CorpseSliding;
+        //FlagsEx &= ~EFEX_CorpseSliding;
         if (tm.FloorZ < Origin.z) {
           #if 0
           GCon->Logf("CORPSE CHECK: %s: fz=%g; oz=%g", GetClass()->GetName(), tm.FloorZ, Origin.z);
@@ -727,7 +726,7 @@ void VEntity::Tick (float deltaTime) {
                              side, ld->normal.x, ld->normal.y, ld->normal.z);
                   #endif
                   snorm += (side ? -ld->normal : ld->normal);
-                  snorm = snorm.normalise();
+                  //snorm = snorm.normalise();
                   #if 0
                   GCon->Logf("  snorm: (%g,%g,%g)", snorm.x, snorm.y, snorm.z);
                   #endif
@@ -736,28 +735,82 @@ void VEntity::Tick (float deltaTime) {
             }
           }
           if (snorm.x != 0.0f || snorm.y != 0.0f) {
-            const float speed = 15.0f; //10.0f+5.0f*FRandom();
-            Velocity.x = snorm.x*speed;
-            Velocity.y = snorm.y*speed;
-            FlagsEx |= EFEX_CorpseSliding;
-            #if 0
-            GCon->Logf("CORPSE SLIDE: %s", GetClass()->GetName());
-            #endif
-            CorpseSlideFailCount = 0;
-            CorpseSlideCheckDelay = 0.4f+FRandom()*0.2f;
+            if ((FlagsEx&EFEX_CorpseSliding) != 0 && CorpseSlideFailCount > 4) {
+              // lay rest, it seems that there is nowhere to slide
+              CorpseSlideCheckDelay = 0.4f+FRandom()*0.2f;
+              CorpseSlideCheckDelay = 100.0f+50.0f*FRandom();
+              #if 0
+              GCon->Logf("CC(%u):%s: STOPSLIDE: sc:%d",
+                         GetUniqueId(), GetClass()->GetName(),
+                         CorpseSlideFailCount);
+              #endif
+            } else {
+              const float speed = 15.0f; //10.0f+5.0f*FRandom();
+              // disturb angle a little
+              float angle = VectorAngleYaw(snorm);
+              #if 0
+              GCon->Logf("CC(%u):%s: snorm:(%g,%g,%g); angle:%g; sc:%d",
+                         GetUniqueId(), GetClass()->GetName(),
+                         snorm.x, snorm.y, snorm.z, AngleMod360(angle),
+                         CorpseSlideFailCount);
+              #endif
+              angle = AngleMod360(angle-5+10*FRandom/*Full*/());
+              snorm = AngleVectorYaw(angle);
+              #if 0
+              GCon->Logf("    snorm:(%g,%g,%g); angle:%g", snorm.x, snorm.y, snorm.z, angle);
+              #endif
+              Velocity.x = snorm.x*speed;
+              Velocity.y = snorm.y*speed;
+              FlagsEx |= EFEX_CorpseSliding;
+              #if 0
+              GCon->Logf("CORPSE SLIDE: %s", GetClass()->GetName());
+              #endif
+              if (FlagsEx&EFEX_CorpseSliding) {
+                CorpseSlideFailCount += 1;
+              } else {
+                CorpseSlideFailCount = 0;
+              }
+              CorpseSlideCheckDelay = 0.4f+FRandom()*0.2f;
+            }
+          } else {
+            FlagsEx &= ~EFEX_CorpseSliding;
           }
         } else {
-          CorpseSlideFailCount += 1;
-          if (CorpseSlideFailCount > 15) {
-            CorpseSlideFailCount = 16;
-            CorpseSlideCheckDelay = 3.2f+FRandom()*2.0f;
+          // center is not hanging
+          if (Velocity.isZero2D() && Velocity.z <= 0.0f) {
+            // it seems to stay in place, so don't bother re-checking it
+            #if 0
+            GCon->Logf("CC(%u):%s: not hanging, in place; cnt:%d; vel:(%g,%g,%g)",
+                       GetUniqueId(), GetClass()->GetName(),
+                       CorpseSlideFailCount,
+                       Velocity.x, Velocity.y, Velocity.z);
+            #endif
+            CorpseSlideFailCount = 0;
+            CorpseSlideCheckDelay = 100.0f+50.0f*FRandom();
           } else {
-            CorpseSlideCheckDelay = 0.2f+FRandom()*0.2f;
+            #if 0
+            GCon->Logf("CC(%u):%s: not hanging; cnt:%d; vel:(%g,%g,%g)",
+                       GetUniqueId(), GetClass()->GetName(),
+                       CorpseSlideFailCount,
+                       Velocity.x, Velocity.y, Velocity.z);
+            #endif
+            CorpseSlideFailCount += 1;
+            if (CorpseSlideFailCount > 15) {
+              CorpseSlideFailCount = 16;
+              CorpseSlideCheckDelay = 3.2f+FRandom()*2.0f;
+            } else {
+              CorpseSlideCheckDelay = 0.2f+FRandom()*0.2f;
+            }
           }
         }
       } else {
         // still moving
-        CorpseSlideCheckDelay = 0.2f+FRandom()*0.2f;
+        #if 0
+        GCon->Logf("CC(%u):%s: still moving; vel:(%g,%g,%g)",
+                   GetUniqueId(), GetClass()->GetName(),
+                   Velocity.x, Velocity.y, Velocity.z);
+        #endif
+        CorpseSlideCheckDelay = 0.4f+FRandom()*0.2f;
       }
     }
   }
