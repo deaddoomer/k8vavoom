@@ -482,8 +482,14 @@ void MakeNormalVectors (const TVec &forward, TVec &right, TVec &up) noexcept {
 //
 //  `rad` should not be negative
 //
+//  note: if otime is specified, then `tmax <= 0.0f || tmin >= 1.0f` is used,
+//        otherwise `tmax < 0.0f || tmin > 1.0f`.
+//        keeping this is important for calling code!
+//
 //==========================================================================
-float RayBoxIntersection2D (const TVec &c, const float rad, const TVec &org, const TVec &dir) noexcept {
+float RayBoxIntersection2D (const TVec &c, const float rad, const TVec &org,
+                            const TVec &dir, float *otime) noexcept
+{
   float tmin = -INFINITY, tmax = INFINITY;
 
   const float xc = c.x-org.x;
@@ -514,8 +520,19 @@ float RayBoxIntersection2D (const TVec &c, const float rad, const TVec &org, con
   // `tmin` is "enter time", `tmax` is "exit time"
   // if `tmin` is negative, we're started inside the box
 
-  if (tmax < 0.0f || tmin > 1.0f || tmax <= tmin) return -1.0f; // didn't hit
-  return zeroDenormalsF(max2(0.0f, tmin));
+  if (!otime) {
+    if (tmax < 0.0f || tmin > 1.0f || tmax <= tmin) return -1.0f; // didn't hit
+    return zeroDenormalsF(max2(0.0f, tmin));
+  } else {
+    if (tmax <= 0.0f || tmin >= 1.0f || tmax <= tmin) {
+      // didn't hit
+      return -1.0f;
+    } else {
+      tmin = max2(0.0f, tmin);
+      *otime = max2(tmin, min2(1.0f, tmax));
+      return tmin;
+    }
+  }
 }
 
 

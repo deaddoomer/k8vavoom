@@ -94,7 +94,7 @@ menudef AliasModelVideoOptions {
   option bool {
     title = "Other";
     cvar = r_models_other;
-    help = "Allow 3D models for things that are none of the above?";
+    help = "Allow 3D models for things which are none of the above?";
   }
 
   option bool {

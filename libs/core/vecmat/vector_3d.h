@@ -716,8 +716,12 @@ static VVA_FORCEINLINE VVA_OKUNUSED VVA_CHECKRESULT bool isCircleTouchingLine (c
 //
 //  `rad` should not be negative
 //
+//  note: if otime is specified, then `tmax <= 0.0f || tmin >= 1.0f` is used,
+//        otherwise `tmax < 0.0f || tmin > 1.0f`.
+//        keeping this is important for calling code!
+//
 //==========================================================================
-float RayBoxIntersection2D (const TVec &c, const float rad, const TVec &org, const TVec &dir) noexcept;
+float RayBoxIntersection2D (const TVec &c, const float rad, const TVec &org, const TVec &dir, float *otime=nullptr) noexcept;
 
 
 //==========================================================================

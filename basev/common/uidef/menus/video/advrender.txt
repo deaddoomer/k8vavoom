@@ -202,7 +202,7 @@ menudef AdvRenderOptions {
     title = "Skip Non-Shadow Surfaces";
     cvar = gl_smart_reject_shadows;
     help =
-      "Skip some surfaces that cannot possibly cast shadow."
+      "Skip some surfaces which cannot possibly cast shadow."
       "This can buy you some FPS with huge lights, but I'm not sure"
       "if i wrote the algo right, so you can turn this off if you'll"
       "see some invalid shadowing.";
@@ -212,7 +212,7 @@ menudef AdvRenderOptions {
     title = "Skip Non-Shadow Segs";
     cvar = gl_smart_reject_svol_segs;
     help =
-      "Skip some segs that cannot possibly cast shadow."
+      "Skip some segs which cannot possibly cast shadow."
       "Suboption of common skipping.";
   }
 
@@ -220,7 +220,7 @@ menudef AdvRenderOptions {
     title = "Skip Non-Shadow Flats";
     cvar = gl_smart_reject_svol_flats;
     help =
-      "Skip some flats that cannot possibly cast shadow."
+      "Skip some flats which cannot possibly cast shadow."
       "Suboption of common skipping.";
   }
 

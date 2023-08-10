@@ -70,7 +70,7 @@ menudef AccessibilityOptions {
     help =
       "Enable or disable extra lighting from weapon firing.",
       "Please, note that this won't affect dynamic lighting",
-      "that can be attached to player weapons!";
+      "which can be attached to player weapons!";
   }
 
   option bool {

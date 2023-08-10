@@ -30,7 +30,7 @@ menudef MinimapOptions {
   option bool {
     title = "Draw Blocking Things";
     cvar = minimap_draw_blocking_things;
-    help = "Draw things that could block path on the minimap?";
+    help = "Draw things which could block path on the minimap?";
   }
 
   option bool {

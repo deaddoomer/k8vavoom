@@ -410,7 +410,7 @@ menudef ControlsMain {
     command = "impulse 10";
   }
 
-  // this is slot for weapons that has no explicit slot
+  // this is slot for weapons which have no explicit slot
   option bind {
     title = "Slot 11";
     button = ona;

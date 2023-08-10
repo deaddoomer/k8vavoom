@@ -17,7 +17,7 @@ menudef ShadowMapOptions {
     cvar = r_shadowmap_fix_light_dist;
     help =
       "Turn on to move lights slightly away from surfaces.",
-      "Lights that are too close to wall/floor will get visible moire.",
+      "Lights which are too close to wall/floor will get visible moire.",
       "This option tells the engine to move light on a safer distance,",
       "if the light is too close to textured surface.",
       "THIS IS EXPERIMENTAL OPTION, and it causes shadow jittering.";

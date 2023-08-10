@@ -21,7 +21,7 @@ menudef MapHacksOptions {
     cvar = r_hack_transparent_doors;
     help =
       "In Vanilla, there was a glitch that allowed creation of transparent"
-      "doors. It was used in many classic WADs like 'Memento Mori', for example."
+      "doors. It was used in many classic WADs like 'Memento Mori'."
       "Usually this works as intended."
       ""
       "\cGWARNING! You must save and reload your game after changing this!";
@@ -82,7 +82,7 @@ menudef MapHacksOptions {
     help =
       "This tries to fix 'Hanging Bridges'."
       "Vanilla floodfill bug sometimes exploited to create bridges"
-      "that looks like hanging over the lower sector floor. Those"
+      "which looks like hanging over the lower sector floor. Those"
       "bridges are still 2D, but they are looking 3D."
       "It may cause rendering glitches, but such cases are rare."
       ""

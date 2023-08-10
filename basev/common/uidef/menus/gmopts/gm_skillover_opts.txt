@@ -14,7 +14,7 @@ menudef GameplayOptions_SkillOverrides {
     }
     help =
       "Force fast/slow monsters.",
-      "\c[!WHITE]Only Fast States\c: only states that are marked as \"FAST\" in DECORATE.",
+      "\c[!WHITE]Only Fast States\c: only states which are marked as \"FAST\" in DECORATE.",
       "\c[!WHITE]All States Fast\c: make all states faster.",
       "\cJYou need to restart the map for this to take effect.";
   }

@@ -78,11 +78,15 @@ menudef GameplayOptions {
   option enum {
     title = "Slide Bodies";
     cvar = gm_slide_bodies;
-    list { "No", "Yes" };
+    list { "No", "Simple", "Complex" };
     help =
-      "Slide bodies that may hang on ledges?",
+      "Slide bodies which may hang on ledges?",
       "The algorithm is very experimental, and some bodies may",
-      "slide in a fancy ways. But this should not affect gameplay.";
+      "slide in a fancy ways. But this should not affect gameplay.",
+      "",
+      "'Complex' check is slower, but tries to calculate if the",
+      "corpse really should fall with some complex math, instead",
+      "of checking only mobj origin.";
   }
 
   option bool {
