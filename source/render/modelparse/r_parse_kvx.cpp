@@ -644,7 +644,8 @@ void VMeshModel::Load_KVX (const vuint8 *Data, int DataSize) {
         break;
       }
       lastsx = mip.xsize; lastsy = mip.ysize; lastsz = mip.zsize;
-      curr->nextMip = new VMeshModel;
+      curr->nextMip = new VMeshModel();
+      memset((void *)curr->nextMip, 0, sizeof(VMeshModel));
       curr = curr->nextMip;
       curr->PrepareMip(*this);
       curr->SetupMip(&mip);
@@ -822,7 +823,8 @@ bool VMeshModel::Load_KVXCache (VStream *st) {
     if (xscale <= 0.0f || yscale <= 0.0f || zscale <= 0.0f) {
       mipflag = 3;
     } else {
-      curr->nextMip = new VMeshModel;
+      curr->nextMip = new VMeshModel();
+      memset((void *)curr->nextMip, 0, sizeof(VMeshModel));
       curr = curr->nextMip;
       curr->PrepareMip(*this);
       if (!curr->Load_KVXCacheMdl(st)) {

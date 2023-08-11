@@ -246,6 +246,7 @@ static VMeshModel *Mod_FindMeshModel (VStr filename, VStr name, int meshIndex,
   }
 
   VMeshModel *mod = new VMeshModel();
+  memset((void *)mod, 0, sizeof(VMeshModel));
   mod->Name = name;
   mod->MeshIndex = meshIndex;
   mod->loaded = false;
