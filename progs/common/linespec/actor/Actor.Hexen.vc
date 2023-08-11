@@ -1554,7 +1554,7 @@ final bool RaiseFromFloor () {
 //==========================================================================
 [decorate] final void A_WraithRaise () {
   if (RaiseFromFloor()) {
-    // reached it's target height
+    // reached its target height
     bNoMorph = false;
     SetState(FindState('Chase'));
     PainChance = Wraith.default.PainChance;

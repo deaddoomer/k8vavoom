@@ -460,11 +460,13 @@ transient float DataGameTime;
 transient float NetLastOrgUpdateTime;
 
 // corpse sliding; implemented in C++ code
+transient bool bCorpseWasNudged;
 transient bool bCorpseSliding;
+transient bool bCorpseSlidingSlope;
 
 transient float cslStartTime;
 transient float cslDelay;
-transient float cslLastZ;
+transient TVec cslLastPos;
 
 
 replication {

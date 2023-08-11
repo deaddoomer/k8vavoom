@@ -279,7 +279,12 @@ bool Physics (float DeltaTime) {
   float oldfloorz = FloorZ;
   float oldFloorNZ = EFloor.spGetNormalZ;
   sector_t *oldSector = Sector;
-  if (bCorpse && bCorpseSliding) {
+  #if 0
+  if (bCorpse && Velocity.xy && !bCorpseSliding) {
+    printdebug("%C(%s): vel=%s; csl=%B", self, UniqueId, Velocity, bCorpseSliding);
+  }
+  #endif
+  if (bCorpse && bCorpseWasNudged) {
     // this is to prevent corpses to climb up the stairs
     float ohh = MaxStepHeight;
     MaxStepHeight = 0;
@@ -1843,7 +1848,7 @@ override void ApplyFriction (float DeltaTime) {
   float vy = Velocity.y;
 
   if (bCorpse) {
-    //if (bCorpseSliding) return; // forced sliding by C++ physics code
+    if (bCorpseSliding/*Slope*/) return; // forced sliding by C++ physics code
     // don't stop sliding if halfway off a step with some momentum
     // but do this only for sectors without 3d floors, and not 3d pobjs
     // (otherwise the body will slide off from any 3d floor/pobj)
@@ -1852,8 +1857,7 @@ override void ApplyFriction (float DeltaTime) {
       if (vx > 0.25*35.0 || vx < -0.25*35.0 ||
           vy > 0.25*35.0 || vy < -0.25*35.0)
       */
-      if (fabs(vx) > 0.25*35.0 || fabs(vy) > 0.25*35.0)
-      {
+      if (fabs(vx) > 0.25*35.0 || fabs(vy) > 0.25*35.0) {
         if (DropOffZ != FloorZ || FloorZ > Sector->floor.GetPointZClamped(Origin)) {
           return;
         }

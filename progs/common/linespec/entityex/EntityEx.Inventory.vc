@@ -218,7 +218,7 @@ void RemoveInventory (Inventory Item) {
   }
 
   if (Item == self) {
-    printerror("%C: RemoveInventory: Item `%C` tries to remove itself from it's own inventory, wtf?!", self, Item);
+    printerror("%C: RemoveInventory: Item `%C` tries to remove itself from its own inventory, wtf?!", self, Item);
     return;
   }
 

@@ -77,7 +77,7 @@ const int POBJ_MOVE_NORMAL = 0;
 bitenum {
   POBJ_MOVE_OVERRIDE,
   POBJ_MOVE_NOLINK,
-  /* for linked polyobjects, don't use master pobj center, but rotate each pobj around it's own center */
+  /* for linked polyobjects, don't use master pobj center, but rotate each pobj around its own center */
   POBJ_MOVE_INDROT,
   /* use polyobject angle instead of `yawangle` in `Polyobj_MoveRotateEx()` */
   POBJ_MOVE_POANGLE,

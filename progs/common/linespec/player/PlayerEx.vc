@@ -3245,7 +3245,7 @@ void DisplayObituary (EntityEx inflictor, EntityEx source, name DmgType) {
       // telefrag
       Msg = "$ob_mptelefrag";
     } else if (inflictor && inflictor.Obituary) {
-      // missile with it's own obituary
+      // missile with its own obituary
       Msg = inflictor.Obituary;
     } else {
       PlayerEx pex = (inflictor && inflictor.Player ? PlayerEx(inflictor.Player) : none);
@@ -4053,7 +4053,7 @@ PlayerPawn SpawnPlayer (mthing_t *mthing, bool Voodoo) {
   TranslEnd = PP.TranslEnd;
   PP.Translation = (Entity::TRANSL_Player<<Entity::TRANSL_TYPE_SHIFT)+GetPlayerNum();
 
-  // if a voodoo doll has been spawned, take it's inventory
+  // if a voodoo doll has been spawned, take its inventory
   if (Voodoo) {
     //printdebug("  moving inventory to the Voodoo Doll from MO (SVI=%C)", SavedInventory);
     PP.ObtainInventory(EntityEx(MO));

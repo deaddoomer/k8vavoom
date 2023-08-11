@@ -216,7 +216,7 @@ void ProcessStairSector () {
 //
 //  Tick
 //
-//  move a floor to it's destination (up or down)
+//  move a floor to its destination (up or down)
 //
 //==========================================================================
 override void Tick (float deltaTime) {

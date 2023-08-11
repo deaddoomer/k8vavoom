@@ -121,7 +121,7 @@ final void InitSpawnedItem (EntityEx A, bool TransTransl, bool SetMaster,
   //if (SetMaster) printdebug("+++ %C: spawned `%C` with SetMaster; (A.bMonster=%B)", self, A, A.bMonster);
 
   if (A.bMonster) {
-    // check if thing fits in it's current location
+    // check if thing fits in its current location
     if (!NoCheckPos && !A.TestLocation()) {
       if (A.CountsAsKill()) --Level.TotalKills;
       A.Destroy();

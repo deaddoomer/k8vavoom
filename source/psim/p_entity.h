@@ -400,14 +400,18 @@ class VEntity : public VThinker {
 
   // corpse sliding code
   enum {
+    // this prevents corpse from climbing upstairs
+    CSL_CorpseWasNudged    = 1u<<0,
     // forced sliding mode
-    CSL_CorpseSliding = 1u<<0,
+    CSL_CorpseSliding      = 1u<<1,
+    // sliding from slope
+    CSL_CorpseSlidingSlope = 1u<<2,
   };
   vuint32 cslFlags;
 
   float cslStartTime; // slide starting time
   float cslCheckDelay; // timeout before next check
-  float cslLastZ;
+  TVec cslLastPos; // need position for slopes and such
 
 protected:
   //VEntity () : SoundClass(E_NoInit), SoundGender(E_NoInit), DecalName(E_NoInit) {}

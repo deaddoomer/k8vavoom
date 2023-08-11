@@ -2000,6 +2000,37 @@ static TPlane::ClipWorkData stxWk;
 
 //==========================================================================
 //
+//  CheckGoodStanding
+//
+//  check all regions
+//
+//==========================================================================
+static inline bool CheckGoodStanding (VEntity *mobj, sector_t *sector, TVec morg) {
+  if (sector) {
+    if (sector->floor.GetPointZClamped(morg) == morg.z) return true;
+    else if (sector->Has3DFloors()) {
+      for (const sec_region_t *reg = sector->eregions->next; reg; reg = reg->next) {
+        if (reg->regflags&(sec_region_t::RF_BaseRegion|sec_region_t::RF_OnlyVisual|sec_region_t::RF_NonSolid)) continue;
+        // get opening points
+        const float fz = reg->efloor.GetPointZClamped(morg);
+        const float cz = reg->eceiling.GetPointZClamped(morg);
+        if (fz >= cz) continue; // ignore paper-thin regions
+        #if 0
+        GCon->Logf(NAME_Debug, "%s(%u): fz=%g; cz=%g; z=%g; hit=%d",
+                   mobj->GetClass()->GetName(), mobj->GetUniqueId(),
+                   fz, cz, morg.z, (cz == morg.z));
+        #endif
+        // we are standing on 3d floor ceilings
+        if (cz == morg.z) return true;
+      }
+    }
+  }
+  return false;
+}
+
+
+//==========================================================================
+//
 //  addPoint
 //
 //==========================================================================
@@ -2163,17 +2194,7 @@ static VVA_OKUNUSED bool checkStationary (VEntity *mobj) {
   for (msecnode_t *mnode = mobj->TouchingSectorList; mnode; mnode = mnode->TNext) {
     // check all subsectors
     for (subsector_t *sub = mnode->Sector->subsectors; sub; sub = sub->seclink) {
-      const float fz = sub->sector->floor.GetPointZClamped(morg);
-      if (fz != morg.z) {
-        //GCon->Logf(NAME_Debug, ":::oops: fz-mz: %g", fz-morg.z);
-        continue;
-      }
-      /*
-      else {
-        GCon->Logf(NAME_Debug, ":::boo: fz-mz: %g", fz-morg.z);
-        continue;
-      }
-      */
+      if (!CheckGoodStanding(mobj, sub->sector, morg)) continue;
       if (!XLevel->IsBBox2DTouchingSubsector(sub, mybbox)) continue;
 
       if (sub->bbox2d[BOX2D_MINX] >= mybbox[BOX2D_MINX] &&
@@ -2413,16 +2434,9 @@ static void AM_drawOneThing (VEntity *mobj, bool &inSpriteMode) {
                   line_t *ld = it.line();
                   if ((ld->flags&ML_TWOSIDED) == 0) continue;
                   if (!mobj->LineIntersects(ld)) continue;
-                  bool ok = false, high = false;
-                  for (int snum = 0; snum < 2 && !high; snum += 1) {
-                    const sector_t *sec = (snum ? ld->backsector : ld->frontsector);
-                    vassert(sec);
-                    const float fz = sec->floor.GetPointZClamped(mobj->Origin);
-                    const float zdiff = fz-mobj->Origin.z;
-                    ok = ok || (zdiff == 0.0f);
-                    high = (zdiff > 0.0f);
-                  }
-                  if (high) continue;
+                  const bool ok = CheckGoodStanding(mobj, ld->frontsector, morg) ||
+                                  CheckGoodStanding(mobj, ld->backsector, morg);
+                  if (!ok) continue;
                   const int side = ld->PointOnSide(mobj->Origin);
                   #if 0
                   GCon->Logf("  line: side=%d; norm:(%g,%g,%g)",

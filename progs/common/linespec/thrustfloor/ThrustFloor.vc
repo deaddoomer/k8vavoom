@@ -72,7 +72,7 @@ bool bBloody; // bloody spike
   // raise spike from the ground
   FloorClip -= RaiseSpeed;
   if (FloorClip <= 0.0) {
-    // reached it's target height
+    // reached its target height
     FloorClip = 0.0;
     bRaised = true;
     if (bBloody) {

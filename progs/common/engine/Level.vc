@@ -370,7 +370,7 @@ native final int GetPolyobjMirror (int poly);
 bitenum {
   POFLAG_FORCED, // do not check position, do not carry objects
   POFLAG_NOLINK, // ignore linked polyobjects
-  POFLAG_INDROT, // for linked polyobjects, don't use master pobj center, but rotate each pobj around it's own center
+  POFLAG_INDROT, // for linked polyobjects, don't use master pobj center, but rotate each pobj around its own center
 }
 native final bool MovePolyobj (int num, float x, float y, optional float z, optional int flags);
 native final bool RotatePolyobj (int num, float angle, optional int flags);

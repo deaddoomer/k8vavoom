@@ -343,7 +343,7 @@ final int RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
 
     //printdebug("%C:002: Other=%C", self, Other);
     // option for monsters that fire explosive projectiles not to hurt
-    // monsters of the same class with it's projectiles.
+    // monsters of the same class with its projectiles.
     // controlled by the bDontHurtClass and bDontHurtSpecies flags.
     // check for `Source != Other` is here because if `DamageSource` is set, species should be ignored
     #if 0
@@ -1021,7 +1021,7 @@ final void NightmareRespawn () {
   float x = SpawnPoint.x;
   float y = SpawnPoint.y;
 
-  // somthing is occupying it's position?
+  // somthing is occupying its position?
   if (!CheckPosition(vector(x, y, ONFLOORZ))) return; // no respwan
 
   // spawn a teleport fog at old spot
@@ -5158,14 +5158,22 @@ bool DoThingRaise (optional bool skipCheckPosition, optional EntityEx Mage) {
   bSolid = true;
   if (bCorpse) {
     // relink, because corpses could have a smaller radius
-    UnlinkFromWorld();
+    // no more
+    //UnlinkFromWorld();
     bCorpse = false;
-    LinkToWorld();
+    //LinkToWorld();
   }
   Health = InitialHealth;
   Target = none;
   LastEnemy = none;
   bCorpseFlipped = false; // unflip it
+
+  // reset corpse sliding state
+  bCorpseSliding = false;
+  bCorpseSlidingSlope = false;
+  cslStartTime = 0;
+  cslDelay = 0;
+  cslLastPos = vector(-66666.0, -66666.0, -66666.0);
 
   // if it counts as kill, count it as another one
   if (CountsAsKill()) ++Level.TotalKills;

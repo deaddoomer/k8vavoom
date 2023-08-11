@@ -635,6 +635,37 @@ static VVA_OKUNUSED inline float PtSide (const TVec &a, const TVec &b, const TVe
 
 //==========================================================================
 //
+//  CheckGoodStanding
+//
+//  check all regions
+//
+//==========================================================================
+static inline bool CheckGoodStanding (VEntity *mobj, sector_t *sector, TVec morg) {
+  if (sector) {
+    if (sector->floor.GetPointZClamped(morg) == morg.z) return true;
+    else if (sector->Has3DFloors()) {
+      for (const sec_region_t *reg = sector->eregions->next; reg; reg = reg->next) {
+        if (reg->regflags&(sec_region_t::RF_BaseRegion|sec_region_t::RF_OnlyVisual|sec_region_t::RF_NonSolid)) continue;
+        // get opening points
+        const float fz = reg->efloor.GetPointZClamped(morg);
+        const float cz = reg->eceiling.GetPointZClamped(morg);
+        if (fz >= cz) continue; // ignore paper-thin regions
+        #if 0
+        GCon->Logf(NAME_Debug, "%s(%u): fz=%g; cz=%g; z=%g; hit=%d",
+                   mobj->GetClass()->GetName(), mobj->GetUniqueId(),
+                   fz, cz, morg.z, (cz == morg.z));
+        #endif
+        // we are standing on 3d floor ceilings
+        if (cz == morg.z) return true;
+      }
+    }
+  }
+  return false;
+}
+
+
+//==========================================================================
+//
 //  addPoint
 //
 //==========================================================================
@@ -744,6 +775,31 @@ static void buildConvexHull () {
 
 //==========================================================================
 //
+//  PointInHull
+//
+//==========================================================================
+static bool PointInHull (const TVec morg) {
+  bool inside = false;
+  const int hlen = stxHull.length();
+  if (hlen > 2) {
+    int c = hlen - 1;
+    for (int f = 0; f < hlen; c = f, f += 1) {
+      // c is prev
+      const TVec pf = stxHull[c];
+      const TVec pc = stxHull[f];
+      if (((pf.y > morg.y) != (pc.y > morg.y)) &&
+          (morg.x < (pc.x-pf.x) * (morg.y-pf.y) / (pc.y-pf.y) + pf.x))
+      {
+        inside = !inside;
+      }
+    }
+  }
+  return inside;
+}
+
+
+//==========================================================================
+//
 //  checkStationary
 //
 //  debug for body sliding
@@ -785,17 +841,7 @@ static bool checkStationary (VEntity *mobj) {
   for (msecnode_t *mnode = mobj->TouchingSectorList; mnode; mnode = mnode->TNext) {
     // check all subsectors
     for (subsector_t *sub = mnode->Sector->subsectors; sub; sub = sub->seclink) {
-      const float fz = sub->sector->floor.GetPointZClamped(morg);
-      if (fz != morg.z) {
-        //GCon->Logf(NAME_Debug, ":::oops: fz-mz: %g", fz-morg.z);
-        continue;
-      }
-      /*
-      else {
-        GCon->Logf(NAME_Debug, ":::boo: fz-mz: %g", fz-morg.z);
-        continue;
-      }
-      */
+      if (!CheckGoodStanding(mobj, sub->sector, morg)) continue;
       if (!XLevel->IsBBox2DTouchingSubsector(sub, mybbox)) continue;
 
       if (sub->bbox2d[BOX2D_MINX] >= mybbox[BOX2D_MINX] &&
@@ -905,14 +951,14 @@ static bool checkStationary (VEntity *mobj) {
   }
   #endif
 
-  int inside = 0;
-  for (int f = 0; f < stxHull.length(); f += 1) {
-    int c = (f + 1) % stxHull.length();
-    if (((stxHull[f].y > morg.y) != (stxHull[c].y > morg.y)) &&
-        (morg.x < (stxHull[c].x-stxHull[f].x) * (morg.y-stxHull[f].y) / (stxHull[c].y-stxHull[f].y) + stxHull[f].x))
-    {
-      inside ^= 1;
-    }
+  bool inside = PointInHull(morg);
+  if (rad > 4.0f) {
+    const float nofs = 2.0f;
+    // check more points
+    if (inside) inside = PointInHull(morg+TVec(+nofs, -nofs));
+    if (inside) inside = PointInHull(morg+TVec(+nofs, +nofs));
+    if (inside) inside = PointInHull(morg+TVec(-nofs, -nofs));
+    if (inside) inside = PointInHull(morg+TVec(-nofs, +nofs));
   }
 
   #if 0
@@ -929,6 +975,7 @@ static bool checkStationary (VEntity *mobj) {
 //==========================================================================
 static VVA_OKUNUSED TVec CalculateSlideVectorMap (VEntity *mobj) {
   float mybbox[4];
+  const TVec morg = mobj->Origin;
   TVec snorm = TVec(0.0f, 0.0f, 0.0f);
   VLevel *XLevel = mobj->XLevel;
 
@@ -944,16 +991,9 @@ static VVA_OKUNUSED TVec CalculateSlideVectorMap (VEntity *mobj) {
         line_t *ld = it.line();
         if ((ld->flags&ML_TWOSIDED) == 0) continue;
         if (!mobj->LineIntersects(ld)) continue;
-        bool ok = false, high = false;
-        for (int snum = 0; snum < 2 && !high; snum += 1) {
-          const sector_t *sec = (snum ? ld->backsector : ld->frontsector);
-          vassert(sec);
-          const float fz = sec->floor.GetPointZClamped(mobj->Origin);
-          const float zdiff = fz-mobj->Origin.z;
-          ok = ok || (zdiff == 0.0f);
-          high = (zdiff > 0.0f);
-        }
-        if (high) continue;
+        const bool ok = CheckGoodStanding(mobj, ld->frontsector, morg) ||
+                        CheckGoodStanding(mobj, ld->backsector, morg);
+        if (!ok) continue;
         const int side = ld->PointOnSide(mobj->Origin);
         #if 0
         GCon->Logf("  line: side=%d; norm:(%g,%g,%g)",
@@ -1011,6 +1051,17 @@ static VVA_OKUNUSED TVec CalculateSlideVectorHull (VEntity *mobj) {
 
 //==========================================================================
 //
+//  CorpseIdle
+//
+//==========================================================================
+static inline void CorpseIdle (VEntity *mobj) {
+  mobj->cslFlags &= ~(VEntity::CSL_CorpseSliding|VEntity::CSL_CorpseSlidingSlope);
+  mobj->cslCheckDelay = -1.0f;
+}
+
+
+//==========================================================================
+//
 //  VEntity::CorpseSlide
 //
 //  "corpse check" should be already done
@@ -1022,90 +1073,136 @@ void VEntity::CorpseSlide (float deltaTime) {
   tmtrace_t tm;
   TVec snorm;
 
+  // if on pobj, do nothing (yet)
+  if (Sector != BaseSector) { CorpseIdle(this); return; }
+
   // default timeout: nudge roughly each tick
   cslCheckDelay = 0.02f;
 
-  if (Velocity.isZero()) {
-    // not moving
-    CheckRelPositionPoint(tm, Origin);
-    stxHull.resetNoDtor();
-    if (tm.FloorZ < Origin.z && !checkStationary(this)) {
-      // this corpse is not in a "stable" position (i.e. should slide away)
-      #ifdef VV_DEBUG_CSL_VERBOSE
-      GCon->Logf("CORPSE HANGING: %s(%u): fz=%g; oz=%g", GetClass()->GetName(),
-                 GetUniqueId(), tm.FloorZ, Origin.z);
-      #endif
+  CheckRelPositionPoint(tm, Origin);
+  #if 0
+  GCon->Logf("CORPSE: %s(%u): fz=%g; oz=%g; efz=%g", GetClass()->GetName(),
+             GetUniqueId(), tm.FloorZ, Origin.z, FloorZ);
+  #endif
+  stxHull.resetNoDtor();
+  if (tm.FloorZ < Origin.z && !checkStationary(this)) {
+    // this corpse is not in a "stable" position (i.e. should slide away)
+    #ifdef VV_DEBUG_CSL_VERBOSE
+    GCon->Logf("CORPSE HANGING: %s(%u): fz=%g; oz=%g", GetClass()->GetName(),
+               GetUniqueId(), tm.FloorZ, Origin.z);
+    #endif
 
-      if (stxHull.length() < 3) {
-        snorm = CalculateSlideVectorMap(this);
-      } else {
-        snorm = CalculateSlideVectorHull(this);
-      }
+    cslFlags &= ~CSL_CorpseSlidingSlope;
 
-      if (!snorm.isZero2D()) {
-        // remember sliding start time
-        if ((cslFlags&CSL_CorpseSliding) == 0) {
+    if (stxHull.length() < 3) {
+      snorm = CalculateSlideVectorMap(this);
+    } else {
+      snorm = CalculateSlideVectorHull(this);
+    }
+
+    if (!snorm.isZero2D()) {
+      if (cslFlags&CSL_CorpseSliding) {
+        // reset starting time when Z was changed
+        if (cslLastPos.z != Origin.z) {
           cslStartTime = XLevel->Time;
-          cslFlags |= CSL_CorpseSliding;
-        } else {
-          // reset starting time when Z was changed
-          if (cslLastZ != Origin.z) cslStartTime = XLevel->Time;
+        } else if ((cslFlags&CSL_CorpseWasNudged) == 0 && cslLastPos == Origin) {
+          cslStartTime = XLevel->Time - 1000.0f; // this will freeze it
         }
-        cslLastZ = Origin.z;
-        // if slided for too long, don't bother anymore
-        if (XLevel->Time - cslStartTime > 60.0f) {
-          // freeze it
-          cslCheckDelay = -1.0f;
-          #ifdef VV_DEBUG_CSL_VERBOSE
-          GCon->Logf("CORPSE IDLE: %s(%u): tm=%g", GetClass()->GetName(),
-                     GetUniqueId(), XLevel->Time - cslStartTime);
-          #endif
-        } else {
-          const float speed = 15.0f; //10.0f+5.0f*FRandom();
-          #ifdef VV_DEBUG_CSL_VERBOSE
-          GCon->Logf("CC(%u):%s: snorm:(%g,%g,%g); angle:%g",
-                     GetUniqueId(), GetClass()->GetName(),
-                     snorm.x, snorm.y, snorm.z, AngleMod360(VectorAngleYaw(snorm)));
-          #endif
+      } else {
+        // remember sliding start time
+        cslStartTime = XLevel->Time;
+        cslFlags |= CSL_CorpseSliding;
+      }
+      cslLastPos = Origin;
+
+      // if slided for too long, don't bother anymore
+      if (XLevel->Time - cslStartTime > 60.0f) {
+        CorpseIdle(this);
+        #ifdef VV_DEBUG_CSL_VERBOSE
+        GCon->Logf("CORPSE IDLE: %s(%u): tm=%g", GetClass()->GetName(),
+                   GetUniqueId(), XLevel->Time - cslStartTime);
+        #endif
+      } else {
+        //const float speed = 15.0f;
+        const float speed = 12.0f + 6.0f*((hashU32(GetUniqueId())>>4)&0x3fu)/63.0f;
+        #ifdef VV_DEBUG_CSL_VERBOSE
+        GCon->Logf("CC(%u):%s: snorm:(%g,%g,%g); angle:%g",
+                   GetUniqueId(), GetClass()->GetName(),
+                   snorm.x, snorm.y, snorm.z, AngleMod360(VectorAngleYaw(snorm)));
+        #endif
+        // don't change velocity each time, it doesn't look good
+        if (cslFlags&CSL_CorpseWasNudged) {
+          if (Velocity.length2DSquared() < 10.0f*10.0f) {
+            Velocity.x = snorm.x*speed;
+            Velocity.y = snorm.y*speed;
+          }
+        } else if (Velocity.length2DSquared() < 3.0f*3.0f) {
+          // nudged for the first time
+          cslFlags |= CSL_CorpseWasNudged;
           Velocity.x = snorm.x*speed;
           Velocity.y = snorm.y*speed;
         }
-      } else {
-        // no slide direction; alas, freeze it
-        #ifdef VV_DEBUG_CSL_VERBOSE
-        GCon->Logf("CC(%u):%s: NO SLIDE DIR; freezing; snorm:(%g,%g,%g)",
-                   GetUniqueId(), GetClass()->GetName(),
-                   snorm.x, snorm.y, snorm.z);
-        #endif
-        cslFlags &= ~CSL_CorpseSliding;
-        cslCheckDelay = -1.0f;
       }
     } else {
-      // not hanging
+      // no slide direction; alas, freeze it
       #ifdef VV_DEBUG_CSL_VERBOSE
-      GCon->Logf("CORPSE STABLE: %s(%u): vel=(%g,%g,%g); diffz=%g; lz=%g; stat=%d",
-                 GetClass()->GetName(),
-                 GetUniqueId(), Velocity.x, Velocity.y, Velocity.z,
-                 tm.FloorZ-Origin.z, cslLastZ, checkStationary(this));
+      GCon->Logf("CC(%u):%s: NO SLIDE DIR; freezing; snorm:(%g,%g,%g)",
+                 GetUniqueId(), GetClass()->GetName(),
+                 snorm.x, snorm.y, snorm.z);
       #endif
-      if (Velocity.isZero2D()) {
-        // it seems to stay in place, so don't bother re-checking it
-        if ((cslFlags&CSL_CorpseSliding) == 0) {
-          // "map was just loaded" hack
-          if (cslStartTime == 0.0f) {
-            cslStartTime = 0.2f;
-            cslCheckDelay = 0.4f + 0.2f*FRandom();
-          } else {
-            cslCheckDelay = -1.0f;
-          }
+      CorpseIdle(this);
+    }
+  } else {
+    // the corpse is stable, but may still move, or lie on a slope
+    #ifdef VV_DEBUG_CSL_VERBOSE
+    GCon->Logf("CORPSE STABLE: %s(%u): vel=(%g,%g,%g); diffz=%g; lz=%g; stat=%d; fn=(%g,%g,%g):%d",
+               GetClass()->GetName(), GetUniqueId(),
+               Velocity.x, Velocity.y, Velocity.z,
+               tm.FloorZ-Origin.z, cslLastPos.z, checkStationary(this),
+               tm.EFloor.GetNormal().x, tm.EFloor.GetNormal().y, tm.EFloor.GetNormal().z,
+               tm.EFloor.isSlope());
+    #endif
+    if (Velocity.isZero2D()) {
+      // it seems to stay in place, so don't bother re-checking it
+      // check for slopes
+      if (tm.EFloor.isSlope()) {
+        #if 0
+        GCon->Logf("CORPSE STABLE: %s(%u): cslFlags=0x%04XH; pdiff=(%g,%g,%g)",
+                   GetClass()->GetName(), GetUniqueId(), cslFlags,
+                   (cslLastPos-Origin).x, (cslLastPos-Origin).y, (cslLastPos-Origin).z);
+        #endif
+        if ((cslFlags&CSL_CorpseSlidingSlope) != 0 && cslLastPos == Origin) {
+          // cannot move
+          CorpseIdle(this);
         } else {
-          cslFlags &= ~CSL_CorpseSliding;
+          const TVec fn = tm.EFloor.GetNormal();
+          //const float speed = 15.0f;
+          const float speed = 12.0f + 6.0f*((hashU32(GetUniqueId())>>4)&0x3fu)/63.0f;
+          cslFlags |= CSL_CorpseSliding|CSL_CorpseSlidingSlope;
+          Velocity.x = fn.x*speed;
+          Velocity.y = fn.y*speed;
+          #ifdef VV_DEBUG_CSL_VERBOSE
+          GCon->Logf("...slope: vel=(%g,%g,%g)", Velocity.x, Velocity.y, Velocity.z);
+          #endif
+        }
+      } else if ((cslFlags&CSL_CorpseSliding) == 0) {
+        cslFlags &= ~(CSL_CorpseSliding|CSL_CorpseSlidingSlope);
+        // "map was just loaded" hack
+        if (cslStartTime == 0.0f) {
+          cslStartTime = 0.2f;
+          cslCheckDelay = 0.4f + 0.2f*FRandom();
+        } else {
           cslCheckDelay = -1.0f;
         }
-        cslLastZ = Origin.z;
       } else {
-        // still moving
-        //CorpseSlideCheckDelay = 100.0f+50.0f*FRandom();
+        CorpseIdle(this);
+      }
+      cslLastPos = Origin;
+    } else {
+      // still moving
+      // if on the slope, keep sliding
+      if (!tm.EFloor.isSlope()) {
+        cslFlags &= ~(CSL_CorpseSliding|CSL_CorpseSlidingSlope);
       }
     }
   }
@@ -1222,7 +1319,7 @@ void VEntity::Tick (float deltaTime) {
     if (FlagsEx&EFEX_SomeSectorMoved) {
       FlagsEx &= ~EFEX_SomeSectorMoved;
       // consider this corpse "fresh"
-      cslFlags &= ~CSL_CorpseSliding;
+      CorpseIdle(this);
       cslCheckDelay = 0.1f + 0.2f*FRandom();
     }
 

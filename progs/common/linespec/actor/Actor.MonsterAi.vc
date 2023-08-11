@@ -688,7 +688,7 @@ bool CheckForResurrect (bool UseVileStates) {
       // enter heal state
       state HealState = FindState('Heal');
       if (!HealState && UseVileStates) {
-        // for DeHackEd compatibility use Arch-vile heal states if this one doesn't have it's own
+        // for DeHackEd compatibility use Arch-vile heal states if this one doesn't have its own
         HealState = FindClassState(Archvile, 'Heal');
       }
       if (HealState) SetState(HealState);
@@ -1282,7 +1282,7 @@ final void doKillXXX (EntityEx dest, name adamagetype, int flags, optional name 
   ChunkType = GetCompatibleClassReplacement(Actor, ChunkType);
   if (!ChunkType) return;
 
-  // stop the thing and reset it's height
+  // stop the thing and reset its height
   Velocity = vector(0.0, 0.0, 0.0);
   Height = default.Height;
 
