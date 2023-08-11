@@ -132,8 +132,8 @@ public:
   VObject *saved;
 public:
   VV_DISABLE_COPY(SavedVObjectPtr)
-  inline SavedVObjectPtr (VObject **aptr) noexcept : ptr(aptr), saved(*aptr) {}
-  inline ~SavedVObjectPtr () noexcept { *ptr = saved; }
+  VVA_FORCEINLINE SavedVObjectPtr (VObject **aptr) noexcept : ptr(aptr), saved(*aptr) {}
+  VVA_FORCEINLINE ~SavedVObjectPtr () noexcept { *ptr = saved; }
 };
 
 
@@ -143,8 +143,8 @@ public:
   VStateCall *PrevCall;
 public:
   VV_DISABLE_COPY(PCSaver)
-  inline PCSaver (VStateCall **aptr) noexcept : ptr(aptr), PrevCall(nullptr) { if (aptr) PrevCall = *aptr; }
-  inline ~PCSaver () noexcept { if (ptr) *ptr = PrevCall; ptr = nullptr; }
+  VVA_FORCEINLINE PCSaver (VStateCall **aptr) noexcept : ptr(aptr), PrevCall(nullptr) { if (aptr) PrevCall = *aptr; }
+  VVA_FORCEINLINE ~PCSaver () noexcept { if (ptr) *ptr = PrevCall; ptr = nullptr; }
 };
 
 
@@ -155,8 +155,8 @@ public:
 public:
   VV_DISABLE_COPY(SetStateGuard)
   // constructor increases invocation count
-  inline SetStateGuard (VEntity *aent) noexcept : ent(aent) { aent->setStateWatchCat = 0; }
-  inline ~SetStateGuard () noexcept { ent->setStateWatchCat = 0; }
+  VVA_FORCEINLINE SetStateGuard (VEntity *aent) noexcept : ent(aent) { aent->setStateWatchCat = 0; }
+  VVA_FORCEINLINE ~SetStateGuard () noexcept { ent->setStateWatchCat = 0; }
 };
 
 
@@ -600,7 +600,7 @@ static TPlane::ClipWorkData stxWk;
 //  segNormal
 //
 //==========================================================================
-static VVA_OKUNUSED inline TVec SegNormal (const TVec &v0, const TVec &v1) {
+static VVA_OKUNUSED TVec SegNormal (const TVec &v0, const TVec &v1) {
   const TVec dir = v1 - v0;
   TVec normal = TVec(dir.y, -dir.x, 0.0f);
   // use some checks to avoid floating point inexactness on axial planes
@@ -625,22 +625,12 @@ static VVA_OKUNUSED inline TVec SegNormal (const TVec &v0, const TVec &v1) {
 
 //==========================================================================
 //
-//  isLeft
-//
-//==========================================================================
-static VVA_OKUNUSED inline float PtSide (const TVec &a, const TVec &b, const TVec &p) {
-  return (b.x - a.x)*(p.y - a.y) - (b.y - a.y)*(p.x - a.x);
-}
-
-
-//==========================================================================
-//
 //  CheckGoodStanding
 //
 //  check all regions
 //
 //==========================================================================
-static inline bool CheckGoodStanding (VEntity *mobj, sector_t *sector, TVec morg) {
+static bool CheckGoodStanding (VEntity *mobj, sector_t *sector, TVec morg) {
   if (sector) {
     if (sector->floor.GetPointZClamped(morg) == morg.z) return true;
     else if (sector->Has3DFloors()) {
@@ -666,15 +656,20 @@ static inline bool CheckGoodStanding (VEntity *mobj, sector_t *sector, TVec morg
 
 //==========================================================================
 //
-//  addPoint
+//  PtSide
+//
+//  this is a magnitude of the cross product of two 2D vectors (yes, it sounds funny)
+//  it is also a determinant of two vectors
+//  and it is proprotional to (signed) triangle area
 //
 //==========================================================================
-static inline void addPoint (const TVec pt) {
-  for (auto &&p : stxPoints) {
-    if (fabsf(p.x-pt.x) < 0.001f && fabsf(p.y-pt.y) < 0.001f) return;
-  }
-  stxPoints.append(TVec(pt.x, pt.y));
+static VVA_OKUNUSED VVA_FORCEINLINE float PtSide (const TVec &a, const TVec &b, const TVec &p) {
+  return (b.x - a.x)*(p.y - a.y) - (b.y - a.y)*(p.x - a.x);
 }
+
+
+// collinearity epsilon for hulls
+static const float hullEps = 0.01f;
 
 
 //==========================================================================
@@ -688,7 +683,6 @@ static void buildConvexHull () {
     #ifdef VX_DUMP_CONVEX_HULL
     GCon->Logf("pt #%d: (%g,%g,%g)", cidx, p.x, p.y, p.z);
     #endif
-    //AM_DrawBox(p.x-1, p.y-1, p.x+1, p.y+1, 0xFFFFFFFF);
     if (p.x < stxPoints[lesspt].x) lesspt = cidx;
     else if (p.x == stxPoints[lesspt].x && p.y < stxPoints[lesspt].y) lesspt = cidx;
     cidx += 1;
@@ -718,7 +712,8 @@ static void buildConvexHull () {
         GCon->Logf("    check #%d: sd=%g (ep=%d)", j, sd, ep);
         #endif
         // epsilon, to ignore collinear points
-        if (sd < -0.0001f) ep = j;
+        // i.e. we will ignore points on the right, and collinear points
+        if (sd < -hullEps) ep = j;
       }
     }
     #ifdef VX_DUMP_CONVEX_HULL
@@ -735,16 +730,18 @@ static void buildConvexHull () {
   }
   #endif
 
+  int hlen;
   for (int f = 0; f < i; f += 1) {
     const TVec np = stxPoints[stxHidx[f]];
-    if (stxHull.length() >= 2) {
+    hlen = stxHull.length();
+    if (hlen >= 2) {
       // check for collinear points
-      if (fabsf(PtSide(stxHull[stxHull.length() - 2], stxHull[stxHull.length() - 1], np)) < 0.0001f) {
+      if (fabsf(PtSide(stxHull[hlen - 2], stxHull[hlen - 1], np)) <= hullEps) {
         // collinear, extend
         #ifdef VX_DUMP_CONVEX_HULL
         GCon->Logf(" extend with %d", f);
         #endif
-        stxHull[stxHull.length() - 1] = np;
+        stxHull[hlen - 1] = np;
         continue;
       }
     }
@@ -752,14 +749,14 @@ static void buildConvexHull () {
   }
 
   // check last hull point
-  if (stxHull.length() > 2) {
+  hlen = stxHull.length();
+  if (hlen > 2) {
     // check for collinear points
-    if (fabsf(PtSide(stxHull[stxHull.length() - 2], stxHull[stxHull.length() - 1], stxHull[0])) < 0.0001f) {
+    if (fabsf(PtSide(stxHull[hlen - 2], stxHull[hlen - 1], stxHull[0])) <= hullEps) {
       // collinear, extend
       #ifdef VX_DUMP_CONVEX_HULL
       GCon->Logf(" remove last");
       #endif
-      //stxHull.removeAt(stxHull.length() - 1);
       stxHull.drop();
     }
   }
@@ -795,6 +792,19 @@ static bool PointInHull (const TVec morg) {
     }
   }
   return inside;
+}
+
+
+//==========================================================================
+//
+//  addPoint
+//
+//==========================================================================
+static VVA_FORCEINLINE void addPoint (const TVec pt) {
+  for (auto &&p : stxPoints) {
+    if (fabsf(p.x-pt.x) < 0.001f && fabsf(p.y-pt.y) < 0.001f) return;
+  }
+  stxPoints.append(TVec(pt.x, pt.y));
 }
 
 
@@ -1011,7 +1021,7 @@ static VVA_OKUNUSED TVec CalculateSlideVectorHull (VEntity *mobj) {
     int c = (f + 1) % stxHull.length();
     TVec v0 = stxHull[f];
     TVec v1 = stxHull[c];
-    if (PtSide(v0, v1, morg) > 0.0f) {
+    if (PtSide(v0, v1, morg) > hullEps) {
       snorm -= SegNormal(v0, v1);
     }
   }
@@ -1033,7 +1043,7 @@ static VVA_OKUNUSED TVec CalculateSlideVectorHull (VEntity *mobj) {
 //  CorpseIdle
 //
 //==========================================================================
-static inline void CorpseIdle (VEntity *mobj) {
+static VVA_FORCEINLINE void CorpseIdle (VEntity *mobj) {
   mobj->cslFlags &= ~(VEntity::CSL_CorpseSliding|VEntity::CSL_CorpseSlidingSlope);
   mobj->cslCheckDelay = -1.0f;
 }

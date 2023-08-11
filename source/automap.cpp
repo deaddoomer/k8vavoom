@@ -204,12 +204,12 @@ struct MarkPoint {
   float y;
   bool active;
 
-  inline MarkPoint () noexcept : x(0.0f), y(0.0f), active(false) {}
+  VVA_FORCEINLINE MarkPoint () noexcept : x(0.0f), y(0.0f), active(false) {}
 
-  inline bool isActive () const noexcept { return active; }
-  inline void setActive (bool v) noexcept { active = v; }
-  inline void activate () noexcept { setActive(true); }
-  inline void deactivate () noexcept { setActive(false); }
+  VVA_FORCEINLINE bool isActive () const noexcept { return active; }
+  VVA_FORCEINLINE void setActive (bool v) noexcept { active = v; }
+  VVA_FORCEINLINE void activate () noexcept { setActive(true); }
+  VVA_FORCEINLINE void deactivate () noexcept { setActive(false); }
 };
 
 struct mline_t {
@@ -1594,7 +1594,7 @@ static bool AM_CalcBM_ByMapCoords (float x0, float y0, float x1, float y1,
 //  calculate blockmap rect
 //
 //==========================================================================
-static inline bool AM_CalcBM (int *bx0, int *by0, int *bx1, int *by1) {
+static VVA_FORCEINLINE bool AM_CalcBM (int *bx0, int *by0, int *bx1, int *by1) {
   return AM_CalcBM_ByMapCoords(m_x, m_y, m_x2, m_y2, bx0, by0, bx1, by1, am_rotate);
 }
 
@@ -2005,7 +2005,7 @@ static TPlane::ClipWorkData stxWk;
 //  check all regions
 //
 //==========================================================================
-static inline bool CheckGoodStanding (VEntity *mobj, sector_t *sector, TVec morg) {
+static bool CheckGoodStanding (VEntity *mobj, sector_t *sector, TVec morg) {
   if (sector) {
     if (sector->floor.GetPointZClamped(morg) == morg.z) return true;
     else if (sector->Has3DFloors()) {
@@ -2031,25 +2031,19 @@ static inline bool CheckGoodStanding (VEntity *mobj, sector_t *sector, TVec morg
 
 //==========================================================================
 //
-//  addPoint
+//  PtSide
+//
+//  this is a magnitude of the cross product of two 2D vectors (yes, it sounds funny)
+//  it is also a determinant of two vectors
+//  and it is proprotional to (signed) triangle area
 //
 //==========================================================================
-static VVA_OKUNUSED inline void addPoint (const TVec pt) {
-  for (auto &&p : stxPoints) {
-    if (fabsf(p.x-pt.x) < 0.001f && fabsf(p.y-pt.y) < 0.001f) return;
-  }
-  stxPoints.append(TVec(pt.x, pt.y));
-}
-
-
-//==========================================================================
-//
-//  isLeft
-//
-//==========================================================================
-static VVA_OKUNUSED inline float PtSide (const TVec &a, const TVec &b, const TVec &p) {
+static VVA_OKUNUSED VVA_FORCEINLINE float PtSide (const TVec &a, const TVec &b, const TVec &p) {
   return (b.x - a.x)*(p.y - a.y) - (b.y - a.y)*(p.x - a.x);
 }
+
+
+static const float hullEps = 0.01f;
 
 
 //==========================================================================
@@ -2063,7 +2057,6 @@ static VVA_OKUNUSED void buildConvexHull () {
     if (dbg_am_slide_verbose_hull.asBool()) {
       GCon->Logf("pt #%d: (%g,%g,%g)", cidx, p.x, p.y, p.z);
     }
-    AM_DrawBox(p.x-1, p.y-1, p.x+1, p.y+1, 0xFFFFFFFF);
     if (p.x < stxPoints[lesspt].x) lesspt = cidx;
     else if (p.x == stxPoints[lesspt].x && p.y < stxPoints[lesspt].y) lesspt = cidx;
     cidx += 1;
@@ -2093,7 +2086,8 @@ static VVA_OKUNUSED void buildConvexHull () {
           GCon->Logf("    check #%d: sd=%g (ep=%d)", j, sd, ep);
         }
         // epsilon, to ignore collinear points
-        if (sd < -0.0001f) ep = j;
+        // i.e. we will ignore points on the right, and collinear points
+        if (sd < -hullEps) ep = j;
       }
     }
     if (dbg_am_slide_verbose_hull.asBool()) {
@@ -2116,7 +2110,7 @@ static VVA_OKUNUSED void buildConvexHull () {
     hlen = stxHull.length();
     if (hlen >= 2) {
       // check for collinear points
-      if (fabsf(PtSide(stxHull[hlen - 2], stxHull[hlen - 1], np)) < 0.0001f) {
+      if (fabsf(PtSide(stxHull[hlen - 2], stxHull[hlen - 1], np)) <= hullEps) {
         // collinear, extend
         if (dbg_am_slide_verbose_hull.asBool()) {
           GCon->Logf(" extend with %d", f);
@@ -2132,12 +2126,11 @@ static VVA_OKUNUSED void buildConvexHull () {
   hlen = stxHull.length();
   if (hlen > 2) {
     // check for collinear points
-    if (fabsf(PtSide(stxHull[hlen - 2], stxHull[hlen - 1], stxHull[0])) < 0.0001f) {
+    if (fabsf(PtSide(stxHull[hlen - 2], stxHull[hlen - 1], stxHull[0])) <= hullEps) {
       // collinear, extend
       if (dbg_am_slide_verbose_hull.asBool()) {
         GCon->Logf(" remove last");
       }
-      //stxHull.removeAt(stxHull.length() - 1);
       stxHull.drop();
     }
   }
@@ -2148,6 +2141,44 @@ static VVA_OKUNUSED void buildConvexHull () {
       GCon->Logf("  #%d: (%g,%g,%g)", f, stxHull[f].x, stxHull[f].y, stxHull[f].z);
     }
   }
+}
+
+
+//==========================================================================
+//
+//  PointInHull
+//
+//==========================================================================
+static bool PointInHull (const TVec morg) {
+  bool inside = false;
+  const int hlen = stxHull.length();
+  if (hlen > 2) {
+    int c = hlen - 1;
+    for (int f = 0; f < hlen; c = f, f += 1) {
+      // c is prev
+      const TVec pf = stxHull[c];
+      const TVec pc = stxHull[f];
+      if (((pf.y > morg.y) != (pc.y > morg.y)) &&
+          (morg.x < (pc.x-pf.x) * (morg.y-pf.y) / (pc.y-pf.y) + pf.x))
+      {
+        inside = !inside;
+      }
+    }
+  }
+  return inside;
+}
+
+
+//==========================================================================
+//
+//  addPoint
+//
+//==========================================================================
+static VVA_OKUNUSED VVA_FORCEINLINE void addPoint (const TVec pt) {
+  for (auto &&p : stxPoints) {
+    if (fabsf(p.x-pt.x) < 0.001f && fabsf(p.y-pt.y) < 0.001f) return;
+  }
+  stxPoints.append(TVec(pt.x, pt.y));
 }
 
 
@@ -2283,15 +2314,17 @@ static VVA_OKUNUSED bool checkStationary (VEntity *mobj) {
   }
   #endif
 
-  int inside = 0;
-  for (int f = 0; f < stxHull.length(); f += 1) {
-    int c = (f + 1) % stxHull.length();
-    if (((stxHull[f].y > morg.y) != (stxHull[c].y > morg.y)) &&
-        (morg.x < (stxHull[c].x-stxHull[f].x) * (morg.y-stxHull[f].y) / (stxHull[c].y-stxHull[f].y) + stxHull[f].x))
-    {
-      inside ^= 1;
-    }
+  bool inside = PointInHull(morg);
+  /*
+  if (rad > 4.0f) {
+    const float nofs = 2.0f;
+    // check more points
+    if (inside) inside = PointInHull(morg+TVec(+nofs, -nofs));
+    if (inside) inside = PointInHull(morg+TVec(+nofs, +nofs));
+    if (inside) inside = PointInHull(morg+TVec(-nofs, -nofs));
+    if (inside) inside = PointInHull(morg+TVec(-nofs, +nofs));
   }
+  */
 
   #if 0
   GCon->Logf(NAME_Debug, "=== pts:%d; hull:%d; inside=%d ===", stxPoints.length(), stxHull.length(), inside);
@@ -2390,7 +2423,19 @@ static void AM_drawOneThing (VEntity *mobj, bool &inSpriteMode) {
         mobj->CheckRelPositionPoint(tm, mobj->Origin);
         if (tm.FloorZ < mobj->Origin.z) {
           rad += 1.0f;
-          if (checkStationary(mobj)) {
+          const bool checkStat = checkStationary(mobj);
+          if (cheatMode >= 16) {
+            // draw hull points
+            for (auto &&p : stxHull) {
+              AM_DrawBox(p.x-1, p.y-1, p.x+1, p.y+1, 0xFFFFFFFF);
+            }
+          } else {
+            // draw contact points
+            for (auto &&p : stxPoints) {
+              AM_DrawBox(p.x-1, p.y-1, p.x+1, p.y+1, 0xFFFFFFFF);
+            }
+          }
+          if (checkStat) {
             AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, 0xFFFF00FF);
             return;
           }
@@ -2436,7 +2481,7 @@ static void AM_drawOneThing (VEntity *mobj, bool &inSpriteMode) {
               TVec v0 = stxHull[f];
               TVec v1 = stxHull[c];
               #if 1
-              if (PtSide(v0, v1, morg) > 0.0f) {
+              if (PtSide(v0, v1, morg) > hullEps) {
                 TPlane pl;
                 pl.Set2Points(v0, v1);
                 TVec n = pl.normal;
@@ -2450,7 +2495,7 @@ static void AM_drawOneThing (VEntity *mobj, bool &inSpriteMode) {
                   TPlane pl;
                   pl.Set2Points(v0, v1);
                   TVec n = pl.normal;
-                  if (PtSide(v0, v1, morg) > 0.0f) n = -n;
+                  if (PtSide(v0, v1, morg) > hullEps) n = -n;
                   snorm = n;
                   sql = sqx;
                 }
@@ -3046,8 +3091,9 @@ static void AM_Minimap_DrawMarks (VWidget *w, float xc, float yc, float scale, f
 //  calculate blockmap rect
 //
 //==========================================================================
-static inline bool AM_MiniMap_CalcBM (VWidget *w, float xc, float yc, float scale,
-                                      bool doRotate, int *bx0, int *by0, int *bx1, int *by1)
+static VVA_FORCEINLINE bool AM_MiniMap_CalcBM (VWidget *w, float xc, float yc, float scale,
+                                               bool doRotate, int *bx0, int *by0,
+                                               int *bx1, int *by1)
 {
   const float halfwdt = w->GetWidth()*0.5f;
   const float halfhgt = w->GetHeight()*0.5f;
