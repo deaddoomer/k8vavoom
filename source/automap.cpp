@@ -49,7 +49,8 @@
 // there is no need to do this anymore: OpenGL will do it for us
 //#define AM_DO_CLIPPING
 
-//#define VX_DUMP_CONVEX_HULL
+static VCvarB dbg_am_slide("dbg_am_slide", false, "debug (visualise) sliding code?", 0);
+static VCvarB dbg_am_slide_verbose_hull("dbg_am_slide_verbose_hull", false, "dump hull builder data?", 0);
 
 
 // player radius for movement checking
@@ -2028,9 +2029,9 @@ static VVA_OKUNUSED inline float PtSide (const TVec &a, const TVec &b, const TVe
 static VVA_OKUNUSED void buildConvexHull () {
   int lesspt = 0, cidx = 0;
   for (auto &&p : stxPoints) {
-    #ifdef VX_DUMP_CONVEX_HULL
-    GCon->Logf("pt #%d: (%g,%g,%g)", cidx, p.x, p.y, p.z);
-    #endif
+    if (dbg_am_slide_verbose_hull.asBool()) {
+      GCon->Logf("pt #%d: (%g,%g,%g)", cidx, p.x, p.y, p.z);
+    }
     AM_DrawBox(p.x-1, p.y-1, p.x+1, p.y+1, 0xFFFFFFFF);
     if (p.x < stxPoints[lesspt].x) lesspt = cidx;
     else if (p.x == stxPoints[lesspt].x && p.y < stxPoints[lesspt].y) lesspt = cidx;
@@ -2042,13 +2043,13 @@ static VVA_OKUNUSED void buildConvexHull () {
 
   int ptOnHull = lesspt;
   int i = 0, ep;
-  #ifdef VX_DUMP_CONVEX_HULL
-  GCon->Logf("starting: %d", ptOnHull);
-  #endif
+  if (dbg_am_slide_verbose_hull.asBool()) {
+    GCon->Logf("starting: %d", ptOnHull);
+  }
   do {
-    #ifdef VX_DUMP_CONVEX_HULL
-    GCon->Logf("  append #%d: %d", i, ptOnHull);
-    #endif
+    if (dbg_am_slide_verbose_hull.asBool()) {
+      GCon->Logf("  append #%d: %d", i, ptOnHull);
+    }
     stxHidx.append(ptOnHull); i += 1; vassert(i == stxHidx.length());
     ep = 0;
     const TVec lpt = stxPoints[ptOnHull];
@@ -2057,37 +2058,39 @@ static VVA_OKUNUSED void buildConvexHull () {
         ep = j;
       } else {
         const float sd = PtSide(lpt, stxPoints[ep], stxPoints[j]);
-        #ifdef VX_DUMP_CONVEX_HULL
-        GCon->Logf("    check #%d: sd=%g (ep=%d)", j, sd, ep);
-        #endif
+        if (dbg_am_slide_verbose_hull.asBool()) {
+          GCon->Logf("    check #%d: sd=%g (ep=%d)", j, sd, ep);
+        }
         // epsilon, to ignore collinear points
         if (sd < -0.0001f) ep = j;
       }
     }
-    #ifdef VX_DUMP_CONVEX_HULL
-    GCon->Logf("     done: pto=%d; ep=%d", ptOnHull, ep);
-    #endif
+    if (dbg_am_slide_verbose_hull.asBool()) {
+      GCon->Logf("     done: pto=%d; ep=%d", ptOnHull, ep);
+    }
     vassert(ep != ptOnHull);
     ptOnHull = ep;
   } while (ep != stxHidx[0]);
 
-  #ifdef VX_DUMP_CONVEX_HULL
-  GCon->Logf(" FIN: %d points", i);
-  for (int f = 0; f < i; f += 1) {
-    GCon->Logf("  #%d: (%g,%g,%g)", f, stxPoints[stxHidx[f]].x, stxPoints[stxHidx[f]].y, stxPoints[stxHidx[f]].z);
+  if (dbg_am_slide_verbose_hull.asBool()) {
+    GCon->Logf(" FIN: %d points", i);
+    for (int f = 0; f < i; f += 1) {
+      GCon->Logf("  #%d: (%g,%g,%g)", f, stxPoints[stxHidx[f]].x, stxPoints[stxHidx[f]].y, stxPoints[stxHidx[f]].z);
+    }
   }
-  #endif
 
+  int hlen;
   for (int f = 0; f < i; f += 1) {
     const TVec np = stxPoints[stxHidx[f]];
-    if (stxHull.length() >= 2) {
+    hlen = stxHull.length();
+    if (hlen >= 2) {
       // check for collinear points
-      if (fabsf(PtSide(stxHull[stxHull.length() - 2], stxHull[stxHull.length() - 1], np)) < 0.0001f) {
+      if (fabsf(PtSide(stxHull[hlen - 2], stxHull[hlen - 1], np)) < 0.0001f) {
         // collinear, extend
-        #ifdef VX_DUMP_CONVEX_HULL
-        GCon->Logf(" extend with %d", f);
-        #endif
-        stxHull[stxHull.length() - 1] = np;
+        if (dbg_am_slide_verbose_hull.asBool()) {
+          GCon->Logf(" extend with %d", f);
+        }
+        stxHull[hlen - 1] = np;
         continue;
       }
     }
@@ -2095,24 +2098,25 @@ static VVA_OKUNUSED void buildConvexHull () {
   }
 
   // check last hull point
-  if (stxHull.length() > 2) {
+  hlen = stxHull.length();
+  if (hlen > 2) {
     // check for collinear points
-    if (fabsf(PtSide(stxHull[stxHull.length() - 2], stxHull[stxHull.length() - 1], stxHull[0])) < 0.0001f) {
+    if (fabsf(PtSide(stxHull[hlen - 2], stxHull[hlen - 1], stxHull[0])) < 0.0001f) {
       // collinear, extend
-      #ifdef VX_DUMP_CONVEX_HULL
-      GCon->Logf(" remove last");
-      #endif
+      if (dbg_am_slide_verbose_hull.asBool()) {
+        GCon->Logf(" remove last");
+      }
       //stxHull.removeAt(stxHull.length() - 1);
       stxHull.drop();
     }
   }
 
-  #ifdef VX_DUMP_CONVEX_HULL
-  GCon->Logf(" SMP: %d points", stxHull.length());
-  for (int f = 0; f < stxHull.length(); f += 1) {
-    GCon->Logf("  #%d: (%g,%g,%g)", f, stxHull[f].x, stxHull[f].y, stxHull[f].z);
+  if (dbg_am_slide_verbose_hull.asBool()) {
+    GCon->Logf(" SMP: %d points", stxHull.length());
+    for (int f = 0; f < stxHull.length(); f += 1) {
+      GCon->Logf("  #%d: (%g,%g,%g)", f, stxHull[f].x, stxHull[f].y, stxHull[f].z);
+    }
   }
-  #endif
 }
 
 
@@ -2300,19 +2304,26 @@ static VVA_OKUNUSED bool checkStationary (VEntity *mobj) {
 //
 //  AM_drawOneThing
 //
+//  >=13: draw only corpses
+//  13: draw corpse bbox
+//  14: draw corpse bbox, and caclucated slide vector
+//  15: draw corpse bbox, and velocity vector
+//
 //==========================================================================
 static void AM_drawOneThing (VEntity *mobj, bool &inSpriteMode) {
   if (!mobj) return;
   if (!mobj->State || mobj->IsGoingToDie()) return;
 
-  #if 0
-  if (!mobj->IsRealCorpse()) return;
-  #endif
+  const int cheatMode = am_cheating.asInt();
+
+  if (dbg_am_slide.asBool() || cheatMode >= 13) {
+    if (!mobj->IsRealCorpse()) return;
+  }
 
   bool invisible = ((mobj->EntityFlags&(VEntity::EF_NoSector|VEntity::EF_Invisible|VEntity::EF_NoBlockmap)) || mobj->RenderStyle == STYLE_None);
-  if (invisible && am_cheating != 3) {
+  if (invisible && cheatMode != 3) {
     if (!mobj->IsMissile()) return;
-    if (am_cheating < 3) return;
+    if (cheatMode < 3) return;
   }
   //if (!(mobj->FlagsEx&VEntity::EFEX_Rendered)) return;
 
@@ -2349,84 +2360,149 @@ static void AM_drawOneThing (VEntity *mobj, bool &inSpriteMode) {
   }
 
   // draw object box
-  if (am_cheating == 3 || am_cheating == 5) {
+  if (cheatMode == 3 || cheatMode == 5 || cheatMode >= 13) {
     if (inSpriteMode) { inSpriteMode = false; Drawer->StartAutomap(am_overlay); }
     //AM_DrawBox(mobj->Origin.x-mobj->Radius, mobj->Origin.y-mobj->Radius, mobj->Origin.x+mobj->Radius, mobj->Origin.y+mobj->Radius, color);
     float rad = mobj->GetMoveRadius();
-    AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, color);
-    #if 0
-    // DEBUG: draw slide force
-    if (mobj->IsRealCorpse() &&
-        /*((mobj->FlagsEx&VEntity::EFEX_SomeSectorMoved) != 0 ||
-         (mobj->FlagsEx&VEntity::EFEX_CorpseSlideChecked) == 0) &&*/
-        /*mobj->Velocity.x == 0.0f && mobj->Velocity.y == 0.0f && mobj->Velocity.z >= 0.0f*/true)
-    {
-      tmtrace_t tm;
-      mobj->CheckRelPositionPoint(tm, mobj->Origin);
-      if (tm.FloorZ < mobj->Origin.z || true) {
-        rad += 1;
-        if (checkStationary(mobj)) {
-          AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, 0xFFFF00FF);
-          return;
-        }
-        //if (strcmp(mobj->GetClass()->GetName(), "DoomImp") != 0) return;
-        //GCon->Logf("%s: fz=%g; oz=%g", mobj->GetClass()->GetName(), tm.FloorZ, mobj->Origin.z);
-        AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, 0xFFFF0000);
-        //
-        float mybbox[4];
-        VLevel *XLevel = mobj->XLevel;
-        mobj->Create2DBox(mybbox);
-        DeclareMakeBlockMapCoordsBBox2D(mybbox, xl, yl, xh, yh);
-        //GCon->Logf(" rad=%g; xl=%d; yl=%d; xh=%d; yh=%d", rad, xl, yl, xh, yh);
-        XLevel->IncrementValidCount(); // used to make sure we only process a line once
+    if (cheatMode >= 13 && mobj->IsRealCorpse()) {
+      if (mobj->cslCheckDelay < 0.0f) {
+        // suspended corpse
+        AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, 0xFF999900);
+        #if 0
+        GCon->Logf("%s(%u): SUSPENDED: %g", mobj->GetClass()->GetName(),
+                   mobj->GetUniqueId(), mobj->cslCheckDelay);
+        #endif
+      } else {
+        AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, color);
+      }
+    } else {
+      AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, color);
+    }
+    if (dbg_am_slide.asBool() || cheatMode >= 14) {
+      // DEBUG: draw slide force
+      if (mobj->IsRealCorpse() &&
+          /*((mobj->FlagsEx&VEntity::EFEX_SomeSectorMoved) != 0 ||
+           (mobj->FlagsEx&VEntity::EFEX_CorpseSlideChecked) == 0) &&*/
+          /*mobj->Velocity.x == 0.0f && mobj->Velocity.y == 0.0f && mobj->Velocity.z >= 0.0f*/true)
+      {
+        tmtrace_t tm;
         TVec snorm = TVec(0.0f, 0.0f, 0.0f);
-        for (int bx = xl; bx <= xh; ++bx) {
-          for (int by = yl; by <= yh; ++by) {
-            //GCon->Logf("  bx=%d; by=%d", bx, by);
-            for (auto &&it : XLevel->allBlockLines(bx, by)) {
-              line_t *ld = it.line();
-              if ((ld->flags&ML_TWOSIDED) == 0) continue;
-              if (!mobj->LineIntersects(ld)) continue;
-              bool ok = false, high = false;
-              for (int snum = 0; snum < 2 && !high; snum += 1) {
-                const sector_t *sec = (snum ? ld->backsector : ld->frontsector);
-                vassert(sec);
-                const float fz = sec->floor.GetPointZClamped(mobj->Origin);
-                const float zdiff = fz-mobj->Origin.z;
-                ok = ok || (zdiff == 0.0f);
-                high = (zdiff > 0.0f);
+        mobj->CheckRelPositionPoint(tm, mobj->Origin);
+        if (tm.FloorZ < mobj->Origin.z) {
+          rad += 1.0f;
+          if (checkStationary(mobj)) {
+            AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, 0xFFFF00FF);
+            return;
+          }
+          //if (strcmp(mobj->GetClass()->GetName(), "DoomImp") != 0) return;
+          //GCon->Logf("%s: fz=%g; oz=%g", mobj->GetClass()->GetName(), tm.FloorZ, mobj->Origin.z);
+          AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, 0xFFFF0000);
+          rad -= 1.0f;
+          //
+          #if 0
+            float mybbox[4];
+            VLevel *XLevel = mobj->XLevel;
+            mobj->Create2DBox(mybbox);
+            DeclareMakeBlockMapCoordsBBox2D(mybbox, xl, yl, xh, yh);
+            //GCon->Logf(" rad=%g; xl=%d; yl=%d; xh=%d; yh=%d", rad, xl, yl, xh, yh);
+            XLevel->IncrementValidCount(); // used to make sure we only process a line once
+            for (int bx = xl; bx <= xh; ++bx) {
+              for (int by = yl; by <= yh; ++by) {
+                //GCon->Logf("  bx=%d; by=%d", bx, by);
+                for (auto &&it : XLevel->allBlockLines(bx, by)) {
+                  line_t *ld = it.line();
+                  if ((ld->flags&ML_TWOSIDED) == 0) continue;
+                  if (!mobj->LineIntersects(ld)) continue;
+                  bool ok = false, high = false;
+                  for (int snum = 0; snum < 2 && !high; snum += 1) {
+                    const sector_t *sec = (snum ? ld->backsector : ld->frontsector);
+                    vassert(sec);
+                    const float fz = sec->floor.GetPointZClamped(mobj->Origin);
+                    const float zdiff = fz-mobj->Origin.z;
+                    ok = ok || (zdiff == 0.0f);
+                    high = (zdiff > 0.0f);
+                  }
+                  if (high) continue;
+                  const int side = ld->PointOnSide(mobj->Origin);
+                  #if 0
+                  GCon->Logf("  line: side=%d; norm:(%g,%g,%g)",
+                             side, ld->normal.x, ld->normal.y, ld->normal.z);
+                  #endif
+                  snorm += (side ? -ld->normal : ld->normal);
+                  snorm = snorm.normalise();
+                  #if 0
+                  GCon->Logf("  snorm: (%g,%g,%g)", snorm.x, snorm.y, snorm.z);
+                  #endif
+                }
               }
-              if (high) continue;
-              const int side = ld->PointOnSide(mobj->Origin);
-              #if 0
-              GCon->Logf("  line: side=%d; norm:(%g,%g,%g)",
-                         side, ld->normal.x, ld->normal.y, ld->normal.z);
-              #endif
-              snorm += (side ? -ld->normal : ld->normal);
-              snorm = snorm.normalise();
-              #if 0
-              GCon->Logf("  snorm: (%g,%g,%g)", snorm.x, snorm.y, snorm.z);
+            }
+          #else
+            float sql = 0.0f; sql = sql; // shut up, gcc!
+            for (int f = 0; f < stxHull.length(); f += 1) {
+              int c = (f + 1) % stxHull.length();
+              TVec v0 = stxHull[f];
+              TVec v1 = stxHull[c];
+              #if 1
+              if (PtSide(v0, v1, morg) > 0.0f) {
+                TPlane pl;
+                pl.Set2Points(v0, v1);
+                TVec n = pl.normal;
+                snorm -= n;
+              }
+              #else
+              //float sqx = (v1 - v0).length2DSquared();
+              if (morg.isProjectedPointOnSeg2D(v0, v1)) {
+                float sqx = morg.segment2DDistanceSquared(v0, v1);
+                if (sqx > sql) {
+                  TPlane pl;
+                  pl.Set2Points(v0, v1);
+                  TVec n = pl.normal;
+                  if (PtSide(v0, v1, morg) > 0.0f) n = -n;
+                  snorm = n;
+                  sql = sqx;
+                }
+              }
               #endif
             }
+          #endif
+        }
+        if (dbg_am_slide.asBool()) {
+          if (!snorm.isZero2D()) {
+            float angle = VectorAngleYaw(snorm);
+            //angle = AngleMod360(angle-5+10*FRandom/*Full*/());
+            snorm = AngleVectorYaw(angle);
+            mline_t l;
+            l.a.x = morg.x;
+            l.a.y = morg.y;
+            l.b.x = (morg + snorm*40).x;
+            l.b.y = (morg + snorm*40).y;
+            if (am_rotate) {
+              AM_rotatePoint(&l.a.x, &l.a.y);
+              AM_rotatePoint(&l.b.x, &l.b.y);
+            }
+            AM_drawMline(&l, 0xFFFFFF00);
+          }
+          mobj->Velocity.x = snorm.x*15;
+          mobj->Velocity.y = snorm.y*15;
+          mobj->cslFlags |= VEntity::CSL_CorpseSliding;
+        } else {
+          if (cheatMode >= 15) snorm = mobj->Velocity;
+          if (!snorm.isZero2D()) {
+            snorm.normaliseInPlace();
+            mline_t l;
+            l.a.x = morg.x;
+            l.a.y = morg.y;
+            l.b.x = (morg + snorm*40).x;
+            l.b.y = (morg + snorm*40).y;
+            if (am_rotate) {
+              AM_rotatePoint(&l.a.x, &l.a.y);
+              AM_rotatePoint(&l.b.x, &l.b.y);
+            }
+            AM_drawMline(&l, 0xFFFFFF00);
           }
         }
-        if (snorm.x != 0.0f || snorm.y != 0.0f) {
-          mline_t l;
-          l.a.x = morg.x;
-          l.a.y = morg.y;
-          l.b.x = (morg + snorm*40).x;
-          l.b.y = (morg + snorm*40).y;
-          if (am_rotate) {
-            AM_rotatePoint(&l.a.x, &l.a.y);
-            AM_rotatePoint(&l.b.x, &l.b.y);
-          }
-          AM_drawMline(&l, 0xFFFFFF00);
-        }
-        mobj->Velocity.x = snorm.x*15;
-        mobj->Velocity.y = snorm.y*15;
       }
     }
-    #endif
   }
 }
 

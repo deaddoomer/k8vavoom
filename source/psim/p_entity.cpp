@@ -34,6 +34,8 @@
 
 //#define VV_SETSTATE_DEBUG
 
+//#define VV_DEBUG_CSL_VERBOSE
+
 #ifdef VV_SETSTATE_DEBUG
 # define VSLOGF(...)  GCon->Logf(NAME_Debug, __VA_ARGS__)
 #else
@@ -58,8 +60,9 @@ static VCvarB vm_optimise_statics("vm_optimise_statics", true, "Try to detect so
 
 extern VCvarB dbg_vm_show_tick_stats;
 
-static VCvarI gm_slide_bodies("gm_slide_bodies", "2", "Slide bodies hanging from ledges and such? (0:no;1:yes)", CVAR_Archive);
+static VCvarB gm_slide_bodies("gm_slide_bodies", true, "Slide bodies hanging from ledges and such?", CVAR_Archive);
 static VCvarB gm_corpse_slidemove("gm_corpse_slidemove", true, "Should corpses use sliding movement?", CVAR_Archive);
+static VCvarI gm_slide_fall_count("gm_slide_fall_count", "4", "How many force corpse slides perform before giving up?", CVAR_Archive);
 
 // k8gore cvars
 VCvarB k8gore_enabled("k8GoreOpt_Enabled", true, "Enable extra blood and gore?", CVAR_Archive);
@@ -594,14 +597,29 @@ static TPlane::ClipWorkData stxWk;
 
 //==========================================================================
 //
-//  addPoint
+//  segNormal
 //
 //==========================================================================
-static inline void addPoint (const TVec pt) {
-  for (auto &&p : stxPoints) {
-    if (fabsf(p.x-pt.x) < 0.001f && fabsf(p.y-pt.y) < 0.001f) return;
+static VVA_OKUNUSED inline TVec SegNormal (const TVec &v0, const TVec &v1) {
+  const TVec dir = v1 - v0;
+  TVec normal = TVec(dir.y, -dir.x, 0.0f);
+  // use some checks to avoid floating point inexactness on axial planes
+  if (!normal.x) {
+    if (!normal.y) {
+      //k8: what to do here?!
+      normal = TVec(0.0f, 0.0f, 0.0f);
+    } else {
+      // vertical
+      normal.y = floatSign(normal.y);
+    }
+  } else if (!normal.y) {
+    // horizontal
+    normal.x = floatSign(normal.x);
+  } else {
+    // sloped
+    normal.normaliseInPlace();
   }
-  stxPoints.append(TVec(pt.x, pt.y));
+  return normal;
 }
 
 
@@ -612,6 +630,19 @@ static inline void addPoint (const TVec pt) {
 //==========================================================================
 static VVA_OKUNUSED inline float PtSide (const TVec &a, const TVec &b, const TVec &p) {
   return (b.x - a.x)*(p.y - a.y) - (b.y - a.y)*(p.x - a.x);
+}
+
+
+//==========================================================================
+//
+//  addPoint
+//
+//==========================================================================
+static inline void addPoint (const TVec pt) {
+  for (auto &&p : stxPoints) {
+    if (fabsf(p.x-pt.x) < 0.001f && fabsf(p.y-pt.y) < 0.001f) return;
+  }
+  stxPoints.append(TVec(pt.x, pt.y));
 }
 
 
@@ -893,6 +924,196 @@ static bool checkStationary (VEntity *mobj) {
 
 //==========================================================================
 //
+//  CalculateSlideVector
+//
+//==========================================================================
+static VVA_OKUNUSED TVec CalculateSlideVectorMap (VEntity *mobj) {
+  float mybbox[4];
+  TVec snorm = TVec(0.0f, 0.0f, 0.0f);
+  VLevel *XLevel = mobj->XLevel;
+
+  mobj->Create2DBox(mybbox);
+  DeclareMakeBlockMapCoordsBBox2D(mybbox, xl, yl, xh, yh);
+  //GCon->Logf(" rad=%g; xl=%d; yl=%d; xh=%d; yh=%d", rad, xl, yl, xh, yh);
+
+  XLevel->IncrementValidCount(); // used to make sure we only process a line once
+  for (int bx = xl; bx <= xh; ++bx) {
+    for (int by = yl; by <= yh; ++by) {
+      //GCon->Logf("  bx=%d; by=%d", bx, by);
+      for (auto &&it : XLevel->allBlockLines(bx, by)) {
+        line_t *ld = it.line();
+        if ((ld->flags&ML_TWOSIDED) == 0) continue;
+        if (!mobj->LineIntersects(ld)) continue;
+        bool ok = false, high = false;
+        for (int snum = 0; snum < 2 && !high; snum += 1) {
+          const sector_t *sec = (snum ? ld->backsector : ld->frontsector);
+          vassert(sec);
+          const float fz = sec->floor.GetPointZClamped(mobj->Origin);
+          const float zdiff = fz-mobj->Origin.z;
+          ok = ok || (zdiff == 0.0f);
+          high = (zdiff > 0.0f);
+        }
+        if (high) continue;
+        const int side = ld->PointOnSide(mobj->Origin);
+        #if 0
+        GCon->Logf("  line: side=%d; norm:(%g,%g,%g)",
+                   side, ld->normal.x, ld->normal.y, ld->normal.z);
+        #endif
+        snorm += (side ? -ld->normal : ld->normal);
+        //snorm = snorm.normalise();
+        #if 0
+        GCon->Logf("  snorm: (%g,%g,%g)", snorm.x, snorm.y, snorm.z);
+        #endif
+      }
+    }
+  }
+
+  if (!snorm.isZero2D()) {
+    float angle = VectorAngleYaw(snorm);
+    angle = AngleMod360(angle-5+10*FRandom/*Full*/());
+    snorm = AngleVectorYaw(angle);
+  }
+
+  return snorm;
+}
+
+
+//==========================================================================
+//
+//  CalculateSlideVectorHull
+//
+//==========================================================================
+static VVA_OKUNUSED TVec CalculateSlideVectorHull (VEntity *mobj) {
+  TVec snorm = TVec(0.0f, 0.0f, 0.0f);
+  TVec morg = mobj->Origin;
+
+  vassert(stxHull.length() >= 3);
+  for (int f = 0; f < stxHull.length(); f += 1) {
+    int c = (f + 1) % stxHull.length();
+    TVec v0 = stxHull[f];
+    TVec v1 = stxHull[c];
+    if (PtSide(v0, v1, morg) > 0.0f) {
+      snorm -= SegNormal(v0, v1);
+    }
+  }
+
+  #if 0
+  if (!snorm.isZero2D()) {
+    float angle = VectorAngleYaw(snorm);
+    angle = AngleMod360(angle-2+4*FRandom/*Full*/());
+    snorm = AngleVectorYaw(angle);
+  }
+  #endif
+
+  return snorm;
+}
+
+
+//==========================================================================
+//
+//  VEntity::CorpseSlide
+//
+//  "corpse check" should be already done
+//
+//  `cslCheckDelay` is zero or negative here
+//
+//==========================================================================
+void VEntity::CorpseSlide (float deltaTime) {
+  tmtrace_t tm;
+  TVec snorm;
+
+  // default timeout: nudge roughly each tick
+  cslCheckDelay = 0.02f;
+
+  if (Velocity.isZero()) {
+    // not moving
+    CheckRelPositionPoint(tm, Origin);
+    stxHull.resetNoDtor();
+    if (tm.FloorZ < Origin.z && !checkStationary(this)) {
+      // this corpse is not in a "stable" position (i.e. should slide away)
+      #ifdef VV_DEBUG_CSL_VERBOSE
+      GCon->Logf("CORPSE HANGING: %s(%u): fz=%g; oz=%g", GetClass()->GetName(),
+                 GetUniqueId(), tm.FloorZ, Origin.z);
+      #endif
+
+      if (stxHull.length() < 3) {
+        snorm = CalculateSlideVectorMap(this);
+      } else {
+        snorm = CalculateSlideVectorHull(this);
+      }
+
+      if (!snorm.isZero2D()) {
+        // remember sliding start time
+        if ((cslFlags&CSL_CorpseSliding) == 0) {
+          cslStartTime = XLevel->Time;
+          cslFlags |= CSL_CorpseSliding;
+        } else {
+          // reset starting time when Z was changed
+          if (cslLastZ != Origin.z) cslStartTime = XLevel->Time;
+        }
+        cslLastZ = Origin.z;
+        // if slided for too long, don't bother anymore
+        if (XLevel->Time - cslStartTime > 60.0f) {
+          // freeze it
+          cslCheckDelay = -1.0f;
+          #ifdef VV_DEBUG_CSL_VERBOSE
+          GCon->Logf("CORPSE IDLE: %s(%u): tm=%g", GetClass()->GetName(),
+                     GetUniqueId(), XLevel->Time - cslStartTime);
+          #endif
+        } else {
+          const float speed = 15.0f; //10.0f+5.0f*FRandom();
+          #ifdef VV_DEBUG_CSL_VERBOSE
+          GCon->Logf("CC(%u):%s: snorm:(%g,%g,%g); angle:%g",
+                     GetUniqueId(), GetClass()->GetName(),
+                     snorm.x, snorm.y, snorm.z, AngleMod360(VectorAngleYaw(snorm)));
+          #endif
+          Velocity.x = snorm.x*speed;
+          Velocity.y = snorm.y*speed;
+        }
+      } else {
+        // no slide direction; alas, freeze it
+        #ifdef VV_DEBUG_CSL_VERBOSE
+        GCon->Logf("CC(%u):%s: NO SLIDE DIR; freezing; snorm:(%g,%g,%g)",
+                   GetUniqueId(), GetClass()->GetName(),
+                   snorm.x, snorm.y, snorm.z);
+        #endif
+        cslFlags &= ~CSL_CorpseSliding;
+        cslCheckDelay = -1.0f;
+      }
+    } else {
+      // not hanging
+      #ifdef VV_DEBUG_CSL_VERBOSE
+      GCon->Logf("CORPSE STABLE: %s(%u): vel=(%g,%g,%g); diffz=%g; lz=%g; stat=%d",
+                 GetClass()->GetName(),
+                 GetUniqueId(), Velocity.x, Velocity.y, Velocity.z,
+                 tm.FloorZ-Origin.z, cslLastZ, checkStationary(this));
+      #endif
+      if (Velocity.isZero2D()) {
+        // it seems to stay in place, so don't bother re-checking it
+        if ((cslFlags&CSL_CorpseSliding) == 0) {
+          // "map was just loaded" hack
+          if (cslStartTime == 0.0f) {
+            cslStartTime = 0.2f;
+            cslCheckDelay = 0.4f + 0.2f*FRandom();
+          } else {
+            cslCheckDelay = -1.0f;
+          }
+        } else {
+          cslFlags &= ~CSL_CorpseSliding;
+          cslCheckDelay = -1.0f;
+        }
+        cslLastZ = Origin.z;
+      } else {
+        // still moving
+        //CorpseSlideCheckDelay = 100.0f+50.0f*FRandom();
+      }
+    }
+  }
+}
+
+
+//==========================================================================
+//
 //  VEntity::Tick
 //
 //==========================================================================
@@ -984,141 +1205,39 @@ void VEntity::Tick (float deltaTime) {
 
   PrevTickOrigin = Origin;
 
+
   //HACK: slide dead bodies away if their center of mass is out of the good sector
-  if (gm_slide_bodies.asInt() > 0 &&
+  if (gm_slide_bodies.asBool() &&
       (EntityFlags&(EF_Corpse|EF_Missile|EF_Invisible|EF_ActLikeBridge)) == EF_Corpse &&
       (FlagsEx&EFEX_Monster))
   {
-    if ((FlagsEx&EFEX_SomeSectorMoved) != 0) {
-      //FlagsEx &= ~EFEX_SomeSectorMoved;
-      if (CorpseSlideCheckDelay >= 1.0f) CorpseSlideCheckDelay = 0.8f;
-    }
-    CorpseSlideCheckDelay -= deltaTime;
-    if (CorpseSlideCheckDelay <= 0.0f) {
+    #ifdef VV_DEBUG_CSL_VERBOSE
+    GCon->Logf("CORPSE-0: %s(%u): pre: delay=%g; stm=%g; pz=%g; flg=0x%04xH",
+               GetClass()->GetName(), GetUniqueId(),
+               cslCheckDelay, cslStartTime, cslLastZ,
+               cslFlags);
+    #endif
+
+    // if sector with the corpse was moved...
+    if (FlagsEx&EFEX_SomeSectorMoved) {
       FlagsEx &= ~EFEX_SomeSectorMoved;
-      if (Velocity.isZero2D() && Velocity.z >= 0.0f) {
-        tmtrace_t tm;
-        CheckRelPositionPoint(tm, Origin);
-        //FlagsEx &= ~EFEX_CorpseSliding;
-        if (tm.FloorZ < Origin.z && (gm_slide_bodies.asInt() < 2 || !checkStationary(this))) {
-          #if 0
-          GCon->Logf("CORPSE CHECK: %s: fz=%g; oz=%g", GetClass()->GetName(), tm.FloorZ, Origin.z);
-          #endif
-          float mybbox[4];
-          Create2DBox(mybbox);
-          DeclareMakeBlockMapCoordsBBox2D(mybbox, xl, yl, xh, yh);
-          XLevel->IncrementValidCount(); // used to make sure we only process a line once
-          TVec snorm = TVec(0.0f, 0.0f, 0.0f);
-          for (int bx = xl; bx <= xh; ++bx) {
-            for (int by = yl; by <= yh; ++by) {
-              for (auto &&it : XLevel->allBlockLines(bx, by)) {
-                line_t *ld = it.line();
-                if ((ld->flags&ML_TWOSIDED) == 0) continue;
-                if (!LineIntersects(ld)) continue;
-                bool ok = false, high = false;
-                for (int snum = 0; snum < 2 && !high; snum += 1) {
-                  const sector_t *sec = (snum ? ld->backsector : ld->frontsector);
-                  vassert(sec);
-                  const float fz = sec->floor.GetPointZClamped(Origin);
-                  const float zdiff = fz-Origin.z;
-                  ok = ok || (zdiff == 0.0f);
-                  high = (zdiff > 0.0f);
-                }
-                if (high) continue;
-                if (ok) {
-                  const int side = ld->PointOnSide(Origin);
-                  #if 0
-                  GCon->Logf("  line: side=%d; norm:(%g,%g,%g)",
-                             side, ld->normal.x, ld->normal.y, ld->normal.z);
-                  #endif
-                  snorm += (side ? -ld->normal : ld->normal);
-                  //snorm = snorm.normalise();
-                  #if 0
-                  GCon->Logf("  snorm: (%g,%g,%g)", snorm.x, snorm.y, snorm.z);
-                  #endif
-                }
-              }
-            }
-          }
-          if (snorm.x != 0.0f || snorm.y != 0.0f) {
-            if ((FlagsEx&EFEX_CorpseSliding) != 0 && CorpseSlideFailCount > 4) {
-              // lay rest, it seems that there is nowhere to slide
-              CorpseSlideCheckDelay = 0.4f+FRandom()*0.2f;
-              CorpseSlideCheckDelay = 100.0f+50.0f*FRandom();
-              #if 0
-              GCon->Logf("CC(%u):%s: STOPSLIDE: sc:%d",
-                         GetUniqueId(), GetClass()->GetName(),
-                         CorpseSlideFailCount);
-              #endif
-            } else {
-              const float speed = 15.0f; //10.0f+5.0f*FRandom();
-              // disturb angle a little
-              float angle = VectorAngleYaw(snorm);
-              #if 0
-              GCon->Logf("CC(%u):%s: snorm:(%g,%g,%g); angle:%g; sc:%d",
-                         GetUniqueId(), GetClass()->GetName(),
-                         snorm.x, snorm.y, snorm.z, AngleMod360(angle),
-                         CorpseSlideFailCount);
-              #endif
-              angle = AngleMod360(angle-5+10*FRandom/*Full*/());
-              snorm = AngleVectorYaw(angle);
-              #if 0
-              GCon->Logf("    snorm:(%g,%g,%g); angle:%g", snorm.x, snorm.y, snorm.z, angle);
-              #endif
-              Velocity.x = snorm.x*speed;
-              Velocity.y = snorm.y*speed;
-              FlagsEx |= EFEX_CorpseSliding;
-              #if 0
-              GCon->Logf("CORPSE SLIDE: %s", GetClass()->GetName());
-              #endif
-              if (FlagsEx&EFEX_CorpseSliding) {
-                CorpseSlideFailCount += 1;
-              } else {
-                CorpseSlideFailCount = 0;
-              }
-              CorpseSlideCheckDelay = 0.4f+FRandom()*0.2f;
-            }
-          } else {
-            FlagsEx &= ~EFEX_CorpseSliding;
-          }
-        } else {
-          // center is not hanging
-          if (Velocity.isZero2D() && Velocity.z <= 0.0f) {
-            // it seems to stay in place, so don't bother re-checking it
-            #if 0
-            GCon->Logf("CC(%u):%s: not hanging, in place; cnt:%d; vel:(%g,%g,%g)",
-                       GetUniqueId(), GetClass()->GetName(),
-                       CorpseSlideFailCount,
-                       Velocity.x, Velocity.y, Velocity.z);
-            #endif
-            CorpseSlideFailCount = 0;
-            CorpseSlideCheckDelay = 100.0f+50.0f*FRandom();
-          } else {
-            #if 0
-            GCon->Logf("CC(%u):%s: not hanging; cnt:%d; vel:(%g,%g,%g)",
-                       GetUniqueId(), GetClass()->GetName(),
-                       CorpseSlideFailCount,
-                       Velocity.x, Velocity.y, Velocity.z);
-            #endif
-            CorpseSlideFailCount += 1;
-            if (CorpseSlideFailCount > 15) {
-              CorpseSlideFailCount = 16;
-              CorpseSlideCheckDelay = 3.2f+FRandom()*2.0f;
-            } else {
-              CorpseSlideCheckDelay = 0.2f+FRandom()*0.2f;
-            }
-          }
-        }
-      } else {
-        // still moving
-        #if 0
-        GCon->Logf("CC(%u):%s: still moving; vel:(%g,%g,%g)",
-                   GetUniqueId(), GetClass()->GetName(),
-                   Velocity.x, Velocity.y, Velocity.z);
-        #endif
-        CorpseSlideCheckDelay = 0.4f+FRandom()*0.2f;
-      }
+      // consider this corpse "fresh"
+      cslFlags &= ~CSL_CorpseSliding;
+      cslCheckDelay = 0.1f + 0.2f*FRandom();
     }
+
+    // is it not idle?
+    if (cslCheckDelay >= 0.0f) {
+      cslCheckDelay -= deltaTime;
+      if (cslCheckDelay <= 0.0f) CorpseSlide(deltaTime);
+    }
+
+    #ifdef VV_DEBUG_CSL_VERBOSE
+    GCon->Logf("CORPSE-1: %s(%u): pre: delay=%g; stm=%g; pz=%g; flg=0x%04xH",
+               GetClass()->GetName(), GetUniqueId(),
+               cslCheckDelay, cslStartTime, cslLastZ,
+               cslFlags);
+    #endif
   }
 
 

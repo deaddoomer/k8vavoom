@@ -1041,7 +1041,9 @@ final void HitLine (ref tmtrace_t tmtrace, float DeltaTime, float StepVelScale, 
     if (bMissile) printdebug("%C:   HitLine -- explode", self);
     #endif
     ExplodeMissile(none, hitline);
-  } else if (bSlide || forceSlide || (bCorpse && GetCvarB('gm_corpse_slidemove'))) {
+  } else if (bSlide || forceSlide ||
+             (bCorpse && (bCorpseSliding || GetCvarB('gm_corpse_slidemove'))))
+  {
     // try to slide for transporter
     if (forceSlide) {
       if (tmp_transporter_velocity) {

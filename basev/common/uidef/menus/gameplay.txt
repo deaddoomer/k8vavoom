@@ -75,10 +75,9 @@ menudef GameplayOptions {
 
   header "Corpses";
 
-  option enum {
+  option bool {
     title = "Slide Bodies";
     cvar = gm_slide_bodies;
-    list { "No", "Simple", "Complex" };
     help =
       "Slide bodies which may hang on ledges?",
       "The algorithm is very experimental, and some bodies may",

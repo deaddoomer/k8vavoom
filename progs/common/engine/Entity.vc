@@ -358,8 +358,6 @@ bool bMissileHitscan; // this is hitscan emulation, should be affected by hitsca
 transient bool bSomeSectorMoved;
 // game loader will fix this, no need to save it
 transient bool bGoreModEntity;
-// forced sliding by C++ physics code?
-transient bool bCorpseSliding;
 
 // 0: none
 // 1: switches object to "k8vavoomInternalNoTickGrav" when it enters idle state (the one with negative duration)
@@ -461,8 +459,12 @@ transient float DataGameTime;
 // used in network code; set to `Ent->XLevel->Time` when we got a new origin
 transient float NetLastOrgUpdateTime;
 
-transient float CorpseSlideCheckDelay;
-transient float CorpseSlideFailCount;
+// corpse sliding; implemented in C++ code
+transient bool bCorpseSliding;
+
+transient float cslStartTime;
+transient float cslDelay;
+transient float cslLastZ;
 
 
 replication {

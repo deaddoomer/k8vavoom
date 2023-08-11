@@ -296,8 +296,6 @@ class VEntity : public VThinker {
     // is this a "gore mod" entity (blood, etc)?
     // WARNING! this is not saved, so it should be restored in `SerialiseOther()`
     EFEX_GoreModEntity     = 1u<<18u,
-    // forced sliding
-    EFEX_CorpseSliding     = 1u<<19u,
   };
   vuint32 FlagsEx;
 
@@ -400,8 +398,16 @@ class VEntity : public VThinker {
   // used in network code; set to `Ent->XLevel->Time` when we got a new origin
   float NetLastOrgUpdateTime;
 
-  float CorpseSlideCheckDelay;
-  vint32 CorpseSlideFailCount;
+  // corpse sliding code
+  enum {
+    // forced sliding mode
+    CSL_CorpseSliding = 1u<<0,
+  };
+  vuint32 cslFlags;
+
+  float cslStartTime; // slide starting time
+  float cslCheckDelay; // timeout before next check
+  float cslLastZ;
 
 protected:
   //VEntity () : SoundClass(E_NoInit), SoundGender(E_NoInit), DecalName(E_NoInit) {}
@@ -821,7 +827,10 @@ public:
   bool IsBlockingLine (const line_t *ld) const noexcept;
   bool IsBlocking3DPobjLineTop (const line_t *ld) const noexcept;
 
-private:
+protected:
+  // "corpse check" should be already done
+  void CorpseSlide (float deltaTime);
+
   // world iterator callbacks
   bool CheckThing (tmtrace_t &, VEntity *);
   bool CheckLine (tmtrace_t &, line_t *);
