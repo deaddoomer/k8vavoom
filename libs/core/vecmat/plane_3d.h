@@ -537,10 +537,18 @@ public:
   };
 
   // clip convex polygon to this plane
-  // `dest` should have room for at least `vcount+1` vertices (and can be equad to `src`, or `nullptr`)
+  // `dest` should have room for at least `vcount+1` vertices (and can be equal to `src`, or `nullptr`)
   // precondition: vcount >= 3
-  void ClipPoly (ClipWorkData &wdata, const TVec *src, const int vcount, TVec *destfront, int *frontcount, TVec *destback, int *backcount,
+  void ClipPoly (ClipWorkData &wdata, const TVec *src, const int vcount,
+                 TVec *destfront, int *frontcount, TVec *destback, int *backcount,
                  const int coplanarSide=CoplanarBoth, const float eps=0.1f) const noexcept;
+
+  // clip convex polygon to this plane
+  // `dest` should have room for at least `vcount+1` vertices (and can be equal to `src`, or `nullptr`)
+  // precondition: vcount >= 3
+  // leaves only front part; coplanar polys goes to front
+  void ClipPolyFront (ClipWorkData &wdata, const TVec *src, const int vcount,
+                      TVec *dest, int *destcount, const float eps=0.1f) const noexcept;
 };
 
 static_assert(__builtin_offsetof(TPlane, dist) == __builtin_offsetof(TPlane, normal.z)+sizeof(float), "TPlane layout fail (0)");

@@ -589,7 +589,7 @@ bool VEntity::NeedPhysics (const float deltaTime) {
 
 
 // sorry!
-static TArrayNC<TVec> stxPoints, stxSubsrc, stxV0, stxV1, stxHull;
+static TArrayNC<TVec> stxPoints, stxSubsrc, stxHull;
 static TArrayNC<int> stxHidx;
 static TPlane stxPl[4]; // clip planes
 static TPlane::ClipWorkData stxWk;
@@ -834,7 +834,7 @@ static bool checkStationary (VEntity *mobj) {
   stxPl[3].Set2Points(TVec(mybbox[BOX2D_MAXX], mybbox[BOX2D_MINY]),
                       TVec(mybbox[BOX2D_MINX], mybbox[BOX2D_MINY]));
 
-  int fc, bc;
+  int fc;
 
   //GCon->Log(NAME_Debug, ":::::::::::::::::::::");
   // check all touching sectors
@@ -888,31 +888,10 @@ static bool checkStationary (VEntity *mobj) {
           stxSubsrc.append(*seg->v1);
         }
 
-        stxV0.setLengthReserve(stxSubsrc.length() + 1);
-        stxV1.setLengthReserve(stxSubsrc.length() + 1);
-        stxPl[0].ClipPoly(stxWk, stxSubsrc.ptr(), stxSubsrc.length(), stxV0.ptr(), &fc,
-                       stxV1.ptr(), &bc, TPlane::CoplanarFront);
-        // now `v0` is front
-        if (fc >= 3) {
-          stxV1.setLengthReserve(stxV0.length() + 1);
-          stxSubsrc.setLengthReserve(stxV0.length() + 1);
-          stxPl[1].ClipPoly(stxWk, stxV0.ptr(), fc, stxSubsrc.ptr(), &fc,
-                       stxV1.ptr(), &bc, TPlane::CoplanarFront);
-          // now `subsrc` is front
-        }
-        if (fc >= 3) {
-          stxV0.setLengthReserve(stxSubsrc.length() + 1);
-          stxV1.setLengthReserve(stxSubsrc.length() + 1);
-          stxPl[2].ClipPoly(stxWk, stxSubsrc.ptr(), fc, stxV0.ptr(), &fc,
-                         stxV1.ptr(), &bc, TPlane::CoplanarFront);
-          // now `v0` is front
-        }
-        if (fc >= 3) {
-          stxV1.setLengthReserve(stxV0.length() + 1);
-          stxSubsrc.setLengthReserve(stxV0.length() + 1);
-          stxPl[3].ClipPoly(stxWk, stxV0.ptr(), fc, stxSubsrc.ptr(), &fc,
-                         stxV1.ptr(), &bc, TPlane::CoplanarFront);
-          // now `subsrc` is front
+        fc = stxSubsrc.length();
+        for (int f = 0; f < 4 && fc >= 3; f += 1) {
+          stxSubsrc.setLengthReserve(fc + 1);
+          stxPl[f].ClipPolyFront(stxWk, stxSubsrc.ptr(), fc, stxSubsrc.ptr(), &fc);
         }
 
         if (fc >= 3) {

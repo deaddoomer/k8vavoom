@@ -322,13 +322,15 @@ void TPlane::ClipPoly (ClipWorkData &wdata, const TVec *src, const int vcount,
 
   if (vcount < 3) return; // why not?
   vassert(src);
-  //vassert(vcount >= 3);
 
   wdata.ensure(vcount+1);
 
   int *sides = wdata.sides;
   float *dots = wdata.dots;
   TVec *points = wdata.points;
+
+  // for better memory access locality
+  memcpy((void *)points, (void *)src, vcount*sizeof(points[0]));
 
   // cache values
   const TVec norm = normal;
@@ -339,9 +341,7 @@ void TPlane::ClipPoly (ClipWorkData &wdata, const TVec *src, const int vcount,
   bool hasBackSomething = false;
   bool hasCoplanarSomething = false;
   for (unsigned i = 0; i < (unsigned)vcount; ++i) {
-    points[i] = src[i];
-    const float dot = norm.dot(src[i])-pdist;
-    dots[i] = dot;
+    const float dot = (dots[i] = norm.dot(points[i])-pdist);
          if (dot < -eps) { sides[i] = PlaneBack; hasBackSomething = true; }
     else if (dot > +eps) { sides[i] = PlaneFront; hasFrontSomething = true; }
     else { sides[i] = PlaneCoplanar; hasCoplanarSomething = true; }
@@ -393,37 +393,179 @@ void TPlane::ClipPoly (ClipWorkData &wdata, const TVec *src, const int vcount,
       /*fuckyougcc*/ ++fcount; // not a bug
       if (destback) destback[bcount] = points[i];
       /*fuckyougcc*/ ++bcount; // not a bug
-      continue;
-    }
-
-    if (sides[i] == PlaneFront) {
-      if (destfront) destfront[fcount] = points[i];
-      /*fuckyougcc*/ ++fcount; // not a bug
     } else {
-      if (destback) destback[bcount] = points[i];
-      /*fuckyougcc*/ ++bcount; // not a bug
-    }
+      if (sides[i] == PlaneFront) {
+        if (destfront) destfront[fcount] = points[i];
+        /*fuckyougcc*/ ++fcount; // not a bug
+      } else {
+        if (destback) destback[bcount] = points[i];
+        /*fuckyougcc*/ ++bcount; // not a bug
+      }
 
-    if (sides[i+1] == PlaneCoplanar || sides[i] == sides[i+1]) continue;
+      if (!(sides[i+1] == PlaneCoplanar || sides[i] == sides[i+1])) {
+        // generate a split point
+        TVec mid;
+        const TVec &p1 = points[i];
+        const TVec &p2 = points[i+1];
+        float idist = dots[i] - dots[i+1];
+        if (idist == 0.0f) {
+          mid = p1;
+        } else {
+          idist = dots[i] / idist;
 
-    // generate a split point
-    const TVec &p1 = points[i];
-    const TVec &p2 = points[i+1];
-    const float idist = dots[i]/(dots[i]-dots[i+1]);
-    TVec mid;
-    for (unsigned j = 0; j < 3; ++j) {
-      // avoid roundoff error when possible
-           if (norm[j] == +1.0f) mid[j] = +pdist;
-      else if (norm[j] == -1.0f) mid[j] = -pdist;
-      else mid[j] = p1[j]+idist*(p2[j]-p1[j]);
+          // avoid roundoff error when possible
+          if (norm.x == +1.0f) mid.x = +pdist;
+          else if (norm.x == -1.0f) mid.x = -pdist;
+          else mid.x = p1.x+idist*(p2.x-p1.x);
+
+          if (norm.y == +1.0f) mid.y = +pdist;
+          else if (norm.y == -1.0f) mid.y = -pdist;
+          else mid.y = p1.y+idist*(p2.y-p1.y);
+
+          if (norm.z == +1.0f) mid.z = +pdist;
+          else if (norm.z == -1.0f) mid.z = -pdist;
+          else mid.z = p1.z+idist*(p2.z-p1.z);
+        }
+        mid.fixDenormalsInPlace();
+
+        if (destfront) destfront[fcount] = mid;
+        /*fuckyougcc*/ ++fcount; // not a bug
+        if (destback) destback[bcount] = mid;
+        /*fuckyougcc*/ ++bcount; // not a bug
+      }
     }
-    mid.fixDenormalsInPlace();
-    if (destfront) destfront[fcount] = mid;
-    /*fuckyougcc*/ ++fcount; // not a bug
-    if (destback) destback[bcount] = mid;
-    /*fuckyougcc*/ ++bcount; // not a bug
   }
 
   if (frontcount) *frontcount = (int)fcount;
   if (backcount) *backcount = (int)bcount;
+}
+
+
+//==========================================================================
+//
+//  TPlane::ClipPolyFront
+//
+//  clip convex polygon to this plane
+//  returns number of new vertices (it can be 0 if the poly is completely clipped away)
+//  `dest` should have room for at least `vcount+1` vertices, and should not be equal to `src`
+//  precondition: vcount >= 3
+//
+//  leaves only front part; coplanar polys goes to front
+//
+//==========================================================================
+void TPlane::ClipPolyFront (ClipWorkData &wdata, const TVec *src, const int vcount,
+                            TVec *dest, int *destcount, const float eps) const noexcept
+{
+  enum {
+    PlaneBack = -1,
+    PlaneCoplanar = 0,
+    PlaneFront = 1,
+  };
+
+  vassert(destcount);
+
+  if (vcount < 3) {
+    *destcount = 0;
+    return;
+  }
+
+  vassert(src);
+  vassert(dest);
+
+  wdata.ensure(vcount+1);
+
+  int *sides = wdata.sides;
+  float *dots = wdata.dots;
+  TVec *points = wdata.points;
+
+  // for better memory access locality
+  memcpy((void *)points, (void *)src, vcount*sizeof(points[0]));
+
+  // cache values
+  const TVec norm = normal;
+  const float pdist = dist;
+
+  // classify points
+  bool hasFrontSomething = false;
+  bool hasBackSomething = false;
+  bool hasCoplanarSomething = false;
+  for (unsigned i = 0; i < (unsigned)vcount; ++i) {
+    const float dot = (dots[i] = norm.dot(points[i])-pdist);
+         if (dot < -eps) { sides[i] = PlaneBack; hasBackSomething = true; }
+    else if (dot > +eps) { sides[i] = PlaneFront; hasFrontSomething = true; }
+    else { sides[i] = PlaneCoplanar; hasCoplanarSomething = true; }
+  }
+
+  if (!hasFrontSomething) {
+    // nothing at the front, but may be totally coplanar
+    if (!hasBackSomething) {
+      // totally coplanar
+      vassert(hasCoplanarSomething);
+      *destcount = vcount;
+      memcpy((void *)dest, (void *)points, vcount*sizeof(points[0]));
+    } else {
+      // nothing at the front
+      *destcount = 0;
+    }
+    return;
+  } else if (!hasBackSomething) {
+    // totally on the front side (possibly with coplanars), copy it
+    *destcount = vcount;
+    memcpy((void *)dest, (void *)points, vcount*sizeof(points[0]));
+    return;
+  }
+
+  // must be split
+
+  // copy, so we can avoid modulus
+  dots[vcount] = dots[0];
+  sides[vcount] = sides[0];
+  points[vcount] = points[0];
+
+  unsigned fcount = 0;
+
+  for (unsigned i = 0; i < (unsigned)vcount; ++i) {
+    if (sides[i] == PlaneCoplanar) {
+      dest[fcount++] = points[i];
+    } else {
+      if (sides[i] == PlaneFront) {
+        dest[fcount++] = points[i];
+      }
+
+      if (!(sides[i + 1] == PlaneCoplanar || sides[i] == sides[i + 1])) {
+        // generate a split point
+        TVec mid;
+        const TVec &p1 = points[i];
+        const TVec &p2 = points[i+1];
+        float idist = dots[i] - dots[i+1];
+        if (idist == 0.0f) {
+          mid = p1;
+        } else {
+          idist = dots[i] / idist;
+
+          // avoid roundoff error when possible
+          if (norm.x == +1.0f) mid.x = +pdist;
+          else if (norm.x == -1.0f) mid.x = -pdist;
+          else mid.x = p1.x+idist*(p2.x-p1.x);
+
+          if (norm.y == +1.0f) mid.y = +pdist;
+          else if (norm.y == -1.0f) mid.y = -pdist;
+          else mid.y = p1.y+idist*(p2.y-p1.y);
+
+          if (p1.z != p2.z) {
+            if (norm.z == +1.0f) mid.z = +pdist;
+            else if (norm.z == -1.0f) mid.z = -pdist;
+            else mid.z = p1.z+idist*(p2.z-p1.z);
+          } else {
+            mid.z = p1.z;
+          }
+        }
+
+        mid.fixDenormalsInPlace();
+        dest[fcount++] = mid;
+      }
+    }
+  }
+
+  *destcount = (int)fcount;
 }
