@@ -597,7 +597,7 @@ static TPlane::ClipWorkData stxWk;
 
 //==========================================================================
 //
-//  segNormal
+//  SegNormal
 //
 //==========================================================================
 static VVA_OKUNUSED TVec SegNormal (const TVec &v0, const TVec &v1) {
@@ -675,6 +675,9 @@ static const float hullEps = 0.01f;
 //==========================================================================
 //
 //  buildConvexHull
+//
+//  this is basically a textbook implementation of gift wrapper algorithm
+//  it is O(h*n), but we won't have a lot of points here, so it's ok
 //
 //==========================================================================
 static void buildConvexHull () {
@@ -1022,17 +1025,25 @@ static VVA_OKUNUSED TVec CalculateSlideVectorHull (VEntity *mobj) {
     TVec v0 = stxHull[f];
     TVec v1 = stxHull[c];
     if (PtSide(v0, v1, morg) > hullEps) {
-      snorm -= SegNormal(v0, v1);
+      #if 0
+      snorm -= SegNormal(v0, v1)*(v1 - v0).length2D();
+      #else
+      const TVec dir = v1 - v0;
+      snorm -= TVec(dir.y, -dir.x, 0.0f);
+      #endif
     }
   }
 
-  #if 0
   if (!snorm.isZero2D()) {
+    #if 0
+    //const float speed = 12.0f + 6.0f*((hashU32(GetUniqueId())>>4)&0x3fu)/63.0f;
     float angle = VectorAngleYaw(snorm);
     angle = AngleMod360(angle-2+4*FRandom/*Full*/());
     snorm = AngleVectorYaw(angle);
+    #else
+    snorm.normaliseInPlace();
+    #endif
   }
-  #endif
 
   return snorm;
 }

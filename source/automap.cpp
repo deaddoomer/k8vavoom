@@ -27,6 +27,7 @@
 //**  The automap code
 //**
 //**************************************************************************
+// the corpse slide copypasta is here for debug purposes
 #include "gamedefs.h"
 #ifdef CLIENT
 # include "screen.h"
@@ -2000,6 +2001,34 @@ static TPlane::ClipWorkData stxWk;
 
 //==========================================================================
 //
+//  SegNormal
+//
+//==========================================================================
+static VVA_OKUNUSED TVec SegNormal (const TVec &v0, const TVec &v1) {
+  const TVec dir = v1 - v0;
+  TVec normal = TVec(dir.y, -dir.x, 0.0f);
+  // use some checks to avoid floating point inexactness on axial planes
+  if (!normal.x) {
+    if (!normal.y) {
+      //k8: what to do here?!
+      normal = TVec(0.0f, 0.0f, 0.0f);
+    } else {
+      // vertical
+      normal.y = floatSign(normal.y);
+    }
+  } else if (!normal.y) {
+    // horizontal
+    normal.x = floatSign(normal.x);
+  } else {
+    // sloped
+    normal.normaliseInPlace();
+  }
+  return normal;
+}
+
+
+//==========================================================================
+//
 //  CheckGoodStanding
 //
 //  check all regions
@@ -2049,6 +2078,9 @@ static const float hullEps = 0.01f;
 //==========================================================================
 //
 //  buildConvexHull
+//
+//  this is basically a textbook implementation of gift wrapper algorithm
+//  it is O(h*n), but we won't have a lot of points here, so it's ok
 //
 //==========================================================================
 static VVA_OKUNUSED void buildConvexHull () {
@@ -2335,12 +2367,101 @@ static VVA_OKUNUSED bool checkStationary (VEntity *mobj) {
 
 //==========================================================================
 //
+//  CalculateSlideVector
+//
+//==========================================================================
+static VVA_OKUNUSED TVec CalculateSlideVectorMap (VEntity *mobj) {
+  float mybbox[4];
+  const TVec morg = mobj->Origin;
+  TVec snorm = TVec(0.0f, 0.0f, 0.0f);
+  VLevel *XLevel = mobj->XLevel;
+
+  mobj->Create2DBox(mybbox);
+  DeclareMakeBlockMapCoordsBBox2D(mybbox, xl, yl, xh, yh);
+  //GCon->Logf(" rad=%g; xl=%d; yl=%d; xh=%d; yh=%d", rad, xl, yl, xh, yh);
+
+  XLevel->IncrementValidCount(); // used to make sure we only process a line once
+  for (int bx = xl; bx <= xh; ++bx) {
+    for (int by = yl; by <= yh; ++by) {
+      //GCon->Logf("  bx=%d; by=%d", bx, by);
+      for (auto &&it : XLevel->allBlockLines(bx, by)) {
+        line_t *ld = it.line();
+        if ((ld->flags&ML_TWOSIDED) == 0) continue;
+        if (!mobj->LineIntersects(ld)) continue;
+        const bool ok = CheckGoodStanding(mobj, ld->frontsector, morg) ||
+                        CheckGoodStanding(mobj, ld->backsector, morg);
+        if (!ok) continue;
+        const int side = ld->PointOnSide(mobj->Origin);
+        #if 0
+        GCon->Logf("  line: side=%d; norm:(%g,%g,%g)",
+                   side, ld->normal.x, ld->normal.y, ld->normal.z);
+        #endif
+        snorm += (side ? -ld->normal : ld->normal);
+        //snorm = snorm.normalise();
+        #if 0
+        GCon->Logf("  snorm: (%g,%g,%g)", snorm.x, snorm.y, snorm.z);
+        #endif
+      }
+    }
+  }
+
+  if (!snorm.isZero2D()) {
+    float angle = VectorAngleYaw(snorm);
+    angle = AngleMod360(angle-5+10*FRandom/*Full*/());
+    snorm = AngleVectorYaw(angle);
+  }
+
+  return snorm;
+}
+
+
+//==========================================================================
+//
+//  CalculateSlideVectorHull
+//
+//==========================================================================
+static VVA_OKUNUSED TVec CalculateSlideVectorHull (VEntity *mobj) {
+  TVec snorm = TVec(0.0f, 0.0f, 0.0f);
+  TVec morg = mobj->Origin;
+
+  vassert(stxHull.length() >= 3);
+  for (int f = 0; f < stxHull.length(); f += 1) {
+    int c = (f + 1) % stxHull.length();
+    TVec v0 = stxHull[f];
+    TVec v1 = stxHull[c];
+    if (PtSide(v0, v1, morg) > hullEps) {
+      #if 0
+      snorm -= SegNormal(v0, v1)*(v1 - v0).length2D();
+      #else
+      const TVec dir = v1 - v0;
+      snorm -= TVec(dir.y, -dir.x, 0.0f);
+      #endif
+    }
+  }
+
+  if (!snorm.isZero2D()) {
+    #if 0
+    float angle = VectorAngleYaw(snorm);
+    angle = AngleMod360(angle-2+4*FRandom/*Full*/());
+    snorm = AngleVectorYaw(angle);
+    #else
+    snorm.normaliseInPlace();
+    #endif
+  }
+
+  return snorm;
+}
+
+
+//==========================================================================
+//
 //  AM_drawOneThing
 //
 //  >=13: draw only corpses
 //  13: draw corpse bbox
-//  14: draw corpse bbox, and caclucated slide vector
-//  15: draw corpse bbox, and velocity vector
+//  14: draw corpse bbox, and velocity vector
+//  15: draw corpse bbox, and caclucated slide vector
+//  16: draw corpse bbox, and caclucated slide vector; draw hull points
 //
 //==========================================================================
 static void AM_drawOneThing (VEntity *mobj, bool &inSpriteMode) {
@@ -2420,6 +2541,7 @@ static void AM_drawOneThing (VEntity *mobj, bool &inSpriteMode) {
       {
         tmtrace_t tm;
         TVec snorm = TVec(0.0f, 0.0f, 0.0f);
+
         mobj->CheckRelPositionPoint(tm, mobj->Origin);
         if (tm.FloorZ < mobj->Origin.z) {
           rad += 1.0f;
@@ -2443,67 +2565,14 @@ static void AM_drawOneThing (VEntity *mobj, bool &inSpriteMode) {
           //GCon->Logf("%s: fz=%g; oz=%g", mobj->GetClass()->GetName(), tm.FloorZ, mobj->Origin.z);
           AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, 0xFFFF0000);
           rad -= 1.0f;
-          //
-          #if 0
-            float mybbox[4];
-            VLevel *XLevel = mobj->XLevel;
-            mobj->Create2DBox(mybbox);
-            DeclareMakeBlockMapCoordsBBox2D(mybbox, xl, yl, xh, yh);
-            //GCon->Logf(" rad=%g; xl=%d; yl=%d; xh=%d; yh=%d", rad, xl, yl, xh, yh);
-            XLevel->IncrementValidCount(); // used to make sure we only process a line once
-            for (int bx = xl; bx <= xh; ++bx) {
-              for (int by = yl; by <= yh; ++by) {
-                //GCon->Logf("  bx=%d; by=%d", bx, by);
-                for (auto &&it : XLevel->allBlockLines(bx, by)) {
-                  line_t *ld = it.line();
-                  if ((ld->flags&ML_TWOSIDED) == 0) continue;
-                  if (!mobj->LineIntersects(ld)) continue;
-                  const bool ok = CheckGoodStanding(mobj, ld->frontsector, morg) ||
-                                  CheckGoodStanding(mobj, ld->backsector, morg);
-                  if (!ok) continue;
-                  const int side = ld->PointOnSide(mobj->Origin);
-                  #if 0
-                  GCon->Logf("  line: side=%d; norm:(%g,%g,%g)",
-                             side, ld->normal.x, ld->normal.y, ld->normal.z);
-                  #endif
-                  snorm += (side ? -ld->normal : ld->normal);
-                  snorm = snorm.normalise();
-                  #if 0
-                  GCon->Logf("  snorm: (%g,%g,%g)", snorm.x, snorm.y, snorm.z);
-                  #endif
-                }
-              }
-            }
-          #else
-            float sql = 0.0f; sql = sql; // shut up, gcc!
-            for (int f = 0; f < stxHull.length(); f += 1) {
-              int c = (f + 1) % stxHull.length();
-              TVec v0 = stxHull[f];
-              TVec v1 = stxHull[c];
-              #if 1
-              if (PtSide(v0, v1, morg) > hullEps) {
-                TPlane pl;
-                pl.Set2Points(v0, v1);
-                TVec n = pl.normal;
-                snorm -= n;
-              }
-              #else
-              //float sqx = (v1 - v0).length2DSquared();
-              if (morg.isProjectedPointOnSeg2D(v0, v1)) {
-                float sqx = morg.segment2DDistanceSquared(v0, v1);
-                if (sqx > sql) {
-                  TPlane pl;
-                  pl.Set2Points(v0, v1);
-                  TVec n = pl.normal;
-                  if (PtSide(v0, v1, morg) > hullEps) n = -n;
-                  snorm = n;
-                  sql = sqx;
-                }
-              }
-              #endif
-            }
-          #endif
+
+          if (stxHull.length() < 3) {
+            snorm = CalculateSlideVectorMap(mobj);
+          } else {
+            snorm = CalculateSlideVectorHull(mobj);
+          }
         }
+
         if (dbg_am_slide.asBool()) {
           if (!snorm.isZero2D()) {
             float angle = VectorAngleYaw(snorm);
@@ -2524,7 +2593,7 @@ static void AM_drawOneThing (VEntity *mobj, bool &inSpriteMode) {
           mobj->Velocity.y = snorm.y*15;
           mobj->cslFlags |= VEntity::CSL_CorpseSliding;
         } else {
-          if (cheatMode >= 15) snorm = mobj->Velocity;
+          if (cheatMode == 14) snorm = mobj->Velocity;
           if (!snorm.isZero2D()) {
             snorm.normaliseInPlace();
             mline_t l;
