@@ -2574,7 +2574,7 @@ static vwadwr_result vwadwr_append_file_info (vwadwr_dir *dir,
   }
   strcpy(fname, name);
 
-  if (dir->fileCount >= 0x3fffffff) {
+  if (dir->fileCount >= 0x00ffffffU) {
     xfree(dir->mman, fname);
     logf(ERROR, "too many files");
     return -1;
@@ -2673,7 +2673,21 @@ vwadwr_bool vwadwr_is_valid_dir (const vwadwr_dir *dir) {
     dir->namesSize >= 8 &&
     (dir->namesSize&0x03) == 0 &&
     dir->chunkCount > 0 && dir->chunkCount <= 0x1fffffffU &&
-    dir->fileCount > 0 && dir->fileCount <= 0xffffU;
+    dir->fileCount > 0 && dir->fileCount <= 0x00ffffffU;
+}
+
+
+//==========================================================================
+//
+//  vwadwr_check_dir
+//
+//==========================================================================
+vwadwr_result vwadwr_check_dir (const vwadwr_dir *dir) {
+  if (dir->namesSize < 8) return VADWR_DIR_NAMES_SIZE;
+  if ((dir->namesSize&0x03) != 0) return VADWR_DIR_NAMES_ALIGN;
+  if (dir->chunkCount == 0 || dir->chunkCount > 0x1fffffffU) return VADWR_DIR_CHUNK_COUNT;
+  if (dir->fileCount == 0 || dir->fileCount > 0x00ffffffU) return VADWR_DIR_FILE_COUNT;
+  return VADWR_DIR_OK;
 }
 
 

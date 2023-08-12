@@ -165,6 +165,11 @@ void VVWadFile::OpenArchive (VStream *fstream) {
   if (!wad) {
     Sys_Error("cannot load vwad file \"%s\"", *PakFileName);
   }
+
+  if (vwad_get_archive_file_count(wad) > 0xffff) {
+    Sys_Error("too many files (%d) in vwad archive \"%s\"", vwad_get_archive_file_count(wad), *PakFileName);
+  }
+
   vw_handle = wad;
 
   if (vwad_has_pubkey(wad) && vwad_is_authenticated(wad)) {

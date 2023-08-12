@@ -189,6 +189,16 @@ vwadwr_dir *vwadwr_new_dir (vwadwr_memman *mman, vwadwr_iostream *outstrm,
 void vwadwr_free_dir (vwadwr_dir **dirp);
 vwadwr_bool vwadwr_is_valid_dir (const vwadwr_dir *dir);
 
+enum {
+  VADWR_DIR_OK = 0,
+  VADWR_DIR_NAMES_ALIGN = -1,
+  VADWR_DIR_NAMES_SIZE = -2,
+  VADWR_DIR_CHUNK_COUNT = -3,
+  VADWR_DIR_FILE_COUNT = -4,
+};
+vwadwr_result vwadwr_check_dir (const vwadwr_dir *dir);
+
+
 // this will free `dir`
 vwadwr_result vwadwr_finish (vwadwr_dir **dirp);
 

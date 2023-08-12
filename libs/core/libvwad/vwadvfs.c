@@ -2340,7 +2340,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
     goto error;
   }
 
-  if (wad->fileCount < 1 || wad->fileCount > 0xffffU ||
+  if (wad->fileCount < 1 || wad->fileCount > /*0xffffU*/0x00ffffffU ||
       wad->fileCount * (uint32_t)sizeof(FileInfo) >= dhdr.upkdirsize ||
       wad->fileCount * (uint32_t)sizeof(FileInfo) >= dhdr.upkdirsize - upofs)
   {
