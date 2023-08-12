@@ -81,11 +81,27 @@ menudef GameplayOptions {
     help =
       "Slide bodies which may hang on ledges?",
       "The algorithm is very experimental, and some bodies may",
-      "slide in a fancy ways. But this should not affect gameplay.",
-      "",
-      "'Complex' check is slower, but tries to calculate if the",
-      "corpse really should fall with some complex math, instead",
-      "of checking only mobj origin.";
+      "slide in a fancy ways. But this should not affect gameplay.";
+  }
+
+  option bool {
+    title = "Slide Dropped Pickups";
+    cvar = gm_slide_drop_items;
+    help =
+      "Slide dropped pickups which may hang on ledges?",
+      "Uses the same algorithm as corpse sliding.";
+  }
+
+  option slider {
+    title = "Slide Time Limit";
+    cvar = gm_slide_time_limit;
+    min = 0;
+    max = 120;
+    step = 2;
+    help =
+      "If sliding corpse/pickup cannot lay rest after this",
+      "number of seconds, it will not be nudged anymore.",
+      "'0' means \"no time limit\".";
   }
 
   option bool {

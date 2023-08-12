@@ -284,7 +284,7 @@ bool Physics (float DeltaTime) {
     printdebug("%C(%s): vel=%s; csl=%B", self, UniqueId, Velocity, bCorpseSliding);
   }
   #endif
-  if (bCorpse && bCorpseWasNudged) {
+  if (bCorpseWasNudged && (bCorpse || (bSpecial && bDropped))) {
     // this is to prevent corpses to climb up the stairs
     float ohh = MaxStepHeight;
     MaxStepHeight = 0;
@@ -1047,6 +1047,7 @@ final void HitLine (ref tmtrace_t tmtrace, float DeltaTime, float StepVelScale, 
     #endif
     ExplodeMissile(none, hitline);
   } else if (bSlide || forceSlide ||
+             bCorpseWasNudged ||
              (bCorpse && (bCorpseSliding || GetCvarB('gm_corpse_slidemove'))))
   {
     // try to slide for transporter
@@ -1848,7 +1849,9 @@ override void ApplyFriction (float DeltaTime) {
   float vy = Velocity.y;
 
   if (bCorpse) {
+    // this is set only for things that should slide
     if (bCorpseSliding/*Slope*/) return; // forced sliding by C++ physics code
+
     // don't stop sliding if halfway off a step with some momentum
     // but do this only for sectors without 3d floors, and not 3d pobjs
     // (otherwise the body will slide off from any 3d floor/pobj)
@@ -1876,8 +1879,36 @@ override void ApplyFriction (float DeltaTime) {
       //    zero factor means "infinite friction" (i.e. the entity cannot move at all)
       if (Friction > 0.0) {
         fric /= Friction;
-        // let nudget corpses slide a little more (it is funnier this way)
+        // let nudged corpses slide a little more (it is funnier this way)
         if (bCorpseWasNudged) fric /= 4.0;
+        Velocity -= Velocity.xy*(fric*DeltaTime);
+      } else {
+        // zero friction: stop right there, you criminal scum!
+        Velocity.x = 0.0;
+        Velocity.y = 0.0;
+      }
+    }
+    return;
+  }
+
+  if (bCorpseWasNudged && bSpecial && bDropped) {
+    // this is set only for things that should slide
+    if (bCorpseSliding/*Slope*/) return; // forced sliding by C++ physics code
+
+    // apply friction here; this pasta is to avoid slowdowns on non-corpses
+    if (fabs(vx) < STOPSPEED && fabs(vy) < STOPSPEED) {
+      Velocity.x = 0.0;
+      Velocity.y = 0.0;
+    } else {
+      // slow down
+      float fric = GetFriction();
+      //k8: this must be right, i believe, because original code multiplies speed by friction
+      //    as we're doing it the opposite way, we should divide subtracted velocity by entity friction factor
+      //    zero factor means "infinite friction" (i.e. the entity cannot move at all)
+      if (Friction > 0.0) {
+        fric /= Friction;
+        // let nudged items slide a little more (it is funnier this way)
+        if (bCorpseWasNudged) fric /= 6.0;
         Velocity -= Velocity.xy*(fric*DeltaTime);
       } else {
         // zero friction: stop right there, you criminal scum!

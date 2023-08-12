@@ -62,7 +62,8 @@ extern VCvarB dbg_vm_show_tick_stats;
 
 static VCvarB gm_slide_bodies("gm_slide_bodies", true, "Slide bodies hanging from ledges and such?", CVAR_Archive);
 static VCvarB gm_corpse_slidemove("gm_corpse_slidemove", true, "Should corpses use sliding movement?", CVAR_Archive);
-static VCvarI gm_slide_fall_count("gm_slide_fall_count", "4", "How many force corpse slides perform before giving up?", CVAR_Archive);
+static VCvarF gm_slide_time_limit("gm_slide_time_limit", "60", "Slide time limit, in seconds?", CVAR_Archive);
+static VCvarB gm_slide_drop_items("gm_slide_drop_items", true, "Slide dropped items hanging from ledges and such?", CVAR_Archive);
 
 // k8gore cvars
 VCvarB k8gore_enabled("k8GoreOpt_Enabled", true, "Enable extra blood and gore?", CVAR_Archive);
@@ -1193,7 +1194,8 @@ void VEntity::CorpseSlide (float deltaTime) {
       cslLastPos = Origin;
 
       // if slided for too long, don't bother anymore
-      if (XLevel->Time - cslStartTime > 60.0f) {
+      const float slm = gm_slide_time_limit.asFloat();
+      if (slm > 0.0f && XLevel->Time - cslStartTime > slm) {
         CorpseIdle(this);
         #ifdef VV_DEBUG_CSL_VERBOSE
         GCon->Logf("CORPSE IDLE: %s(%u): tm=%g", GetClass()->GetName(),
@@ -1424,7 +1426,49 @@ void VEntity::Tick (float deltaTime) {
                cslFlags);
     #endif
   }
+  else if (gm_slide_drop_items.asBool() &&
+           (FlagsEx&(EFEX_Special|EFEX_Dropped)) == (EFEX_Special|EFEX_Dropped) &&
+           (EntityFlags&(EF_Solid|EF_NoBlockmap)) == 0)
+  {
+    #ifdef VV_DEBUG_CSL_VERBOSE
+    GCon->Logf("DROP-0: %s(%u): pre: delay=%g; stm=%g; pz=%g; flg=0x%04xH",
+               GetClass()->GetName(), GetUniqueId(),
+               cslCheckDelay, cslStartTime, cslLastZ,
+               cslFlags);
+    #endif
 
+    // if sector with the corpse was moved...
+    if (FlagsEx&EFEX_SomeSectorMoved) {
+      FlagsEx &= ~EFEX_SomeSectorMoved;
+      // consider this corpse "fresh"
+      CorpseIdle(this);
+      cslCheckDelay = 0.1f + 0.2f*FRandom();
+    }
+
+    // is it not idle?
+    if (cslCheckDelay >= 0.0f) {
+      cslCheckDelay -= deltaTime;
+      if (cslCheckDelay <= 0.0f) CorpseSlide(deltaTime);
+    }
+
+    #ifdef VV_DEBUG_CSL_VERBOSE
+    GCon->Logf("DROP-1: %s(%u): pre: delay=%g; stm=%g; pz=%g; flg=0x%04xH",
+               GetClass()->GetName(), GetUniqueId(),
+               cslCheckDelay, cslStartTime, cslLastZ,
+               cslFlags);
+    #endif
+  } else {
+    // just in case: clear sliding flags
+    cslFlags = 0;
+  }
+
+  #if 0
+  if (FlagsEx&EFEX_Dropped) {
+    GCon->Logf("ITEN: %s(%u): flags=0x%08xH; exflags=0x%08xH",
+               GetClass()->GetName(), GetUniqueId(),
+               EntityFlags, FlagsEx);
+  }
+  #endif
 
   // reset 'in chase' (we can do it before ticker instead of after it, it doesn't matter)
   if (eflagsex&EFEX_IsEntityEx) fldbInChase->SetBool(this, false);

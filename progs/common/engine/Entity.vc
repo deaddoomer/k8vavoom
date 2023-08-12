@@ -359,6 +359,11 @@ transient bool bSomeSectorMoved;
 // game loader will fix this, no need to save it
 transient bool bGoreModEntity;
 
+// from `EntityEx`
+transient native readonly bool bNothingNothing_; // this was temporarily used for corpse sliding; remove (reuse) later
+bool bSpecial; // call P_SpecialThing when touched
+bool bDropped; // dropped by a demon, not level spawned
+
 // 0: none
 // 1: switches object to "k8vavoomInternalNoTickGrav" when it enters idle state (the one with negative duration)
 // 2: this one switches object to "NoInteraction" when it enters idle state (the one with negative duration)

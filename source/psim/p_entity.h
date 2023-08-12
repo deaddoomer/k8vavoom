@@ -296,6 +296,11 @@ class VEntity : public VThinker {
     // is this a "gore mod" entity (blood, etc)?
     // WARNING! this is not saved, so it should be restored in `SerialiseOther()`
     EFEX_GoreModEntity     = 1u<<18u,
+
+    // more flags from EntityEx
+    EFEX_NothingNothing    = 1u<<19u, // this was temporarily used for corpse sliding; remove (reuse) later
+    EFEX_Special           = 1u<<20u, // bSpecial
+    EFEX_Dropped           = 1u<<21u, // bDropped
   };
   vuint32 FlagsEx;
 

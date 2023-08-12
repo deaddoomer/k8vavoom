@@ -174,7 +174,7 @@ name WallBounceSound; // if empty, use `BounceSound`
  */
 
 // flags
-bool bSpecial; // call P_SpecialThing when touched
+//bool bSpecial; // call P_SpecialThing when touched (moved to `Entity`)
 bool bShootable; // can be hit
 bool bAmbush;
 bool bJustHit; // try to attack right back
@@ -182,7 +182,7 @@ bool bJustAttacked; // take at least one step before attacking
 bool bSpawnCeiling; // hang from ceiling instead of floor
 // movement flags
 bool bPickUp; // for players to pick up items
-bool bDropped; // dropped by a demon, not level spawned
+//bool bDropped; // dropped by a demon, not level spawned (moved to `Entity`)
 bool bNoBlood; // don't bleed when shot (use puff)
 bool bNoBloodDecals; // don't spawn blood decals (k8:FIXME: dunno)
 bool bPuffNoDecals; // don't spawn puff decals
