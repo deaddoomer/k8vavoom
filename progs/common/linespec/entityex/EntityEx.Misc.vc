@@ -5174,6 +5174,7 @@ bool DoThingRaise (optional bool skipCheckPosition, optional EntityEx Mage) {
   cslStartTime = 0;
   cslDelay = 0;
   cslLastPos = vector(-66666.0, -66666.0, -66666.0);
+  //cslLastSub = nullptr;
 
   // if it counts as kill, count it as another one
   if (CountsAsKill()) ++Level.TotalKills;

@@ -502,7 +502,9 @@ void TPlane::ClipPolyFront (ClipWorkData &wdata, const TVec *src, const int vcou
       // totally coplanar
       vassert(hasCoplanarSomething);
       *destcount = vcount;
-      memcpy((void *)dest, (void *)points, vcount*sizeof(points[0]));
+      if ((void *)dest != (void *)src) {
+        memcpy((void *)dest, (void *)points, vcount*sizeof(points[0]));
+      }
     } else {
       // nothing at the front
       *destcount = 0;
@@ -511,7 +513,9 @@ void TPlane::ClipPolyFront (ClipWorkData &wdata, const TVec *src, const int vcou
   } else if (!hasBackSomething) {
     // totally on the front side (possibly with coplanars), copy it
     *destcount = vcount;
-    memcpy((void *)dest, (void *)points, vcount*sizeof(points[0]));
+    if ((void *)dest != (void *)src) {
+      memcpy((void *)dest, (void *)points, vcount*sizeof(points[0]));
+    }
     return;
   }
 
@@ -522,9 +526,9 @@ void TPlane::ClipPolyFront (ClipWorkData &wdata, const TVec *src, const int vcou
   sides[vcount] = sides[0];
   points[vcount] = points[0];
 
-  unsigned fcount = 0;
+  int fcount = 0;
 
-  for (unsigned i = 0; i < (unsigned)vcount; ++i) {
+  for (int i = 0; i < vcount; ++i) {
     if (sides[i] == PlaneCoplanar) {
       dest[fcount++] = points[i];
     } else {
@@ -567,5 +571,7 @@ void TPlane::ClipPolyFront (ClipWorkData &wdata, const TVec *src, const int vcou
     }
   }
 
-  *destcount = (int)fcount;
+  vassert(fcount <= vcount+1);
+
+  *destcount = fcount;
 }

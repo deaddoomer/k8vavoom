@@ -467,6 +467,7 @@ transient bool bCorpseSlidingSlope;
 transient float cslStartTime;
 transient float cslDelay;
 transient TVec cslLastPos;
+//native readonly transient subsector_t *cslLastSub; // no need to keep sector here
 
 
 replication {

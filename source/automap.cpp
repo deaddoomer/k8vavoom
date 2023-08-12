@@ -1997,6 +1997,7 @@ static TArrayNC<TVec> stxPoints, stxSubsrc, stxHull;
 static TArrayNC<int> stxHidx;
 static TPlane stxPl[4]; // clip planes
 static TPlane::ClipWorkData stxWk;
+static TVec stxOuterPoint; // set if we have a hull
 
 
 //==========================================================================
@@ -2203,6 +2204,65 @@ static bool PointInHull (const TVec morg) {
 
 //==========================================================================
 //
+//  pointGtr
+//
+//  true if `p0 > p1`
+//
+//==========================================================================
+static VVA_OKUNUSED VVA_FORCEINLINE bool pointGtr (const TVec &p0, const TVec &p1) {
+  const TVec d = p0 - p1;
+  if (d.x != 0.0f) return (d.x > 0.0f);
+  // x is equal
+  if (d.y != 0.0f) return (d.y > 0.0f);
+  // y is equal
+  return (d.z > 0.0f);
+}
+
+
+//==========================================================================
+//
+//  removeDupPoints
+//
+//==========================================================================
+/*
+static void removeDupPoints () {
+  const int len = stxPoints.length();
+  if (len > 2) {
+    // shellsort 'em
+    TVec p;
+    int h, i, j;
+    h = 1; do { h = h*3 + 1; } while (h <= len);
+    do {
+      h = h / 3; i = h;
+      while (i < len) {
+        p = stxPoints[i]; j = i;
+        while (j >= h && pointGtr(stxPoints[j - h], p)) {
+          stxPoints[j] = stxPoints[j - h]; j -= h;
+        }
+        stxPoints[j] = p;
+        i += 1;
+      }
+    } while (h != 1);
+
+    int s = 1, d = 1;
+    while (s < len) {
+      if (fabs(stxPoints[s - 1].x - stxPoints[s].x) < 0.001f &&
+          fabs(stxPoints[s - 1].y - stxPoints[s].y) < 0.001f)
+      {
+        s += 1;
+      } else {
+        if (s != d) stxPoints[d] = stxPoints[s];
+        s += 1; d += 1;
+      }
+    }
+    if (d != len) stxPoints.setLengthNoResize(d);
+  }
+}
+*/
+
+
+//==========================================================================
+//
 //  addPoint
 //
 //==========================================================================
@@ -2235,7 +2295,11 @@ static VVA_OKUNUSED bool checkStationary (VEntity *mobj) {
   AM_DrawBox(morg.x-1, morg.y-1, morg.x+1, morg.y+1, 0xFFFF7F00);
 
   mobj->Create2DBox(mybbox);
+
   stxPoints.resetNoDtor();
+  // just in case
+  stxHull.resetNoDtor();
+  stxHidx.resetNoDtor();
 
   // left edge
   stxPl[0].Set2Points(TVec(mybbox[BOX2D_MINX], mybbox[BOX2D_MINY]),
@@ -2347,16 +2411,22 @@ static VVA_OKUNUSED bool checkStationary (VEntity *mobj) {
   #endif
 
   bool inside = PointInHull(morg);
-  /*
-  if (rad > 4.0f) {
+  if (inside && rad > 6.0f) {
     const float nofs = 2.0f;
+    const TVec cvv[4] = {
+      TVec(+nofs, -nofs),
+      TVec(+nofs, +nofs),
+      TVec(-nofs, -nofs),
+      TVec(-nofs, +nofs),
+    };
     // check more points
-    if (inside) inside = PointInHull(morg+TVec(+nofs, -nofs));
-    if (inside) inside = PointInHull(morg+TVec(+nofs, +nofs));
-    if (inside) inside = PointInHull(morg+TVec(-nofs, -nofs));
-    if (inside) inside = PointInHull(morg+TVec(-nofs, +nofs));
+    for (int f = 0; inside && f < 4; f += 1) {
+      inside = PointInHull(morg+cvv[f]);
+      if (!inside) stxOuterPoint = morg+cvv[f];
+    }
+  } else {
+    stxOuterPoint = morg;
   }
-  */
 
   #if 0
   GCon->Logf(NAME_Debug, "=== pts:%d; hull:%d; inside=%d ===", stxPoints.length(), stxHull.length(), inside);
@@ -2417,36 +2487,101 @@ static VVA_OKUNUSED TVec CalculateSlideVectorMap (VEntity *mobj) {
 
 //==========================================================================
 //
-//  CalculateSlideVectorHull
+//  CalculateSlideVectorHullOld
 //
 //==========================================================================
-static VVA_OKUNUSED TVec CalculateSlideVectorHull (VEntity *mobj) {
+static VVA_OKUNUSED TVec CalculateSlideVectorHullOld (VEntity *mobj, TVec morg) {
   TVec snorm = TVec(0.0f, 0.0f, 0.0f);
-  TVec morg = mobj->Origin;
+  //TVec morg = mobj->Origin;
 
-  vassert(stxHull.length() >= 3);
-  for (int f = 0; f < stxHull.length(); f += 1) {
-    int c = (f + 1) % stxHull.length();
-    TVec v0 = stxHull[f];
-    TVec v1 = stxHull[c];
+  const int hlen = stxHull.length();
+  vassert(hlen >= 3);
+  int c = hlen - 1;
+  for (int f = 0; f < hlen; c = f, f += 1) {
+    // from c to f
+    const TVec &v0 = stxHull[c];
+    const TVec &v1 = stxHull[f];
     if (PtSide(v0, v1, morg) > hullEps) {
       #if 0
       snorm -= SegNormal(v0, v1)*(v1 - v0).length2D();
       #else
       const TVec dir = v1 - v0;
-      snorm -= TVec(dir.y, -dir.x, 0.0f);
+      const float ndist = morg.line2DDistanceSquared(v0, v1) * 0.0f + 4.0f;
+      const TVec norm = TVec(dir.y, -dir.x, 0.0f) / (ndist < 0.01f ? 1.0f : sqrtf(ndist));
+      snorm -= norm;
       #endif
+    }
+  }
+
+  if (snorm.isZero2D()) {
+    // inside or coplanar, just take the longest line
+    float bestlen = -1.0f;
+    c = hlen - 1;
+    for (int f = 0; f < hlen; c = f, f += 1) {
+      // from c to f
+      const TVec &v0 = stxHull[c];
+      const TVec &v1 = stxHull[f];
+      const float xlen = (v1 - v0).length2DSquared();
+      if (xlen > bestlen) {
+        #if 0
+        snorm = SegNormal(v0, v1)*(v1 - v0).length2D();
+        #else
+        const TVec dir = v1 - v0;
+        snorm = TVec(dir.y, -dir.x, 0.0f);
+        #endif
+        bestlen = xlen;
+      }
     }
   }
 
   if (!snorm.isZero2D()) {
     #if 0
+    //const float speed = 12.0f + 6.0f*((hashU32(GetUniqueId())>>4)&0x3fu)/63.0f;
     float angle = VectorAngleYaw(snorm);
     angle = AngleMod360(angle-2+4*FRandom/*Full*/());
     snorm = AngleVectorYaw(angle);
     #else
     snorm.normaliseInPlace();
     #endif
+  }
+
+  return snorm;
+}
+
+
+//==========================================================================
+//
+//  CalculateSlideVectorHull
+//
+//  move by the vector from the center of hull to origin
+//
+//==========================================================================
+static VVA_OKUNUSED TVec CalculateSlideVectorHull (VEntity *mobj, TVec morg) {
+  TVec snorm, hc;
+  //TVec morg = mobj->Origin;
+
+  const int hlen = stxHull.length();
+  vassert(hlen >= 3);
+
+  // calculate hull centroid: average of all hull vertices
+  // our hull has no collinear points, so it is ok
+
+  hc = TVec(0.0f, 0.0f, 0.0f);
+  for (int f = 0; f < hlen; f += 1) {
+    hc += stxHull[f];
+  }
+  hc /= hlen;
+
+  AM_DrawBox(hc.x-1, hc.y-1, hc.x+1, hc.y+1, 0xFF007FFF);
+
+  // vector from hc to morg is our new direction
+  snorm = morg - hc;
+  snorm.z = 0.0f;
+  // just in case
+  if (!snorm.isZero2D()) {
+    snorm.normaliseInPlace();
+  } else {
+    snorm = CalculateSlideVectorHullOld(mobj, morg);
   }
 
   return snorm;
@@ -2560,16 +2695,17 @@ static void AM_drawOneThing (VEntity *mobj, bool &inSpriteMode) {
           if (checkStat) {
             AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, 0xFFFF00FF);
             return;
+          } else {
+            //if (strcmp(mobj->GetClass()->GetName(), "DoomImp") != 0) return;
+            //GCon->Logf("%s: fz=%g; oz=%g", mobj->GetClass()->GetName(), tm.FloorZ, mobj->Origin.z);
+            AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, 0xFFFF0000);
           }
-          //if (strcmp(mobj->GetClass()->GetName(), "DoomImp") != 0) return;
-          //GCon->Logf("%s: fz=%g; oz=%g", mobj->GetClass()->GetName(), tm.FloorZ, mobj->Origin.z);
-          AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, 0xFFFF0000);
           rad -= 1.0f;
 
-          if (stxHull.length() < 3) {
-            snorm = CalculateSlideVectorMap(mobj);
+          if (stxHull.length() >= 3) {
+            snorm = CalculateSlideVectorHull(mobj, stxOuterPoint);
           } else {
-            snorm = CalculateSlideVectorHull(mobj);
+            snorm = CalculateSlideVectorMap(mobj);
           }
         }
 

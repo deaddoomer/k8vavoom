@@ -1852,7 +1852,8 @@ override void ApplyFriction (float DeltaTime) {
     // don't stop sliding if halfway off a step with some momentum
     // but do this only for sectors without 3d floors, and not 3d pobjs
     // (otherwise the body will slide off from any 3d floor/pobj)
-    if (Sector == BaseSector && !SectorHas3DFloors(Sector)) {
+    // also, nudged corpses should have frictin applied
+    if (!bCorpseWasNudged && Sector == BaseSector && !SectorHas3DFloors(Sector)) {
       /*
       if (vx > 0.25*35.0 || vx < -0.25*35.0 ||
           vy > 0.25*35.0 || vy < -0.25*35.0)
@@ -1863,11 +1864,34 @@ override void ApplyFriction (float DeltaTime) {
         }
       }
     }
+    // apply corpse friction here; this pasta is to avoid slowdowns on non-corpses
+    if (fabs(vx) < STOPSPEED && fabs(vy) < STOPSPEED) {
+      Velocity.x = 0.0;
+      Velocity.y = 0.0;
+    } else {
+      // slow down
+      float fric = GetFriction();
+      //k8: this must be right, i believe, because original code multiplies speed by friction
+      //    as we're doing it the opposite way, we should divide subtracted velocity by entity friction factor
+      //    zero factor means "infinite friction" (i.e. the entity cannot move at all)
+      if (Friction > 0.0) {
+        fric /= Friction;
+        // let nudget corpses slide a little more (it is funnier this way)
+        if (bCorpseWasNudged) fric /= 4.0;
+        Velocity -= Velocity.xy*(fric*DeltaTime);
+      } else {
+        // zero friction: stop right there, you criminal scum!
+        Velocity.x = 0.0;
+        Velocity.y = 0.0;
+      }
+    }
+    return;
   }
 
   // clamp Voodoo Dolls too
   if (fabs(vx) < STOPSPEED && fabs(vy) < STOPSPEED &&
-      (!bIsPlayer || Player.MO != self || (Player.MO == self && !Player.ForwardMove && !Player.SideMove)))
+      (!bIsPlayer || Player.MO != self ||
+       (Player.MO == self && !Player.ForwardMove && !Player.SideMove)))
   {
     Velocity.x = 0.0;
     Velocity.y = 0.0;
@@ -1884,18 +1908,25 @@ override void ApplyFriction (float DeltaTime) {
     //k8: this must be right, i believe, because original code multiplies speed by friction
     //    as we're doing it the opposite way, we should divide subtracted velocity by entity friction factor
     //    zero factor means "infinite friction" (i.e. the entity cannot move at all)
-    if (Friction > 0.0) fric /= Friction;
-    // apply extra friction for player, so it won't slide
-    if (bIsPlayer && Player && Player.MO == self && !Player.ForwardMove && !Player.SideMove && GetCvarB('player_extra_friction_enabled')) {
-      // check for conveyor belts
-      if (!PhysicsCheckScroller()) {
-        float efric = GetCvarF('player_extra_friction');
-        if (efric > 0.0) fric *= efric;
+    if (Friction > 0.0) {
+      fric /= Friction;
+      // apply extra friction for player, so it won't slide
+      if (bIsPlayer && Player && Player.MO == self &&
+          !Player.ForwardMove && !Player.SideMove &&
+          GetCvarB('player_extra_friction_enabled'))
+      {
+        // check for conveyor belts
+        if (!PhysicsCheckScroller()) {
+          float efric = GetCvarF('player_extra_friction');
+          if (efric > 0.0) fric *= efric;
+        }
       }
+      Velocity -= Velocity.xy*(fric*DeltaTime);
+    } else {
+      // zero friction: stop right there, you criminal scum!
+      Velocity.x = 0.0;
+      Velocity.y = 0.0;
     }
-    TVec vdiff = Velocity.xy*(fric*DeltaTime);
-    if (Friction <= 0.0) vdiff = Velocity.xy; // stop right there, you criminal scum!
-    Velocity -= vdiff;
   }
 }
 

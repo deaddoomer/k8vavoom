@@ -412,6 +412,7 @@ class VEntity : public VThinker {
   float cslStartTime; // slide starting time
   float cslCheckDelay; // timeout before next check
   TVec cslLastPos; // need position for slopes and such
+  //subsector_t *cslLastSub; // no need to keep sector here
 
 protected:
   //VEntity () : SoundClass(E_NoInit), SoundGender(E_NoInit), DecalName(E_NoInit) {}

@@ -593,6 +593,7 @@ static TArrayNC<TVec> stxPoints, stxSubsrc, stxHull;
 static TArrayNC<int> stxHidx;
 static TPlane stxPl[4]; // clip planes
 static TPlane::ClipWorkData stxWk;
+static TVec stxOuterPoint; // set if we have a hull
 
 
 //==========================================================================
@@ -631,7 +632,7 @@ static VVA_OKUNUSED TVec SegNormal (const TVec &v0, const TVec &v1) {
 //
 //==========================================================================
 static bool CheckGoodStanding (VEntity *mobj, sector_t *sector, TVec morg) {
-  if (sector) {
+  if (sector && !sector->isOriginalPObj()) {
     if (sector->floor.GetPointZClamped(morg) == morg.z) return true;
     else if (sector->Has3DFloors()) {
       for (const sec_region_t *reg = sector->eregions->next; reg; reg = reg->next) {
@@ -827,12 +828,14 @@ static bool checkStationary (VEntity *mobj) {
   VLevel *XLevel = mobj->XLevel;
   TVec morg = mobj->Origin;
   const float rad = mobj->GetMoveRadius();
-  if (rad < 2.0f) return true; // why bother?
-
-  //AM_DrawBox(morg.x-1, morg.y-1, morg.x+1, morg.y+1, 0xFFFF7F00);
+  if (rad < 3.0f) return true; // why bother?
 
   mobj->Create2DBox(mybbox);
+
   stxPoints.resetNoDtor();
+  // just in case
+  stxHull.resetNoDtor();
+  stxHidx.resetNoDtor();
 
   // left edge
   stxPl[0].Set2Points(TVec(mybbox[BOX2D_MINX], mybbox[BOX2D_MINY]),
@@ -944,13 +947,21 @@ static bool checkStationary (VEntity *mobj) {
   #endif
 
   bool inside = PointInHull(morg);
-  if (rad > 4.0f) {
+  if (inside && rad > 6.0f) {
     const float nofs = 2.0f;
+    const TVec cvv[4] = {
+      TVec(+nofs, -nofs),
+      TVec(+nofs, +nofs),
+      TVec(-nofs, -nofs),
+      TVec(-nofs, +nofs),
+    };
     // check more points
-    if (inside) inside = PointInHull(morg+TVec(+nofs, -nofs));
-    if (inside) inside = PointInHull(morg+TVec(+nofs, +nofs));
-    if (inside) inside = PointInHull(morg+TVec(-nofs, -nofs));
-    if (inside) inside = PointInHull(morg+TVec(-nofs, +nofs));
+    for (int f = 0; inside && f < 4; f += 1) {
+      inside = PointInHull(morg+cvv[f]);
+      if (!inside) stxOuterPoint = morg+cvv[f];
+    }
+  } else {
+    stxOuterPoint = morg;
   }
 
   #if 0
@@ -1012,25 +1023,50 @@ static VVA_OKUNUSED TVec CalculateSlideVectorMap (VEntity *mobj) {
 
 //==========================================================================
 //
-//  CalculateSlideVectorHull
+//  CalculateSlideVectorHullOld
 //
 //==========================================================================
-static VVA_OKUNUSED TVec CalculateSlideVectorHull (VEntity *mobj) {
+static VVA_OKUNUSED TVec CalculateSlideVectorHullOld (VEntity *mobj, TVec morg) {
   TVec snorm = TVec(0.0f, 0.0f, 0.0f);
-  TVec morg = mobj->Origin;
+  //TVec morg = mobj->Origin;
 
-  vassert(stxHull.length() >= 3);
-  for (int f = 0; f < stxHull.length(); f += 1) {
-    int c = (f + 1) % stxHull.length();
-    TVec v0 = stxHull[f];
-    TVec v1 = stxHull[c];
+  const int hlen = stxHull.length();
+  vassert(hlen >= 3);
+  int c = hlen - 1;
+  for (int f = 0; f < hlen; c = f, f += 1) {
+    // from c to f
+    const TVec &v0 = stxHull[c];
+    const TVec &v1 = stxHull[f];
     if (PtSide(v0, v1, morg) > hullEps) {
       #if 0
       snorm -= SegNormal(v0, v1)*(v1 - v0).length2D();
       #else
       const TVec dir = v1 - v0;
-      snorm -= TVec(dir.y, -dir.x, 0.0f);
+      const float ndist = morg.line2DDistanceSquared(v0, v1) * 0.0f + 4.0f;
+      const TVec norm = TVec(dir.y, -dir.x, 0.0f) / (ndist < 0.01f ? 1.0f : sqrtf(ndist));
+      snorm -= norm;
       #endif
+    }
+  }
+
+  if (snorm.isZero2D()) {
+    // inside or coplanar, just take the longest line
+    float bestlen = -1.0f;
+    c = hlen - 1;
+    for (int f = 0; f < hlen; c = f, f += 1) {
+      // from c to f
+      const TVec &v0 = stxHull[c];
+      const TVec &v1 = stxHull[f];
+      const float xlen = (v1 - v0).length2DSquared();
+      if (xlen > bestlen) {
+        #if 0
+        snorm = SegNormal(v0, v1)*(v1 - v0).length2D();
+        #else
+        const TVec dir = v1 - v0;
+        snorm = TVec(dir.y, -dir.x, 0.0f);
+        #endif
+        bestlen = xlen;
+      }
     }
   }
 
@@ -1051,12 +1087,50 @@ static VVA_OKUNUSED TVec CalculateSlideVectorHull (VEntity *mobj) {
 
 //==========================================================================
 //
+//  CalculateSlideVectorHull
+//
+//  move by the vector from the center of hull to origin
+//
+//==========================================================================
+static VVA_OKUNUSED TVec CalculateSlideVectorHull (VEntity *mobj, TVec morg) {
+  TVec snorm, hc;
+  //TVec morg = mobj->Origin;
+
+  const int hlen = stxHull.length();
+  vassert(hlen >= 3);
+
+  // calculate hull centroid: average of all hull vertices
+  // our hull has no collinear points, so it is ok
+
+  hc = TVec(0.0f, 0.0f, 0.0f);
+  for (int f = 0; f < hlen; f += 1) {
+    hc += stxHull[f];
+  }
+  hc /= hlen;
+
+  // vector from hc to morg is our new direction
+  snorm = morg - hc;
+  snorm.z = 0.0f;
+  // just in case
+  if (!snorm.isZero2D()) {
+    snorm.normaliseInPlace();
+  } else {
+    snorm = CalculateSlideVectorHullOld(mobj, morg);
+  }
+
+  return snorm;
+}
+
+
+//==========================================================================
+//
 //  CorpseIdle
 //
 //==========================================================================
 static VVA_FORCEINLINE void CorpseIdle (VEntity *mobj) {
   mobj->cslFlags &= ~(VEntity::CSL_CorpseSliding|VEntity::CSL_CorpseSlidingSlope);
   mobj->cslCheckDelay = -1.0f;
+  //mobj->cslLastSub = nullptr;
 }
 
 
@@ -1074,19 +1148,21 @@ void VEntity::CorpseSlide (float deltaTime) {
   TVec snorm;
 
   // if on pobj, do nothing (yet)
-  if (Sector != BaseSector) { CorpseIdle(this); return; }
+  //if (Sector != BaseSector) { CorpseIdle(this); return; }
+  if (Sector->isAnyPObj()) { CorpseIdle(this); return; }
 
-  // default timeout: nudge roughly each tick
-  cslCheckDelay = 0.02f;
+  // default timeout; nudge rougly each two ticks
+  cslCheckDelay = 0.06f;
 
   CheckRelPositionPoint(tm, Origin);
   #if 0
   GCon->Logf("CORPSE: %s(%u): fz=%g; oz=%g; efz=%g", GetClass()->GetName(),
              GetUniqueId(), tm.FloorZ, Origin.z, FloorZ);
   #endif
-  stxHull.resetNoDtor();
+
   if (tm.FloorZ < Origin.z && !checkStationary(this)) {
     // this corpse is not in a "stable" position (i.e. should slide away)
+    // we have built convex hull here too
     #ifdef VV_DEBUG_CSL_VERBOSE
     GCon->Logf("CORPSE HANGING: %s(%u): fz=%g; oz=%g", GetClass()->GetName(),
                GetUniqueId(), tm.FloorZ, Origin.z);
@@ -1094,10 +1170,10 @@ void VEntity::CorpseSlide (float deltaTime) {
 
     cslFlags &= ~CSL_CorpseSlidingSlope;
 
-    if (stxHull.length() < 3) {
-      snorm = CalculateSlideVectorMap(this);
+    if (stxHull.length() >= 3) {
+      snorm = CalculateSlideVectorHull(this, stxOuterPoint);
     } else {
-      snorm = CalculateSlideVectorHull(this);
+      snorm = CalculateSlideVectorMap(this);
     }
 
     if (!snorm.isZero2D()) {
@@ -1106,6 +1182,7 @@ void VEntity::CorpseSlide (float deltaTime) {
         if (cslLastPos.z != Origin.z) {
           cslStartTime = XLevel->Time;
         } else if ((cslFlags&CSL_CorpseWasNudged) == 0 && cslLastPos == Origin) {
+          // if cannot move since last check, it means that it stuck
           cslStartTime = XLevel->Time - 1000.0f; // this will freeze it
         }
       } else {
@@ -1125,32 +1202,42 @@ void VEntity::CorpseSlide (float deltaTime) {
       } else {
         //const float speed = 15.0f;
         const float speed = 12.0f + 6.0f*((hashU32(GetUniqueId())>>4)&0x3fu)/63.0f;
-        #ifdef VV_DEBUG_CSL_VERBOSE
-        GCon->Logf("CC(%u):%s: snorm:(%g,%g,%g); angle:%g",
+        #if defined(VV_DEBUG_CSL_VERBOSE) || 0
+        GCon->Logf("CC(%u):%s: snorm:(%g,%g,%g):%g; angle:%g; xspeed:%g (%g)",
                    GetUniqueId(), GetClass()->GetName(),
-                   snorm.x, snorm.y, snorm.z, AngleMod360(VectorAngleYaw(snorm)));
+                   snorm.x, snorm.y, snorm.z, snorm.length2D(),
+                   AngleMod360(VectorAngleYaw(snorm)),
+                   Velocity.length2D(), speed);
         #endif
         // don't change velocity each time, it doesn't look good
         if (cslFlags&CSL_CorpseWasNudged) {
           if (Velocity.length2DSquared() < 10.0f*10.0f) {
             Velocity.x = snorm.x*speed;
             Velocity.y = snorm.y*speed;
+            #if defined(VV_DEBUG_CSL_VERBOSE) || 0
+            GCon->Logf("  finspeed(0):%g", Velocity.length2D());
+            #endif
           }
         } else if (Velocity.length2DSquared() < 3.0f*3.0f) {
           // nudged for the first time
           cslFlags |= CSL_CorpseWasNudged;
           Velocity.x = snorm.x*speed;
           Velocity.y = snorm.y*speed;
+          #if defined(VV_DEBUG_CSL_VERBOSE) || 0
+          GCon->Logf("  finspeed(1):%g", Velocity.length2D());
+          #endif
         }
       }
     } else {
-      // no slide direction; alas, freeze it
+      // no slide direction; alas, freeze it (but only if it doesn't move)
       #ifdef VV_DEBUG_CSL_VERBOSE
       GCon->Logf("CC(%u):%s: NO SLIDE DIR; freezing; snorm:(%g,%g,%g)",
                  GetUniqueId(), GetClass()->GetName(),
                  snorm.x, snorm.y, snorm.z);
       #endif
-      CorpseIdle(this);
+      if (Velocity.length2DSquared() < 3.0f*3.0f) {
+        CorpseIdle(this);
+      }
     }
   } else {
     // the corpse is stable, but may still move, or lie on a slope
@@ -1186,21 +1273,22 @@ void VEntity::CorpseSlide (float deltaTime) {
           #endif
         }
       } else if ((cslFlags&CSL_CorpseSliding) == 0) {
+        // wasn't sliding
         cslFlags &= ~(CSL_CorpseSliding|CSL_CorpseSlidingSlope);
         // "map was just loaded" hack
         if (cslStartTime == 0.0f) {
           cslStartTime = 0.2f;
           cslCheckDelay = 0.4f + 0.2f*FRandom();
         } else {
-          cslCheckDelay = -1.0f;
+          CorpseIdle(this);
         }
       } else {
+        // was sliding, and stopped
         CorpseIdle(this);
       }
       cslLastPos = Origin;
     } else {
       // still moving
-      // if on the slope, keep sliding
       if (!tm.EFloor.isSlope()) {
         cslFlags &= ~(CSL_CorpseSliding|CSL_CorpseSlidingSlope);
       }

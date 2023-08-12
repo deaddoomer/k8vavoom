@@ -77,13 +77,13 @@ struct VLineSpecInfo {
   };
   vuint32 Flags;
 
-  inline void clear () noexcept { Index = 0; Name.clear(); Flags = 0u; }
+  VVA_FORCEINLINE void clear () noexcept { Index = 0; Name.clear(); Flags = 0u; }
 
-  inline bool IsUnimplemented () const noexcept { return (Flags&Unimplemented); }
-  inline bool IsNoScript () const noexcept { return (Flags&NoScript); }
-  inline bool IsNoLine () const noexcept { return (Flags&NoLine); }
+  VVA_FORCEINLINE bool IsUnimplemented () const noexcept { return (Flags&Unimplemented); }
+  VVA_FORCEINLINE bool IsNoScript () const noexcept { return (Flags&NoScript); }
+  VVA_FORCEINLINE bool IsNoLine () const noexcept { return (Flags&NoLine); }
 
-  inline bool IsScriptAllowed () const noexcept { return !(Flags&(Unimplemented|NoScript|NoLine)); }
+  VVA_FORCEINLINE bool IsScriptAllowed () const noexcept { return !(Flags&(Unimplemented|NoScript|NoLine)); }
 };
 
 
@@ -276,11 +276,11 @@ struct VTerrainBootprint {
   };
   vuint32 Flags;
 
-  inline bool isOptional () const noexcept { return (Flags&Flag_Optional); }
-  inline void setOptional () noexcept { Flags |= Flag_Optional; }
-  inline void resetOptional () noexcept { Flags &= ~Flag_Optional; }
+  VVA_FORCEINLINE bool isOptional () const noexcept { return (Flags&Flag_Optional); }
+  VVA_FORCEINLINE void setOptional () noexcept { Flags |= Flag_Optional; }
+  VVA_FORCEINLINE void resetOptional () noexcept { Flags &= ~Flag_Optional; }
 
-  inline void genValues () noexcept {
+  VVA_FORCEINLINE void genValues () noexcept {
     if (AlphaMin < 0.0f) {
       AlphaValue = -1.0f;
     } else {
@@ -357,9 +357,9 @@ struct drawseg_t {
 
   vuint32 flags;
 
-  inline bool NeedRecreate () const noexcept { return !!(flags&Flag_Recreate); }
-  inline void SetRecreate () noexcept { flags |= Flag_Recreate; }
-  inline void ResetRecreate () noexcept { flags &= ~Flag_Recreate; }
+  VVA_FORCEINLINE bool NeedRecreate () const noexcept { return !!(flags&Flag_Recreate); }
+  VVA_FORCEINLINE void SetRecreate () noexcept { flags |= Flag_Recreate; }
+  VVA_FORCEINLINE void ResetRecreate () noexcept { flags &= ~Flag_Recreate; }
 };
 
 
@@ -666,13 +666,13 @@ struct line_t : public TPlane {
   line_t **v2lines;
   vint32 v2linesCount;
 
-  inline int vxCount (int vidx) const noexcept { return (vidx ? v2linesCount : v1linesCount); }
-  inline line_t *vxLine (int vidx, int idx) noexcept { return (vidx ? v2lines[idx] : v1lines[idx]); }
-  inline const line_t *vxLine (int vidx, int idx) const noexcept { return (vidx ? v2lines[idx] : v1lines[idx]); }
+  VVA_FORCEINLINE int vxCount (int vidx) const noexcept { return (vidx ? v2linesCount : v1linesCount); }
+  VVA_FORCEINLINE line_t *vxLine (int vidx, int idx) noexcept { return (vidx ? v2lines[idx] : v1lines[idx]); }
+  VVA_FORCEINLINE const line_t *vxLine (int vidx, int idx) const noexcept { return (vidx ? v2lines[idx] : v1lines[idx]); }
 
   polyobj_t *pobject; // do not use this directly!
 
-  inline polyobj_t *pobj () const noexcept { return pobject; }
+  VVA_FORCEINLINE polyobj_t *pobj () const noexcept { return pobject; }
 
   // so we'll be able to check those without `VLevel` object
   side_t *frontside;
@@ -696,7 +696,7 @@ struct line_t : public TPlane {
   // returns `true` if the line hits the box
   // line is finite
   //FIXME: do not check for equality here?
-  inline bool Box2DHit (const float tmbox[4]) const noexcept {
+  VVA_FORCEINLINE bool Box2DHit (const float tmbox[4]) const noexcept {
     if (tmbox[BOX2D_RIGHT] <= bbox2d[BOX2D_LEFT] ||
         tmbox[BOX2D_LEFT] >= bbox2d[BOX2D_RIGHT] ||
         tmbox[BOX2D_TOP] <= bbox2d[BOX2D_BOTTOM] ||
@@ -756,24 +756,24 @@ struct sec_plane_t : public TPlane {
   //sector_t *parent; // can be `nullptr`, has meaning only for `SPF_ALLOCATED` planes
   //vuint32 exflags; // SPF_EX_xxx
 
-  inline VVA_CHECKRESULT float GetPointZClamped (float x, float y) const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT float GetPointZClamped (float x, float y) const noexcept {
     return clampval(GetPointZ(x, y), minz, maxz);
   }
 
-  inline VVA_CHECKRESULT float GetPointZRevClamped (float x, float y) const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT float GetPointZRevClamped (float x, float y) const noexcept {
     //FIXME: k8: should min and max be switched here?
     return clampval(GetPointZRev(x, y), minz, maxz);
   }
 
-  inline VVA_CHECKRESULT float GetPointZClamped (const TVec &v) const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT float GetPointZClamped (const TVec &v) const noexcept {
     return GetPointZClamped(v.x, v.y);
   }
 
-  inline VVA_CHECKRESULT float GetPointZRevClamped (const TVec &v) const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT float GetPointZRevClamped (const TVec &v) const noexcept {
     return GetPointZRevClamped(v.x, v.y);
   }
 
-  inline void CopyOffsetsFrom (const sec_plane_t &src) noexcept {
+  VVA_FORCEINLINE void CopyOffsetsFrom (const sec_plane_t &src) noexcept {
     xoffs = src.xoffs;
     yoffs = src.yoffs;
     XScale = src.XScale;
@@ -804,14 +804,14 @@ struct TSecPlaneRef {
   float minZ, maxZ;
   /*bool*/vint32 flags; // actually, bit flags
 
-  inline TSecPlaneRef () noexcept
+  VVA_FORCEINLINE TSecPlaneRef () noexcept
     : splane(nullptr)
     , minZ(0.0f)
     , maxZ(0.0f)
     , flags(Flags_None)
   {}
 
-  inline TSecPlaneRef (const TSecPlaneRef &sp) noexcept
+  VVA_FORCEINLINE TSecPlaneRef (const TSecPlaneRef &sp) noexcept
     : splane(sp.splane)
     , minZ(sp.minZ)
     , maxZ(sp.maxZ)
@@ -825,7 +825,7 @@ struct TSecPlaneRef {
     , flags(arev ? Flag_Flipped : Flags_None)
   {}
 
-  inline void operator = (const TSecPlaneRef &sp) noexcept {
+  VVA_FORCEINLINE void operator = (const TSecPlaneRef &sp) noexcept {
     if (this != &sp) {
       splane = sp.splane;
       minZ = sp.minZ;
@@ -834,57 +834,57 @@ struct TSecPlaneRef {
     }
   }
 
-  inline bool isValid () const noexcept { return !!splane; }
+  VVA_FORCEINLINE bool isValid () const noexcept { return !!splane; }
 
-  inline bool isFloor () const noexcept { return (GetNormalZSafe() > 0.0f); }
-  inline bool isCeiling () const noexcept { return (GetNormalZSafe() < 0.0f); }
+  VVA_FORCEINLINE bool isFloor () const noexcept { return (GetNormalZSafe() > 0.0f); }
+  VVA_FORCEINLINE bool isCeiling () const noexcept { return (GetNormalZSafe() < 0.0f); }
 
-  inline bool isSlope () const noexcept { return (fabsf(GetNormalZSafe()) != 1.0f); }
+  VVA_FORCEINLINE bool isSlope () const noexcept { return (fabsf(GetNormalZSafe()) != 1.0f); }
 
   // see enum at the top
-  inline Type classify () const noexcept {
+  VVA_FORCEINLINE Type classify () const noexcept {
     const float z = GetNormalZSafe();
     return (z < 0.0f ? Ceiling : z > 0.0f ? Floor : Unknown);
   }
 
-  inline bool isFlipped () const noexcept { return !!(flags&Flag_Flipped); }
-  inline bool isOwnMinMax () const noexcept { return !!(flags&Flag_UseMinMax); }
+  VVA_FORCEINLINE bool isFlipped () const noexcept { return !!(flags&Flag_Flipped); }
+  VVA_FORCEINLINE bool isOwnMinMax () const noexcept { return !!(flags&Flag_UseMinMax); }
 
-  inline void set (sec_plane_t *aplane, bool arev) noexcept {
+  VVA_FORCEINLINE void set (sec_plane_t *aplane, bool arev) noexcept {
     splane = aplane;
     flags = (arev ? Flag_Flipped : Flags_None);
   }
 
-  inline TVec GetNormal () const noexcept { return (flags&Flag_Flipped ? -splane->normal : splane->normal); }
-  inline float GetNormalZ () const noexcept { return (flags&Flag_Flipped ? -splane->normal.z : splane->normal.z); }
-  inline float GetNormalZSafe () const noexcept { return (splane ? (flags&Flag_Flipped ? -splane->normal.z : splane->normal.z) : 0.0f); }
-  inline float GetDist () const noexcept { return (flags&Flag_Flipped ? -splane->dist : splane->dist); }
-  inline TPlane GetPlane () const noexcept {
+  VVA_FORCEINLINE TVec GetNormal () const noexcept { return (flags&Flag_Flipped ? -splane->normal : splane->normal); }
+  VVA_FORCEINLINE float GetNormalZ () const noexcept { return (flags&Flag_Flipped ? -splane->normal.z : splane->normal.z); }
+  VVA_FORCEINLINE float GetNormalZSafe () const noexcept { return (splane ? (flags&Flag_Flipped ? -splane->normal.z : splane->normal.z) : 0.0f); }
+  VVA_FORCEINLINE float GetDist () const noexcept { return (flags&Flag_Flipped ? -splane->dist : splane->dist); }
+  VVA_FORCEINLINE TPlane GetPlane () const noexcept {
     TPlane res;
     res.normal = (flags&Flag_Flipped ? -splane->normal : splane->normal);
     res.dist = (flags&Flag_Flipped ? -splane->dist : splane->dist);
     return res;
   }
 
-  inline float PointDistance (const TVec &p) const noexcept {
+  VVA_FORCEINLINE float PointDistance (const TVec &p) const noexcept {
     return (flags&Flag_Flipped ? p.dotv2neg(splane->normal)+splane->dist : p.dot(splane->normal)-splane->dist);
   }
 
   // valid only for horizontal planes!
   //inline float GetRealDist () const noexcept { return (!flipped ? splane->dist*splane->normal.z : (-splane->dist)*(-splane->normal.z)); }
-  inline float GetRealDist () const noexcept {
+  VVA_FORCEINLINE float GetRealDist () const noexcept {
     return ((flags&Flag_Flipped ? -splane->dist : splane->dist)*splane->normal.z);
   }
 
-  inline void Flip () noexcept { flags ^= Flag_Flipped; }
+  VVA_FORCEINLINE void Flip () noexcept { flags ^= Flag_Flipped; }
 
   // get z of point with given x and y coords
   // don't try to use it on a vertical plane
-  inline VVA_CHECKRESULT float GetPointZ (float x, float y) const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT float GetPointZ (float x, float y) const noexcept {
     return (flags&Flag_Flipped ? splane->GetPointZRev(x, y) : splane->GetPointZ(x, y));
   }
 
-  inline VVA_CHECKRESULT float GetPointZClamped (float x, float y) const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT float GetPointZClamped (float x, float y) const noexcept {
     //return clampval((!flipped ? splane->GetPointZ(x, y) : splane->GetPointZRev(x, y)), splane->minz, splane->maxz);
     //return (!flipped ? splane->GetPointZClamped(x, y) : splane->GetPointZRevClamped(x, y));
     if (flags&Flag_UseMinMax) {
@@ -894,39 +894,39 @@ struct TSecPlaneRef {
     }
   }
 
-  inline VVA_CHECKRESULT float DotPoint (const TVec &point) const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT float DotPoint (const TVec &point) const noexcept {
     return (flags&Flag_Flipped ? point.dotv2neg(splane->normal) : point.dot(splane->normal));
   }
 
-  inline VVA_CHECKRESULT float GetPointZ (const TVec &v) const noexcept { return GetPointZ(v.x, v.y); }
+  VVA_FORCEINLINE VVA_CHECKRESULT float GetPointZ (const TVec &v) const noexcept { return GetPointZ(v.x, v.y); }
 
-  inline VVA_CHECKRESULT float GetPointZClamped (const TVec &v) const noexcept { return GetPointZClamped(v.x, v.y); }
-
-  // returns side 0 (front) or 1 (back, or on plane)
-  inline VVA_CHECKRESULT int PointOnSide (const TVec &point) const noexcept { return (PointDistance(point) <= 0.0f); }
+  VVA_FORCEINLINE VVA_CHECKRESULT float GetPointZClamped (const TVec &v) const noexcept { return GetPointZClamped(v.x, v.y); }
 
   // returns side 0 (front) or 1 (back, or on plane)
-  inline VVA_CHECKRESULT int PointOnSideThreshold (const TVec &point) const noexcept { return (PointDistance(point) < 0.1f); }
+  VVA_FORCEINLINE VVA_CHECKRESULT int PointOnSide (const TVec &point) const noexcept { return (PointDistance(point) <= 0.0f); }
+
+  // returns side 0 (front) or 1 (back, or on plane)
+  VVA_FORCEINLINE VVA_CHECKRESULT int PointOnSideThreshold (const TVec &point) const noexcept { return (PointDistance(point) < 0.1f); }
 
   // returns side 0 (front, or on plane) or 1 (back)
   // "fri" means "front inclusive"
-  inline VVA_CHECKRESULT int PointOnSideFri (const TVec &point) const noexcept { return (PointDistance(point) < 0.0f); }
+  VVA_FORCEINLINE VVA_CHECKRESULT int PointOnSideFri (const TVec &point) const noexcept { return (PointDistance(point) < 0.0f); }
 
   // returns side 0 (front), 1 (back), or 2 (on)
   // used in line tracing (only)
-  inline VVA_CHECKRESULT int PointOnSide2 (const TVec &point) const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT int PointOnSide2 (const TVec &point) const noexcept {
     const float dot = PointDistance(point);
     return (dot < -0.1f ? 1 : dot > 0.1f ? 0 : 2);
   }
 
   // returns side 0 (front), 1 (back)
   // if at least some part of the sphere is on a front side, it means "front"
-  inline VVA_CHECKRESULT int SphereOnSide (const TVec &center, float radius) const noexcept { return (PointDistance(center) <= -radius); }
+  VVA_FORCEINLINE VVA_CHECKRESULT int SphereOnSide (const TVec &center, float radius) const noexcept { return (PointDistance(center) <= -radius); }
 
-  inline VVA_CHECKRESULT bool SphereTouches (const TVec &center, float radius) const noexcept { return (fabsf(PointDistance(center)) < radius); }
+  VVA_FORCEINLINE VVA_CHECKRESULT bool SphereTouches (const TVec &center, float radius) const noexcept { return (fabsf(PointDistance(center)) < radius); }
 
   // returns side 0 (front), 1 (back), or 2 (collides)
-  inline VVA_CHECKRESULT int SphereOnSide2 (const TVec &center, float radius) const noexcept {
+  VVA_FORCEINLINE VVA_CHECKRESULT int SphereOnSide2 (const TVec &center, float radius) const noexcept {
     const float d = PointDistance(center);
     return (d < -radius ? 1 : d > radius ? 0 : 2);
   }
@@ -1173,7 +1173,7 @@ struct sector_t {
   };
   vuint32 SectorFlags;
 
-  inline bool IsUnderwater () const noexcept { return (SectorFlags&SF_UnderWater); }
+  VVA_FORCEINLINE bool IsUnderwater () const noexcept { return (SectorFlags&SF_UnderWater); }
 
   // 0 = untraversed, 1,2 = sndlines -1
   vint32 soundtraversed;
@@ -1216,11 +1216,11 @@ struct sector_t {
   sector_t *othersecFloor;
   sector_t *othersecCeiling;
 
-  polyobj_t *ownpobj; // polyobject that has this subsector as its "inner" one
+  polyobj_t *ownpobj; // polyobject that has this sector as its "inner" one
 
 
-  inline bool Has3DFloors () const noexcept { return !!eregions->next; }
-  inline bool HasAnyExtraFloors () const noexcept { return (!!eregions->next) || (!!heightsec); }
+  VVA_FORCEINLINE bool Has3DFloors () const noexcept { return !!eregions->next; }
+  VVA_FORCEINLINE bool HasAnyExtraFloors () const noexcept { return (!!eregions->next) || (!!heightsec); }
 
   inline bool Has3DSlopes () const noexcept {
     for (const sec_region_t *reg = eregions->next; reg; reg = reg->next) {
@@ -1237,9 +1237,9 @@ struct sector_t {
   // `next` is set, everything other is zeroed
   sec_region_t *AllocRegion ();
 
-  inline bool isOriginalPObj () const noexcept { return (linecount == 0); }
-  inline bool isInnerPObj () const noexcept { return (linecount && ownpobj); }
-  inline bool isAnyPObj () const noexcept { return (linecount == 0 || ownpobj); }
+  VVA_FORCEINLINE bool isOriginalPObj () const noexcept { return (linecount == 0); }
+  VVA_FORCEINLINE bool isInnerPObj () const noexcept { return (linecount && ownpobj); }
+  VVA_FORCEINLINE bool isAnyPObj () const noexcept { return (linecount == 0 || ownpobj); }
 };
 
 
@@ -1271,11 +1271,11 @@ public:
   vint32 count; // number of used elements in `segs`
   vint32 amount; // number of allocated elements for `segs`
 
-  inline void reset () noexcept { count = 0; flags &= ~CLIPSEGS_CREATED; }
+  VVA_FORCEINLINE void reset () noexcept { count = 0; flags &= ~CLIPSEGS_CREATED; }
 
   void Free () noexcept;
 
-  inline void EnsureClipSegs (VLevel *level) { if (!(flags&CLIPSEGS_CREATED)) CreateClipSegs(level); }
+  VVA_FORCEINLINE void EnsureClipSegs (VLevel *level) { if (!(flags&CLIPSEGS_CREATED)) CreateClipSegs(level); }
 
 protected:
   void CreateClipSegs (VLevel *level);
@@ -1289,18 +1289,18 @@ public:
     int count;
     int index;
   public:
-    inline PolySegIter (seg_t *asegs, int acount, int aindex=0) noexcept : segs(asegs), count(acount), index(aindex) {}
-    inline PolySegIter begin () noexcept { return PolySegIter(segs, count, index); }
-    inline PolySegIter end () noexcept { return PolySegIter(segs, count, count); }
-    inline bool operator == (const PolySegIter &b) const noexcept { return (segs == b.segs && count == b.count && index == b.index); }
-    inline bool operator != (const PolySegIter &b) const noexcept { return (segs != b.segs || count != b.count || index != b.index); }
-    inline PolySegIter operator * () const noexcept { return PolySegIter(segs, count, index); } /* required for iterator */
-    inline void operator ++ () noexcept { if (index < count) ++index; } /* this is enough for iterator */
+    VVA_FORCEINLINE PolySegIter (seg_t *asegs, int acount, int aindex=0) noexcept : segs(asegs), count(acount), index(aindex) {}
+    VVA_FORCEINLINE PolySegIter begin () noexcept { return PolySegIter(segs, count, index); }
+    VVA_FORCEINLINE PolySegIter end () noexcept { return PolySegIter(segs, count, count); }
+    VVA_FORCEINLINE bool operator == (const PolySegIter &b) const noexcept { return (segs == b.segs && count == b.count && index == b.index); }
+    VVA_FORCEINLINE bool operator != (const PolySegIter &b) const noexcept { return (segs != b.segs || count != b.count || index != b.index); }
+    VVA_FORCEINLINE PolySegIter operator * () const noexcept { return PolySegIter(segs, count, index); } /* required for iterator */
+    VVA_FORCEINLINE void operator ++ () noexcept { if (index < count) ++index; } /* this is enough for iterator */
     // accessors
-    inline seg_t *seg () const noexcept { return (index < count ? &segs[index] : nullptr); }
+    VVA_FORCEINLINE seg_t *seg () const noexcept { return (index < count ? &segs[index] : nullptr); }
   };
 
-  inline PolySegIter SegFirst () const noexcept { return PolySegIter(segs, count); }
+  VVA_FORCEINLINE PolySegIter SegFirst () const noexcept { return PolySegIter(segs, count); }
 };
 
 
@@ -1315,16 +1315,16 @@ public:
   private:
     polyobjpart_t *ppart;
   public:
-    inline PolySubIter (polyobjpart_t *apart) noexcept : ppart(apart) {}
-    inline PolySubIter begin () noexcept { return PolySubIter(ppart); }
-    inline PolySubIter end () noexcept { return PolySubIter(nullptr); }
-    inline bool operator == (const PolySubIter &b) const noexcept { return (ppart == b.ppart); }
-    inline bool operator != (const PolySubIter &b) const noexcept { return (ppart != b.ppart); }
-    inline PolySubIter operator * () const noexcept { return PolySubIter(ppart); } /* required for iterator */
-    inline void operator ++ () noexcept { if (ppart) ppart = ppart->nextpobj; } /* this is enough for iterator */
+    VVA_FORCEINLINE PolySubIter (polyobjpart_t *apart) noexcept : ppart(apart) {}
+    VVA_FORCEINLINE PolySubIter begin () noexcept { return PolySubIter(ppart); }
+    VVA_FORCEINLINE PolySubIter end () noexcept { return PolySubIter(nullptr); }
+    VVA_FORCEINLINE bool operator == (const PolySubIter &b) const noexcept { return (ppart == b.ppart); }
+    VVA_FORCEINLINE bool operator != (const PolySubIter &b) const noexcept { return (ppart != b.ppart); }
+    VVA_FORCEINLINE PolySubIter operator * () const noexcept { return PolySubIter(ppart); } /* required for iterator */
+    VVA_FORCEINLINE void operator ++ () noexcept { if (ppart) ppart = ppart->nextpobj; } /* this is enough for iterator */
     // accessors
-    inline polyobjpart_t *part () const noexcept { return ppart; }
-    inline subsector_t *sub () const noexcept { return (ppart ? ppart->sub : nullptr); }
+    VVA_FORCEINLINE polyobjpart_t *part () const noexcept { return ppart; }
+    VVA_FORCEINLINE subsector_t *sub () const noexcept { return (ppart ? ppart->sub : nullptr); }
   };
 
   class PolyLineIter {
@@ -1333,15 +1333,15 @@ public:
     int count;
     int index;
   public:
-    inline PolyLineIter (line_t **alines, int acount, int aindex=0) noexcept : lines(alines), count(acount), index(aindex) {}
-    inline PolyLineIter begin () noexcept { return PolyLineIter(lines, count, index); }
-    inline PolyLineIter end () noexcept { return PolyLineIter(lines, count, count); }
-    inline bool operator == (const PolyLineIter &b) const noexcept { return (lines == b.lines && count == b.count && index == b.index); }
-    inline bool operator != (const PolyLineIter &b) const noexcept { return (lines != b.lines || count != b.count || index != b.index); }
-    inline PolyLineIter operator * () const noexcept { return PolyLineIter(lines, count, index); } /* required for iterator */
-    inline void operator ++ () noexcept { if (index < count) ++index; } /* this is enough for iterator */
+    VVA_FORCEINLINE PolyLineIter (line_t **alines, int acount, int aindex=0) noexcept : lines(alines), count(acount), index(aindex) {}
+    VVA_FORCEINLINE PolyLineIter begin () noexcept { return PolyLineIter(lines, count, index); }
+    VVA_FORCEINLINE PolyLineIter end () noexcept { return PolyLineIter(lines, count, count); }
+    VVA_FORCEINLINE bool operator == (const PolyLineIter &b) const noexcept { return (lines == b.lines && count == b.count && index == b.index); }
+    VVA_FORCEINLINE bool operator != (const PolyLineIter &b) const noexcept { return (lines != b.lines || count != b.count || index != b.index); }
+    VVA_FORCEINLINE PolyLineIter operator * () const noexcept { return PolyLineIter(lines, count, index); } /* required for iterator */
+    VVA_FORCEINLINE void operator ++ () noexcept { if (index < count) ++index; } /* this is enough for iterator */
     // accessors
-    inline line_t *line () const noexcept { return (index < count ? lines[index] : nullptr); }
+    VVA_FORCEINLINE line_t *line () const noexcept { return (index < count ? lines[index] : nullptr); }
   };
 
   class PolySegIter {
@@ -1350,15 +1350,15 @@ public:
     int count;
     int index;
   public:
-    inline PolySegIter (seg_t **asegs, int acount, int aindex=0) noexcept : segs(asegs), count(acount), index(aindex) {}
-    inline PolySegIter begin () noexcept { return PolySegIter(segs, count, index); }
-    inline PolySegIter end () noexcept { return PolySegIter(segs, count, count); }
-    inline bool operator == (const PolySegIter &b) const noexcept { return (segs == b.segs && count == b.count && index == b.index); }
-    inline bool operator != (const PolySegIter &b) const noexcept { return (segs != b.segs || count != b.count || index != b.index); }
-    inline PolySegIter operator * () const noexcept { return PolySegIter(segs, count, index); } /* required for iterator */
-    inline void operator ++ () noexcept { if (index < count) ++index; } /* this is enough for iterator */
+    VVA_FORCEINLINE PolySegIter (seg_t **asegs, int acount, int aindex=0) noexcept : segs(asegs), count(acount), index(aindex) {}
+    VVA_FORCEINLINE PolySegIter begin () noexcept { return PolySegIter(segs, count, index); }
+    VVA_FORCEINLINE PolySegIter end () noexcept { return PolySegIter(segs, count, count); }
+    VVA_FORCEINLINE bool operator == (const PolySegIter &b) const noexcept { return (segs == b.segs && count == b.count && index == b.index); }
+    VVA_FORCEINLINE bool operator != (const PolySegIter &b) const noexcept { return (segs != b.segs || count != b.count || index != b.index); }
+    VVA_FORCEINLINE PolySegIter operator * () const noexcept { return PolySegIter(segs, count, index); } /* required for iterator */
+    VVA_FORCEINLINE void operator ++ () noexcept { if (index < count) ++index; } /* this is enough for iterator */
     // accessors
-    inline seg_t *seg () const noexcept { return (index < count ? segs[index] : nullptr); }
+    VVA_FORCEINLINE seg_t *seg () const noexcept { return (index < count ? segs[index] : nullptr); }
   };
 
 public:
@@ -1420,13 +1420,13 @@ public:
   // this is done by `RemoveAllSubsectors()`, you don't need to call it manually
   void ResetClipSegs ();
 
-  VVA_CHECKRESULT inline PolySubIter SubFirst () const noexcept { return PolySubIter(parts); }
-  VVA_CHECKRESULT inline PolyLineIter LineFirst () const noexcept { return PolyLineIter(lines, numlines); }
-  VVA_CHECKRESULT inline PolySegIter SegFirst () const noexcept { return PolySegIter(segs, numsegs); }
+  VVA_CHECKRESULT VVA_FORCEINLINE PolySubIter SubFirst () const noexcept { return PolySubIter(parts); }
+  VVA_CHECKRESULT VVA_FORCEINLINE PolyLineIter LineFirst () const noexcept { return PolyLineIter(lines, numlines); }
+  VVA_CHECKRESULT VVA_FORCEINLINE PolySegIter SegFirst () const noexcept { return PolySegIter(segs, numsegs); }
 
-  VVA_CHECKRESULT inline bool Is3D () const noexcept { return posector; }
+  VVA_CHECKRESULT VVA_FORCEINLINE bool Is3D () const noexcept { return posector; }
   // valid only for 3d pobjs
-  VVA_CHECKRESULT inline sector_t *GetSector () const noexcept { return posector; }
+  VVA_CHECKRESULT VVA_FORCEINLINE sector_t *GetSector () const noexcept { return posector; }
 };
 
 
@@ -1482,9 +1482,9 @@ struct subregion_t {
   subsector_t *sub; // subsector for this region
   vuint32 rdindex; // unique id in renderer (sequential, can be used to index various arrays)
 
-  inline void ForceRecreation () noexcept { flags |= SRF_FORCE_RECREATE; }
-  inline void ResetForceRecreation () noexcept { flags &= ~SRF_FORCE_RECREATE; }
-  inline bool IsForcedRecreation () const noexcept { return (flags&SRF_FORCE_RECREATE); }
+  VVA_FORCEINLINE void ForceRecreation () noexcept { flags |= SRF_FORCE_RECREATE; }
+  VVA_FORCEINLINE void ResetForceRecreation () noexcept { flags &= ~SRF_FORCE_RECREATE; }
+  VVA_FORCEINLINE bool IsForcedRecreation () const noexcept { return (flags&SRF_FORCE_RECREATE); }
 };
 
 
@@ -1509,16 +1509,16 @@ public:
   private:
     polyobjpart_t *ppart;
   public:
-    inline PolySubIter (polyobjpart_t *apart) noexcept : ppart(apart) {}
-    inline PolySubIter begin () noexcept { return PolySubIter(ppart); }
-    inline PolySubIter end () noexcept { return PolySubIter(nullptr); }
-    inline bool operator == (const PolySubIter &b) const noexcept { return (ppart == b.ppart); }
-    inline bool operator != (const PolySubIter &b) const noexcept { return (ppart != b.ppart); }
-    inline PolySubIter operator * () const noexcept { return PolySubIter(ppart); } /* required for iterator */
-    inline void operator ++ () noexcept { if (ppart) ppart = ppart->nextsub; } /* this is enough for iterator */
+    VVA_FORCEINLINE PolySubIter (polyobjpart_t *apart) noexcept : ppart(apart) {}
+    VVA_FORCEINLINE PolySubIter begin () noexcept { return PolySubIter(ppart); }
+    VVA_FORCEINLINE PolySubIter end () noexcept { return PolySubIter(nullptr); }
+    VVA_FORCEINLINE bool operator == (const PolySubIter &b) const noexcept { return (ppart == b.ppart); }
+    VVA_FORCEINLINE bool operator != (const PolySubIter &b) const noexcept { return (ppart != b.ppart); }
+    VVA_FORCEINLINE PolySubIter operator * () const noexcept { return PolySubIter(ppart); } /* required for iterator */
+    VVA_FORCEINLINE void operator ++ () noexcept { if (ppart) ppart = ppart->nextsub; } /* this is enough for iterator */
     // accessors
-    inline polyobjpart_t *part () const noexcept { return ppart; }
-    inline polyobj_t *pobj () const noexcept { return (ppart ? ppart->pobj : nullptr); }
+    VVA_FORCEINLINE polyobjpart_t *part () const noexcept { return ppart; }
+    VVA_FORCEINLINE polyobj_t *pobj () const noexcept { return (ppart ? ppart->pobj : nullptr); }
   };
 
 public:
@@ -1551,19 +1551,19 @@ public:
   // reset polyobject clipsegs for this subsector
   void ResetClipSegs ();
 
-  inline bool HasPObjs () const noexcept { return !!polyparts; }
-  inline PolySubIter PObjFirst () const noexcept { return PolySubIter(polyparts); }
+  VVA_FORCEINLINE bool HasPObjs () const noexcept { return !!polyparts; }
+  VVA_FORCEINLINE PolySubIter PObjFirst () const noexcept { return PolySubIter(polyparts); }
 
-  inline bool Has3DPObjs () const noexcept {
+  VVA_FORCEINLINE bool Has3DPObjs () const noexcept {
     for (const polyobjpart_t *part = polyparts; part; part = part->nextsub) {
       if (part->pobj->Is3D()) return true;
     }
     return false;
   }
 
-  inline bool isOriginalPObj () const noexcept { return sector->isOriginalPObj(); }
-  inline bool isInnerPObj () const noexcept { return sector->isInnerPObj(); }
-  inline bool isAnyPObj () const noexcept { return sector->isAnyPObj(); }
+  VVA_FORCEINLINE bool isOriginalPObj () const noexcept { return sector->isOriginalPObj(); }
+  VVA_FORCEINLINE bool isInnerPObj () const noexcept { return sector->isInnerPObj(); }
+  VVA_FORCEINLINE bool isAnyPObj () const noexcept { return sector->isAnyPObj(); }
 };
 
 
@@ -1775,7 +1775,7 @@ struct opening_t {
   opening_t *listprev;
   opening_t *listnext;
 
-  inline void copyFrom (const opening_t *op) {
+  VVA_FORCEINLINE void copyFrom (const opening_t *op) {
     if (op == this) return;
     if (op) {
       top = op->top;
