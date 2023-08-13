@@ -176,6 +176,12 @@ VExpression *VAssignment::DoResolve (VEmitContext &ec) {
   // struct assignment
   if (Oper == Assign && op1->Type.Type == TYPE_Struct && op2->Type.Type == TYPE_Struct) {
     op2->Type.CheckMatch(true/*asref*/, Loc, op1->Type);
+    // check if assignable
+    if (op1->Type.Struct->NoAssign) {
+      ParseError(Loc, "cannot assign to unassignable struct `%s`", *op1->Type.GetName());
+    } else if (op2->Type.Struct->NoAssign) {
+      ParseError(Loc, "cannot assign from unassignable struct `%s`", *op2->Type.GetName());
+    }
     op1->RequestAddressOfForAssign();
     op2->RequestAddressOf();
   } else {

@@ -269,7 +269,7 @@ bool VFieldType::IsUntagged () const {
   switch (Type) {
     case TYPE_Struct:
       //GLog.Logf(NAME_Debug, "IU: %s (%d)", *GetName(), (int)Type);
-      return (Struct && Struct->IsUntagged);
+      return (Struct && Struct->Untagged);
     case TYPE_Pointer:
     case TYPE_State:
     case TYPE_Delegate:

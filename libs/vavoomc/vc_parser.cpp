@@ -2318,21 +2318,25 @@ void VParser::ParseDefaultProperties (VClass *InClass, bool doparse, int defcoun
 void VParser::ParseStruct (VClass *InClass, bool IsVector) {
   bool globalRO = Lex.Check(TK_ReadOnly);
   bool untagged = false;
+  bool noAssign = false;
 
-  // `[untagged]`
+  // `[<flags>]`: untagged, noassign
   if (Lex.Check(TK_LBracket)) {
-    /*
-    if (IsVector) {
-      ParseError(Lex.Location, "Vector-based structs cannot be untagged");
-    } else
-    */
-    if (Lex.Token != TK_Identifier || Lex.Name != "untagged") {
-      ParseError(Lex.Location, "`untagged` expected");
-    } else {
-      untagged = true;
+    do {
+      if (Lex.Token != TK_Identifier) {
+        ParseError(Lex.Location, "flag name expected");
+        break;
+      } else if (Lex.Name == "untagged") {
+        untagged = true;
+      } else if (Lex.Name == "noassign") {
+        noAssign = true;
+      } else {
+        ParseError(Lex.Location, "unknown flag name `%s`", *Lex.Name);
+      }
       Lex.NextToken();
-      Lex.Expect(TK_RBracket, ERR_MISSING_RFIGURESCOPE);
-    }
+      if (Lex.Token == TK_Comma) Lex.NextToken(); else break;
+    } while (0);
+    Lex.Expect(TK_RBracket, ERR_MISSING_RFIGURESCOPE);
   }
 
   VName Name = Lex.Name;
@@ -2346,7 +2350,8 @@ void VParser::ParseStruct (VClass *InClass, bool IsVector) {
 
   // new struct
   VStruct *Struct = new VStruct(Name, (InClass ? (VMemberBase *)InClass : (VMemberBase *)Package), StrLoc);
-  Struct->IsUntagged = untagged;
+  Struct->Untagged = untagged;
+  Struct->NoAssign = noAssign;
   Struct->Defined = false;
   Struct->IsVector = IsVector;
   Struct->Fields = nullptr;

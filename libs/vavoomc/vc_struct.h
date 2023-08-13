@@ -47,7 +47,9 @@ public:
   // structure methods (namespacing)
   TArray<VMethod *> Methods;
   // is taking address allowed?
-  bool IsUntagged;
+  bool Untagged;
+  // if set, struct cannot be assigned, or passed by value
+  bool NoAssign;
 
   // compiler fields
   VName ParentStructName;

@@ -281,7 +281,7 @@ override bool OnEvent (ref event_t evt) {
     if (evt.keycode == K_MOUSE1 && evt.dest == self) {
       printdebug("%s: mdown!", self);
       SetFocus();
-      //evt.eaten = true;
+      //evt.Eat();
       //return true;
     }
     */

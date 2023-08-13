@@ -2273,6 +2273,20 @@ IMPLEMENT_FREE_STRUCT_FUNCTION(Object, event_t, isMouseButton) {
   }
 }
 
+// native void eat ();
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, event_t, eat) {
+  event_t *ev;
+  vobjGetParam(ev);
+  if (ev) ev->flags |= EFlag_Eaten;
+}
+
+// native void cancel ();
+IMPLEMENT_FREE_STRUCT_FUNCTION(Object, event_t, cancel) {
+  event_t *ev;
+  vobjGetParam(ev);
+  if (ev) ev->flags |= EFlag_Cancelled;
+}
+
 
 
 // ////////////////////////////////////////////////////////////////////////// //
