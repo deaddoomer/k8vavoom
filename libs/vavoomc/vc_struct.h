@@ -46,6 +46,8 @@ public:
   VField *Fields;
   // structure methods (namespacing)
   TArray<VMethod *> Methods;
+  // is taking address allowed?
+  bool IsUntagged;
 
   // compiler fields
   VName ParentStructName;
@@ -79,7 +81,7 @@ private:
   void UpdateDTorCache ();
 
 public:
-  VStruct (VName, VMemberBase *, TLocation);
+  VStruct (VName AName, VMemberBase *AOuter, TLocation ALoc);
   virtual void CompilerShutdown () override;
 
   virtual void PostLoad () override;

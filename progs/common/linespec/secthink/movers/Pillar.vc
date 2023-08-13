@@ -102,7 +102,7 @@ void InitOpen (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int A
   Sector = InSector;
 
   if (!Arg3) {
-    FloorDestHeight = Level.FindLowestFloorSurrounding(Sector, &Spot1);
+    FloorDestHeight = Level.FindLowestFloorSurrounding(Sector, out Spot1);
   } else {
     Spot1 = *Sector->lines[0]->v1;
     FloorDestHeight = GetPlanePointZ(ref Sector->floor, Spot1)-float(Arg3);
@@ -112,7 +112,7 @@ void InitOpen (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int A
   FloorDest = DotProduct(Sector->floor.normal, Spot1);
 
   if (!Arg4) {
-    CeilDestHeight = Level.FindHighestCeilingSurrounding(Sector, &Spot2);
+    CeilDestHeight = Level.FindHighestCeilingSurrounding(Sector, out Spot2);
   } else {
     Spot2 = *Sector->lines[0]->v1;
     CeilDestHeight = GetPlanePointZ(ref Sector->ceiling, Spot2)+float(Arg4);

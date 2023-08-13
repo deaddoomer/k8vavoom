@@ -522,7 +522,7 @@ native static final int R_RegisterPicPal (name Name, name palname);
 // registers a graphic with a full path, returns handle
 native static final int R_RegisterPicPath (name path);
 // retrieves pic info
-native static final void R_GetPicInfo (int handle, picinfo_t *info);
+native static final void R_GetPicInfo (int handle, out picinfo_t info);
 // WARNING! this is slow for the first time, and loads image into memory
 native static final void R_GetPicRealDimensions (int handle, out int x0, out int y0, out int width, out int height, optional bool unscaled);
 // draws a pic
@@ -726,7 +726,7 @@ native static final slist_t *GetSlist ();
 native static final string TranslateKey (int c); // handle shift+key
 native static final string KeyNameForNum (int KeyNr);
 
-native static final void IN_GetBindingKeys (string cmd, int *key1, int *key2, int strifemode, string modSection, out int isActive);
+native static final void IN_GetBindingKeys (string cmd, out int key1, out int key2, int strifemode, string modSection, out int isActive);
 native static final void IN_GetDefaultModBindingKeysEx (string cmd, ref array!int keylist, string modSection);
 native static final void IN_GetBindingKeysEx (string cmd, ref array!int keylist, int strifemode, string modSection);
 

@@ -177,7 +177,7 @@ void SB_DrawSmallNum (int x, int y, int num, optional float alpha) {
 
   if (num < 0) num = -num;
 
-  R_GetPicInfo(pic_yellownum[0], &info);
+  R_GetPicInfo(pic_yellownum[0], out info);
   w = info.width;
 
   // in the special case of 0, you draw 0

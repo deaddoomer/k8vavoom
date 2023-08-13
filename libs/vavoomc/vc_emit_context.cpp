@@ -479,7 +479,7 @@ void VEmitContext::stackFree (int pos, int size) {
 //  allocate stack slot for this local
 //
 //==========================================================================
-void VEmitContext::AllocateLocalSlot (int idx) {
+void VEmitContext::AllocateLocalSlot (int idx, bool aUnsafe) {
   vassert(idx >= 0 && idx < LocalDefs.length());
   VLocalVarDef &loc = LocalDefs[idx];
   if (loc.invalid) return; // already dead
@@ -492,6 +492,7 @@ void VEmitContext::AllocateLocalSlot (int idx) {
     loc.Offset = 1;
     loc.invalid = true;
     loc.reused = false; // it doesn't matter
+    loc.isUnsafe = false;
   } else {
     #ifdef VV_EMIT_DUMP_SLOT_ALLOC
     GLog.Logf(NAME_Debug, "%s: allocated local `%s` (idx=%d; ofs=%d; size=%d; realloced=%d)", *loc.Loc.toStringNoCol(), *loc.Name, idx, ofs, loc.stackSize, (int)realloced);
@@ -499,6 +500,7 @@ void VEmitContext::AllocateLocalSlot (int idx) {
     loc.Offset = ofs;
     // if we are in a loop, always clear it
     loc.reused = (realloced || InLoop > 0);
+    loc.isUnsafe = aUnsafe;
   }
 }
 
@@ -519,6 +521,7 @@ void VEmitContext::ReleaseLocalSlot (int idx) {
   #endif
   stackFree(loc.Offset, loc.stackSize);
   loc.Offset = -666;
+  loc.isUnsafe = false;
 }
 
 
@@ -595,7 +598,9 @@ int VEmitContext::CalcUsedStackSize () const noexcept {
 //  VEmitContext::NewLocal
 //
 //==========================================================================
-VLocalVarDef &VEmitContext::NewLocal (VName aname, const VFieldType &atype, const TLocation &aloc, vuint32 pflags) {
+VLocalVarDef &VEmitContext::NewLocal (VName aname, const VFieldType &atype,
+                                      bool aUnsafe, const TLocation &aloc, vuint32 pflags)
+{
   const int ssz = (pflags&(FPARM_Out|FPARM_Ref) ? 1 : atype.GetStackSize());
 
   VLocalVarDef &loc = LocalDefs.Alloc();
@@ -611,6 +616,7 @@ VLocalVarDef &VEmitContext::NewLocal (VName aname, const VFieldType &atype, cons
   loc.reused = false;
   loc.stackSize = ssz;
   loc.invalid = false;
+  loc.isUnsafe = aUnsafe;
 
   return loc;
 }
@@ -784,6 +790,17 @@ bool VEmitContext::CheckLocalDecl (VName locname, const TLocation &locloc) {
 VFieldType VEmitContext::GetLocalVarType (int idx) {
   if (idx < 0 || idx >= LocalDefs.length()) return VFieldType(TYPE_Unknown);
   return LocalDefs[idx].Type;
+}
+
+
+//==========================================================================
+//
+//  VEmitContext::IsLocalUnsafe
+//
+//==========================================================================
+bool VEmitContext::IsLocalUnsafe (int idx) {
+  if (idx < 0 || idx >= LocalDefs.length()) return false;
+  return LocalDefs[idx].isUnsafe;
 }
 
 

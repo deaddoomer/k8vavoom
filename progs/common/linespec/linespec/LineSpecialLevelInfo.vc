@@ -1173,7 +1173,7 @@ override int ExecuteActionSpecial (int Special, int Arg1, int Arg2, int Arg3,
         //print("LNSPEC_LineSetBlocking: (%d, 0x%04x, 0x%04x)", Arg1, Arg2, Arg3);
         int setFlags = ConvertLineBlockingFlags(Arg2), clearFlags = ~ConvertLineBlockingFlags(Arg3);
         int searcher = -1;
-        for (line_t *ldef = XLevel.FindLine(Arg1, &searcher); ldef; ldef = XLevel.FindLine(Arg1, &searcher)) {
+        for (line_t *ldef = XLevel.FindLine(Arg1, ref searcher); ldef; ldef = XLevel.FindLine(Arg1, ref searcher)) {
           ldef->flags |= setFlags;
           ldef->flags &= clearFlags;
         }
@@ -2933,8 +2933,8 @@ override int AcsPolyRotateEx (int po, int speed, float deltaangle, int moveflags
 /*final*/ void SpawnScrollTextureModel (line_t *Line) {
   if (!Line) return;
   int Searcher = -1;
-  for (line_t *Other = XLevel.FindLine(Line->arg1, &Searcher); Other;
-       Other = XLevel.FindLine(Line->arg1, &Searcher))
+  for (line_t *Other = XLevel.FindLine(Line->arg1, ref Searcher); Other;
+       Other = XLevel.FindLine(Line->arg1, ref Searcher))
   {
     if (Line != Other) {
       Scroller Scroll = SpawnThinker(Scroller);
@@ -3018,8 +3018,8 @@ override int AcsPolyRotateEx (int po, int speed, float deltaangle, int moveflags
     }
 
     int Searcher = -1;
-    for (line_t *Other = XLevel.FindLine(LineId, &Searcher); Other;
-         Other = XLevel.FindLine(LineId, &Searcher))
+    for (line_t *Other = XLevel.FindLine(LineId, ref Searcher); Other;
+         Other = XLevel.FindLine(LineId, ref Searcher))
     {
       // check if this line already has a scroller
       int i;
@@ -3533,8 +3533,8 @@ name ConvertSpecialDamageType (int mod) {
   /*
   int Searcher = -1;
   bool Ret = false;
-  for (line_t *Line = XLevel.FindLine(Arg1, &Searcher); Line;
-       Line = XLevel.FindLine(Arg1, &Searcher))
+  for (line_t *Line = XLevel.FindLine(Arg1, ref Searcher); Line;
+       Line = XLevel.FindLine(Arg1, ref Searcher))
   {
     sector_t *sec = (Arg2 ? Line->backsector : Line->frontsector);
     if (!sec) continue;
@@ -3575,8 +3575,8 @@ name ConvertSpecialDamageType (int mod) {
   /*
   int Searcher = -1;
   bool Ret = false;
-  for (line_t *Line = XLevel.FindLine(Arg1, &Searcher); Line;
-       Line = XLevel.FindLine(Arg1, &Searcher))
+  for (line_t *Line = XLevel.FindLine(Arg1, ref Searcher); Line;
+       Line = XLevel.FindLine(Arg1, ref Searcher))
   {
     sector_t *sec = (Arg2 ? Line->backsector : Line->frontsector);
     if (!sec) continue;
@@ -3617,8 +3617,8 @@ name ConvertSpecialDamageType (int mod) {
   int NoChange = 0x7fff0000;
 
   int Searcher = -1;
-  for (line_t *Line = XLevel.FindLine(Arg1, &Searcher); Line;
-       Line = XLevel.FindLine(Arg1, &Searcher))
+  for (line_t *Line = XLevel.FindLine(Arg1, ref Searcher); Line;
+       Line = XLevel.FindLine(Arg1, ref Searcher))
   {
     if (Line->sidenum[Arg4] < 0) continue;
     side_t *Side = &XLevel.Sides[Line->sidenum[Arg4]];
@@ -4850,7 +4850,7 @@ override int DoThingDamage (int Tid, int Amount, name DmgType, Entity Activator)
   if (side || thing.bNoTeleport || !line) return false;
 
   searcher = -1;
-  for (l = XLevel.FindLine(id, &searcher); l; l = XLevel.FindLine(id, &searcher)) {
+  for (l = XLevel.FindLine(id, ref searcher); l; l = XLevel.FindLine(id, ref searcher)) {
     if (l == line || !l->backsector) continue;
 
     // get the thing's position along the source linedef
@@ -5202,7 +5202,7 @@ private transient array!Entity recSoundSectorEntities; // will be collected in n
 /*final*/ bool EV_LineTranslucent (int Arg1, int Arg2, int Arg3, int Arg4, int Arg5) {
   bool res = false;
   int Searcher = -1;
-  for (line_t *Other = XLevel.FindLine(Arg1, &Searcher); Other; Other = XLevel.FindLine(Arg1, &Searcher)) {
+  for (line_t *Other = XLevel.FindLine(Arg1, ref Searcher); Other; Other = XLevel.FindLine(Arg1, ref Searcher)) {
     Other->alpha = float(Arg2)/255.0;
          if (Arg3 == 0) Other->flags &= ~ML_ADDITIVE;
     else if (Arg3 == 1) Other->flags |= ML_ADDITIVE;

@@ -61,7 +61,7 @@ void ResizeToPicDimensions () {
   int height = Height;
   foreach (int handle; Frames) {
     picinfo_t pinf;
-    R_GetPicInfo(handle, &pinf);
+    R_GetPicInfo(handle, out pinf);
     width = max(width, pinf.width);
     height = max(height, pinf.height);
   }
@@ -85,7 +85,7 @@ void AddFrame (name Name) {
   Frames.length = Frames.length+1;
   Frames[Frames.length-1] = Handle;
   if (bAutoSize) {
-    R_GetPicInfo(Handle, &Info);
+    R_GetPicInfo(Handle, out Info);
     //printdebug("%s: size=(%d,%d); ns=(%s,%s); scale=(%s,%s); ofs=(%s,%s)", Name, Info.width, Info.height, Info.widthNonScaled, Info.heightNonScaled, Info.xscale, Info.yscale, Info.xoffset, Info.yoffset);
     if (Frames.length == 1) {
       // set up offsets and size for initial frame

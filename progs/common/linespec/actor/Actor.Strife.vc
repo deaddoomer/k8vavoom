@@ -165,8 +165,9 @@ const float MAULERRANGE        = 33.0*64.0;
 //
 //==========================================================================
 [decorate] final void A_LightGoesOut() {
+  TVec spot;
   Sector->params.lightlevel = 0;
-  Sector->floor.dist = Level.FindLowestFloorSurrounding(Sector, nullptr);
+  Sector->floor.dist = Level.FindLowestFloorSurrounding(Sector, out spot);
   foreach (auto i; 0..8) {
     EntityEx foo = Spawn(Rubble1, Origin);
     if (foo) {

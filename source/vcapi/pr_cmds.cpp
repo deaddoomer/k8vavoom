@@ -804,7 +804,7 @@ IMPLEMENT_FREE_FUNCTION(VObject, KeyNameForNum) {
   #endif
 }
 
-//native static final void IN_GetBindingKeys (string cmd, int *key1, int *key2, int strifemode, string modSection, out int isActive);
+//native static final void IN_GetBindingKeys (string cmd, out int key1, out int key2, int strifemode, string modSection, out int isActive);
 IMPLEMENT_FREE_FUNCTION(VObject, IN_GetBindingKeys) {
   VStr name;
   int *key1;

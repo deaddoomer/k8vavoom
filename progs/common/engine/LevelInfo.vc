@@ -671,7 +671,7 @@ final sector_t *getNextSector (line_t *line, sector_t *sec) {
 //  find lowest floor height in surrounding sectors
 //
 //==========================================================================
-final float FindLowestFloorSurrounding (sector_t *sec, TVec *v) {
+final float FindLowestFloorSurrounding (sector_t *sec, out TVec v) {
   TVec spot = *sec->lines[0]->v1;
   float floor = GetPlanePointZ(ref sec->floor, spot);
   foreach (int i; 0..sec.lines.length) {
@@ -692,7 +692,7 @@ final float FindLowestFloorSurrounding (sector_t *sec, TVec *v) {
       spot = *check->v2;
     }
   }
-  if (v) *v = spot;
+  v = spot;
   return floor;
 }
 
@@ -704,7 +704,7 @@ final float FindLowestFloorSurrounding (sector_t *sec, TVec *v) {
 //  find highest floor height in surrounding sectors
 //
 //==========================================================================
-final float FindHighestFloorSurrounding (sector_t *sec, TVec *v) {
+final float FindHighestFloorSurrounding (sector_t *sec, out TVec v) {
   if (sec.lines.length == 0) return sec.floor.maxz;
   TVec spot = *sec->lines[0]->v1;
   float floor = -float.max;
@@ -725,7 +725,7 @@ final float FindHighestFloorSurrounding (sector_t *sec, TVec *v) {
       spot = *check->v2;
     }
   }
-  if (v) *v = spot;
+  v = spot;
   return floor;
 }
 
@@ -741,7 +741,7 @@ final float FindHighestFloorSurrounding (sector_t *sec, TVec *v) {
 //  Rewritten by Lee Killough to avoid fixed array and to be faster
 //
 //==========================================================================
-final float FindNextHighestFloor (sector_t *sec, TVec *v) {
+final float FindNextHighestFloor (sector_t *sec, out TVec v) {
   if (sec.lines.length == 0) return sec.floor.maxz;
   TVec spot = *sec->lines[0]->v1;
   float height = GetPlanePointZ(ref sec->floor, spot);
@@ -767,7 +767,7 @@ final float FindNextHighestFloor (sector_t *sec, TVec *v) {
       spot = *check->v2;
     }
   }
-  if (v) *v = spot;
+  v = spot;
   return height;
 }
 
@@ -783,7 +783,7 @@ final float FindNextHighestFloor (sector_t *sec, TVec *v) {
 //  jff 02/03/98 Twiddled Lee's P_FindNextHighestFloor to make this
 //
 //==========================================================================
-final float FindNextLowestFloor (sector_t *sec, TVec *v) {
+final float FindNextLowestFloor (sector_t *sec, out TVec v) {
   if (sec.lines.length == 0) return sec.floor.maxz;
   TVec spot = *sec->lines[0]->v1;
   float height = GetPlanePointZ(ref sec->floor, spot);
@@ -809,7 +809,7 @@ final float FindNextLowestFloor (sector_t *sec, TVec *v) {
       spot = *check->v2;
     }
   }
-  if (v) *v = spot;
+  v = spot;
   return height;
 }
 
@@ -825,8 +825,8 @@ final float FindNextLowestFloor (sector_t *sec, TVec *v) {
 //  jff 02/03/98 Twiddled Lee's P_FindNextHighestFloor to make this
 //
 //==========================================================================
-final float FindNextLowestCeiling (sector_t *sec, TVec *v) {
-  if (sec.lines.length == 0) return sec.ceiling.minz; //k8: gozzo uses floor here; why?
+final float FindNextLowestCeiling (sector_t *sec, out TVec v) {
+  if (sec.lines.length == 0) return sec.ceiling.minz; //k8: GZDoom returns floor here; why?
   TVec spot = *sec->lines[0]->v1;
   float height = GetPlanePointZ(ref sec->ceiling, spot);
   float heightdiff = float.max;
@@ -851,7 +851,7 @@ final float FindNextLowestCeiling (sector_t *sec, TVec *v) {
       spot = *check->v2;
     }
   }
-  if (v) *v = spot;
+  v = spot;
   return height;
 }
 
@@ -867,7 +867,7 @@ final float FindNextLowestCeiling (sector_t *sec, TVec *v) {
 //  jff 02/03/98 Twiddled Lee's P_FindNextHighestFloor to make this
 //
 //==========================================================================
-final float FindNextHighestCeiling (sector_t *sec, TVec *v) {
+final float FindNextHighestCeiling (sector_t *sec, out TVec v) {
   if (sec.lines.length == 0) return sec.ceiling.minz;
   TVec spot = *sec->lines[0]->v1;
   float height = GetPlanePointZ(ref sec->ceiling, spot);
@@ -893,7 +893,7 @@ final float FindNextHighestCeiling (sector_t *sec, TVec *v) {
       spot = *check->v2;
     }
   }
-  if (v) *v = spot;
+  v = spot;
   return height;
 }
 
@@ -905,7 +905,7 @@ final float FindNextHighestCeiling (sector_t *sec, TVec *v) {
 //  find lowest ceiling in the surrounding sectors
 //
 //==========================================================================
-final float FindLowestCeilingSurrounding (sector_t *sec, TVec *v) {
+final float FindLowestCeilingSurrounding (sector_t *sec, out TVec v) {
   if (sec.lines.length == 0) return sec.ceiling.minz;
   TVec spot = *sec->lines[0]->v1;
   float height = float.max;
@@ -926,7 +926,7 @@ final float FindLowestCeilingSurrounding (sector_t *sec, TVec *v) {
       spot = *check->v2;
     }
   }
-  if (v) *v = spot;
+  v = spot;
   return height;
 }
 
@@ -938,7 +938,7 @@ final float FindLowestCeilingSurrounding (sector_t *sec, TVec *v) {
 //  find highest ceiling in the surrounding sectors
 //
 //==========================================================================
-final float FindHighestCeilingSurrounding (sector_t *sec, TVec *v) {
+final float FindHighestCeilingSurrounding (sector_t *sec, out TVec v) {
   if (sec.lines.length == 0) return sec.ceiling.minz;
   TVec spot = *sec->lines[0]->v1;
   float height = -float.max;
@@ -959,7 +959,7 @@ final float FindHighestCeilingSurrounding (sector_t *sec, TVec *v) {
       spot = *check->v2;
     }
   }
-  if (v) *v = spot;
+  v = spot;
   return height;
 }
 
@@ -1121,9 +1121,9 @@ final int FindMinSurroundingLight (sector_t *sector, int min) {
 //  Find the highest point on the floor of the sector
 //
 //==========================================================================
-final float FindHighestFloorPoint (sector_t *sec, TVec *v) {
+final float FindHighestFloorPoint (sector_t *sec, out TVec v) {
   if (!sec->floor.normal.x && !sec->floor.normal.y) {
-    if (v) *v = *sec->lines[0]->v1;
+    v = *sec->lines[0]->v1;
     return sec->floor.dist;
   }
 
@@ -1145,7 +1145,7 @@ final float FindHighestFloorPoint (sector_t *sec, TVec *v) {
       spot = *line->v2;
     }
   }
-  if (v) *v = spot;
+  v = spot;
   return height;
 }
 
@@ -1157,9 +1157,9 @@ final float FindHighestFloorPoint (sector_t *sec, TVec *v) {
 //  Find the lowest point on the ceiling of the sector
 //
 //==========================================================================
-final float FindLowestCeilingPoint (sector_t *sec, TVec *v) {
+final float FindLowestCeilingPoint (sector_t *sec, out TVec v) {
   if (!sec->ceiling.normal.x && !sec->ceiling.normal.y) {
-    if (v) *v = *sec->lines[0]->v1;
+    v = *sec->lines[0]->v1;
     return -sec->ceiling.dist;
   }
 
@@ -1179,7 +1179,7 @@ final float FindLowestCeilingPoint (sector_t *sec, TVec *v) {
       spot = *line->v2;
     }
   }
-  if (v) *v = spot;
+  v = spot;
   return height;
 }
 

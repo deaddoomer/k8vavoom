@@ -71,7 +71,7 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
   switch (Type) {
     case DOOREV_Close:
       if (Sector.lines.length == 0) break;
-      Height = Level.FindLowestCeilingSurrounding(Sector, &Spot);
+      Height = Level.FindLowestCeilingSurrounding(Sector, out Spot);
       Spot.z = Height-4.0;
       TopHeight = DotProduct(Sector->ceiling.normal, Spot);
       Direction = -1;
@@ -96,7 +96,7 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
       if ((Type == DOOREV_Raise || Type == DOOREV_RaiseLocked) && !Arg3) Type = DOOREV_Open;
 
       if (Sector.lines.length == 0) break;
-      Height = Level.FindLowestCeilingSurrounding(Sector, &Spot);
+      Height = Level.FindLowestCeilingSurrounding(Sector, out Spot);
       Spot.z = Height-4.0;
       TopHeight = DotProduct(Sector->ceiling.normal, Spot);
       Direction = 1;
@@ -105,7 +105,7 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
     case DOOREV_RaiseIn5Mins:
       if (Sector.lines.length == 0) break;
       Direction = 2;
-      Height = Level.FindLowestCeilingSurrounding(Sector, &Spot);
+      Height = Level.FindLowestCeilingSurrounding(Sector, out Spot);
       Spot.z = Height-4.0;
       TopHeight = DotProduct(Sector->ceiling.normal, Spot);
       TopTime = 5.0*60.0;
@@ -115,7 +115,7 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
   if (Level.CompatNoDoorLight) LightTag = 0;
 
   if (Sector.lines.length == 0) { Direction = 0; return; }
-  Height = Level.FindHighestFloorPoint(Sector, &BotSpot);
+  Height = Level.FindHighestFloorPoint(Sector, out BotSpot);
   BotDist = DotProduct(vector(BotSpot.x, BotSpot.y, Height), Sector->ceiling.normal);
   OldFloorDist = Sector->floor.dist;
 }
@@ -139,7 +139,7 @@ void InitCloseIn30 (sector_t *InSector) {
   Speed = 70.0;
   TopTime = 30.0;
   if (Sector.lines.length == 0) return;
-  Height = Level.FindHighestFloorPoint(Sector, &BotSpot);
+  Height = Level.FindHighestFloorPoint(Sector, out BotSpot);
   BotDist = DotProduct(vector(BotSpot.x, BotSpot.y, Height), Sector->ceiling.normal);
   OldFloorDist = Sector->floor.dist;
   TopHeight = Sector->ceiling.dist;

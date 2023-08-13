@@ -71,7 +71,7 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4,
     // elevator down to next floor
     case ELEVEV_Down:
       Direction = -1;
-      NewHeight = Level.FindNextLowestFloor(Sector, &Spot);
+      NewHeight = Level.FindNextLowestFloor(Sector, out Spot);
       Spot.z = NewHeight;
       FloorDestDist = DotProduct(Sector->floor.normal, Spot);
       Spot.z += GetPlanePointZ(ref Sector->ceiling, Spot)-GetPlanePointZ(ref Sector->floor, Spot);
@@ -80,7 +80,7 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4,
     // elevator up to next floor
     case ELEVEV_Up:
       Direction = 1;
-      NewHeight = Level.FindNextHighestFloor(Sector, &Spot);
+      NewHeight = Level.FindNextHighestFloor(Sector, out Spot);
       Spot.z = NewHeight;
       FloorDestDist = DotProduct(Sector->floor.normal, Spot);
       Spot.z += GetPlanePointZ(ref Sector->ceiling, Spot)-GetPlanePointZ(ref Sector->floor, Spot);

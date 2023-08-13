@@ -601,7 +601,9 @@ VExpression *VCastOrInvocation::DoResolve (VEmitContext &ec) {
         delete this;
         return nullptr;
       }
-      VExpression *e = new VDynCastWithVar(Args[0], new VLocalVar(num, Loc), Loc);
+      VExpression *e = new VDynCastWithVar(Args[0],
+                                           new VLocalVar(num, ec.IsLocalUnsafe(num), Loc),
+                                           Loc);
       NumArgs = 0;
       delete this;
       return e->Resolve(ec);
@@ -1166,7 +1168,7 @@ VExpression *VDotInvocation::DoResolve (VEmitContext &ec) {
           // re-resolve with `&`
           delete SelfExpr;
           SelfExpr = nullptr;
-          selfCopy = new VUnary(VUnary::TakeAddress, selfCopy, selfCopy->Loc);
+          selfCopy = new VUnary(VUnary::TakeAddressForced, selfCopy, selfCopy->Loc);
         }
       } else {
         // do not re-resolve
@@ -2176,7 +2178,7 @@ VExpression *VInvocation::DoResolve (VEmitContext &ec) {
     if (!Args[i] && i < VMethod::MAX_PARAMS) {
       if ((Func->ParamFlags[i]&(FPARM_Out|FPARM_Ref)) != 0) {
         // create temporary
-        VLocalVarDef &L = ec.NewLocal(NAME_None, Func->ParamTypes[i], Loc);
+        VLocalVarDef &L = ec.NewLocal(NAME_None, Func->ParamTypes[i], VEmitContext::Safe, Loc);
         L.Visible = false; // it is unnamed, and hidden ;-)
         lcidx[i] = L.GetIndex();
       }
@@ -2872,7 +2874,7 @@ void VInvocation::Emit (VEmitContext &ec) {
         */
         const VLocalVarDef &loc = ec.GetLocalByIndex(lcidx[i]);
         //GLog.Logf(NAME_Debug, "%s:000: invoke: arg #%d: lofs=%d", *Loc.toStringNoCol(), i, loc.Offset);
-        ec.AllocateLocalSlot(lcidx[i]);
+        ec.AllocateLocalSlot(lcidx[i], VEmitContext::Safe);
         //GLog.Logf(NAME_Debug, "%s:001: invoke: arg #%d: lofs=%d; reused=%d", *Loc.toStringNoCol(), i, loc.Offset, (int)loc.reused);
         if (loc.reused) ec.EmitLocalZero(lcidx[i], Loc); // forced zero if reused
         // check if we won't forgont to allocate the local
@@ -2958,7 +2960,7 @@ void VInvocation::Emit (VEmitContext &ec) {
         if (i < VMethod::MAX_PARAMS && optmarshall[i] >= 0) {
           // i found her!
           //HACK: it is safe (and necessary) to resolve here
-          VExpression *xlv = new VLocalVar(optmarshall[i], Args[i]->Loc);
+          VExpression *xlv = new VLocalVar(optmarshall[i], VEmitContext::Safe, Args[i]->Loc);
           xlv = xlv->Resolve(ec);
           if (!xlv) VCFatalError("VC: internal compiler error (13496)");
           xlv->Emit(ec);

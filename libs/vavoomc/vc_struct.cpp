@@ -44,6 +44,7 @@ VStruct::VStruct (VName AName, VMemberBase *AOuter, TLocation ALoc)
   , IsVector(false)
   , StackSize(0)
   , Fields(nullptr)
+  , IsUntagged(false)
   , ParentStructName(NAME_None)
   , Defined(true)
   , PostLoaded(false)
@@ -56,6 +57,17 @@ VStruct::VStruct (VName AName, VMemberBase *AOuter, TLocation ALoc)
   , cacheNeedDTor(DTF_Unknown)
   , cacheNeedCleanup(-1)
 {
+  //FIXME: do we need to propagate `[untagged]` flag?
+  while (AOuter != nullptr) {
+    if (AOuter->MemberType == MEMBER_Struct &&
+        ((VStruct *)AOuter)->IsUntagged)
+    {
+      IsUntagged = true;
+      AOuter = nullptr;
+    } else {
+      AOuter = AOuter->Outer;
+    }
+  }
 }
 
 

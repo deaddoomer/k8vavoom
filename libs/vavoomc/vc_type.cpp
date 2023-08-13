@@ -262,6 +262,26 @@ VFieldType VFieldType::MakeDictType (const VFieldType &ktype, const VFieldType &
 
 //==========================================================================
 //
+//  VFieldType::IsUntagged
+//
+//==========================================================================
+bool VFieldType::IsUntagged () const {
+  switch (Type) {
+    case TYPE_Struct:
+      //GLog.Logf(NAME_Debug, "IU: %s (%d)", *GetName(), (int)Type);
+      return (Struct && Struct->IsUntagged);
+    case TYPE_Pointer:
+    case TYPE_State:
+    case TYPE_Delegate:
+      return true;
+    default: break;
+  }
+  return false;
+}
+
+
+//==========================================================================
+//
 //  VFieldType::MakePointerType
 //
 //==========================================================================

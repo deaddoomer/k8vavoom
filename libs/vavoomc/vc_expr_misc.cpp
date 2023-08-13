@@ -266,7 +266,7 @@ void VSingleName::DoSyntaxCopyTo (VExpression *e) {
 VExpression *VSingleName::InternalResolve (VEmitContext &ec, VSingleName::AssType assType) {
   int num = ec.CheckForLocalVar(Name);
   if (num != -1) {
-    VExpression *e = new VLocalVar(num, Loc);
+    VExpression *e = new VLocalVar(num, ec.IsLocalUnsafe(num), Loc);
     delete this;
     return e->Resolve(ec);
   }

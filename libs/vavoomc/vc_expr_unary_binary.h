@@ -62,6 +62,7 @@ public:
     Not,
     BitInvert,
     TakeAddress,
+    TakeAddressForced, // doesn't check for safety
   };
 
 public:

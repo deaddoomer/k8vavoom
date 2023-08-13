@@ -346,7 +346,7 @@ native final bool SetHeightSector (sector_t *Sector, sector_t *SrcSector);
 
 // returns `-1` on end
 native final int FindSectorFromTag (out sector_t *Sector, int tag, optional int start);
-native final line_t *FindLine (int lineTag, int *searchPosition);
+native final line_t *FindLine (int lineTag, ref int searchPosition);
 
 // support for linked sectors
 native final void SectorSetLink (int controltag, int tag, int surface, int movetype);
@@ -856,8 +856,9 @@ bool Do_LineAlignFlatCommon (line_t *lineact, int lineid, int side, bool doFloor
   } else {
     int Searcher = -1;
     bool res = false;
-    for (line_t *line = FindLine(lineid, &Searcher); line;
-         line = FindLine(lineid, &Searcher))
+    for (line_t *line = FindLine(lineid, ref Searcher);
+         line;
+         line = FindLine(lineid, ref Searcher))
     {
       if (Do_LineAlignFlatByLine(line, side, doFloor, doCeiling, scale!optional)) res = true;
     }

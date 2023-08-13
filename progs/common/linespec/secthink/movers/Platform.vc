@@ -107,11 +107,11 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
   if (Sector.lines.length == 0) { printwarn("invalid platform in `Platform.Init()`"); return; }
   switch (Type) {
     case PLATEV_PerpetualRaise:
-      DestHeight = Level.FindLowestFloorSurrounding(Sector, &Spot);
+      DestHeight = Level.FindLowestFloorSurrounding(Sector, out Spot);
       Spot.z = DestHeight+8.0;
       Low = DotProduct(Sector->floor.normal, Spot);
       if (Low > Sector->floor.dist) Low = Sector->floor.dist;
-      DestHeight = Level.FindHighestFloorSurrounding(Sector, &Spot);
+      DestHeight = Level.FindHighestFloorSurrounding(Sector, out Spot);
       Spot.z = DestHeight;
       High = DotProduct(Sector->floor.normal, Spot);
       if (High < Sector->floor.dist) High = Sector->floor.dist;
@@ -119,11 +119,11 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
       Status = P_Random()&1;
       break;
     case PLATEV_PerpetualRaiseLip:
-      DestHeight = Level.FindLowestFloorSurrounding(Sector, &Spot);
+      DestHeight = Level.FindLowestFloorSurrounding(Sector, out Spot);
       Spot.z = DestHeight+float(Arg4);
       Low = DotProduct(Sector->floor.normal, Spot);
       if (Low > Sector->floor.dist) Low = Sector->floor.dist;
-      DestHeight = Level.FindHighestFloorSurrounding(Sector, &Spot);
+      DestHeight = Level.FindHighestFloorSurrounding(Sector, out Spot);
       Spot.z = DestHeight;
       High = DotProduct(Sector->floor.normal, Spot);
       if (High < Sector->floor.dist) High = Sector->floor.dist;
@@ -131,7 +131,7 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
       Status = P_Random()&1;
       break;
     case PLATEV_DownWaitUpStay:
-      DestHeight = Level.FindLowestFloorSurrounding(Sector, &Spot);
+      DestHeight = Level.FindLowestFloorSurrounding(Sector, out Spot);
       Spot.z = DestHeight+8.0;
       Low = DotProduct(Sector->floor.normal, Spot);
       if (Low > Sector->floor.dist) Low = Sector->floor.dist;
@@ -140,7 +140,7 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
       Status = PLAT_Down;
       break;
     case PLATEV_DownWaitUpStayLip:
-      DestHeight = Level.FindLowestFloorSurrounding(Sector, &Spot);
+      DestHeight = Level.FindLowestFloorSurrounding(Sector, out Spot);
       Spot.z = DestHeight+float(Arg4);
       Low = DotProduct(Sector->floor.normal, Spot);
       if (Low > Sector->floor.dist) Low = Sector->floor.dist;
@@ -150,7 +150,7 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
       if (Arg5) StartSound = LineSpecialLevelInfo(Level).DefaultFloorSound;
       break;
     case PLATEV_DownNearestWaitUpStay:
-      DestHeight = Level.FindNextLowestFloor(Sector, &Spot);
+      DestHeight = Level.FindNextLowestFloor(Sector, out Spot);
       Spot.z = DestHeight+float(Arg4);
       Low = DotProduct(Sector->floor.normal, Spot);
       High = Sector->floor.dist;
@@ -158,7 +158,7 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
       Status = PLAT_Down;
       break;
     case PLATEV_DownLowestCeilingWaitUpStay:
-      DestHeight = Level.FindLowestCeilingSurrounding(Sector, &Spot);
+      DestHeight = Level.FindLowestCeilingSurrounding(Sector, out Spot);
       Spot.z = DestHeight;
       Low = DotProduct(Sector->floor.normal, Spot);
       if (Low > Sector->floor.dist) Low = Sector->floor.dist;
@@ -176,7 +176,7 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
       Status = PLAT_Down;
       break;
     case PLATEV_UpWaitDownStay:
-      DestHeight = Level.FindHighestFloorSurrounding(Sector, &Spot);
+      DestHeight = Level.FindHighestFloorSurrounding(Sector, out Spot);
       Spot.z = DestHeight;
       High = DotProduct(Sector->floor.normal, Spot);
       if (High < Sector->floor.dist) High = Sector->floor.dist;
@@ -185,7 +185,7 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
       Status = PLAT_Up;
       break;
     case PLATEV_UpNearestWaitDownStay:
-      DestHeight = Level.FindNextHighestFloor(Sector, &Spot);
+      DestHeight = Level.FindNextHighestFloor(Sector, out Spot);
       Spot.z = DestHeight;
       High = DotProduct(Sector->floor.normal, Spot);
       if (High < Sector->floor.dist) High = Sector->floor.dist;
@@ -205,7 +205,7 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
     case PLATEV_Toggle: //jff 3/14/98 add new type to support instant toggle
       Crush = 10; //jff 3/14/98 crush anything in the way
       // set up toggling between ceiling, floor inclusive
-      DestHeight = Level.FindLowestCeilingPoint(Sector, &Spot);
+      DestHeight = Level.FindLowestCeilingPoint(Sector, out Spot);
       Spot.z = DestHeight;
       Low = DotProduct(Sector->floor.normal, Spot);
       High = Sector->floor.dist;

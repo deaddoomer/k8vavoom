@@ -373,7 +373,7 @@ void IM_LoadData () {
 
     // your face
     star = R_RegisterPic('stfst01');
-    R_GetPicInfo(star, &info);
+    R_GetPicInfo(star, out info);
     star_width = info.width;
 
     // dead face
@@ -404,7 +404,7 @@ void IM_DrawLF () {
 
   // draw <LevelName>
   if (ClGame.im.LeaveTitlePatch) {
-    R_GetPicInfo(LeaveTitlePic, &info);
+    R_GetPicInfo(LeaveTitlePic, out info);
     DrawPic(ConvertX(640/2)-info.width/2, y, LeaveTitlePic);
     y += info.height+TextHeight("DUMMY")/4;
   } else {
@@ -441,7 +441,7 @@ void IM_DrawEL () {
   // draw level
   y += (5*TextHeight("DUMMY"))/4;
   if (ClGame.im.EnterTitlePatch) {
-    R_GetPicInfo(EnterTitlePic, &info);
+    R_GetPicInfo(EnterTitlePic, out info);
     DrawPic(ConvertX(640/2)-info.width/2, y, EnterTitlePic);
   } else {
     DrawText(ConvertX(640/2), y, ClGame.im.EnterName);
@@ -681,7 +681,7 @@ void IM_DrawCooperativeStats () {
   foreach ClGame.GLevel.LevelInfo.AllThinkers(PlayerReplicationInfo, RepInfo) {
     i = RepInfo.PlayerNum;
     x = NG_STATSX;
-    R_GetPicInfo(p[i], &info);
+    R_GetPicInfo(p[i], out info);
     DrawPic(ConvertX(x)-info.width, y, p[i]);
 
     if (i == ClGame.cl.ClientNum) DrawPic(ConvertX(x)-info.width, y, star);
@@ -859,7 +859,7 @@ void IM_DrawDeathmatchStats () {
 
   foreach ClGame.GLevel.LevelInfo.AllThinkers(PlayerReplicationInfo, RepInfo) {
     if (RepInfo.PlayerNum == ClGame.cl.ClientNum) {
-      R_GetPicInfo(star, &info);
+      R_GetPicInfo(star, out info);
       DrawPic(ConvertX(DM_MATRIXX)-info.width-5, y-8, star);
     }
     SetTextAlign(hleft, vtop);

@@ -797,14 +797,14 @@ void VMethod::Emit () {
     if (P.Name != NAME_None) {
       //if (ec.CheckForLocalVar(P.Name) != -1) ParseError(P.Loc, "Redefined argument `%s`", *P.Name);
       ec.CheckLocalDecl(P.Name, P.Loc);
-      VLocalVarDef &L = ec.NewLocal(P.Name, ParamTypes[i], P.Loc, ParamFlags[i]);
+      VLocalVarDef &L = ec.NewLocal(P.Name, ParamTypes[i], VEmitContext::Safe, P.Loc, ParamFlags[i]);
       L.Visible = true;
       ec.ReserveLocalSlot(L.GetIndex());
       // create optional
       if (ParamFlags[i]&FPARM_Optional) {
         VName specName(va("specified_%s", *P.Name));
         if (ec.CheckForLocalVar(specName) != -1) ParseError(P.Loc, "Redefined argument `%s`", *specName);
-        VLocalVarDef &SL = ec.NewLocal(specName, TYPE_Int, P.Loc);
+        VLocalVarDef &SL = ec.NewLocal(specName, TYPE_Int, VEmitContext::Safe, P.Loc);
         SL.Visible = true;
         ec.ReserveLocalSlot(SL.GetIndex());
       }

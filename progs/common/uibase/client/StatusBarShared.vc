@@ -396,7 +396,7 @@ void SB_DrawDeathmatchStats () {
       // your face
       int star = R_RegisterPic('stfst01');
       picinfo_t info;
-      R_GetPicInfo(star, &info);
+      R_GetPicInfo(star, out info);
       DrawPic(DM_MATRIXX-info.width-5, y-8, star);
     }
     SetTextAlign(hleft, vtop);

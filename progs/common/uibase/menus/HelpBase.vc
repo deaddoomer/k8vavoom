@@ -60,7 +60,7 @@ protected void AppendHelpPage (name Name, optional bool nonIWAD, optional bool a
   if (pich < 0) return;
   // get picture dimensions
   picinfo_t pnfo;
-  R_GetPicInfo(pich, &pnfo);
+  R_GetPicInfo(pich, out pnfo);
   if (pnfo.width < 1 || pnfo.height < 1) return;
   auto pg = pages.alloc();
   pg.picname = Name;

@@ -470,7 +470,7 @@
     damage = DamagePerBullet;
     if (randDamage) damage *= (P_Random()%3+1);
     LineAttack(aimDir, Range, damage, PuffType, NoAttackGhosts:default,
-               outHitPoint:&hitPoint, PuffType.default.DamageType, secondary:false,
+               out outHitPoint:hitPoint, PuffType.default.DamageType, secondary:false,
                decalType:decal, disableRandomZ:!doRandPuffZ, out puffEntity:puff);
     if (missile) {
       EntityEx msl;
@@ -502,7 +502,7 @@
       damage = DamagePerBullet;
       if (randDamage) damage *= (P_Random()%3+1);
       LineAttack(dir, Range, damage, PuffType, NoAttackGhosts:default,
-                 outHitPoint:&hitPoint, PuffType.default.DamageType, secondary:(i != 0),
+                 out outHitPoint:hitPoint, PuffType.default.DamageType, secondary:(i != 0),
                  decalType:decal, disableRandomZ:!doRandPuffZ, out puffEntity:puff);
       if (missile) {
         EntityEx msl;

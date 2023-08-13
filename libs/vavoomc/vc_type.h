@@ -98,6 +98,8 @@ public:
 
   static VFieldType MakeDictType (const VFieldType &ktype, const VFieldType &vtype, const TLocation &loc);
 
+  bool IsUntagged () const;
+
   VFieldType MakePointerType () const;
   VFieldType GetPointerInnerType () const;
   VFieldType MakeArrayType (int, const TLocation &) const;

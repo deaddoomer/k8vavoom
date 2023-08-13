@@ -225,7 +225,7 @@ final void FireSuperBullet () {
     int damage = DamagePerBullet;
     if (!(Flags&CBAF_NORANDOM)) damage *= ((P_Random()%3)+1);
     LineAttack(dir, Range, damage, PuffType, NoAttackGhosts:default,
-               outHitPoint:&hitPoint, PuffType.default.DamageType, secondary:(i != 0),
+               out outHitPoint:hitPoint, PuffType.default.DamageType, secondary:(i != 0),
                disableRandomZ:!!(Flags&CBAF_NORANDOMPUFFZ), out puffEntity:puff);
     if (missile) {
       EntityEx msl;

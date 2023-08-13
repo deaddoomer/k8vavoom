@@ -32,7 +32,7 @@ const int FHF_NOIMPACTDECAL = 2;
 //  aiming
 //
 //**************************************************************************
-struct trsplat_t {
+struct [untagged] trsplat_t {
   TVec org;
   TVec hit;
   line_t *line;
@@ -430,7 +430,7 @@ override void eventLineAttackACS (TVec dir, float distance, int LADamage, name a
 //==========================================================================
 final bool LineAttack (TVec dir, float distance, int LADamage,
                        class!EntityEx PuffType, optional bool NoAttackGhosts,
-                       optional TVec *outHitPoint, optional name DmgType,
+                       optional out TVec outHitPoint, optional name DmgType,
                        optional bool secondary, optional name decalType,
                        optional int pufftid, optional bool disableRandomZ,
                        optional out EntityEx hitEntity, optional out EntityEx puffEntity)
@@ -490,7 +490,7 @@ final bool LineAttack (TVec dir, float distance, int LADamage,
       if (!in.bIsABlockingLine) continue;
 
       // hit blocking line
-      if (outHitPoint) *outHitPoint = hitPoint;
+      if (outHitPoint!specified) outHitPoint = hitPoint;
 
       // position a bit closer
       realHitPoint = hitPoint;
@@ -520,7 +520,7 @@ final bool LineAttack (TVec dir, float distance, int LADamage,
     hitPoint = in.hitpoint;
     // position a bit closer
     hitPoint -= 2.0*dir;
-    if (outHitPoint) *outHitPoint = hitPoint;
+    if (outHitPoint!specified) outHitPoint = hitPoint;
 
     bool UseAxeBlood = bIsPlayer && PlayerEx(Player).ReadyWeapon && PlayerEx(Player).ReadyWeapon.bAxeBlood;
     bool UseBloodSplatter = UseAxeBlood || bBloodSplatter ||

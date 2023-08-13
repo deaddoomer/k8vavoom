@@ -1640,7 +1640,7 @@ void RoamRandom (out TVec dest) {
 
   posdest_valid = false;
 
-  EntityEx::PathInfo piFwd, piLeft, piRight;
+  EntityEx::PathInfo piFwd[untagged], piLeft[untagged], piRight[untagged];
   float dist = 1024.0;
 
   Actor allyToSupport = FindAllyToSupport(allowESP:true);
@@ -1676,7 +1676,7 @@ void RoamRandom (out TVec dest) {
   botmo.TracePath(an-45, dist, out piRight, allowJump:true);
 
   // random choice
-  EntityEx::PathInfo *pip[3];
+  EntityEx::PathInfo*[3] pip;
   pip[0] = &piFwd;
   pip[1] = &piLeft;
   pip[2] = &piRight;

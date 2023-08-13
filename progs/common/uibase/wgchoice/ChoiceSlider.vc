@@ -298,7 +298,7 @@ override void OnDraw () {
       xx += 8;
     }
     DrawPic(xx, 0, pic_M_SLDRT);
-    R_GetPicInfo(pic_M_SLDRT, &pinf);
+    R_GetPicInfo(pic_M_SLDRT, out pinf);
     xt = xx+pinf.width;
     xx = CursorXOffs+30+int((Value-MinValue)*100.0/(MaxValue-MinValue));
     DrawPic(xx, 7, pic_M_SLDKB);
@@ -311,7 +311,7 @@ override void OnDraw () {
       xx += 8;
     }
     DrawPic(xx, 0, pic_M_THERMR);
-    R_GetPicInfo(pic_M_THERMR, &pinf);
+    R_GetPicInfo(pic_M_THERMR, out pinf);
     xt = xx+pinf.width;
     xx = CursorXOffs+8+6+int((Value-MinValue)*100.0/(MaxValue-MinValue));
     DrawPic(xx, 0, pic_M_THERMO);

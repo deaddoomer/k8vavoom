@@ -59,7 +59,7 @@ void SetPicture (int handle) {
 override int CalcTextWidth () {
   if (PicHandle) {
     picinfo_t pinf;
-    R_GetPicInfo(PicHandle, &pinf);
+    R_GetPicInfo(PicHandle, out pinf);
     int wdt = pinf.width;
     if (!ignoreOffsets) wdt -= pinf.xoffset;
     return wdt;
@@ -77,7 +77,7 @@ override int CalcTextWidth () {
 override int CalcTextHeight () {
   if (PicHandle) {
     picinfo_t pinf;
-    R_GetPicInfo(PicHandle, &pinf);
+    R_GetPicInfo(PicHandle, out pinf);
     int hgt = pinf.height;
     if (!ignoreOffsets) hgt -= pinf.yoffset;
     return hgt;
@@ -97,7 +97,7 @@ override void OnDraw () {
     int x = 0, y = 0;
     if (ignoreOffsets) {
       picinfo_t pinf;
-      R_GetPicInfo(PicHandle, &pinf);
+      R_GetPicInfo(PicHandle, out pinf);
       x = pinf.xoffset;
       y = pinf.yoffset;
     }

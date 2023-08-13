@@ -184,7 +184,7 @@ void VUnary::DoSyntaxCopyTo (VExpression *e) {
 //
 //==========================================================================
 VExpression *VUnary::DoResolve (VEmitContext &ec) {
-  if (Oper == TakeAddress && op && ec.SelfClass) {
+  if ((Oper == TakeAddress || Oper == TakeAddressForced) && op && ec.SelfClass) {
     vassert(!opresolved);
     if (op->IsSingleName()) {
       VMethod *M = nullptr;
@@ -273,6 +273,29 @@ VExpression *VUnary::DoResolve (VEmitContext &ec) {
         delete this;
         return nullptr;
       } else {
+        if (op->IsLocalVarExpr()) {
+          VLocalVar *lvar = (VLocalVar *)op;
+          if (!lvar->isUnsafe) {
+            // check type
+            if (!lvar->Type.IsUntagged()) {
+              ParseError(Loc, "Cannot take address of safe local variable");
+              delete this;
+              return nullptr;
+            }
+          }
+          op->RequestAddressOf();
+        } else {
+          op->RequestAddressOf();
+        }
+        Type = op->RealType.MakePointerType();
+      }
+      break;
+    case TakeAddressForced:
+      if (op->Type.Type == TYPE_Reference) {
+        ParseError(Loc, "Tried to take address of reference");
+        delete this;
+        return nullptr;
+      } else {
         op->RequestAddressOf();
         Type = op->RealType.MakePointerType();
       }
@@ -344,6 +367,7 @@ void VUnary::Emit (VEmitContext &ec) {
       ec.AddStatement(OPC_BitInverse, Loc);
       break;
     case TakeAddress:
+    case TakeAddressForced:
       break;
   }
 }
@@ -377,6 +401,7 @@ const char *VUnary::getOpName () const {
     case Not: return "!";
     case BitInvert: return "~";
     case TakeAddress: return "&";
+    case TakeAddressForced: return "(!&!)";
   }
   return "wtf?!";
 }

@@ -336,7 +336,7 @@ void SB_DrawTallNum (int x, int y, int num, int color, float alpha, bool perc) {
   if (recolored) color = (color&0xff_ff_ff)|(clamp(cast(int)(alpha*255.0), 0, 255)<<24);
 
   if (perc && pic_percent > 0) {
-    //R_GetPicInfo(pic_percent, &info);
+    //R_GetPicInfo(pic_percent, out info);
     //x -= info.width;
     if (recolored) {
       DrawPicRecolored(x, y, color, pic_percent);
@@ -352,7 +352,7 @@ void SB_DrawTallNum (int x, int y, int num, int color, float alpha, bool perc) {
   do {
     int hh = pic_tallnum[num%10];
     if (hh > 0) {
-      R_GetPicInfo(hh, &info);
+      R_GetPicInfo(hh, out info);
       x -= info.width;
       if (recolored) {
         DrawPicRecolored(x, y, color, hh);
@@ -365,7 +365,7 @@ void SB_DrawTallNum (int x, int y, int num, int color, float alpha, bool perc) {
 
   // draw a minus sign if necessary
   if (neg && pic_minus > 0) {
-    R_GetPicInfo(pic_minus, &info);
+    R_GetPicInfo(pic_minus, out info);
     x -= info.width;
     if (recolored) {
       DrawPicRecolored(x, y, color, pic_minus);
@@ -392,7 +392,7 @@ void SB_DrawSmallNum (int x, int y, int num, int color) {
   // draw the new number
   do {
     int hh = pic_yellownum[num%10];
-    R_GetPicInfo(hh, &info);
+    R_GetPicInfo(hh, out info);
     x -= info.width;
     if (recolored) {
       DrawPicRecolored(x, y, color, hh);
@@ -581,7 +581,7 @@ final void DrawPicFit (int maxw, int maxh, int x, int y, int handle, optional fl
   // scale it to the appropriate size
   if (handle <= 0 || alpha <= 0) return;
   picinfo_t pinf;
-  R_GetPicInfo(handle, &pinf);
+  R_GetPicInfo(handle, out pinf);
   if (pinf.width > 0 && pinf.height > 0) {
     alpha = fmin(alpha, 1.0);
     // standard doom image is 31x17
@@ -619,7 +619,7 @@ final void DrawPicFitCenter (int maxw, int maxh, int x, int ybot, int handle, op
   if (handle <= 0 || alpha <= 0) return;
   if (maxh < 0) { ybot -= maxh; maxh = -maxh; }
   picinfo_t pinf;
-  R_GetPicInfo(handle, &pinf);
+  R_GetPicInfo(handle, out pinf);
   if (pinf.width > 0 && pinf.height > 0) {
     int x0, y0, width, height;
     R_GetPicRealDimensions(handle, out x0, out y0, out width, out height);
@@ -659,7 +659,7 @@ final void DrawPicFitCenter (int maxw, int maxh, int x, int ybot, int handle, op
 final void DbgPrintPicSize (int handle, string pname) {
   if (handle > 0) {
     picinfo_t pinf;
-    R_GetPicInfo(handle, &pinf);
+    R_GetPicInfo(handle, out pinf);
     printdebug("%s: %dx%d", pname, pinf.width, pinf.height);
   }
 }
@@ -798,7 +798,7 @@ override void SB_DrawFullscreenStats () {
     //if (ClGame.maxclients > 1) DrawPic(12, ovh-32, pic_faceback, fsalpha, cl.MO.Translation);
     //DrawPic(12, ovh-32, pic_faces[sb_faceindex], fsalpha);
     picinfo_t pi;
-    R_GetPicInfo(pic_faces[sb_faceindex], &pi);
+    R_GetPicInfo(pic_faces[sb_faceindex], out pi);
     int rhgt = int((pi.height-pi.yoffset)*R_GetAspectRatio());
     float scaleN = (pi.height > 42 ? 32.0/pi.height : 1.0);
     //printdebug("hgt=%s; scaleN=%s; rhgt=%s (%s)", pi.height, scaleN, rhgt, int(rhgt*scaleN));
@@ -972,7 +972,7 @@ override void SB_DrawFullscreenStats () {
           float alpha = fmin(1.0, fsalpha+(ai.active ? 0.4 : 0.05));
           int ico = GetEntityIconHandle(ai.ammo, noReady:true); //R_RegisterPic(ai.ammo.IconName);
           if (ico) {
-            //R_GetPicInfo(ico, &pi);
+            //R_GetPicInfo(ico, out pi);
             //DrawPic(xpos+(30-pi.width)/2, ypos, ico, alpha);
             DrawPicFitCenter(28, 18, xpos+1, ypos+2, ico, alpha);
           }

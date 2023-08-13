@@ -654,7 +654,7 @@ static final void DrawFullScreenPic (int Handle, optional bool dontRestoreVScree
                                      optional out float scale, optional bool dontClearScreen)
 {
   picinfo_t pinf;
-  R_GetPicInfo(Handle, &pinf);
+  R_GetPicInfo(Handle, out pinf);
   if (pinf.width < 1 || pinf.height < 1) {
     DrawEmptyScreen();
     xofs = 0;
@@ -702,7 +702,7 @@ static final void DrawFullScreenPicFinale (int Handle, optional bool dontClearSc
   //DrawPicFS320(xofs320, yofs200, Handle);
 #else
   picinfo_t pinf;
-  R_GetPicInfo(Handle, &pinf);
+  R_GetPicInfo(Handle, out pinf);
   if (pinf.width < 1 || pinf.height < 1) {
     DrawEmptyScreen();
   } else {
@@ -743,7 +743,7 @@ static final void DrawFullScreenPicFinale320 (float xofs320, float yofs200, int 
   DrawPicFS320(xofs320, yofs200, Handle);
 #else
   picinfo_t pinf;
-  R_GetPicInfo(Handle, &pinf);
+  R_GetPicInfo(Handle, out pinf);
   if (pinf.width < 1 || pinf.height < 1) {
     DrawEmptyScreen();
   } else {
@@ -786,7 +786,7 @@ static final void DrawFullScreenPicFinale320Ofs (float xofs320, float yofs200, i
   DrawPicFS320(xofs320, yofs200, Handle);
 #else
   picinfo_t pinf;
-  R_GetPicInfo(Handle, &pinf);
+  R_GetPicInfo(Handle, out pinf);
   if (pinf.width < 1 || pinf.height < 1) {
     DrawEmptyScreen();
   } else {
@@ -846,7 +846,7 @@ static final void DrawPicFS320HScroll2 (float fracofs, int Handle1, int Handle2,
   DrawPicFS320(scrolled-320, 0, Handle1, alpha!optional);
 #else
   picinfo_t pinf;
-  R_GetPicInfo(Handle1, &pinf);
+  R_GetPicInfo(Handle1, out pinf);
   if (pinf.width < 1 || pinf.height < 1) {
     DrawEmptyScreen();
   } else {
@@ -886,7 +886,7 @@ static final void DrawPicFS200VScroll2 (float fracofs, int Handle1, int Handle2,
   DrawPicFS320(0, scrolled-200, Handle1, alpha!optional);
 #else
   picinfo_t pinf;
-  R_GetPicInfo(Handle1, &pinf);
+  R_GetPicInfo(Handle1, out pinf);
   if (pinf.width < 1 || pinf.height < 1) {
     DrawEmptyScreen();
   } else {
@@ -914,7 +914,7 @@ static final void DrawPicFS200VScroll2 (float fracofs, int Handle1, int Handle2,
 
 #ifdef VCC_STANDALONE_EXECUTOR
 #else
-static final void wgGetBindingKeys (string cmd, int *key1, int *key2) {
+static final void wgGetBindingKeys (string cmd, out int key1, out int key2) {
   int isActive;
   IN_GetBindingKeys(cmd, key1, key2, 0, "", out isActive);
 }
@@ -950,32 +950,32 @@ static final int ConvertBoundKey (int key, optional bool useBindings/*=true*/) {
   int key1, key2;
 
   if (!specified_useBindings || useBindings) {
-    wgGetBindingKeys("+Forward", &key1, &key2);
+    wgGetBindingKeys("+Forward", out key1, out key2);
     if (key == key1 || key == key2) return K_UPARROW;
 
-    wgGetBindingKeys("+Backward", &key1, &key2);
+    wgGetBindingKeys("+Backward", out key1, out key2);
     if (key == key1 || key == key2) return K_DOWNARROW;
 
-    wgGetBindingKeys("+Left", &key1, &key2);
+    wgGetBindingKeys("+Left", out key1, out key2);
     if (key == key1 || key == key2) return K_LEFTARROW;
 
-    wgGetBindingKeys("+MoveLeft", &key1, &key2);
+    wgGetBindingKeys("+MoveLeft", out key1, out key2);
     if (key == key1 || key == key2) return K_LEFTARROW;
 
-    wgGetBindingKeys("+Right", &key1, &key2);
+    wgGetBindingKeys("+Right", out key1, out key2);
     if (key == key1 || key == key2) return K_RIGHTARROW;
 
-    wgGetBindingKeys("+MoveRight", &key1, &key2);
+    wgGetBindingKeys("+MoveRight", out key1, out key2);
     if (key == key1 || key == key2) return K_RIGHTARROW;
 
-    wgGetBindingKeys("+Attack", &key1, &key2);
+    wgGetBindingKeys("+Attack", out key1, out key2);
     if (key == key1 || key == key2) return K_ENTER;
 
-    wgGetBindingKeys("+Use", &key1, &key2);
+    wgGetBindingKeys("+Use", out key1, out key2);
     if (key == key1 || key == key2) return K_ENTER;
 
     //wgGetBindingKeys("+Strafe", &key1, &key2);
-    wgGetBindingKeys("+AltAttack", &key1, &key2);
+    wgGetBindingKeys("+AltAttack", out key1, out key2);
     if (key == key1 || key == key2) return K_ESCAPE;
   }
 

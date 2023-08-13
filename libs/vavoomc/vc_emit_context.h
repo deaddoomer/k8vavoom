@@ -56,6 +56,7 @@ public:
   bool Visible;
   bool WasRead; // reading from local will set this
   bool WasWrite; // writing to local will set this
+  bool isUnsafe;
   vuint32 ParamFlags;
   // internal index; DO NOT CHANGE!
   int ldindex;
@@ -80,6 +81,11 @@ class VEmitContext {
   friend class VAutoFin;
 
 public:
+  enum {
+    Safe = false,
+    Unsafe = true
+  };
+
   struct VCompExit {
     int lidx; // local index
     TLocationLine loc;
@@ -170,11 +176,12 @@ public:
   void ClearLocalDefs ();
 
   // allocates new local, don't set offset yet
-  VLocalVarDef &NewLocal (VName aname, const VFieldType &atype, const TLocation &aloc, vuint32 pflags=0);
+  VLocalVarDef &NewLocal (VName aname, const VFieldType &atype,
+                          bool aUnsafe, const TLocation &aloc, vuint32 pflags=0);
 
   // allocate stack slot for this local, and set local offset
   // sets `reused` flag in local
-  void AllocateLocalSlot (int idx);
+  void AllocateLocalSlot (int idx, bool aUnsafe);
   // release stack slot for this local, and reset local offset
   void ReleaseLocalSlot (int idx);
 
@@ -204,6 +211,7 @@ public:
   // returns index in `LocalDefs`
   int CheckForLocalVar (VName Name);
   VFieldType GetLocalVarType (int idx);
+  bool IsLocalUnsafe (int idx);
 
   int CheckForLocalVarCI (VName Name);
 

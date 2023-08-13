@@ -57,7 +57,7 @@ void SetPic (name Name) {
   picinfo_t Info;
   Handle = R_RegisterPic(Name);
   if (bAutoSize) {
-    R_GetPicInfo(Handle, &Info);
+    R_GetPicInfo(Handle, out Info);
     OffsetX = Info.xoffset;
     OffsetY = Info.yoffset;
     SetPos(OriginX-OffsetX, OriginY-OffsetY);

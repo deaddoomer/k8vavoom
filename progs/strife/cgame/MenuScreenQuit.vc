@@ -69,7 +69,7 @@ override void CreateBackButton () {
 override void OnDraw () {
   if (currPic > 0) {
     picinfo_t pnfo;
-    R_GetPicInfo(currPic, &pnfo);
+    R_GetPicInfo(currPic, out pnfo);
     if (pnfo.width < 1 || pnfo.height < 1) {
       ShadeRect(0, 0, Width, Height, GetCvarF('menu_darkening'));
     } else {

@@ -38,12 +38,25 @@ public:
   VExpression *TypeOfExpr; // for automatic vars w/o initializer, resolve this, and use its type
   bool isRef; // for range foreach
   bool isConst; // for range foreach
+  bool isUnsafe; // can we take an address of this local?
   int toeIterArgN; // >=0: `TypeOfExpr` is iterator call, take nth arg
   //bool emitClear;
   int locIdx;
   bool ctorInit; // `true` if `Value` is constructor call
 
-  VLocalEntry () : TypeExpr(nullptr), Name(NAME_None), Value(nullptr), TypeOfExpr(nullptr), isRef(false), isConst(false), toeIterArgN(-1), /*emitClear(false),*/ locIdx(-1), ctorInit(false) {}
+  inline VLocalEntry ()
+    : TypeExpr(nullptr)
+    , Name(NAME_None)
+    , Value(nullptr)
+    , TypeOfExpr(nullptr)
+    , isRef(false)
+    , isConst(false)
+    , isUnsafe(false)
+    , toeIterArgN(-1)
+    /*, emitClear(false)*/
+    , locIdx(-1)
+    , ctorInit(false)
+  {}
 };
 
 
@@ -106,8 +119,9 @@ public:
   vuint32 locSavedFlags; // local reusing can replace 'em
   bool requestedAddr;
   bool requestedAssAddr;
+  bool isUnsafe; // can we take an address of this local?
 
-  VLocalVar (int ANum, const TLocation &ALoc);
+  VLocalVar (int ANum, bool aUnsafe, const TLocation &ALoc);
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void RequestAddressOf () override;

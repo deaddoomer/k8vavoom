@@ -357,7 +357,7 @@ override void OnDraw () {
     scope(exit) SetVirtualScreen(ovw, ovh);
     /*
     picinfo_t pinf;
-    R_GetPicInfo(BackgroundPic, &pinf);
+    R_GetPicInfo(BackgroundPic, out pinf);
     if (pinf.width >= 320 && pinf.height >= 200) {
       SetVirtualScreen(pinf.width, pinf.height);
     } else {
@@ -372,7 +372,7 @@ override void OnDraw () {
     /*
     {
       picinfo_t pinf;
-      R_GetPicInfo(BackgroundPic, &pinf);
+      R_GetPicInfo(BackgroundPic, out pinf);
       print("pinf:(%s,%s); vs:(%s,%s); ofs:(%s,%s); scale=%s", pinf.width, pinf.height, GetVirtualWidth(), GetVirtualHeight(), xofs, yofs, scale);
     }
     */
@@ -420,7 +420,7 @@ final private void DrawPointer (int n, int xofs, int yofs) {
   fits = false;
   i = 0;
   do {
-    R_GetPicInfo(PointerPics[i], &info);
+    R_GetPicInfo(PointerPics[i], out info);
     left = Spots[n].X-info.xoffset;
     top = Spots[n].Y-info.yoffset;
     right = left+info.width;

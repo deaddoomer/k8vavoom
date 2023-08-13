@@ -1612,7 +1612,7 @@ VLoopStatementWithTempLocals::~VLoopStatementWithTempLocals () {
 void VLoopStatementWithTempLocals::EmitCtor (VEmitContext &ec) {
   // no need to clear uninited vars, the loop will take care of it
   for (auto &&lv : tempLocals) {
-    ec.AllocateLocalSlot(lv);
+    ec.AllocateLocalSlot(lv, VEmitContext::Safe);
     VLocalVarDef &loc = ec.GetLocalByIndex(lv);
     if (loc.reused && loc.Type.NeedZeroingOnSlotReuse()) ec.EmitLocalZero(lv, Loc);
   }
@@ -1752,10 +1752,10 @@ VStatement *VForeachIota::DoResolve (VEmitContext &ec) {
   if ((reversed ? loR : hiR)->IsIntConst()) {
     limit = new VIntLiteral((reversed ? loR : hiR)->GetIntConst(), (reversed ? lo : hi)->Loc);
   } else {
-    VLocalVarDef &L = ec.NewLocal(NAME_None, VFieldType(TYPE_Int), (reversed ? lo : hi)->Loc);
+    VLocalVarDef &L = ec.NewLocal(NAME_None, VFieldType(TYPE_Int), VEmitContext::Safe, (reversed ? lo : hi)->Loc);
     L.Visible = false; // it is unnamed, and hidden ;-)
     tempLocals.append(L.GetIndex());
-    limit = new VLocalVar(L.GetIndex(), L.Loc);
+    limit = new VLocalVar(L.GetIndex(), L.isUnsafe, L.Loc);
     // initialize hidden local with higher/lower bound
     hiinit = new VAssignment(VAssignment::Assign, limit->SyntaxCopy(), (reversed ? lo : hi)->SyntaxCopy(), L.Loc);
   }
@@ -2054,10 +2054,10 @@ VStatement *VForeachArray::DoResolve (VEmitContext &ec) {
   if (idxvar) {
     index = idxvar->SyntaxCopy();
   } else {
-    VLocalVarDef &L = ec.NewLocal(NAME_None, VFieldType(TYPE_Int), Loc);
+    VLocalVarDef &L = ec.NewLocal(NAME_None, VFieldType(TYPE_Int), VEmitContext::Safe, Loc);
     L.Visible = false; // it is unnamed, and hidden ;-)
     tempLocals.append(L.GetIndex());
-    index = new VLocalVar(L.GetIndex(), L.Loc);
+    index = new VLocalVar(L.GetIndex(), L.isUnsafe, L.Loc);
   }
   // initialize index
   if (!reversed) {
@@ -2083,10 +2083,10 @@ VStatement *VForeachArray::DoResolve (VEmitContext &ec) {
       // for static arrays we know the limit for sure
       limit = new VIntLiteral(staticLen, arr->Loc);
     } else {
-      VLocalVarDef &L = ec.NewLocal(NAME_None, VFieldType(TYPE_Int), arr->Loc);
+      VLocalVarDef &L = ec.NewLocal(NAME_None, VFieldType(TYPE_Int), VEmitContext::Safe, arr->Loc);
       L.Visible = false; // it is unnamed, and hidden ;-)
       tempLocals.append(L.GetIndex());
-      limit = new VLocalVar(L.GetIndex(), L.Loc);
+      limit = new VLocalVar(L.GetIndex(), L.isUnsafe, L.Loc);
       // initialize hidden local with array length
       VExpression *len = new VDotField(arr->SyntaxCopy(), VName("length"), arr->Loc);
       hiinit = new VAssignment(VAssignment::Assign, limit->SyntaxCopy(), len, len->Loc);
@@ -2121,7 +2121,7 @@ VStatement *VForeachArray::DoResolve (VEmitContext &ec) {
   // refvar code will be completed in our codegen
   if (isRef) {
     vassert(indLocalVal >= 0);
-    varaddr = new VLocalVar(indLocalVal, loopLoad->Loc);
+    varaddr = new VLocalVar(indLocalVal, VEmitContext::Safe, loopLoad->Loc);
     varaddr = varaddr->Resolve(ec); // should not fail (i hope)
     if (varaddr) {
       varaddr->RequestAddressOf(); // get rid of `ref`
@@ -2361,7 +2361,7 @@ void VForeachScriptedOuter::DoEmit (VEmitContext &ec) {
 //==========================================================================
 void VForeachScriptedOuter::EmitCtor (VEmitContext &ec) {
   if (initLocIdx >= 0) {
-    ec.AllocateLocalSlot(initLocIdx);
+    ec.AllocateLocalSlot(initLocIdx, VEmitContext::Safe);
     VLocalVarDef &loc = ec.GetLocalByIndex(initLocIdx);
     if (loc.reused && loc.Type.NeedZeroingOnSlotReuse()) ec.EmitLocalZero(initLocIdx, Loc);
   }
@@ -2553,7 +2553,7 @@ VStatement *VForeachScripted::DoResolve (VEmitContext &ec) {
 
     // create hidden local for `it`
     {
-      VLocalVarDef &L = ec.NewLocal(NAME_None, minit->ParamTypes[0], Loc);
+      VLocalVarDef &L = ec.NewLocal(NAME_None, minit->ParamTypes[0], VEmitContext::Safe, Loc);
       L.Visible = false; // it is unnamed, and hidden ;-)
       //tempLocals.append(L.GetIndex());
       //initLocIdx = itlocidx;
@@ -2562,7 +2562,7 @@ VStatement *VForeachScripted::DoResolve (VEmitContext &ec) {
 
     // insert hidden local as first init arg
     for (int f = einit->NumArgs; f > 0; --f) einit->Args[f] = einit->Args[f-1];
-    einit->Args[0] = new VLocalVar(itlocidx, Loc);
+    einit->Args[0] = new VLocalVar(itlocidx, VEmitContext::Safe, Loc);
     ++einit->NumArgs;
     // and resolve the call
     ivInit = (isBoolInit ? einit->ResolveBoolean(ec) : einit->Resolve(ec));
@@ -2604,7 +2604,7 @@ VStatement *VForeachScripted::DoResolve (VEmitContext &ec) {
     // remove all `enext` args, and insert foreach args instead
     for (int f = 0; f < enext->NumArgs; ++f) delete enext->Args[f];
     enext->NumArgs = 1+fevarCount;
-    enext->Args[0] = new VLocalVar(itlocidx, Loc);
+    enext->Args[0] = new VLocalVar(itlocidx, VEmitContext::Safe, Loc);
     for (int f = 0; f < fevarCount; ++f) enext->Args[f+1] = fevars[f].var->SyntaxCopy();
 
     ivNext = enext->ResolveBoolean(ec);
@@ -2640,7 +2640,7 @@ VStatement *VForeachScripted::DoResolve (VEmitContext &ec) {
       // replace "done" args with hidden `it`
       for (int f = 0; f < edone->NumArgs; ++f) delete edone->Args[f];
       edone->NumArgs = 1;
-      edone->Args[0] = new VLocalVar(itlocidx, Loc);
+      edone->Args[0] = new VLocalVar(itlocidx, VEmitContext::Safe, Loc);
 
       ivDone = edone->Resolve(ec);
       if (!ivDone) return CreateInvalid();

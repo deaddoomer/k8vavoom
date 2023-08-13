@@ -152,7 +152,7 @@ void VLocalDecl::EmitDtors (VEmitContext &ec) {
 //==========================================================================
 void VLocalDecl::Allocate (VEmitContext &ec) {
   for (auto &&loc : Vars) {
-    ec.AllocateLocalSlot(loc.locIdx);
+    ec.AllocateLocalSlot(loc.locIdx, loc.isUnsafe);
     #ifdef VV_DEBUG_ALLOC_RELEASE
     VLocalVarDef &ldef = ec.GetLocalByIndex(loc.locIdx);
     GLog.Logf(NAME_Debug, "VLocalDecl::Allocate: name=`%s`; idx=%d; ofs=%d; reused=%d; %s", *ldef.Name, loc.locIdx, ldef.Offset, (int)ldef.reused, *ldef.Loc.toStringNoCol());
@@ -253,7 +253,7 @@ bool VLocalDecl::Declare (VEmitContext &ec) {
     if (!e.TypeExpr) {
       retres = false;
       // create dummy local
-      VLocalVarDef &L = ec.NewLocal(e.Name, VFieldType(TYPE_Void), e.Loc);
+      VLocalVarDef &L = ec.NewLocal(e.Name, VFieldType(TYPE_Void), VEmitContext::Safe, e.Loc);
       L.ParamFlags = (e.isRef ? FPARM_Ref : 0)|(e.isConst ? FPARM_Const : 0);
       e.locIdx = L.ldindex;
       continue;
@@ -267,7 +267,7 @@ bool VLocalDecl::Declare (VEmitContext &ec) {
     }
 
     //VLocalVarDef &L = ec.AllocLocal(e.Name, Type, e.Loc);
-    VLocalVarDef &L = ec.NewLocal(e.Name, Type, e.Loc);
+    VLocalVarDef &L = ec.NewLocal(e.Name, Type, e.isUnsafe, e.Loc);
     L.ParamFlags = (e.isRef ? FPARM_Ref : 0)|(e.isConst ? FPARM_Const : 0);
     //if (e.isRef) fprintf(stderr, "*** <%s:%d> is REF\n", *e.Name, L.ldindex);
     e.locIdx = L.ldindex;
@@ -284,7 +284,7 @@ bool VLocalDecl::Declare (VEmitContext &ec) {
         }
       } else {
         L.Visible = false; // hide from initializer expression
-        VExpression *op1 = new VLocalVar(L.ldindex, e.Loc);
+        VExpression *op1 = new VLocalVar(L.ldindex, L.isUnsafe, e.Loc);
         e.Value = new VAssignment(VAssignment::Assign, op1, e.Value, e.Loc);
         e.Value = e.Value->Resolve(ec);
         if (!e.Value) retres = false;
@@ -387,7 +387,7 @@ VStr VLocalDecl::toString () const {
 //  VLocalVar::VLocalVar
 //
 //==========================================================================
-VLocalVar::VLocalVar (int ANum, const TLocation &ALoc)
+VLocalVar::VLocalVar (int ANum, bool aUnsafe, const TLocation &ALoc)
   : VExpression(ALoc)
   , num(ANum)
   , AddressRequested(false)
@@ -395,6 +395,7 @@ VLocalVar::VLocalVar (int ANum, const TLocation &ALoc)
   , locSavedFlags(0)
   , requestedAddr(false)
   , requestedAssAddr(false)
+  , isUnsafe(aUnsafe)
 {
 }
 

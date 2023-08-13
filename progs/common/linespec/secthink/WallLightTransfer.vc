@@ -45,7 +45,7 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5)
   Sector = InSector;
   TargetId = Arg1;
   Flags = Arg2;
-  int snums[2];
+  int[2] snums;
 
   // do a manual search, because tags hash is not yet set up.
   foreach (auto i; 0..XLevel.Lines.length) {
@@ -79,7 +79,9 @@ override void Tick (float DeltaTime) {
   int Light = Sector->params.lightlevel;
   if (Light != LastLight) {
     int Searcher = -1;
-    for (line_t *Line = XLevel.FindLine(TargetId, &Searcher); Line; Line = XLevel.FindLine(TargetId, &Searcher)) {
+    for (line_t *Line = XLevel.FindLine(TargetId, ref Searcher); Line;
+         Line = XLevel.FindLine(TargetId, ref Searcher))
+    {
       DoTransfer(Line, Light);
     }
     LastLight = Light;
@@ -93,7 +95,7 @@ override void Tick (float DeltaTime) {
 //
 //==========================================================================
 void DoTransfer (line_t *Line, int Light) {
-  int snums[2];
+  int[2] snums;
   snums[0] = (Flags&WLF_SIDE1 ? Line->sidenum[0] : -1);
   snums[1] = (Flags&WLF_SIDE2 ? Line->sidenum[1] : -1);
   foreach (auto sidx; snums) {

@@ -157,7 +157,7 @@ override void StartMap()
     pic_innum[10 + i] = R_RegisterPic(name(va("inred%d", i)));
     pic_smallinnum[i] = R_RegisterPic(name(va("smallin%d", i)));
     pic_bignum[i] = R_RegisterPic(name(va("fontb%d", 16 + i)));
-    R_GetPicInfo(pic_bignum[i], &info);
+    R_GetPicInfo(pic_bignum[i], out info);
     bignumwidth[i] = info.width;
   }
   pic_minus = R_RegisterPic('negnum');

@@ -410,7 +410,9 @@ VLocalDecl *VParser::CreateUnnamedLocal (VFieldType type, const TLocation &loc) 
 //  returns `VLocalDecl`
 //
 //==========================================================================
-VLocalDecl *VParser::ParseLocalVar (VExpression *TypeExpr, LocalType lt, VExpression *size0, VExpression *size1) {
+VLocalDecl *VParser::ParseLocalVar (VExpression *TypeExpr, LocalType lt,
+                                    VExpression *size0, VExpression *size1)
+{
   VLocalDecl *Decl = new VLocalDecl(Lex.Location);
   bool isFirstVar = true;
   bool wasNewArray = false;
@@ -452,6 +454,20 @@ VLocalDecl *VParser::ParseLocalVar (VExpression *TypeExpr, LocalType lt, VExpres
       e.Loc = Lex.Location;
       e.Name = Lex.Name;
       Lex.NextToken();
+      // `[untagged]`
+      if (Lex.Check(TK_LBracket)) {
+        if (Lex.Token != TK_Identifier || Lex.Name != "untagged") {
+          ParseError(Lex.Location, "`untagged` expected");
+          delete SE2;
+          delete SE;
+          delete e.TypeExpr;
+          e.TypeExpr = nullptr;
+          continue;
+        }
+        Lex.NextToken();
+        Lex.Expect(TK_RBracket, ERR_MISSING_RFIGURESCOPE);
+        e.isUnsafe = true;
+      }
       // create it
       e.TypeExpr = new VFixedArrayType(e.TypeExpr, SE, SE2, SLoc);
       wasNewArray = true;
@@ -481,6 +497,7 @@ VLocalDecl *VParser::ParseLocalVar (VExpression *TypeExpr, LocalType lt, VExpres
         continue;
       }
 
+      /* no more old array declaration syntax
       if (Lex.Check(TK_LBracket)) {
         if (lt != LocalNormal) ParseError(Lex.Location, "Foreach variable cannot be an array");
         // arrays cannot be initialized (it seems), so they cannot be automatic
@@ -491,6 +508,20 @@ VLocalDecl *VParser::ParseLocalVar (VExpression *TypeExpr, LocalType lt, VExpres
         VExpression *SE = ParseExpression();
         Lex.Expect(TK_RBracket, ERR_MISSING_RFIGURESCOPE);
         e.TypeExpr = new VFixedArrayType(e.TypeExpr, SE, nullptr, SLoc);
+      }
+      */
+
+      // `[untagged]`
+      if (Lex.Check(TK_LBracket)) {
+        if (Lex.Token != TK_Identifier || Lex.Name != "untagged") {
+          ParseError(Lex.Location, "`untagged` expected");
+          delete e.TypeExpr;
+          e.TypeExpr = nullptr;
+          continue;
+        }
+        Lex.NextToken();
+        Lex.Expect(TK_RBracket, ERR_MISSING_RFIGURESCOPE);
+        e.isUnsafe = true;
       }
 
       // initialisation
@@ -866,7 +897,8 @@ VExpression *VParser::ParseExpressionPriority1 () {
         // second index
         if (Lex.Check(TK_Comma)) ind2 = ParseTernaryExpression();
         Lex.Expect(TK_RBracket, ERR_BAD_ARRAY);
-        // this was buggy with things like: `arr[n]*varname` (because index already parsed, and asterisk took for a pointer declaration)
+        // this was buggy with things like: `arr[n]*varname`
+        // (because index already parsed, and asterisk was taken for a pointer declaration)
         // fixed by using saved `CheckForLocal`; `ParseExpressionPriority0()` always resets it, but
         // if we got a single name, and locals were allowed, then this looks like a local
         // we cannot have local slices yet, so don't bother checking that
@@ -2245,6 +2277,23 @@ void VParser::ParseDefaultProperties (VClass *InClass, bool doparse, int defcoun
 //==========================================================================
 void VParser::ParseStruct (VClass *InClass, bool IsVector) {
   bool globalRO = Lex.Check(TK_ReadOnly);
+  bool untagged = false;
+
+  // `[untagged]`
+  if (Lex.Check(TK_LBracket)) {
+    /*
+    if (IsVector) {
+      ParseError(Lex.Location, "Vector-based structs cannot be untagged");
+    } else
+    */
+    if (Lex.Token != TK_Identifier || Lex.Name != "untagged") {
+      ParseError(Lex.Location, "`untagged` expected");
+    } else {
+      untagged = true;
+      Lex.NextToken();
+      Lex.Expect(TK_RBracket, ERR_MISSING_RFIGURESCOPE);
+    }
+  }
 
   VName Name = Lex.Name;
   TLocation StrLoc = Lex.Location;
@@ -2257,6 +2306,7 @@ void VParser::ParseStruct (VClass *InClass, bool IsVector) {
 
   // new struct
   VStruct *Struct = new VStruct(Name, (InClass ? (VMemberBase *)InClass : (VMemberBase *)Package), StrLoc);
+  Struct->IsUntagged = untagged;
   Struct->Defined = false;
   Struct->IsVector = IsVector;
   Struct->Fields = nullptr;

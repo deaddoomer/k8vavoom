@@ -61,10 +61,10 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5,
   int texTop = XLevel.Sides[Line1->sidenum[0]].TopTexture;
   VAnimDoorDef *Def = FindAnimDoor(texTop);
 
-  Height = Level.FindLowestCeilingSurrounding(Sector, &Spot);
+  Height = Level.FindLowestCeilingSurrounding(Sector, out Spot);
   Spot.z = Height;
   TopDist = DotProduct(Sector->ceiling.normal, Spot);
-  Height = Level.FindHighestFloorPoint(Sector, &Spot);
+  Height = Level.FindHighestFloorPoint(Sector, out Spot);
   Spot.z = Height;
   BotDist = DotProduct(Sector->ceiling.normal, Spot);
 
