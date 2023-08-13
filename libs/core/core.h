@@ -141,6 +141,9 @@ class VMemberBase;
 class VStruct;
 class VObject;
 
+// we will use vwads for saves and such
+#include "libvwad/vwadvfs.h"
+#include "libvwad/vwadwrite.h"
 
 #include "strtod_plan9.h"
 #include "propp.h"

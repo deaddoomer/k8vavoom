@@ -147,17 +147,18 @@ vwadwr_result vwadwr_z85_decode_key (const vwadwr_z85_key enkey, vwadwr_public_k
     finish archive creation with vwadwr_finish, or free dir with vwadwr_free_dir
 */
 
+// flags for `vwadwr_new_dir()`
 #define VWADWR_NEW_DEFAULT    (0u)
 #define VWADWR_NEW_DONT_SIGN  (0x4000u)
 
-// error codes
+// error codes for `vwadwr_new_dir()`
 #define VWADWR_NEW_OK           (0)
-#define VWADWR_NEW_ERR_AUTHOR   (1)
-#define VWADWR_NEW_ERR_TITLE    (2)
-#define VWADWR_NEW_ERR_COMMENT  (3)
-#define VWADWR_NEW_ERR_FLAGS    (4)
-#define VWADWR_NEW_ERR_PRIVKEY  (5)
-#define VWADWR_NEW_ERR_OTHER    (-1)
+#define VWADWR_NEW_ERR_AUTHOR   (-1)
+#define VWADWR_NEW_ERR_TITLE    (-2)
+#define VWADWR_NEW_ERR_COMMENT  (-3)
+#define VWADWR_NEW_ERR_FLAGS    (-4)
+#define VWADWR_NEW_ERR_PRIVKEY  (-5)
+#define VWADWR_NEW_ERR_OTHER    (-666)
 
 
 vwadwr_bool vwadwr_is_good_privkey (const vwadwr_secret_key privkey);
@@ -206,20 +207,18 @@ vwadwr_result vwadwr_finish (vwadwr_dir **dirp);
 typedef vwadwr_bool vwadwr_pack_progress (vwadwr_dir *dir, int read, int written, void *udata);
 
 
-enum {
-  /* literal-only more (silly!) */
-  VADWR_COMP_SILLY = -666,
-  /* no compression */
-  VADWR_COMP_DISABLE = -1,
-  /* no literal-only, no lazy matching */
-  VADWR_COMP_FASTEST = 0,
-  /* with literal-only, no lazy matching */
-  VADWR_COMP_FAST = 1,
-  /* no literal-only, with lazy matching */
-  VADWR_COMP_MEDIUM = 2,
-  /* with literal-only, with lazy matching */
-  VADWR_COMP_BEST = 3,
-};
+// compression levels
+/* no compression */
+#define VADWR_COMP_DISABLE  (-1)
+/* literal-only mode (silly!) */
+#define VADWR_COMP_FASTEST  (0)
+/* no literal-only, with no lazy matching */
+#define VADWR_COMP_FAST     (1)
+/* no literal-only, with lazy matching */
+#define VADWR_COMP_MEDIUM   (2)
+/* with literal-only, with lazy matching */
+#define VADWR_COMP_BEST     (3)
+
 
 // group name is case-insensitive.
 // file name is case-insensitive.

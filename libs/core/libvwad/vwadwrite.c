@@ -2391,11 +2391,11 @@ vwadwr_dir *vwadwr_new_dir (vwadwr_memman *mman, vwadwr_iostream *outstrm,
   // now create header fields
   put_u32(&res->mhdr.crc32, 0);
   put_u16(&res->mhdr.version, 0);
+  uint16_t archflags = (res->has_privkey ? 0x00 : 0x01);
   #ifdef VWAD_USE_NAME_LENGTHES
-    put_u16(&res->mhdr.flags, (res->has_privkey ? 0x00 : 0x01)|0x02);
-  #else
-    put_u16(&res->mhdr.flags, (res->has_privkey ? 0x00 : 0x01));
+  archflags |= 0x02;
   #endif
+  put_u16(&res->mhdr.flags, archflags);
   // unpacked comment size
   const uint32_t u_csz = (comment ? (uint32_t)strlen(comment) : 0);
   vassert(u_csz < 65556);
@@ -2713,7 +2713,9 @@ static int qsnamecmp (const void *aa, const void *bb) {
 //  vwadwr_write_directory
 //
 //==========================================================================
-static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *strm) {
+static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *strm,
+                                             const uint32_t dirofs)
+{
   if (strm == NULL || strm->write == NULL) return -669;
   if (!vwadwr_is_valid_dir(dir)) return -666;
 
@@ -2722,7 +2724,7 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
                            4+(uint64_t)dir->fileCount*VWADWR_FILE_ENTRY_SIZE+
                            4+(uint64_t)dir->chunkCount*VWADWR_CHUNK_ENTRY_SIZE;
 
-  if (dirsz64 > 0xffffff + 1) {
+  if (dirsz64 > 0x04000000) {
     logf(ERROR, "directory too big");
     return -669;
   }
@@ -2887,6 +2889,13 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
   xfree(dir->mman, fdir);
 
 
+  if (0x7fffffffU - dirofs < (unsigned)pks) {
+    xfree(dir->mman, pkdir);
+    logf(ERROR, "file with directory (%u bytes) is too big", dirsz);
+    return -669;
+  }
+
+
   uint8_t dirheader[4 * 4];
   // packed dir data crc32
   pk_crc32 = crc32_buf(pkdir, (unsigned)pks);
@@ -2967,6 +2976,7 @@ vwadwr_result vwadwr_pack_file (vwadwr_dir *dir, vwadwr_iostream *instrm,
   uint8_t *dest1 = NULL;
   int allow_litonly = 0;
   int allow_lazy = 0;
+  int allow_lz = 0;
 
   buf = xalloc(dir->mman, 65536);
   if (buf == NULL) {
@@ -2980,13 +2990,35 @@ vwadwr_result vwadwr_pack_file (vwadwr_dir *dir, vwadwr_iostream *instrm,
   }
 
   if (level >= 0) {
-    if (level > VADWR_COMP_BEST) level = VADWR_COMP_BEST;
-    allow_litonly = ((level & 0x01) != 0);
-    allow_lazy = ((level & 0x02) != 0);
-    dest1 = xalloc(dir->mman, 65536 + 4);
-    if (dest1 == NULL) {
-      logf(ERROR, "out of memory");
-      goto error;
+    switch (level) {
+      case VADWR_COMP_FASTEST:
+        allow_litonly = 1;
+        allow_lazy = 0;
+        allow_lz = 0;
+        break;
+      case VADWR_COMP_FAST:
+        allow_litonly = 0;
+        allow_lazy = 0;
+        allow_lz = 1;
+        break;
+      case VADWR_COMP_MEDIUM:
+        allow_litonly = 0;
+        allow_lazy = 1;
+        allow_lz = 1;
+        break;
+      case VADWR_COMP_BEST:
+      default:
+        allow_litonly = 1;
+        allow_lazy = 1;
+        allow_lz = 1;
+        break;
+    }
+    if (allow_lz && allow_litonly) {
+      dest1 = xalloc(dir->mman, 65536 + 4);
+      if (dest1 == NULL) {
+        logf(ERROR, "out of memory");
+        goto error;
+      }
     }
   }
 
@@ -3006,8 +3038,9 @@ vwadwr_result vwadwr_pack_file (vwadwr_dir *dir, vwadwr_iostream *instrm,
     fullcrc32 = crc32_part(fullcrc32, buf, (unsigned)rd);
     const uint32_t crc32 = crc32_buf(buf, (unsigned)rd);
     int pks;
-    if (level < 0) {
-      if (level == VADWR_COMP_SILLY) {
+    if (!allow_lz) {
+      // no LZ compression
+      if (allow_litonly) {
         pks = CompressLZFF3LitOnly(buf, rd, dest + 4, 65535);
         if (pks < 1) pks = -1;
       } else {
@@ -3019,7 +3052,7 @@ vwadwr_result vwadwr_pack_file (vwadwr_dir *dir, vwadwr_iostream *instrm,
         logf(ERROR, "out of memory");
         goto error;
       }
-      if ((allow_litonly && (pks <= 0 || pks >= rd / 2)) || rd < 16384) {
+      if (allow_litonly) {
         vassert(dest1 != NULL);
         int pks1 = pks - 1;
         if (pks1 <= 0) pks1 = 65535;
@@ -3281,7 +3314,7 @@ vwadwr_result vwadwr_finish (vwadwr_dir **dirp) {
   const uint32_t dirofs = (uint32_t)dirofspos;
 
   // pack and write main directory
-  if (vwadwr_write_directory(dir, dir->outstrm) != 0) {
+  if (vwadwr_write_directory(dir, dir->outstrm, dirofs) != 0) {
     logf(ERROR, "cannot write directory");
     vwadwr_free_dir(dirp);
     return -1;

@@ -24,7 +24,7 @@
 //**
 //**************************************************************************
 #include "fsys_local.h"
-#include "../libvwad/vwadvfs.h"
+/*#include "../libvwad/vwadvfs.h"*/
 
 
 EName fsys_report_added_paks_logtype = NAME_Init;

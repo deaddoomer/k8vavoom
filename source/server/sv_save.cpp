@@ -64,10 +64,10 @@ enum { NUM_AUTOSAVES = 9 };
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static VCvarB r_dbg_save_on_level_exit("r_dbg_save_on_level_exit", false, "Save before exiting a level.\nNote that after loading this save you prolly won't be able to exit again.", CVAR_PreInit|CVAR_NoShadow/*|CVAR_Archive*/);
-static VCvarI save_compression_level("save_compression_level", "6", "Save file compression level [0..9]", CVAR_Archive|CVAR_NoShadow);
+static VCvarB dbg_save_on_level_exit("dbg_save_on_level_exit", false, "Save before exiting a level.\nNote that after loading this save you prolly won't be able to exit again.", CVAR_PreInit|CVAR_NoShadow/*|CVAR_Archive*/);
+static VCvarB dbg_load_ignore_wadlist("dbg_load_ignore_wadlist", false, "Ignore list of loaded wads in savegame when hash mated?", CVAR_PreInit|CVAR_NoShadow/*|CVAR_Archive*/);
 
-static VCvarB dbg_save_ignore_wadlist("dbg_save_ignore_wadlist", false, "Ignore list of loaded wads in savegame when hash mated?", CVAR_PreInit|CVAR_NoShadow/*|CVAR_Archive*/);
+static VCvarI save_compression_level("save_compression_level", "6", "Save file compression level [0..9]", CVAR_Archive|CVAR_NoShadow);
 
 static VCvarB sv_new_map_autosave("sv_new_map_autosave", true, "Autosave when entering new map (except first one)?", CVAR_PreInit|CVAR_NoShadow/*|CVAR_Archive*/);
 
@@ -1100,7 +1100,7 @@ bool VSaveSlot::LoadSlot (int Slot) {
     return false;
   }
 
-  if (!dbg_save_ignore_wadlist) {
+  if (!dbg_load_ignore_wadlist.asBool()) {
     if (wcount != wadlist.length()) {
       saveFileBase.clear();
       VStream::Destroy(Strm);
@@ -1113,7 +1113,7 @@ bool VSaveSlot::LoadSlot (int Slot) {
   for (int f = 0; f < wcount; ++f) {
     VStr s;
     *Strm << s;
-    if (!dbg_save_ignore_wadlist) {
+    if (!dbg_load_ignore_wadlist.asBool()) {
       if (s != wadlist[f]) {
         saveFileBase.clear();
         VStream::Destroy(Strm);
@@ -2509,7 +2509,7 @@ void SV_AutoSave (bool checkpoint) {
 
 #ifdef CLIENT
 void SV_AutoSaveOnLevelExit () {
-  if (!r_dbg_save_on_level_exit) return;
+  if (!dbg_save_on_level_exit) return;
 
   if (!CheckIfSaveIsAllowed()) return;
 

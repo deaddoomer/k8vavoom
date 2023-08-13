@@ -2175,12 +2175,12 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
 
   logf(DEBUG, "vwad_open_archive: pkdirsize=0x%08x", dhdr.pkdirsize);
   logf(DEBUG, "vwad_open_archive: upkdirsize=0x%08x", dhdr.upkdirsize);
-  if (dhdr.pkdirsize == 0 || dhdr.pkdirsize > 0xffffff) {
+  if (dhdr.pkdirsize == 0 || dhdr.pkdirsize > 0x04000000U) {
     xfree(mman, wadcomment);
     logf(ERROR, "vwad_open_archive: invalid directory size");
     return NULL;
   }
-  if (dhdr.upkdirsize <= 4*11 || dhdr.upkdirsize > 0xffffff) {
+  if (dhdr.upkdirsize <= 4*11 || dhdr.upkdirsize > 0x04000000U) {
     xfree(mman, wadcomment);
     logf(ERROR, "vwad_open_archive: invalid directory size");
     return NULL;
