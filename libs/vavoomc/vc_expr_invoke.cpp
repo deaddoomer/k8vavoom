@@ -2129,6 +2129,15 @@ VExpression *VInvocation::DoResolve (VEmitContext &ec) {
       // this can be already resolved if we're in `VPropertyAssign`
       if (!Args[i]->IsResolved()) Args[i] = Args[i]->Resolve(ec);
       if (!Args[i]) { ArgsOk = false; break; }
+      // check for struct copying
+      if ((Func->ParamFlags[i]&(FPARM_Ref|FPARM_Out)) == 0 &&
+          Args[i]->Type.Type == TYPE_Struct &&
+          Args[i]->Type.Struct->NoAssign)
+      {
+        ParseError(Args[i]->Loc, "cannot pass noassign struct by value for parameter #%d", i+1);
+        ArgsOk = false;
+        break;
+      }
       // marshaling
       if (wantOptMarshal && i < VMethod::MAX_PARAMS &&
           Args[i]->IsLocalVarExpr() && (Func->ParamFlags[i]&FPARM_Optional) != 0)
