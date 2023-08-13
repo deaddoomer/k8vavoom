@@ -2182,12 +2182,12 @@ VExpression *VInvocation::DoResolve (VEmitContext &ec) {
   // we may create new locals, so activate local reuse mechanics
   for (int f = 0; f < VMethod::MAX_PARAMS; ++f) lcidx[f] = -1;
 
-  // for omited "optional ref", create temporary locals
+  // for omited `optional ref`/`optional out`, create temporary locals
   for (int i = 0; i < NumArgs; ++i) {
     if (!Args[i] && i < VMethod::MAX_PARAMS) {
       if ((Func->ParamFlags[i]&(FPARM_Out|FPARM_Ref)) != 0) {
         // create temporary
-        VLocalVarDef &L = ec.NewLocal(NAME_None, Func->ParamTypes[i], VEmitContext::Safe, Loc);
+        VLocalVarDef &L = ec.NewLocal(NAME_None, Func->ParamTypes[i], VEmitContext::Unsafe, Loc);
         L.Visible = false; // it is unnamed, and hidden ;-)
         lcidx[i] = L.GetIndex();
       }
