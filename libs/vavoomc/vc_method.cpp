@@ -619,12 +619,12 @@ bool VMethod::Define () {
     if ((ParamFlags[i]&FPARM_Out) != 0 && (ParamFlags[i]&FPARM_Ref) != 0) ParseError(P.Loc, "Modifiers `out` and `ref` are mutually exclusive");
 
     if (ParamFlags[i]&(FPARM_Out|FPARM_Ref)) {
-      ++ParamsSize;
+      ParamsSize += 1;
     } else {
       if (!type.CheckPassable(P.TypeExpr->Loc, false)) ParseError(P.TypeExpr->Loc, "Invalid parameter #%d type '%s' in method '%s'", i+1, *type.GetName(), *GetFullName());
       ParamsSize += type.GetStackSize();
     }
-    if (ParamFlags[i]&FPARM_Optional) ++ParamsSize;
+    if (ParamFlags[i]&FPARM_Optional) ParamsSize += 1;
   }
 
   // if this is a overridden method, verify that return type and argument types match
