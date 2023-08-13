@@ -196,6 +196,7 @@ VParser::VParser (VLexer &ALex, VPackage *APackage)
   , currClass(nullptr)
   , currSwitch(nullptr)
   , CheckForLocal(false)
+  , UnsafeExpr(false)
   , anonLocalCount(0)
   , lastCompoundStart()
   , inCompound(false)
@@ -621,7 +622,7 @@ VExpression *VParser::ParseExpressionPriority0 () {
     case TK_LParen:
       {
         Lex.NextToken();
-        VExpression *op = ParseTernaryExpression();
+        VExpression *op = ParseTernaryExpressionKeepUnsafeFlag();
         if (!op) ParseError(l, "Expression expected");
         Lex.Expect(TK_RParen, ERR_MISSING_RPAREN);
         VExpression *e = new VExprParens(op, l);
@@ -802,35 +803,52 @@ VExpression *VParser::ParseExpressionPriority0 () {
       {
         Lex.NextToken();
         Lex.Expect(TK_LParen, ERR_MISSING_LPAREN);
-        // allow casts to primitive types
-        switch (Lex.Token) {
-          case TK_Int:
-          case TK_Float:
-          case TK_String:
-          case TK_Name:
-          case TK_Void:
-            {
-              auto tk = Lex.Token;
-              Lex.NextToken();
-              Lex.Expect(TK_RParen, ERR_MISSING_RPAREN);
-              VExpression *op = ParseExpressionPriority1();
-              if (!op) ParseError(l, "Expression expected");
-              switch (tk) {
-                case TK_Int: return new VScalarToInt(op, false);
-                case TK_Float: return new VScalarToFloat(op, false);
-                case TK_String: return new VCastToString(op);
-                case TK_Name: return new VCastToName(op);
-                case TK_Void: return new VDropResult(op);
-                default: VCFatalError("VC: Ketmar forgot to handle some type in `VParser::ParseExpressionPriority0()`");
+        // `[unsafe]`?
+        if (Lex.Token == TK_LBracket) {
+          const bool oldUnsafeExpr = UnsafeExpr;
+          Lex.NextToken();
+          if (Lex.Token != TK_Identifier || Lex.Name != "unsafe") {
+            ParseError(Lex.Location, "`unsafe` expected");
+          } else {
+            Lex.NextToken();
+            Lex.Expect(TK_RBracket, ERR_MISSING_RFIGURESCOPE);
+          }
+          UnsafeExpr = true;
+          Lex.Expect(TK_RParen, ERR_MISSING_RPAREN);
+          VExpression *e = ParseExpressionPriority1();
+          UnsafeExpr = oldUnsafeExpr;
+          return e;
+        } else {
+          // allow casts to primitive types
+          switch (Lex.Token) {
+            case TK_Int:
+            case TK_Float:
+            case TK_String:
+            case TK_Name:
+            case TK_Void:
+              {
+                auto tk = Lex.Token;
+                Lex.NextToken();
+                Lex.Expect(TK_RParen, ERR_MISSING_RPAREN);
+                VExpression *op = ParseExpressionPriority1();
+                if (!op) ParseError(l, "Expression expected");
+                switch (tk) {
+                  case TK_Int: return new VScalarToInt(op, false);
+                  case TK_Float: return new VScalarToFloat(op, false);
+                  case TK_String: return new VCastToString(op);
+                  case TK_Name: return new VCastToName(op);
+                  case TK_Void: return new VDropResult(op);
+                  default: VCFatalError("VC: Ketmar forgot to handle some type in `VParser::ParseExpressionPriority0()`");
+                }
               }
-            }
-            break;
-          default: break;
+              break;
+            default: break;
+          }
+          VExpression *t = ParseTypeWithPtrs(false); // no delegates
+          Lex.Expect(TK_RParen, ERR_MISSING_RPAREN);
+          VExpression *e = ParseExpressionPriority1();
+          return new VStructPtrCast(e, t, l);
         }
-        VExpression *t = ParseTypeWithPtrs(false); // no delegates
-        Lex.Expect(TK_RParen, ERR_MISSING_RPAREN);
-        VExpression *e = ParseExpressionPriority1();
-        return new VStructPtrCast(e, t, l);
       }
       break;
     case TK_Delegate:
@@ -963,7 +981,12 @@ VExpression *VParser::ParseExpressionInternal (int prio, bool allowAssign) {
         op = ParseExpressionInternal(prio, allowAssign); // right-associative
         if (!op) return nullptr;
         switch (oinf->type) {
-          case OperInfo::Unary: return new VUnary((VUnary::EUnaryOp)oinf->oper, op, l);
+          case OperInfo::Unary:
+            if (UnsafeExpr && (VUnary::EUnaryOp)oinf->oper == VUnary::TakeAddress) {
+              return new VUnary(VUnary::TakeAddressForced, op, l);
+            } else {
+              return new VUnary((VUnary::EUnaryOp)oinf->oper, op, l);
+            }
           case OperInfo::UnaryAsterisk: return new VPushPointed(op, l);
           case OperInfo::PrefixIncDec: return new VUnaryMutator((VUnaryMutator::EIncDec)oinf->oper, op, l);
           default: VCFatalError("internal compiler error in unary expression parser");
@@ -1035,9 +1058,23 @@ VExpression *VParser::ParseExpressionInternal (int prio, bool allowAssign) {
 //
 //==========================================================================
 VExpression *VParser::ParseExpression (bool allowAssign) {
-  CheckForLocal = false;
+  const bool oldUnsafeExpr = UnsafeExpr;
+  CheckForLocal = false; UnsafeExpr = false;
   if (!allowAssign && Lex.Token == TK_LParen) allowAssign = true;
-  return ParseExpressionInternal(GetMaxPriority(), allowAssign);
+  VExpression *e = ParseExpressionInternal(GetMaxPriority(), allowAssign);
+  UnsafeExpr = oldUnsafeExpr;
+  return e;
+}
+
+
+//==========================================================================
+//
+//  VParser::ParseTernaryExpressionKeepUnsafeFlag
+//
+//==========================================================================
+VExpression *VParser::ParseTernaryExpressionKeepUnsafeFlag () {
+  CheckForLocal = false;
+  return ParseExpressionInternal(GetTernaryPriority(), /*allowAssign*/false);
 }
 
 
@@ -1047,8 +1084,11 @@ VExpression *VParser::ParseExpression (bool allowAssign) {
 //
 //==========================================================================
 VExpression *VParser::ParseTernaryExpression () {
-  CheckForLocal = false;
-  return ParseExpressionInternal(GetTernaryPriority(), /*allowAssign*/false);
+  const bool oldUnsafeExpr = UnsafeExpr;
+  CheckForLocal = false; UnsafeExpr = false;
+  VExpression *e = ParseExpressionInternal(GetTernaryPriority(), /*allowAssign*/false);
+  UnsafeExpr = oldUnsafeExpr;
+  return e;
 }
 
 
@@ -1058,6 +1098,7 @@ VExpression *VParser::ParseTernaryExpression () {
 //
 //==========================================================================
 VExpression *VParser::ParseAssignExpression () {
+  CheckForLocal = true; UnsafeExpr = false;
   return ParseExpressionInternal(GetAssignPriority(), /*allowAssign*/true);
 }
 
@@ -1603,7 +1644,6 @@ VStatement *VParser::ParseStatement () {
       }
     default:
       // expression
-      CheckForLocal = true;
       VExpression *Expr = ParseAssignExpression();
       if (!Expr) {
         if (!Lex.Check(TK_Semicolon)) {

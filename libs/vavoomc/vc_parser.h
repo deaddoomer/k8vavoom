@@ -39,6 +39,7 @@ private:
   VClass *currClass; // for lambdas
   VSwitch *currSwitch;
   bool CheckForLocal;
+  bool UnsafeExpr;
   int anonLocalCount;
 
   // for error reporting
@@ -61,6 +62,7 @@ private:
   VExpression *ParseExpressionPriority1 (); // indexing, field access
   VExpression *ParseExpressionInternal (int prio, bool allowAssign);
   VExpression *ParseTernaryExpression ();
+  VExpression *ParseTernaryExpressionKeepUnsafeFlag ();
   VExpression *ParseAssignExpression (); // this automatically allows assign
   VExpression *ParseExpression (bool allowAssign=false);
   VLocalDecl *CreateUnnamedLocal (VFieldType type, const TLocation &loc);

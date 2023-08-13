@@ -285,6 +285,11 @@ VExpression *VUnary::DoResolve (VEmitContext &ec) {
           }
           op->RequestAddressOf();
         } else {
+          if (!op->Type.IsUntagged()) {
+            ParseError(Loc, "Cannot take address of safe type '%s'", *op->Type.GetName());
+            delete this;
+            return nullptr;
+          }
           op->RequestAddressOf();
         }
         Type = op->RealType.MakePointerType();
