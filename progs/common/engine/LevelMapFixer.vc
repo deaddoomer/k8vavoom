@@ -20,11 +20,10 @@ enum {
 //  LdrSectorOffsetFloor
 //
 //==========================================================================
-private static final void LdrSectorOffsetFloor (sector_t *sec, float ofs) {
-  if (!sec) return;
-  sec->floor.TexZ += ofs;
-  sec->floor.minz += ofs;
-  sec->floor.maxz += ofs;
+private static final void LdrSectorOffsetFloor (ref sector_t sec, float ofs) {
+  sec.floor.TexZ += ofs;
+  sec.floor.minz += ofs;
+  sec.floor.maxz += ofs;
 }
 
 
@@ -33,11 +32,10 @@ private static final void LdrSectorOffsetFloor (sector_t *sec, float ofs) {
 //  LdrSectorOffsetCeiling
 //
 //==========================================================================
-private static final void LdrSectorOffsetCeiling (sector_t *sec, float ofs) {
-  if (!sec) return;
-  sec->ceiling.TexZ += ofs;
-  sec->ceiling.minz += ofs;
-  sec->ceiling.maxz += ofs;
+private static final void LdrSectorOffsetCeiling (ref sector_t sec, float ofs) {
+  sec.ceiling.TexZ += ofs;
+  sec.ceiling.minz += ofs;
+  sec.ceiling.maxz += ofs;
 }
 
 
@@ -54,10 +52,10 @@ void KnownMapBugFixer () {
     // missing textures
     Sides[Lines[693].sidenum[1]].TopTexture = LdrTexNumForName("BROWN1", TEXTYPE_Wall);
     // fix HOM errors with sectors too low
-    LdrSectorOffsetFloor(&Sectors[9], 8);
-    LdrSectorOffsetFloor(&Sectors[105], 8);
-    LdrSectorOffsetFloor(&Sectors[132], 8);
-    LdrSectorOffsetFloor(&Sectors[137], 8);
+    LdrSectorOffsetFloor(ref Sectors[9], 8);
+    LdrSectorOffsetFloor(ref Sectors[105], 8);
+    LdrSectorOffsetFloor(ref Sectors[132], 8);
+    LdrSectorOffsetFloor(ref Sectors[137], 8);
     printwarn("MAPFIX: Doom: E1M4 detected and fixed");
     return;
   }
@@ -130,9 +128,9 @@ void KnownMapBugFixer () {
     // invalid line sectors
     assert(Sides[Lines[21].sidenum[0]].Sector);
     assert(Sides[Lines[57].sidenum[1]].Sector);
-    Lines[21].frontsector = &Sectors[1];
+    Lines[21].frontsector = cast([unsafe])(&Sectors[1]);
     Sides[Lines[21].sidenum[0]].Sector = Lines[21].frontsector;
-    Lines[57].backsector = &Sectors[1];
+    Lines[57].backsector = cast([unsafe])(&Sectors[1]);
     Sides[Lines[57].sidenum[1]].Sector = Lines[57].backsector;
     printwarn("MAPFIX: Doom: E3M8 detected and fixed");
     return;
@@ -245,8 +243,8 @@ void KnownMapBugFixer () {
   // Doom II: MAP21
   if (MapHashMD5 == "ebdac00e9d25d884b2c8f4b1f0390539") {
     // push ceiling down in glitchy sectors above the stair switches
-    LdrSectorOffsetCeiling(&Sectors[50], -56);
-    LdrSectorOffsetCeiling(&Sectors[54], -56);
+    LdrSectorOffsetCeiling(ref Sectors[50], -56);
+    LdrSectorOffsetCeiling(ref Sectors[54], -56);
     printwarn("MAPFIX: Doom II: MAP21 detected and fixed");
     return;
   }
@@ -333,8 +331,8 @@ void KnownMapBugFixer () {
   if (MapHashMD5 == "add0fac41afb0b3c9b9f3c0006f93805") {
     // Broken door between the hallway that leads to a Torch
     // and the passage that has a Bag of Holding at its end
-    LdrSectorOffsetFloor(&Sectors[86], -128);
-    LdrSectorOffsetCeiling(&Sectors[86], -128);
+    LdrSectorOffsetFloor(ref Sectors[86], -128);
+    LdrSectorOffsetCeiling(ref Sectors[86], -128);
     printwarn("MAPFIX: Heretic: E1M3 detected and fixed");
     return;
   }
@@ -342,17 +340,17 @@ void KnownMapBugFixer () {
   // Heretic: E1M4
   if (MapHashMD5 == "916318d8b06dac2d83424b23e4b66531") {
     // wrong sector offsets
-    LdrSectorOffsetCeiling(&Sectors[0], 8);
-    LdrSectorOffsetCeiling(&Sectors[1], 8);
-    LdrSectorOffsetCeiling(&Sectors[2], 8);
-    LdrSectorOffsetCeiling(&Sectors[3], 8);
-    LdrSectorOffsetCeiling(&Sectors[4], 8);
-    LdrSectorOffsetCeiling(&Sectors[6], 8);
-    LdrSectorOffsetFloor(&Sectors[6], 8);
-    LdrSectorOffsetCeiling(&Sectors[17], 8);
+    LdrSectorOffsetCeiling(ref Sectors[0], 8);
+    LdrSectorOffsetCeiling(ref Sectors[1], 8);
+    LdrSectorOffsetCeiling(ref Sectors[2], 8);
+    LdrSectorOffsetCeiling(ref Sectors[3], 8);
+    LdrSectorOffsetCeiling(ref Sectors[4], 8);
+    LdrSectorOffsetCeiling(ref Sectors[6], 8);
+    LdrSectorOffsetFloor(ref Sectors[6], 8);
+    LdrSectorOffsetCeiling(ref Sectors[17], 8);
     // yellow key door
-    LdrSectorOffsetFloor(&Sectors[284], -8);
-    LdrSectorOffsetCeiling(&Sectors[284], -8);
+    LdrSectorOffsetFloor(ref Sectors[284], -8);
+    LdrSectorOffsetCeiling(ref Sectors[284], -8);
     // missing textures
     Sides[Lines[490].sidenum[1]].BottomTexture = LdrTexNumForName("GRSTNPB", TEXTYPE_Wall);
     Sides[Lines[722].sidenum[0]].BottomTexture = LdrTexNumForName("WOODWL", TEXTYPE_Wall);
@@ -587,7 +585,7 @@ void KnownMapBugFixer () {
     // fix sectors
     foreach (auto idx, auto ref sec; Sectors) {
       if (sec.sectorTag == oldtag && idx != 3686) {
-        //printdebug(" sector #%s has tag #%s", &sec-&Sectors[0], sec.sectorTag);
+        //printdebug(" sector #%s has tag #%s", cast([unsafe])(&sec-&Sectors[0]), sec.sectorTag);
         sec.sectorTag = newtag;
       }
     }

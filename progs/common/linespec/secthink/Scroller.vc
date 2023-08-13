@@ -55,7 +55,7 @@ int SideParts;
 void InitFloor (sector_t *InSector, int XDir, int YDir, int InSpeed) {
   if (!InSector || (XDir|YDir) == 0 || InSpeed < 0) { Destroy(); return; }
   Sector = InSector;
-  Affectee = Sector-&XLevel.Sectors[0];
+  Affectee = cast([unsafe])(Sector-&XLevel.Sectors[0]);
   Type = SCROLLEV_Floor;
   //InSpeed = min(InSpeed, 31); //FIXME
   //float spd = float(1<<InSpeed);
@@ -195,7 +195,7 @@ void InitTextureModel (line_t *Line, line_t *SrcLine) {
     // if 1, then displacement
     // if 2, then accelerative (also if 3)
     foreach (auto i; 0..XLevel.Sectors.length) {
-      if (&XLevel.Sectors[i] == SrcLine->frontsector) {
+      if (cast([unsafe])(&XLevel.Sectors[i]) == SrcLine->frontsector) {
         Control = i;
         break;
       }
@@ -233,7 +233,7 @@ void InitGen (int InType, line_t *SrcLine, int InAffectee) {
   if (!SrcLine || InAffectee < 0 || InAffectee >= XLevel.Sectors.length) { Destroy(); return; }
   Type = InType;
   Affectee = InAffectee;
-  Sector = &XLevel.Sectors[Affectee];
+  Sector = cast([unsafe])(&XLevel.Sectors[Affectee]);
   if (SrcLine->arg2&4) {
     // the line housing the special controls the direction and speed of scrolling
     XSpeed = (SrcLine->v2->x-SrcLine->v1->x);
@@ -260,7 +260,7 @@ void InitGen (int InType, line_t *SrcLine, int InAffectee) {
   if (SrcLine->arg2&3) {
     // if 1, then displacement
     // if 2, then accelerative (also if 3)
-    Control = (SrcLine->frontsector ? SrcLine->frontsector-&XLevel.Sectors[0] : -1);
+    Control = (SrcLine->frontsector ? cast([unsafe])(SrcLine->frontsector-&XLevel.Sectors[0]) : -1);
     if (SrcLine->arg2&2) bAccel = true;
   }
   if (Control != -1) {
@@ -282,7 +282,7 @@ void InitScripted (int InType, int Arg2, int Arg3, int InAffectee) {
   if (InAffectee < 0 || InAffectee >= XLevel.Sectors.length) { Destroy(); return; }
   Type = InType;
   Affectee = InAffectee;
-  Sector = &XLevel.Sectors[Affectee];
+  Sector = cast([unsafe])(&XLevel.Sectors[Affectee]);
   // the speed and direction are parameters to the special
   XSpeed = float(Arg2)*35.0/32.0;
   YSpeed = float(Arg3)*35.0/32.0;
@@ -368,17 +368,17 @@ override void Tick (float DeltaTime) {
         XLevel.Sides[Affectee].Bot.TextureOffset += XDelta;
         XLevel.Sides[Affectee].Bot.RowOffset += YDelta;
       }
-      LineSpecialLevelInfo(Level).ClampSideOffsets(&XLevel.Sides[Affectee]);
+      LineSpecialLevelInfo(Level).ClampSideOffsets(cast([unsafe])(&XLevel.Sides[Affectee]));
       break;
     case SCROLLEV_Floor:
       XLevel.Sectors[Affectee].floor.xoffs += XDelta;
       XLevel.Sectors[Affectee].floor.yoffs += YDelta;
-      LineSpecialLevelInfo(Level).ClampSecPlaneOffsets(&XLevel.Sectors[Affectee].floor);
+      LineSpecialLevelInfo(Level).ClampSecPlaneOffsets(cast([unsafe])(&XLevel.Sectors[Affectee].floor));
       break;
     case SCROLLEV_Ceiling:
       XLevel.Sectors[Affectee].ceiling.xoffs += XDelta;
       XLevel.Sectors[Affectee].ceiling.yoffs += YDelta;
-      LineSpecialLevelInfo(Level).ClampSecPlaneOffsets(&XLevel.Sectors[Affectee].ceiling);
+      LineSpecialLevelInfo(Level).ClampSecPlaneOffsets(cast([unsafe])(&XLevel.Sectors[Affectee].ceiling));
       break;
     case SCROLLEV_Carry:
       CarryScrollX = XDelta;

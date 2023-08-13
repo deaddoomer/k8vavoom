@@ -93,14 +93,19 @@ final void DebugCheckMidTex () {
         float bcz2 = tr.line.backsector.ceiling.GetPointZClamped(*tr.line.v2);
         //if (bcz1 != bcz2) Error("OOPS(back ceiling)");
         printdebug("linedef %d: (f/b secs=%d/%d); ffz=(%f:%f); fcz=(%f:%f); bfz=(%f:%f); bcz=(%f:%f); alpha=%f; special=%s<%s>; arg=(%s,%s,%s,%s,%s)",
-            tr.line-&XLevel.Lines[0],
-            tr.line.frontsector-&XLevel.Sectors[0], tr.line.backsector-&XLevel.Sectors[0],
+            cast([unsafe])(tr.line-&XLevel.Lines[0]),
+            cast([unsafe])(tr.line.frontsector-&XLevel.Sectors[0]),
+            cast([unsafe])(tr.line.backsector-&XLevel.Sectors[0]),
             ffz1, ffz2, fcz1, fcz2, bfz1, bfz2, bcz1, bcz2,
             tr.line.alpha,
             tr.line.special, LineSpecial2Str(tr.line.special),
             tr.line.arg1, tr.line.arg2, tr.line.arg3, tr.line.arg4, tr.line.arg5);
-        printdebug("fsec(%d): ceiling=%f; floor=%f", tr.line.frontsector-&XLevel.Sectors[0], tr.line.frontsector.ceiling.minz, tr.line.frontsector.floor.maxz);
-        printdebug("bsec(%d): ceiling=%f; floor=%f", tr.line.backsector-&XLevel.Sectors[0], tr.line.backsector.ceiling.minz, tr.line.backsector.floor.maxz);
+        printdebug("fsec(%d): ceiling=%f; floor=%f",
+                   cast([unsafe])(tr.line.frontsector-&XLevel.Sectors[0]),
+                   tr.line.frontsector.ceiling.minz, tr.line.frontsector.floor.maxz);
+        printdebug("bsec(%d): ceiling=%f; floor=%f",
+                   cast([unsafe])(tr.line.backsector-&XLevel.Sectors[0]),
+                   tr.line.backsector.ceiling.minz, tr.line.backsector.floor.maxz);
       } else {
         float ffz1 = tr.line.frontsector.floor.GetPointZClamped(*tr.line.v1);
         float ffz2 = tr.line.frontsector.floor.GetPointZClamped(*tr.line.v2);
@@ -109,15 +114,15 @@ final void DebugCheckMidTex () {
         float fcz2 = tr.line.frontsector.ceiling.GetPointZClamped(*tr.line.v2);
         //if (fcz1 != fcz2) Error("OOPS(front ceiling)");
         printdebug("linedef %d: (f sec=%d); ffz=(%f:%f); fcz=(%f:%f); special=%s<%s>; arg=(%s,%s,%s,%s,%s)",
-            tr.line-&XLevel.Lines[0],
-            tr.line.frontsector-&XLevel.Sectors[0],
+            cast([unsafe])(tr.line-&XLevel.Lines[0]),
+            cast([unsafe])(tr.line.frontsector-&XLevel.Sectors[0]),
             ffz1, ffz2, fcz1, fcz2,
             tr.line.special, LineSpecial2Str(tr.line.special),
             tr.line.arg1, tr.line.arg2, tr.line.arg3, tr.line.arg4, tr.line.arg5);
       }
       foreach (auto snum; 0..2) {
         if (tr.line.sidenum[snum] < 0) continue;
-        side_t *sd = &XLevel.Sides[tr.line.sidenum[snum]];
+        side_t *sd = cast([unsafe])(&XLevel.Sides[tr.line.sidenum[snum]]);
         printdebug("side %s: toptex(%d)=%s; midtex(%d)=%s; bottex(%d)=%s", snum,
           sd.TopTexture, GetTextureName(sd.TopTexture),
           sd.MidTexture, GetTextureName(sd.MidTexture),
@@ -196,10 +201,10 @@ private final bool DebugTraceLineEx (TVec org, TVec dir, float distance, bool al
         opening_t *open = XLevel.LineOpenings(li, hitPoint, SPF_NOBLOCKING, stopat3dmidtex);
         if (open) {
           printdebug("SKYFLAT: %d (%s)", Level.Game.skyflatnum, GetTextureName(Level.Game.skyflatnum));
-          printdebug(":: line #%d (flags=0x%08x) ::", li-&XLevel.Lines[0], li->flags);
+          printdebug(":: line #%d (flags=0x%08x) ::", cast([unsafe])(li-&XLevel.Lines[0]), li->flags);
           foreach (auto snum; 0..2) {
             if (li.sidenum[snum] < 0) continue;
-            side_t *sd = &XLevel.Sides[li.sidenum[snum]];
+            side_t *sd = cast([unsafe])(&XLevel.Sides[li.sidenum[snum]]);
             printdebug("side %s: toptex(%d)=%s; midtex(%d)=%s; bottex(%d)=%s", snum,
               sd.TopTexture, GetTextureName(sd.TopTexture),
               sd.MidTexture, GetTextureName(sd.MidTexture),

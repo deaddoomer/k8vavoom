@@ -118,10 +118,10 @@ void PerformLDefSpecialTranslation (VLevel InLevel, int OldSpec, spec_trans_t *t
     line->SpacFlags = 0;
     line->flags &= ~(ML_REPEAT_SPECIAL|ML_MONSTERSCANACTIVATE|ML_KEEPDATA);
 
-    printwarn("TRANSLATION: linedef #%s, special %d -- NOT FOUND!", line-&InLevel.Lines[0], OldSpec);
+    printwarn("TRANSLATION: linedef #%s, special %d -- NOT FOUND!", cast([unsafe])(line-&InLevel.Lines[0]), OldSpec);
     if (GetCvarB('trans_debug_log')) {
       print("=================================================");
-      print("***TRANS: linedef #%s, special %d -- NOT FOUND!", line-&InLevel.Lines[0], OldSpec);
+      print("***TRANS: linedef #%s, special %d -- NOT FOUND!", cast([unsafe])(line-&InLevel.Lines[0]), OldSpec);
       print("%s items in translation table", spec_trans_tab.length);
       for (auto idx = spec_trans_tab.firstIndex(); spec_trans_tab.isValidIndex(idx); idx = spec_trans_tab.nextIndex(idx)) {
         auto key = spec_trans_tab.keyAtIndex(idx); // pointer to key

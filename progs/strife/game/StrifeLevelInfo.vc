@@ -182,7 +182,9 @@ override int ExecuteActionSpecial (int Special, int Arg1, int Arg2, int Arg3,
     // Arg3 is tag
     bool isdm = (Level.Game.netgame && Level.Game.deathmatch);
     EntityEx e = EntityEx(ent);
-    printdebug("%C: exec special #%d (%d,%d,%d,%d,%d) (A=%C; line=%d; side=%d)", self, Special, Arg1, Arg2, Arg3, Arg4, Arg5, ent, (line ? line-&XLevel.Lines[0] : -1), side);
+    printdebug("%C: exec special #%d (%d,%d,%d,%d,%d) (A=%C; line=%d; side=%d)", self, Special,
+               Arg1, Arg2, Arg3, Arg4, Arg5, ent,
+               (line ? cast([unsafe])(line-&XLevel.Lines[0]) : -1), side);
     int type = Arg2;
     int tag = Arg3;
     int res = 0;

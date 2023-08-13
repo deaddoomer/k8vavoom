@@ -494,11 +494,11 @@ void MakeSlope (VLevel InLevel, mthing_t *mthing, bool IsCeiling) {
     line_t *line = sec->lines[i];
     if (mthing->tid == line->arg1) {
       if (!IsCeiling) {
-        plane = &sec->floor;
+        plane = cast([unsafe])(&sec->floor);
         p1 = vector(line->v1->x, line->v1->y, plane->minz);
         p2 = vector(line->v2->x, line->v2->y, plane->minz);
       } else {
-        plane = &sec->ceiling;
+        plane = cast([unsafe])(&sec->ceiling);
         p1 = vector(line->v1->x, line->v1->y, plane->maxz);
         p2 = vector(line->v2->x, line->v2->y, plane->maxz);
       }
@@ -533,23 +533,23 @@ void SlopeLineToPoint (VLevel InLevel, mthing_t *mthing, bool IsCeiling) {
 
   sector_t *sec = InLevel.PointInSector(vector(mthing->x, mthing->y, 0.0));
   if (!IsCeiling) {
-    plane = &sec->floor;
+    plane = cast([unsafe])(&sec->floor);
   } else {
-    plane = &sec->ceiling;
+    plane = cast([unsafe])(&sec->ceiling);
   }
   p1 = vector(mthing->x, mthing->y, 0.0);
   p1.z = GetPlanePointZ(ref *plane, p1)+mthing->height;
 
   foreach (auto i; 0..InLevel.Lines.length) {
-    line_t *line = &InLevel.Lines[i];
+    line_t *line = cast([unsafe])(&InLevel.Lines[i]);
     if (!IsLineTagEqual(line, mthing->args[1-1])) continue;
 
     sec = (PointOnPlaneSide(p1, *line) == 0 ? line->frontsector : line->backsector);
     if (sec == nullptr) continue;
     if (!IsCeiling) {
-      plane = &sec->floor;
+      plane = cast([unsafe])(&sec->floor);
     } else {
-      plane = &sec->ceiling;
+      plane = cast([unsafe])(&sec->ceiling);
     }
 
     p2 = *line->v1;
@@ -590,11 +590,11 @@ void SetSlope (VLevel InLevel, mthing_t *mthing, bool IsCeiling) {
   sector_t *sec = InLevel.PointInSector(vector(mthing->x, mthing->y, 0.0));
   if (!sec) FatalError("point (%f,%f) is not in level", mthing->x, mthing->y);
   if (!IsCeiling) {
-    plane = &sec->floor;
+    plane = cast([unsafe])(&sec->floor);
     //if (plane.normal.z == 0) FatalError("SetSlope: invalid floor in sector #%d (%v)", calcSecIdx(InLevel, sec), plane.normal);
     //print("SetSlope; sector %d (floor); %s; plane.dist=%f; plane.normal=%v", calcSecIdx(InLevel, sec), plane, plane.dist, plane.normal);
   } else {
-    plane = &sec->ceiling;
+    plane = cast([unsafe])(&sec->ceiling);
     //if (plane.normal.z == 0) FatalError("SetSlope: invalid ceiling in sector #%d (%v)", calcSecIdx(InLevel, sec), plane.normal);
     //print("SetSlope; sector %d (ceiling); %s; plane.dist=%f; plane.normal=%v", calcSecIdx(InLevel, sec), plane, plane.dist, plane.normal);
   }
@@ -622,7 +622,7 @@ void SetSlope (VLevel InLevel, mthing_t *mthing, bool IsCeiling) {
     foreach (auto lidx, line_t *ln; sec.lines) {
       foreach (int snum; 0..2) {
         if (ln.sidenum[snum] >= 0) {
-          side_t *sd = &InLevel.Sides[ln.sidenum[snum]];
+          side_t *sd = cast([unsafe])(&InLevel.Sides[ln.sidenum[snum]]);
           // floor
           if (!IsCeiling && sd.BottomTexture <= 0) {
             //print("F-FUUUUUUUU! (%s:%s) %s", lidx, snum, sec.floor.pic);
@@ -652,7 +652,7 @@ bool SetVertexHeights (VLevel InLevel, int ThingID) {
   foreach (auto i; 0..InLevel.Vertexes.length) InLevel.Vertexes[i].z = 0.1;
 
   foreach (auto j; 0..InLevel.Things.length) {
-    mthing_t *mthing = &InLevel.Things[j];
+    mthing_t *mthing = cast([unsafe])(&InLevel.Things[j]);
     if (mthing->type == ThingID) {
       foreach (auto i; 0..InLevel.Vertexes.length) {
         if (InLevel.Vertexes[i].x == mthing->x &&
@@ -692,7 +692,7 @@ void MakeVertexFloorHeights (VLevel InLevel) {
   if (!SetVertexHeights(InLevel, FLOOR_VERTEX_HEIGHT_TYPE)) return;
 
   foreach (auto i; 0..InLevel.Sectors.length) {
-    sector_t *sec = &InLevel.Sectors[i];
+    sector_t *sec = cast([unsafe])(&InLevel.Sectors[i]);
     if (sec.lines.length != 3) continue;
     p1 = *sec->lines[0]->v1;
     p2 = *sec->lines[0]->v2;
@@ -733,7 +733,7 @@ void MakeVertexCeilingHeights (VLevel InLevel) {
   if (!SetVertexHeights(InLevel, CEILING_VERTEX_HEIGHT_TYPE)) return;
 
   foreach (auto i; 0..InLevel.Sectors.length) {
-    sector_t *sec = &InLevel.Sectors[i];
+    sector_t *sec = cast([unsafe])(&InLevel.Sectors[i]);
     if (sec.lines.length != 3) continue;
     p1 = *sec->lines[0]->v1;
     p2 = *sec->lines[0]->v2;
@@ -795,7 +795,7 @@ void AlignPlane (VLevel InLevel, sector_t *sec, line_t *line, int which, int lin
 
   sector_t *refsec = (line.frontsector == sec ? line.backsector : line.frontsector);
 
-  sec_plane_t *srcplane = (which == 0 ? &sec.floor : &sec.ceiling);
+  sec_plane_t *srcplane = (which == 0 ? cast([unsafe])(&sec.floor) : cast([unsafe])(&sec.ceiling));
   float srcheight = (which == 0 ? sec.floor.TexZ : sec.ceiling.TexZ);
   float destheight = (which == 0 ? refsec.floor.TexZ : refsec.ceiling.TexZ);
 
@@ -823,7 +823,7 @@ void AlignPlane (VLevel InLevel, sector_t *sec, line_t *line, int which, int lin
     foreach (auto lidx, line_t *ln; sec.lines) {
       foreach (int snum; 0..2) {
         if (ln.sidenum[snum] >= 0) {
-          side_t *sd = &InLevel.Sides[ln.sidenum[snum]];
+          side_t *sd = cast([unsafe])(&InLevel.Sides[ln.sidenum[snum]]);
           // floor
           if (which == 0 && sd.BottomTexture <= 0) {
             //print("F-FUUUUUUUU! (%s:%s) %s", lidx, snum, sec.floor.pic);
@@ -848,7 +848,7 @@ void AlignPlane (VLevel InLevel, sector_t *sec, line_t *line, int which, int lin
 //==========================================================================
 void SetSlopes (VLevel InLevel) {
   foreach (auto i; 0..InLevel.Lines.length) {
-    line_t *line = &InLevel.Lines[i];
+    line_t *line = cast([unsafe])(&InLevel.Lines[i]);
     if (line.special == LNSPEC_PlaneAlign) {
       line.special = 0;
       line.lineTag = InLevel.Lines[i].arg3;
@@ -884,7 +884,7 @@ void SetSlopes (VLevel InLevel) {
 //==========================================================================
 void ProcessCopySlopes (VLevel InLevel) {
   foreach (auto i; 0..InLevel.Lines.length) {
-    line_t *line = &InLevel.Lines[i];
+    line_t *line = cast([unsafe])(&InLevel.Lines[i]);
     if (line.special == LNSPEC_PlaneCopy) {
       line.special = 0;
       CopyPlaneBetweenTaggedSectors(InLevel, line.frontsector, line.arg1, IsCeiling:false); // front floor
@@ -971,8 +971,8 @@ void SpawnExtraFloors (VLevel InLevel, line_t *line, bool isEDGE) {
   }
   int tag = line->arg1+(line->arg1&8 ? 0 : line->arg5);
   foreach (auto j; 0..InLevel.Sectors.length) {
-    if (IsSectorTagEqual(&InLevel.Sectors[j], tag)) {
-      InLevel.AddExtraFloor(line, &InLevel.Sectors[j]);
+    if (IsSectorTagEqual(cast([unsafe])(&InLevel.Sectors[j]), tag)) {
+      InLevel.AddExtraFloor(line, cast([unsafe])(&InLevel.Sectors[j]));
     }
   }
 }
@@ -1267,7 +1267,7 @@ override void SpawnWorld (VLevel InLevel) {
   // set up tagged lines
   if (!InLevel.bTextMap) {
     foreach (auto i; 0..InLevel.Lines.length) {
-      line_t *line = &InLevel.Lines[i];
+      line_t *line = cast([unsafe])(&InLevel.Lines[i]);
       switch (line->special) {
         case LNSPEC_LineSetIdentification:
           line->special = 0;
@@ -1320,7 +1320,7 @@ override void SpawnWorld (VLevel InLevel) {
   //   CEILING_VERTEX_HEIGHT_TYPE
 
   foreach (auto i; 0..InLevel.Things.length) {
-    mthing_t *mthing = &InLevel.Things[i];
+    mthing_t *mthing = cast([unsafe])(&InLevel.Things[i]);
     switch (mthing->type) {
       case FLOOR_SLOPE_TYPE:
         //print("SLOPE: FLOOR_SLOPE_TYPE");
@@ -1356,7 +1356,7 @@ override void SpawnWorld (VLevel InLevel) {
   }
 
   foreach (auto i; 0..InLevel.Things.length) {
-    mthing_t *mthing = &InLevel.Things[i];
+    mthing_t *mthing = cast([unsafe])(&InLevel.Things[i]);
     if (mthing->type == COPY_FLOOR_PLANE_TYPE ||
         mthing->type == COPY_CEILING_PLANE_TYPE)
     {
@@ -1376,7 +1376,7 @@ override void SpawnWorld (VLevel InLevel) {
 
   // set up 3D floors, transfers of light, etc.
   foreach (auto i; 0..InLevel.Lines.length) {
-    line_t *line = &InLevel.Lines[i];
+    line_t *line = cast([unsafe])(&InLevel.Lines[i]);
     switch (line->special) {
       // arg5 is non-zero for EDGE "thin floors"
       // we need to set ceiling height equal to floor height in their control sector
@@ -1494,13 +1494,13 @@ override void SpawnWorld (VLevel InLevel) {
 
   // process translucent lines
   foreach (auto i; 0..InLevel.Lines.length) {
-    line_t *line = &InLevel.Lines[i];
+    line_t *line = cast([unsafe])(&InLevel.Lines[i]);
     switch (line->special) {
       case LNSPEC_LineTranslucent:
         alpha = fclamp(float(line->arg2)/255.0, 0, 255);
         if (line->arg1) {
           foreach (auto j; 0..InLevel.Lines.length) {
-            if (IsLineTagEqual(&InLevel.Lines[j], line->arg1)) {
+            if (IsLineTagEqual(cast([unsafe])(&InLevel.Lines[j]), line->arg1)) {
               InLevel.Lines[j].alpha = alpha;
               if (line->arg3 == 1) InLevel.Lines[j].flags |= ML_ADDITIVE;
             }
@@ -1519,7 +1519,7 @@ override void SpawnWorld (VLevel InLevel) {
 
   // spawn polyobjects
   foreach (auto i; 0..InLevel.Things.length) {
-    mthing_t *mthing = &InLevel.Things[i];
+    mthing_t *mthing = cast([unsafe])(&InLevel.Things[i]);
     switch (mthing->type) {
       case PO_SPAWN_TYPE_HEXEN:
       case PO_SPAWNCRUSH_TYPE_HEXEN:

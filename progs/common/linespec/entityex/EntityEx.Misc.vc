@@ -183,10 +183,17 @@ void FixLightPosition (sector_t *asector, ref TVec org, optional int thingidx) {
     float pdist = DotProduct(org, ldef.normal)-ldef.dist;
     if (fabs(pdist) >= 1.0f) continue;
     mdir = (mdir+ldef.normal)/2;
-    if (specified_thingidx) printdebug("sector #%d: line #%d: light #%d in the wall!", asector-&XLevel.Sectors[0], ldef-&XLevel.Lines[0], thingidx);
+    if (thingidx!specified) {
+      printdebug("sector #%d: line #%d: light #%d in the wall!",
+                 cast([unsafe])(asector-&XLevel.Sectors[0]),
+                 cast([unsafe])(ldef-&XLevel.Lines[0]), thingidx);
+    }
   }
   if (mdir) {
-    if (specified_thingidx) printdebug("sector #%d: move light #%d out of the walls with %s!", asector-&XLevel.Sectors[0], thingidx, mdir);
+    if (thingidx!specified) {
+      printdebug("sector #%d: move light #%d out of the walls with %s!",
+                 cast([unsafe])(asector-&XLevel.Sectors[0]), thingidx, mdir);
+    }
     org += mdir*4;
   }
 }
@@ -1041,7 +1048,7 @@ final void NightmareRespawn () {
     // inherit attributes from deceased one
     A = SpawnEntityChecked(class!EntityEx, class!EntityEx(Class), vector(x, y, z), default, default, AllowReplace:false);
     if (A) {
-      Level.CopyMThing(&SpawnPoint, &A.SpawnPoint);
+      Level.CopyMThing(cast([unsafe])(&SpawnPoint), cast([unsafe])(&A.SpawnPoint));
       A.Angles.yaw = float(45*(SpawnPoint.angle/45));
 
       if (SpawnPoint.options&LineSpecialLevelInfo::MTF_AMBUSH) A.bAmbush = true;
@@ -1795,7 +1802,7 @@ override void OnMapSpawn (mthing_t *mthing) {
       return;
     }
 
-    Level.CopyMThing(mthing, &SpawnPoint);
+    Level.CopyMThing(mthing, cast([unsafe])(&SpawnPoint));
 
     float x = mthing->x;
     float y = mthing->y;
@@ -4329,7 +4336,7 @@ final bool UseLinesOld (float UseRange, float UseThingRange, name FailSound,
 //==========================================================================
 final bool CheckSwitchRange (line_t *ld, int side, TVec hitpoint, ref bool failSound) {
   if (ld.sidenum[side] < 0) return false; // wtf?!
-  side_t *sd = &XLevel.Sides[ld.sidenum[side]];
+  side_t *sd = cast([unsafe])(&XLevel.Sides[ld.sidenum[side]]);
 
   float ehgt = fmax(0.0, Height);
   //float ez0 = Origin.z;

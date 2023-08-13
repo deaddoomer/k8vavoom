@@ -204,7 +204,10 @@ final void queueRefreshNode (BotPathNode node, optional bool forced) {
   if (refreshMap.find(node.index)) return;
   if (bot_developer_messages_path) printmsg(PMSG.BotDevPath, "queueRefreshNode(2): #%d", node.index);
   // queue this node, and all adjacent nodes
-  if (bot_developer_messages_path) printmsg(PMSG.BotDevPath, "queuing node #%d (sector #%d) for refresh", node.index, node.sub.sector-&bot.player.MO.XLevel.Sectors[0]);
+  if (bot_developer_messages_path) {
+    printmsg(PMSG.BotDevPath, "queuing node #%d (sector #%d) for refresh",
+             node.index, cast([unsafe])(node.sub.sector-&bot.player.MO.XLevel.Sectors[0]));
+  }
   refreshMap.put(node.index, true);
   //node.queryCounter = queryCounter;
 }
@@ -224,7 +227,10 @@ final void refreshNovePassability (BotPathNode node) {
   EntityEx::FakeDoorInfo savedPlane;
   VLevel lev = bot.player.MO.XLevel;
 
-  if (bot_developer_messages_path) printmsg(PMSG.BotDevPath, "updating sub #%d (sector #%d) passability (old is %B)", node.index, node.sub.sector-&lev.Sectors[0], node.passable);
+  if (bot_developer_messages_path) {
+    printmsg(PMSG.BotDevPath, "updating sub #%d (sector #%d) passability (old is %B)",
+             node.index, cast([unsafe])(node.sub.sector-&lev.Sectors[0]), node.passable);
+  }
 
   fakeOpenDoor(node, out savedPlane);
   scope(exit) restoreFakeOpenDoor(savedPlane);
@@ -239,7 +245,7 @@ final void refreshNovePassability (BotPathNode node) {
     node.passable = false;
     TVec center = lev.GetSubsectorCenter(sub);
     foreach (auto lidx; sub.firstline..sub.firstline+sub.numlines) {
-      auto seg = &lev.Segs[lidx];
+      auto seg = cast([unsafe])(&lev.Segs[lidx]);
       TVec dir = center-(*seg->v1);
       if (dir.length2DSquared < 4*4) continue;
       cpos = (*seg->v1)+(dir.normalise2D)*3.5;
@@ -259,7 +265,11 @@ final void refreshNovePassability (BotPathNode node) {
   }
 
   if (node.passable != oldPassable) {
-    if (bot_developer_messages_path) printmsg(PMSG.BotDevPath, "node #%d becomes %svalid (door:%B; sector: %s)", node.index, (node.passable ? "" : "in"), node.door, node.sub.sector-&lev.Sectors[0]);
+    if (bot_developer_messages_path) {
+      printmsg(PMSG.BotDevPath, "node #%d becomes %svalid (door:%B; sector: %s)", node.index,
+               (node.passable ? "" : "in"), node.door,
+               cast([unsafe])(node.sub.sector-&lev.Sectors[0]));
+    }
   }
 }
 
@@ -271,7 +281,7 @@ transient dictionary!(int, int) twoWayRefresh;
 final void refreshNodeExit (BotPathNode node, int exitnum) {
   EntityEx botmo = EntityEx(bot.player.MO);
   VLevel lev = botmo.XLevel;
-  auto tr = &node.exits[exitnum];
+  auto tr = cast([unsafe])(&node.exits[exitnum]);
 
   auto sec = tr.sub.sector;
   //if (sec.floor.dist == tr.floorDist && sec.ceiling.dist == tr.ceilDist) return;
@@ -355,7 +365,10 @@ final void refreshAllNodesInMap () {
     int key = refreshMap.keyAtIndex(idx);
     auto node = nodes[key];
     node.queryCounter = 0;
-    if (bot_developer_messages_path) printmsg(PMSG.BotDevPath, "refreshing node #%d (sector #%d)", node.index, node.sub.sector-&bot.player.MO.XLevel.Sectors[0]);
+    if (bot_developer_messages_path) {
+      printmsg(PMSG.BotDevPath, "refreshing node #%d (sector #%d)", node.index,
+               cast([unsafe])(node.sub.sector-&bot.player.MO.XLevel.Sectors[0]));
+    }
     refreshNode(node);
   }
 
@@ -376,7 +389,10 @@ final void refreshAllNodesInMap () {
     if (!tmpNodeInds.length) break;
     foreach (auto nidx; tmpNodeInds) {
       auto node = nodes[nidx];
-      if (bot_developer_messages_path) printmsg(PMSG.BotDevPath, "secondary refreshing node #%d (sector #%d)", node.index, node.sub.sector-&bot.player.MO.XLevel.Sectors[0]);
+      if (bot_developer_messages_path) {
+        printmsg(PMSG.BotDevPath, "secondary refreshing node #%d (sector #%d)", node.index,
+                 cast([unsafe])(node.sub.sector-&bot.player.MO.XLevel.Sectors[0]));
+      }
       refreshNode(node);
     }
   }
@@ -399,7 +415,7 @@ final void Setup (BotPlayerBase abot) {
   // create nodes
   nodes.length = lev.Subsectors.length;
   foreach (auto idx, ref auto node; nodes) {
-    GameObject::subsector_t *sub = &lev.Subsectors[idx];
+    GameObject::subsector_t *sub = cast([unsafe])(&lev.Subsectors[idx]);
     node = BotPathNode.CreateNew(lev);
     node.sub = sub;
     node.index = idx;
@@ -423,7 +439,7 @@ final void Setup (BotPlayerBase abot) {
 
     // create exits
     foreach (auto lidx; sub.firstline..sub.firstline+sub.numlines) {
-      auto seg = &lev.Segs[lidx];
+      auto seg = cast([unsafe])(&lev.Segs[lidx]);
       if (!seg.partner || seg.partner.frontsub == seg.frontsub) continue; // not interesting
 
       GameObject::line_t *ld = seg.linedef;
@@ -436,7 +452,7 @@ final void Setup (BotPlayerBase abot) {
       auto tr = node.exits.alloc();
       tr.seg = seg;
       tr.sub = seg.partner.frontsub;
-      tr.subnum = tr.sub-&lev.Subsectors[0];
+      tr.subnum = cast([unsafe])(tr.sub-&lev.Subsectors[0]);
 
       //if (tr.sub.sector != sub.sector) node.sectorExits[$] = node.exits.length-1;
 
@@ -501,17 +517,18 @@ final bool BuildPath (TVec from, GameObject::subsector_t *fromsub, TVec dest, Ga
   // early exit: same subsector is always reachable
   if (fromsub == destsub) {
     PathArrayClear();
-    PathArrayPushNode(nodes[fromsub-&lev.Subsectors[0]]);
+    PathArrayPushNode(nodes[cast([unsafe])(fromsub-&lev.Subsectors[0])]);
     pathCost = 0;
     return true;
   }
 
-  queueRefreshNode(nodes[fromsub-&lev.Subsectors[0]]);
-  queueRefreshNode(nodes[destsub-&lev.Subsectors[0]]);
+  queueRefreshNode(nodes[cast([unsafe])(fromsub-&lev.Subsectors[0])]);
+  queueRefreshNode(nodes[cast([unsafe])(destsub-&lev.Subsectors[0])]);
 
   for (;;) {
     refreshAllNodesInMap();
-    bool res = Solve(nodes[fromsub-&lev.Subsectors[0]], nodes[destsub-&lev.Subsectors[0]]);
+    bool res = Solve(nodes[cast([unsafe])(fromsub-&lev.Subsectors[0])],
+                     nodes[cast([unsafe])(destsub-&lev.Subsectors[0])]);
     if (refreshMap.length == 0) return res;
     if (bot_developer_messages_path) printmsg(PMSG.BotDevPath, "*** MAP CHANGED! ***");
   }

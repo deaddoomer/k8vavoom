@@ -117,8 +117,8 @@ override void OnDraw()
 void IM_InitHubText()
 {
   IntermissionText *itext =
-    ClGame.intermissionPhase == ClientGame::IM_Phase.Leave ? &ClGame.im.LeaveText :
-    ClGame.intermissionPhase == ClientGame::IM_Phase.Enter ? &ClGame.im.EnterText :
+    ClGame.intermissionPhase == ClientGame::IM_Phase.Leave ? cast([unsafe])(&ClGame.im.LeaveText) :
+    ClGame.intermissionPhase == ClientGame::IM_Phase.Enter ? cast([unsafe])(&ClGame.im.EnterText) :
     nullptr;
 
   if (!itext.Text)

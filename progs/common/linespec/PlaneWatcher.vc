@@ -64,9 +64,9 @@ void Start (Entity it, line_t *aline, int alineSide, bool ceiling, int tag,
   if (XLevel.FindSectorFromTag(out Sector, tag) >= 0) {
     //Sector = &XLevel.Sectors[secnum];
     if (bCeiling) {
-      plane = &Sector->ceiling;
+      plane = cast([unsafe])(&Sector->ceiling);
     } else {
-      plane = &Sector->floor;
+      plane = cast([unsafe])(&Sector->floor);
     }
     LastD = plane->dist;
     //FIXME plane.ChangeHeight();

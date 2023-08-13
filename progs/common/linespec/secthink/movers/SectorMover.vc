@@ -125,14 +125,14 @@ final bool MoveLinkedSectorsPlane (sector_t *sec, int floorOrCeiling, const ref 
   if (!floordelta) return true;
   float texdelta = (!floorOrCeiling ? sec->floor.TexZ-saved.lastTexZ : sec->ceiling.TexZ-saved.lastTexZ);
 
-  int sidx = sec-&XLevel.Sectors[0];
+  int sidx = cast([unsafe])(sec-&XLevel.Sectors[0]);
   if (sidx >= XLevel.sectorlinkStart.length) return true;
 
   origLinkPlanes.reset(); // so we would be able to restore them
   int snum = XLevel.sectorlinkStart[sidx];
   while (snum >= 0) {
     //print("moving linked sector #%d (control is #%d)", XLevel.sectorlinks[snum].index, sidx);
-    sector_t *sc = &XLevel.Sectors[XLevel.sectorlinks[snum].index];
+    sector_t *sc = cast([unsafe])(&XLevel.Sectors[XLevel.sectorlinks[snum].index]);
     if (!forced) {
       auto sv = origLinkPlanes.alloc();
       if (!floorOrCeiling) {

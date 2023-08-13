@@ -225,9 +225,9 @@
   if (SpeechNum) {
     // drop stuff as determined by conversation
     if (SpeechNum < 0) {
-      Speech = &XLevel.GenericSpeeches[-SpeechNum-1];
+      Speech = cast([unsafe])(&XLevel.GenericSpeeches[-SpeechNum-1]);
     } else {
-      Speech = &XLevel.LevelSpeeches[SpeechNum-1];
+      Speech = cast([unsafe])(&XLevel.LevelSpeeches[SpeechNum-1]);
     }
     DropItemType = LineSpecialLevelInfo(Level).GetClassFromID(Speech->DropItem);
     if (DropItemType && drop) {

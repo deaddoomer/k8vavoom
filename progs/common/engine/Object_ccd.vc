@@ -149,7 +149,7 @@ static final float CD_SweepLineAABBlpl (const ref CD_LinePlanes linePlanes, TVec
   int phit = -1;
 
   foreach (auto pidx; 0..linePlanes.count) {
-    TPlane *plane = &linePlanes.planes[pidx];
+    TPlane plane = linePlanes.planes[pidx];
     // box
     // line plane normal z is always zero, so don't bother checking it
     TVec offset = vector((plane.normal.x < 0.0f ? bmax.x : bmin.x), (plane.normal.y < 0.0f ? bmax.y : bmin.y), /*(plane.normal.z < 0.0f ? bmax.z : bmin.z)*/bmin.z);

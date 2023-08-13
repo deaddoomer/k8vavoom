@@ -210,7 +210,7 @@ override void SpawnSpecials () {
 
   // init special sectors
   foreach (i; 0..XLevel.Sectors.length) {
-    sector = &XLevel.Sectors[i];
+    sector = cast([unsafe])(&XLevel.Sectors[i]);
     if (!sector->special) continue;
     if (sector->special&SECSPEC_SECRET_MASK) ++TotalSecret; // secret sector
     switch (sector->special&SECSPEC_BASE_MASK) {
@@ -316,7 +316,7 @@ override void SpawnSpecials () {
 
   // init line effects
   foreach (i; 0..XLevel.Lines.length) {
-    line_t *line = &XLevel.Lines[i];
+    line_t *line = cast([unsafe])(&XLevel.Lines[i]);
     if (!line.special) continue;
     bool notinteresting = false;
     switch (line.special) {
@@ -383,7 +383,7 @@ override void SpawnSpecials () {
       if (frontClosed != backClosed && (frontClosed || backClosed)) {
         // ok, some sector is closed, check if we need to transfer texture
         int sdidx = (backClosed ? 0 : 1);
-        side_t *fside = &XLevel.Sides[line.sidenum[sdidx]];
+        side_t *fside = cast([unsafe])(&XLevel.Sides[line.sidenum[sdidx]]);
         if (!fside.TopTexture && fside.MidTexture && !fside.BottomTexture) {
           //print("ldef #%s: toptex=%s; csn=%s; midtex=%s; bottex=%s", line-&XLevel.Lines[0], fside.TopTexture, sdidx, fside.MidTexture, fside.BottomTexture);
           fside.TopTexture = fside.MidTexture;
@@ -1711,14 +1711,14 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
   int SecNum;
   if (Arg1) {
     foreach (SecNum; 0..XLevel.Sectors.length) {
-      if (IsSectorTagEqual(&XLevel.Sectors[SecNum], Arg1)) break;
+      if (IsSectorTagEqual(cast([unsafe])(&XLevel.Sectors[SecNum]), Arg1)) break;
     }
   } else {
     SecNum = 1;
   }
 
   while (SecNum >= 0 && SecNum < XLevel.Sectors.length) {
-    sec = (Arg1 ? &XLevel.Sectors[SecNum] : Line->backsector);
+    sec = (Arg1 ? cast([unsafe])(&XLevel.Sectors[SecNum]) : Line->backsector);
 
     //OldSecNum = /*SecNum*/Sec-&XLevel.Sectors[0]; //jff 3/4/98 preserve loop index
     //int SecNum = OldSecNum;
@@ -1762,7 +1762,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
           }
 
           sec = TSec;
-          SecNum = TSec-&XLevel.Sectors[0];
+          SecNum = cast([unsafe])(TSec-&XLevel.Sectors[0]);
 
           Floor = SpawnThinker(FloorMover);
           Floor.InitStair(sec, Arg1, Arg2, Arg3, Arg4, Arg5, Generic, Height);
@@ -1780,7 +1780,7 @@ override void StartPlaneWatcher (Entity it, line_t *line, int lineSide,
     ++SecNum;
     if (SecNum < 0 || SecNum > XLevel.Sectors.length) break;
     while (SecNum < XLevel.Sectors.length) {
-      if (IsSectorTagEqual(&XLevel.Sectors[SecNum], Arg1)) break;
+      if (IsSectorTagEqual(cast([unsafe])(&XLevel.Sectors[SecNum]), Arg1)) break;
       ++SecNum;
     }
   }
@@ -2882,7 +2882,7 @@ override int AcsPolyRotateEx (int po, int speed, float deltaangle, int moveflags
   for (int hidx = XLevel.FindSectorFromTag(out sec, Line->arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out sec, Line->arg1, hidx))
   {
-    int secnum = sec-&XLevel.Sectors[0];
+    int secnum = cast([unsafe])(sec-&XLevel.Sectors[0]);
     Scroller Scroll = SpawnThinker(Scroller);
     if (Scroll && !Scroll.IsDestroyed) {
       Scroll.InitGen(Scroller::SCROLLEV_Ceiling, Line, secnum);
@@ -2902,7 +2902,7 @@ override int AcsPolyRotateEx (int po, int speed, float deltaangle, int moveflags
   for (int hidx = XLevel.FindSectorFromTag(out sec, Line->arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out sec, Line->arg1, hidx))
   {
-    int secnum = sec-&XLevel.Sectors[0];
+    int secnum = cast([unsafe])(sec-&XLevel.Sectors[0]);
     if (Line->arg3 != 1) {
       // scroll the floor texture
       Scroller Scroll = SpawnThinker(Scroller);
@@ -3099,7 +3099,7 @@ override int AcsPolyRotateEx (int po, int speed, float deltaangle, int moveflags
   for (int hidx = XLevel.FindSectorFromTag(out sec, Arg1); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out sec, Arg1, hidx))
   {
-    int secnum = sec-&XLevel.Sectors[0];
+    int secnum = cast([unsafe])(sec-&XLevel.Sectors[0]);
     Sc = SpawnThinker(Scroller);
     if (Sc && !Sc.IsDestroyed) {
       Sc.InitScripted(Type, Arg2, Arg3, secnum);
@@ -3384,7 +3384,7 @@ name ConvertSpecialDamageType (int mod) {
   {
     sec.floor.xoffs = XOffs;
     sec.floor.yoffs = YOffs;
-    ClampSecPlaneOffsets(&sec.floor);
+    ClampSecPlaneOffsets(cast([unsafe])(&sec.floor));
   }
   return true;
 }
@@ -3404,7 +3404,7 @@ name ConvertSpecialDamageType (int mod) {
   {
     sec.ceiling.xoffs = XOffs;
     sec.ceiling.yoffs = YOffs;
-    ClampSecPlaneOffsets(&sec.ceiling);
+    ClampSecPlaneOffsets(cast([unsafe])(&sec.ceiling));
   }
   return true;
 }
@@ -3621,7 +3621,7 @@ name ConvertSpecialDamageType (int mod) {
        Line = XLevel.FindLine(Arg1, ref Searcher))
   {
     if (Line->sidenum[Arg4] < 0) continue;
-    side_t *Side = &XLevel.Sides[Line->sidenum[Arg4]];
+    side_t *Side = cast([unsafe])(&XLevel.Sides[Line->sidenum[Arg4]]);
 
     // X offset
     if (Arg2 != NoChange) {
@@ -5086,7 +5086,7 @@ private transient array!Entity recSoundSectorEntities; // will be collected in n
   sector_t *sec;
 
   foreach (int i; 0..XLevel.Lines.length) {
-    line_t *l = &XLevel.Lines[i];
+    line_t *l = cast([unsafe])(&XLevel.Lines[i]);
     switch (l->special) {
       case LNSPEC_SectorSetWind: // wind
         for (int hidx = XLevel.FindSectorFromTag(out sec, l->arg1); hidx >= 0;
@@ -5094,7 +5094,7 @@ private transient array!Entity recSoundSectorEntities; // will be collected in n
         {
           Pusher P = SpawnThinker(Pusher);
           if (P && !P.IsDestroyed) {
-            P.Init(Pusher::PUSHER_Wind, l->arg4 ? l : nullptr, l->arg2, l->arg3, none, sec-&XLevel.Sectors[0]);
+            P.Init(Pusher::PUSHER_Wind, l->arg4 ? l : nullptr, l->arg2, l->arg3, none, cast([unsafe])(sec-&XLevel.Sectors[0]));
           }
         }
         break;
@@ -5105,7 +5105,7 @@ private transient array!Entity recSoundSectorEntities; // will be collected in n
         {
           Pusher P = SpawnThinker(Pusher);
           if (P && !P.IsDestroyed) {
-            P.Init(Pusher::PUSHER_Current, l->arg4 ? l : nullptr, l->arg2, l->arg3, none, sec-&XLevel.Sectors[0]);
+            P.Init(Pusher::PUSHER_Current, l->arg4 ? l : nullptr, l->arg2, l->arg3, none, cast([unsafe])(sec-&XLevel.Sectors[0]));
           }
         }
         break;
@@ -5116,7 +5116,7 @@ private transient array!Entity recSoundSectorEntities; // will be collected in n
           for (int hidx = XLevel.FindSectorFromTag(out sec, l->arg1); hidx >= 0;
                hidx = XLevel.FindSectorFromTag(out sec, l->arg1, hidx))
           {
-            int ssnum = sec-&XLevel.Sectors[0];
+            int ssnum = cast([unsafe])(sec-&XLevel.Sectors[0]);
             EntityEx thing = GetPushThing(ssnum);
             if (thing) {
               // No MT_P* means no effect
@@ -5138,7 +5138,7 @@ private transient array!Entity recSoundSectorEntities; // will be collected in n
               for (s = 0; s < XLevel.Sectors.length; ++s) if (&XLevel.Sectors[s] == thing.Sector) break;
               */
               if (!thing.Sector) continue;
-              int s = thing.Sector-&XLevel.Sectors[0];
+              int s = cast([unsafe])(thing.Sector-&XLevel.Sectors[0]);
               Pusher P = SpawnThinker(Pusher);
               if (P && !P.IsDestroyed) {
                 P.Init(Pusher::PUSHER_Push, l->arg4 ? l : nullptr, l->arg3, 0, thing, s);
@@ -5180,7 +5180,7 @@ private transient array!Entity recSoundSectorEntities; // will be collected in n
   for (int hidx = XLevel.FindSectorFromTag(out sec, tag); hidx >= 0;
        hidx = XLevel.FindSectorFromTag(out sec, tag, hidx))
   {
-    int secnum = sec-&XLevel.Sectors[0];
+    int secnum = cast([unsafe])(sec-&XLevel.Sectors[0]);
     for (P = Collection; P; P = P.AdjustLink) {
       if (P.Affectee == secnum) break;
     }
@@ -5793,7 +5793,7 @@ override void SpawnMapThing (mthing_t *mthing) {
   // count deathmatch start positions
   if (mthing.type == 11) {
     DeathmatchStarts.length += 1;
-    CopyMThing(mthing, &DeathmatchStarts[$-1]);
+    CopyMThing(mthing, cast([unsafe])(&DeathmatchStarts[$-1]));
     return;
   }
 
@@ -5850,7 +5850,7 @@ override void SpawnMapThing (mthing_t *mthing) {
   if (IsPlayerStart) {
     // save spots for respawning in network games
     PlayerStarts.length += 1;
-    CopyMThing(mthing, &PlayerStarts[$-1]);
+    CopyMThing(mthing, cast([unsafe])(&PlayerStarts[$-1]));
     return;
   }
 
@@ -6061,9 +6061,9 @@ bool StartConversation (EntityEx User, EntityEx UseOn) {
     }
 
     if (SpeechNum < 0) {
-      Speech = &XLevel.GenericSpeeches[-SpeechNum-1];
+      Speech = cast([unsafe])(&XLevel.GenericSpeeches[-SpeechNum-1]);
     } else {
-      Speech = &XLevel.LevelSpeeches[SpeechNum-1];
+      Speech = cast([unsafe])(&XLevel.LevelSpeeches[SpeechNum-1]);
     }
 
     if (Speech->JumpToConv &&
@@ -6174,12 +6174,12 @@ final class!EntityEx GetClassFromID (int ID) {
   }
 
   if (CurrentSpeechIndex < 0) {
-    Speech = &XLevel.GenericSpeeches[-CurrentSpeechIndex-1];
+    Speech = cast([unsafe])(&XLevel.GenericSpeeches[-CurrentSpeechIndex-1]);
   } else {
-    Speech = &XLevel.LevelSpeeches[CurrentSpeechIndex-1];
+    Speech = cast([unsafe])(&XLevel.LevelSpeeches[CurrentSpeechIndex-1]);
   }
 
-  Choice = &Speech->Choices[ChoiceNum-1];
+  Choice = cast([unsafe])(&Speech->Choices[ChoiceNum-1]);
   // check if player has needed items
   Item1 = CheckForNeededItem(CurrentSpeakingTo, Choice->NeedItem1, Choice->NeedAmount1);
   Item2 = CheckForNeededItem(CurrentSpeakingTo, Choice->NeedItem2, Choice->NeedAmount2);

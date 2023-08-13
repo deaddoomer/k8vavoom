@@ -49,13 +49,13 @@ void Init (sector_t *InSector, int Arg1, int Arg2, int Arg3, int Arg4, int Arg5)
 
   // do a manual search, because tags hash is not yet set up.
   foreach (auto i; 0..XLevel.Lines.length) {
-    if (IsLineTagEqual(&XLevel.Lines[i], TargetId)) {
-      line_t *Line = &XLevel.Lines[i];
+    if (IsLineTagEqual(cast([unsafe])(&XLevel.Lines[i]), TargetId)) {
+      line_t *Line = cast([unsafe])(&XLevel.Lines[i]);
       snums[0] = (Flags&WLF_SIDE1 ? Line->sidenum[0] : -1);
       snums[1] = (Flags&WLF_SIDE2 ? Line->sidenum[1] : -1);
       foreach (auto sidx; snums) {
         if (sidx < 0) continue;
-        side_t *side = &XLevel.Sides[sidx];
+        side_t *side = cast([unsafe])(&XLevel.Sides[sidx]);
         side.Light = Sector->params.lightlevel;
         side.bAbsLight = true;
       }

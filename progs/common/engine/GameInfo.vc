@@ -348,9 +348,9 @@ void TranslateSpecialActions (VLevel InLevel, LevelInfo Level) {
 //
 //==========================================================================
 void TranslateLevel (VLevel InLevel) {
-  foreach (auto i; 0..InLevel.Lines.length) TranslateLine(InLevel, &InLevel.Lines[i]);
-  foreach (auto i; 0..InLevel.Sectors.length) TranslateSector(InLevel, &InLevel.Sectors[i]);
-  foreach (auto i; 0..InLevel.Things.length) TranslateThing(InLevel, &InLevel.Things[i]);
+  foreach (auto i; 0..InLevel.Lines.length) TranslateLine(InLevel, cast([unsafe])(&InLevel.Lines[i]));
+  foreach (auto i; 0..InLevel.Sectors.length) TranslateSector(InLevel, cast([unsafe])(&InLevel.Sectors[i]));
+  foreach (auto i; 0..InLevel.Things.length) TranslateThing(InLevel, cast([unsafe])(&InLevel.Things[i]));
 }
 
 

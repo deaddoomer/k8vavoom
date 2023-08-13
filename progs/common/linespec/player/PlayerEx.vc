@@ -2737,7 +2737,7 @@ void DecalEffect (TVec org, name dectype, int side, int lineidx, optional int tr
 {
   if (!dectype || lineidx < 0 || !Level.XLevel) return; // just in case
   if (lineidx >= Level.XLevel.Lines.length) return;
-  Level.XLevel.AddDecal(org, dectype, side, &Level.XLevel.Lines[lineidx],
+  Level.XLevel.AddDecal(org, dectype, side, cast([unsafe])(&Level.XLevel.Lines[lineidx]),
     translation:translation!optional, shadeclr:shadeclr!optional, alpha:alpha!optional,
     animator:animator!optional, permanent:permanent!optional, angle:angle!optional, forceFlipX:forceFlipX!optional);
 }
@@ -3420,7 +3420,7 @@ mthing_t *PerformRebornSpawn () {
   mthing_t *bestOther = nullptr;
   float bestOtherDist = float.max;
   foreach (auto i; 0..Level.PlayerStarts.length) {
-    auto sp = &Level.PlayerStarts[i];
+    auto sp = cast([unsafe])(&Level.PlayerStarts[i]);
     if (sp.type == GetPlayerNum()+1) {
       if (sp.args[0] == Level.Game.RebornPosition) {
         // i found her!
@@ -3662,7 +3662,7 @@ void DeathMatchSpawnPlayer () {
   }
 
   foreach (int i; dms) {
-    auto sp = &Level.DeathmatchStarts[i];
+    auto sp = cast([unsafe])(&Level.DeathmatchStarts[i]);
     if (CheckSpot(sp)) {
       SpawnPlayer(sp, false);
       return;

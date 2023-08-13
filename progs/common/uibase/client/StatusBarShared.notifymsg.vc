@@ -74,7 +74,7 @@ void AllocMessageSlot (int maxcount, ref array!NotifyMessage list, ref int count
   // find existing message
   NotifyMessage *msg;
   for (int n = count-1; n >= 0; --n) {
-    msg = &list[n];
+    msg = cast([unsafe])(&list[n]);
     assert(msg.time > 0.0);
     if (msg.nick == nick && msg.text == s) {
       ++msg.dupcount;
@@ -91,7 +91,7 @@ void AllocMessageSlot (int maxcount, ref array!NotifyMessage list, ref int count
     if (list.length < maxcount) list.length = maxcount;
     ++count;
   }
-  msg = &list[count-1];
+  msg = cast([unsafe])(&list[count-1]);
   msg.dupcount = 1;
   msg.nick = nick;
   msg.text = s;

@@ -81,7 +81,7 @@ void DoLightningFlash (float DeltaTime) {
     LightningFlash -= DeltaTime;
     if (LightningFlash > 0.0) {
       foreach (auto i; 0..XLevel.Sectors.length) {
-        tempSec = &XLevel.Sectors[i];
+        tempSec = cast([unsafe])(&XLevel.Sectors[i]);
         if (LightningSectors[i/8]&(1<<(i&7))) {
           if (LightningLightLevels[i] < tempSec->params.lightlevel-4) {
             tempSec->params.lightlevel -= 4;
@@ -92,7 +92,7 @@ void DoLightningFlash (float DeltaTime) {
       // remove the alternate lightning flash special
       LightningFlash = 0.0;
       foreach (auto i; 0..XLevel.Sectors.length) {
-        tempSec = &XLevel.Sectors[i];
+        tempSec = cast([unsafe])(&XLevel.Sectors[i]);
         if (LightningSectors[i/8]&(1<<(i&7))) {
           tempSec->params.lightlevel = LightningLightLevels[i];
         }
@@ -107,7 +107,7 @@ void DoLightningFlash (float DeltaTime) {
   foundSec = false;
   for (int i = (XLevel.Sectors.length+7)/8-1; i >= 0; --i) LightningSectors[i] = 0;
   foreach (auto i; 0..XLevel.Sectors.length) {
-    tempSec = &XLevel.Sectors[i];
+    tempSec = cast([unsafe])(&XLevel.Sectors[i]);
     int Spec = tempSec->special&SECSPEC_BASE_MASK;
     if (tempSec->ceiling.pic == Level.Game.skyflatnum ||
         Spec == SECSPEC_LightningOutdoor ||

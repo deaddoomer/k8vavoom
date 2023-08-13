@@ -198,8 +198,8 @@ void Start () {
   */
 
   if (!checkForDoom2()) {
-    FindEpisodeAndMap(ClGame.im.LeaveMap, &im_episode, &im_map);
-    FindEpisodeAndMap(ClGame.im.EnterMap, &im_nextepisode, &im_nextmap);
+    FindEpisodeAndMap(ClGame.im.LeaveMap, out im_episode, out im_map);
+    FindEpisodeAndMap(ClGame.im.EnterMap, out im_nextepisode, out im_nextmap);
   }
 
   IM_InitAnimatedBack();
@@ -237,18 +237,18 @@ void Start () {
 //  FindEpisodeAndMap
 //
 //==========================================================================
-void FindEpisodeAndMap (name Name, int *epi, int *map) {
+void FindEpisodeAndMap (name Name, out int epi, out int map) {
   foreach (auto e; 1..4) {
     foreach (auto m; 1..10) {
       if (Name == name(va("e%dm%d", e, m))) {
-        *epi = e;
-        *map = m;
+        epi = e;
+        map = m;
         return;
       }
     }
   }
-  *epi = 4;
-  *map = 1;
+  epi = 4;
+  map = 1;
 }
 
 
@@ -1075,8 +1075,8 @@ void IM_InitText () {
   //printdebug("phase=%s; next=%s", ClGame.intermissionPhase, ClGame.GLevel.LevelInfo.NextMap);
 
   IntermissionText *itext =
-    ClGame.intermissionPhase == ClientGame::IM_Phase.Leave ? &ClGame.im.LeaveText :
-    ClGame.intermissionPhase == ClientGame::IM_Phase.Enter ? &ClGame.im.EnterText :
+    ClGame.intermissionPhase == ClientGame::IM_Phase.Leave ? cast([unsafe])(&ClGame.im.LeaveText) :
+    ClGame.intermissionPhase == ClientGame::IM_Phase.Enter ? cast([unsafe])(&ClGame.im.EnterText) :
     nullptr;
 
   // do not skip exit text
