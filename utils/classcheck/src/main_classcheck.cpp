@@ -1249,6 +1249,13 @@ void parseVCSource (VStr filename, VStr className=VStr::EmptyString) {
     if (par->eat("alias")) { skipUntilSemi(par); continue; }
 
     if (par->eat("struct")) {
+      // skip flags
+      if (par->check("[")) {
+        while (!par->eat("]")) {
+          vassert(!par->isEOF());
+          par->skipToken();
+        }
+      }
       Type *stp = new Type();
       stp->loc = par->getTokenLoc();
       stp->srcfile = par->srcfile;
