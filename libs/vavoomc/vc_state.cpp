@@ -62,6 +62,7 @@ VState::VState (VName AName, VMemberBase *AOuter, TLocation ALoc)
   , LightInited(false)
   , LightDef(nullptr)
   , LightName(VStr())
+  , infoFlags(0)
   , validcount(0)
   , funcIsCopy(false)
 {

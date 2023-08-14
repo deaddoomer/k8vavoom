@@ -102,6 +102,13 @@ public:
   VLightEffectDef *LightDef;
   VStr LightName;
 
+  // used to suppress continuous warnings
+  enum {
+    SIF_Warned = 1u<<0,
+  };
+  vuint32 infoFlags;
+
+  // for watchcat
   vint64 validcount;
 
   // compiler flags

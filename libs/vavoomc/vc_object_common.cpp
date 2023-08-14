@@ -1743,6 +1743,20 @@ IMPLEMENT_FUNCTION(VObject, SetStateFRN) {
   if (State) State->frameAction = v;
 }
 
+// native static final bool GetStateWarnedFlag (state State);
+IMPLEMENT_FUNCTION(VObject, GetStateWarnedFlag) {
+  VState *State;
+  vobjGetParam(State);
+  RET_BOOL(State ? !!(State->infoFlags&VState::SIF_Warned) : true);
+}
+
+// native static final void SetStateWarnedFlag (state State);
+IMPLEMENT_FUNCTION(VObject, SetStateWarnedFlag) {
+  VState *State;
+  vobjGetParam(State);
+  if (State) State->infoFlags |= VState::SIF_Warned;
+}
+
 
 //==========================================================================
 //

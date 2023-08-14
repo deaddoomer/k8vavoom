@@ -249,6 +249,8 @@
   DECLARE_FUNCTION(SetStateArgN)
   DECLARE_FUNCTION(GetStateFRN)
   DECLARE_FUNCTION(SetStateFRN)
+  DECLARE_FUNCTION(GetStateWarnedFlag)
+  DECLARE_FUNCTION(SetStateWarnedFlag)
 
   // Iterators
   DECLARE_FUNCTION(AllObjects)
