@@ -80,12 +80,21 @@ menudef MiscOptions {
     help = "Player weapon bobbing. Relative to camera bobbing.";
   }
 
-  option slider {
+  option enum {
     title = "Save compression";
     cvar = save_compression_level;
-    step = 1;
-    min = 0;
-    max = 9;
+    list {
+      "Fastest",
+      "Fast",
+      "Medium",
+      "Best"
+    };
+    help =
+      "Savegame compression. Fastest usually can make saved games",
+      "around two times smaller than the raw data, and it is almost instant.",
+      "Fast is quite good at compression, but usually two-three times",
+      "slower than fastest. Other modes will not gain much better compression.",
+      "Set this to 'Fastest' to trade saving speed for 100-200 kb of disk space.";
   }
 
 

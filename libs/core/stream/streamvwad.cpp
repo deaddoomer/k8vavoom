@@ -26,6 +26,53 @@
 #include "../core.h"
 
 
+static void logger (int type, const char *fmt, ...) {
+  va_list ap;
+  switch (type) {
+    case VWADWR_LOG_NOTE:
+      #if 1
+      va_start(ap, fmt);
+      GLog.doWrite(NAME_Debug, fmt, ap, true);
+      va_end(ap);
+      #endif
+      return;
+    case VWADWR_LOG_WARNING:
+      va_start(ap, fmt);
+      GLog.doWrite(NAME_Warning, fmt, ap, true);
+      va_end(ap);
+      return;
+    case VWADWR_LOG_ERROR:
+      va_start(ap, fmt);
+      GLog.doWrite(NAME_Error, fmt, ap, true);
+      va_end(ap);
+      return;
+    case VWADWR_LOG_DEBUG:
+      #if 0
+      va_start(ap, fmt);
+      GLog.doWrite(NAME_Debug, fmt, ap, true);
+      #endif
+      va_end(ap);
+      return;
+    default: break;
+  }
+  #if 0
+  va_start(ap, fmt);
+  GLog.doWrite(NAME_Log, fmt, ap, true);
+  va_end(ap);
+  #endif
+}
+
+
+static void assertion_failed (const char *fmt, ...) {
+  static char msgbuf[1024];
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(msgbuf, sizeof(msgbuf), fmt, ap);
+  va_end(ap);
+  Sys_Error("%s", msgbuf);
+}
+
+
 static void *xxalloc (vwad_memman *mman, uint32_t size) {
   return Z_Malloc(size);
 }
@@ -34,9 +81,22 @@ static void xxfree (vwad_memman *mman, void *p) {
   return Z_Free(p);
 }
 
+static void *wrxxalloc (vwadwr_memman *mman, uint32_t size) {
+  return Z_Malloc(size);
+}
+
+static void wrxxfree (vwadwr_memman *mman, void *p) {
+  return Z_Free(p);
+}
+
 static vwad_memman memman = {
   .alloc = &xxalloc,
   .free = &xxfree,
+};
+
+static vwadwr_memman wrmemman = {
+  .alloc = &wrxxalloc,
+  .free = &wrxxfree,
 };
 
 
@@ -133,7 +193,7 @@ VVWadArchive::~VVWadArchive () {
 void VVWadArchive::Close () {
   while (openlist) {
     VStream *s = openlist;
-    VStream::Destroy(s);
+    s->Close();
   }
   if (vw_handle) vwad_close_archive(&vw_handle);
   archname.clear();
@@ -156,10 +216,12 @@ VStream *VVWadArchive::OpenFile (VStr name) {
   VStream *res = nullptr;
   if (vw_handle) {
     vwad_fidx fidx = vwad_find_file(vw_handle, *name);
+    //GLog.Logf(NAME_Debug, "name=<%s>; fidx=%d", *name, fidx);
     if (fidx >= 0) {
-      int fd = vwad_fopen(vw_handle, fidx);
+      const int fd = vwad_fopen(vw_handle, fidx);
+      //GLog.Logf(NAME_Debug, "name=<%s>; fd=%d", *name, fd);
       if (fd >= 0) {
-        VStream *res = new VVWadStreamReader(this, fd);
+        res = new VVWadStreamReader(this, fd);
         if (res->IsError()) { VStream::Destroy(res); res = nullptr; }
       }
     }
@@ -233,6 +295,7 @@ VVWadStreamReader::VVWadStreamReader (VVWadArchive *aarc, vwad_fd afd)
   bLoading = true;
 
   if (aarc && aarc->vw_handle && afd >= 0) {
+    //GLog.Logf(NAME_Debug, "afd=%d", afd);
     arc = aarc;
     vw_handle = aarc->vw_handle;
     vw_strm = &aarc->vw_strm;
@@ -288,6 +351,17 @@ void VVWadStreamReader::DoClose () {
 VStr VVWadStreamReader::GetName () const {
   if (!arc || fd < 0) return "<shit>";
   return VStr(arc->archname + ":" + VStr(vwad_get_file_name(vw_handle, vwad_fdfidx(vw_handle, fd))));
+}
+
+
+//==========================================================================
+//
+//  VVWadStreamReader::GetGroupName
+//
+//==========================================================================
+VStr VVWadStreamReader::GetGroupName () const {
+  if (!arc || fd < 0) return VStr::EmptyString;
+  return VStr(vwad_get_file_group_name(vw_handle, vwad_fdfidx(vw_handle, fd)));
 }
 
 
@@ -412,6 +486,11 @@ static int VStream_tell (vwadwr_iostream *strm) {
 static int VStream_read (vwadwr_iostream *strm, void *buf, int bufsize) {
   VStream *st = (VStream *)strm->udata;
   if (st->IsError()) return -1;
+
+  if (!st->IsLoading()) {
+    GLog.Logf(NAME_Error, "SHIT! reading from writer stream!");
+  }
+
   int pos = st->Tell();
   int size = st->TotalSize();
   if (pos < 0 || size < 0) return -1;
@@ -423,6 +502,26 @@ static int VStream_read (vwadwr_iostream *strm, void *buf, int bufsize) {
     if (st->IsError()) return -1;
   }
   return bufsize;
+}
+
+
+//==========================================================================
+//
+//  VStream_write
+//
+//  write *exactly* bufsize bytes; return 0 on success, negative on failure
+//
+//==========================================================================
+static int VStream_write (vwadwr_iostream *strm, const void *buf, int bufsize) {
+  VStream *st = (VStream *)strm->udata;
+  if (st->IsError()) return -1;
+
+  if (st->IsLoading()) {
+    GLog.Logf(NAME_Error, "SHIT! writing to reader stream!");
+  }
+
+  st->Serialise(buf, bufsize);
+  return (!st->IsError() ? 0 : -1);
 }
 
 
@@ -441,6 +540,8 @@ vwadwr_result vwadwr_write_vstream (vwadwr_dir *wad, VStream *strm,
 {
   if (!strm) return -1;
   if (!strm->IsLoading()) return -1;
+  strm->Seek(0);
+  if (strm->IsError()) return -1;
   vwadwr_iostream ios;
   ios.seek = &VStream_seek;
   ios.tell = &VStream_tell;
@@ -448,4 +549,90 @@ vwadwr_result vwadwr_write_vstream (vwadwr_dir *wad, VStream *strm,
   ios.write = nullptr;
   ios.udata = (void *)strm;
   return vwadwr_pack_file(wad, &ios, level, pkfname, groupname, ftime, upksizep, pksizep, progcb, progudata);
+}
+
+
+//==========================================================================
+//
+//  vwadwr_create_archive_stream
+//
+//==========================================================================
+vwadwr_dir *vwadwr_create_archive_stream (VStream *dstrm, VStr author, VStr title) {
+  if (!dstrm || dstrm->IsLoading()) return nullptr;
+  dstrm->Seek(0);
+  if (dstrm->IsError()) return nullptr;
+
+  vwadwr_secret_key privkey;
+  do {
+    prng_randombytes(privkey, sizeof(vwadwr_secret_key));
+  } while (!vwadwr_is_good_privkey(privkey));
+
+  //VStream *ostream = FL_OpenSysFileWrite(aArchName);
+
+  vwadwr_iostream *ios = (vwadwr_iostream *)Z_Malloc((uint32_t)sizeof(vwadwr_iostream));
+  if (!ios) return nullptr;
+  ios->seek = &VStream_seek;
+  ios->tell = &VStream_tell;
+  ios->read = &VStream_read;
+  ios->write = &VStream_write;
+  ios->udata = (void *)dstrm;
+
+  vwadwr_logf = logger;
+  vwadwr_assertion_failed = assertion_failed;
+
+  vwadwr_dir *wad = vwadwr_new_dir(&wrmemman, ios, *author, *title,
+                                   NULL, /* no comment */
+                                   VWADWR_NEW_DONT_SIGN, privkey,
+                                   NULL, NULL);
+  if (!wad) Z_Free(ios);
+
+  return wad;
+}
+
+
+//==========================================================================
+//
+//  vwadwr_finish_archive_stream
+//
+//==========================================================================
+bool vwadwr_finish_archive_stream (vwadwr_dir *&vwad) {
+  bool res = false;
+  if (vwad) {
+    vwadwr_iostream *ios = vwadwr_dir_get_outstrm(vwad);
+    vwadwr_result xres = vwadwr_finish(&vwad);
+    res = (xres == 0);
+    vwad = nullptr;
+    Z_Free(ios);
+  }
+  return res;
+}
+
+
+//==========================================================================
+//
+//  vwadwr_destroy_archive_stream
+//
+//==========================================================================
+void vwadwr_destroy_archive_stream (vwadwr_dir *&vwad) {
+  if (vwad) {
+    vwadwr_iostream *ios = vwadwr_dir_get_outstrm(vwad);
+    vwadwr_free_dir(&vwad);
+    vwad = nullptr;
+    Z_Free(ios);
+  }
+}
+
+
+//==========================================================================
+//
+//  vwadwr_arc_get_archive_stream
+//
+//==========================================================================
+VStream *vwadwr_arc_get_archive_stream (vwadwr_dir *vwad) {
+  if (vwad) {
+    vwadwr_iostream *ios = vwadwr_dir_get_outstrm(vwad);
+    return (VStream *)ios->udata;
+  } else {
+    return nullptr;
+  }
 }

@@ -45,7 +45,7 @@ public:
   // open from disk
   VVWadArchive (VStr aArchName);
   // open from stream; will close owned stream even on open error
-  VVWadArchive (VStr aArchName, VStream *strm, bool owned=true);
+  VVWadArchive (VStr aArchName, VStream *strm, bool owned);
 
   virtual ~VVWadArchive ();
 
@@ -53,6 +53,36 @@ public:
 
   inline bool IsOpen () const noexcept { return !!vw_handle; }
   inline VStr GetName () const noexcept { return archname; }
+
+  inline int GetFilesCount () const noexcept {
+    return (vw_handle ? vwad_get_archive_file_count(vw_handle) : 0);
+  }
+
+  inline VStr GetFileName (int fidx) const noexcept {
+    if (vw_handle) return VStr(vwad_get_file_name(vw_handle, fidx));
+    return VStr::EmptyString;
+  }
+
+  inline VStr GetTitle () const noexcept {
+    if (vw_handle) return VStr(vwad_get_archive_title(vw_handle));
+    return VStr::EmptyString;
+  }
+
+  inline VStr GetAuthor () const noexcept {
+    if (vw_handle) return VStr(vwad_get_archive_author(vw_handle));
+    return VStr::EmptyString;
+  }
+
+  inline VStr GetComment () const noexcept {
+    if (vw_handle) {
+      char *cmt = new char[VWAD_MAX_COMMENT_SIZE + 1];
+      vwad_get_archive_comment(vw_handle, cmt, VWAD_MAX_COMMENT_SIZE + 1);
+      VStr res = VStr(cmt);
+      delete cmt;
+      return res;
+    }
+    return VStr::EmptyString;
+  }
 
   // return `nullptr` on error
   VStream *OpenFile (VStr name);
@@ -90,9 +120,21 @@ public:
   virtual int TotalSize () override;
   virtual bool AtEnd () override;
   virtual bool Close () override;
+
+  virtual VStr GetGroupName () const;
 };
 
 
+// `dstrm` should be alive until archive is closed!
+// `dstrm` will be seeked to 0
+vwadwr_dir *vwadwr_create_archive_stream (VStream *dstrm, VStr author, VStr title);
+// will set `vwad` to `nullptr`
+bool vwadwr_finish_archive_stream (vwadwr_dir *&vwad);
+// use this to abort writing; will not destroy stream
+void vwadwr_destroy_archive_stream (vwadwr_dir *&vwad);
+VStream *vwadwr_arc_get_archive_stream (vwadwr_dir *vwad);
+
+// `strm` will be seeked to 0
 vwadwr_result vwadwr_write_vstream (vwadwr_dir *wad, VStream *strm,
                                     int level, /* VADWR_COMP_xxx */
                                     const char *pkfname,

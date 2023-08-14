@@ -2692,7 +2692,7 @@ vwadwr_bool vwadwr_is_valid_dir (const vwadwr_dir *dir) {
     dir != NULL &&
     dir->namesSize >= 8 &&
     (dir->namesSize&0x03) == 0 &&
-    dir->chunkCount > 0 && dir->chunkCount <= 0x1fffffffU &&
+    /*dir->chunkCount > 0 &&*/ dir->chunkCount <= 0x1fffffffU &&
     dir->fileCount > 0 && dir->fileCount <= 0x00ffffffU;
 }
 
@@ -2705,7 +2705,7 @@ vwadwr_bool vwadwr_is_valid_dir (const vwadwr_dir *dir) {
 vwadwr_result vwadwr_check_dir (const vwadwr_dir *dir) {
   if (dir->namesSize < 8) return VADWR_DIR_NAMES_SIZE;
   if ((dir->namesSize&0x03) != 0) return VADWR_DIR_NAMES_ALIGN;
-  if (dir->chunkCount == 0 || dir->chunkCount > 0x1fffffffU) return VADWR_DIR_CHUNK_COUNT;
+  if (/*dir->chunkCount == 0 ||*/ dir->chunkCount > 0x1fffffffU) return VADWR_DIR_CHUNK_COUNT;
   if (dir->fileCount == 0 || dir->fileCount > 0x00ffffffU) return VADWR_DIR_FILE_COUNT;
   return VADWR_DIR_OK;
 }
@@ -2849,6 +2849,7 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
   #ifdef VWAD_USE_NAME_LENGTHES
   uint32_t pnofs = 0;
   #endif
+  uint32_t ccc = 0;
   for (FileInfo *fi = dir->filesHead; fi; fi = fi->next) {
     vassert(fi->fname->nameofs != 0);
     memcpy(fdir + fdirofs, &z32, 4); fdirofs += 4; // first chunk will be calculated
@@ -2864,6 +2865,7 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
     put_u32(fdir + fdirofs, fi->crc32); fdirofs += 4;
     put_u32(fdir + fdirofs, fi->upksize); fdirofs += 4;
     put_u32(fdir + fdirofs, fi->chunkCount); fdirofs += 4;
+    ccc += fi->chunkCount;
     #ifdef VWAD_USE_NAME_LENGTHES
     if (pnofs == 0) {
       put_u32(fdir + fdirofs, fi->fname->nameofs);
@@ -2880,6 +2882,7 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
   vassert(fdirofs = 4+dir->chunkCount*VWADWR_CHUNK_ENTRY_SIZE +
                     4+dir->fileCount*VWADWR_FILE_ENTRY_SIZE);
   vassert(fdirofs = namesStart);
+  vassert(ccc = dir->chunkCount);
 
   // names
   //put_u32(fdir + fdirofs, dir->namesSize); fdirofs += 4;

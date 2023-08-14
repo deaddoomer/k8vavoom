@@ -1874,7 +1874,7 @@ void SV_ShutdownGame () {
   if (GGameInfo->NetMode != NM_DedicatedServer) GClGame->eventDisconnected();
   #endif
 
-  SV_InitBaseSlot();
+  SV_ClearBaseSlot();
 
   GGameInfo->NetMode = NM_None;
 

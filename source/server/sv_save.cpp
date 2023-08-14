@@ -27,6 +27,12 @@
 //**  Archiving: SaveGame I/O.
 //**
 //**************************************************************************
+//#define USE_OLD_SAVE_CODE
+
+#ifdef USE_OLD_SAVE_CODE
+# include "sv_save.old.cpp"
+#else
+
 #include "../gamedefs.h"
 #include "../host.h"
 #include "../psim/p_entity.h"
@@ -58,16 +64,37 @@ static inline struct tm *localtime_r (const time_t *_Time, struct tm *_Tm) {
 #endif
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 #define VAVOOM_LOADER_CAN_SKIP_CLASSES
 
+
+// ////////////////////////////////////////////////////////////////////////// //
 enum { NUM_AUTOSAVES = 9 };
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+#define NEWFTM_FNAME_SAVE_HEADER   "k8vavoom_savegame_header.dat"
+#define NEWFTM_FNAME_SAVE_DESCR    "description.dat"
+#define NEWFTM_FNAME_SAVE_WADLIST  "wadlist.dat"
+#define NEWFTM_FNAME_SAVE_CURRMAP  "current_map.dat"
+#define NEWFTM_FNAME_SAVE_MAPLIST  "maplist.dat"
+#define NEWFTM_FNAME_SAVE_CPOINT   "checkpoint.dat"
+#define NEWFTM_FNAME_SAVE_SKILL    "skill.dat"
+#define NEWFTM_FNAME_SAVE_DATE     "datetime.dat"
+
+#define NEWFTM_FNAME_MAP_NAMES     "names.dat"
+#define NEWFTM_FNAME_MAP_ACSEXPT   "acs_exports.dat"
+#define NEWFTM_FNAME_MAP_THINKERS  "thinkers.dat"
+#define NEWFTM_FNAME_MAP_SOUNDS    "sounds.dat"
+#define NEWFTM_FNAME_MAP_GINFO     "ginfo.dat"
 
 
 // ////////////////////////////////////////////////////////////////////////// //
 static VCvarB dbg_save_on_level_exit("dbg_save_on_level_exit", false, "Save before exiting a level.\nNote that after loading this save you prolly won't be able to exit again.", CVAR_PreInit|CVAR_NoShadow/*|CVAR_Archive*/);
 static VCvarB dbg_load_ignore_wadlist("dbg_load_ignore_wadlist", false, "Ignore list of loaded wads in savegame when hash mated?", CVAR_PreInit|CVAR_NoShadow/*|CVAR_Archive*/);
+static VCvarB dbg_save_in_old_format("dbg_save_in_old_format", false, "Save games in old format instead of vwads?", CVAR_PreInit|CVAR_NoShadow/*|CVAR_Archive*/);
 
-static VCvarI save_compression_level("save_compression_level", "6", "Save file compression level [0..9]", CVAR_Archive|CVAR_NoShadow);
+static VCvarI save_compression_level("save_compression_level", "1", "Save file compression level [0..3]", CVAR_Archive|CVAR_NoShadow);
 
 static VCvarB sv_new_map_autosave("sv_new_map_autosave", true, "Autosave when entering new map (except first one)?", CVAR_PreInit|CVAR_NoShadow/*|CVAR_Archive*/);
 
@@ -129,15 +156,7 @@ enum {
 };
 
 
-class VSavedMap {
-public:
-  vuint8 Compressed;
-  TArrayNC<vuint8> Data;
-  VName Name;
-  vint32 DecompressedSize;
-};
-
-
+// ////////////////////////////////////////////////////////////////////////// //
 class VSavedCheckpoint {
 public:
   struct EntityInfo {
@@ -254,19 +273,87 @@ public:
 };
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+class VSavedMap {
+public:
+  VName Name;
+  int Index;
+  // for old format
+  // for new format, we are keeping map vwads here
+  TArrayNC<vuint8> Data;
+  // only for old format
+  vuint8 Compressed;
+  vint32 DecompressedSize;
+
+public:
+  VSavedMap (bool asNewFormat) : Compressed(asNewFormat ? 69 : 0), DecompressedSize(0) {}
+
+  inline void ClearData (bool asNewFormat) {
+    Data.clear();
+    Compressed = (asNewFormat ? 69 : 0);
+    DecompressedSize = 0;
+  }
+
+  //inline void SetNewFormat () noexcept { Compressed = 69; }
+  inline bool IsNewFormat () const noexcept { return (Compressed == 69); }
+
+  VStr GenVWadName () const {
+    /*
+    RIPEMD160_Ctx ctx;
+    uint8_t hash[RIPEMD160_BYTES];
+    ripemd160_init(&ctx);
+    VStr n = VStr(Name);
+    if (!n.IsEmpty()) {
+      ripemd160_put(&ctx, *n, (unsigned)n.length());
+    }
+    ripemd160_finish(&ctx, hash);
+    return "map_"+VStr::buf2hex(&hash, RIPEMD160_BYTES)+".vwad";
+    */
+    return va("map_%04d.vwad", Index);
+  }
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// save slot may contain several maps for hub saves
+// also, some maps may be overwritten time and time again (hub)
+// for new format, we will use subdir with vwads to store it all
 class VSaveSlot {
 public:
   VStr Description;
   VName CurrentMap;
+
   TArray<VSavedMap *> Maps; // if there are no maps, it is a checkpoint
+
   VSavedCheckpoint CheckPoint;
   vint32 SavedSkill; // -1: don't change/unknown
 
-  ~VSaveSlot () { Clear(); }
+private:
+  bool newFormat;
 
-  void Clear ();
+private:
+  // doesn't destroy stream on error
+  bool LoadSlotOld (int Slot, VStream *strm);
+  // `vwad` should be set
+  bool LoadSlotNew (int Slot, VVWadArchive *vwad);
+
+  bool SaveToSlotOld (int Slot);
+  bool SaveToSlotNew (int Slot);
+
+  // will always destroy `strm`, and destroy `vmain` (with its stream) on error
+  // return `true` on success
+  bool PackStream (vwadwr_dir *vmain, VStream *strm, VStr fname);
+
+public:
+  VSaveSlot () : SavedSkill(-1), newFormat(true) {}
+  ~VSaveSlot () { Clear(true); }
+
+  inline bool IsNewFormat () const noexcept { return newFormat; }
+
+  void Clear (bool asNewFormat);
   bool LoadSlot (int Slot);
   bool SaveToSlot (int Slot);
+
   VSavedMap *FindMap (VName Name);
 };
 
@@ -278,7 +365,9 @@ static VSaveSlot BaseSlot;
 // ////////////////////////////////////////////////////////////////////////// //
 class VSaveLoaderStream : public VStream {
 private:
+public: //DEBUG!
   VStream *Stream;
+  VVWadArchive *vwad;
 
 public:
   TArray<VName> NameRemap;
@@ -288,8 +377,25 @@ public:
 public:
   VV_DISABLE_COPY(VSaveLoaderStream)
 
-  VSaveLoaderStream (VStream *InStream) : Stream(InStream) { bLoading = true; }
+  VSaveLoaderStream (VStream *InStream) : Stream(InStream), vwad(nullptr) { bLoading = true; }
+  VSaveLoaderStream (VVWadArchive *avwad) : Stream(nullptr), vwad(avwad) { bLoading = true; }
   virtual ~VSaveLoaderStream () override { Close(); delete Stream; Stream = nullptr; }
+
+  inline bool IsNewFormat () const noexcept { return !!vwad; }
+
+  // close current stream, open a new one, assign it to `Stream`
+  void OpenFile (VStr name) {
+    if (vwad) {
+      if (Stream) { VStream::Destroy(Stream); Stream = nullptr; }
+      Stream = vwad->OpenFile(name);
+      if (!Stream) {
+        Sys_Error("cannot find save part named '%s'", *name);
+      }
+    } else {
+      // what a brilliant error message!
+      Sys_Error("trying to read old safe as new save");
+    }
+  }
 
   // stream interface
   virtual void Serialise (void *Data, int Len) override { Stream->Serialise(Data, Len); }
@@ -298,7 +404,21 @@ public:
   virtual int TotalSize () override { return Stream->TotalSize(); }
   virtual bool AtEnd () override { return Stream->AtEnd(); }
   virtual void Flush () override { Stream->Flush(); }
-  virtual bool Close () override { return Stream->Close(); }
+
+  virtual bool Close () override {
+    bool res;
+    if (vwad) {
+      res = true;
+      if (Stream) { res = !Stream->IsError(); VStream::Destroy(Stream); Stream = nullptr; }
+      vwad->Close();
+      delete vwad;
+      vwad = nullptr;
+    } else {
+      if (Stream) res = Stream->Close(); else res = true;
+    }
+    if (!res) SetError();
+    return res;
+  }
 
   virtual void io (VSerialisable *&Ref) override {
     vint32 scpIndex;
@@ -359,6 +479,8 @@ public:
 class VSaveWriterStream : public VStream {
 private:
   VStream *Stream;
+  vwadwr_dir *vwad;
+  VStr vwadfile; // current opened file name
 
 public:
   TArray<VName> Names;
@@ -371,13 +493,74 @@ public:
 public:
   VV_DISABLE_COPY(VSaveWriterStream)
 
-  VSaveWriterStream (VStream *InStream) : Stream(InStream) {
+  VSaveWriterStream (VStream *InStream) : Stream(InStream), vwad(nullptr) {
+    bLoading = false;
+    NamesMap.setLength(VName::GetNumNames());
+    for (int i = 0; i < VName::GetNumNames(); ++i) NamesMap[i] = -1;
+  }
+
+  VSaveWriterStream (vwadwr_dir *avwad) : Stream(nullptr), vwad(avwad) {
     bLoading = false;
     NamesMap.setLength(VName::GetNumNames());
     for (int i = 0; i < VName::GetNumNames(); ++i) NamesMap[i] = -1;
   }
 
   virtual ~VSaveWriterStream () override { Close(); delete Stream; Stream = nullptr; }
+
+  inline bool IsNewFormat () const noexcept { return !!vwad; }
+
+  void CloseFile () {
+    if (vwad) {
+      if (!vwadfile.IsEmpty()) {
+        #if 0
+        GCon->Logf("SG-WRITER: writing file '%s'...", *vwadfile);
+        #endif
+        vassert(Stream != nullptr);
+        vassert(dynamic_cast<VMemoryStream *>(Stream));
+        bool res = false;
+        Stream->Seek(0);
+        if (!Stream->IsError()) {
+          int level = save_compression_level.asInt();
+          if (level < VADWR_COMP_DISABLE || level > VADWR_COMP_BEST) {
+            level = VADWR_COMP_FAST;
+            save_compression_level = level;
+          }
+          #if 0
+          GCon->Logf("SG-WRITER: ...packing (level: %d)", level);
+          #endif
+          VMemoryStream *mst = (VMemoryStream *)Stream;
+          mst->BeginRead();
+          vwadwr_result xres = vwadwr_write_vstream(vwad, mst, level, *vwadfile);
+          #if 0
+          GCon->Logf("SG-WRITER: ...xres=%d", xres);
+          #endif
+          res = (xres == 0);
+        }
+        VStream::Destroy(Stream); Stream = nullptr;
+        vwadfile.clear();
+        if (!res) SetError();
+      } else {
+        vassert(Stream == nullptr);
+      }
+    }
+  }
+
+  // this automatically closes old file
+  bool CreateFile (VStr name) {
+    if (vwad) {
+      CloseFile();
+      if (!IsError()) {
+        while (name.startsWith("/")) name.chopLeft(1);
+        if (name.IsEmpty()) {
+          SetError();
+        } else {
+          vwadfile = name;
+          Stream = new VMemoryStream();
+        }
+      }
+    }
+    return !IsError();
+  }
 
   // stream interface
   virtual void Serialise (void *Data, int Len) override { Stream->Serialise(Data, Len); }
@@ -386,7 +569,24 @@ public:
   virtual int TotalSize () override { return Stream->TotalSize(); }
   virtual bool AtEnd () override { return Stream->AtEnd(); }
   virtual void Flush () override { Stream->Flush(); }
-  virtual bool Close () override { return Stream->Close(); }
+
+  virtual bool Close () override {
+    bool res = false;
+    if (vwad) {
+      CloseFile();
+      res = !IsError();
+      if (res) {
+        res = vwadwr_finish_archive_stream(vwad);
+      } else {
+        vwadwr_destroy_archive_stream(vwad);
+      }
+      vwad = nullptr;
+    } else {
+      if (Stream) { res = Stream->Close(); Stream = nullptr; } else res = true;
+    }
+    if (!res) SetError();
+    return res;
+  }
 
   void RegisterObject (VObject *o) {
     if (!o) return;
@@ -626,10 +826,25 @@ static void UpgradeSaveDirectory (VStr oldpath, VStr newpath) {
 //
 //==========================================================================
 static VStr GetDiskSavesPath () {
-  VStr svdir = SV_GetSavesDir().appendPath(GetSaveSlotCommonDirectoryPrefix());
-  VStr oldpath = SV_GetSavesDir().appendPath(GetSaveSlotCommonDirectoryPrefixOld());
+  VStr xdir = SV_GetSavesDir();
+  VStr svdir = xdir.appendPath(GetSaveSlotCommonDirectoryPrefix());
+  VStr oldpath = xdir.appendPath(GetSaveSlotCommonDirectoryPrefixOld());
   UpgradeSaveDirectory(oldpath, svdir);
   return svdir;
+}
+
+
+//==========================================================================
+//
+//  GetDiskSavesPathNoHash
+//
+//==========================================================================
+static VStr GetDiskSavesPathNoHash () {
+  VStr xdir = SV_GetSavesDir();
+  VStr svdir = xdir.appendPath(GetSaveSlotCommonDirectoryPrefix());
+  VStr oldpath = xdir.appendPath(GetSaveSlotCommonDirectoryPrefixOld());
+  UpgradeSaveDirectory(oldpath, svdir);
+  return xdir;
 }
 
 
@@ -694,9 +909,10 @@ static void UpdateSaveDirWadList () {
 static VStr GetSaveSlotBaseFileName (int slot) {
   if (isBadSlotIndex(slot)) return VStr();
   VStr pfx = GetSaveSlotCommonDirectoryPrefix();
-  if (slot == QUICKSAVE_SLOT) return pfx+"/quicksave";
-  if (slot < 0) return pfx+va("/autosave_%02d", -slot);
-  return pfx+va("/normsave_%02d", slot+1);
+  if (slot == QUICKSAVE_SLOT) pfx += "/quicksave";
+  else if (slot < 0) pfx += va("/autosave_%02d", -slot);
+  else pfx += va("/normsave_%02d", slot+1);
+  return pfx;
 }
 
 
@@ -711,6 +927,9 @@ static VStr GetSaveSlotBaseFileName (int slot) {
 static VStream *SV_OpenSlotFileRead (int slot) {
   saveFileBase.clear();
   if (isBadSlotIndex(slot)) return nullptr;
+
+  VStr seenVWad, seenVsg;
+
   // search save subdir
   auto svdir = GetDiskSavesPath();
   auto dir = Sys_OpenDir(svdir);
@@ -719,34 +938,97 @@ static VStream *SV_OpenSlotFileRead (int slot) {
     for (;;) {
       VStr fname = Sys_ReadDir(dir);
       if (fname.isEmpty()) break;
-      if (fname.startsWithNoCase(svpfx) && fname.endsWithNoCase(".vsg")) {
-        Sys_CloseDir(dir);
-        saveFileBase = svdir+"/"+fname;
-        return FL_OpenSysFileRead(saveFileBase);
+      if (fname.startsWithNoCase(svpfx)) {
+        if (seenVsg.isEmpty() && fname.endsWithNoCase(".vsg")) seenVsg = fname;
+        else if (seenVWad.isEmpty() && fname.endsWithNoCase(".vwad")) seenVWad = fname;
+        if (!seenVWad.isEmpty()) break;
       }
     }
     Sys_CloseDir(dir);
-  }
-  /*
-  // for backwards compatibility, remove after several releases
-  svdir = SV_GetSavesDir();
-  dir = Sys_OpenDir(svdir);
-  if (dir) {
-    auto svpfx = GetSaveSlotCommonDirectoryPrefix();
-    svpfx += "_";
-    svpfx += GetSaveSlotBaseFileName(slot).extractFileName();
-    for (;;) {
-      VStr fname = Sys_ReadDir(dir);
-      if (fname.isEmpty()) break;
-      if (fname.startsWithNoCase(svpfx) && fname.endsWithNoCase(".vsg")) {
-        Sys_CloseDir(dir);
-        return FL_OpenSysFileRead(svdir+"/"+fname);
-      }
+    if (!seenVWad.isEmpty()) {
+      saveFileBase = svdir.appendPath(seenVWad);
+    } else if (!seenVsg.isEmpty()) {
+      saveFileBase = svdir.appendPath(seenVsg);
+    } else {
+      saveFileBase.clear();
     }
-    Sys_CloseDir(dir);
+    if (!saveFileBase.isEmpty()) {
+      VStream *st = FL_OpenSysFileRead(saveFileBase);
+      if (st != nullptr) return st;
+      saveFileBase.clear();
+    }
   }
-  */
+
   return nullptr;
+}
+
+
+//==========================================================================
+//
+//  SV_OpenSlotFileReadWithFmt
+//
+//  sets `arc` to `nullptr` for old-style saves
+//  old format header is skipped
+//
+//  return `nullptr` on error, otherwise a stream
+//  WARNING! returned stream is owned by `arc`, if `arc` is not `nullptr`!
+//
+//==========================================================================
+static VStream *SV_OpenSlotFileReadWithFmt (int Slot, VVWadArchive *&vwad) {
+  VStream *Strm = nullptr;
+  char VersionText[SAVE_VERSION_TEXT_LENGTH+1];
+  vwad = nullptr;
+
+  #if 0
+  GCon->Logf(NAME_Debug, "SV_OpenSlotFileReadWithFmt: Slot=%d...", Slot);
+  #endif
+  Strm = SV_OpenSlotFileRead(Slot);
+
+  if (Strm) {
+    #if 0
+    GCon->Log(NAME_Debug, "...checking");
+    #endif
+
+    // is it a vwad?
+    memset(VersionText, 0, 4);
+
+    Strm->Serialise(VersionText, 4);
+    if (Strm->IsError()) {
+      VStream::Destroy(Strm);
+      saveFileBase.clear();
+      return nullptr;
+    }
+
+    if (memcmp(VersionText, "VWAD", 4) == 0) {
+      #if 0
+      GCon->Log(NAME_Debug, "....VWAD");
+      #endif
+      Strm->Seek(0);
+      if (Strm->IsError()) { VStream::Destroy(Strm); return nullptr; }
+      vwad = new VVWadArchive(VStr(va("slot_%02d_main", Slot)), Strm, true);
+      if (!vwad->IsOpen()) {
+        // the stream is already destroyed
+        delete vwad; vwad = nullptr;
+        saveFileBase.clear();
+        return nullptr;
+      }
+    } else {
+      #if 0
+      GCon->Log(NAME_Debug, "....VSG!");
+      #endif
+      vassert(SAVE_VERSION_TEXT_LENGTH > 4);
+      memset(VersionText + 4, 0, sizeof(VersionText) - 4);
+      // check the version text
+      Strm->Serialise(VersionText + 4, SAVE_VERSION_TEXT_LENGTH - 4);
+      if (VStr::Cmp(VersionText, SAVE_VERSION_TEXT) /*&& VStr::Cmp(VersionText, SAVE_VERSION_TEXT_NO_DATE)*/) {
+        VStream::Destroy(Strm);
+        saveFileBase.clear();
+        return nullptr;
+      }
+    }
+  }
+
+  return Strm;
 }
 
 
@@ -758,11 +1040,10 @@ static VStream *SV_OpenSlotFileRead (int slot) {
 //  kill 'em all!
 //
 //==========================================================================
-static bool removeSlotSaveFiles (int slot, VStr fignore) {
+static bool removeSlotSaveFiles (int slot) {
   TArray<VStr> tokill;
   if (isBadSlotIndex(slot)) return false;
-  VStr fignore2;
-  if (fignore.length()) fignore2 = fignore+".lmap";
+
   // search save subdir
   auto svdir = GetDiskSavesPath();
   auto dir = Sys_OpenDir(svdir);
@@ -771,33 +1052,19 @@ static bool removeSlotSaveFiles (int slot, VStr fignore) {
     for (;;) {
       VStr fname = Sys_ReadDir(dir);
       if (fname.isEmpty()) break;
-      if (fname.startsWithNoCase(svpfx) && (fname.endsWithNoCase(".vsg") || fname.endsWithNoCase(".vsg.lmap"))) {
-        VStr fn = svdir+"/"+fname;
-        if (fn != fignore && fn != fignore2) tokill.append(fn);
+      if (fname.startsWithNoCase(svpfx) &&
+          (fname.endsWithNoCase(".vsg") || fname.endsWithNoCase(".vsg.lmap") ||
+           fname.endsWithNoCase(".vwad") || fname.endsWithNoCase(".vwad.lmap")))
+      {
+        VStr fn = svdir.appendPath(fname);
+        /*if (fn != fignore && fn != fignore2)*/ tokill.append(fn);
       }
     }
     Sys_CloseDir(dir);
   }
-  /*
-  // for backwards compatibility, remove after several releases
-  svdir = SV_GetSavesDir();
-  dir = Sys_OpenDir(svdir);
-  if (dir) {
-    auto svpfx = GetSaveSlotCommonDirectoryPrefix();
-    svpfx += "_";
-    svpfx += GetSaveSlotBaseFileName(slot).extractFileName();
-    for (;;) {
-      VStr fname = Sys_ReadDir(dir);
-      if (fname.isEmpty()) break;
-      if (fname.startsWithNoCase(svpfx) && (fname.endsWithNoCase(".vsg") || fname.endsWithNoCase(".vsg.lmap"))) {
-        VStr fn = svdir+"/"+fname;
-        if (fn != fignore && fn != fignore2) tokill.append(fn);
-      }
-    }
-    Sys_CloseDir(dir);
-  }
-  */
-  if (tokill.length() > 4) return false; // something is VERY wrong here!
+
+  //if (tokill.length() > 4) return false; // something is VERY wrong here!
+
   for (int f = 0; f < tokill.length(); ++f) Sys_FileDelete(tokill[f]);
   return true;
 }
@@ -812,13 +1079,14 @@ static bool removeSlotSaveFiles (int slot, VStr fignore) {
 //  sets `saveFileBase`
 //
 //==========================================================================
-static VStream *SV_CreateSlotFileWrite (int slot, VStr descr) {
+static VStream *SV_CreateSlotFileWrite (int slot, VStr descr, bool asNew) {
   saveFileBase.clear();
   if (isBadSlotIndex(slot)) return nullptr;
   if (slot == QUICKSAVE_SLOT) descr = VStr();
-  //removeSlotSaveFiles(slot);
-  auto svpfx = SV_GetSavesDir()+"/"+GetSaveSlotBaseFileName(slot);
+
+  auto svpfx = GetDiskSavesPathNoHash().appendPath(GetSaveSlotBaseFileName(slot));
   FL_CreatePath(svpfx.extractFilePath()); // just in case
+
   // normalize description
   VStr newdesc;
   for (int f = 0; f < descr.length(); ++f) {
@@ -836,12 +1104,16 @@ static VStream *SV_CreateSlotFileWrite (int slot, VStr descr) {
   while (newdesc.length() && newdesc[newdesc.length()-1] == '_') newdesc.chopRight(1);
   // finalize file name
   if (newdesc.length()) { svpfx += "_"; svpfx += newdesc; }
-  svpfx += ".vsg";
+
+  if (asNew) svpfx += ".vwad"; else svpfx += ".vsg";
+  //GCon->Logf(NAME_Debug, "SAVE: <%s>", *svpfx);
   saveFileBase = svpfx;
   VStream *res = FL_OpenSysFileWrite(svpfx);
   if (res) {
-    removeSlotSaveFiles(slot, svpfx);
-    UpdateSaveDirWadList();
+    VStream::Destroy(res);
+    removeSlotSaveFiles(slot);
+    res = FL_OpenSysFileWrite(svpfx);
+    if (res) UpdateSaveDirWadList();
   }
   return res;
 }
@@ -855,7 +1127,7 @@ static VStream *SV_CreateSlotFileWrite (int slot, VStr descr) {
 //==========================================================================
 static bool SV_DeleteSlotFile (int slot) {
   if (isBadSlotIndex(slot)) return false;
-  return removeSlotSaveFiles(slot, VStr::EmptyString);
+  return removeSlotSaveFiles(slot);
 }
 #endif
 
@@ -929,21 +1201,6 @@ static VStr TimeVal2Str (const TTimeVal *tvin, bool forAutosave=false) {
   } else {
     return VStr("unknown");
   }
-}
-
-
-//==========================================================================
-//
-//  VSaveSlot::Clear
-//
-//==========================================================================
-void VSaveSlot::Clear () {
-  Description.Clean();
-  CurrentMap = NAME_None;
-  SavedSkill = -1;
-  for (int i = 0; i < Maps.length(); ++i) { delete Maps[i]; Maps[i] = nullptr; }
-  Maps.Clear();
-  CheckPoint.Clear();
 }
 
 
@@ -1046,43 +1303,37 @@ static bool LoadDateTValExtData (VStream *Strm, TTimeVal *tv) {
 
 //==========================================================================
 //
-//  VSaveSlot::LoadSlot
+//  VSaveSlot::Clear
 //
 //==========================================================================
-bool VSaveSlot::LoadSlot (int Slot) {
-  Clear();
-  saveFileBase.clear();
+void VSaveSlot::Clear (bool asNewFormat) {
+  Description.Clean();
+  CurrentMap = NAME_None;
+  SavedSkill = -1;
+  for (int i = 0; i < Maps.length(); ++i) { delete Maps[i]; Maps[i] = nullptr; }
+  Maps.Clear();
+  CheckPoint.Clear();
+  //if (vwad) { delete vwad; vwad = nullptr; }
+  newFormat = asNewFormat;
+}
 
-  VStream *Strm = SV_OpenSlotFileRead(Slot);
-  if (!Strm) {
-    saveFileBase.clear();
-    GCon->Logf(NAME_Error, "Savegame #%d file doesn't exist", Slot);
-    return false;
-  }
 
-  // check the version text
-  char VersionText[SAVE_VERSION_TEXT_LENGTH+1];
-  memset(VersionText, 0, sizeof(VersionText));
-  Strm->Serialise(VersionText, SAVE_VERSION_TEXT_LENGTH);
-  if (VStr::Cmp(VersionText, SAVE_VERSION_TEXT) /*&& VStr::Cmp(VersionText, SAVE_VERSION_TEXT_NO_DATE)*/) {
-    saveFileBase.clear();
-    // bad version
-    VStream::Destroy(Strm);
-    Strm = nullptr;
-    GCon->Logf(NAME_Error, "Savegame #%d is from incompatible version", Slot);
-    return false;
-  }
+//==========================================================================
+//
+//  VSaveSlot::LoadSlotOld
+//
+//  doesn't destroy stream on error
+//
+//==========================================================================
+bool VSaveSlot::LoadSlotOld (int Slot, VStream *Strm) {
+  Clear(false);
 
   *Strm << Description;
+  if (Strm->IsError()) return false;
 
   // skip extended data
-  if (VStr::Cmp(VersionText, SAVE_VERSION_TEXT) == 0) {
+  if (true/*VStr::Cmp(VersionText, SAVE_VERSION_TEXT) == 0*/) {
     if (!SkipExtData(Strm) || Strm->IsError()) {
-      saveFileBase.clear();
-      // bad file
-      VStream::Destroy(Strm);
-      Strm = nullptr;
-      GCon->Logf(NAME_Error, "Savegame #%d is corrupted", Slot);
       return false;
     }
   }
@@ -1093,18 +1344,12 @@ bool VSaveSlot::LoadSlot (int Slot) {
   *Strm << wcount;
 
   if (wcount < 1 || wcount > 8192) {
-    saveFileBase.clear();
-    VStream::Destroy(Strm);
-    Strm = nullptr;
     GCon->Logf(NAME_Error, "Invalid savegame #%d (bad number of mods)", Slot);
     return false;
   }
 
   if (!dbg_load_ignore_wadlist.asBool()) {
     if (wcount != wadlist.length()) {
-      saveFileBase.clear();
-      VStream::Destroy(Strm);
-      Strm = nullptr;
       GCon->Logf(NAME_Error, "Invalid savegame #%d (bad number of mods)", Slot);
       return false;
     }
@@ -1115,9 +1360,6 @@ bool VSaveSlot::LoadSlot (int Slot) {
     *Strm << s;
     if (!dbg_load_ignore_wadlist.asBool()) {
       if (s != wadlist[f]) {
-        saveFileBase.clear();
-        VStream::Destroy(Strm);
-        Strm = nullptr;
         GCon->Logf(NAME_Error, "Invalid savegame #%d (bad mod)", Slot);
         return false;
       }
@@ -1131,13 +1373,20 @@ bool VSaveSlot::LoadSlot (int Slot) {
   vint32 NumMaps;
   *Strm << STRM_INDEX(NumMaps);
   for (int i = 0; i < NumMaps; ++i) {
-    VSavedMap *Map = new VSavedMap();
+    VSavedMap *Map = new VSavedMap(false);
     Maps.Append(Map);
+    Map->Index = Maps.length() - 1;
+    vassert(Map->Index == i);
+    vassert(!Map->IsNewFormat());
     vint32 DataLen;
     *Strm << TmpName << Map->Compressed << STRM_INDEX(Map->DecompressedSize) << STRM_INDEX(DataLen);
     Map->Name = *TmpName;
     Map->Data.setLength(DataLen);
     Strm->Serialise(Map->Data.Ptr(), Map->Data.length());
+    #if 0
+    GCon->Logf(NAME_Debug, "Map #%d: %s (cp:%d; ds:%d; uds:%d)", i, *Map->Name,
+               Map->Compressed, DataLen, Map->DecompressedSize);
+    #endif
   }
 
   //HACK: if `NumMaps` is 0, we're loading a checkpoint
@@ -1145,6 +1394,7 @@ bool VSaveSlot::LoadSlot (int Slot) {
     // load players inventory
     VSavedCheckpoint &cp = CheckPoint;
     cp.Serialise(Strm);
+    SavedSkill = cp.Skill;
   } else {
     VSavedCheckpoint &cp = CheckPoint;
     cp.Clear();
@@ -1160,7 +1410,7 @@ bool VSaveSlot::LoadSlot (int Slot) {
           if (seg == GSLOT_DATA_SKILL) {
             vint32 sk;
             *Strm << STRM_INDEX(sk);
-            if (sk < 0 || sk > 32) {
+            if (sk < 0 || sk > 31) {
               GCon->Logf(NAME_Warning, "Invalid savegame #%d skill (%d)", Slot, sk);
             } else {
               SavedSkill = sk;
@@ -1168,8 +1418,6 @@ bool VSaveSlot::LoadSlot (int Slot) {
             continue;
           }
           GCon->Logf(NAME_Warning, "Invalid savegame #%d extra segment (%u)", Slot, seg);
-          VStream::Destroy(Strm);
-          saveFileBase.clear();
           return false;
         }
       }
@@ -1178,12 +1426,9 @@ bool VSaveSlot::LoadSlot (int Slot) {
 
   bool err = Strm->IsError();
 
-  VStream::Destroy(Strm);
-
   Host_ResetSkipFrames();
 
   if (err) {
-    saveFileBase.clear();
     GCon->Logf(NAME_Error, "Error loading savegame #%d data", Slot);
     return false;
   }
@@ -1195,15 +1440,202 @@ bool VSaveSlot::LoadSlot (int Slot) {
 
 //==========================================================================
 //
-//  VSaveSlot::SaveToSlot
+//  VSaveSlot::LoadSlotNew
+//
+//  `vwad` should be set
 //
 //==========================================================================
-bool VSaveSlot::SaveToSlot (int Slot) {
+bool VSaveSlot::LoadSlotNew (int Slot, VVWadArchive *vwad) {
+  Clear(true);
+
+  VStream *Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_HEADER);
+  if (!Strm) return false;
+  /*
+  if (Strm->GetGroupName() != "<savegame>") {
+    VStream::Destroy(Strm);
+    GCon->Logf(NAME_Error, "Invalid savegame #%d header", Slot);
+    return false;
+  }
+  */
+
+  vuint8 savever = 255;
+  *Strm << savever;
+  if (Strm->IsError()) { VStream::Destroy(Strm); return false; }
+  VStream::Destroy(Strm);
+  if (savever != 0) {
+    GCon->Logf(NAME_Error, "Invalid savegame #%d version", Slot);
+    return false;
+  }
+
+  Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_DESCR);
+  if (!Strm) return false;
+  *Strm << Description;
+  if (Strm->IsError()) { VStream::Destroy(Strm); return false; }
+  VStream::Destroy(Strm);
+
+  // check list of loaded modules
+  if (!dbg_load_ignore_wadlist.asBool()) {
+    Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_WADLIST);
+    if (!Strm) return false;
+    auto wadlist = FL_GetWadPk3List();
+    vint32 wcount = wadlist.length();
+    *Strm << wcount;
+
+    if (wcount < 1 || wcount > 8192) {
+      VStream::Destroy(Strm);
+      GCon->Logf(NAME_Error, "Invalid savegame #%d (bad number of mods)", Slot);
+      return false;
+    }
+
+    if (wcount != wadlist.length()) {
+      VStream::Destroy(Strm);
+      GCon->Logf(NAME_Error, "Invalid savegame #%d (bad number of mods)", Slot);
+      return false;
+    }
+
+    for (int f = 0; f < wcount; ++f) {
+      VStr s;
+      *Strm << s;
+      if (s != wadlist[f]) {
+        VStream::Destroy(Strm);
+        GCon->Logf(NAME_Error, "Invalid savegame #%d (bad mod)", Slot);
+        return false;
+      }
+    }
+
+    VStream::Destroy(Strm);
+  }
+
+  // load current map name
+  Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_CURRMAP);
+  if (!Strm) return false;
+  VStr TmpName;
+  *Strm << TmpName;
+  if (Strm->IsError()) { VStream::Destroy(Strm); return false; }
+  VStream::Destroy(Strm);
+
+  CurrentMap = *TmpName;
+
+  // load map list
+  vint32 NumMaps = -1;
+  Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_MAPLIST);
+  if (Strm) {
+    *Strm << STRM_INDEX(NumMaps);
+    if (Strm->IsError() || NumMaps < 0 || NumMaps > 1024) { VStream::Destroy(Strm); return false; }
+    for (int i = 0; i < NumMaps; ++i) {
+      *Strm << TmpName;
+      if (Strm->IsError()) { VStream::Destroy(Strm); return false; }
+      VSavedMap *Map = new VSavedMap(true);
+      if (Strm->IsError()) { VStream::Destroy(Strm); return false; }
+      Map->Name = *TmpName;
+      Maps.Append(Map);
+      Map->Index = Maps.length() - 1;
+    }
+    VStream::Destroy(Strm);
+
+    // now load map vwads
+    for (int i = 0; i < NumMaps; ++i) {
+      VSavedMap *Map = Maps[i];
+      vassert(Map->Index == i);
+      vassert(Map->IsNewFormat());
+      VStr vname = Map->GenVWadName();
+      Strm = vwad->OpenFile(vname);
+      if (Strm->IsError() || Strm->TotalSize() < 16) { VStream::Destroy(Strm); return false; }
+      Map->Data.setLength(Strm->TotalSize());
+      Strm->Serialise(Map->Data.Ptr(), Map->Data.length());
+      if (Strm->IsError()) { VStream::Destroy(Strm); return false; }
+      VStream::Destroy(Strm);
+    }
+  } else {
+    // for checkpoint, we don't have map list at all
+    NumMaps = 0;
+  }
+
+  //HACK: if `NumMaps` is 0, we're loading a checkpoint
+  if (NumMaps == 0) {
+    // load players inventory
+    VSavedCheckpoint &cp = CheckPoint;
+    cp.Clear();
+    Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_CPOINT);
+    if (!Strm) return false;
+    cp.Serialise(Strm);
+    if (Strm->IsError()) { VStream::Destroy(Strm); return false; }
+    VStream::Destroy(Strm);
+    SavedSkill = cp.Skill;
+  } else {
+    VSavedCheckpoint &cp = CheckPoint;
+    cp.Clear();
+    // load skill level
+    SavedSkill = -1;
+    Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_SKILL);
+    if (Strm) {
+      vint32 sk = -1;
+      *Strm << sk;
+      if (Strm->IsError()) { VStream::Destroy(Strm); return false; }
+      VStream::Destroy(Strm);
+      if (sk < 0 || sk > 31) {
+        GCon->Logf(NAME_Warning, "Invalid savegame #%d skill (%d)", Slot, sk);
+      } else {
+        SavedSkill = sk;
+      }
+    }
+  }
+
+  Host_ResetSkipFrames();
+
+  vassert(!saveFileBase.isEmpty());
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VSaveSlot::LoadSlot
+//
+//==========================================================================
+bool VSaveSlot::LoadSlot (int Slot) {
+  Clear(!dbg_save_in_old_format.asBool());
   saveFileBase.clear();
 
-  VStream *Strm = SV_CreateSlotFileWrite(Slot, Description);
+  VVWadArchive *vwad = nullptr;
+  VStream *Strm = SV_OpenSlotFileReadWithFmt(Slot, vwad);
   if (!Strm) {
     saveFileBase.clear();
+    GCon->Logf(NAME_Error, "Savegame #%d file doesn't exist", Slot);
+    return false;
+  }
+
+  bool res;
+
+  if (vwad) {
+    res = LoadSlotNew(Slot, vwad);
+    delete vwad;
+  } else {
+    res = LoadSlotOld(Slot, Strm);
+    if (res && Strm->IsError()) res = false;
+    VStream::Destroy(Strm);
+  }
+
+  if (!res) {
+    saveFileBase.clear();
+    GCon->Logf(NAME_Error, "Savegame #%d could not be read", Slot);
+    Clear(!dbg_save_in_old_format.asBool());
+  }
+
+  return res;
+}
+
+
+//==========================================================================
+//
+//  VSaveSlot::SaveToSlotOld
+//
+//==========================================================================
+bool VSaveSlot::SaveToSlotOld (int Slot) {
+  saveFileBase.clear();
+
+  VStream *Strm = SV_CreateSlotFileWrite(Slot, Description, false);
+  if (!Strm) {
     GCon->Logf(NAME_Error, "cannot save to slot %d!", Slot);
     return false;
   }
@@ -1252,13 +1684,17 @@ bool VSaveSlot::SaveToSlot (int Slot) {
   VStr TmpName(CurrentMap);
   *Strm << TmpName;
 
+  // write map list
   vint32 NumMaps = Maps.length();
   *Strm << STRM_INDEX(NumMaps);
   for (int i = 0; i < Maps.length(); ++i) {
-    TmpName = VStr(Maps[i]->Name);
-    vint32 DataLen = Maps[i]->Data.length();
-    *Strm << TmpName << Maps[i]->Compressed << STRM_INDEX(Maps[i]->DecompressedSize) << STRM_INDEX(DataLen);
-    Strm->Serialise(Maps[i]->Data.Ptr(), Maps[i]->Data.length());
+    VSavedMap *Map = Maps[i];
+    vassert(Map->Index == i);
+    vassert(!Map->IsNewFormat());
+    TmpName = VStr(Map->Name);
+    vint32 DataLen = Map->Data.length();
+    *Strm << TmpName << Map->Compressed << STRM_INDEX(Map->DecompressedSize) << STRM_INDEX(DataLen);
+    Strm->Serialise(Map->Data.Ptr(), Map->Data.length());
   }
 
   //HACK: if `NumMaps` is 0, we're saving checkpoint
@@ -1266,8 +1702,9 @@ bool VSaveSlot::SaveToSlot (int Slot) {
     // save players inventory
     VSavedCheckpoint &cp = CheckPoint;
     cp.Serialise(Strm);
+    SavedSkill = cp.Skill;
   } else {
-    if (SavedSkill > 0 && SavedSkill <= 32) {
+    if (SavedSkill >= 0 && SavedSkill < 32) {
       // save extra data
       vuint32 seg = GSLOT_DATA_START;
       *Strm << STRM_INDEX_U(seg);
@@ -1290,13 +1727,199 @@ bool VSaveSlot::SaveToSlot (int Slot) {
   Host_ResetSkipFrames();
 
   if (err) {
-    saveFileBase.clear();
     GCon->Logf(NAME_Error, "error saving to slot %d, savegame is corrupted!", Slot);
     return false;
   }
 
   vassert(!saveFileBase.isEmpty());
   return true;
+}
+
+
+//==========================================================================
+//
+//  VSaveSlot::PackStream
+//
+//  will destroy stream in any case
+//  will destroy vmain and its stream on error
+//
+//==========================================================================
+bool VSaveSlot::PackStream (vwadwr_dir *vmain, VStream *Strm, VStr fname) {
+  int level;
+
+  vassert(vmain);
+  vassert(!fname.isEmpty());
+  if (!Strm || Strm->IsError()) goto error;
+
+  vassert(dynamic_cast<VMemoryStream *>(Strm));
+  ((VMemoryStream *)Strm)->BeginRead();
+
+  level = save_compression_level.asInt();
+  if (level < VADWR_COMP_DISABLE || level > VADWR_COMP_BEST) {
+    level = VADWR_COMP_FAST;
+    save_compression_level = level;
+  }
+
+  // do not compress embedded vwads
+  if (fname.endsWith(".vwad")) level = VADWR_COMP_DISABLE;
+
+  #if 0
+  GCon->Logf(NAME_Debug, "...packing: '%s' (%d)", *fname, Strm->TotalSize());
+  #endif
+  if (vwadwr_write_vstream(vmain, Strm, level, *fname) != 0) goto error;
+  VStream::Destroy(Strm);
+  return true;
+
+error:
+  #if 1
+  if (Strm) {
+    GCon->Logf(NAME_Error, "cannot pack: '%s' (%d)", *fname, Strm->TotalSize());
+  }
+  #endif
+  VStream *mst = vwadwr_arc_get_archive_stream(vmain);
+  vwadwr_destroy_archive_stream(vmain);
+  VStream::Destroy(mst);
+  VStream::Destroy(Strm);
+  return false;
+}
+
+
+//==========================================================================
+//
+//  VSaveSlot::SaveToSlotNew
+//
+//==========================================================================
+bool VSaveSlot::SaveToSlotNew (int Slot) {
+  TTimeVal tv;
+  GetTimeOfDay(&tv);
+
+  VStream *ArcStrm = SV_CreateSlotFileWrite(Slot, Description, true);
+  if (!ArcStrm) {
+    GCon->Logf(NAME_Error, "cannot save to slot %d!", Slot);
+    return false;
+  }
+
+  vwadwr_dir *vmain = vwadwr_create_archive_stream(ArcStrm,
+                                                   "k8vavoom engine (save game)",
+                                                   Description + " | "+TimeVal2Str(&tv));
+  if (!vmain) {
+    GCon->Logf(NAME_Error, "cannot create save archive for slot %d!", Slot);
+    return false;
+  }
+
+  VStream *Strm;
+
+  // version
+  Strm = new VMemoryStream();
+  vuint8 savever = 0;
+  *Strm << savever;
+  if (!PackStream(vmain, Strm, NEWFTM_FNAME_SAVE_HEADER)) return false;
+
+  Strm = new VMemoryStream();
+  *Strm << Description;
+  if (!PackStream(vmain, Strm, NEWFTM_FNAME_SAVE_DESCR)) return false;
+
+  // extended data: date value and date string
+  // date value
+  Strm = new VMemoryStream();
+  *Strm << tv.secs << tv.usecs << tv.secshi;
+
+  // date string (unused, but nice to have)
+  VStr dstr = TimeVal2Str(&tv);
+  *Strm << dstr;
+
+  if (!PackStream(vmain, Strm, NEWFTM_FNAME_SAVE_DATE)) return false;
+
+  // write list of loaded modules
+  {
+    Strm = new VMemoryStream();
+
+    auto wadlist = FL_GetWadPk3List();
+    vint32 wcount = wadlist.length();
+    *Strm << wcount;
+
+    for (int f = 0; f < wcount; ++f) *Strm << wadlist[f];
+
+    if (!PackStream(vmain, Strm, NEWFTM_FNAME_SAVE_WADLIST)) return false;
+  }
+
+  // write current map name
+  Strm = new VMemoryStream();
+  VStr TmpName(CurrentMap);
+  *Strm << TmpName;
+  if (!PackStream(vmain, Strm, NEWFTM_FNAME_SAVE_CURRMAP)) return false;
+
+  // write map list
+  Strm = new VMemoryStream();
+  vint32 NumMaps = Maps.length();
+  *Strm << STRM_INDEX(NumMaps);
+  for (int i = 0; i < Maps.length(); ++i) {
+    VSavedMap *Map = Maps[i];
+    vassert(Map->Index == i);
+    vassert(Map->IsNewFormat());
+    TmpName = VStr(Map->Name);
+    *Strm << TmpName;
+  }
+  if (!PackStream(vmain, Strm, NEWFTM_FNAME_SAVE_MAPLIST)) return false;
+
+  // write map vwads
+  for (int i = 0; i < NumMaps; ++i) {
+    VSavedMap *Map = Maps[i];
+    vassert(Map->Index == i);
+    vassert(Map->IsNewFormat());
+    vassert(Map->Data.length() >= 16);
+    VStr vname = Map->GenVWadName();
+    Strm = new VMemoryStream();
+    Strm->Serialise(Map->Data.Ptr(), Map->Data.length());
+    if (!PackStream(vmain, Strm, vname)) return false;
+  }
+
+  //HACK: if `NumMaps` is 0, we're loading a checkpoint
+  if (NumMaps == 0) {
+    // save players inventory
+    VSavedCheckpoint &cp = CheckPoint;
+    Strm = new VMemoryStream();
+    cp.Serialise(Strm);
+    if (!PackStream(vmain, Strm, NEWFTM_FNAME_SAVE_CPOINT)) return false;
+    SavedSkill = cp.Skill;
+  } else {
+    VSavedCheckpoint &cp = CheckPoint;
+    cp.Clear();
+    // write skill level
+    if (SavedSkill >= 0 && SavedSkill < 32) {
+      Strm = new VMemoryStream();
+      vint32 sk = SavedSkill;
+      *Strm << sk;
+      if (!PackStream(vmain, Strm, NEWFTM_FNAME_SAVE_SKILL)) return false;
+    }
+  }
+
+  // finish vwad
+  bool xres = vwadwr_finish_archive_stream(vmain);
+  #if 0
+  GCon->Logf(NAME_Debug, "finished VWAD archive! xres=%d (%s)", (int)xres, *ArcStrm->GetName());
+  #endif
+  if (!xres) {
+    GCon->Logf(NAME_Error, "cannot finish save archive");
+  }
+  VStream::Destroy(ArcStrm);
+
+  return xres;
+}
+
+
+//==========================================================================
+//
+//  VSaveSlot::SaveToSlot
+//
+//==========================================================================
+bool VSaveSlot::SaveToSlot (int Slot) {
+  const bool res = (IsNewFormat() ? SaveToSlotNew(Slot) : SaveToSlotOld(Slot));
+  if (!res) {
+    saveFileBase.clear();
+    removeSlotSaveFiles(Slot);
+  }
+  return res;
 }
 
 
@@ -1313,49 +1936,99 @@ VSavedMap *VSaveSlot::FindMap (VName Name) {
 
 //==========================================================================
 //
+//  SV_GetSaveStringOld
+//
+//==========================================================================
+static bool SV_GetSaveStringOld (int Slot, VStr &Desc, VStream *Strm) {
+  bool goodSave = true;
+  Desc = "???";
+  *Strm << Desc;
+  // skip extended data
+  if (true/*VStr::Cmp(VersionText, SAVE_VERSION_TEXT) == 0*/) {
+    if (!SkipExtData(Strm) || Strm->IsError()) goodSave = false;
+  }
+  if (goodSave) {
+    // check list of loaded modules
+    auto wadlist = FL_GetWadPk3List();
+    vint32 wcount = wadlist.length();
+    *Strm << wcount;
+    if (wcount < 1 || wcount > 8192 || wcount != wadlist.length()) {
+      goodSave = false;
+    } else {
+      for (int f = 0; f < wcount; ++f) {
+        VStr s;
+        *Strm << s;
+        if (s != wadlist[f]) { goodSave = false; break; }
+      }
+    }
+  }
+  if (!goodSave) Desc = "*"+Desc;
+  return /*true*/goodSave;
+}
+
+
+//==========================================================================
+//
+//  SV_GetSaveStringNew
+//
+//==========================================================================
+static bool SV_GetSaveStringNew (int Slot, VStr &Desc, VVWadArchive *vwad) {
+  VStream *Strm;
+
+  Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_DESCR);
+  if (!Strm) return false;
+  *Strm << Desc;
+  if (Strm->IsError()) { VStream::Destroy(Strm); return false; }
+  VStream::Destroy(Strm);
+
+  bool goodSave = true;
+  #if 0
+  // check list of loaded modules
+  auto wadlist = FL_GetWadPk3List();
+  vint32 wcount = -1;
+
+  Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_WADLIST);
+  if (!Strm) return false;
+  *Strm << wcount;
+  if (wcount != wadlist.length()) {
+    goodSave = false;
+  } else {
+    for (int f = 0; f < wcount; ++f) {
+      VStr s;
+      *Strm << s;
+      if (s != wadlist[f]) { goodSave = false; break; }
+    }
+  }
+  if (goodSave && Strm->IsError()) goodSave = false;
+  VStream::Destroy(Strm);
+  #endif
+
+  if (!goodSave) Desc = "*"+Desc;
+  return /*true*/goodSave;
+}
+
+
+//==========================================================================
+//
 //  SV_GetSaveString
 //
 //==========================================================================
 bool SV_GetSaveString (int Slot, VStr &Desc) {
-  VStream *Strm = SV_OpenSlotFileRead(Slot);
-  if (Strm) {
-    char VersionText[SAVE_VERSION_TEXT_LENGTH+1];
-    memset(VersionText, 0, sizeof(VersionText));
-    Strm->Serialise(VersionText, SAVE_VERSION_TEXT_LENGTH);
-    bool goodSave = true;
-    Desc = "???";
-    if (VStr::Cmp(VersionText, SAVE_VERSION_TEXT) /*&& VStr::Cmp(VersionText, SAVE_VERSION_TEXT_NO_DATE)*/) {
-      // bad version, put an asterisk in front of the description
-      goodSave = false;
-    } else {
-      *Strm << Desc;
-      // skip extended data
-      if (VStr::Cmp(VersionText, SAVE_VERSION_TEXT) == 0) {
-        if (!SkipExtData(Strm) || Strm->IsError()) goodSave = false;
-      }
-      if (goodSave) {
-        // check list of loaded modules
-        auto wadlist = FL_GetWadPk3List();
-        vint32 wcount = wadlist.length();
-        *Strm << wcount;
-        if (wcount < 1 || wcount > 8192 || wcount != wadlist.length()) {
-          goodSave = false;
-        } else {
-          for (int f = 0; f < wcount; ++f) {
-            VStr s;
-            *Strm << s;
-            if (s != wadlist[f]) { goodSave = false; break; }
-          }
-        }
-      }
-    }
-    if (!goodSave) Desc = "*"+Desc;
+  VVWadArchive *vwad = nullptr;
+  VStream *Strm = SV_OpenSlotFileReadWithFmt(Slot, vwad);
+  bool res;
+  if (vwad) {
+    res = SV_GetSaveStringNew(Slot, Desc, vwad);
+    delete vwad;
+  } else if (Strm) {
+    res = SV_GetSaveStringOld(Slot, Desc, Strm);
+    if (res && Strm->IsError()) res = false;
     VStream::Destroy(Strm);
-    return /*true*/goodSave;
   } else {
-    Desc = EMPTYSTRING;
-    return false;
+    res = false;
   }
+  if (!res) Desc = EMPTYSTRING;
+  return res;
 }
 
 
@@ -1366,22 +2039,35 @@ bool SV_GetSaveString (int Slot, VStr &Desc) {
 //
 //==========================================================================
 void SV_GetSaveDateString (int Slot, VStr &datestr) {
-  VStream *Strm = SV_OpenSlotFileRead(Slot);
-  if (Strm) {
-    char VersionText[SAVE_VERSION_TEXT_LENGTH+1];
-    memset(VersionText, 0, sizeof(VersionText));
-    Strm->Serialise(VersionText, SAVE_VERSION_TEXT_LENGTH);
-    datestr = "UNKNOWN";
-    if (VStr::Cmp(VersionText, SAVE_VERSION_TEXT) == 0) {
-      VStr Desc;
-      *Strm << Desc;
+  VVWadArchive *vwad = nullptr;
+  VStream *Strm = SV_OpenSlotFileReadWithFmt(Slot, vwad);
+  bool res;
+  if (vwad) {
+    res = false;
+    Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_DATE);
+    if (Strm) {
+      TTimeVal tv;
+      memset((void *)&tv, 0, sizeof(tv));
+      *Strm << tv.secs << tv.usecs << tv.secshi;
+      res = !Strm->IsError();
+      VStream::Destroy(Strm);
+      if (res) datestr = TimeVal2Str(&tv);
+    }
+    delete vwad;
+  } else if (Strm) {
+    VStr Desc;
+    *Strm << Desc;
+    res = !Strm->IsError();
+    if (res) {
       datestr = LoadDateStrExtData(Strm);
       if (datestr.length() == 0) datestr = "UNKNOWN";
+      if (res && Strm->IsError()) res = false;
     }
     VStream::Destroy(Strm);
   } else {
-    datestr = "UNKNOWN";
+    res = false;
   }
+  if (!res) datestr = "UNKNOWN";
 }
 
 
@@ -1393,24 +2079,35 @@ void SV_GetSaveDateString (int Slot, VStr &datestr) {
 //
 //==========================================================================
 static bool SV_GetSaveDateTVal (int Slot, TTimeVal *tv) {
-  memset((void *)tv, 0, sizeof(*tv));
-  VStream *Strm = SV_OpenSlotFileRead(Slot);
-  if (Strm) {
-    char VersionText[SAVE_VERSION_TEXT_LENGTH+1];
-    memset(VersionText, 0, sizeof(VersionText));
-    Strm->Serialise(VersionText, SAVE_VERSION_TEXT_LENGTH);
-    //fprintf(stderr, "OPENED slot #%d\n", Slot);
-    if (VStr::Cmp(VersionText, SAVE_VERSION_TEXT) != 0) { VStream::Destroy(Strm); return false; }
-    //fprintf(stderr, "  slot #%d has valid version\n", Slot);
+  //memset((void *)tv, 0, sizeof(*tv));
+
+  VVWadArchive *vwad = nullptr;
+  VStream *Strm = SV_OpenSlotFileReadWithFmt(Slot, vwad);
+  bool res;
+  if (vwad) {
+    res = false;
+    Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_DATE);
+    if (Strm) {
+      TTimeVal tv;
+      memset((void *)&tv, 0, sizeof(tv));
+      *Strm << tv.secs << tv.usecs << tv.secshi;
+      res = !Strm->IsError();
+      VStream::Destroy(Strm);
+    }
+    delete vwad;
+  } else if (Strm) {
     VStr Desc;
     *Strm << Desc;
-    //fprintf(stderr, "  slot #%d description: [%s]\n", Slot, *Desc);
-    if (!LoadDateTValExtData(Strm, tv)) { VStream::Destroy(Strm); return false; }
+    res = !Strm->IsError();
+    if (res) {
+      res = LoadDateTValExtData(Strm, tv);
+    }
     VStream::Destroy(Strm);
-    return true;
   } else {
-    return false;
+    res = false;
   }
+  if (!res) memset((void *)tv, 0, sizeof(*tv));
+  return res;
 }
 
 
@@ -1449,8 +2146,10 @@ static int SV_FindAutosaveSlot () {
 //  AssertSegment
 //
 //==========================================================================
-static void AssertSegment (VStream &Strm, gameArchiveSegment_t segType) {
-  if (Streamer<vint32>(Strm) != (int)segType) Host_Error("Corrupt save game: Segment [%d] failed alignment check", segType);
+static inline void AssertSegment (VStream &Strm, gameArchiveSegment_t segType) {
+  if (Streamer<vint32>(Strm) != (int)segType) {
+    Host_Error("Corrupted save game: Segment [%d] failed alignment check", segType);
+  }
 }
 
 
@@ -1460,11 +2159,15 @@ static void AssertSegment (VStream &Strm, gameArchiveSegment_t segType) {
 //
 //==========================================================================
 static void ArchiveNames (VSaveWriterStream *Saver) {
-  // write offset to the names in the beginning of the file
-  vint32 NamesOffset = Saver->Tell();
-  Saver->Seek(0);
-  *Saver << NamesOffset;
-  Saver->Seek(NamesOffset);
+  if (Saver->IsNewFormat()) {
+    if (!Saver->CreateFile(NEWFTM_FNAME_MAP_NAMES)) return;
+  } else {
+    // write offset to the names in the beginning of the file
+    vint32 NamesOffset = Saver->Tell();
+    Saver->Seek(0);
+    *Saver << NamesOffset;
+    Saver->Seek(NamesOffset);
+  }
 
   // serialise names
   vint32 Count = Saver->Names.length();
@@ -1477,9 +2180,14 @@ static void ArchiveNames (VSaveWriterStream *Saver) {
     if (len) Saver->Serialise((void *)EName, len);
   }
 
+  if (Saver->IsNewFormat()) {
+    if (!Saver->CreateFile(NEWFTM_FNAME_MAP_ACSEXPT)) return;
+  }
   // serialise number of ACS exports
   vint32 numScripts = Saver->AcsExports.length();
   *Saver << STRM_INDEX(numScripts);
+
+  Saver->CloseFile();
 }
 
 
@@ -1489,11 +2197,33 @@ static void ArchiveNames (VSaveWriterStream *Saver) {
 //
 //==========================================================================
 static void UnarchiveNames (VSaveLoaderStream *Loader) {
-  vint32 NamesOffset;
-  *Loader << NamesOffset;
+  vint32 NamesOffset = -1;
+  vint32 TmpOffset = 0;
 
-  vint32 TmpOffset = Loader->Tell();
-  Loader->Seek(NamesOffset);
+  if (Loader->IsNewFormat()) {
+    Loader->OpenFile(NEWFTM_FNAME_MAP_NAMES);
+  } else {
+    *Loader << NamesOffset;
+    TmpOffset = Loader->Tell();
+    #if 0
+    FILE *fo = fopen("zzz.$$$", "w");
+    Loader->Seek(0);
+    while (Loader->Tell() != Loader->TotalSize()) {
+      char buf[4096];
+      memset(buf, -1, 4096);
+      int rd = Loader->TotalSize() - Loader->Tell();
+      if (rd > 4096) rd = 4096;
+      Loader->Serialise(buf, rd);
+      fwrite(buf, rd, 1, fo);
+    }
+    fclose(fo);
+    #endif
+    Loader->Seek(NamesOffset);
+    #if 0
+    GCon->Logf(NAME_Debug, "  cofs: %d; nofs: %d; pos: %d", TmpOffset, NamesOffset, Loader->Tell());
+    #endif
+  }
+
   vint32 Count;
   *Loader << STRM_INDEX(Count);
   Loader->NameRemap.setLength(Count);
@@ -1512,6 +2242,9 @@ static void UnarchiveNames (VSaveLoaderStream *Loader) {
   }
 
   // unserialise number of ACS exports
+  if (Loader->IsNewFormat()) {
+    Loader->OpenFile(NEWFTM_FNAME_MAP_ACSEXPT);
+  }
   vint32 numScripts = -1;
   *Loader << STRM_INDEX(numScripts);
   if (numScripts < 0 || numScripts >= 1024*1024*2) Host_Error("invalid number of ACS scripts (%d)", numScripts);
@@ -1520,7 +2253,9 @@ static void UnarchiveNames (VSaveLoaderStream *Loader) {
   // create empty script objects
   for (vint32 f = 0; f < numScripts; ++f) Loader->AcsExports[f] = AcsCreateEmptyThinker();
 
-  Loader->Seek(TmpOffset);
+  if (!Loader->IsNewFormat()) {
+    Loader->Seek(TmpOffset);
+  }
 }
 
 
@@ -1530,8 +2265,12 @@ static void UnarchiveNames (VSaveLoaderStream *Loader) {
 //
 //==========================================================================
 static void ArchiveThinkers (VSaveWriterStream *Saver, bool SavingPlayers) {
-  vint32 Seg = ASEG_WORLD;
-  *Saver << Seg;
+  if (Saver->IsNewFormat()) {
+    if (!Saver->CreateFile(NEWFTM_FNAME_MAP_THINKERS)) return;
+  } else {
+    vint32 Seg = ASEG_WORLD;
+    *Saver << Seg;
+  }
 
   Saver->skipPlayers = !SavingPlayers;
 
@@ -1590,6 +2329,8 @@ static void ArchiveThinkers (VSaveWriterStream *Saver, bool SavingPlayers) {
 
   // save collected VAcs objects contents
   for (vint32 f = 0; f < Saver->AcsExports.length(); ++f) Saver->AcsExports[f]->Serialise(*Saver);
+
+  Saver->CloseFile();
 }
 
 
@@ -1601,7 +2342,11 @@ static void ArchiveThinkers (VSaveWriterStream *Saver, bool SavingPlayers) {
 static void UnarchiveThinkers (VSaveLoaderStream *Loader) {
   VObject *Obj = nullptr;
 
-  AssertSegment(*Loader, ASEG_WORLD);
+  if (Loader->IsNewFormat()) {
+    Loader->OpenFile(NEWFTM_FNAME_MAP_THINKERS);
+  } else {
+    AssertSegment(*Loader, ASEG_WORLD);
+  }
 
   // add level
   Loader->Exports.Append(GLevel);
@@ -1734,15 +2479,23 @@ static void UnarchiveThinkers (VSaveLoaderStream *Loader) {
 //  ArchiveSounds
 //
 //==========================================================================
-static void ArchiveSounds (VStream &Strm) {
-  vint32 Seg = ASEG_SOUNDS;
-  Strm << Seg;
-#ifdef CLIENT
-  GAudio->SerialiseSounds(Strm);
-#else
-  vint32 Dummy = 0;
-  Strm << Dummy;
-#endif
+static void ArchiveSounds (VSaveWriterStream *Saver) {
+  if (Saver->IsNewFormat()) {
+    #ifdef CLIENT
+    if (!Saver->CreateFile(NEWFTM_FNAME_MAP_SOUNDS)) return;
+    GAudio->SerialiseSounds(*Saver);
+    Saver->CloseFile();
+    #endif
+  } else {
+    vint32 Seg = ASEG_SOUNDS;
+    *Saver << Seg;
+    #ifdef CLIENT
+    GAudio->SerialiseSounds(*Saver);
+    #else
+    vint32 Dummy = 0;
+    *Saver << Dummy;
+    #endif
+  }
 }
 
 
@@ -1751,125 +2504,191 @@ static void ArchiveSounds (VStream &Strm) {
 //  UnarchiveSounds
 //
 //==========================================================================
-static void UnarchiveSounds (VStream &Strm) {
-  AssertSegment(Strm, ASEG_SOUNDS);
-#ifdef CLIENT
-  GAudio->SerialiseSounds(Strm);
-#else
-  vint32 count = 0;
-  Strm << count;
-  //FIXME: keep this in sync with VAudio
-  //Strm.Seek(Strm.Tell()+Dummy*36); //FIXME!
-  if (count < 0) Sys_Error("invalid sound sequence data");
-  while (count-- > 0) {
-    vuint8 xver = 0; // current version is 0
-    Strm << xver;
-    if (xver != 0) Sys_Error("invalid sound sequence data");
-    vint32 Sequence;
-    vint32 OriginId;
-    TVec Origin;
-    vint32 CurrentSoundID;
-    float DelayTime;
-    vuint32 DidDelayOnce;
-    float Volume;
-    float Attenuation;
-    vint32 ModeNum;
-    Strm << STRM_INDEX(Sequence)
-      << STRM_INDEX(OriginId)
-      << Origin
-      << STRM_INDEX(CurrentSoundID)
-      << DelayTime
-      << STRM_INDEX(DidDelayOnce)
-      << Volume
-      << Attenuation
-      << STRM_INDEX(ModeNum);
+static void UnarchiveSounds (VSaveLoaderStream *Loader) {
+  if (Loader->IsNewFormat()) {
+    #ifdef CLIENT
+    Loader->OpenFile(NEWFTM_FNAME_MAP_SOUNDS);
+    GAudio->SerialiseSounds(*Loader);
+    #endif
+  } else {
+    AssertSegment(*Loader, ASEG_SOUNDS);
+    #ifdef CLIENT
+    GAudio->SerialiseSounds(*Loader);
+    #else
+    vint32 count = 0;
+    *Loader << count;
+    //FIXME: keep this in sync with VAudio
+    //Strm.Seek(Strm.Tell()+Dummy*36); //FIXME!
+    if (count < 0) Sys_Error("invalid sound sequence data");
+    while (count-- > 0) {
+      vuint8 xver = 0; // current version is 0
+      *Loader << xver;
+      if (xver != 0) Sys_Error("invalid sound sequence data");
+      vint32 Sequence;
+      vint32 OriginId;
+      TVec Origin;
+      vint32 CurrentSoundID;
+      float DelayTime;
+      vuint32 DidDelayOnce;
+      float Volume;
+      float Attenuation;
+      vint32 ModeNum;
+      *Loader << STRM_INDEX(Sequence)
+        << STRM_INDEX(OriginId)
+        << Origin
+        << STRM_INDEX(CurrentSoundID)
+        << DelayTime
+        << STRM_INDEX(DidDelayOnce)
+        << Volume
+        << Attenuation
+        << STRM_INDEX(ModeNum);
 
-    vint32 Offset;
-    Strm << STRM_INDEX(Offset);
+      vint32 Offset;
+      *Loader << STRM_INDEX(Offset);
 
-    vint32 Count;
-    Strm << STRM_INDEX(Count);
-    if (Count < 0) Sys_Error("invalid sound sequence data");
-    for (int i = 0; i < Count; ++i) {
-      VName SeqName;
-      Strm << SeqName;
+      vint32 Count;
+      *Loader << STRM_INDEX(Count);
+      if (Count < 0) Sys_Error("invalid sound sequence data");
+      for (int i = 0; i < Count; ++i) {
+        VName SeqName;
+        *Loader << SeqName;
+      }
+
+      vint32 ParentSeqIdx;
+      vint32 ChildSeqIdx;
+      *Loader << STRM_INDEX(ParentSeqIdx) << STRM_INDEX(ChildSeqIdx);
     }
-
-    vint32 ParentSeqIdx;
-    vint32 ChildSeqIdx;
-    Strm << STRM_INDEX(ParentSeqIdx) << STRM_INDEX(ChildSeqIdx);
+    #endif
   }
-#endif
 }
 
 
 //==========================================================================
 //
-// SV_SaveMap
+//  SV_SaveMap
 //
 //==========================================================================
 static void SV_SaveMap (bool savePlayers) {
   // make sure we don't have any garbage
   Host_CollectGarbage(true);
 
+  VSaveWriterStream *Saver;
+
   // open the output file
-  VMemoryStream *InStrm = new VMemoryStream();
-  VSaveWriterStream *Saver = new VSaveWriterStream(InStrm);
+  if (!BaseSlot.IsNewFormat()) {
+    // old format
+    VSavedMap *Map = BaseSlot.FindMap(GLevel->MapName);
+    if (!Map) {
+      Map = new VSavedMap(false);
+      BaseSlot.Maps.Append(Map);
+      Map->Name = GLevel->MapName;
+    } else {
+      Map->ClearData(false);
+    }
 
-  int NamesOffset = 0;
-  *Saver << NamesOffset;
+    VMemoryStream *InStrm = new VMemoryStream();
+    Saver = new VSaveWriterStream(InStrm);
 
-  // place a header marker
-  vint32 Seg = ASEG_MAP_HEADER;
-  *Saver << Seg;
+    vint32 NamesOffset = 0;
+    *Saver << NamesOffset;
 
-  // write the level timer
-  *Saver << GLevel->Time << GLevel->TicTime;
+    // place a header marker
+    vint32 Seg = ASEG_MAP_HEADER;
+    *Saver << Seg;
 
-  // write main data
-  ArchiveThinkers(Saver, savePlayers);
-  ArchiveSounds(*Saver);
+    // write the level timer
+    *Saver << GLevel->Time << GLevel->TicTime;
 
-  // place a termination marker
-  Seg = ASEG_END;
-  *Saver << Seg;
+    // write main data
+    ArchiveThinkers(Saver, savePlayers);
+    ArchiveSounds(Saver);
 
-  ArchiveNames(Saver);
+    // place a termination marker
+    Seg = ASEG_END;
+    *Saver << Seg;
 
-  // close the output file
-  Saver->Close();
+    ArchiveNames(Saver);
 
-  TArrayNC<vuint8> &Buf = InStrm->GetArray();
+    // close the output file
+    Saver->Close();
 
-  VSavedMap *Map = BaseSlot.FindMap(GLevel->MapName);
-  if (!Map) {
-    Map = new VSavedMap();
-    BaseSlot.Maps.Append(Map);
-    Map->Name = GLevel->MapName;
-  }
+    TArrayNC<vuint8> &Buf = InStrm->GetArray();
 
-  // compress map data
-  Map->DecompressedSize = Buf.length();
-  Map->Data.Clear();
-  if (save_compression_level <= 0) {
-    Map->Compressed = 0;
-    Map->Data.setLength(Buf.length());
-    if (Buf.length()) memcpy(Map->Data.ptr(), Buf.ptr(), Buf.length());
+    // compress map data
+    Map->DecompressedSize = Buf.length();
+    Map->Data.Clear();
+    if (save_compression_level.asInt() < 0) {
+      Map->Compressed = 0;
+      Map->Data.setLength(Buf.length());
+      if (Buf.length()) memcpy(Map->Data.ptr(), Buf.ptr(), Buf.length());
+    } else {
+      Map->Compressed = 1;
+      VArrayStream *ArrStrm = new VArrayStream("<savemap>", Map->Data);
+      ArrStrm->BeginWrite();
+      int level = save_compression_level.asInt() * 3;
+      if (level < 3) level = 3;
+      VZLibStreamWriter *ZipStrm = new VZLibStreamWriter(ArrStrm, level);
+      ZipStrm->Serialise(Buf.Ptr(), Buf.length());
+      bool wasErr = ZipStrm->IsError();
+      if (!ZipStrm->Close()) wasErr = true;
+      delete ZipStrm;
+      ArrStrm->Close();
+      delete ArrStrm;
+      if (wasErr) Host_Error("error compressing savegame data");
+    }
+
+    delete Saver;
   } else {
-    Map->Compressed = 1;
-    VArrayStream *ArrStrm = new VArrayStream("<savemap>", Map->Data);
-    ArrStrm->BeginWrite();
-    VZLibStreamWriter *ZipStrm = new VZLibStreamWriter(ArrStrm, (int)save_compression_level);
-    ZipStrm->Serialise(Buf.Ptr(), Buf.length());
-    bool wasErr = ZipStrm->IsError();
-    if (!ZipStrm->Close()) wasErr = true;
-    delete ZipStrm;
-    ArrStrm->Close();
-    delete ArrStrm;
-    if (wasErr) Host_Error("error compressing savegame data");
-  }
+    vassert(BaseSlot.IsNewFormat());
 
-  delete Saver;
+    VMemoryStream *InStrm = new VMemoryStream();
+    vwadwr_dir *vwad = vwadwr_create_archive_stream(InStrm, "k8vavoom engine", "saved map data");
+    if (vwad == nullptr) {
+      delete InStrm;
+      Host_Error("error creating saved map archive");
+    }
+
+    // remove old map
+    VSavedMap *Map = BaseSlot.FindMap(GLevel->MapName);
+    if (!Map) {
+      Map = new VSavedMap(true);
+      BaseSlot.Maps.Append(Map);
+      Map->Name = GLevel->MapName;
+    } else {
+      Map->ClearData(true);
+    }
+
+    // create saver
+    Saver = new VSaveWriterStream(vwad);
+
+    // write the level timer
+    if (Saver->CreateFile(NEWFTM_FNAME_MAP_GINFO)) {
+      *Saver << GLevel->Time << GLevel->TicTime;
+      Saver->CloseFile();
+    }
+
+    // write main data
+    ArchiveThinkers(Saver, savePlayers);
+    ArchiveSounds(Saver);
+    ArchiveNames(Saver);
+
+    // close the output file
+    const bool ok = Saver->Close();
+    delete Saver;
+
+    if (ok) {
+      vassert(Map->IsNewFormat());
+      TArrayNC<vuint8> &Buf = InStrm->GetArray();
+      Map->Data.Clear();
+      Map->Data.setLength(Buf.length());
+      if (Buf.length()) memcpy(Map->Data.ptr(), Buf.ptr(), Buf.length());
+      delete InStrm;
+    } else {
+      Map->Data.Clear();
+      delete InStrm;
+      Host_Error("error writing saved map archive");
+    }
+  }
 }
 
 
@@ -2079,37 +2898,59 @@ static bool SV_LoadMap (VName MapName, bool allowCheckpoints, bool hubTeleport) 
   VSavedMap *Map = BaseSlot.FindMap(MapName);
   vassert(Map);
 
-  // decompress map data
-  TArrayNC<vuint8> DecompressedData;
-  if (!Map->Compressed) {
-    DecompressedData.setLength(Map->Data.length());
-    if (Map->Data.length()) memcpy(DecompressedData.ptr(), Map->Data.ptr(), Map->Data.length());
-  } else {
-    VArrayStream *ArrStrm = new VArrayStream("<savemap:mapdata>", Map->Data);
-    /*VZLibStreamReader*/VStream *ZipStrm = new VZLibStreamReader(ArrStrm, VZLibStreamReader::UNKNOWN_SIZE, Map->DecompressedSize);
-    DecompressedData.setLength(Map->DecompressedSize);
-    ZipStrm->Serialise(DecompressedData.Ptr(), DecompressedData.length());
-    const bool wasErr = ZipStrm->IsError();
-    VStream::Destroy(ZipStrm);
-    ArrStrm->Close();
-    delete ArrStrm;
-    if (wasErr) Host_Error("error decompressing savegame data");
-  }
+  VSaveLoaderStream *Loader = nullptr;
 
-  VSaveLoaderStream *Loader = new VSaveLoaderStream(new VArrayStream("<savemap:mapdata>", DecompressedData));
+  // oops, it should be here
+  TArrayNC<vuint8> DecompressedData;
+
+  if (Map->IsNewFormat()) {
+    VMemoryStreamRO *mst = new VMemoryStreamRO("<savemap:mapdata>",
+                                               Map->Data.ptr(), Map->Data.length(), false);
+    VVWadArchive *vmap = new VVWadArchive("<savemap:mapdata>", mst, true);
+    if (!vmap->IsOpen()) {
+      Host_Error("error opening savegame arhive");
+    } else {
+      Loader = new VSaveLoaderStream(vmap);
+    }
+  } else {
+    // decompress map data
+    if (!Map->Compressed) {
+      DecompressedData.setLength(Map->Data.length());
+      if (Map->Data.length()) memcpy(DecompressedData.ptr(), Map->Data.ptr(), Map->Data.length());
+    } else {
+      VArrayStream *ArrStrm = new VArrayStream("<savemap:mapdata>", Map->Data);
+      /*VZLibStreamReader*/
+      VStream *ZipStrm = new VZLibStreamReader(ArrStrm,
+                                               Map->Data.length()/*VZLibStreamReader::UNKNOWN_SIZE*/,
+                                               Map->DecompressedSize);
+      DecompressedData.setLength(Map->DecompressedSize);
+      ZipStrm->Serialise(DecompressedData.Ptr(), DecompressedData.length());
+      const bool wasErr = ZipStrm->IsError();
+      VStream::Destroy(ZipStrm);
+      ArrStrm->Close();
+      delete ArrStrm;
+      if (wasErr) Host_Error("error decompressing savegame data");
+    }
+    Loader = new VSaveLoaderStream(new VArrayStream("<savemap:mapdata>", DecompressedData));
+  }
 
   // load names
   UnarchiveNames(Loader);
 
-  AssertSegment(*Loader, ASEG_MAP_HEADER);
-
   // read the level timer
+  if (Loader->IsNewFormat()) {
+    Loader->OpenFile(NEWFTM_FNAME_MAP_GINFO);
+  } else {
+    AssertSegment(*Loader, ASEG_MAP_HEADER);
+  }
   *Loader << GLevel->Time << GLevel->TicTime;
 
   UnarchiveThinkers(Loader);
-  UnarchiveSounds(*Loader);
+  UnarchiveSounds(Loader);
 
-  AssertSegment(*Loader, ASEG_END);
+  if (!Loader->IsNewFormat()) {
+    AssertSegment(*Loader, ASEG_END);
+  }
 
   // free save buffer
   Loader->Close();
@@ -2264,11 +3105,11 @@ static void SV_LoadGame (int slot) {
 
 //==========================================================================
 //
-//  SV_InitBaseSlot
+//  SV_ClearBaseSlot
 //
 //==========================================================================
-void SV_InitBaseSlot () {
-  BaseSlot.Clear();
+void SV_ClearBaseSlot () {
+  BaseSlot.Clear(!dbg_save_in_old_format.asBool());
 }
 
 
@@ -2342,7 +3183,7 @@ void SV_MapTeleport (VName mapname, int flags, int newskill) {
     } else {
       // entering new cluster: clear base slot
       if (dbg_save_verbose&0x20) GCon->Logf("**** NEW CLUSTER ****");
-      BaseSlot.Clear();
+      BaseSlot.Clear(!dbg_save_in_old_format.asBool());
     }
   }
 
@@ -2437,6 +3278,11 @@ void Draw_SaveIcon ();
 void Draw_LoadIcon ();
 
 
+//==========================================================================
+//
+//  CheckIfLoadIsAllowed
+//
+//==========================================================================
 static bool CheckIfLoadIsAllowed () {
   if (svs.deathmatch) {
     GCon->Log("Can't load in deathmatch game");
@@ -2448,6 +3294,11 @@ static bool CheckIfLoadIsAllowed () {
 #endif
 
 
+//==========================================================================
+//
+//  CheckIfSaveIsAllowed
+//
+//==========================================================================
 static bool CheckIfSaveIsAllowed () {
   if (svs.deathmatch) {
     GCon->Log("Can't save in deathmatch game");
@@ -2468,6 +3319,11 @@ static bool CheckIfSaveIsAllowed () {
 }
 
 
+//==========================================================================
+//
+//  BroadcastSaveText
+//
+//==========================================================================
 static void BroadcastSaveText (const char *msg) {
   if (!msg || !msg[0]) return;
   if (sv_save_messages) {
@@ -2483,6 +3339,11 @@ static void BroadcastSaveText (const char *msg) {
 }
 
 
+//==========================================================================
+//
+//  SV_AutoSave
+//
+//==========================================================================
 void SV_AutoSave (bool checkpoint) {
   if (!CheckIfSaveIsAllowed()) return;
 
@@ -2508,6 +3369,11 @@ void SV_AutoSave (bool checkpoint) {
 
 
 #ifdef CLIENT
+//==========================================================================
+//
+//  SV_AutoSaveOnLevelExit
+//
+//==========================================================================
 void SV_AutoSaveOnLevelExit () {
   if (!dbg_save_on_level_exit) return;
 
@@ -2738,4 +3604,7 @@ COMMAND(ShowSavePrefix) {
   VStr pfx = VStr::buf2hex(&hash, 8);
   GCon->Logf("save prefix: %s", *pfx);
 }
+#endif
+
+
 #endif

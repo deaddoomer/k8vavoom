@@ -2312,7 +2312,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman
 
   // setup and check chunks
   uint32_t upofs = 4+4;
-  if (wad->chunkCount == 0 || wad->chunkCount > 0x1fffffffU ||
+  if (/*wad->chunkCount == 0 ||*/ wad->chunkCount > 0x1fffffffU ||
       wad->chunkCount*(uint32_t)sizeof(ChunkInfo) >= dhdr.upkdirsize ||
       wad->chunkCount*(uint32_t)sizeof(ChunkInfo) >= dhdr.upkdirsize - upofs)
   {
