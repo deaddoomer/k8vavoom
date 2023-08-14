@@ -410,6 +410,11 @@ void doWander (optional int flags) {
 //
 //  Actor has a melee attack, so it tries to close as fast as possible
 //
+//  fix: restore `bInChase` to `false` if we didn't took a jump.
+//       this allows multiple zero-duration ticks, and also
+//       allows other actions like `A_Look` to work if chase was used
+//       without state labels (or didn't jumped)
+//
 //==========================================================================
 void DoChase (bool FastChase, state AMeleeState, state AMissileState,
               bool NightmareFast, bool PlayActive, bool DontMove,
@@ -421,8 +426,12 @@ void DoChase (bool FastChase, state AMeleeState, state AMissileState,
   float dist;
   float ang;
 
+  //printdebug("%C: bInChase=%B", self, bInChase);
   if (bInChase) return;
+  bool finInChase = false;
   bInChase = true;
+  // if we didn't jumped, reset the flag (see the comment in the header)
+  scope(exit) bInChase = finInChase;
   // nope, we can came here from zero-duration states, so don't reset this here
   // this is done in `VEntity::Tick()` instead
   /*
@@ -483,7 +492,10 @@ void DoChase (bool FastChase, state AMeleeState, state AMissileState,
         if (Level.PerfectHatredMode&LevelInfo::PHM_WANDER) {
           A_Wander();
         } else {
-          if (!noIdleNoTarget) SetState(IdleState);
+          if (!noIdleNoTarget) {
+            finInChase = true;
+            SetState(IdleState);
+          }
           bInCombat = false;
         }
         return;
@@ -544,7 +556,10 @@ void DoChase (bool FastChase, state AMeleeState, state AMissileState,
       bJustAttacked = true;
       if (NewGoal && Delay != 0) {
         bInCombat = true;
-        if (!noIdleNoTarget) SetState(IdleState);
+        if (!noIdleNoTarget) {
+          finInChase = true;
+          SetState(IdleState);
+        }
       }
       Goal = NewGoal;
       return;
@@ -579,6 +594,7 @@ void DoChase (bool FastChase, state AMeleeState, state AMissileState,
       // check for melee attack
       if (AMeleeState && CheckMeleeRange()) {
         if (AttackSound) PlaySound(AttackSound, CHAN_WEAPON);
+        finInChase = true;
         SetState(AMeleeState);
         return;
       }
@@ -587,6 +603,7 @@ void DoChase (bool FastChase, state AMeleeState, state AMissileState,
       if (AMissileState) {
         if (IsFast() || !MoveCount) {
           if (CheckMissileRange()) {
+            finInChase = true;
             SetState(AMissileState);
             bJustAttacked = true;
             return;
@@ -852,10 +869,9 @@ final void DoChasePerfectHatred () {
 //==========================================================================
 [decorate] final void A_ExtChase (bool UseMelee, bool UseMissile, optional bool PlayActive, optional bool NightmareFast) {
   if (!specified_PlayActive) PlayActive = true;
-  state Melee = MeleeState;
-  if (!UseMelee) Melee = none;
-  state Missile = MissileState;
-  if (!UseMissile) Missile = none;
+  state Melee = (UseMelee ? MeleeState : none);
+  state Missile = (UseMissile ? MissileState : none);
+  //printdebug("%C: A_ExtChase", self);
   DoChase(false, Melee, Missile, NightmareFast, PlayActive, false);
   // in "perfect hatred" mode, switch target if we haven't seen it for long enough
   if (bMonster && (Level.PerfectHatredMode&LevelInfo::PHM_HUNT_MONSTERS)) DoChasePerfectHatred();
