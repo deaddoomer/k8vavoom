@@ -3863,6 +3863,73 @@ final state FindJumpStateOfsForState (state res, int offset) {
 
 //===========================================================================
 //
+//  ResolveBadState
+//
+//  tries to resolve bad (empty) state to the next one
+//
+//===========================================================================
+final state ResolveBadState (string who, optional string xmsg) {
+  if (!GetStateWarnedFlag(XLevel.CallingState)) {
+    if (xmsg!specified && xmsg) {
+      printwarn("unknown %s decorate label (%s) (actor is `%C`) -- probably broken code!", who, xmsg, self);
+    } else {
+      printwarn("unknown %s decorate label (actor is `%C`) -- probably broken code!", who, self);
+    }
+    if (XLevel.CallingState) printwarn("... current state: %s", XLevel.CallingState);
+    SetStateWarnedFlag(XLevel.CallingState);
+  }
+  if (GetCvarB('dbg_emulate_broken_gozzo_gotos')) return GetNextState(XLevel.CallingState);
+  return none;
+}
+
+
+//===========================================================================
+//
+//  ResolveBadStateJump
+//
+//  tries to resolve bad (empty) state to the next one
+//
+//===========================================================================
+final state ResolveBadStateJump (optional string xmsg) {
+  if (!GetStateWarnedFlag(XLevel.CallingState)) {
+    string who = (XLevel.StateCall->Item ? va("item `%C` ", XLevel.StateCall->Item) : "");
+    if (xmsg!specified && xmsg) {
+      printwarn("unknown %sdecorate label (%s) (actor is `%C`) -- probably broken code!", who, xmsg, self);
+    } else {
+      printwarn("unknown %sdecorate label (actor is `%C`) -- probably broken code!", who, self);
+    }
+    if (XLevel.CallingState) printwarn("... current state: %s", XLevel.CallingState);
+    SetStateWarnedFlag(XLevel.CallingState);
+  }
+  if (GetCvarB('dbg_emulate_broken_gozzo_gotos')) return GetNextState(XLevel.CallingState);
+  return none;
+}
+
+
+//===========================================================================
+//
+//  ResolveBadStateLabel
+//
+//  tries to resolve bad (empty) state to the next one
+//
+//===========================================================================
+final state ResolveBadStateLabel (name Label, string who, optional string xmsg) {
+  if (!GetStateWarnedFlag(XLevel.CallingState)) {
+    if (xmsg!specified && xmsg) {
+      printwarn("unknown %s decorate label (%s) '%s' (actor is `%C`) -- probably broken code!", who, xmsg, Label, self);
+    } else {
+      printwarn("unknown %s decorate label '%s' (actor is `%C`) -- probably broken code!", who, Label, self);
+    }
+    if (XLevel.CallingState) printwarn("... current state: %s", XLevel.CallingState);
+    SetStateWarnedFlag(XLevel.CallingState);
+  }
+  if (GetCvarB('dbg_emulate_broken_gozzo_gotos')) return GetNextState(XLevel.CallingState);
+  return none;
+}
+
+
+//===========================================================================
+//
 //  FindJumpState
 //
 //  used in decorate code to resolve jump-labels-as-arguments
@@ -3873,26 +3940,28 @@ final state FindJumpStateOfsForState (state res, int offset) {
 //  decorate codegen will strip leading and trailing spaces
 //
 //===========================================================================
-final state FindJumpState (name Label, int offset) {
-  if (Label.nameEquCI('null') || Label.endsWithCI('::null')) return none;
+final state FindJumpState (name Label/*, optional int offset*/) {
+  // added `!Label` too
+  if (!Label || Label.nameEquCI('null') || Label.endsWithCI('::null')) return none;
 
-  if (!Label || Label.nameEquCI('none') /*|| Label.nameEquCI('nil')*/ || Label.nameEquCI('empty') ||
+  if (Label.nameEquCI('none') /*|| Label.nameEquCI('nil')*/ || Label.nameEquCI('empty') ||
       Label.endsWithCI('::none') /*|| Label.endsWithCI('::nil')*/ || Label.endsWithCI('::empty') ||
       Label == '::' || Label.nameEquCI('Super::'))
   {
+    // this actually is not right, because some decorate actions expect `none` state
+    #if 0
     return FindJumpStateOfs(offset);
+    #else
+    return none;
+    #endif
   }
 
   // in state call chain?
   if (XLevel.StateCall) {
     // `item` is the original caller, we should follow its states here
     state res = XLevel.StateCall->Item.FindState(Label);
-    if (offset && res) res = FindJumpStateOfsForState(res, offset);
-    if (!res) {
-      printwarn("unknown item `%C` decorate label (statecall) '%s' (actor is `%C`) -- probably broken code!", XLevel.StateCall->Item, Label, self);
-      if (XLevel.CallingState) printwarn("... current state: %s", XLevel.CallingState);
-      if (!offset && GetCvarB('dbg_emulate_broken_gozzo_gotos')) res = GetNextState(XLevel.CallingState);
-    }
+    //if (offset && res) res = FindJumpStateOfsForState(res, offset);
+    if (!res) res = ResolveBadStateLabel(Label, va("item `%C`", XLevel.StateCall->Item), "statecall");
     return res;
   }
 
@@ -3906,25 +3975,16 @@ final state FindJumpState (name Label, int offset) {
     {
       if (!PlayerEx(Player).ReadyWeapon) return none;
       state res = PlayerEx(Player).ReadyWeapon.FindState(Label);
-      if (offset && res) res = FindJumpStateOfsForState(res, offset);
-      if (!res) {
-        printwarn("unknown weapon `%C` decorate label '%s' -- probably broken code!", PlayerEx(Player).ReadyWeapon, Label);
-        if (XLevel.CallingState) printwarn("... current state: %s", XLevel.CallingState);
-        if (!offset && GetCvarB('dbg_emulate_broken_gozzo_gotos')) res = GetNextState(XLevel.CallingState);
-      }
+      //if (offset && res) res = FindJumpStateOfsForState(res, offset);
+      if (!res) res = ResolveBadStateLabel(Label, va("weapon `%C`", PlayerEx(Player).ReadyWeapon));
       return res;
     }
   }
 
   // normal state jump
   state res = FindState(Label);
-  if (offset && res) res = FindJumpStateOfsForState(res, offset);
-  if (!res) {
-    printwarn("unknown actor `%C` decorate label '%s' -- probably broken code!", self, Label);
-    if (XLevel.CallingState) printwarn("... current state: %s", XLevel.CallingState);
-    if (!offset && GetCvarB('dbg_emulate_broken_gozzo_gotos')) res = GetNextState(XLevel.CallingState);
-  }
-
+  //if (offset && res) res = FindJumpStateOfsForState(res, offset);
+  if (!res) res = ResolveBadStateLabel(Label, "actor");
   return res;
 }
 
@@ -4002,6 +4062,7 @@ final void PlrSetAngleInterp (ref BasePlayer::VPlrAngleInterp ii, float prevangl
 //
 //===========================================================================
 final void DoJump (state aState, optional bool affectStateCallResult) {
+  if (!aState) aState = ResolveBadStateJump("jumpdest");
   if (XLevel.StateCall) {
     XLevel.StateCall->State = aState;
     // shoult state jump affect state chain results?

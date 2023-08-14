@@ -1436,6 +1436,10 @@ native static final void SetStateArgN (state State, int argn, int v); // argn is
 native static final int GetStateFRN (state State);
 native static final void SetStateFRN (state State, int v);
 
+// returns `true` for `none` state
+native static final bool GetStateWarnedFlag (state State);
+native static final void SetStateWarnedFlag (state State);
+
 
 // ////////////////////////////////////////////////////////////////////////// //
 // iterators

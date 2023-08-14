@@ -795,6 +795,7 @@ final void DoChasePerfectHatred () {
   if (!specified_Flags) {
     DoChase(FastChase:false, MeleeState, MissileState, NightmareFast:LineSpecialGameInfo(Level.Game).bNightmareFastChase, PlayActive:true, DontMove:false);
   } else {
+    //printdebug("%C: ams=%s; ams=%s", self, AMeleeState, AMissileState);
     if ((Flags&CHF_RESURRECT) && CheckForResurrect(false)) return;
     DoChase(
       FastChase:!!(Flags&CHF_FASTCHASE), AMeleeState, AMissileState,

@@ -1975,11 +1975,11 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
       if (GotoLabel.isEmpty()) sc->Error(va("empty label in `%s`!", *TmpName));
 
       // call `FindJumpState()`
-      // final state FindJumpState (name Label, int offset);
+      // final state FindJumpState (name Label/*, optional int offset*/);
       VExpression *TmpArgs[2];
       TmpArgs[0] = new VNameLiteral(VName(*GotoLabel), TmpLoc);
-      TmpArgs[1] = new VIntLiteral(0, TmpLoc);
-      VExpression *exprState = new VInvocation(nullptr, Class->FindMethodChecked("FindJumpState"), nullptr, false, false, TmpLoc, 2, TmpArgs);
+      //TmpArgs[1] = new VIntLiteral(0, TmpLoc);
+      VExpression *exprState = new VInvocation(nullptr, Class->FindMethodChecked("FindJumpState"), nullptr, false, false, TmpLoc, 1/*2*/, TmpArgs);
       // call `decorate_A_RetDoJump`
       TmpArgs[0] = exprState;
       VExpression *einv = new VDecorateInvocation(VName("decorate_A_RetDoJump"), TmpLoc, 1, TmpArgs);

@@ -662,12 +662,12 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
           TmpArgs[0] = new VDecorateUserVar(lblName, ALoc);
           return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, ALoc, 1, TmpArgs);
         } else {
-          // final state FindJumpState (name Label, int offset);
+          // final state FindJumpState (name Label/*, optional int offset*/);
           //TmpArgs[0] = this;
           delete this;
           TmpArgs[0] = new VNameLiteral(VName(*lblName), ALoc);
-          TmpArgs[1] = new VIntLiteral(0, ALoc);
-          return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpState"), nullptr, false, false, ALoc, 2, TmpArgs);
+          //TmpArgs[1] = new VIntLiteral(0, ALoc);
+          return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpState"), nullptr, false, false, ALoc, 1/*2*/, TmpArgs);
         }
       }
       // integer?
@@ -693,11 +693,11 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
         delete this;
         return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, ALoc, 1, TmpArgs);
         */
-        // final state FindJumpState (name Label, int offset);
+        // final state FindJumpState (name Label/*, optional int offset*/);
         delete this;
         TmpArgs[0] = new VNameLiteral(VName("none"), ALoc);
-        TmpArgs[1] = new VIntLiteral(0, ALoc);
-        return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpState"), nullptr, false, false, ALoc, 2, TmpArgs);
+        //TmpArgs[1] = new VIntLiteral(0, ALoc);
+        return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpState"), nullptr, false, false, ALoc, 1/*2*/, TmpArgs);
       }
       // support things like `A_Jump(n, func())`
       if (Type.Type != TYPE_State) {

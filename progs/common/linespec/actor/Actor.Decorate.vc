@@ -401,6 +401,7 @@ protected final void do_A_Lower (optional float lowerspeed) self(Actor) {
 //==========================================================================
 [decorate] final void decorate_A_RetDoJump (state aState) {
   KeepChainResult(); //k8: this is prolly wrong, because `return` in GZDoom can return `fail` condition too
+  if (!aState) aState = ResolveBadStateJump("JumpTo");
   if (XLevel.StateCall) {
     XLevel.StateCall->State = aState;
   } else {
