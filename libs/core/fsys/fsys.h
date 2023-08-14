@@ -57,6 +57,7 @@ void FL_CreatePath (VStr Path);
 // if `lump` is not `nullptr`, sets it to file lump or to -1
 VStream *FL_OpenFileRead (VStr Name, int *lump=nullptr);
 
+// open "system" (i.e. disk-only) files
 VStream *FL_OpenSysFileRead (VStr Name);
 VStream *FL_OpenSysFileWrite (VStr Name);
 

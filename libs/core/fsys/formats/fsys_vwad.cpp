@@ -142,7 +142,8 @@ VVWadFile::~VVWadFile () {
   if (vw_handle) {
     vwad_close_archive((vwad_handle **)&vw_handle);
   }
-  Z_Free(vw_strm); vw_strm = nullptr;
+  /*Z_Free(vw_strm); vw_strm = nullptr;*/
+  memset((void *)&vw_strm, 0, sizeof(vw_strm));
 }
 
 
@@ -153,28 +154,23 @@ VVWadFile::~VVWadFile () {
 //==========================================================================
 void VVWadFile::OpenArchive (VStream *fstream) {
   vassert(fstream);
-  vwad_iostream *iostrm = (vwad_iostream *)Z_Calloc(sizeof(vwad_iostream));
-  vassert(iostrm);
 
-  iostrm->seek = &ioseek;
-  iostrm->read = &ioread;
-  iostrm->udata = (void *)fstream;
-  vw_strm = iostrm;
+  vw_strm.seek = &ioseek;
+  vw_strm.read = &ioread;
+  vw_strm.udata = (void *)fstream;
 
-  vwad_handle *wad = vwad_open_archive(iostrm, VWAD_OPEN_DEFAULT|VWAD_OPEN_NO_MAIN_COMMENT, &memman);
-  if (!wad) {
+  vw_handle = vwad_open_archive(&vw_strm, VWAD_OPEN_DEFAULT|VWAD_OPEN_NO_MAIN_COMMENT, &memman);
+  if (!vw_handle) {
     Sys_Error("cannot load vwad file \"%s\"", *PakFileName);
   }
 
-  if (vwad_get_archive_file_count(wad) > 0xffff) {
-    Sys_Error("too many files (%d) in vwad archive \"%s\"", vwad_get_archive_file_count(wad), *PakFileName);
+  if (vwad_get_archive_file_count(vw_handle) > 0xffff) {
+    Sys_Error("too many files (%d) in vwad archive \"%s\"", vwad_get_archive_file_count(vw_handle), *PakFileName);
   }
 
-  vw_handle = wad;
-
-  if (vwad_has_pubkey(wad) && vwad_is_authenticated(wad)) {
+  if (vwad_has_pubkey(vw_handle) && vwad_is_authenticated(vw_handle)) {
     vwad_public_key pubkey;
-    if (vwad_get_pubkey(wad, pubkey) == 0) {
+    if (vwad_get_pubkey(vw_handle, pubkey) == 0) {
       if (memcmp(pubkey, k8PubKey, sizeof(pubkey)) == 0) {
         GLog.Logf(NAME_Init, "SIGNED BY: Ketmar Dark");
       } else {
@@ -188,14 +184,14 @@ void VVWadFile::OpenArchive (VStream *fstream) {
     }
   }
 
-  const char *author = vwad_get_archive_author(wad);
+  const char *author = vwad_get_archive_author(vw_handle);
   if (author[0]) GLog.Logf(NAME_Init, "AUTHOR(S): %s", author);
 
-  const char *title = vwad_get_archive_title(wad);
+  const char *title = vwad_get_archive_title(vw_handle);
   if (title[0]) GLog.Logf(NAME_Init, "TITLE: %s", title);
 
   /*
-  const char *comment = vwad_get_archive_comment(wad);
+  const char *comment = vwad_get_archive_comment(vw_handle);
   if (comment) {
     char cmt[64];
     int pos = 0;
@@ -208,31 +204,31 @@ void VVWadFile::OpenArchive (VStream *fstream) {
       GLog.Logf(NAME_Init, "COMMENT: %s", cmt);
     }
   }
-  vwad_free_archive_comment(wad);
+  vwad_free_archive_comment(vw_handle);
   */
 
   // global cache size, speedups WAD reading
-  //vwad_set_archive_cache(wad, 8); //~512KB
+  //vwad_set_archive_cache(vw_handle, 8); //~512KB
 
   type = PAK;
 
-  const int maxFIdx = vwad_get_archive_file_count(wad);
+  const int maxFIdx = vwad_get_archive_file_count(vw_handle);
   #if 0
   GLog.Logf(NAME_Debug, "VWAD: %d files...", maxFIdx);
   #endif
   for (int i = 0; i < maxFIdx; ++i) {
-    const char *fname = vwad_get_file_name(wad, i);
+    const char *fname = vwad_get_file_name(vw_handle, i);
     vassert(fname && fname[0] && fname[strlen(fname) - 1] != '/');
 
     #if 0
-    GLog.Logf(NAME_Debug, "VWAD: %d: '%s' (%d)", i, fname, vwad_get_file_size(wad, i));
+    GLog.Logf(NAME_Debug, "VWAD: %d: '%s' (%d)", i, fname, vwad_get_file_size(vw_handle, i));
     #endif
 
     VPakFileInfo fi;
     fi.SetFileName(fname);
-    fi.filetime = vwad_get_ftime(wad, i);
+    fi.filetime = vwad_get_ftime(vw_handle, i);
     fi.pakdataofs = i; // index
-    fi.filesize = vwad_get_file_size(wad, i);
+    fi.filesize = vwad_get_file_size(vw_handle, i);
     pakdir.append(fi);
   }
 
@@ -251,6 +247,6 @@ VStream *VVWadFile::CreateLumpReaderNum (int Lump) {
   vassert(Lump < pakdir.files.length());
   return new VVWadFileReader(PakFileName+":"+pakdir.files[Lump].fileNameIntr,
                              pakdir.files[Lump],
-                             (vwad_handle *)vw_handle, (vwad_iostream *)vw_strm,
+                             vw_handle, &vw_strm,
                              &rdlock);
 }

@@ -35,14 +35,15 @@ Library libcore.a :
   src/stream/streamsbit.cpp
   src/stream/streamsex.cpp
   src/stream/streamszlib.cpp
+  src/stream/streamvwad.cpp
   src/stream/ntvalue.cpp
+
+  #src/vsqlite3/sqlite3.c
 
   src/textparser.cpp
 
   src/libvwad/vwadvfs.c
-  src/libvwad/vwadvfs.h
   src/libvwad/vwadwrite.c
-  src/libvwad/vwadwrite.h
 
   src/hash/lookup2.cpp
   src/hash/lookup3.cpp

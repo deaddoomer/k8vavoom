@@ -111,6 +111,8 @@
 # include "mimalloc/mimalloc.h"
 #endif
 
+#include "vsqlite3/sqlite3.h"
+
 #include "mythreadlite.h"
 #include "crypto/prng_randombytes.h"
 
@@ -202,6 +204,7 @@ VVA_OKUNUSED VVA_FORCEINLINE uint32_t GetTypeHash (const VCustomKeyInfo_NamedVal
 #include "stream/streamsbit.h" // bitstreams
 #include "stream/streamsex.h" // extended streams
 #include "stream/streamszlib.h" // packed streams
+#include "stream/streamvwad.h"
 
 #include "textparser.h"
 

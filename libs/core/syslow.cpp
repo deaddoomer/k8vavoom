@@ -1003,6 +1003,7 @@ VStr Sys_GetUserName () {
 
 typedef /*NTSYSAPI*/ NTSTATUS NTAPI (*RtlGetVersionFn)(/*IN OUT*/ PRTL_OSVERSIONINFOEXW lpVersionInformation);
 
+#if 0
 static void __attribute__((constructor)) ctor_checkshitdoze_ctor (void) {
   RtlGetVersionFn gpi;
   HMODULE libh = GetModuleHandleW(L"ntdll.dll");
@@ -1059,6 +1060,7 @@ static void __attribute__((constructor)) ctor_checkshitdoze_ctor (void) {
   }
 #endif
 }
+#endif
 
 
 struct ShitdozeDir {

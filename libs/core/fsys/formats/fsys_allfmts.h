@@ -78,8 +78,8 @@ public: // fuck shitpp friend idiocity
 //==========================================================================
 class VVWadFile : public VPakFileBase {
 private:
-  void *vw_strm;
-  void *vw_handle;
+  vwad_handle *vw_handle;
+  vwad_iostream vw_strm;
 
   // you can pass central dir offset here
   void OpenArchive (VStream *fstream);

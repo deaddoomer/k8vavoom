@@ -49,6 +49,8 @@ add_library(core STATIC
   stream/streamsex.cpp
   stream/streamszlib.h
   stream/streamszlib.cpp
+  stream/streamvwad.h
+  stream/streamvwad.cpp
   stream/ntvalue.cpp
   textparser.h
   textparser.cpp
@@ -67,6 +69,9 @@ add_library(core STATIC
   vecmat/matrixrot.h
   vecmat/matrixvp.h
   vecmat/matrix4.cpp
+  vsqlite3/sqlite3.h
+  vsqlite3/sqlite3.c
+  vsqlite3/vsqlite3_opts.h
   xml.h
   xml.cpp
   zone.h
