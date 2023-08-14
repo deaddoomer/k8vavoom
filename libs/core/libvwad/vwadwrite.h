@@ -190,6 +190,10 @@ vwadwr_dir *vwadwr_new_dir (vwadwr_memman *mman, vwadwr_iostream *outstrm,
 void vwadwr_free_dir (vwadwr_dir **dirp);
 vwadwr_bool vwadwr_is_valid_dir (const vwadwr_dir *dir);
 
+vwadwr_memman *vwadwr_dir_get_memman (vwadwr_dir *dir);
+vwadwr_iostream *vwadwr_dir_get_outstrm (vwadwr_dir *dir);
+
+
 enum {
   VADWR_DIR_OK = 0,
   VADWR_DIR_NAMES_ALIGN = -1,
@@ -223,6 +227,7 @@ typedef vwadwr_bool vwadwr_pack_progress (vwadwr_dir *dir, int read, int written
 // group name is case-insensitive.
 // file name is case-insensitive.
 // both strings should be valid utf-8 strings (check with `vwadwr_is_valid_XXX()`)
+// `upksizep` and `pksizep` can be `NULL`
 vwadwr_result vwadwr_pack_file (vwadwr_dir *dir, vwadwr_iostream *instrm,
                                 int level, /* VADWR_COMP_xxx */
                                 const char *pkfname,

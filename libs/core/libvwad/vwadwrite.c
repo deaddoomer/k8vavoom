@@ -1534,7 +1534,7 @@ static int CompressLZFF3 (vwadwr_memman *mman, const void *source, int srclen,
   srcsize = (uint32_t)srclen;
 
   memset(dict, -1, sizeof(dict));
-  htbl = malloc(sizeof(htbl[0]) * LZFF_NUM_BUCKETS);
+  htbl = xalloc(mman, sizeof(htbl[0]) * LZFF_NUM_BUCKETS);
   if (htbl == NULL) return -666;
   hfree = 0;
 
@@ -2461,6 +2461,26 @@ vwadwr_dir *vwadwr_new_dir (vwadwr_memman *mman, vwadwr_iostream *outstrm,
 error:
   vwadwr_free_dir(&res);
   return NULL;
+}
+
+
+//==========================================================================
+//
+//  vwadwr_dir_get_memman
+//
+//==========================================================================
+vwadwr_memman *vwadwr_dir_get_memman (vwadwr_dir *dir) {
+  return (dir ? dir->mman : NULL);
+}
+
+
+//==========================================================================
+//
+//  vwadwr_dir_get_outstrm
+//
+//==========================================================================
+vwadwr_iostream *vwadwr_dir_get_outstrm (vwadwr_dir *dir) {
+  return (dir ? dir->outstrm : NULL);
 }
 
 
