@@ -117,6 +117,11 @@
 //
 //===========================================================================
 [decorate] final void decorate_A_ReFire (optional state refirestate) self(Actor) {
+  if (!refirestate && refirestate!specified) {
+    if (bIsPlayer && PlayerEx(Player).ReadyWeapon) {
+      refirestate = ResolveBadState(va("weapon `%C`", PlayerEx(Player).ReadyWeapon));
+    }
+  }
   do_A_ReFire(refirestate!optional);
 }
 
