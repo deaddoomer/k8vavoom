@@ -103,6 +103,23 @@ public:
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+class VStream;
+
+// game saver needs to map strings too, but only strings
+// this takes priority over the normal mapper
+class VStreamIOStrMapper {
+public:
+  VV_DISABLE_COPY(VStreamIOStrMapper)
+
+  inline VStreamIOStrMapper () {}
+  virtual ~VStreamIOStrMapper ();
+
+  // interface functions for objects and classes streams
+  virtual void io (VStream *st, VStr &) = 0;
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 // base class for various streams
 class VStream {
 protected:
@@ -112,12 +129,21 @@ protected:
 
 public:
   VStreamIOMapper *Mapper;
+  VStreamIOStrMapper *StrMapper;
   vuint16 version; // stream version; usually purely informational
 
 public:
   VV_DISABLE_COPY(VStream)
 
-  VVA_FORCEINLINE VStream () : bLoading(true), bError(false), bFastSeek(true), Mapper(nullptr), version(0) {}
+  VVA_FORCEINLINE VStream ()
+    : bLoading(true)
+    , bError(false)
+    , bFastSeek(true)
+    , Mapper(nullptr)
+    , StrMapper(nullptr)
+    , version(0)
+  {}
+
   virtual ~VStream ();
 
   // status requests
@@ -127,6 +153,10 @@ public:
 
   virtual bool IsFastSeek () const noexcept;
   virtual void SetFastSeek (bool value) noexcept;
+
+  // doesn't own the mapper
+  // use `nullptr` to detach
+  virtual void AttachStringMapper (VStreamIOStrMapper *amapper);
 
   // this is used in VObject serialisers; default is `false`
   virtual bool IsExtendedFormat () const noexcept;

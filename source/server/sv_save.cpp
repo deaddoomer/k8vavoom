@@ -85,6 +85,7 @@ enum { NUM_AUTOSAVES = 9 };
 #define NEWFTM_FNAME_SAVE_SKILL    "skill.dat"
 #define NEWFTM_FNAME_SAVE_DATE     "datetime.dat"
 
+#define NEWFTM_FNAME_MAP_STRTBL    "strings.dat"
 #define NEWFTM_FNAME_MAP_NAMES     "names.dat"
 #define NEWFTM_FNAME_MAP_ACSEXPT   "acs_exports.dat"
 #define NEWFTM_FNAME_MAP_WORDINFO  "worldinfo.dat"
@@ -367,10 +368,101 @@ static VSaveSlot BaseSlot;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+class VStreamIOStrMapperWriter : public VStreamIOStrMapper {
+public:
+  TArray<VStr> strTable;
+  TMap<VStr, int> strMap;
+
+public:
+  VV_DISABLE_COPY(VStreamIOStrMapperWriter)
+
+  inline VStreamIOStrMapperWriter () { strTable.append(VStr::EmptyString); }
+  virtual ~VStreamIOStrMapperWriter () override {}
+
+  // interface functions for objects and classes streams
+  virtual void io (VStream *strm, VStr &s) override {
+    vint32 sidx;
+    if (s.IsEmpty()) {
+      sidx = 0;
+    } else {
+      auto kp = strMap.get(s);
+      if (kp) {
+        sidx = *kp;
+      } else {
+        sidx = strTable.length();
+        if (sidx >= 1024 * 1024) {
+          strm->SetError();
+          return;
+        }
+        strTable.Append(s);
+        strMap.put(s, sidx);
+      }
+    }
+    //GCon->Logf(NAME_Debug, "WRSM: string #%d: <%s>", sidx, *s);
+    *strm << STRM_INDEX(sidx);
+  }
+
+  void WriteStrings (VStream *st) {
+    if (!st || st->IsError()) return;
+    vint32 tlen = strTable.length();
+    *st << tlen;
+    // string #0 is always empty
+    for (int f = 1; f < tlen; f += 1) {
+      *st << strTable[f];
+      if (st->IsError()) return;
+    }
+  }
+};
+
+
+class VStreamIOStrMapperLoader : public VStreamIOStrMapper {
+public:
+  TArray<VStr> strTable;
+
+public:
+  VV_DISABLE_COPY(VStreamIOStrMapperLoader)
+
+  inline VStreamIOStrMapperLoader () {}
+  virtual ~VStreamIOStrMapperLoader () override {}
+
+  // interface functions for objects and classes streams
+  virtual void io (VStream *strm, VStr &s) override {
+    vint32 sidx = -1;
+    *strm << STRM_INDEX(sidx);
+    if (strm->IsError() || sidx < 0 || sidx >= strTable.length()) {
+      strm->SetError();
+    } else {
+      s = strTable[sidx];
+    }
+    //GCon->Logf(NAME_Debug, "RDSM: string #%d: <%s>", sidx, *s);
+  }
+
+  void LoadStrings (VStream *strm) {
+    strTable.clear();
+
+    vint32 count = -1;
+    *strm << count;
+    if (strm->IsError() || count < 1 || count > 1024*1024) {
+      strm->SetError();
+      return;
+    }
+
+    // string #0 is always empty
+    strTable.setLength(count);
+    for (int f = 1; f < count; f += 1) {
+      *strm << strTable[f];
+      if (strm->IsError()) { strm->SetError(); return; }
+    }
+  }
+};
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 class VSaveLoaderStream : public VStream {
 private:
   VStream *Stream;
   VVWadArchive *vwad;
+  VStreamIOStrMapperLoader *strMapper;
 
 private:
   // extended sections support
@@ -385,6 +477,22 @@ private:
     return (!esecclosed ? currestream : Stream);
   }
 
+private:
+  void LoadStringTable () {
+    if (!vwad->FileExists(NEWFTM_FNAME_MAP_STRTBL)) return;
+
+    VStream *sst = vwad->OpenFile(NEWFTM_FNAME_MAP_STRTBL);
+    if (!sst) { SetError(); return; }
+
+    strMapper = new VStreamIOStrMapperLoader();
+    strMapper->LoadStrings(sst);
+    const bool err = sst->IsError();
+
+    VStream::Destroy(sst);
+    AttachStringMapper(strMapper);
+    if (err) SetError();
+  }
+
 public:
   TArray<VName> NameRemap;
   TArray<VObject *> Exports;
@@ -393,13 +501,31 @@ public:
 public:
   VV_DISABLE_COPY(VSaveLoaderStream)
 
-  VSaveLoaderStream (VStream *InStream) : Stream(InStream), vwad(nullptr), esecclosed(true) { bLoading = true; }
-  VSaveLoaderStream (VVWadArchive *avwad) : Stream(nullptr), vwad(avwad), esecclosed(true) { bLoading = true; }
+  VSaveLoaderStream (VStream *InStream)
+    : Stream(InStream)
+    , vwad(nullptr)
+    , strMapper(nullptr)
+    , esecclosed(true)
+  {
+    bLoading = true;
+  }
+
+  VSaveLoaderStream (VVWadArchive *avwad)
+    : Stream(nullptr)
+    , vwad(avwad)
+    , strMapper(nullptr)
+    , esecclosed(true)
+  {
+    bLoading = true;
+    LoadStringTable();
+  }
 
   virtual ~VSaveLoaderStream () override {
+    AttachStringMapper(nullptr);
     Close();
     VStream::Destroy(currestream);
     VStream::Destroy(Stream);
+    delete strMapper;
   }
 
   inline bool IsNewFormat () const noexcept { return !!vwad; }
@@ -415,6 +541,8 @@ public:
       if (!Stream) {
         // memleak!
         Host_Error("cannot find save part named '%s'", *name);
+      } else {
+        Stream->AttachStringMapper(strMapper);
       }
     } else {
       // what a brilliant error message! also, memleak
@@ -484,6 +612,7 @@ public:
           SetError();
           return false;
         }
+        currestream->AttachStringMapper(strMapper);
         // restore section position, if there is any
         auto kv = esections.get(name);
         if (kv) {
@@ -668,9 +797,11 @@ public:
 };
 
 
+// ////////////////////////////////////////////////////////////////////////// //
 class VSaveWriterStream : public VStream {
 private:
   VVWadNewArchive *vwad;
+  VStreamIOStrMapperWriter *strMapper;
   VStream *Stream;
 
 private:
@@ -708,7 +839,7 @@ private:
     esections.clear();
   }
 
-  // ...and destroy them
+  // flush and destroy extended sections
   void FlushESections () {
     if (IsError()) { WipeESections(); return; }
     if (!vwad) { vassert(esections.length() == 0); return; }
@@ -781,7 +912,11 @@ private:
         } else {
           Stream = vwad->CreateFileDirect(name, level);
         }
-        if (!Stream) SetError();
+        if (Stream) {
+          Stream->AttachStringMapper(strMapper);
+        } else {
+          SetError();
+        }
       }
     }
     return !IsError();
@@ -792,12 +927,33 @@ public:
   VV_DISABLE_COPY(VSaveWriterStream)
 
   // takes ownership of the passed stream
-  VSaveWriterStream (VStream *InStream) : vwad(nullptr), Stream(InStream) { Init(); }
-  // takes ownership of the passed archive object,
-  // will properly close and destroy the archive
-  VSaveWriterStream (VVWadNewArchive *avwad) : vwad(avwad), Stream(nullptr) { Init(); }
+  VSaveWriterStream (VStream *InStream)
+    : vwad(nullptr)
+    , strMapper(nullptr)
+    , Stream(InStream)
+  {
+    Init();
+  }
 
-  virtual ~VSaveWriterStream () override { Close(); delete Stream; Stream = nullptr; }
+  // takes ownership of the passed archive object
+  // will properly close and destroy the archive
+  VSaveWriterStream (VVWadNewArchive *avwad)
+    : vwad(avwad)
+    , strMapper(nullptr)
+    , Stream(nullptr)
+  {
+    Init();
+    #if 1
+    strMapper = new VStreamIOStrMapperWriter();
+    AttachStringMapper(strMapper);
+    #endif
+  }
+
+  virtual ~VSaveWriterStream () override {
+    Close();
+    delete Stream; Stream = nullptr;
+    delete strMapper; strMapper = nullptr;
+  }
 
   inline bool IsNewFormat () const noexcept { return (vwad != nullptr); }
 
@@ -849,6 +1005,7 @@ public:
           es->name = name;
           es->est = new VMemoryStream();
           es->est->BeginWrite();
+          es->est->AttachStringMapper(strMapper);
           sidx = esections.length();
           esections.Append(es);
         }
@@ -872,6 +1029,7 @@ public:
     VStream::Destroy(Stream);
     WipeESections();
     if (vwad) { delete vwad; vwad = nullptr; }
+    delete strMapper; strMapper = nullptr;
     VStream::SetError();
   }
 
@@ -880,7 +1038,6 @@ public:
     VStream *s = GetCurrStream();
     return ((s && s->IsError()) || (Stream && Stream->IsError()));
   }
-
 
   virtual bool Close () override {
     bool err = IsError();
@@ -896,7 +1053,24 @@ public:
         FlushESections();
         err = IsError();
       }
-      if (!err) err = !vwad->Close();
+      if (!err) {
+        if (strMapper) {
+          int level = save_compression_level.asInt();
+          if (level < VADWR_COMP_DISABLE || level > VADWR_COMP_BEST) {
+            level = VADWR_COMP_FAST;
+            save_compression_level = level;
+          }
+          VStream *wo = vwad->CreateFileDirect(NEWFTM_FNAME_MAP_STRTBL, level);
+          if (wo) {
+            strMapper->WriteStrings(wo);
+            err = !wo->Close();
+            VStream::Destroy(wo);
+          } else {
+            err = true;
+          }
+        }
+        if (!err) err = !vwad->Close();
+      }
       delete vwad; vwad = nullptr;
     } else {
       if (Stream) { err = !Stream->Close(); Stream = nullptr; }

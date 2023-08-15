@@ -251,6 +251,11 @@ VNTValueReader::VNTValueReader (VStream *ASrcStream)
 }
 
 
+//==========================================================================
+//
+//  VNTValueReader::~VNTValueReader
+//
+//==========================================================================
 VNTValueReader::~VNTValueReader () {
   if (srcStream && !bError && !srcStream->IsError()) {
     // skip fields
@@ -276,6 +281,39 @@ VNTValueReader::~VNTValueReader () {
       }
     } while (0);
     if (srcStream && srcStream->IsError()) setError();
+  }
+}
+
+
+//==========================================================================
+//
+//  VNTValueReader::GetIOMapper
+//
+//==========================================================================
+VStreamIOMapper *VNTValueReader::GetIOMapper () {
+  return (srcStream ? srcStream->Mapper : nullptr);
+}
+
+
+//==========================================================================
+//
+//  VNTValueReader::GetStringMapper
+//
+//==========================================================================
+VStreamIOStrMapper *VNTValueReader::GetStringMapper () {
+  return (srcStream ? srcStream->StrMapper : nullptr);
+}
+
+
+//==========================================================================
+//
+//  VNTValueReader::AttachMappersTo
+//
+//==========================================================================
+void VNTValueReader::AttachMappersTo (VStream *dstrm) {
+  if (dstrm && srcStream) {
+    dstrm->Mapper = srcStream->Mapper;
+    dstrm->StrMapper = srcStream->StrMapper;
   }
 }
 
@@ -527,6 +565,39 @@ VNTValueWriter::~VNTValueWriter () {
 
 //==========================================================================
 //
+//  VNTValueWriter::GetIOMapper
+//
+//==========================================================================
+VStreamIOMapper *VNTValueWriter::GetIOMapper () {
+  return (strm ? strm->Mapper : nullptr);
+}
+
+
+//==========================================================================
+//
+//  VNTValueWriter::GetStringMapper
+//
+//==========================================================================
+VStreamIOStrMapper *VNTValueWriter::GetStringMapper () {
+  return (strm ? strm->StrMapper : nullptr);
+}
+
+
+//==========================================================================
+//
+//  VNTValueWriter::AttachMappersTo
+//
+//==========================================================================
+void VNTValueWriter::AttachMappersTo (VStream *dstrm) {
+  if (dstrm && strm) {
+    dstrm->Mapper = strm->Mapper;
+    dstrm->StrMapper = strm->StrMapper;
+  }
+}
+
+
+//==========================================================================
+//
 //  VNTValueWriter::WriteTo
 //
 //==========================================================================
@@ -606,6 +677,39 @@ VNTValueIO::VNTValueIO (VStream *astrm)
 VNTValueIO::~VNTValueIO () {
   if (rd) { delete rd; rd = nullptr; }
   if (wr) { delete wr; wr = nullptr; }
+}
+
+
+//==========================================================================
+//
+//  VNTValueIO::GetStringMapper
+//
+//==========================================================================
+VStreamIOStrMapper *VNTValueIO::GetStringMapper () {
+  return (rd ? rd->GetStringMapper() : wr ? wr->GetStringMapper() : nullptr);
+}
+
+
+//==========================================================================
+//
+//  VNTValueIO::GetIOMapper
+//
+//==========================================================================
+VStreamIOMapper *VNTValueIO::GetIOMapper () {
+  return (rd ? rd->GetIOMapper() : wr ? wr->GetIOMapper() : nullptr);
+}
+
+
+//==========================================================================
+//
+//  VNTValueIO::AttachMappersTo
+//
+//==========================================================================
+void VNTValueIO::AttachMappersTo (VStream *dstrm) {
+  if (dstrm) {
+    if (wr) wr->AttachMappersTo(dstrm);
+    else if (rd) rd->AttachMappersTo(dstrm);
+  }
 }
 
 

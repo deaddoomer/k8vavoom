@@ -71,6 +71,9 @@ void VTextureID::save (VStream &strm) const {
   // full name
   VStr fullName = (tex->SourceLump >= 0 ? W_RealLumpName(tex->SourceLump) : VStr::EmptyString);
   strm << fullName;
+  #if 0
+  GCon->Logf(NAME_Debug, "+++ :(%p): +++ id=%d; ttype=%d; txname=<%s>; fullname=<%s>", strm.StrMapper, aid, ttype, *txname, *fullName);
+  #endif
 }
 
 

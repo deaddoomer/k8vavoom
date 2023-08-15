@@ -257,6 +257,11 @@ public:
 
   inline bool IsError () const { return bError; }
 
+  VStreamIOMapper *GetIOMapper ();
+  VStreamIOStrMapper *GetStringMapper ();
+
+  void AttachMappersTo (VStream *strm);
+
   // if `vtype` is not `T_Invalid`, returns invalid VNTValue if it is not possible to convert
   // returns invalid VNTValue if not found
   VNTValue readValue (VName vname, vuint8 vtype=VNTValue::T_Invalid);
@@ -289,6 +294,11 @@ public:
 
   // returns `true` if value was replaced
   bool putValue (const VNTValue &v);
+
+  VStreamIOMapper *GetIOMapper ();
+  VStreamIOStrMapper *GetStringMapper ();
+
+  void AttachMappersTo (VStream *strm);
 };
 
 
@@ -330,4 +340,9 @@ public:
   //TODO: find a good way to work with blobs
   virtual VNTValue readBlob (VName vname);
   virtual void writeBlob (VName vname, const void *buf, int len);
+
+  VStreamIOMapper *GetIOMapper ();
+  VStreamIOStrMapper *GetStringMapper ();
+
+  void AttachMappersTo (VStream *strm);
 };

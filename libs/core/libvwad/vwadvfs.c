@@ -2828,7 +2828,7 @@ static vwad_fidx find_file (vwad_handle *wad, const char *name) {
       fidx = wad->files[fidx].hcNext;
     }
   }
-  return 0;
+  return -1;
 }
 
 

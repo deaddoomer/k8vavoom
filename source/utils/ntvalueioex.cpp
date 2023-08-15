@@ -259,6 +259,7 @@ void VNTValueIOEx::io (VName vname, VTextureID &v) {
       //GCon->Logf(NAME_Debug, "LDBLOB: size=%d", blob.getBlobSize());
       //VStr s = "   "; for (int f = 0; f < blob.getBlobSize(); ++f) s += va(" %02x", blob.getBlobPtr()[f]); GCon->Logf(NAME_Debug, "%s", *s);
       VMemoryStreamRO rst;
+      AttachMappersTo(&rst);
       rst.Setup("::texture", blob.getBlobPtr(), blob.getBlobSize());
       v.Serialise(rst);
     } else if (tname == NAME_None) {
@@ -296,6 +297,7 @@ void VNTValueIOEx::io (VName vname, VTextureID &v) {
     io(VName(va("%s.ttype", *transformName(vname))), ttype);
 
     VMemoryStream mst;
+    AttachMappersTo(&mst);
     mst.BeginWrite();
     v.Serialise(mst);
     TArrayNC<vuint8> &arr = mst.GetArray();

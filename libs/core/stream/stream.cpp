@@ -176,6 +176,16 @@ VStreamIOMapper::~VStreamIOMapper () {
 
 //==========================================================================
 //
+//  VStreamIOStrMapper::~VStreamIOStrMapper
+//
+//==========================================================================
+VStreamIOStrMapper::~VStreamIOStrMapper () {
+}
+
+
+
+//==========================================================================
+//
 //  VStream::~VStream
 //
 //==========================================================================
@@ -200,6 +210,16 @@ bool VStream::IsFastSeek () const noexcept {
 //==========================================================================
 void VStream::SetFastSeek (bool value) noexcept {
   bFastSeek = value;
+}
+
+
+//==========================================================================
+//
+//  VStream::AttachStringMapper
+//
+//==========================================================================
+void VStream::AttachStringMapper (VStreamIOStrMapper *amapper) {
+  StrMapper = amapper;
 }
 
 
@@ -428,7 +448,9 @@ void VStream::io (VName &v) {
 //
 //==========================================================================
 void VStream::io (VStr &s) {
-  if (Mapper) Mapper->io(s); else s.Serialise(*this);
+  if (StrMapper) StrMapper->io(this, s);
+  else if (Mapper) Mapper->io(s);
+  else s.Serialise(*this);
 }
 
 
