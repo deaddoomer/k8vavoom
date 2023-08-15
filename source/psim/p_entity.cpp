@@ -374,6 +374,7 @@ void VEntity::SerialiseOther (VStream &Strm) {
       FlagsEx &= ~EFEX_GoreModEntity;
     }
     #ifdef EXTRA_DATA_SIGNATURE
+    not used
     // has other data?
     auto opos = Strm.Tell();
     if (!LoadExtraData(Strm)) {
@@ -400,6 +401,7 @@ void VEntity::SerialiseOther (VStream &Strm) {
   } else {
     // saving
     #ifdef EXTRA_DATA_SIGNATURE
+    not used
     SaveExtraData();
     #endif
   }

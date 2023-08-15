@@ -33,6 +33,9 @@
 # include "sv_save.old.cpp"
 #else
 
+//#define VXX_DEBUG_SECTION_READER
+//#define VXX_DEBUG_SECTION_WRITER
+
 #include "../gamedefs.h"
 #include "../host.h"
 #include "../psim/p_entity.h"
@@ -369,6 +372,19 @@ private:
   VStream *Stream;
   VVWadArchive *vwad;
 
+private:
+  // extended sections support
+  // name and position
+  TMap<VStrCI, int> esections;
+  // current section
+  VStr currsection;
+  VStream *currestream;
+  bool esecclosed;
+
+  inline VStream *GetCurrStream () const {
+    return (!esecclosed ? currestream : Stream);
+  }
+
 public:
   TArray<VName> NameRemap;
   TArray<VObject *> Exports;
@@ -377,9 +393,14 @@ public:
 public:
   VV_DISABLE_COPY(VSaveLoaderStream)
 
-  VSaveLoaderStream (VStream *InStream) : Stream(InStream), vwad(nullptr) { bLoading = true; }
-  VSaveLoaderStream (VVWadArchive *avwad) : Stream(nullptr), vwad(avwad) { bLoading = true; }
-  virtual ~VSaveLoaderStream () override { Close(); delete Stream; Stream = nullptr; }
+  VSaveLoaderStream (VStream *InStream) : Stream(InStream), vwad(nullptr), esecclosed(true) { bLoading = true; }
+  VSaveLoaderStream (VVWadArchive *avwad) : Stream(nullptr), vwad(avwad), esecclosed(true) { bLoading = true; }
+
+  virtual ~VSaveLoaderStream () override {
+    Close();
+    VStream::Destroy(currestream);
+    VStream::Destroy(Stream);
+  }
 
   inline bool IsNewFormat () const noexcept { return !!vwad; }
 
@@ -402,32 +423,175 @@ public:
   }
 
   // stream interface
+  virtual bool IsExtendedFormat () const noexcept override {
+    return IsNewFormat();
+  }
+
+  // opening non-existing section is error, so check if necessary
+  // asking for empty name still returns `false`
+  virtual bool HasExtendedSection (VStr name) override {
+    if (IsNewFormat() && !IsError()) {
+      if (name.IsEmpty()) return false;
+      if (currsection.strEquCI(name)) return true;
+      return vwad->FileExists(name);
+    }
+    return false;
+  }
+
+  virtual bool ExtendedSection (VStr name) override {
+    if (IsNewFormat() && !IsError()) {
+      if (name.isEmpty()) {
+        #ifdef VXX_DEBUG_SECTION_READER
+        if (!esecclosed) {
+          GCon->Logf(NAME_Debug, "RDX: closed section '%s'", *currsection);
+        }
+        #endif
+        esecclosed = true;
+      } else {
+        // check last used section
+        if (currsection.strEquCI(name)) {
+          vassert(currestream != nullptr);
+          #ifdef VXX_DEBUG_SECTION_READER
+          if (esecclosed) {
+            GCon->Logf(NAME_Debug, "RDX: opened section '%s'", *currsection);
+          }
+          #endif
+          esecclosed = false;
+          return true;
+        }
+        // save current section position
+        if (currestream) {
+          vassert(!currsection.IsEmpty());
+          int pos = currestream->Tell();
+          #ifdef VXX_DEBUG_SECTION_READER
+          GCon->Logf(NAME_Debug, "RDX: saving section '%s' state (pos=%d)", *currsection, pos);
+          #endif
+          if (currestream->IsError() || pos < 0) {
+            SetError();
+            return false;
+          }
+          VStream::Destroy(currestream);
+          esections.put(currsection, pos);
+          currsection.clear();
+          esecclosed = true;
+        }
+        // open new section stream
+        currestream = vwad->OpenFile(name);
+        if (currestream == nullptr) {
+          #ifdef VXX_DEBUG_SECTION_READER
+          GCon->Logf(NAME_Debug, "RDX: cannot open section '%s'", *name);
+          #endif
+          SetError();
+          return false;
+        }
+        // restore section position, if there is any
+        auto kv = esections.get(name);
+        if (kv) {
+          vassert(*kv >= 0);
+          #ifdef VXX_DEBUG_SECTION_READER
+          GCon->Logf(NAME_Debug, "RDX: restored section '%s' state (pos=%d)", *name, *kv);
+          #endif
+          currestream->Seek(*kv);
+          if (currestream->IsError()) {
+            SetError();
+            return false;
+          }
+        }
+        #ifdef VXX_DEBUG_SECTION_READER
+        GCon->Logf(NAME_Debug, "RDX: opened section '%s'", *name);
+        #endif
+        esecclosed = false;
+        currsection = name;
+        return true;
+      }
+    }
+    return !IsError();
+  }
+
+  VStr CurrentExtendedSection () override {
+    return (!esecclosed ? currsection : VStr::EmptyString);
+  }
+
   virtual void SetError () override {
+    VStream::Destroy(currestream);
+    currsection.clear();
+    esecclosed = true;
+    esections.clear();
     VStream::Destroy(Stream);
+
     VStream::SetError();
   }
 
   virtual bool IsError () const noexcept override {
-    return (bError || (Stream && Stream->IsError()));
+    if (bError) return true;
+    VStream *s = GetCurrStream();
+    return ((s && s->IsError()) || (Stream && Stream->IsError()));
   }
 
   virtual void Serialise (void *Data, int Len) override {
-    if (Stream) Stream->Serialise(Data, Len); else SetError();
+    VStream *s = GetCurrStream();
+    if (s) {
+      s->Serialise(Data, Len);
+      if (s->IsError()) SetError();
+    } else {
+      SetError();
+    }
   }
+
   virtual void Seek (int Pos) override {
-    if (Stream) Stream->Seek(Pos); else SetError();
+    VStream *s = GetCurrStream();
+    if (s) {
+      s->Seek(Pos);
+      if (s->IsError()) SetError();
+    } else {
+      SetError();
+    }
   }
+
   virtual int Tell () override {
-    if (Stream) return Stream->Tell(); else { SetError(); return 0; }
+    VStream *s = GetCurrStream();
+    int res = 0;
+    if (s) {
+      res = s->Tell();
+      if (s->IsError()) SetError();
+    } else {
+      SetError();
+    }
+    return res;
   }
+
   virtual int TotalSize () override {
-    if (Stream) return Stream->TotalSize(); else { SetError(); return 0; }
+    VStream *s = GetCurrStream();
+    int res = 0;
+    if (s) {
+      res = s->TotalSize();
+      if (s->IsError()) SetError();
+    } else {
+      SetError();
+    }
+    return res;
   }
+
   virtual bool AtEnd () override {
-    if (Stream) return Stream->AtEnd(); else { SetError(); return true; }
+    VStream *s = GetCurrStream();
+    bool res = true;
+    if (s) {
+      res = s->AtEnd();
+      if (s->IsError()) SetError();
+    } else {
+      SetError();
+    }
+    return res;
   }
+
   virtual void Flush () override {
-    if (Stream) Stream->Flush(); else SetError();
+    VStream *s = GetCurrStream();
+    if (s) {
+      s->Flush();
+      if (s->IsError()) SetError();
+    } else {
+      SetError();
+    }
   }
 
   virtual bool Close () override {
@@ -436,6 +600,10 @@ public:
       if (!err) err = !Stream->Close();
       VStream::Destroy(Stream);
     }
+    VStream::Destroy(currestream);
+    currsection.clear();
+    esecclosed = true;
+    esections.clear();
     if (vwad) {
       if (!err) vwad->Close();
       delete vwad; vwad = nullptr;
@@ -505,6 +673,15 @@ private:
   VVWadNewArchive *vwad;
   VStream *Stream;
 
+private:
+  // extended sections support
+  struct ExtSection {
+    VStr name;
+    VMemoryStream *est;
+  };
+  TArray<ExtSection *> esections;
+  int currsection;
+
 public:
   TArray<VName> Names;
   TArray<VObject *> Exports;
@@ -514,10 +691,69 @@ public:
   bool skipPlayers;
 
 private:
+  inline VStream *GetCurrStream () const {
+    return (currsection >= 0 ? esections[currsection]->est : Stream);
+  }
+
+  void WipeESections () {
+    currsection = -1;
+    for (int f = 0; f < esections.length(); f += 1) {
+      ExtSection *es = esections[f];
+      esections[f] = nullptr;
+      if (es) {
+        if (es->est) { es->est->Close(); delete es->est; }
+        delete es;
+      }
+    }
+    esections.clear();
+  }
+
+  // ...and destroy them
+  void FlushESections () {
+    if (IsError()) { WipeESections(); return; }
+    if (!vwad) { vassert(esections.length() == 0); return; }
+
+    for (int f = 0; f < esections.length(); f += 1) {
+      ExtSection *es = esections[f];
+      vassert(es != nullptr);
+
+      if (!es->est || es->est->IsError()) { SetError(); break; }
+
+      int level = save_compression_level.asInt();
+      if (level < VADWR_COMP_DISABLE || level > VADWR_COMP_BEST) {
+        level = VADWR_COMP_FAST;
+        save_compression_level = level;
+      }
+      // just in case
+      if (es->name.endsWithNoCase(".vwad")) level = VADWR_COMP_DISABLE;
+
+      #ifdef VXX_DEBUG_SECTION_WRITER
+      GCon->Logf(NAME_Debug, "WRX: [%d/%d] flushing section '%s' (%d bytes)",
+        f + 1, esections.length(), *es->name, es->est->TotalSize());
+      #endif
+
+      VStream *xst = vwad->CreateFileDirect(es->name, level);
+      if (!xst) {
+        GCon->Logf(NAME_Error, "cannot create save writer subsection '%s'", *es->name);
+        SetError();
+        break;
+      }
+      if (es->est->TotalSize() != 0) {
+        xst->Serialise(es->est->GetArray().Ptr(), es->est->GetArray().length());
+      }
+      const bool err = !xst->Close();
+      delete xst;
+      if (err) { SetError(); break; }
+    }
+
+    WipeESections();
+  }
+
   void Init () {
     bLoading = false;
     NamesMap.setLength(VName::GetNumNames());
     for (int i = 0; i < VName::GetNumNames(); ++i) NamesMap[i] = -1;
+    currsection = -1;
   }
 
   // this automatically closes old file
@@ -587,15 +823,64 @@ public:
   inline bool CreateFileDirect (VStr name) { return CreateFile(name, false); }
 
   // stream interface
+  virtual bool IsExtendedFormat () const noexcept override {
+    return IsNewFormat();
+  }
+
+  virtual bool ExtendedSection (VStr name) override {
+    if (IsNewFormat() && !IsError()) {
+      if (name.isEmpty()) {
+        #ifdef VXX_DEBUG_SECTION_READER
+        if (currsection >= 0) {
+          GCon->Logf(NAME_Debug, "WRX: closed section '%s'", *esections[currsection]->name);
+        }
+        #endif
+        currsection = -1;
+      } else {
+        int sidx = 0;
+        // early exit for the same section
+        if (currsection >= 0 && esections[currsection]->name.strEquCI(name)) return true;
+        while (sidx < esections.length() && !esections[sidx]->name.strEquCI(name)) {
+          sidx += 1;
+        }
+        if (sidx >= esections.length()) {
+          // new section
+          ExtSection *es = new ExtSection();
+          es->name = name;
+          es->est = new VMemoryStream();
+          es->est->BeginWrite();
+          sidx = esections.length();
+          esections.Append(es);
+        }
+        currsection = sidx;
+        #ifdef VXX_DEBUG_SECTION_READER
+        if (currsection >= 0) {
+          GCon->Logf(NAME_Debug, "WRX: opened section '%s'", *esections[currsection]->name);
+        }
+        #endif
+        return true;
+      }
+    }
+    return !IsError();
+  }
+
+  VStr CurrentExtendedSection () override {
+    return (currsection >= 0 ? esections[currsection]->name : VStr::EmptyString);
+  }
+
   virtual void SetError () override {
     VStream::Destroy(Stream);
+    WipeESections();
     if (vwad) { delete vwad; vwad = nullptr; }
     VStream::SetError();
   }
 
   virtual bool IsError () const noexcept override {
-    return (bError || (Stream && Stream->IsError()));
+    if (bError) return true;
+    VStream *s = GetCurrStream();
+    return ((s && s->IsError()) || (Stream && Stream->IsError()));
   }
+
 
   virtual bool Close () override {
     bool err = IsError();
@@ -605,6 +890,12 @@ public:
         err = Stream->IsError();
       }
       delete Stream; Stream = nullptr;
+      if (err) {
+        WipeESections();
+      } else {
+        FlushESections();
+        err = IsError();
+      }
       if (!err) err = !vwad->Close();
       delete vwad; vwad = nullptr;
     } else {
@@ -615,22 +906,69 @@ public:
   }
 
   virtual void Serialise (void *Data, int Len) override {
-    if (Stream) Stream->Serialise(Data, Len); else SetError();
+    VStream *s = GetCurrStream();
+    if (s) {
+      s->Serialise(Data, Len);
+      if (s->IsError()) SetError();
+    } else {
+      SetError();
+    }
   }
+
   virtual void Seek (int Pos) override {
-    if (Stream) Stream->Seek(Pos); else SetError();
+    VStream *s = GetCurrStream();
+    if (s) {
+      s->Seek(Pos);
+      if (s->IsError()) SetError();
+    } else {
+      SetError();
+    }
   }
+
   virtual int Tell () override {
-    if (Stream) return Stream->Tell(); else { SetError(); return 0; }
+    VStream *s = GetCurrStream();
+    int res = 0;
+    if (s) {
+      res = s->Tell();
+      if (s->IsError()) SetError();
+    } else {
+      SetError();
+    }
+    return res;
   }
+
   virtual int TotalSize () override {
-    if (Stream) return Stream->TotalSize(); else { SetError(); return 0; }
+    VStream *s = GetCurrStream();
+    int res = 0;
+    if (s) {
+      res = s->TotalSize();
+      if (s->IsError()) SetError();
+    } else {
+      SetError();
+    }
+    return res;
   }
+
   virtual bool AtEnd () override {
-    if (Stream) return Stream->AtEnd(); else { SetError(); return 0; }
+    VStream *s = GetCurrStream();
+    bool res = true;
+    if (s) {
+      res = s->AtEnd();
+      if (s->IsError()) SetError();
+    } else {
+      SetError();
+    }
+    return res;
   }
+
   virtual void Flush () override {
-    if (Stream) Stream->Flush(); else SetError();
+    VStream *s = GetCurrStream();
+    if (s) {
+      s->Flush();
+      if (s->IsError()) SetError();
+    } else {
+      SetError();
+    }
   }
 
   void RegisterObject (VObject *o) {

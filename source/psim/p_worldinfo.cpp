@@ -41,7 +41,7 @@ IMPLEMENT_CLASS(V, WorldInfo)
 //==========================================================================
 void VWorldInfo::PostCtor () {
   Super::PostCtor();
-  Acs = new VAcsGlobal;
+  Acs = new VAcsGlobal();
 }
 
 
@@ -52,10 +52,23 @@ void VWorldInfo::PostCtor () {
 //==========================================================================
 void VWorldInfo::SerialiseOther (VStream &Strm) {
   Super::SerialiseOther(Strm);
+
+  // serialise global script info
+  VStr osec = Strm.CurrentExtendedSection();
+  if (!Strm.ExtendedSection("vworldinfo/acs_global.dat")) {
+    if (Strm.IsLoading()) {
+      GCon->Logf(NAME_Error, "no worldinfo ACS global data");
+    }
+    Strm.SetError();
+    return;
+  }
   vuint8 xver = 0;
   Strm << xver;
-  // serialise global script info
+  if (Strm.IsLoading() && xver != 0) {
+    GCon->Logf(NAME_Error, "invalid worldinfo ACS global data version");
+  }
   Acs->Serialise(Strm);
+  Strm.ExtendedSection(osec);
 }
 
 

@@ -176,6 +176,8 @@ static bool writeOrCheckUInt (VStream &Strm, vuint32 value, const char *errmsg=n
 //
 //  VLevel::SerialiseOther
 //
+//  FIXME: add error checking for sections!
+//
 //==========================================================================
 void VLevel::SerialiseOther (VStream &Strm) {
   int i;
@@ -206,8 +208,25 @@ void VLevel::SerialiseOther (VStream &Strm) {
   writeOrCheckUInt(Strm, LSSHash, "geometry hash");
   bool segsHashOK = writeOrCheckUInt(Strm, SegHash);
 
+  bool doDecals = segsHashOK;
+  if (doDecals && Strm.IsExtendedFormat()) {
+    if (Strm.IsLoading()) {
+      doDecals = Strm.HasExtendedSection("vlevel/decals.dat");
+    } else {
+      // if we don't have decals, don't write them
+      doDecals = false;
+      for (int f = 0; !doDecals && f < (int)NumSegs; ++f) {
+        doDecals = !!Segs[f].decalhead;
+      }
+    }
+  }
+
+  VStr osec;
+
   // decals
-  if (segsHashOK) {
+  if (doDecals) {
+    osec = Strm.CurrentExtendedSection();
+    Strm.ExtendedSection("vlevel/decals.dat");
     vuint32 dctotal = 0;
     if (Strm.IsLoading()) {
       // load decals
@@ -273,18 +292,21 @@ void VLevel::SerialiseOther (VStream &Strm) {
       Strm.Seek(currPos);
       GCon->Logf("%u decals saved", dctotal);
     }
+    Strm.ExtendedSection(osec);
   } else {
     // skip decals
-    vint32 dcSize = 0;
-    Strm << dcSize;
-    if (Strm.IsLoading()) {
-      if (dcSize < 0) Host_Error("decals section is broken");
-      Strm.Seek(Strm.Tell()+dcSize);
-    }
-    if (dcSize) {
-      GCon->Logf("seg hash doesn't match (this is harmless, but you lost decals)");
-    } else {
-      GCon->Logf("seg hash doesn't match (this is harmless)");
+    if (!Strm.IsExtendedFormat()) {
+      vint32 dcSize = 0;
+      Strm << dcSize;
+      if (Strm.IsLoading()) {
+        if (dcSize < 0) Host_Error("decals section is broken");
+        Strm.Seek(Strm.Tell()+dcSize);
+      }
+      if (dcSize) {
+        GCon->Logf("seg hash doesn't match (this is harmless, but you lost decals)");
+      } else {
+        GCon->Logf("seg hash doesn't match (this is harmless)");
+      }
     }
   }
 
@@ -293,24 +315,35 @@ void VLevel::SerialiseOther (VStream &Strm) {
   bool hasSectorDecals = !Strm.IsLoading();
 
   // write "extended save" flag
-  if (!Strm.IsLoading()) {
-    vint32 scflag = EXTSAVE_NUMSEC_MAGIC1;
-    Strm << STRM_INDEX(scflag);
+  if (Strm.IsExtendedFormat()) {
+    // extended
+    if (!Strm.IsLoading()) {
+      hasSectorDecals = !!subdecalhead;
+    }
+  } else {
+    if (!Strm.IsLoading()) {
+      vint32 scflag = EXTSAVE_NUMSEC_MAGIC1;
+      Strm << STRM_INDEX(scflag);
+    }
   }
 
   // sectors
+  osec = Strm.CurrentExtendedSection();
+  Strm.ExtendedSection("vlevel/sectors.dat");
   {
     vint32 cnt = NumSectors;
     // check "extended save" magic
     Strm << STRM_INDEX(cnt);
-    if (Strm.IsLoading()) {
+    if (Strm.IsLoading() && !Strm.IsExtendedFormat()) {
       if (cnt == EXTSAVE_NUMSEC_MAGIC0 || cnt == EXTSAVE_NUMSEC_MAGIC1) {
         hasSectorDecals = (cnt == EXTSAVE_NUMSEC_MAGIC1);
         extSaveVer = true;
         Strm << STRM_INDEX(cnt);
       }
-      if (cnt != NumSectors) Host_Error("invalid number of sectors");
+    } else {
+      extSaveVer = true;
     }
+    if (cnt != NumSectors) Host_Error("invalid number of sectors (%d vs %d)", cnt, NumSectors);
 
     for (i = 0, sec = Sectors; i < NumSectors; ++i, ++sec) {
       VNTValueIOEx vio(&Strm);
@@ -412,6 +445,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
     }
     if (Strm.IsLoading()) HashSectors();
   }
+  Strm.ExtendedSection(osec);
 
   // extended info section
   vint32 hasSegVisibility = 1;
@@ -421,18 +455,28 @@ void VLevel::SerialiseOther (VStream &Strm) {
     #else
       0;
     #endif
-  if (extSaveVer) {
-    VNTValueIOEx vio(&Strm);
-    vio.io(VName("extflags.hassegvis"), hasSegVisibility);
-    vio.io(VName("extflags.hasmapmarks"), hasAutomapMarks);
+
+  if (!Strm.IsExtendedFormat()) {
+    if (extSaveVer) {
+      VNTValueIOEx vio(&Strm);
+      vio.io(VName("extflags.hassegvis"), hasSegVisibility);
+      vio.io(VName("extflags.hasmapmarks"), hasAutomapMarks);
+    } else {
+      hasSegVisibility = 0;
+      hasAutomapMarks = 0;
+    }
   } else {
-    hasSegVisibility = 0;
-    hasAutomapMarks = 0;
+    if (Strm.IsLoading()) {
+      hasSegVisibility = Strm.HasExtendedSection("vlevel/seg_visibility.dat");
+      hasAutomapMarks = Strm.HasExtendedSection("vlevel/automap_marks.dat");
+    }
   }
 
   // seg visibility
   bool segvisLoaded = false;
-  if (hasSegVisibility) {
+  if (hasSegVisibility && (segsHashOK || !Strm.IsExtendedFormat())) {
+    osec = Strm.CurrentExtendedSection();
+    Strm.ExtendedSection("vlevel/seg_visibility.dat");
     //if (Strm.IsLoading()) GCon->Log("loading seg mapping");
     vint32 dcSize = 0;
     int dcStartPos = Strm.Tell();
@@ -470,6 +514,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
       GCon->Logf("seg hash doesn't match for seg mapping (this is harmless)");
       Strm.Seek(dcStartPos+4+dcSize);
     }
+    Strm.ExtendedSection(osec);
   }
 
   // automap marks
@@ -480,6 +525,8 @@ void VLevel::SerialiseOther (VStream &Strm) {
     #else
       0;
     #endif
+    osec = Strm.CurrentExtendedSection();
+    Strm.ExtendedSection("vlevel/automap_marks.dat");
     Strm << STRM_INDEX(number);
     if (number < 0 || number > 1024) Host_Error("invalid automap marks data");
     //GCon->Logf(NAME_Debug, "marks: %d", number);
@@ -519,10 +566,13 @@ void VLevel::SerialiseOther (VStream &Strm) {
       vassert(number == 0);
       #endif
     }
+    Strm.ExtendedSection(osec);
   }
 
   // subsector decals
   if (hasSectorDecals) {
+    osec = Strm.CurrentExtendedSection();
+    Strm.ExtendedSection("vlevel/flat_decals.dat");
     vint32 sscount = (Strm.IsLoading() ? 0 : NumSubsectors);
     Strm << STRM_INDEX(sscount);
     vint32 sdctotal = 0;
@@ -573,9 +623,12 @@ void VLevel::SerialiseOther (VStream &Strm) {
       Strm.Seek(currPos);
       GCon->Logf("%d subsector decals saved", sdctotal);
     }
+    Strm.ExtendedSection(osec);
   }
 
   // lines
+  osec = Strm.CurrentExtendedSection();
+  Strm.ExtendedSection("vlevel/lines.dat");
   {
     vint32 cnt = NumLines;
     Strm << STRM_INDEX(cnt);
@@ -710,6 +763,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
     }
     if (Strm.IsLoading()) HashLines();
   }
+  Strm.ExtendedSection(osec);
 
   // restore subsector "rendered" flag
   if (Strm.IsLoading()) {
@@ -726,6 +780,8 @@ void VLevel::SerialiseOther (VStream &Strm) {
   }
 
   // polyobjs
+  osec = Strm.CurrentExtendedSection();
+  Strm.ExtendedSection("vlevel/polyobj.dat");
   {
     vint32 cnt = NumPolyObjs;
     Strm << STRM_INDEX(cnt);
@@ -755,8 +811,11 @@ void VLevel::SerialiseOther (VStream &Strm) {
       vio.io(VName("SpecialData"), PolyObjs[i]->SpecialData);
     }
   }
+  Strm.ExtendedSection(osec);
 
   // static lights
+  osec = Strm.CurrentExtendedSection();
+  Strm.ExtendedSection("vlevel/static_lights.dat");
   {
     TMapNC<vuint32, VEntity *> suidmap;
     vint32 slcount = StaticLights.length();
@@ -811,9 +870,12 @@ void VLevel::SerialiseOther (VStream &Strm) {
       }
     }
   }
+  Strm.ExtendedSection(osec);
 
   // ACS: script thinkers must be serialized first
   // script thinkers
+  osec = Strm.CurrentExtendedSection();
+  Strm.ExtendedSection("vlevel/acs_thinkers.dat");
   {
     vuint8 xver = 1;
     Strm << xver;
@@ -826,21 +888,29 @@ void VLevel::SerialiseOther (VStream &Strm) {
     for (int f = 0; f < sthcount; ++f) {
       VSerialisable *obj = scriptThinkers[f];
       Strm << obj;
-      if (obj && obj->GetClassName() != "VAcs") Host_Error("Save is broken (loaded `%s` instead of `VAcs`)", *obj->GetClassName());
+      if (obj && obj->GetClassName() != "VAcs") {
+        Host_Error("Save is broken (loaded `%s` instead of `VAcs`)", *obj->GetClassName());
+      }
       //GCon->Logf("VLSR: script #%d: %p", f, (void *)obj);
       scriptThinkers[f] = (VLevelScriptThinker *)obj;
     }
   }
+  Strm.ExtendedSection(osec);
 
   // script manager
+  osec = Strm.CurrentExtendedSection();
+  Strm.ExtendedSection("vlevel/acs_manager.dat");
   {
     vuint8 xver = 0;
     Strm << xver;
     if (xver != 0) Host_Error("Save is broken (invalid acs manager version %u)", (unsigned)xver);
     Acs->Serialise(Strm);
   }
+  Strm.ExtendedSection(osec);
 
   // camera textures
+  osec = Strm.CurrentExtendedSection();
+  Strm.ExtendedSection("vlevel/camera_textures.dat");
   {
     int NumCamTex = CameraTextures.length();
     Strm << STRM_INDEX(NumCamTex);
@@ -852,8 +922,11 @@ void VLevel::SerialiseOther (VStream &Strm) {
       vio.io(VName("FOV"), CameraTextures[i].FOV);
     }
   }
+  Strm.ExtendedSection(osec);
 
   // translation tables
+  osec = Strm.CurrentExtendedSection();
+  Strm.ExtendedSection("vlevel/transtbls.dat");
   {
     int NumTrans = Translations.length();
     Strm << STRM_INDEX(NumTrans);
@@ -874,8 +947,11 @@ void VLevel::SerialiseOther (VStream &Strm) {
       if (Present) Translations[i]->Serialise(Strm);
     }
   }
+  Strm.ExtendedSection(osec);
 
   // body queue translation tables
+  osec = Strm.CurrentExtendedSection();
+  Strm.ExtendedSection("vlevel/transtbl_body.dat");
   {
     int NumTrans = BodyQueueTrans.length();
     Strm << STRM_INDEX(NumTrans);
@@ -896,8 +972,11 @@ void VLevel::SerialiseOther (VStream &Strm) {
       if (Present) BodyQueueTrans[i]->Serialise(Strm);
     }
   }
+  Strm.ExtendedSection(osec);
 
   // zones
+  osec = Strm.CurrentExtendedSection();
+  Strm.ExtendedSection("vlevel/zones.dat");
   {
     vint32 cnt = NumZones;
     Strm << STRM_INDEX(cnt);
@@ -910,4 +989,5 @@ void VLevel::SerialiseOther (VStream &Strm) {
       vio.io(VName("zoneid"), Zones[i]);
     }
   }
+  Strm.ExtendedSection(osec);
 }
