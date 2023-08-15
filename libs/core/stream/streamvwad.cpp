@@ -25,6 +25,8 @@
 //**************************************************************************
 #include "../core.h"
 
+#define VVX_DEBUG_WRITER
+
 
 static void logger (int type, const char *fmt, ...) {
   va_list ap;
@@ -121,6 +123,7 @@ static vwad_result VArch_read (vwad_iostream *strm, void *buf, int bufsize) {
 //  VVWadArchive::VVWadArchive
 //
 //==========================================================================
+/*
 VVWadArchive::VVWadArchive (VStr aArchName)
   : archname()
   , vw_handle(nullptr)
@@ -144,6 +147,7 @@ VVWadArchive::VVWadArchive (VStr aArchName)
     }
   }
 }
+*/
 
 
 //==========================================================================
@@ -222,7 +226,7 @@ VStream *VVWadArchive::OpenFile (VStr name) {
       //GLog.Logf(NAME_Debug, "name=<%s>; fd=%d", *name, fd);
       if (fd >= 0) {
         res = new VVWadStreamReader(this, fd);
-        if (res->IsError()) { VStream::Destroy(res); res = nullptr; }
+        if (res->IsError()) VStream::Destroy(res);
       }
     }
   }
@@ -527,112 +531,429 @@ static int VStream_write (vwadwr_iostream *strm, const void *buf, int bufsize) {
 
 //==========================================================================
 //
-//  vwadwr_write_vstream
+//  VVWadNewArchive::VVWadNewArchive
+//
+//  create to stream; will close owned stream even on open error
+//  stream will be seeked to 0
 //
 //==========================================================================
-vwadwr_result vwadwr_write_vstream (vwadwr_dir *wad, VStream *strm,
-                                    int level, /* VADWR_COMP_xxx */
-                                    const char *pkfname,
-                                    const char *groupname, /* can be NULL */
-                                    unsigned long long ftime, /* can be 0; seconds since Epoch */
-                                    int *upksizep, int *pksizep,
-                                    vwadwr_pack_progress progcb, void *progudata)
+VVWadNewArchive::VVWadNewArchive (VStr aArchName, VStr author, VStr title,
+                                  VStream *dstrm, bool owned)
+  : archname(aArchName)
+  , vw_handle(nullptr)
+  , destStream(nullptr)
+  , destStreamOwn(owned)
+  , active(nullptr)
+  , error(true)
 {
-  if (!strm) return -1;
-  if (!strm->IsLoading()) return -1;
-  strm->Seek(0);
-  if (strm->IsError()) return -1;
-  vwadwr_iostream ios;
-  ios.seek = &VStream_seek;
-  ios.tell = &VStream_tell;
-  ios.read = &VStream_read;
-  ios.write = nullptr;
-  ios.udata = (void *)strm;
-  return vwadwr_pack_file(wad, &ios, level, pkfname, groupname, ftime, upksizep, pksizep, progcb, progudata);
-}
+  if (!vwadwr_logf) vwadwr_logf = logger;
+  if (!vwadwr_assertion_failed) vwadwr_assertion_failed = assertion_failed;
 
+  if (!dstrm || dstrm->IsLoading() || dstrm->IsError()) {
+    if (owned && dstrm) VStream::Destroy(dstrm);
+    return;
+  }
 
-//==========================================================================
-//
-//  vwadwr_create_archive_stream
-//
-//==========================================================================
-vwadwr_dir *vwadwr_create_archive_stream (VStream *dstrm, VStr author, VStr title) {
-  if (!dstrm || dstrm->IsLoading()) return nullptr;
-  dstrm->Seek(0);
-  if (dstrm->IsError()) return nullptr;
+  if (dstrm->Tell() != 0) dstrm->Seek(0);
+  if (dstrm->IsError()) {
+    if (owned && dstrm) VStream::Destroy(dstrm);
+    return;
+  }
 
   vwadwr_secret_key privkey;
   do {
     prng_randombytes(privkey, sizeof(vwadwr_secret_key));
   } while (!vwadwr_is_good_privkey(privkey));
 
-  //VStream *ostream = FL_OpenSysFileWrite(aArchName);
+  vw_strm.seek = &VStream_seek;
+  vw_strm.tell = &VStream_tell;
+  vw_strm.read = &VStream_read;
+  vw_strm.write = &VStream_write;
+  vw_strm.udata = (void *)dstrm;
 
-  vwadwr_iostream *ios = (vwadwr_iostream *)Z_Malloc((uint32_t)sizeof(vwadwr_iostream));
-  if (!ios) return nullptr;
-  ios->seek = &VStream_seek;
-  ios->tell = &VStream_tell;
-  ios->read = &VStream_read;
-  ios->write = &VStream_write;
-  ios->udata = (void *)dstrm;
-
-  vwadwr_logf = logger;
-  vwadwr_assertion_failed = assertion_failed;
-
-  vwadwr_dir *wad = vwadwr_new_dir(&wrmemman, ios, *author, *title,
-                                   NULL, /* no comment */
-                                   VWADWR_NEW_DONT_SIGN, privkey,
-                                   NULL, NULL);
-  if (!wad) Z_Free(ios);
-
-  return wad;
-}
-
-
-//==========================================================================
-//
-//  vwadwr_finish_archive_stream
-//
-//==========================================================================
-bool vwadwr_finish_archive_stream (vwadwr_dir *&vwad) {
-  bool res = false;
-  if (vwad) {
-    vwadwr_iostream *ios = vwadwr_dir_get_outstrm(vwad);
-    vwadwr_result xres = vwadwr_finish(&vwad);
-    res = (xres == 0);
-    vwad = nullptr;
-    Z_Free(ios);
+  vw_handle = vwadwr_new_dir(&wrmemman, &vw_strm, *author, *title,
+                             NULL, /* no comment */
+                             VWADWR_NEW_DONT_SIGN, privkey,
+                             NULL, NULL);
+  if (!vw_handle || dstrm->IsError()) {
+    if (owned && dstrm) VStream::Destroy(dstrm);
+    return;
   }
-  return res;
+
+  destStream = dstrm;
+  error = false;
 }
 
 
 //==========================================================================
 //
-//  vwadwr_destroy_archive_stream
+//  VVWadNewArchive::~VVWadNewArchive
 //
 //==========================================================================
-void vwadwr_destroy_archive_stream (vwadwr_dir *&vwad) {
-  if (vwad) {
-    vwadwr_iostream *ios = vwadwr_dir_get_outstrm(vwad);
-    vwadwr_free_dir(&vwad);
-    vwad = nullptr;
-    Z_Free(ios);
+VVWadNewArchive::~VVWadNewArchive () {
+  Close();
+}
+
+
+//==========================================================================
+//
+//  VVWadNewArchive::Close
+//
+//  finish creating, write final dir, and so on
+//  return success flag
+//
+//==========================================================================
+bool VVWadNewArchive::Close () {
+  if (active) active->Close();
+  if (vw_handle) {
+    const vwadwr_result xres = vwadwr_finish(&vw_handle);
+    vassert(vw_handle == nullptr);
+    if (xres != VWADWR_OK) SetError();
   }
+  if (destStreamOwn && destStream) VStream::Destroy(destStream);
+  destStream = nullptr;
+  return !error;
 }
 
 
 //==========================================================================
 //
-//  vwadwr_arc_get_archive_stream
+//  VVWadNewArchive::SetError
+//
+//  this also closes the archive handle, and possibly destroys destination stream
 //
 //==========================================================================
-VStream *vwadwr_arc_get_archive_stream (vwadwr_dir *vwad) {
-  if (vwad) {
-    vwadwr_iostream *ios = vwadwr_dir_get_outstrm(vwad);
-    return (VStream *)ios->udata;
-  } else {
+void VVWadNewArchive::SetError () {
+  if (active) {
+    #ifdef VVX_DEBUG_WRITER
+    GLog.Logf(NAME_Debug, "WARC: SetError: %s", *active->fname);
+    #endif
+    active->SetError();
+  }
+  if (vw_handle) {
+    vwadwr_free_dir(&vw_handle);
+    vassert(vw_handle == nullptr);
+  }
+  if (destStreamOwn && destStream) VStream::Destroy(destStream);
+  destStream = nullptr;
+  error = true;
+}
+
+
+//==========================================================================
+//
+//  VVWadNewArchive::CreateFile
+//
+//  return `nullptr` on error
+//  otherwise, return unseekable stream suitable for writing
+//  close the stream to finish file
+//
+//==========================================================================
+VStream *VVWadNewArchive::CreateFile (VStr name, int level/* VADWR_COMP_xxx */,
+                                      VStr groupname, vwadwr_ftime ftime,
+                                      bool buffit)
+{
+  if (error) return nullptr;
+  if (!vw_handle || active) {
+    #ifdef VVX_DEBUG_WRITER
+    if (active) {
+      GLog.Logf(NAME_Debug, "WARC: CreateDup: %s (new: %s)", *active->fname, *name);
+    }
+    #endif
+    SetError();
     return nullptr;
   }
+
+  const vwadwr_result res = vwadwr_create_file(vw_handle, level, *name, *groupname, ftime);
+  if (res != VWADWR_OK) {
+    #ifdef VVX_DEBUG_WRITER
+    GLog.Logf(NAME_Debug, "WARC: CreateFileErr: %s; err=%d", *name, res);
+    #endif
+    SetError();
+    return nullptr;
+  }
+
+  return new VVWadStreamWriter(this, name, buffit);
+}
+
+
+//==========================================================================
+//
+//  VVWadStreamWriter::VVWadStreamWriter
+//
+//==========================================================================
+VVWadStreamWriter::VVWadStreamWriter (VVWadNewArchive *aarc, VStr afname, bool buffit)
+  : arc(aarc)
+  , stbuf(nullptr)
+  , fname(afname)
+  , currpos(0)
+  , seekpos(0)
+{
+  bLoading = false;
+  if (aarc == nullptr || !aarc->IsOpen() || aarc->IsError()) {
+    SetError();
+  } else {
+    vassert(aarc->active == nullptr);
+    aarc->active = this;
+    if (buffit) {
+      stbuf = new VMemoryStream();
+      stbuf->BeginWrite();
+    }
+    #ifdef VVX_DEBUG_WRITER
+    GLog.Logf(NAME_Debug, "WR: Created: %s; buffit=%d", *fname, (int)buffit);
+    #endif
+  }
+}
+
+
+//==========================================================================
+//
+//  VVWadStreamWriter::~VVWadStreamWriter
+//
+//==========================================================================
+VVWadStreamWriter::~VVWadStreamWriter () {
+  DoClose();
+}
+
+
+//==========================================================================
+//
+//  VVWadStreamWriter::DoClose
+//
+//==========================================================================
+void VVWadStreamWriter::DoClose () {
+  if (arc != nullptr) {
+    #ifdef VVX_DEBUG_WRITER
+    GLog.Logf(NAME_Debug, "WR: DoClose: %s", *fname);
+    #endif
+    vwadwr_dir *wad = nullptr;
+    VVWadNewArchive *aarc = arc;
+    arc = nullptr;
+
+    if (aarc->active == this) {
+      wad = aarc->vw_handle;
+      aarc->active = nullptr;
+      if (IsError()) aarc->SetError();
+    } else {
+      #ifdef VVX_DEBUG_WRITER
+      GLog.Logf(NAME_Debug, "WR: DoClose: %s -- orphan!", *fname);
+      #endif
+      SetError();
+    }
+
+    if (!IsError()) {
+      if (wad != nullptr) {
+        // write buffered stream?
+        if (stbuf != nullptr) {
+          TArrayNC<vuint8> data = stbuf->GetArray();
+          vwadwr_result wres = vwadwr_write(aarc->vw_handle, data.Ptr(), (vwadwr_uint)data.length());
+          if (wres != VWADWR_OK) {
+            #ifdef VVX_DEBUG_WRITER
+            GLog.Logf(NAME_Debug, "WR: BUFWRITE ERROR=%d", wres);
+            #endif
+            aarc->SetError();
+            SetError();
+          }
+        }
+        if (vwadwr_close_file(wad) != VWADWR_OK) {
+          #ifdef VVX_DEBUG_WRITER
+          GLog.Logf(NAME_Debug, "WR: DoClose: %s -- close error", *fname);
+          #endif
+          aarc->SetError();
+          SetError();
+        }
+      } else {
+        #ifdef VVX_DEBUG_WRITER
+        GLog.Logf(NAME_Debug, "WR: DoClose: %s -- xxorphan!", *fname);
+        #endif
+        aarc->SetError();
+        SetError();
+      }
+    }
+  }
+  // we don't need a buffer anymore
+  if (stbuf != nullptr) { stbuf->Close(); delete stbuf; stbuf = nullptr; }
+
+  #ifdef VVX_DEBUG_WRITER
+  GLog.Logf(NAME_Debug, "WR: DoClose: %s (%d)", *fname, (int)IsError());
+  #endif
+  fname.clear();
+}
+
+
+//==========================================================================
+//
+//  VVWadStreamWriter::Close
+//
+//==========================================================================
+bool VVWadStreamWriter::Close () {
+  DoClose();
+  return !IsError();
+}
+
+
+//==========================================================================
+//
+//  VVWadStreamWriter::SetError
+//
+//==========================================================================
+void VVWadStreamWriter::SetError () {
+  #ifdef VVX_DEBUG_WRITER
+  GLog.Logf(NAME_Debug, "WR: SetError: %s (%d)", *fname, (int)IsError());
+  #endif
+  abort();
+
+  if (arc != nullptr && arc->active == this) {
+    arc->active = nullptr;
+    arc->SetError();
+  }
+  arc = nullptr;
+  if (stbuf != nullptr) { stbuf->Close(); delete stbuf; stbuf = nullptr; }
+  fname.clear();
+
+  VStream::SetError();
+}
+
+
+//==========================================================================
+//
+//  VVWadStreamWriter::GetName
+//
+//==========================================================================
+VStr VVWadStreamWriter::GetName () const {
+  if (!arc) return "<shit>";
+  return VStr(arc->archname + ":" + fname);
+}
+
+
+//==========================================================================
+//
+//  VVWadStreamWriter::Serialise
+//
+//==========================================================================
+void VVWadStreamWriter::Serialise (void *buf, int len) {
+  if (len == 0 || IsError()) return;
+  #if 0 && defined(VVX_DEBUG_WRITER)
+  GLog.Logf(NAME_Debug, "WR: Serialise: %s (len=%d; buf=%p; err=%d)",
+            *fname, len, buf, (int)IsError());
+  #endif
+  if (len < 0 || !buf || !arc) {
+    #ifdef VVX_DEBUG_WRITER
+    GLog.Logf(NAME_Debug, "WR: ARG ERROR! arc=%p", arc);
+    #endif
+    SetError();
+    return;
+  }
+
+  if (stbuf != nullptr) {
+    if (stbuf->IsError()) {
+      #ifdef VVX_DEBUG_WRITER
+      GLog.Log(NAME_Debug, "WR: WRITE TO ERRORED BUFFSTREAM");
+      #endif
+      SetError();
+      return;
+    }
+    vassert(currpos == stbuf->Tell());
+    if (seekpos != currpos) {
+      #ifdef VVX_DEBUG_WRITER
+      GLog.Logf(NAME_Debug, "WR: BEFORE SEEK (sp=%d; cp=%d; xp=%d; ts=%d)",
+                seekpos, currpos, stbuf->Tell(), stbuf->TotalSize());
+      #endif
+      stbuf->Seek(seekpos);
+      if (stbuf->IsError()) {
+        #ifdef VVX_DEBUG_WRITER
+        GLog.Logf(NAME_Debug, "WR: SEEK FAIL (sp=%d; cp=%d)", seekpos, currpos);
+        #endif
+        SetError();
+        return;
+      }
+      currpos = seekpos;
+      vassert(currpos == stbuf->Tell());
+    }
+    stbuf->Serialise(buf, len);
+    if (stbuf->IsError()) {
+      #ifdef VVX_DEBUG_WRITER
+      GLog.Log(NAME_Debug, "WR: WRITE FAIL");
+      #endif
+      SetError();
+    } else {
+      seekpos = (currpos += len);
+    }
+  } else {
+    if (seekpos != currpos) {
+      #ifdef VVX_DEBUG_WRITER
+      GLog.Logf(NAME_Debug, "WR: ARG ERROR! seekpos=%d; currpos=%d", seekpos, currpos);
+      #endif
+      SetError();
+    }
+
+    const vwadwr_result res = vwadwr_write(arc->vw_handle, buf, (vwadwr_uint)len);
+    if (res != VWADWR_OK) {
+      #ifdef VVX_DEBUG_WRITER
+      GLog.Logf(NAME_Debug, "WR: ERROR=%d", res);
+      #endif
+      SetError();
+    } else {
+      seekpos = (currpos += len);
+    }
+  }
+}
+
+
+//==========================================================================
+//
+//  VVWadStreamWriter::Seek
+//
+//==========================================================================
+void VVWadStreamWriter::Seek (int pos) {
+  if (stbuf != nullptr) {
+    if (!stbuf->IsError()) {
+      if (pos < 0 || pos > stbuf->TotalSize()) {
+        #ifdef VVX_DEBUG_WRITER
+        GLog.Logf(NAME_Debug, "WR: SeekError: %s; pos=%d; currpos=%d", *fname, pos, currpos);
+        #endif
+      } else {
+        seekpos = pos;
+      }
+    }
+  } else {
+    if (pos < 0 || pos > currpos) {
+      #ifdef VVX_DEBUG_WRITER
+      GLog.Logf(NAME_Debug, "WR: SeekError: %s; pos=%d; currpos=%d", *fname, pos, currpos);
+      #endif
+      SetError();
+    } else {
+      seekpos = pos;
+    }
+  }
+}
+
+
+//==========================================================================
+//
+//  VVWadStreamWriter::Tell
+//
+//==========================================================================
+int VVWadStreamWriter::Tell () {
+  return seekpos;
+}
+
+
+//==========================================================================
+//
+//  VVWadStreamWriter::TotalSize
+//
+//==========================================================================
+int VVWadStreamWriter::TotalSize () {
+  return (stbuf != nullptr ? stbuf->TotalSize() : currpos);
+}
+
+
+//==========================================================================
+//
+//  VVWadStreamWriter::AtEnd
+//
+//==========================================================================
+bool VVWadStreamWriter::AtEnd () {
+  return (stbuf != nullptr ? stbuf->AtEnd() : true);
 }

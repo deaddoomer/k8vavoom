@@ -10,19 +10,13 @@
 #include "vwadwrite.h"
 
 #include <stdarg.h>
-#include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
 
 // to test the code
 //#define VWAD_COMPILE_DECOMPRESSOR
 
 #define VWAD_USE_NAME_LENGTHES
-//#define VWAD_SORT_NAME_TABLE
 
-#if defined(VWAD_USE_NAME_LENGTHES) && defined(VWAD_SORT_NAME_TABLE)
-# error "cannot both sort names and use lengthes"
-#endif
 
 #define VWADWR_FILE_ENTRY_SIZE   (4 * 10)
 #define VWADWR_CHUNK_ENTRY_SIZE  (4 + 2 + 2)
@@ -65,43 +59,43 @@ extern "C" {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static CC25519_INLINE uint32_t get_u32 (const void *src) {
-  uint32_t res = ((const uint8_t *)src)[0];
-  res |= ((uint32_t)((const uint8_t *)src)[1])<<8;
-  res |= ((uint32_t)((const uint8_t *)src)[2])<<16;
-  res |= ((uint32_t)((const uint8_t *)src)[3])<<24;
+static CC25519_INLINE vwadwr_uint get_u32 (const void *src) {
+  vwadwr_uint res = ((const vwadwr_ubyte *)src)[0];
+  res |= ((vwadwr_uint)((const vwadwr_ubyte *)src)[1])<<8;
+  res |= ((vwadwr_uint)((const vwadwr_ubyte *)src)[2])<<16;
+  res |= ((vwadwr_uint)((const vwadwr_ubyte *)src)[3])<<24;
   return res;
 }
 
-static CC25519_INLINE void put_u64 (void *dest, uint64_t u) {
-  ((uint8_t *)dest)[0] = (uint8_t)u;
-  ((uint8_t *)dest)[1] = (uint8_t)(u>>8);
-  ((uint8_t *)dest)[2] = (uint8_t)(u>>16);
-  ((uint8_t *)dest)[3] = (uint8_t)(u>>24);
-  ((uint8_t *)dest)[4] = (uint8_t)(u>>32);
-  ((uint8_t *)dest)[5] = (uint8_t)(u>>40);
-  ((uint8_t *)dest)[6] = (uint8_t)(u>>48);
-  ((uint8_t *)dest)[7] = (uint8_t)(u>>56);
+static CC25519_INLINE void put_u64 (void *dest, vwadwr_uint64 u) {
+  ((vwadwr_ubyte *)dest)[0] = (vwadwr_ubyte)u;
+  ((vwadwr_ubyte *)dest)[1] = (vwadwr_ubyte)(u>>8);
+  ((vwadwr_ubyte *)dest)[2] = (vwadwr_ubyte)(u>>16);
+  ((vwadwr_ubyte *)dest)[3] = (vwadwr_ubyte)(u>>24);
+  ((vwadwr_ubyte *)dest)[4] = (vwadwr_ubyte)(u>>32);
+  ((vwadwr_ubyte *)dest)[5] = (vwadwr_ubyte)(u>>40);
+  ((vwadwr_ubyte *)dest)[6] = (vwadwr_ubyte)(u>>48);
+  ((vwadwr_ubyte *)dest)[7] = (vwadwr_ubyte)(u>>56);
 }
 
-static CC25519_INLINE void put_u32 (void *dest, uint32_t u) {
-  ((uint8_t *)dest)[0] = (uint8_t)u;
-  ((uint8_t *)dest)[1] = (uint8_t)(u>>8);
-  ((uint8_t *)dest)[2] = (uint8_t)(u>>16);
-  ((uint8_t *)dest)[3] = (uint8_t)(u>>24);
+static CC25519_INLINE void put_u32 (void *dest, vwadwr_uint u) {
+  ((vwadwr_ubyte *)dest)[0] = (vwadwr_ubyte)u;
+  ((vwadwr_ubyte *)dest)[1] = (vwadwr_ubyte)(u>>8);
+  ((vwadwr_ubyte *)dest)[2] = (vwadwr_ubyte)(u>>16);
+  ((vwadwr_ubyte *)dest)[3] = (vwadwr_ubyte)(u>>24);
 }
 
-static CC25519_INLINE void put_u16 (void *dest, uint16_t u) {
-  ((uint8_t *)dest)[0] = (uint8_t)u;
-  ((uint8_t *)dest)[1] = (uint8_t)(u>>8);
+static CC25519_INLINE void put_u16 (void *dest, vwadwr_ushort u) {
+  ((vwadwr_ubyte *)dest)[0] = (vwadwr_ubyte)u;
+  ((vwadwr_ubyte *)dest)[1] = (vwadwr_ubyte)(u>>8);
 }
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-typedef unsigned char ed25519_signature[64];
-typedef unsigned char ed25519_public_key[32];
-typedef unsigned char ed25519_secret_key[32];
-typedef unsigned char ed25519_random_seed[32];
+typedef vwadwr_ubyte ed25519_signature[64];
+typedef vwadwr_ubyte ed25519_public_key[32];
+typedef vwadwr_ubyte ed25519_secret_key[32];
+typedef vwadwr_ubyte ed25519_random_seed[32];
 
 
 typedef struct cc_ed25519_iostream_t cc_ed25519_iostream;
@@ -121,7 +115,7 @@ struct cc_ed25519_iostream_t {
 
 
 struct sha512_state {
-  uint64_t h[8];
+  vwadwr_uint64 h[8];
 };
 
 #define SHA512_BLOCK_SIZE  (128)
@@ -134,7 +128,7 @@ static const struct sha512_state sha512_initial_state = { {
   0x1f83d9abfb41bd6bLL, 0x5be0cd19137e2179LL,
 } };
 
-static const uint64_t round_k[80] = {
+static const vwadwr_uint64 round_k[80] = {
   0x428a2f98d728ae22LL, 0x7137449123ef65cdLL,
   0xb5c0fbcfec4d3b2fLL, 0xe9b5dba58189dbbcLL,
   0x3956c25bf348b538LL, 0x59f111f1b605d019LL,
@@ -177,8 +171,8 @@ static const uint64_t round_k[80] = {
   0x5fcb6fab3ad6faecLL, 0x6c44198c4a475817LL,
 };
 
-static CC25519_INLINE uint64_t load64 (const uint8_t *x) {
-  uint64_t r = *(x++);
+static CC25519_INLINE vwadwr_uint64 load64 (const vwadwr_ubyte *x) {
+  vwadwr_uint64 r = *(x++);
   r = (r << 8) | *(x++);
   r = (r << 8) | *(x++);
   r = (r << 8) | *(x++);
@@ -190,7 +184,7 @@ static CC25519_INLINE uint64_t load64 (const uint8_t *x) {
   return r;
 }
 
-static CC25519_INLINE void store64 (uint8_t *x, uint64_t v) {
+static CC25519_INLINE void store64 (vwadwr_ubyte *x, vwadwr_uint64 v) {
   x += 7; *(x--) = v;
   v >>= 8; *(x--) = v;
   v >>= 8; *(x--) = v;
@@ -201,13 +195,13 @@ static CC25519_INLINE void store64 (uint8_t *x, uint64_t v) {
   v >>= 8; *(x--) = v;
 }
 
-static CC25519_INLINE uint64_t rot64 (uint64_t x, int bits) {
+static CC25519_INLINE vwadwr_uint64 rot64 (vwadwr_uint64 x, int bits) {
   return (x >> bits) | (x << (64 - bits));
 }
 
-static void sha512_block (struct sha512_state *s, const uint8_t *blk) {
-  uint64_t w[16];
-  uint64_t a, b, c, d, e, f, g, h;
+static void sha512_block (struct sha512_state *s, const vwadwr_ubyte *blk) {
+  vwadwr_uint64 w[16];
+  vwadwr_uint64 a, b, c, d, e, f, g, h;
   int i;
 
   for (i = 0; i < 16; i++) {
@@ -225,19 +219,19 @@ static void sha512_block (struct sha512_state *s, const uint8_t *blk) {
   h = s->h[7];
 
   for (i = 0; i < 80; i++) {
-    const uint64_t wi = w[i & 15];
-    const uint64_t wi15 = w[(i + 1) & 15];
-    const uint64_t wi2 = w[(i + 14) & 15];
-    const uint64_t wi7 = w[(i + 9) & 15];
-    const uint64_t s0 = rot64(wi15, 1) ^ rot64(wi15, 8) ^ (wi15 >> 7);
-    const uint64_t s1 = rot64(wi2, 19) ^ rot64(wi2, 61) ^ (wi2 >> 6);
+    const vwadwr_uint64 wi = w[i & 15];
+    const vwadwr_uint64 wi15 = w[(i + 1) & 15];
+    const vwadwr_uint64 wi2 = w[(i + 14) & 15];
+    const vwadwr_uint64 wi7 = w[(i + 9) & 15];
+    const vwadwr_uint64 s0 = rot64(wi15, 1) ^ rot64(wi15, 8) ^ (wi15 >> 7);
+    const vwadwr_uint64 s1 = rot64(wi2, 19) ^ rot64(wi2, 61) ^ (wi2 >> 6);
 
-    const uint64_t S0 = rot64(a, 28) ^ rot64(a, 34) ^ rot64(a, 39);
-    const uint64_t S1 = rot64(e, 14) ^ rot64(e, 18) ^ rot64(e, 41);
-    const uint64_t ch = (e & f) ^ ((~e) & g);
-    const uint64_t temp1 = h + S1 + ch + round_k[i] + wi;
-    const uint64_t maj = (a & b) ^ (a & c) ^ (b & c);
-    const uint64_t temp2 = S0 + maj;
+    const vwadwr_uint64 S0 = rot64(a, 28) ^ rot64(a, 34) ^ rot64(a, 39);
+    const vwadwr_uint64 S1 = rot64(e, 14) ^ rot64(e, 18) ^ rot64(e, 41);
+    const vwadwr_uint64 ch = (e & f) ^ ((~e) & g);
+    const vwadwr_uint64 temp1 = h + S1 + ch + round_k[i] + wi;
+    const vwadwr_uint64 maj = (a & b) ^ (a & c) ^ (b & c);
+    const vwadwr_uint64 temp2 = S0 + maj;
 
     h = g;
     g = f;
@@ -265,9 +259,9 @@ static CC25519_INLINE void sha512_init (struct sha512_state *s) {
   memcpy(s, &sha512_initial_state, sizeof(*s));
 }
 
-static void sha512_final (struct sha512_state *s, const uint8_t *blk, size_t total_size) {
-  uint8_t temp[SHA512_BLOCK_SIZE] = {0};
-  const size_t last_size = total_size & (SHA512_BLOCK_SIZE - 1);
+static void sha512_final (struct sha512_state *s, const vwadwr_ubyte *blk, vwadwr_uint total_size) {
+  vwadwr_ubyte temp[SHA512_BLOCK_SIZE] = {0};
+  const vwadwr_uint last_size = total_size & (SHA512_BLOCK_SIZE - 1);
 
   if (last_size) memcpy(temp, blk, last_size);
   temp[last_size] = 0x80;
@@ -281,8 +275,8 @@ static void sha512_final (struct sha512_state *s, const uint8_t *blk, size_t tot
   sha512_block(s, temp);
 }
 
-static void sha512_get (const struct sha512_state *s, uint8_t *hash,
-                        unsigned int offset, unsigned int len)
+static void sha512_get (const struct sha512_state *s, vwadwr_ubyte *hash,
+                        vwadwr_uint offset, vwadwr_uint len)
 {
   int i;
 
@@ -294,8 +288,8 @@ static void sha512_get (const struct sha512_state *s, uint8_t *hash,
   offset &= 7;
 
   if (offset) {
-    uint8_t tmp[8];
-    unsigned int c = 8 - offset;
+    vwadwr_ubyte tmp[8];
+    vwadwr_uint c = 8 - offset;
 
     if (c > len) c = len;
 
@@ -312,7 +306,7 @@ static void sha512_get (const struct sha512_state *s, uint8_t *hash,
   }
 
   if (len) {
-    uint8_t tmp[8];
+    vwadwr_ubyte tmp[8];
 
     store64(tmp, s->h[i]);
     memcpy(hash, tmp, len);
@@ -321,21 +315,21 @@ static void sha512_get (const struct sha512_state *s, uint8_t *hash,
 
 #define F25519_SIZE  (32)
 
-static CC25519_INLINE void f25519_copy (uint8_t *x, const uint8_t *a) {
+static CC25519_INLINE void f25519_copy (vwadwr_ubyte *x, const vwadwr_ubyte *a) {
   memcpy(x, a, F25519_SIZE);
 }
 
 #define FPRIME_SIZE  (32)
 
-static CC25519_INLINE void fprime_copy (uint8_t *x, const uint8_t *a) {
+static CC25519_INLINE void fprime_copy (vwadwr_ubyte *x, const vwadwr_ubyte *a) {
   memcpy(x, a, FPRIME_SIZE);
 }
 
 struct ed25519_pt {
-  uint8_t x[F25519_SIZE];
-  uint8_t y[F25519_SIZE];
-  uint8_t t[F25519_SIZE];
-  uint8_t z[F25519_SIZE];
+  vwadwr_ubyte x[F25519_SIZE];
+  vwadwr_ubyte y[F25519_SIZE];
+  vwadwr_ubyte t[F25519_SIZE];
+  vwadwr_ubyte z[F25519_SIZE];
 };
 
 static const struct ed25519_pt ed25519_base = {
@@ -370,7 +364,7 @@ static const struct ed25519_pt ed25519_neutral = {
 #define ED25519_PACK_SIZE  F25519_SIZE
 #define ED25519_EXPONENT_SIZE  32
 
-static CC25519_INLINE void ed25519_prepare (uint8_t *e) {
+static CC25519_INLINE void ed25519_prepare (vwadwr_ubyte *e) {
   e[0] &= 0xf8;
   e[31] &= 0x7f;
   e[31] |= 0x40;
@@ -384,10 +378,10 @@ static CC25519_INLINE void ed25519_copy (struct ed25519_pt *dst, const struct ed
 #define EDSIGN_PUBLIC_KEY_SIZE  (32)
 #define EDSIGN_SIGNATURE_SIZE   (64)
 
-static void f25519_select (uint8_t *dst, const uint8_t *zero, const uint8_t *one,
-                           uint8_t condition)
+static void f25519_select (vwadwr_ubyte *dst, const vwadwr_ubyte *zero, const vwadwr_ubyte *one,
+                           vwadwr_ubyte condition)
 {
-  const uint8_t mask = -condition;
+  const vwadwr_ubyte mask = -condition;
   int i;
 
   for (i = 0; i < F25519_SIZE; i++) {
@@ -395,9 +389,9 @@ static void f25519_select (uint8_t *dst, const uint8_t *zero, const uint8_t *one
   }
 }
 
-static void f25519_normalize (uint8_t *x) {
-  uint8_t minusp[F25519_SIZE];
-  uint16_t c;
+static void f25519_normalize (vwadwr_ubyte *x) {
+  vwadwr_ubyte minusp[F25519_SIZE];
+  vwadwr_ushort c;
   int i;
 
   c = (x[31] >> 7) * 19;
@@ -417,19 +411,19 @@ static void f25519_normalize (uint8_t *x) {
     c >>= 8;
   }
 
-  c += ((uint16_t)x[i]) - 128;
+  c += ((vwadwr_ushort)x[i]) - 128;
   minusp[31] = c;
 
   f25519_select(x, minusp, x, (c >> 15) & 1);
 }
 
-static void f25519_add (uint8_t *r, const uint8_t *a, const uint8_t *b) {
-  uint16_t c = 0;
+static void f25519_add (vwadwr_ubyte *r, const vwadwr_ubyte *a, const vwadwr_ubyte *b) {
+  vwadwr_ushort c = 0;
   int i;
 
   for (i = 0; i < F25519_SIZE; i++) {
     c >>= 8;
-    c += ((uint16_t)a[i]) + ((uint16_t)b[i]);
+    c += ((vwadwr_ushort)a[i]) + ((vwadwr_ushort)b[i]);
     r[i] = c;
   }
 
@@ -443,18 +437,18 @@ static void f25519_add (uint8_t *r, const uint8_t *a, const uint8_t *b) {
   }
 }
 
-static void f25519_sub (uint8_t *r, const uint8_t *a, const uint8_t *b) {
-  uint32_t c = 0;
+static void f25519_sub (vwadwr_ubyte *r, const vwadwr_ubyte *a, const vwadwr_ubyte *b) {
+  vwadwr_uint c = 0;
   int i;
 
   c = 218;
   for (i = 0; i + 1 < F25519_SIZE; i++) {
-    c += 65280 + ((uint32_t)a[i]) - ((uint32_t)b[i]);
+    c += 65280 + ((vwadwr_uint)a[i]) - ((vwadwr_uint)b[i]);
     r[i] = c;
     c >>= 8;
   }
 
-  c += ((uint32_t)a[31]) - ((uint32_t)b[31]);
+  c += ((vwadwr_uint)a[31]) - ((vwadwr_uint)b[31]);
   r[31] = c & 127;
   c = (c >> 7) * 19;
 
@@ -465,18 +459,18 @@ static void f25519_sub (uint8_t *r, const uint8_t *a, const uint8_t *b) {
   }
 }
 
-static void f25519_neg (uint8_t *r, const uint8_t *a) {
-  uint32_t c = 0;
+static void f25519_neg (vwadwr_ubyte *r, const vwadwr_ubyte *a) {
+  vwadwr_uint c = 0;
   int i;
 
   c = 218;
   for (i = 0; i + 1 < F25519_SIZE; i++) {
-    c += 65280 - ((uint32_t)a[i]);
+    c += 65280 - ((vwadwr_uint)a[i]);
     r[i] = c;
     c >>= 8;
   }
 
-  c -= ((uint32_t)a[31]);
+  c -= ((vwadwr_uint)a[31]);
   r[31] = c & 127;
   c = (c >> 7) * 19;
 
@@ -487,8 +481,8 @@ static void f25519_neg (uint8_t *r, const uint8_t *a) {
   }
 }
 
-static void f25519_mul__distinct (uint8_t *r, const uint8_t *a, const uint8_t *b) {
-  uint32_t c = 0;
+static void f25519_mul__distinct (vwadwr_ubyte *r, const vwadwr_ubyte *a, const vwadwr_ubyte *b) {
+  vwadwr_uint c = 0;
   int i;
 
   for (i = 0; i < F25519_SIZE; i++) {
@@ -496,12 +490,12 @@ static void f25519_mul__distinct (uint8_t *r, const uint8_t *a, const uint8_t *b
 
     c >>= 8;
     for (j = 0; j <= i; j++) {
-      c += ((uint32_t)a[j]) * ((uint32_t)b[i - j]);
+      c += ((vwadwr_uint)a[j]) * ((vwadwr_uint)b[i - j]);
     }
 
     for (; j < F25519_SIZE; j++) {
-      c += ((uint32_t)a[j]) *
-           ((uint32_t)b[i + F25519_SIZE - j]) * 38;
+      c += ((vwadwr_uint)a[j]) *
+           ((vwadwr_uint)b[i + F25519_SIZE - j]) * 38;
     }
 
     r[i] = c;
@@ -517,8 +511,8 @@ static void f25519_mul__distinct (uint8_t *r, const uint8_t *a, const uint8_t *b
   }
 }
 
-static void f25519_inv__distinct (uint8_t *r, const uint8_t *x) {
-  uint8_t s[F25519_SIZE];
+static void f25519_inv__distinct (vwadwr_ubyte *r, const vwadwr_ubyte *x) {
+  vwadwr_ubyte s[F25519_SIZE];
   int i;
 
   f25519_mul__distinct(s, x, x);
@@ -539,21 +533,21 @@ static void f25519_inv__distinct (uint8_t *r, const uint8_t *x) {
   f25519_mul__distinct(r, s, x);
 }
 
-static void raw_add (uint8_t *x, const uint8_t *p) {
-  uint16_t c = 0;
+static void raw_add (vwadwr_ubyte *x, const vwadwr_ubyte *p) {
+  vwadwr_ushort c = 0;
   int i;
 
   for (i = 0; i < FPRIME_SIZE; i++) {
-    c += ((uint16_t)x[i]) + ((uint16_t)p[i]);
+    c += ((vwadwr_ushort)x[i]) + ((vwadwr_ushort)p[i]);
     x[i] = c;
     c >>= 8;
   }
 }
 
-static void fprime_select (uint8_t *dst, const uint8_t *zero, const uint8_t *one,
-                           uint8_t condition)
+static void fprime_select (vwadwr_ubyte *dst, const vwadwr_ubyte *zero, const vwadwr_ubyte *one,
+                           vwadwr_ubyte condition)
 {
-  const uint8_t mask = -condition;
+  const vwadwr_ubyte mask = -condition;
   int i;
 
   for (i = 0; i < FPRIME_SIZE; i++) {
@@ -561,13 +555,13 @@ static void fprime_select (uint8_t *dst, const uint8_t *zero, const uint8_t *one
   }
 }
 
-static void raw_try_sub (uint8_t *x, const uint8_t *p) {
-  uint8_t minusp[FPRIME_SIZE];
-  uint16_t c = 0;
+static void raw_try_sub (vwadwr_ubyte *x, const vwadwr_ubyte *p) {
+  vwadwr_ubyte minusp[FPRIME_SIZE];
+  vwadwr_ushort c = 0;
   int i;
 
   for (i = 0; i < FPRIME_SIZE; i++) {
-    c = ((uint16_t)x[i]) - ((uint16_t)p[i]) - c;
+    c = ((vwadwr_ushort)x[i]) - ((vwadwr_ushort)p[i]) - c;
     minusp[i] = c;
     c = (c >> 8) & 1;
   }
@@ -575,9 +569,9 @@ static void raw_try_sub (uint8_t *x, const uint8_t *p) {
   fprime_select(x, minusp, x, c);
 }
 
-static int prime_msb (const uint8_t *p) {
+static int prime_msb (const vwadwr_ubyte *p) {
   int i;
-  uint8_t x;
+  vwadwr_ubyte x;
 
   for (i = FPRIME_SIZE - 1; i >= 0; i--) {
     if (p[i]) break;
@@ -594,12 +588,12 @@ static int prime_msb (const uint8_t *p) {
   return i - 1;
 }
 
-static void shift_n_bits (uint8_t *x, int n) {
-  uint16_t c = 0;
+static void shift_n_bits (vwadwr_ubyte *x, int n) {
+  vwadwr_ushort c = 0;
   int i;
 
   for (i = 0; i < FPRIME_SIZE; i++) {
-    c |= ((uint16_t)x[i]) << n;
+    c |= ((vwadwr_ushort)x[i]) << n;
     x[i] = c;
     c >>= 8;
   }
@@ -609,8 +603,8 @@ static CC25519_INLINE int min_int (int a, int b) {
   return a < b ? a : b;
 }
 
-static void fprime_from_bytes (uint8_t *n, const uint8_t *x, size_t len,
-                               const uint8_t *modulus)
+static void fprime_from_bytes (vwadwr_ubyte *n, const vwadwr_ubyte *x, vwadwr_uint len,
+                               const vwadwr_ubyte *modulus)
 {
   const int preload_total = min_int(prime_msb(modulus) - 1, len << 3);
   const int preload_bytes = preload_total >> 3;
@@ -630,7 +624,7 @@ static void fprime_from_bytes (uint8_t *n, const uint8_t *x, size_t len,
   }
 
   for (i = rbits - 1; i >= 0; i--) {
-    const uint8_t bit = (x[i >> 3] >> (i & 7)) & 1;
+    const vwadwr_ubyte bit = (x[i >> 3] >> (i & 7)) & 1;
 
     shift_n_bits(n, 1);
     n[0] |= bit;
@@ -638,19 +632,19 @@ static void fprime_from_bytes (uint8_t *n, const uint8_t *x, size_t len,
   }
 }
 
-static CC25519_INLINE void fprime_add (uint8_t *r, const uint8_t *a, const uint8_t *modulus) {
+static CC25519_INLINE void fprime_add (vwadwr_ubyte *r, const vwadwr_ubyte *a, const vwadwr_ubyte *modulus) {
   raw_add(r, a);
   raw_try_sub(r, modulus);
 }
 
-static void fprime_mul (uint8_t *r, const uint8_t *a, const uint8_t *b, const uint8_t *modulus) {
+static void fprime_mul (vwadwr_ubyte *r, const vwadwr_ubyte *a, const vwadwr_ubyte *b, const vwadwr_ubyte *modulus) {
   int i;
 
   memset(r, 0, FPRIME_SIZE);
 
   for (i = prime_msb(modulus); i >= 0; i--) {
-    const uint8_t bit = (b[i >> 3] >> (i & 7)) & 1;
-    uint8_t plusa[FPRIME_SIZE];
+    const vwadwr_ubyte bit = (b[i >> 3] >> (i & 7)) & 1;
+    vwadwr_ubyte plusa[FPRIME_SIZE];
 
     shift_n_bits(r, 1);
     raw_try_sub(r, modulus);
@@ -662,8 +656,8 @@ static void fprime_mul (uint8_t *r, const uint8_t *a, const uint8_t *b, const ui
   }
 }
 
-static CC25519_INLINE void ed25519_unproject (uint8_t *x, uint8_t *y, const struct ed25519_pt *p) {
-  uint8_t z1[F25519_SIZE];
+static CC25519_INLINE void ed25519_unproject (vwadwr_ubyte *x, vwadwr_ubyte *y, const struct ed25519_pt *p) {
+  vwadwr_ubyte z1[F25519_SIZE];
 
   f25519_inv__distinct(z1, p->z);
   f25519_mul__distinct(x, p->x, z1);
@@ -673,9 +667,9 @@ static CC25519_INLINE void ed25519_unproject (uint8_t *x, uint8_t *y, const stru
   f25519_normalize(y);
 }
 
-static CC25519_INLINE void ed25519_pack (uint8_t *c, const uint8_t *x, const uint8_t *y) {
-  uint8_t tmp[F25519_SIZE];
-  uint8_t parity;
+static CC25519_INLINE void ed25519_pack (vwadwr_ubyte *c, const vwadwr_ubyte *x, const vwadwr_ubyte *y) {
+  vwadwr_ubyte tmp[F25519_SIZE];
+  vwadwr_ubyte parity;
 
   f25519_copy(tmp, x);
   f25519_normalize(tmp);
@@ -686,7 +680,7 @@ static CC25519_INLINE void ed25519_pack (uint8_t *c, const uint8_t *x, const uin
   c[31] |= parity;
 }
 
-static const uint8_t ed25519_k[F25519_SIZE] = {
+static const vwadwr_ubyte ed25519_k[F25519_SIZE] = {
   0x59, 0xf1, 0xb2, 0x26, 0x94, 0x9b, 0xd6, 0xeb,
   0x56, 0xb1, 0x83, 0x82, 0x9a, 0x14, 0xe0, 0x00,
   0x30, 0xd1, 0xf3, 0xee, 0xf2, 0x80, 0x8e, 0x19,
@@ -696,14 +690,14 @@ static const uint8_t ed25519_k[F25519_SIZE] = {
 static void ed25519_add (struct ed25519_pt *r,
                          const struct ed25519_pt *p1, const struct ed25519_pt *p2)
 {
-  uint8_t a[F25519_SIZE];
-  uint8_t b[F25519_SIZE];
-  uint8_t c[F25519_SIZE];
-  uint8_t d[F25519_SIZE];
-  uint8_t e[F25519_SIZE];
-  uint8_t f[F25519_SIZE];
-  uint8_t g[F25519_SIZE];
-  uint8_t h[F25519_SIZE];
+  vwadwr_ubyte a[F25519_SIZE];
+  vwadwr_ubyte b[F25519_SIZE];
+  vwadwr_ubyte c[F25519_SIZE];
+  vwadwr_ubyte d[F25519_SIZE];
+  vwadwr_ubyte e[F25519_SIZE];
+  vwadwr_ubyte f[F25519_SIZE];
+  vwadwr_ubyte g[F25519_SIZE];
+  vwadwr_ubyte h[F25519_SIZE];
 
   f25519_sub(c, p1->y, p1->x);
   f25519_sub(d, p2->y, p2->x);
@@ -726,13 +720,13 @@ static void ed25519_add (struct ed25519_pt *r,
 }
 
 static void ed25519_double (struct ed25519_pt *r, const struct ed25519_pt *p) {
-  uint8_t a[F25519_SIZE];
-  uint8_t b[F25519_SIZE];
-  uint8_t c[F25519_SIZE];
-  uint8_t e[F25519_SIZE];
-  uint8_t f[F25519_SIZE];
-  uint8_t g[F25519_SIZE];
-  uint8_t h[F25519_SIZE];
+  vwadwr_ubyte a[F25519_SIZE];
+  vwadwr_ubyte b[F25519_SIZE];
+  vwadwr_ubyte c[F25519_SIZE];
+  vwadwr_ubyte e[F25519_SIZE];
+  vwadwr_ubyte f[F25519_SIZE];
+  vwadwr_ubyte g[F25519_SIZE];
+  vwadwr_ubyte h[F25519_SIZE];
 
   f25519_mul__distinct(a, p->x, p->x);
   f25519_mul__distinct(b, p->y, p->y);
@@ -753,7 +747,7 @@ static void ed25519_double (struct ed25519_pt *r, const struct ed25519_pt *p) {
 }
 
 static void ed25519_smult (struct ed25519_pt *r_out, const struct ed25519_pt *p,
-                           const uint8_t *e)
+                           const vwadwr_ubyte *e)
 {
   struct ed25519_pt r;
   int i;
@@ -761,7 +755,7 @@ static void ed25519_smult (struct ed25519_pt *r_out, const struct ed25519_pt *p,
   ed25519_copy(&r, &ed25519_neutral);
 
   for (i = 255; i >= 0; i--) {
-    const uint8_t bit = (e[i >> 3] >> (i & 7)) & 1;
+    const vwadwr_ubyte bit = (e[i >> 3] >> (i & 7)) & 1;
     struct ed25519_pt s;
 
     ed25519_double(&r, &r);
@@ -778,14 +772,14 @@ static void ed25519_smult (struct ed25519_pt *r_out, const struct ed25519_pt *p,
 
 #define EXPANDED_SIZE  (64)
 
-static const uint8_t ed25519_order[FPRIME_SIZE] = {
+static const vwadwr_ubyte ed25519_order[FPRIME_SIZE] = {
   0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58,
   0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9, 0xde, 0x14,
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10
 };
 
-static CC25519_INLINE void expand_key (uint8_t *expanded, const uint8_t *secret) {
+static CC25519_INLINE void expand_key (vwadwr_ubyte *expanded, const vwadwr_ubyte *secret) {
   struct sha512_state s;
 
   sha512_init(&s);
@@ -794,39 +788,39 @@ static CC25519_INLINE void expand_key (uint8_t *expanded, const uint8_t *secret)
   ed25519_prepare(expanded);
 }
 
-static CC25519_INLINE void pp (uint8_t *packed, const struct ed25519_pt *p) {
-  uint8_t x[F25519_SIZE];
-  uint8_t y[F25519_SIZE];
+static CC25519_INLINE void pp (vwadwr_ubyte *packed, const struct ed25519_pt *p) {
+  vwadwr_ubyte x[F25519_SIZE];
+  vwadwr_ubyte y[F25519_SIZE];
 
   ed25519_unproject(x, y, p);
   ed25519_pack(packed, x, y);
 }
 
-static CC25519_INLINE void sm_pack (uint8_t *r, const uint8_t *k) {
+static CC25519_INLINE void sm_pack (vwadwr_ubyte *r, const vwadwr_ubyte *k) {
   struct ed25519_pt p;
 
   ed25519_smult(&p, &ed25519_base, k);
   pp(r, &p);
 }
 
-static CC25519_INLINE void edsign_sec_to_pub (uint8_t *pub, const uint8_t *secret) {
-  uint8_t expanded[EXPANDED_SIZE];
+static CC25519_INLINE void edsign_sec_to_pub (vwadwr_ubyte *pub, const vwadwr_ubyte *secret) {
+  vwadwr_ubyte expanded[EXPANDED_SIZE];
 
   expand_key(expanded, secret);
   sm_pack(pub, expanded);
 }
 
-static int hash_with_prefix (uint8_t *out_fp,
-                              uint8_t *init_block, unsigned int prefix_size,
-                              cc_ed25519_iostream *strm)
+static int hash_with_prefix (vwadwr_ubyte *out_fp,
+                             vwadwr_ubyte *init_block, vwadwr_uint prefix_size,
+                             cc_ed25519_iostream *strm)
 {
   struct sha512_state s;
 
   const int xxlen = strm->total_size(strm);
   if (xxlen < 0) return -1;
-  const size_t len = (size_t)xxlen;
+  const vwadwr_uint len = (vwadwr_uint)xxlen;
 
-  uint8_t msgblock[SHA512_BLOCK_SIZE];
+  vwadwr_ubyte msgblock[SHA512_BLOCK_SIZE];
 
   sha512_init(&s);
 
@@ -837,7 +831,7 @@ static int hash_with_prefix (uint8_t *out_fp,
     }
     sha512_final(&s, init_block, len + prefix_size);
   } else {
-    size_t i;
+    vwadwr_uint i;
 
     if (strm->read(strm, 0, msgblock, SHA512_BLOCK_SIZE - prefix_size) != 0) return -1;
     memcpy(init_block + prefix_size, msgblock, SHA512_BLOCK_SIZE - prefix_size);
@@ -866,32 +860,32 @@ static int hash_with_prefix (uint8_t *out_fp,
   return 0;
 }
 
-static CC25519_INLINE int generate_k (uint8_t *k, const uint8_t *kgen_key,
-                                       cc_ed25519_iostream *strm)
+static CC25519_INLINE int generate_k (vwadwr_ubyte *k, const vwadwr_ubyte *kgen_key,
+                                      cc_ed25519_iostream *strm)
 {
-  uint8_t block[SHA512_BLOCK_SIZE];
+  vwadwr_ubyte block[SHA512_BLOCK_SIZE];
   memcpy(block, kgen_key, 32);
   return hash_with_prefix(k, block, 32, strm);
 }
 
-static int hash_message (uint8_t *z, const uint8_t *r, const uint8_t *a,
+static int hash_message (vwadwr_ubyte *z, const vwadwr_ubyte *r, const vwadwr_ubyte *a,
                          cc_ed25519_iostream *strm)
 {
-  uint8_t block[SHA512_BLOCK_SIZE];
+  vwadwr_ubyte block[SHA512_BLOCK_SIZE];
 
   memcpy(block, r, 32);
   memcpy(block + 32, a, 32);
   return hash_with_prefix(z, block, 64, strm);
 }
 
-static int edsign_sign_stream (uint8_t *signature, const uint8_t *pub, const uint8_t *secret,
+static int edsign_sign_stream (vwadwr_ubyte *signature, const vwadwr_ubyte *pub, const vwadwr_ubyte *secret,
                                cc_ed25519_iostream *strm)
 {
-  uint8_t expanded[EXPANDED_SIZE];
-  uint8_t e[FPRIME_SIZE];
-  uint8_t s[FPRIME_SIZE];
-  uint8_t k[FPRIME_SIZE];
-  uint8_t z[FPRIME_SIZE];
+  vwadwr_ubyte expanded[EXPANDED_SIZE];
+  vwadwr_ubyte e[FPRIME_SIZE];
+  vwadwr_ubyte s[FPRIME_SIZE];
+  vwadwr_ubyte k[FPRIME_SIZE];
+  vwadwr_ubyte z[FPRIME_SIZE];
 
   expand_key(expanded, secret);
 
@@ -911,7 +905,7 @@ static int edsign_sign_stream (uint8_t *signature, const uint8_t *pub, const uin
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static CC25519_INLINE uint32_t hashU32 (uint32_t v) {
+static CC25519_INLINE vwadwr_uint hashU32 (vwadwr_uint v) {
   v ^= v >> 16;
   v *= 0x21f0aaadu;
   v ^= v >> 15;
@@ -920,15 +914,15 @@ static CC25519_INLINE uint32_t hashU32 (uint32_t v) {
   return v;
 }
 
-static uint32_t deriveSeed (uint32_t seed, const uint8_t *buf, size_t buflen) {
-  for (uint32_t f = 0; f < buflen; f += 1) {
+static vwadwr_uint deriveSeed (vwadwr_uint seed, const vwadwr_ubyte *buf, vwadwr_uint buflen) {
+  for (vwadwr_uint f = 0; f < buflen; f += 1) {
     seed = hashU32((seed + 0x9E3779B9u) ^ buf[f]);
   }
   // hash it again
   return hashU32(seed + 0x9E3779B9u);
 }
 
-static void crypt_buffer (uint32_t xseed, uint64_t nonce, void *buf, uint32_t bufsize) {
+static void crypt_buffer (vwadwr_uint xseed, vwadwr_uint64 nonce, void *buf, vwadwr_uint bufsize) {
   // use xoroshiro-derived PRNG, because i don't need cryptostrong xor at all
   #define MB32X  do { \
     /* 2 to the 32 divided by golden ratio; adding forms a Weyl sequence */ \
@@ -940,9 +934,9 @@ static void crypt_buffer (uint32_t xseed, uint64_t nonce, void *buf, uint32_t bu
   } while (0)
 
   xseed += nonce;
-  uint32_t rval;
+  vwadwr_uint rval;
 
-  uint32_t *b32 = (uint32_t *)buf;
+  vwadwr_uint *b32 = (vwadwr_uint *)buf;
   while (bufsize >= 4) {
     MB32X;
     put_u32(b32, get_u32(b32) ^ rval);
@@ -952,21 +946,21 @@ static void crypt_buffer (uint32_t xseed, uint64_t nonce, void *buf, uint32_t bu
   if (bufsize) {
     // final [1..3] bytes
     MB32X;
-    uint32_t n;
-    uint8_t *b = (uint8_t *)b32;
+    vwadwr_uint n;
+    vwadwr_ubyte *b = (vwadwr_ubyte *)b32;
     switch (bufsize) {
       case 3:
-        n = b[0]|((uint32_t)b[1]<<8)|((uint32_t)b[2]<<16);
+        n = b[0]|((vwadwr_uint)b[1]<<8)|((vwadwr_uint)b[2]<<16);
         n ^= rval;
-        b[0] = (uint8_t)n;
-        b[1] = (uint8_t)(n>>8);
-        b[2] = (uint8_t)(n>>16);
+        b[0] = (vwadwr_ubyte)n;
+        b[1] = (vwadwr_ubyte)(n>>8);
+        b[2] = (vwadwr_ubyte)(n>>16);
         break;
       case 2:
-        n = b[0]|((uint32_t)b[1]<<8);
+        n = b[0]|((vwadwr_uint)b[1]<<8);
         n ^= rval;
-        b[0] = (uint8_t)n;
-        b[1] = (uint8_t)(n>>8);
+        b[0] = (vwadwr_ubyte)n;
+        b[1] = (vwadwr_ubyte)(n>>8);
         break;
       case 1:
         b[0] ^= rval;
@@ -979,7 +973,7 @@ static void crypt_buffer (uint32_t xseed, uint64_t nonce, void *buf, uint32_t bu
 // ////////////////////////////////////////////////////////////////////////// //
 #define crc32_init  (0xffffffffU)
 
-static const uint32_t crctab[16] = {
+static const vwadwr_uint crctab[16] = {
   0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac,
   0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
   0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c,
@@ -988,25 +982,25 @@ static const uint32_t crctab[16] = {
 
 
 #define CRC32BYTE(bt_)  do { \
-  crc32 ^= (uint8_t)(bt_); \
+  crc32 ^= (vwadwr_ubyte)(bt_); \
   crc32 = crctab[crc32&0x0f]^(crc32>>4); \
   crc32 = crctab[crc32&0x0f]^(crc32>>4); \
 } while (0)
 
 
-static CC25519_INLINE uint32_t crc32_part (uint32_t crc32, const void *src, size_t len) {
-  const uint8_t *buf = (const uint8_t *)src;
+static CC25519_INLINE vwadwr_uint crc32_part (vwadwr_uint crc32, const void *src, vwadwr_uint len) {
+  const vwadwr_ubyte *buf = (const vwadwr_ubyte *)src;
   while (len--) {
     CRC32BYTE(*buf++);
   }
   return crc32;
 }
 
-static CC25519_INLINE uint32_t crc32_final (uint32_t crc32) {
+static CC25519_INLINE vwadwr_uint crc32_final (vwadwr_uint crc32) {
   return crc32^0xffffffffU;
 }
 
-static CC25519_INLINE uint32_t crc32_buf (const void *src, size_t len) {
+static CC25519_INLINE vwadwr_uint crc32_buf (const void *src, vwadwr_uint len) {
   return crc32_final(crc32_part(crc32_init, src, len));
 }
 
@@ -1017,7 +1011,7 @@ static const char *z85_enc_alphabet =
   "0123456789abcdefghijklmnopqrstuvwxyzABCDEFG"
   "HIJKLMNOPQRSTUVWXYZ.-:+=^!/*?&<>()[]{}@%$#";
 
-static const uint8_t z85_dec_alphabet [96] = {
+static const vwadwr_ubyte z85_dec_alphabet [96] = {
   0x00, 0x44, 0x00, 0x54, 0x53, 0x52, 0x48, 0x00,
   0x4B, 0x4C, 0x46, 0x41, 0x00, 0x3F, 0x3E, 0x45,
   0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
@@ -1034,15 +1028,15 @@ static const uint8_t z85_dec_alphabet [96] = {
 
 
 void vwadwr_z85_encode_key (const vwadwr_public_key inkey, vwadwr_z85_key enkey) {
-  uint8_t sdata[32 + 4];
+  vwadwr_ubyte sdata[32 + 4];
   memcpy(sdata, inkey, 32);
-  const uint32_t crc32 = crc32_buf(sdata, 32);
+  const vwadwr_uint crc32 = crc32_buf(sdata, 32);
   put_u32(&sdata[32], crc32);
-  unsigned dpos = 0, spos = 0, value = 0;
+  vwadwr_uint dpos = 0, spos = 0, value = 0;
   while (spos < 32 + 4) {
     value = value * 256u + sdata[spos++];
     if (spos % 4u == 0) {
-      unsigned divisor = 85 * 85 * 85 * 85;
+      vwadwr_uint divisor = 85 * 85 * 85 * 85;
       while (divisor) {
         char ech = z85_enc_alphabet[value / divisor % 85u];
         if (ech == '/') ech = '~';
@@ -1052,19 +1046,19 @@ void vwadwr_z85_encode_key (const vwadwr_public_key inkey, vwadwr_z85_key enkey)
       value = 0;
     }
   }
-  if (dpos != (unsigned)sizeof(vwadwr_z85_key) - 1u) vwad__builtin_trap();
+  if (dpos != (vwadwr_uint)sizeof(vwadwr_z85_key) - 1u) vwad__builtin_trap();
   enkey[dpos] = 0;
 }
 
 
 vwadwr_result vwadwr_z85_decode_key (const vwadwr_z85_key enkey, vwadwr_public_key outkey) {
-  if (enkey == NULL || outkey == NULL) return -1;
-  uint8_t ddata[32 + 4];
-  unsigned dpos = 0, spos = 0, value = 0;
-  while (spos < (unsigned)sizeof(vwadwr_z85_key) - 1) {
+  if (enkey == NULL || outkey == NULL) return VADWR_ERR_ARGS;
+  vwadwr_ubyte ddata[32 + 4];
+  vwadwr_uint dpos = 0, spos = 0, value = 0;
+  while (spos < (vwadwr_uint)sizeof(vwadwr_z85_key) - 1) {
     char inch = enkey[spos++];
     switch (inch) {
-      case 0: return -1;
+      case 0: return VADWR_ERR_BAD_ASCII;
       case '\\': inch = '/'; break;
       case '~': inch = '/'; break;
       case '|': inch = '!'; break;
@@ -1072,10 +1066,10 @@ vwadwr_result vwadwr_z85_decode_key (const vwadwr_z85_key enkey, vwadwr_public_k
       case ';': inch = ':'; break;
       default: break;
     }
-    if (!strchr(z85_enc_alphabet, inch)) return -1;
-    value = value * 85 + z85_dec_alphabet[(uint8_t)inch - 32];
+    if (!strchr(z85_enc_alphabet, inch)) return VADWR_ERR_BAD_ASCII;
+    value = value * 85 + z85_dec_alphabet[(vwadwr_ubyte)inch - 32];
     if (spos % 5u == 0) {
-      unsigned divisor = 256 * 256 * 256;
+      vwadwr_uint divisor = 256 * 256 * 256;
       while (divisor) {
         ddata[dpos++] = value / divisor % 256u;
         divisor /= 256u;
@@ -1084,11 +1078,11 @@ vwadwr_result vwadwr_z85_decode_key (const vwadwr_z85_key enkey, vwadwr_public_k
     }
   }
   if (dpos != 32 + 4) vwad__builtin_trap();
-  if (enkey[spos] != 0) return -1;
-  const uint32_t crc32 = crc32_buf(ddata, 32);
-  if (crc32 != get_u32(&ddata[32])) return -1; // bad checksum
+  if (enkey[spos] != 0) return VADWR_ERR_BAD_ASCII;
+  const vwadwr_uint crc32 = crc32_buf(ddata, 32);
+  if (crc32 != get_u32(&ddata[32])) return VADWR_ERR_BAD_ASCII; // bad checksum
   memcpy(outkey, ddata, 32);
-  return 0;
+  return VWADWR_OK;
 }
 
 
@@ -1120,8 +1114,8 @@ static inline const char *SkipPathPartCStr (const char *s) {
 
 #ifdef _MSC_VER
 #define vassert(cond_)  do { if (vwad__builtin_expect((!(cond_)), 0)) { const int line__assf = __LINE__; \
-    if (vwad_assertion_failed) { \
-      vwad_assertion_failed("%s:%d: Assertion in `%s` failed: %s\n", \
+    if (vwadwr_assertion_failed) { \
+      vwadwr_assertion_failed("%s:%d: Assertion in `%s` failed: %s\n", \
         SkipPathPartCStr(__FILE__), line__assf, __FUNCSIG__, #cond_); \
       vwad__builtin_trap(); /* just in case */ \
     } else { \
@@ -1131,8 +1125,8 @@ static inline const char *SkipPathPartCStr (const char *s) {
 } while (0)
 #else
 #define vassert(cond_)  do { if (vwad__builtin_expect((!(cond_)), 0)) { const int line__assf = __LINE__; \
-    if (vwad_assertion_failed) { \
-      vwad_assertion_failed("%s:%d: Assertion in `%s` failed: %s\n", \
+    if (vwadwr_assertion_failed) { \
+      vwadwr_assertion_failed("%s:%d: Assertion in `%s` failed: %s\n", \
         SkipPathPartCStr(__FILE__), line__assf, __PRETTY_FUNCTION__, #cond_); \
       vwad__builtin_trap(); /* just in case */ \
     } else { \
@@ -1145,15 +1139,15 @@ static inline const char *SkipPathPartCStr (const char *s) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 // memory allocation
-static CC25519_INLINE void *xalloc (vwadwr_memman *mman, size_t size) {
+static CC25519_INLINE void *xalloc (vwadwr_memman *mman, vwadwr_uint size) {
   vassert(size > 0 && size <= 0x7ffffff0u);
-  if (mman != NULL) return mman->alloc(mman, (uint32_t)size); else return malloc(size);
+  if (mman != NULL) return mman->alloc(mman, (vwadwr_uint)size); else return malloc(size);
 }
 
 
-static CC25519_INLINE void *zalloc (vwadwr_memman *mman, size_t size) {
+static CC25519_INLINE void *zalloc (vwadwr_memman *mman, vwadwr_uint size) {
   vassert(size > 0 && size <= 0x7ffffff0u);
-  void *p = (mman != NULL ? mman->alloc(mman, (uint32_t)size) : malloc(size));
+  void *p = (mman != NULL ? mman->alloc(mman, (vwadwr_uint)size) : malloc(size));
   if (p) memset(p, 0, size);
   return p;
 }
@@ -1177,19 +1171,19 @@ enum {
 
 // ////////////////////////////////////////////////////////////////////////// //
 typedef struct {
-  uint32_t x1, x2;
-  uint8_t *dest;
+  vwadwr_uint x1, x2;
+  vwadwr_ubyte *dest;
   int dpos, dend;
 } EntEncoder;
 
 typedef struct {
-  uint32_t x1, x2, x;
-  const uint8_t *src;
+  vwadwr_uint x1, x2, x;
+  const vwadwr_ubyte *src;
   int spos, send;
 } EntDecoder;
 
 typedef struct {
-  uint16_t p1, p2;
+  vwadwr_ushort p1, p2;
 } Predictor;
 
 
@@ -1212,18 +1206,18 @@ typedef struct {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static void EncInit (EntEncoder *ee, void *outbuf, uint32_t obsize) {
+static void EncInit (EntEncoder *ee, void *outbuf, vwadwr_uint obsize) {
   ee->x1 = 0; ee->x2 = 0xFFFFFFFFU;
-  ee->dest = (uint8_t *)outbuf; ee->dpos = 0;
+  ee->dest = (vwadwr_ubyte *)outbuf; ee->dpos = 0;
   ee->dend = obsize;
 }
 
 static CC25519_INLINE void EncEncode (EntEncoder *ee, int p, intbool_t bit) {
-  uint32_t xmid = ee->x1 + (uint32_t)(((uint64_t)((ee->x2 - ee->x1) & 0xffffffffU) * (uint32_t)p) >> 17);
+  vwadwr_uint xmid = ee->x1 + (vwadwr_uint)(((vwadwr_uint64)((ee->x2 - ee->x1) & 0xffffffffU) * (vwadwr_uint)p) >> 17);
   if (bit) ee->x2 = xmid; else ee->x1 = xmid + 1;
   while ((ee->x1 ^ ee->x2) < (1u << 24)) {
     if (ee->dpos < ee->dend) {
-      ee->dest[ee->dpos++] = (uint8_t)(ee->x2 >> 24);
+      ee->dest[ee->dpos++] = (vwadwr_ubyte)(ee->x2 >> 24);
     } else {
       ee->dpos = 0x7fffffff - 8;
     }
@@ -1234,10 +1228,10 @@ static CC25519_INLINE void EncEncode (EntEncoder *ee, int p, intbool_t bit) {
 
 static void EncFlush (EntEncoder *ee) {
   if (ee->dpos + 4 <= ee->dend) {
-    ee->dest[ee->dpos++] = (uint8_t)(ee->x2 >> 24); ee->x2 <<= 8;
-    ee->dest[ee->dpos++] = (uint8_t)(ee->x2 >> 24); ee->x2 <<= 8;
-    ee->dest[ee->dpos++] = (uint8_t)(ee->x2 >> 24); ee->x2 <<= 8;
-    ee->dest[ee->dpos++] = (uint8_t)(ee->x2 >> 24); ee->x2 <<= 8;
+    ee->dest[ee->dpos++] = (vwadwr_ubyte)(ee->x2 >> 24); ee->x2 <<= 8;
+    ee->dest[ee->dpos++] = (vwadwr_ubyte)(ee->x2 >> 24); ee->x2 <<= 8;
+    ee->dest[ee->dpos++] = (vwadwr_ubyte)(ee->x2 >> 24); ee->x2 <<= 8;
+    ee->dest[ee->dpos++] = (vwadwr_ubyte)(ee->x2 >> 24); ee->x2 <<= 8;
   } else {
     ee->dpos = 0x7fffffff - 8;
   }
@@ -1246,7 +1240,7 @@ static void EncFlush (EntEncoder *ee) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 #ifdef VWAD_COMPILE_DECOMPRESSOR
-static VWAD_OKUNUSED CC25519_INLINE uint8_t DecGetByte (EntDecoder *ee) {
+static VWAD_OKUNUSED CC25519_INLINE vwadwr_ubyte DecGetByte (EntDecoder *ee) {
   if (ee->spos < ee->send) {
     return ee->src[ee->spos++];
   } else {
@@ -1255,9 +1249,9 @@ static VWAD_OKUNUSED CC25519_INLINE uint8_t DecGetByte (EntDecoder *ee) {
   }
 }
 
-static VWAD_OKUNUSED void DecInit (EntDecoder *ee, const void *inbuf, uint32_t insize) {
+static VWAD_OKUNUSED void DecInit (EntDecoder *ee, const void *inbuf, vwadwr_uint insize) {
   ee->x1 = 0; ee->x2 = 0xFFFFFFFFU;
-  ee->src = (const uint8_t *)inbuf; ee->spos = 0; ee->send = insize;
+  ee->src = (const vwadwr_ubyte *)inbuf; ee->spos = 0; ee->send = insize;
   ee->x = DecGetByte(ee);
   ee->x = (ee->x << 8) + DecGetByte(ee);
   ee->x = (ee->x << 8) + DecGetByte(ee);
@@ -1265,7 +1259,7 @@ static VWAD_OKUNUSED void DecInit (EntDecoder *ee, const void *inbuf, uint32_t i
 }
 
 static VWAD_OKUNUSED CC25519_INLINE intbool_t DecDecode (EntDecoder *ee, int p) {
-  uint32_t xmid = ee->x1 + (uint32_t)(((uint64_t)((ee->x2 - ee->x1) & 0xffffffffU) * (uint32_t)p) >> 17);
+  vwadwr_uint xmid = ee->x1 + (vwadwr_uint)(((vwadwr_uint64)((ee->x2 - ee->x1) & 0xffffffffU) * (vwadwr_uint)p) >> 17);
   intbool_t bit = (ee->x <= xmid);
   if (bit) ee->x2 = xmid; else ee->x1 = xmid + 1;
   while ((ee->x1 ^ ee->x2) < (1u << 24)) {
@@ -1284,16 +1278,16 @@ static void PredInit (Predictor *pp) {
 }
 
 static CC25519_INLINE int PredGetP (Predictor *pp) {
-  return (int)((uint32_t)pp->p1 + (uint32_t)pp->p2);
+  return (int)((vwadwr_uint)pp->p1 + (vwadwr_uint)pp->p2);
 }
 
 static CC25519_INLINE void PredUpdate (Predictor *pp, intbool_t bit) {
   if (bit) {
-    pp->p1 += ((~((uint32_t)pp->p1)) >> 3) & 0b0001111111111111;
-    pp->p2 += ((~((uint32_t)pp->p2)) >> 6) & 0b0000001111111111;
+    pp->p1 += ((~((vwadwr_uint)pp->p1)) >> 3) & 0b0001111111111111;
+    pp->p2 += ((~((vwadwr_uint)pp->p2)) >> 6) & 0b0000001111111111;
   } else {
-    pp->p1 -= ((uint32_t)pp->p1) >> 3;
-    pp->p2 -= ((uint32_t)pp->p2) >> 6;
+    pp->p1 -= ((vwadwr_uint)pp->p1) >> 3;
+    pp->p2 -= ((vwadwr_uint)pp->p2) >> 6;
   }
 }
 
@@ -1315,7 +1309,9 @@ static VWAD_OKUNUSED CC25519_INLINE intbool_t PredGetBitDecodeUpdate (Predictor 
 
 // ////////////////////////////////////////////////////////////////////////// //
 static void BitPPMInit (BitPPM *ppm, int initstate) {
-  for (size_t f = 0; f < sizeof(ppm->pred) / sizeof(ppm->pred[0]); ++f) PredInit(&ppm->pred[f]);
+  for (vwadwr_uint f = 0; f < (vwadwr_uint)sizeof(ppm->pred) / (vwadwr_uint)sizeof(ppm->pred[0]); ++f) {
+    PredInit(&ppm->pred[f]);
+  }
   ppm->ctx = !!initstate;
 }
 
@@ -1337,7 +1333,9 @@ static VWAD_OKUNUSED CC25519_INLINE intbool_t BitPPMDecode (BitPPM *ppm, EntDeco
 
 // ////////////////////////////////////////////////////////////////////////// //
 static void BytePPMInit (BytePPM *ppm) {
-  for (size_t f = 0; f < sizeof(ppm->predBits) / sizeof(ppm->predBits[0]); ++f) PredInit(&ppm->predBits[f]);
+  for (vwadwr_uint f = 0; f < (vwadwr_uint)sizeof(ppm->predBits) / (vwadwr_uint)sizeof(ppm->predBits[0]); ++f) {
+    PredInit(&ppm->predBits[f]);
+  }
   ppm->ctxBits = 0;
 }
 
@@ -1354,8 +1352,8 @@ static CC25519_INLINE void BytePPMEncodeByte (BytePPM *ppm, EntEncoder *enc, int
 }
 
 #ifdef VWAD_COMPILE_DECOMPRESSOR
-static VWAD_OKUNUSED CC25519_INLINE uint8_t BytePPMDecodeByte (BytePPM *ppm, EntDecoder *dec) {
-  uint32_t n = 1;
+static VWAD_OKUNUSED CC25519_INLINE vwadwr_ubyte BytePPMDecodeByte (BytePPM *ppm, EntDecoder *dec) {
+  vwadwr_uint n = 1;
   int cofs = ppm->ctxBits * 256;
   do {
     intbool_t bit = PredGetBitDecodeUpdate(&ppm->predBits[cofs + n], dec);
@@ -1363,7 +1361,7 @@ static VWAD_OKUNUSED CC25519_INLINE uint8_t BytePPMDecodeByte (BytePPM *ppm, Ent
   } while (n < 0x100);
   n -= 0x100;
   ppm->ctxBits = (n >= 0x80);
-  return (uint8_t)n;
+  return (vwadwr_ubyte)n;
 }
 #endif
 
@@ -1405,9 +1403,9 @@ static VWAD_OKUNUSED CC25519_INLINE int WordPPMDecodeInt (WordPPM *ppm, EntDecod
 #define LZFF_NUM_BUCKETS  (LZFF_OFS_LIMIT * 2)
 
 typedef struct {
-  uint32_t sptr;
-  uint32_t bytes4;
-  uint32_t prev;
+  vwadwr_uint sptr;
+  vwadwr_uint bytes4;
+  vwadwr_uint prev;
 } LZFFHashEntry;
 
 
@@ -1420,15 +1418,15 @@ static int CompressLZFF3 (vwadwr_memman *mman, const void *source, int srclen,
                           void *dest, int dstlen,
                           vwadwr_bool allow_lazy)
 {
-  uint32_t bestofs, bestlen, he, b4, lp, wr;
-  uint32_t mmax, mlen, cpp, pos;
-  uint32_t mtbestofs, mtbestlen;
-  uint32_t ssizemax;
-  uint32_t srcsize;
-  uint32_t litcount, litpos, spos;
-  uint32_t hfree, heidx, ntidx;
-  uint32_t dict[LZFF_HASH_SIZE];
-  const uint8_t *src;
+  vwadwr_uint bestofs, bestlen, he, b4, lp, wr;
+  vwadwr_uint mmax, mlen, cpp, pos;
+  vwadwr_uint mtbestofs, mtbestlen;
+  vwadwr_uint ssizemax;
+  vwadwr_uint srcsize;
+  vwadwr_uint litcount, litpos, spos;
+  vwadwr_uint hfree, heidx, ntidx;
+  vwadwr_uint dict[LZFF_HASH_SIZE];
+  const vwadwr_ubyte *src;
   EntEncoder enc;
   BytePPM ppmData;
   WordPPM ppmMtOfs, ppmMtLen, ppmLitLen;
@@ -1456,10 +1454,10 @@ static int CompressLZFF3 (vwadwr_memman *mman, const void *source, int srclen,
     pos = (spos > LZFF_OFS_LIMIT + 1 ? spos - LZFF_OFS_LIMIT - 1 : 0); \
     if (pos >= spos) vwad__builtin_trap(); \
     b4 = \
-      (uint32_t)src[pos] + \
-      ((uint32_t)src[pos + 1] << 8) + \
-      ((uint32_t)src[pos + 2] << 16) + \
-      ((uint32_t)src[pos + 3] << 24); \
+      (vwadwr_uint)src[pos] + \
+      ((vwadwr_uint)src[pos + 1] << 8) + \
+      ((vwadwr_uint)src[pos + 2] << 16) + \
+      ((vwadwr_uint)src[pos + 3] << 24); \
     do { \
       heidx = (b4 * 0x9E3779B1u) % LZFF_HASH_SIZE; \
       he = dict[heidx]; \
@@ -1470,7 +1468,7 @@ static int CompressLZFF3 (vwadwr_memman *mman, const void *source, int srclen,
       dict[heidx] = ntidx; \
       ++pos; \
       /* update bytes */ \
-      b4 = (b4 >> 8) + ((uint32_t)src[pos + 3] << 24); \
+      b4 = (b4 >> 8) + ((vwadwr_uint)src[pos + 3] << 24); \
     } while (pos != spos); \
   } while (0)
 
@@ -1527,15 +1525,15 @@ static int CompressLZFF3 (vwadwr_memman *mman, const void *source, int srclen,
   } while (0)
 
 
-  if (srclen < 1 || srclen > 0x1fffffff) return -1;
-  if (dstlen < 1 || dstlen > 0x1fffffff) return -1;
+  if (srclen < 1 || srclen > 0x3fffffff) return VADWR_ERR_ARGS;
+  if (dstlen < 1 || dstlen > 0x3fffffff) return VADWR_ERR_ARGS;
 
-  src = (const uint8_t *)source;
-  srcsize = (uint32_t)srclen;
+  src = (const vwadwr_ubyte *)source;
+  srcsize = (vwadwr_uint)srclen;
 
   memset(dict, -1, sizeof(dict));
-  htbl = xalloc(mman, sizeof(htbl[0]) * LZFF_NUM_BUCKETS);
-  if (htbl == NULL) return -666;
+  htbl = xalloc(mman, (vwadwr_uint)sizeof(htbl[0]) * LZFF_NUM_BUCKETS);
+  if (htbl == NULL) return VWADWR_ERR_MEM;
   hfree = 0;
 
   BytePPMInit(&ppmData);
@@ -1544,7 +1542,7 @@ static int CompressLZFF3 (vwadwr_memman *mman, const void *source, int srclen,
   WordPPMInit(&ppmLitLen);
   BitPPMInit(&ppmLitFlag, 1);
 
-  EncInit(&enc, dest, (uint32_t)dstlen);
+  EncInit(&enc, dest, (vwadwr_uint)dstlen);
 
   litpos = 0;
   if (srcsize <= 6) {
@@ -1563,12 +1561,12 @@ static int CompressLZFF3 (vwadwr_memman *mman, const void *source, int srclen,
         ++spos;
       } else {
         // try match with the next char
-        uint32_t xdiff;
+        vwadwr_uint xdiff;
         if (allow_lazy && spos < srcsize - 4) {
           xdiff = 2;
           int doagain;
           do {
-            uint32_t bestofs1, bestlen1;
+            vwadwr_uint bestofs1, bestlen1;
             spos += 1; FindMatch(bestofs1, bestlen1);
             if (bestlen1 >= bestlen + 2) {
               if (litcount == 0) litpos = spos - 1;
@@ -1621,23 +1619,23 @@ static int CompressLZFF3 (vwadwr_memman *mman, const void *source, int srclen,
 static int CompressLZFF3LitOnly (const void *source, int srclen, void *dest, int dstlen) {
   int srcsize;
   int litcount;
-  const uint8_t *src;
+  const vwadwr_ubyte *src;
   EntEncoder enc;
   BytePPM ppmData;
   WordPPM ppmLitLen;
   BitPPM ppmLitFlag;
 
-  if (srclen < 1 || srclen > 0x1fffffff) return -1;
-  if (dstlen < 1 || dstlen > 0x1fffffff) return -1;
+  if (srclen < 1 || srclen > 0x3fffffff) return VADWR_ERR_ARGS;
+  if (dstlen < 1 || dstlen > 0x3fffffff) return VADWR_ERR_ARGS;
 
-  src = (const uint8_t *)source;
-  srcsize = (uint32_t)srclen;
+  src = (const vwadwr_ubyte *)source;
+  srcsize = (vwadwr_uint)srclen;
 
   BytePPMInit(&ppmData);
   WordPPMInit(&ppmLitLen);
   BitPPMInit(&ppmLitFlag, 1);
 
-  EncInit(&enc, dest, (uint32_t)dstlen);
+  EncInit(&enc, dest, (vwadwr_uint)dstlen);
 
   litcount = srcsize;
 
@@ -1675,18 +1673,18 @@ static VWAD_OKUNUSED intbool_t DecompressLZFF3 (const void *src, int srclen,
   WordPPM ppmMtOfs, ppmMtLen, ppmLitLen;
   BitPPM ppmLitFlag;
   int litcount, n;
-  uint32_t dictpos, spos;
+  vwadwr_uint dictpos, spos;
 
   #define PutByte(bt_)  do { \
     if (unpsize != 0) { \
-      ((uint8_t *)dest)[dictpos++] = (uint8_t)(bt_); unpsize -= 1; \
+      ((vwadwr_ubyte *)dest)[dictpos++] = (vwadwr_ubyte)(bt_); unpsize -= 1; \
     } else { \
       error = int_true; \
     } \
   } while (0)
 
-  if (srclen < 1 || srclen > 0x1fffffff) return 0;
-  if (unpsize < 1 || unpsize > 0x1fffffff) return 0;
+  if (srclen < 1 || srclen > 0x3fffffff) return 0;
+  if (unpsize < 1 || unpsize > 0x3fffffff) return 0;
 
   error = int_false;
   dictpos = 0;
@@ -1701,14 +1699,14 @@ static VWAD_OKUNUSED intbool_t DecompressLZFF3 (const void *src, int srclen,
 
   if (!BitPPMDecode(&ppmLitFlag, &dec)) error = int_true;
   else {
-    uint8_t sch;
+    vwadwr_ubyte sch;
     int len, ofs;
 
     litcount = WordPPMDecodeInt(&ppmLitLen, &dec) + 1;
     while (!error && litcount != 0) {
       litcount -= 1;
       n = BytePPMDecodeByte(&ppmData, &dec);
-      PutByte((uint8_t)n);
+      PutByte((vwadwr_ubyte)n);
       error = error || (dec.spos > dec.send);
     }
 
@@ -1718,7 +1716,7 @@ static VWAD_OKUNUSED intbool_t DecompressLZFF3 (const void *src, int srclen,
         while (!error && litcount != 0) {
           litcount -= 1;
           n = BytePPMDecodeByte(&ppmData, &dec);
-          PutByte((uint8_t)n);
+          PutByte((vwadwr_ubyte)n);
           error = error || (dec.spos > dec.send);
         }
       } else {
@@ -1729,7 +1727,7 @@ static VWAD_OKUNUSED intbool_t DecompressLZFF3 (const void *src, int srclen,
           spos = dictpos - ofs;
           while (!error && len != 0) {
             len -= 1;
-            sch = ((const uint8_t *)dest)[spos];
+            sch = ((const vwadwr_ubyte *)dest)[spos];
             spos++;
             PutByte(sch);
           }
@@ -1816,16 +1814,16 @@ void vwadwr_free_file_stream (vwadwr_iostream *strm) {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-unsigned vwadwr_crc32_init (void) { return crc32_init; }
-unsigned vwadwr_crc32_part (unsigned crc32, const void *src, size_t len) { return crc32_part(crc32, src, len); }
-unsigned vwadwr_crc32_final (unsigned crc32) { return crc32_final(crc32); }
+vwadwr_uint vwadwr_crc32_init (void) { return crc32_init; }
+vwadwr_uint vwadwr_crc32_part (vwadwr_uint crc32, const void *src, vwadwr_uint len) { return crc32_part(crc32, src, len); }
+vwadwr_uint vwadwr_crc32_final (vwadwr_uint crc32) { return crc32_final(crc32); }
 
 
 // ////////////////////////////////////////////////////////////////////////// //
 /* is the given codepoint considered printable?
 i restrict it to some useful subset.
 unifuck is unifucked, but i hope that i sorted out all idiotic diactritics and control chars. */
-static CC25519_INLINE vwadwr_bool is_uni_printable (uint16_t ch) {
+static CC25519_INLINE vwadwr_bool is_uni_printable (vwadwr_ushort ch) {
   return
     (ch >= 0x0001 && ch <= 0x024F) || // basic latin
     (ch >= 0x0390 && ch <= 0x0482) || // some greek, and cyrillic w/o combiners
@@ -1840,8 +1838,8 @@ static CC25519_INLINE vwadwr_bool is_uni_printable (uint16_t ch) {
 /* determine utf-8 sequence length (in bytes) by its first char.
 returns length (up to 4) or 0 on invalid first char
 doesn't allow overlongs */
-static CC25519_INLINE uint32_t utf_char_len (const void *str) {
-  const uint8_t ch = *((const uint8_t *)str);
+static CC25519_INLINE vwadwr_uint utf_char_len (const void *str) {
+  const vwadwr_ubyte ch = *((const vwadwr_ubyte *)str);
   if (ch < 0x80) return 1;
   else if ((ch&0x0E0) == 0x0C0) return (ch != 0x0C0 && ch != 0x0C1 ? 2 : 0);
   else if ((ch&0x0F0) == 0x0E0) return 3;
@@ -1850,15 +1848,15 @@ static CC25519_INLINE uint32_t utf_char_len (const void *str) {
 }
 
 
-static CC25519_INLINE uint16_t utf_decode (const char **strp) {
-  const uint8_t *bp = (const uint8_t *)*strp;
-  uint16_t res = (uint16_t)utf_char_len(bp);
-  uint8_t ch = *bp;
+static CC25519_INLINE vwadwr_ushort utf_decode (const char **strp) {
+  const vwadwr_ubyte *bp = (const vwadwr_ubyte *)*strp;
+  vwadwr_ushort res = (vwadwr_ushort)utf_char_len(bp);
+  vwadwr_ubyte ch = *bp;
   if (res < 1 || res > 3) {
     res = VWADWR_REPLACEMENT_CHAR;
     *strp += 1;
   } else if (ch < 0x80) {
-    if (ch == 0x7f) res = VWAD_REPLACEMENT_CHAR; else res = ch;
+    if (ch == 0x7f) res = VWADWR_REPLACEMENT_CHAR; else res = ch;
     *strp += 1;
   } else if ((ch&0x0E0) == 0x0C0) {
     if (ch == 0x0C0 || ch == 0x0C1) {
@@ -1900,7 +1898,7 @@ static CC25519_INLINE uint16_t utf_decode (const char **strp) {
 }
 
 
-static CC25519_INLINE uint16_t unilower (uint16_t ch) {
+static CC25519_INLINE vwadwr_ushort unilower (vwadwr_ushort ch) {
   if ((ch >= 'A' && ch <= 'Z') ||
       (ch >= 0x00C0 && ch <= 0x00D6) ||
       (ch >= 0x00D8 && ch <= 0x00DE) ||
@@ -1925,7 +1923,7 @@ static CC25519_INLINE uint16_t unilower (uint16_t ch) {
 //  vwadwr_utf_char_len
 //
 //==========================================================================
-uint32_t vwadwr_utf_char_len (const void *str) {
+vwadwr_uint vwadwr_utf_char_len (const void *str) {
   return (str ? utf_char_len(str) : 0);
 }
 
@@ -1935,7 +1933,7 @@ uint32_t vwadwr_utf_char_len (const void *str) {
 //  vwadwr_is_uni_printable
 //
 //==========================================================================
-vwadwr_bool vwadwr_is_uni_printable (uint16_t ch) {
+vwadwr_bool vwadwr_is_uni_printable (vwadwr_ushort ch) {
   return is_uni_printable(ch);
 }
 
@@ -1947,7 +1945,7 @@ vwadwr_bool vwadwr_is_uni_printable (uint16_t ch) {
 //  advances `strp` at least by one byte
 //
 //==========================================================================
-uint16_t vwadwr_utf_decode (const char **strp) {
+vwadwr_ushort vwadwr_utf_decode (const char **strp) {
   return utf_decode(strp);
 }
 
@@ -1957,23 +1955,23 @@ uint16_t vwadwr_utf_decode (const char **strp) {
 //  vwadwr_uni_tolower
 //
 //==========================================================================
-uint16_t vwadwr_uni_tolower (uint16_t ch) {
+vwadwr_ushort vwadwr_uni_tolower (vwadwr_ushort ch) {
   return unilower(ch);
 }
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-static uint32_t joaatHashStrCI (const char *key) {
+static vwadwr_uint joaatHashStrCI (const char *key) {
   #define JOAAT_MIX(b_)  do { \
-    hash += (uint8_t)(b_); \
+    hash += (vwadwr_ubyte)(b_); \
     hash += hash<<10; \
     hash ^= hash>>6; \
   } while (0)
 
-  uint32_t hash = 0x29a;
-  uint32_t len = 0;
+  vwadwr_uint hash = 0x29a;
+  vwadwr_uint len = 0;
   while (*key) {
-    uint16_t ch = unilower(utf_decode(&key));
+    vwadwr_ushort ch = unilower(utf_decode(&key));
     JOAAT_MIX(ch);
     if (ch >= 0x100) JOAAT_MIX(ch>>8);
     ++len;
@@ -1993,8 +1991,8 @@ static uint32_t joaatHashStrCI (const char *key) {
 // ////////////////////////////////////////////////////////////////////////// //
 static vwadwr_bool strEquCI (const char *s0, const char *s1) {
   if (!s0 || !s1) return 0;
-  uint16_t c0 = unilower(utf_decode(&s0));
-  uint16_t c1 = unilower(utf_decode(&s1));
+  vwadwr_ushort c0 = unilower(utf_decode(&s0));
+  vwadwr_ushort c1 = unilower(utf_decode(&s1));
   while (c0 != 0 && c1 != 0&& c0 == c1) {
     if (c0 == VWADWR_REPLACEMENT_CHAR || c1 == VWADWR_REPLACEMENT_CHAR) return 0;
     c0 = unilower(utf_decode(&s0));
@@ -2040,12 +2038,13 @@ static char *normalize_name (vwadwr_memman *mman, const char *s) {
       return NULL;
     }
   }
-  const size_t rlen = strlen(s);
+  vwadwr_uint rlen = 0;
+  while (rlen <= 4096 && s[rlen] != 0) ++rlen;
   if (rlen == 0 || rlen > 4096 || is_path_delim(s[rlen - 1])) return NULL;
   char *res = zalloc(mman, rlen + 1);
   if (res == NULL) return NULL;
-  size_t dpos = 0;
-  for (size_t f = 0; f < rlen; f += 1) {
+  vwadwr_uint dpos = 0;
+  for (vwadwr_uint f = 0; f < rlen; f += 1) {
     char ch = s[f];
     #ifdef WIN32
     if (ch == '\\') ch = '/';
@@ -2067,35 +2066,33 @@ static char *normalize_name (vwadwr_memman *mman, const char *s) {
 
 typedef struct ChunkInfo_t ChunkInfo;
 struct ChunkInfo_t {
-  uint16_t pksize;  // packed chunk size (0 means "unpacked")
+  vwadwr_ushort pksize;  // packed chunk size (0 means "unpacked")
   ChunkInfo *next;
 };
 
 
 typedef struct GroupName_t GroupName;
 struct GroupName_t {
-  uint32_t gnameofs; // !0: this group already registered
+  vwadwr_uint gnameofs; // !0: this group already registered
   char *name;
   GroupName *next;
 };
 
 typedef struct FileName_t FileName;
 struct FileName_t {
-  uint32_t nameofs;
+  vwadwr_uint nameofs;
   char *name;
 };
 
 typedef struct FileInfo_t FileInfo;
 struct FileInfo_t {
-  uint32_t upksize;    // unpacked file size
-  uint32_t fchunk;     // first chunk
-  uint32_t chunkCount; // chunk count
-  uint32_t nhash;      // name hash
-  uint32_t crc32;      // full crc32
-  uint64_t ftime;      // file time since Epoch
+  vwadwr_uint upksize;    // unpacked file size (current or final)
+  vwadwr_uint pksize;     // unpacked file size (current or final)
+  vwadwr_uint chunkCount; // chunk count
+  vwadwr_uint nhash;      // name hash
+  vwadwr_uint crc32;      // full crc32
+  vwadwr_uint64 ftime;      // file time since Epoch
   FileInfo *bknext;    // next name in bucket
-  //uint32_t nameofs;    // name offset in names array
-  //char *name;
   FileName *fname;
   GroupName *group; // points to some struct in dir
   FileInfo *next;
@@ -2104,16 +2101,21 @@ struct FileInfo_t {
 
 vwad_push_pack
 typedef struct vwad_packed_struct {
-  uint32_t crc32;
-  uint16_t version;
-  uint16_t flags;
-  uint32_t dirofs;
-  uint16_t u_cmt_size;
-  uint16_t p_cmt_size;
-  uint32_t cmt_crc32;
+  vwadwr_uint crc32;
+  vwadwr_ushort version;
+  vwadwr_ushort flags;
+  vwadwr_uint dirofs;
+  vwadwr_ushort u_cmt_size;
+  vwadwr_ushort p_cmt_size;
+  vwadwr_uint cmt_crc32;
 } MainFileHeader;
 vwad_pop_pack
 
+
+// writing bytes
+#define WR_MODE_WRITE  (0)
+// copying raw chunks
+#define WR_MODE_RAW    (1)
 
 struct vwadwr_dir_t {
   vwadwr_memman *mman;
@@ -2125,16 +2127,28 @@ struct vwadwr_dir_t {
   ChunkInfo *chunksHead;
   ChunkInfo *chunksTail;
   GroupName *groupNames;
-  uint32_t xorRndSeed;
-  uint32_t xorRndSeedPK;
-  uint32_t chunkCount; // number of used elements in `chunks` array
+  vwadwr_uint xorRndSeed;
+  vwadwr_uint xorRndSeedPK;
+  vwadwr_uint chunkCount; // number of used elements in `chunks` array
   // files (0 is unused)
   FileInfo *filesHead;
   FileInfo *filesTail;
-  uint32_t fileCount;
-  uint32_t namesSize;
+  vwadwr_uint fileCount;
+  vwadwr_uint namesSize;
   char author[256];
   char title[256];
+  // file writing API
+  FileInfo *wrfile; // non-NULL if we are writing file right now
+  vwadwr_uint wrpos; // position in `wrchunk`
+  // compression level, decoded
+  int allow_litonly;
+  int allow_lazy;
+  int allow_lz;
+  int wrmode;
+  char wrchunk[65536]; // current buffer
+  // two chunk comression buffers (data and CRC32)
+  char pkbuf0[65536 + 4];
+  char pkbuf1[65536 + 4];
   // directory hash table
   FileInfo *buckets[HASH_BUCKETS];
 };
@@ -2147,11 +2161,12 @@ struct vwadwr_dir_t {
 //==========================================================================
 static vwadwr_bool is_valid_file_name (const char *str) {
   if (!str || !str[0] || str[0] == '/') return 0;
-  const size_t slen = strlen(str);
+  vwadwr_uint slen = 0;
+  while (slen <= 255 && str[slen] != 0) slen += 1;
   if (slen > 255) return 0; // too long
   if (str[slen - 1] == '/') return 0; // should not end with a slash
   // check chars
-  uint16_t ch;
+  vwadwr_ushort ch;
   do { ch = utf_decode(&str); } while (ch >= 32 && ch != VWADWR_REPLACEMENT_CHAR);
   return (ch == 0);
 }
@@ -2167,7 +2182,7 @@ static vwadwr_bool is_valid_string (const char *cmt, int maxlen, vwadwr_bool one
   if (cmt != NULL) {
     const char *cmtstart = cmt;
     while (res) {
-      const uint16_t ch = utf_decode(&cmt);
+      const vwadwr_ushort ch = utf_decode(&cmt);
       if ((size_t)(cmt - cmtstart) > (size_t)maxlen + 1) res = 0;
       else if (ch == 0) break;
       else if (ch == VWADWR_REPLACEMENT_CHAR) res = 0;
@@ -2226,17 +2241,17 @@ void vwadwr_free_dir (vwadwr_dir **dirp) {
 //==========================================================================
 static vwadwr_bool check_privkey (const vwadwr_secret_key privkey) {
   int zcount = 0, ocount = 0;
-  for (unsigned f = 0; f < (unsigned)sizeof(vwadwr_secret_key); f += 1) {
+  for (vwadwr_uint f = 0; f < (vwadwr_uint)sizeof(vwadwr_secret_key); f += 1) {
     switch (privkey[f]) {
       case 0: ++zcount; break;
       case 1: ++ocount; break;
     }
   }
   if (zcount > 2 || ocount > 2) return 0;
-  for (unsigned f = 0; f < (unsigned)sizeof(vwadwr_secret_key) - 1u; f += 1) {
-    const uint8_t v = privkey[f];
+  for (vwadwr_uint f = 0; f < (vwadwr_uint)sizeof(vwadwr_secret_key) - 1u; f += 1) {
+    const vwadwr_ubyte v = privkey[f];
     int count = 0;
-    for (unsigned c = f + 1u; c < (unsigned)sizeof(vwadwr_secret_key); c += 1) {
+    for (vwadwr_uint c = f + 1u; c < (vwadwr_uint)sizeof(vwadwr_secret_key); c += 1) {
       if (privkey[c] == v) {
         if (++count > 3) return 0;
       }
@@ -2265,7 +2280,7 @@ vwadwr_dir *vwadwr_new_dir (vwadwr_memman *mman, vwadwr_iostream *outstrm,
                             const char *author, /* can be NULL */
                             const char *title, /* can be NULL */
                             const char *comment, /* can be NULL */
-                            unsigned flags,
+                            vwadwr_uint flags,
                             const vwadwr_secret_key privkey,
                             vwadwr_public_key respubkey, /* OUT; can be NULL */
                             int *error) /* OUT; can be NULL */
@@ -2274,22 +2289,23 @@ vwadwr_dir *vwadwr_new_dir (vwadwr_memman *mman, vwadwr_iostream *outstrm,
   int xerr = 0;
   if (error == NULL) error = &xerr; // to avoid endless checks
   if (respubkey) memset(respubkey, 0, sizeof(ed25519_public_key));
-  if (outstrm == NULL) { *error = VWADWR_NEW_ERR_OTHER; return NULL; }
-  if (privkey == NULL) { *error = VWADWR_NEW_ERR_PRIVKEY; return NULL; }
-  if (!check_privkey(privkey)) { *error = VWADWR_NEW_ERR_PRIVKEY; return NULL; }
-  if (!is_valid_string(author, 127, 1)) { *error = VWADWR_NEW_ERR_AUTHOR; return NULL; }
-  if (!is_valid_string(title, 127, 1)) { *error = VWADWR_NEW_ERR_TITLE; return NULL; }
-  if (!is_valid_string(comment, 65535, 0)) { *error = VWADWR_NEW_ERR_COMMENT; return NULL; }
-  if ((flags & ~VWADWR_NEW_DONT_SIGN) != 0) { *error = VWADWR_NEW_ERR_FLAGS; return NULL; }
-  *error = VWADWR_NEW_ERR_OTHER;
+  if (outstrm == NULL) { *error = VWADWR_ERR_OTHER; return NULL; }
+  if (privkey == NULL) { *error = VWADWR_ERR_PRIVKEY; return NULL; }
+  if (!check_privkey(privkey)) { *error = VWADWR_ERR_PRIVKEY; return NULL; }
+  if (!is_valid_string(author, 127, 1)) { *error = VWADWR_ERR_AUTHOR; return NULL; }
+  if (!is_valid_string(title, 127, 1)) { *error = VWADWR_ERR_TITLE; return NULL; }
+  if (!is_valid_string(comment, 65535, 0)) { *error = VWADWR_ERR_COMMENT; return NULL; }
+  if ((flags & ~VWADWR_NEW_DONT_SIGN) != 0) { *error = VWADWR_ERR_FLAGS; return NULL; }
+  *error = VWADWR_ERR_OTHER;
 
-  res = zalloc(mman, sizeof(vwadwr_dir));
+  res = zalloc(mman, (vwadwr_uint)sizeof(vwadwr_dir));
   if (res == NULL) return NULL;
 
   res->mman = mman;
   res->outstrm = outstrm;
   res->namesSize = 4; // first string is always empty
   res->fileCount = 0;
+  res->wrfile = NULL;
 
   // public key
   logf(NOTE, "generating public key");
@@ -2319,8 +2335,8 @@ vwadwr_dir *vwadwr_new_dir (vwadwr_memman *mman, vwadwr_iostream *outstrm,
   ed25519_signature edsign;
   memset(edsign, 0, sizeof(ed25519_signature));
   // fill dsign with giberish
-  crypt_buffer(deriveSeed(0xa28, res->pubkey, sizeof(ed25519_secret_key)),
-               0x29b, edsign, (uint32_t)sizeof(ed25519_signature));
+  crypt_buffer(deriveSeed(0xa28, res->pubkey, (vwadwr_uint)sizeof(ed25519_secret_key)),
+               0x29b, edsign, (vwadwr_uint)sizeof(ed25519_signature));
   if (outstrm->write(outstrm, edsign, (int)sizeof(ed25519_signature)) != 0) {
     logf(ERROR, "cannot write edsign");
     goto error;
@@ -2329,8 +2345,8 @@ vwadwr_dir *vwadwr_new_dir (vwadwr_memman *mman, vwadwr_iostream *outstrm,
   // encrypt public key
   ed25519_public_key epk;
   memcpy(epk, res->pubkey, sizeof(ed25519_public_key));
-  crypt_buffer(deriveSeed(0xa29, edsign, (uint32_t)sizeof(ed25519_signature)),
-               0x29a, epk, (uint32_t)sizeof(ed25519_public_key));
+  crypt_buffer(deriveSeed(0xa29, edsign, (vwadwr_uint)sizeof(ed25519_signature)),
+               0x29a, epk, (vwadwr_uint)sizeof(ed25519_public_key));
 
   // write public key
   if (outstrm->write(outstrm, epk, (int)sizeof(ed25519_public_key)) != 0) {
@@ -2339,10 +2355,10 @@ vwadwr_dir *vwadwr_new_dir (vwadwr_memman *mman, vwadwr_iostream *outstrm,
   }
 
   // write author
-  uint8_t asslen = (author != NULL ? (uint8_t)strlen(author) : 0u);
+  vwadwr_ubyte asslen = (author != NULL ? (vwadwr_ubyte)strlen(author) : 0u);
   if (asslen) memcpy(res->author, author, asslen); res->author[asslen] = 0;
 
-  uint8_t tsslen = (title != NULL ? (uint8_t)strlen(title) : 0u);
+  vwadwr_ubyte tsslen = (title != NULL ? (vwadwr_ubyte)strlen(title) : 0u);
   if (tsslen) memcpy(res->title, title, tsslen); res->title[tsslen] = 0;
 
   // lengthes
@@ -2382,22 +2398,22 @@ vwadwr_dir *vwadwr_new_dir (vwadwr_memman *mman, vwadwr_iostream *outstrm,
   }
 
   // create initial seed from pubkey, author, and title
-  res->xorRndSeed = deriveSeed(0x29c, res->pubkey, sizeof(ed25519_public_key));
-  res->xorRndSeed = deriveSeed(res->xorRndSeed, (const uint8_t *)author, (int)asslen);
-  res->xorRndSeed = deriveSeed(res->xorRndSeed, (const uint8_t *)title, (int)tsslen);
+  res->xorRndSeed = deriveSeed(0x29c, res->pubkey, (vwadwr_uint)sizeof(ed25519_public_key));
+  res->xorRndSeed = deriveSeed(res->xorRndSeed, (const vwadwr_ubyte *)author, (int)asslen);
+  res->xorRndSeed = deriveSeed(res->xorRndSeed, (const vwadwr_ubyte *)title, (int)tsslen);
   // remember it
   res->xorRndSeedPK = res->xorRndSeed;
 
   // now create header fields
   put_u32(&res->mhdr.crc32, 0);
   put_u16(&res->mhdr.version, 0);
-  uint16_t archflags = (res->has_privkey ? 0x00 : 0x01);
+  vwadwr_ushort archflags = (res->has_privkey ? 0x00 : 0x01);
   #ifdef VWAD_USE_NAME_LENGTHES
   archflags |= 0x02;
   #endif
   put_u16(&res->mhdr.flags, archflags);
   // unpacked comment size
-  const uint32_t u_csz = (comment ? (uint32_t)strlen(comment) : 0);
+  const vwadwr_uint u_csz = (comment ? (vwadwr_uint)strlen(comment) : 0);
   vassert(u_csz < 65556);
   put_u16(&res->mhdr.u_cmt_size, u_csz);
   // dir offset (unknown for now)
@@ -2406,7 +2422,7 @@ vwadwr_dir *vwadwr_new_dir (vwadwr_memman *mman, vwadwr_iostream *outstrm,
   // compress and write comment
   if (u_csz) {
     put_u32(&res->mhdr.cmt_crc32, crc32_buf(comment, u_csz));
-    uint8_t *pkc = xalloc(mman, u_csz);
+    vwadwr_ubyte *pkc = xalloc(mman, u_csz);
     if (pkc == NULL) {
       logf(ERROR, "cannot alloc comment buffer");
       goto error;
@@ -2434,12 +2450,12 @@ vwadwr_dir *vwadwr_new_dir (vwadwr_memman *mman, vwadwr_iostream *outstrm,
     } else {
       // write compressed
       logf(NOTE, "comment: packed from %u to %d", u_csz, pksz0);
-      put_u16(&res->mhdr.p_cmt_size, (uint16_t)pksz0);
+      put_u16(&res->mhdr.p_cmt_size, (vwadwr_ushort)pksz0);
       if (outstrm->write(outstrm, &res->mhdr, (int)sizeof(res->mhdr)) != 0) { xfree(mman, pkc); goto error; }
       // encrypt comment with pk-seed
-      crypt_buffer(res->xorRndSeedPK, 2, pkc, (uint32_t)pksz0);
+      crypt_buffer(res->xorRndSeedPK, 2, pkc, (vwadwr_uint)pksz0);
       // mix packed comment data
-      res->xorRndSeed = deriveSeed(res->xorRndSeed, pkc, (uint32_t)pksz0);
+      res->xorRndSeed = deriveSeed(res->xorRndSeed, pkc, (vwadwr_uint)pksz0);
       if (outstrm->write(outstrm, pkc, pksz0) != 0) { xfree(mman, pkc); goto error; }
     }
   } else {
@@ -2489,10 +2505,10 @@ vwadwr_iostream *vwadwr_dir_get_outstrm (vwadwr_dir *dir) {
 //  vwadwr_append_chunk
 //
 //==========================================================================
-static vwadwr_result vwadwr_append_chunk (vwadwr_dir *dir, uint16_t pksize) {
-  if (dir == NULL) return -666;
-  if (dir->chunkCount >= 0x3fffffff) return -1;
-  ChunkInfo *ci = zalloc(dir->mman, sizeof(ChunkInfo));
+static vwadwr_result vwadwr_append_chunk (vwadwr_dir *dir, vwadwr_ushort pksize) {
+  if (dir == NULL) return VADWR_ERR_ARGS;
+  if (dir->chunkCount >= 0x3fffffff) return VADWR_ERR_CHUNK_COUNT;
+  ChunkInfo *ci = zalloc(dir->mman, (vwadwr_uint)sizeof(ChunkInfo));
   if (ci != NULL) {
     ci->pksize = pksize;
     ci->next = NULL;
@@ -2503,12 +2519,12 @@ static vwadwr_result vwadwr_append_chunk (vwadwr_dir *dir, uint16_t pksize) {
       vassert(dir->chunkCount != 0);
       dir->chunksTail->next = ci;
     }
-    ++dir->chunkCount;
+    dir->chunkCount += 1;
     vassert(dir->chunkCount != 0);
     dir->chunksTail = ci;
-    return 0;
+    return VWADWR_OK;
   } else {
-    return -1;
+    return VWADWR_ERR_MEM;
   }
 }
 
@@ -2520,8 +2536,8 @@ static vwadwr_result vwadwr_append_chunk (vwadwr_dir *dir, uint16_t pksize) {
 //==========================================================================
 vwadwr_bool vwadwr_is_valid_file_name (const char *str) {
   if (!str || !str[0] || str[0] == '/') return 0;
-  size_t slen = 0;
-  while (slen <= 255 && str[slen]) ++slen;
+  vwadwr_uint slen = 0;
+  while (slen <= 255 && str[slen] != 0) slen += 1;
   if (slen > 255) return 0;
   if (str[slen - 1] == '/') return 0; // should not end with a slash
   return is_valid_file_name(str);
@@ -2550,8 +2566,8 @@ static GroupName *vwadwr_register_group (vwadwr_dir *dir, const char *grpname, i
   GroupName *gi = dir->groupNames;
   while (gi != NULL && !strEquCI(grpname, gi->name)) gi = gi->next;
   if (gi == NULL) {
-    const uint32_t slen = (uint32_t)strlen(grpname);
-    gi = zalloc(dir->mman, sizeof(GroupName));
+    const vwadwr_uint slen = (vwadwr_uint)strlen(grpname);
+    gi = zalloc(dir->mman, (vwadwr_uint)sizeof(GroupName));
     if (gi == NULL) { *err = -1; return NULL; }
     gi->name = zalloc(dir->mman, slen + 1);
     if (gi->name == NULL) { xfree(dir->mman, gi); *err = -1; return NULL; }
@@ -2571,40 +2587,35 @@ static GroupName *vwadwr_register_group (vwadwr_dir *dir, const char *grpname, i
 //
 //  vwadwr_append_file_info
 //
+//  WARNING! `dir->filesTail` should point to the new file info on exit!
+//
 //==========================================================================
 static vwadwr_result vwadwr_append_file_info (vwadwr_dir *dir,
-                                              const char *name, const char *gname,
-                                              uint32_t chunkCount, uint32_t upksize,
-                                              uint32_t crc32, uint64_t ftime)
+                                              const char *pkfname, const char *gname,
+                                              vwadwr_uint crc32, vwadwr_uint64 ftime)
 {
-  if (dir == NULL) return -666;
-  if (name == NULL) return -660;
-  if (name == NULL || !vwadwr_is_valid_file_name(name)) return -663;
+  if (dir == NULL || pkfname == NULL || pkfname[0] == 0) return VADWR_ERR_ARGS;
 
-  if (chunkCount == 0) {
-    if (upksize != 0) return -661;
-  } else {
-    if (upksize == 0) return -661;
-  }
+  char *fname = normalize_name(dir->mman, pkfname);
+  if (fname == NULL) return VWADWR_ERR_MEM;
 
-  char *fname = xalloc(dir->mman, strlen(name) + 1);
-  if (fname == NULL) {
-    logf(ERROR, "bad file name: \"%s\"", name);
-    return -2;
+  if (!vwadwr_is_valid_file_name(fname)) {
+    logf(ERROR, "bad file name: \"%s\"", fname);
+    xfree(dir->mman, fname);
+    return VWADWR_ERR_NAME;
   }
-  strcpy(fname, name);
 
   if (dir->fileCount >= 0x00ffffffU) {
     xfree(dir->mman, fname);
     logf(ERROR, "too many files");
-    return -1;
+    return VADWR_ERR_FILE_COUNT;
   }
 
-  const size_t fnlen = strlen(fname);
+  const vwadwr_uint fnlen = (vwadwr_uint)strlen(fname);
   if (fnlen >= 512) {
     logf(ERROR, "file name too long: \"%s\"", fname);
     xfree(dir->mman, fname);
-    return -1;
+    return VWADWR_ERR_NAME;
   }
 
   if (dir->namesSize >= 0x3fffffff || 0x3fffffff - dir->namesSize < fnlen + 6 ||
@@ -2612,23 +2623,23 @@ static vwadwr_result vwadwr_append_file_info (vwadwr_dir *dir,
   {
     xfree(dir->mman, fname);
     logf(ERROR, "name table too big");
-    return -1;
+    return VADWR_ERR_NAMES_SIZE;
   }
 
-  const uint32_t hash = hashStrCI(fname);
-  const uint32_t bkt = hash % HASH_BUCKETS;
+  const vwadwr_uint hash = hashStrCI(fname);
+  const vwadwr_uint bkt = hash % HASH_BUCKETS;
   FileInfo *fi = dir->buckets[bkt];
   while (fi != NULL) {
     if (fi->nhash == hash && strEquCI(fi->fname->name, fname)) {
       logf(ERROR, "duplicate file name: \"%s\" and \"%s\"", fname, fi->fname->name);
       xfree(dir->mman, fname);
-      return -2;
+      return VADWR_ERR_DUP_FILE;
     }
     fi = fi->bknext;
   }
 
   // create new file info
-  fi = zalloc(dir->mman, sizeof(FileInfo));
+  fi = zalloc(dir->mman, (vwadwr_uint)sizeof(FileInfo));
   if (fi != NULL) {
     if (gname && gname[0]) {
       int err;
@@ -2636,25 +2647,24 @@ static vwadwr_result vwadwr_append_file_info (vwadwr_dir *dir,
       if (err != 0) {
         xfree(dir->mman, fname);
         xfree(dir->mman, fi);
-        logf(ERROR, "error allocating group info");
-        return -2;
+        return VWADWR_ERR_MEM;
       }
     } else {
       fi->group = NULL;
     }
 
-    FileName *nn = zalloc(dir->mman, sizeof(FileName));
+    FileName *nn = zalloc(dir->mman, (vwadwr_uint)sizeof(FileName));
     if (nn == NULL) {
       xfree(dir->mman, fname);
       xfree(dir->mman, fi);
-      logf(ERROR, "error allocating group info");
-      return -2;
+      return VWADWR_ERR_MEM;
     }
     nn->nameofs = 0;
     nn->name = fname;
 
-    fi->upksize = upksize;
-    fi->chunkCount = chunkCount;
+    fi->upksize = 0;
+    fi->pksize = 0;
+    fi->chunkCount = 0;
     fi->nhash = hash;
     fi->bknext = dir->buckets[bkt];
     fi->ftime = ftime;
@@ -2673,11 +2683,10 @@ static vwadwr_result vwadwr_append_file_info (vwadwr_dir *dir,
 
     ++dir->fileCount;
 
-    return 0;
+    return VWADWR_OK;
   } else {
     xfree(dir->mman, fname);
-    logf(ERROR, "out of memory");
-    return -2;
+    return VWADWR_ERR_MEM;
   }
 }
 
@@ -2703,29 +2712,13 @@ vwadwr_bool vwadwr_is_valid_dir (const vwadwr_dir *dir) {
 //
 //==========================================================================
 vwadwr_result vwadwr_check_dir (const vwadwr_dir *dir) {
-  if (dir->namesSize < 8) return VADWR_DIR_NAMES_SIZE;
-  if ((dir->namesSize&0x03) != 0) return VADWR_DIR_NAMES_ALIGN;
-  if (/*dir->chunkCount == 0 ||*/ dir->chunkCount > 0x1fffffffU) return VADWR_DIR_CHUNK_COUNT;
-  if (dir->fileCount == 0 || dir->fileCount > 0x00ffffffU) return VADWR_DIR_FILE_COUNT;
-  return VADWR_DIR_OK;
+  if (dir == NULL) return VADWR_ERR_ARGS;
+  if (dir->namesSize < 8) return VADWR_ERR_NAMES_SIZE;
+  if ((dir->namesSize&0x03) != 0) return VADWR_ERR_NAMES_ALIGN;
+  if (/*dir->chunkCount == 0 ||*/ dir->chunkCount > 0x1fffffffU) return VADWR_ERR_CHUNK_COUNT;
+  if (dir->fileCount == 0 || dir->fileCount > 0x00ffffffU) return VADWR_ERR_FILE_COUNT;
+  return VWADWR_OK;
 }
-
-
-#ifdef VWAD_SORT_NAME_TABLE
-//==========================================================================
-//
-//  qsnamecmp
-//
-//==========================================================================
-static int qsnamecmp (const void *aa, const void *bb) {
-  const FileName *fa = *(const FileName **)aa;
-  const FileName *fb = *(const FileName **)bb;
-  int sc0 = 0; for (const char *s = fa->name; *s; ++s) if (*s == '/') ++sc0;
-  int sc1 = 0; for (const char *s = fb->name; *s; ++s) if (*s == '/') ++sc1;
-  if (sc0 != sc1) return (sc0 < sc1 ? -1 : 1);
-  return strcmp(fa->name, fb->name);
-}
-#endif
 
 
 //==========================================================================
@@ -2734,57 +2727,37 @@ static int qsnamecmp (const void *aa, const void *bb) {
 //
 //==========================================================================
 static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *strm,
-                                             const uint32_t dirofs)
+                                             const vwadwr_uint dirofs)
 {
-  if (strm == NULL || strm->write == NULL) return -669;
-  if (!vwadwr_is_valid_dir(dir)) return -666;
+  if (strm == NULL || strm->write == NULL) return VADWR_ERR_ARGS;
+  const int dcheck = vwadwr_check_dir(dir);
+  if (dcheck != VWADWR_OK) return dcheck;
 
   // calculate directory size
-  const uint64_t dirsz64 = (uint64_t)dir->namesSize+
-                           4+(uint64_t)dir->fileCount*VWADWR_FILE_ENTRY_SIZE+
-                           4+(uint64_t)dir->chunkCount*VWADWR_CHUNK_ENTRY_SIZE;
+  const vwadwr_uint64 dirsz64 = (vwadwr_uint64)dir->namesSize+
+                           4+(vwadwr_uint64)dir->fileCount*VWADWR_FILE_ENTRY_SIZE+
+                           4+(vwadwr_uint64)dir->chunkCount*VWADWR_CHUNK_ENTRY_SIZE;
 
   if (dirsz64 > 0x04000000) {
     logf(ERROR, "directory too big");
-    return -669;
+    return VADWR_ERR_DIR_TOO_BIG;
   }
 
-  const uint32_t dirsz = (uint32_t)dirsz64;
+  const vwadwr_uint dirsz = (vwadwr_uint)dirsz64;
 
-  uint8_t *fdir = zalloc(dir->mman, dirsz);
+  vwadwr_ubyte *fdir = zalloc(dir->mman, dirsz);
   if (fdir == NULL) {
-    logf(ERROR, "cannot allocate directory");
-    return -669;
+    return VWADWR_ERR_MEM;
   }
 
-  uint32_t nidx;
-  #ifdef VWAD_SORT_NAME_TABLE
-    // sort names
-    FileName **narr = zalloc(dir->mman, sizeof(FileName *)*dir->fileCount);
-    if (narr == NULL) {
-      xfree(dir->mman, narr);
-      xfree(dir->mman, fdir);
-      logf(ERROR, "cannot allocate name array");
-      return -669;
-    }
-    nidx = 0;
-    for (FileInfo *fi = dir->filesHead; fi; fi = fi->next) {
-      vassert(nidx != dir->fileCount);
-      vassert(fi->fname != NULL);
-      vassert(fi->fname->name != NULL);
-      narr[nidx] = fi->fname;
-      nidx += 1;
-    }
-    vassert(nidx == dir->fileCount);
-    qsort(narr, dir->fileCount, sizeof(narr[0]), qsnamecmp);
-  #endif
+  vwadwr_uint nidx;
 
   // create names table
-  uint32_t namesStart = 4+dir->fileCount*VWADWR_FILE_ENTRY_SIZE +
-                        4+dir->chunkCount*VWADWR_CHUNK_ENTRY_SIZE;
-  uint32_t fdirofs = 0;
-  const uint32_t z32 = 0;
-  const uint16_t z16 = 0;
+  vwadwr_uint namesStart = 4+dir->fileCount*VWADWR_FILE_ENTRY_SIZE +
+                           4+dir->chunkCount*VWADWR_CHUNK_ENTRY_SIZE;
+  vwadwr_uint fdirofs = 0;
+  const vwadwr_uint z32 = 0;
+  const vwadwr_ushort z16 = 0;
 
   // put counters
   put_u32(fdir + fdirofs, dir->chunkCount); fdirofs += 4;
@@ -2799,7 +2772,7 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
   vassert(fdirofs = 4+4 + dir->chunkCount*VWADWR_CHUNK_ENTRY_SIZE);
 
   // put files, and fill names table
-  uint32_t nameOfs = 4; // first string is always empty
+  vwadwr_uint nameOfs = 4; // first string is always empty
 
   // put group names
   for (FileInfo *fi = dir->filesHead; fi; fi = fi->next) {
@@ -2807,7 +2780,7 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
       // store group name
       fi->group->gnameofs = nameOfs;
       strcpy((char *)(fdir + namesStart + nameOfs), fi->group->name);
-      nameOfs += (uint32_t)strlen(fi->group->name) + 1;
+      nameOfs += (vwadwr_uint)strlen(fi->group->name) + 1;
       // align
       if (nameOfs&0x03) nameOfs = (nameOfs|0x03)+1;
       vassert(nameOfs + namesStart <= dirsz);
@@ -2815,41 +2788,28 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
   }
 
   // put file names, and assign offsets
-  #ifdef VWAD_SORT_NAME_TABLE
-    for (nidx = 0; nidx < dir->fileCount; nidx += 1) {
-      narr[nidx]->nameofs = nameOfs;
-      strcpy((char *)(fdir + namesStart + nameOfs), narr[nidx]->name);
-      nameOfs += (uint32_t)strlen(narr[nidx]->name) + 1;
-      // align
-      if (nameOfs&0x03) nameOfs = (nameOfs|0x03)+1;
-      vassert(nameOfs + namesStart <= dirsz);
-      nidx += 1;
-    }
-    xfree(dir->mman, narr);
-  #else
-    nidx = 0;
-    for (FileInfo *fi = dir->filesHead; fi; fi = fi->next) {
-      vassert(nidx != dir->fileCount);
-      vassert(fi->fname != NULL);
-      vassert(fi->fname->name != NULL);
-      // remember offset
-      fi->fname->nameofs = nameOfs;
-      strcpy((char *)(fdir + namesStart + nameOfs), fi->fname->name);
-      nameOfs += (uint32_t)strlen(fi->fname->name) + 1;
-      // align
-      if (nameOfs&0x03) nameOfs = (nameOfs|0x03)+1;
-      vassert(nameOfs + namesStart <= dirsz);
-      nidx += 1;
-    }
-    vassert(nidx == dir->fileCount);
-  #endif
+  nidx = 0;
+  for (FileInfo *fi = dir->filesHead; fi; fi = fi->next) {
+    vassert(nidx != dir->fileCount);
+    vassert(fi->fname != NULL);
+    vassert(fi->fname->name != NULL);
+    // remember offset
+    fi->fname->nameofs = nameOfs;
+    strcpy((char *)(fdir + namesStart + nameOfs), fi->fname->name);
+    nameOfs += (vwadwr_uint)strlen(fi->fname->name) + 1;
+    // align
+    if (nameOfs&0x03) nameOfs = (nameOfs|0x03)+1;
+    vassert(nameOfs + namesStart <= dirsz);
+    nidx += 1;
+  }
+  vassert(nidx == dir->fileCount);
   vassert(nameOfs == dir->namesSize);
 
   // put file info
   #ifdef VWAD_USE_NAME_LENGTHES
-  uint32_t pnofs = 0;
+  vwadwr_uint pnofs = 0;
   #endif
-  uint32_t ccc = 0;
+  vwadwr_uint ccc = 0;
   for (FileInfo *fi = dir->filesHead; fi; fi = fi->next) {
     vassert(fi->fname->nameofs != 0);
     memcpy(fdir + fdirofs, &z32, 4); fdirofs += 4; // first chunk will be calculated
@@ -2890,12 +2850,12 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
   vassert(fdirofs == dirsz);
 
   // write directory
-  uint32_t upk_crc32 = crc32_buf(fdir, dirsz);
-  uint8_t *pkdir = xalloc(dir->mman, 0xffffff + 1);
-  uint32_t pk_crc32;
+  vwadwr_uint upk_crc32 = crc32_buf(fdir, dirsz);
+  vwadwr_ubyte *pkdir = xalloc(dir->mman, 0xffffff + 1);
+  vwadwr_uint pk_crc32;
   int pks = CompressLZFF3(dir->mman, fdir, dirsz, pkdir, 0xffffff, 1/*allow_lazy*/);
   vassert(pks > 0); // the thing that should not be
-  uint8_t *pkdir1 = xalloc(dir->mman, 0xffffff + 1);
+  vwadwr_ubyte *pkdir1 = xalloc(dir->mman, 0xffffff + 1);
   int pks1 = pks;
   if (pks1 < 1 || pks1 >= 0xffffff) pks1 = 0xffffff;
   pks1 = CompressLZFF3LitOnly(fdir, dirsz, pkdir1, pks1);
@@ -2912,21 +2872,21 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
   xfree(dir->mman, fdir);
 
 
-  if (0x7fffffffU - dirofs < (unsigned)pks) {
+  if (0x7fffffffU - dirofs < (vwadwr_uint)pks) {
     xfree(dir->mman, pkdir);
-    logf(ERROR, "file with directory (%u bytes) is too big", dirsz);
-    return -669;
+    logf(ERROR, "directory (%u bytes) is too big", dirsz);
+    return VADWR_ERR_VWAD_TOO_BIG;
   }
 
 
-  uint8_t dirheader[4 * 4];
+  vwadwr_ubyte dirheader[4 * 4];
   // packed dir data crc32
-  pk_crc32 = crc32_buf(pkdir, (unsigned)pks);
+  pk_crc32 = crc32_buf(pkdir, (vwadwr_uint)pks);
   put_u32(dirheader + 0, pk_crc32);
   // unpacked dir data crc32
   put_u32(dirheader + 4, upk_crc32);
   // packed dir size
-  uint32_t tmp = (uint32_t)pks;
+  vwadwr_uint tmp = (vwadwr_uint)pks;
   put_u32(dirheader + 8, tmp);
   // unpacked dir size
   put_u32(dirheader + 12, dirsz);
@@ -2936,345 +2896,387 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
   if (strm->write(strm, dirheader, 4 * 4) != 0) {
     xfree(dir->mman, pkdir);
     logf(ERROR, "write error");
-    return -669;
+    return VADWR_ERR_IO_ERROR;
   }
 
   // dir data
-  crypt_buffer(dir->xorRndSeed, 0xffffffffU, pkdir, (uint32_t)pks);
+  crypt_buffer(dir->xorRndSeed, 0xffffffffU, pkdir, (vwadwr_uint)pks);
   if (strm->write(strm, pkdir, pks) != 0) {
     xfree(dir->mman, pkdir);
     logf(ERROR, "write error");
-    return -669;
+    return VADWR_ERR_IO_ERROR;
   }
   xfree(dir->mman, pkdir);
 
-  return 0;
+  return VWADWR_OK;
 }
 
 
 //==========================================================================
 //
-//  xread_chunk
+//  vwadwr_get_last_file_packed_size
 //
 //==========================================================================
-static int xread_chunk (vwadwr_iostream *strm, uint8_t *buf) {
-  int total = 0;
-  while (total != 65536) {
-    const int rd = strm->read(strm, buf, 65536 - total);
-    if (rd < 0) return -1;
-    if (rd == 0) break;
-    total += rd;
-    buf += (unsigned)rd;
-  }
-  return total;
+int vwadwr_get_last_file_packed_size (vwadwr_dir *dir) {
+  return (dir && dir->filesTail ? (int)dir->filesTail->pksize : 0);
 }
 
 
 //==========================================================================
 //
-//  vwadwr_pack_file
+//  vwadwr_get_last_file_unpacked_size
 //
 //==========================================================================
-vwadwr_result vwadwr_pack_file (vwadwr_dir *dir, vwadwr_iostream *instrm,
-                                int level, /* VADWR_COMP_xxx */
-                                const char *pkfname, const char *groupname,
-                                unsigned long long ftime,
-                                int *upksizep, int *pksizep,
-                                vwadwr_pack_progress progcb, void *progudata)
+int vwadwr_get_last_file_unpacked_size (vwadwr_dir *dir) {
+  return (dir && dir->filesTail ? (int)dir->filesTail->upksize : 0);
+}
+
+
+//==========================================================================
+//
+//  vwadwr_get_last_file_chunk_count
+//
+//==========================================================================
+int vwadwr_get_last_file_chunk_count (vwadwr_dir *dir) {
+  return (dir && dir->filesTail ? (int)dir->filesTail->chunkCount : 0);
+}
+
+
+//==========================================================================
+//
+//  vwadwr_create_file
+//
+//  you can use this API to write files with the usual fwrite-like API.
+//  please note that you cannot seek backwards in this case, and only
+//  one file can be created for writing.
+//
+//==========================================================================
+vwadwr_result vwadwr_create_file (vwadwr_dir *dir, int level, /* VADWR_COMP_xxx */
+                                  const char *pkfname,
+                                  const char *groupname, /* can be NULL */
+                                  vwadwr_ftime ftime) /* can be 0; seconds since Epoch */
 {
-  if (dir == NULL || instrm == NULL || pkfname == NULL) return -1;
-  if (pksizep) *pksizep = 0;
-  if (upksizep) *upksizep = 0;
+  if (dir == NULL || pkfname == NULL) return VADWR_ERR_ARGS;
 
-  if (!vwadwr_is_valid_group_name(groupname)) return -1;
+  if (dir->wrfile != NULL) return VADWR_ERR_FILE_OPEN;
 
-  if (pkfname == NULL || !pkfname[0]) return -1;
-  char *xname = normalize_name(dir->mman, pkfname);
-  if (xname == NULL) return -1;
+  if (!vwadwr_is_valid_group_name(groupname)) return VWADWR_ERR_GROUP;
 
-  if (!vwadwr_is_valid_file_name(xname)) { xfree(dir->mman, xname); return -1; }
+  if (!pkfname[0]) return VWADWR_ERR_NAME;
 
-  uint8_t *buf = NULL;
-  uint8_t *dest = NULL;
-  uint8_t *dest1 = NULL;
-  int allow_litonly = 0;
-  int allow_lazy = 0;
-  int allow_lz = 0;
-
-  buf = xalloc(dir->mman, 65536);
-  if (buf == NULL) {
-    logf(ERROR, "out of memory");
-    goto error;
-  }
-  dest = xalloc(dir->mman, 65536 + 4);
-  if (dest == NULL) {
-    logf(ERROR, "out of memory");
-    goto error;
-  }
-
+  dir->allow_litonly = 0;
+  dir->allow_lazy = 0;
+  dir->allow_lz = 0;
   if (level >= 0) {
     switch (level) {
       case VADWR_COMP_FASTEST:
-        allow_litonly = 1;
-        allow_lazy = 0;
-        allow_lz = 0;
+        dir->allow_litonly = 1;
+        dir->allow_lazy = 0;
+        dir->allow_lz = 0;
         break;
       case VADWR_COMP_FAST:
-        allow_litonly = 0;
-        allow_lazy = 0;
-        allow_lz = 1;
+        dir->allow_litonly = 0;
+        dir->allow_lazy = 0;
+        dir->allow_lz = 1;
         break;
       case VADWR_COMP_MEDIUM:
-        allow_litonly = 0;
-        allow_lazy = 1;
-        allow_lz = 1;
+        dir->allow_litonly = 0;
+        dir->allow_lazy = 1;
+        dir->allow_lz = 1;
         break;
       case VADWR_COMP_BEST:
       default:
-        allow_litonly = 1;
-        allow_lazy = 1;
-        allow_lz = 1;
+        dir->allow_litonly = 1;
+        dir->allow_lazy = 1;
+        dir->allow_lz = 1;
         break;
     }
-    if (allow_lz && allow_litonly) {
-      dest1 = xalloc(dir->mman, 65536 + 4);
-      if (dest1 == NULL) {
-        logf(ERROR, "out of memory");
-        goto error;
-      }
-    }
   }
 
-  uint32_t fullcrc32 = crc32_init;
-  int ccnum = 0;
-  int res_pksize = 0;
-  int total_size = 0;
-  int rd = xread_chunk(instrm, buf);
-  while (rd > 0) {
-    #if 0
-    logf(DEBUG, "chunk #%d: size=%d", ccnum, rd);
-    #endif
-    if (0x7fffffff - total_size < rd) {
-      logf(ERROR, "input file too big");
-      goto error;
-    }
-    fullcrc32 = crc32_part(fullcrc32, buf, (unsigned)rd);
-    const uint32_t crc32 = crc32_buf(buf, (unsigned)rd);
-    int pks;
-    if (!allow_lz) {
-      // no LZ compression
-      if (allow_litonly) {
-        pks = CompressLZFF3LitOnly(buf, rd, dest + 4, 65535);
-        if (pks < 1) pks = -1;
-      } else {
-        pks = -1;
-      }
-    } else {
-      pks = CompressLZFF3(dir->mman, buf, rd, dest + 4, 65535, allow_lazy);
-      if (pks == -666) {
-        logf(ERROR, "out of memory");
-        goto error;
-      }
-      if (allow_litonly) {
-        vassert(dest1 != NULL);
-        int pks1 = pks - 1;
-        if (pks1 <= 0) pks1 = 65535;
-        pks1 = CompressLZFF3LitOnly(buf, rd, dest1 + 4, pks1);
-        if (pks1 > 0 && (pks <= 0 || pks1 < pks)) {
-          uint8_t *t = dest; dest = dest1; dest1 = t;
-          pks = pks1;
-        }
-      }
-    }
-    const uint32_t nonce = 4 + dir->chunkCount;
-    if (pks <= 0 || pks > 65535 || pks > rd) {
-      // raw chunk
-      if (vwadwr_append_chunk(dir, 0) != 0) {
-        logf(ERROR, "cannot append chunk info");
-        goto error;
-      }
-      vassert(rd > 0 && rd <= 65536);
-      memcpy(dest + 4, buf, (unsigned)rd);
-      pks = rd;
-    } else {
-      // packed chunk
-      if (vwadwr_append_chunk(dir, (uint32_t)pks) != 0) {
-        logf(ERROR, "cannot append chunk info");
-        goto error;
-      }
-    }
-    put_u32(dest, crc32);
-    crypt_buffer(dir->xorRndSeed, nonce, dest, (unsigned)pks + 4);
-    if (dir->outstrm->write(dir->outstrm, dest, pks + 4) != 0) {
-      logf(ERROR, "write error");
-      goto error;
-    }
-    res_pksize += pks;
-    ccnum += 1;
-    total_size += rd;
-    if (progcb) {
-      if (!progcb(dir, total_size, res_pksize, progudata)) {
-        logf(ERROR, "user abort");
-        goto error;
-      }
-    }
-    if (rd != 65536) break;
-    rd = xread_chunk(instrm, buf);
-  }
-
-  if (rd < 0) {
-    logf(ERROR, "read error");
-    goto error;
-  }
-  vassert(rd >= 0 && rd < 65536);
-
-  vassert((total_size + 65535) / 65536 == ccnum);
-
-  xfree(dir->mman, dest1);
-  xfree(dir->mman, dest);
-  xfree(dir->mman, buf);
-
-  fullcrc32 = crc32_final(fullcrc32);
-  if (vwadwr_append_file_info(dir, xname, groupname, (uint32_t)ccnum,
-                              (uint32_t)total_size, fullcrc32, ftime) != 0)
-  {
-    xfree(dir->mman, xname);
-    logf(ERROR, "cannot append file info");
-    return -1;
-  }
-  xfree(dir->mman, xname);
-
-  if (pksizep) *pksizep = res_pksize;
-  if (upksizep) *upksizep = total_size;
-  return 0;
-
-error:
-  xfree(dir->mman, xname);
-  xfree(dir->mman, dest1);
-  xfree(dir->mman, dest);
-  xfree(dir->mman, buf);
-  return -1;
-}
-
-
-#ifndef VWADWR_DISABLE_COPY_FILES
-//==========================================================================
-//
-//  vwadwr_copy_file
-//
-//  used to copy file from the existing archive without repacking
-//
-//==========================================================================
-vwadwr_result vwadwr_copy_file (vwadwr_dir *dir,
-                                vwad_handle *srcwad, vwad_fidx fidx,
-                                const char *pkfname, /* new name; can be NULL to retain */
-                                const char *groupname, /* can be NULL to retain */
-                                unsigned long long ftime, /* can be 0 to retain */
-                                int *upksizep, int *pksizep,
-                                vwadwr_pack_progress progcb, void *progudata)
-{
-  if (dir == NULL || srcwad == NULL) return -1;
-  if (pksizep) *pksizep = 0;
-  if (upksizep) *upksizep = 0;
-
-  const int chunkCount = vwad_get_file_chunk_count(srcwad, fidx);
-  if (chunkCount < 0) return -1;
-
-  if (groupname == NULL) groupname = vwad_get_file_group_name(srcwad, fidx);
-  if (pkfname == NULL) pkfname = vwad_get_file_name(srcwad, fidx);
-  if (ftime == 0) ftime = vwad_get_ftime(srcwad, fidx);
-
-  if (!vwadwr_is_valid_group_name(groupname)) return -1;
-
-  if (pkfname == NULL || !pkfname[0]) return -1;
   char *xname = normalize_name(dir->mman, pkfname);
-  if (xname == NULL) return -1;
+  if (xname == NULL) return VWADWR_ERR_NAME;
 
-  if (!vwadwr_is_valid_file_name(xname)) { xfree(dir->mman, xname); return -1; }
-
-  uint8_t *buf = NULL;
-
-  buf = xalloc(dir->mman, 65536 + 4);
-  if (buf == NULL) {
-    xfree(dir->mman, xname);
-    logf(ERROR, "out of memory");
-    return -1;
-  }
-
-  uint32_t fullcrc32 = vwad_get_fcrc32(srcwad, fidx);
-  int res_pksize = 0;
-  int total_size = 0;
-  for (int ccidx = 0; ccidx < chunkCount; ++ccidx) {
-    int csz, upksz, packed;
-    if (vwad_get_file_chunk_size(srcwad, fidx, ccidx, &csz, &upksz, &packed) != 0) {
-      xfree(dir->mman, xname);
-      xfree(dir->mman, buf);
-      logf(ERROR, "cannot get source chunk size");
-      return -1;
-    }
-    if (vwad_read_raw_file_chunk(srcwad, fidx, ccidx, buf) != 0) {
-      xfree(dir->mman, xname);
-      xfree(dir->mman, buf);
-      logf(ERROR, "cannot read source chunk");
-      return -1;
-    }
-    const uint32_t nonce = 4 + dir->chunkCount;
-    if (!packed) {
-      // raw chunk
-      if (vwadwr_append_chunk(dir, 0) != 0) {
-        xfree(dir->mman, xname);
-        xfree(dir->mman, buf);
-        logf(ERROR, "cannot append chunk info");
-        return -1;
-      }
-    } else {
-      // packed chunk
-      if (vwadwr_append_chunk(dir, (uint32_t)csz) != 0) {
-        xfree(dir->mman, xname);
-        xfree(dir->mman, buf);
-        logf(ERROR, "cannot append chunk info");
-        return -1;
-      }
-    }
-    csz += 4; /* crc32 */
-    crypt_buffer(dir->xorRndSeed, nonce, buf, csz);
-    if (dir->outstrm->write(dir->outstrm, buf, csz) != 0) {
-      xfree(dir->mman, xname);
-      xfree(dir->mman, buf);
-      logf(ERROR, "write error");
-      return -1;
-    }
-    csz -= 4; /* crc32 */
-    res_pksize += csz;
-    total_size += upksz;
-    if (progcb) {
-      if (!progcb(dir, total_size, res_pksize, progudata)) {
-        xfree(dir->mman, xname);
-        xfree(dir->mman, buf);
-        logf(ERROR, "user abort");
-        return -1;
-      }
-    }
-  }
-
-  xfree(dir->mman, buf);
-
-  vassert(vwad_get_file_size(srcwad, fidx) == total_size);
-
-  if (vwadwr_append_file_info(dir, xname, groupname, (uint32_t)chunkCount,
-                              (uint32_t)total_size, fullcrc32, ftime) != 0)
-  {
-    xfree(dir->mman, xname);
+  // we don't know sizes and such yet, so use zeroes
+  vwadwr_result rescode = vwadwr_append_file_info(dir, pkfname, groupname, 0, ftime);
+  if (rescode != VWADWR_OK) {
     logf(ERROR, "cannot append file info");
-    return -1;
+    return rescode;
   }
-  xfree(dir->mman, xname);
 
-  if (pksizep) *pksizep = res_pksize;
-  if (upksizep) *upksizep = total_size;
-  return 0;
+  dir->wrfile = dir->filesTail;
+  dir->wrfile->crc32 = crc32_init;
+
+  dir->wrpos = 0;
+  dir->wrmode = WR_MODE_WRITE;
+
+  return VWADWR_OK;
 }
-#endif
+
+
+//==========================================================================
+//
+//  vwadwr_flush_chunk
+//
+//==========================================================================
+static vwadwr_result vwadwr_flush_chunk (vwadwr_dir *dir) {
+  if (dir == NULL || dir->wrfile == NULL) return VADWR_ERR_ARGS;
+  vassert(dir->wrpos > 0 && dir->wrpos <= 65536);
+
+  vwadwr_result rescode;
+  FileInfo *fi = dir->wrfile;
+
+  if (fi->chunkCount >= 0x3fffffffU) return VADWR_ERR_CHUNK_COUNT;
+
+  fi->crc32 = crc32_part(fi->crc32, dir->wrchunk, dir->wrpos);
+
+  // compress
+  const vwadwr_uint rd = dir->wrpos;
+  const vwadwr_uint crc32 = crc32_buf(dir->wrchunk, rd);
+  char *dest = dir->pkbuf0; // compressed buffer
+  int pks;
+  if (!dir->allow_lz) {
+    // no LZ compression
+    if (dir->allow_litonly) {
+      pks = CompressLZFF3LitOnly(dir->wrchunk, rd, dest + 4, 65535);
+      if (pks < 1) pks = -1;
+    } else {
+      pks = -1;
+    }
+  } else {
+    pks = CompressLZFF3(dir->mman, dir->wrchunk, rd, dest + 4, 65535, dir->allow_lazy);
+    if (pks == VWADWR_ERR_MEM) return VWADWR_ERR_MEM;
+    if (dir->allow_litonly) {
+      int pks1 = pks - 1;
+      if (pks1 <= 0) pks1 = 65535;
+      pks1 = CompressLZFF3LitOnly(dir->wrchunk, rd, dir->pkbuf1 + 4, pks1);
+      if (pks1 > 0 && (pks <= 0 || pks1 < pks)) {
+        // use this buffer
+        dest = dir->pkbuf1;
+        pks = pks1;
+      }
+    }
+  }
+
+  // append chunk and write it
+  const vwadwr_uint nonce = 4 + dir->chunkCount;
+  if (pks <= 0 || pks > 65535 || pks > (int)rd) {
+    // raw chunk
+    rescode = vwadwr_append_chunk(dir, 0);
+    if (rescode != VWADWR_OK) return rescode;
+    vassert(rd > 0 && rd <= 65536);
+    memcpy(dest + 4, dir->wrchunk, rd);
+    pks = (int)rd;
+  } else {
+    // packed chunk
+    rescode = vwadwr_append_chunk(dir, (vwadwr_uint)pks);
+    if (rescode != VWADWR_OK) return rescode;
+  }
+  put_u32(dest, crc32);
+  crypt_buffer(dir->xorRndSeed, nonce, dest, (vwadwr_uint)pks + 4);
+  if (dir->outstrm->write(dir->outstrm, dest, pks + 4) != 0) {
+    return VADWR_ERR_IO_ERROR;
+  }
+
+  fi->upksize += dir->wrpos;
+  fi->pksize += (vwadwr_uint)pks;
+  fi->chunkCount += 1;
+
+  if (fi->upksize > 0x7fffffffU) return VADWR_ERR_FILE_TOO_BIG;
+  if (fi->pksize > 0x7fffffffU) return VADWR_ERR_FILE_TOO_BIG;
+
+  dir->wrpos = 0;
+
+  return VWADWR_OK;
+}
+
+
+//==========================================================================
+//
+//  vwadwr_write
+//
+//  writing 0 bytes is not an error
+//
+//==========================================================================
+vwadwr_result vwadwr_write (vwadwr_dir *dir, const void *buf, vwadwr_uint len) {
+  if (dir == NULL) return VADWR_ERR_ARGS;
+
+  FileInfo *fi = dir->wrfile;
+  if (fi == NULL) return VADWR_ERR_FILE_CLOSED;
+
+  if (dir->wrmode != WR_MODE_WRITE) return VADWR_ERR_INVALID_MODE;
+
+  if (len == 0 || len > 0x7ffffff0U) return VWADWR_OK;
+  if (buf == NULL) return VADWR_ERR_ARGS;
+
+  if (0x7ffffff0U - fi->upksize < len) return VADWR_ERR_FILE_TOO_BIG;
+
+  vwadwr_result rescode;
+  const char *src = (const char *)buf;
+  while (len != 0) {
+    int left = 65536 - (int)dir->wrpos;
+    if (left > (int)len) left = (int)len;
+    memcpy(dir->wrchunk + dir->wrpos, src, left);
+    dir->wrpos += (vwadwr_uint)left;
+    src += (vwadwr_uint)left;
+    len -= (vwadwr_uint)left;
+    vassert(dir->wrpos <= 65536);
+    if (dir->wrpos == 65536) {
+      // we have complete chunk, pack and write it
+      rescode = vwadwr_flush_chunk(dir);
+      if (rescode != VWADWR_OK) return rescode;
+    }
+  }
+
+  return VWADWR_OK;
+}
+
+
+//==========================================================================
+//
+//  vwadwr_close_file
+//
+//  if this returned error, there is no reason to continue; call `vwadwr_free_dir()`
+//
+//==========================================================================
+vwadwr_result vwadwr_close_file (vwadwr_dir *dir) {
+  if (dir == NULL) return VADWR_ERR_ARGS;
+
+  FileInfo *fi = dir->wrfile;
+  if (fi == NULL) return VADWR_ERR_FILE_CLOSED;
+
+  if (dir->wrmode != WR_MODE_WRITE) return VADWR_ERR_INVALID_MODE;
+
+  // flush final chunk
+  vwadwr_result rescode;
+  if (dir->wrpos != 0) {
+    rescode = vwadwr_flush_chunk(dir);
+    if (rescode != VWADWR_OK) return rescode;
+  }
+
+  // final CRC32
+  fi->crc32 = crc32_part(fi->crc32, dir->wrchunk, dir->wrpos);
+  fi->crc32 = crc32_final(fi->crc32);
+
+  dir->wrfile = NULL;
+
+  return VWADWR_OK;
+}
+
+
+//==========================================================================
+//
+//  vwadwr_create_raw_file
+//
+//  you can use this API to write files with the usual fwrite-like API.
+//  please note that you cannot seek backwards in this case, and only
+//  one file can be created for writing.
+//
+//==========================================================================
+vwadwr_result vwadwr_create_raw_file (vwadwr_dir *dir,
+                                      const char *pkfname,
+                                      const char *groupname, /* can be NULL */
+                                      vwadwr_uint filecrc32,
+                                      vwadwr_ftime ftime) /* can be 0; seconds since Epoch */
+{
+  if (dir == NULL || pkfname == NULL) return VADWR_ERR_ARGS;
+
+  if (dir->wrfile != NULL) return VADWR_ERR_FILE_OPEN;
+
+  if (!vwadwr_is_valid_group_name(groupname)) return VWADWR_ERR_GROUP;
+
+  // we don't know sizes and such yet, so use zeroes
+  vwadwr_result rescode = vwadwr_append_file_info(dir, pkfname, groupname, filecrc32, ftime);
+  if (rescode != VWADWR_OK) {
+    logf(ERROR, "cannot append file info");
+    return rescode;
+  }
+
+  dir->wrfile = dir->filesTail;
+
+  dir->wrmode = WR_MODE_RAW;
+
+  return VWADWR_OK;
+}
+
+
+//==========================================================================
+//
+//  vwadwr_write_raw_chunk
+//
+//  used to copy raw decrypted chunks from other VWAD
+//  use raw reading API in reader to obtain them
+//  `pksz`, `upksz` and `packed` are exactly what `vwad_get_file_chunk_size()` returns
+//  `chunk` is what `vwad_read_raw_file_chunk()` read
+//
+//==========================================================================
+vwadwr_result vwadwr_write_raw_chunk (vwadwr_dir *dir, const void *chunk,
+                                      int pksz, int upksz, int packed)
+{
+  if (dir == NULL) return VADWR_ERR_ARGS;
+  if (chunk == NULL) return VADWR_ERR_ARGS;
+  if (pksz < 5 || upksz < 1 || pksz > 65536 + 4 || upksz > 65536) return VADWR_ERR_ARGS;
+
+  FileInfo *fi = dir->wrfile;
+
+  if (fi == NULL) return VADWR_ERR_FILE_CLOSED;
+
+  if (dir->wrmode != WR_MODE_RAW) return VADWR_ERR_INVALID_MODE;
+
+  if (0x7ffffff0U - fi->upksize < (vwadwr_uint)pksz) return VADWR_ERR_FILE_TOO_BIG;
+
+  if (fi->chunkCount >= 0x3fffffffU) return VADWR_ERR_CHUNK_COUNT;
+
+  vwadwr_result rescode;
+  const vwadwr_uint nonce = 4 + dir->chunkCount;
+  vwadwr_uint csz = (vwadwr_uint)pksz - 4;
+  if (!packed) {
+    // raw chunk
+    rescode = vwadwr_append_chunk(dir, 0);
+    if (rescode != VWADWR_OK) return rescode;
+  } else {
+    // packed chunk
+    rescode = vwadwr_append_chunk(dir, (vwadwr_uint)csz);
+    if (rescode != VWADWR_OK) return rescode;
+  }
+  csz += 4; /* crc32 */
+  memcpy(dir->pkbuf0, chunk, csz);
+  crypt_buffer(dir->xorRndSeed, nonce, dir->pkbuf0, csz);
+  if (dir->outstrm->write(dir->outstrm, dir->pkbuf0, csz) != 0) {
+    return VADWR_ERR_IO_ERROR;
+  }
+  csz -= 4; /* crc32 */
+
+  fi->upksize += (vwadwr_uint)upksz;
+  fi->pksize += csz;
+  fi->chunkCount += 1;
+
+  if (fi->upksize > 0x7fffffffU) return VADWR_ERR_FILE_TOO_BIG;
+  if (fi->pksize > 0x7fffffffU) return VADWR_ERR_FILE_TOO_BIG;
+
+  return VWADWR_OK;
+}
+
+
+//==========================================================================
+//
+//  vwadwr_close_raw_file
+//
+//  if this returned error, there is no reason to continue; call `vwadwr_free_dir()`
+//
+//==========================================================================
+vwadwr_result vwadwr_close_raw_file (vwadwr_dir *dir) {
+  if (dir == NULL) return VADWR_ERR_ARGS;
+
+  FileInfo *fi = dir->wrfile;
+
+  if (fi == NULL) return VADWR_ERR_FILE_CLOSED;
+
+  if (dir->wrmode != WR_MODE_RAW) return VADWR_ERR_INVALID_MODE;
+
+  dir->wrfile = NULL;
+
+  return VWADWR_OK;
+}
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -3307,7 +3309,7 @@ static int ed_read (cc_ed25519_iostream *strm, int startpos, void *buf, int bufs
     const int rd = nfo->strm->read(nfo->strm, buf, bufsize);
     if (rd <= 0) return -1;
     if ((bufsize -= rd) != 0) {
-      buf = ((uint8_t *)buf) + (unsigned)rd;
+      buf = ((vwadwr_ubyte *)buf) + (vwadwr_uint)rd;
     }
   }
   return 0;
@@ -3320,55 +3322,63 @@ static int ed_read (cc_ed25519_iostream *strm, int startpos, void *buf, int bufs
 //
 //==========================================================================
 vwadwr_result vwadwr_finish (vwadwr_dir **dirp) {
-  if (dirp == NULL || *dirp == NULL) return -1;
+  if (dirp == NULL || *dirp == NULL) return VADWR_ERR_ARGS;
+
+  vwadwr_result rescode;
 
   vwadwr_dir *dir = *dirp;
-  if (!vwadwr_is_valid_dir(dir)) {
+  if (dir->wrfile != NULL) return VADWR_ERR_FILE_OPEN;
+
+  rescode = vwadwr_check_dir(dir);
+  if (rescode != VWADWR_OK) {
     vwadwr_free_dir(dirp);
-    return -1;
+    logf(ERROR, "invalid directory");
+    return rescode;
   }
 
   int dirofspos = dir->outstrm->tell(dir->outstrm);
   if (dirofspos <= 4*3+32+64 || dirofspos > 0x6fffffff) {
     vwadwr_free_dir(dirp);
-    return -1;
+    logf(ERROR, "archive too big");
+    return VADWR_ERR_VWAD_TOO_BIG;
   }
 
-  const uint32_t dirofs = (uint32_t)dirofspos;
+  const vwadwr_uint dirofs = (vwadwr_uint)dirofspos;
 
   // pack and write main directory
-  if (vwadwr_write_directory(dir, dir->outstrm, dirofs) != 0) {
-    logf(ERROR, "cannot write directory");
+  rescode = vwadwr_write_directory(dir, dir->outstrm, dirofs);
+  if (rescode != VWADWR_OK) {
     vwadwr_free_dir(dirp);
-    return -1;
+    logf(ERROR, "cannot write directory");
+    return rescode;
   }
 
   const int fout_size = dir->outstrm->tell(dir->outstrm);
   if (fout_size <= 0 || fout_size > 0x7ffffff0) {
-    logf(ERROR, "output file too big");
     vwadwr_free_dir(dirp);
-    return -1;
+    logf(ERROR, "output file too big");
+    return VADWR_ERR_VWAD_TOO_BIG;
   }
 
   // write header
   int sofs = 4+32+64+1+(int)strlen(dir->author)+1+(int)strlen(dir->title)+8;
   if (dir->outstrm->seek(dir->outstrm, sofs) != 0) {
-    logf(ERROR, "cannot seek to header");
     vwadwr_free_dir(dirp);
-    return -1;
+    logf(ERROR, "cannot seek to header");
+    return VADWR_ERR_IO_ERROR;
   }
 
   // setup dir offset
   put_u32(&dir->mhdr.dirofs, dirofs);
   // calculate buffer crc32
-  put_u32(&dir->mhdr.crc32, crc32_buf(&dir->mhdr.version, (uint32_t)sizeof(dir->mhdr)-4));
+  put_u32(&dir->mhdr.crc32, crc32_buf(&dir->mhdr.version, (vwadwr_uint)sizeof(dir->mhdr)-4));
 
   // encrypt and write main header using pk-derived seed
-  crypt_buffer(dir->xorRndSeedPK, 1, &dir->mhdr, (uint32_t)sizeof(dir->mhdr));
+  crypt_buffer(dir->xorRndSeedPK, 1, &dir->mhdr, (vwadwr_uint)sizeof(dir->mhdr));
   if (dir->outstrm->write(dir->outstrm, &dir->mhdr, (int)sizeof(dir->mhdr)) != 0) {
-    logf(ERROR, "write error");
     vwadwr_free_dir(dirp);
-    return -1;
+    logf(ERROR, "write error");
+    return VADWR_ERR_IO_ERROR;
   }
 
   ed25519_signature edsign;
@@ -3379,9 +3389,9 @@ vwadwr_result vwadwr_finish (vwadwr_dir **dirp) {
     nfo.currpos = -1;
     nfo.size = fout_size;
     if (nfo.size <= 0) {
-      logf(ERROR, "tell error");
       vwadwr_free_dir(dirp);
-      return -1;
+      logf(ERROR, "tell error");
+      return VADWR_ERR_IO_ERROR;
     }
     edstrm.udata = &nfo;
     edstrm.total_size = ed_total_size;
@@ -3390,13 +3400,13 @@ vwadwr_result vwadwr_finish (vwadwr_dir **dirp) {
     logf(NOTE, "creating signature");
     int sres = edsign_sign_stream(edsign, dir->pubkey, dir->privkey, &edstrm);
     if (sres != 0) {
-      logf(ERROR, "failed to sign data");
       vwadwr_free_dir(dirp);
-      return -1;
+      logf(ERROR, "failed to sign data");
+      return VWADWR_ERR_OTHER;
     }
   } else {
     // fill signature with file-dependent gibberish
-    uint32_t xseed = dir->fileCount;
+    vwadwr_uint xseed = dir->fileCount;
     for (FileInfo *fi = dir->filesHead; fi != NULL; fi = fi->next) {
       xseed = hashU32(xseed ^ fi->upksize);
       xseed = hashU32(xseed ^ fi->chunkCount);
@@ -3404,44 +3414,44 @@ vwadwr_result vwadwr_finish (vwadwr_dir **dirp) {
     }
     if (xseed == 0) xseed = deriveSeed(0xa27, NULL, 0);
     memset(edsign, 0, sizeof(ed25519_signature));
-    crypt_buffer(xseed, 0x29b, edsign, (uint32_t)sizeof(ed25519_signature));
+    crypt_buffer(xseed, 0x29b, edsign, (vwadwr_uint)sizeof(ed25519_signature));
   }
 
   // write signature (or gibberish)
   if (dir->outstrm->seek(dir->outstrm, 4) != 0) {
+    vwadwr_free_dir(dirp);
     logf(ERROR, "cannot seek in output file");
-    vwadwr_free_dir(dirp);
-    return -1;
+    return VADWR_ERR_IO_ERROR;
   }
-  if (dir->outstrm->write(dir->outstrm, edsign, sizeof(ed25519_signature)) != 0) {
-    logf(ERROR, "write error");
+  if (dir->outstrm->write(dir->outstrm, edsign, (int)sizeof(ed25519_signature)) != 0) {
     vwadwr_free_dir(dirp);
-    return -1;
+    logf(ERROR, "write error");
+    return VADWR_ERR_IO_ERROR;
   }
 
   // re-encrypt public key
   // create initial seed from signature, author, and title
-  uint32_t pkxseed;
-  pkxseed = deriveSeed(0xa29, edsign, (uint32_t)sizeof(ed25519_signature));
-  pkxseed = deriveSeed(pkxseed, (const uint8_t *)dir->author, strlen(dir->author));
-  pkxseed = deriveSeed(pkxseed, (const uint8_t *)dir->title, strlen(dir->title));
+  vwadwr_uint pkxseed;
+  pkxseed = deriveSeed(0xa29, edsign, (vwadwr_uint)sizeof(ed25519_signature));
+  pkxseed = deriveSeed(pkxseed, (const vwadwr_ubyte *)dir->author, (vwadwr_uint)strlen(dir->author));
+  pkxseed = deriveSeed(pkxseed, (const vwadwr_ubyte *)dir->title, (vwadwr_uint)strlen(dir->title));
   #if 0
   logf(DEBUG, "kkseed: 0x%08x", pkxseed);
   #endif
 
   ed25519_public_key epk;
   memcpy(epk, dir->pubkey, sizeof(ed25519_public_key));
-  crypt_buffer(pkxseed, 0x29a, epk, (uint32_t)sizeof(ed25519_public_key));
+  crypt_buffer(pkxseed, 0x29a, epk, (vwadwr_uint)sizeof(ed25519_public_key));
 
   // write public key
   if (dir->outstrm->write(dir->outstrm, epk, (int)sizeof(ed25519_public_key)) != 0) {
-    logf(ERROR, "write error");
     vwadwr_free_dir(dirp);
-    return -1;
+    logf(ERROR, "write error");
+    return VADWR_ERR_IO_ERROR;
   }
 
   vwadwr_free_dir(dirp);
-  return 0;
+  return VWADWR_OK;
 }
 
 
@@ -3455,10 +3465,10 @@ vwadwr_result vwadwr_finish (vwadwr_dir **dirp) {
 //     1: not equal
 //
 //==========================================================================
-vwadwr_result vwadwr_wildmatch (const char *pat, size_t plen, const char *str, size_t slen) {
+vwadwr_result vwadwr_wildmatch (const char *pat, vwadwr_uint plen, const char *str, vwadwr_uint slen) {
   #define GETSCH(dst_)  do { \
     const char *stmp = &str[spos]; \
-    const uint32_t uclen = utf_char_len(stmp); \
+    const vwadwr_uint uclen = utf_char_len(stmp); \
     if (error || uclen == 0 || uclen > 3 || slen - spos < uclen) { error = 1; (dst_) = VWADWR_REPLACEMENT_CHAR; } \
     else { \
       (dst_) = unilower(utf_decode(&stmp)); \
@@ -3469,7 +3479,7 @@ vwadwr_result vwadwr_wildmatch (const char *pat, size_t plen, const char *str, s
 
   #define GETPCH(dst_)  do { \
     const char *stmp = &pat[patpos]; \
-    const uint32_t uclen = utf_char_len(stmp); \
+    const vwadwr_uint uclen = utf_char_len(stmp); \
     if (error || uclen == 0 || uclen > 3 || plen - patpos < uclen) { error = 1; (dst_) = VWADWR_REPLACEMENT_CHAR; } \
     else { \
       (dst_) = unilower(utf_decode(&stmp)); \
@@ -3478,10 +3488,10 @@ vwadwr_result vwadwr_wildmatch (const char *pat, size_t plen, const char *str, s
     } \
   } while (0)
 
-  uint16_t sch, c0, c1;
+  vwadwr_ushort sch, c0, c1;
   vwadwr_bool hasMatch, inverted;
   vwadwr_bool star = 0, dostar = 0;
-  size_t patpos = 0, spos = 0;
+  vwadwr_uint patpos = 0, spos = 0;
   int error = 0;
 
   while (!error && !dostar && spos < slen) {
@@ -3581,8 +3591,8 @@ vwadwr_result vwadwr_wildmatch (const char *pat, size_t plen, const char *str, s
 #ifdef VWAD_DEBUG_WILDPATH
 #include <stdio.h>
 #endif
-vwadwr_result vwadwr_wildmatch_path (const char *pat, size_t plen, const char *str, size_t slen) {
-  size_t ppos, spos;
+vwadwr_result vwadwr_wildmatch_path (const char *pat, vwadwr_uint plen, const char *str, vwadwr_uint slen) {
+  vwadwr_uint ppos, spos;
   vwadwr_bool pat_has_slash = 0;
   vwadwr_result res;
 
@@ -3602,7 +3612,7 @@ vwadwr_result vwadwr_wildmatch_path (const char *pat, size_t plen, const char *s
     // match by path parts
     #ifdef VWAD_DEBUG_WILDPATH
     fprintf(stderr, "=== pat:<%.*s>; str:<%.*s> ===\n",
-            (unsigned)plen, pat, (unsigned)slen, str);
+            (vwadwr_uint)plen, pat, (vwadwr_uint)slen, str);
     #endif
     while (slen && str[0] == '/') { --slen; ++str; }
     res = 0;
@@ -3612,8 +3622,8 @@ vwadwr_result vwadwr_wildmatch_path (const char *pat, size_t plen, const char *s
       spos = 0; while (spos != slen && str[spos] != '/') ++spos;
       #ifdef VWAD_DEBUG_WILDPATH
       fprintf(stderr, "  MT: ppos=%u; spos=%u; pat=<%.*s>; str=<%.*s> (ex: %d)\n",
-              (unsigned)ppos, (unsigned)spos,
-              (unsigned)ppos, pat, (unsigned)spos, str,
+              (vwadwr_uint)ppos, (vwadwr_uint)spos,
+              (vwadwr_uint)ppos, pat, (vwadwr_uint)spos, str,
               ((ppos == plen) != (spos == slen)));
       #endif
       if ((ppos == plen) != (spos == slen)) {

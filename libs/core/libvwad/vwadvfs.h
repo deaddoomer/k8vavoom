@@ -55,6 +55,26 @@
 extern "C" {
 #endif
 
+// this should be 8 bit (i hope so)
+typedef unsigned char vwad_ubyte;
+// this should be 16 bit (i hope so)
+typedef unsigned short vwad_ushort;
+// this should be 32 bit (i hope so)
+typedef unsigned int vwad_uint;
+// this should be 64 bit (i hope so)
+typedef unsigned long long vwad_uint64;
+
+// size checks
+typedef char vwad_temp_typedef_check_char[(sizeof(char) == 1) ? 1 : -1];
+typedef char vwad_temp_typedef_check_ubyte[(sizeof(vwad_ubyte) == 1) ? 1 : -1];
+typedef char vwad_temp_typedef_check_ushort[(sizeof(vwad_ushort) == 2) ? 1 : -1];
+typedef char vwad_temp_typedef_check_uint[(sizeof(vwad_uint) == 4) ? 1 : -1];
+typedef char vwad_temp_typedef_check_uint64[(sizeof(vwad_uint64) == 8) ? 1 : -1];
+
+// this should be 64 bit (i hope so)
+typedef vwad_uint64 vwad_ftime;
+
+
 // for self-documentation purposes
 typedef int vwad_bool;
 
@@ -92,7 +112,7 @@ typedef struct vwad_memman_t vwad_memman;
 struct vwad_memman_t {
   // will never be called with zero `size`
   // return NULL on OOM
-  void *(*alloc) (vwad_memman *mman, uint32_t size);
+  void *(*alloc) (vwad_memman *mman, vwad_uint size);
   // will never be called with NULL `p`
   void (*free) (vwad_memman *mman, void *p);
   // user data
@@ -100,7 +120,7 @@ struct vwad_memman_t {
 };
 
 // Ed25519 public key, 32 bytes
-typedef unsigned char vwad_public_key[32];
+typedef vwad_ubyte vwad_public_key[32];
 
 // 40 bytes of key, 5 bytes of crc32, plus zero
 typedef char vwad_z85_key[46];
@@ -155,7 +175,7 @@ vwad_result vwad_z85_decode_key (const vwad_z85_key enkey, vwad_public_key outke
 // (i.e. they should be alive until `vwad_close()`).
 // if `mman` is `NULL`, use libc memory manager.
 // default cache settings is "global cache, 256KB" (4 buffers)
-vwad_handle *vwad_open_archive (vwad_iostream *strm, unsigned flags, vwad_memman *mman);
+vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags, vwad_memman *mman);
 // will free handle memory, and clean handle pointer.
 void vwad_close_archive (vwad_handle **wadp);
 
@@ -172,14 +192,14 @@ void vwad_set_archive_cache (vwad_handle *wad, int bufferCount);
 
 // get size of the comment, without the trailing zero byte.
 // returns 0 on error, or on empty comment.
-unsigned int vwad_get_archive_comment_size (vwad_handle *wad);
+vwad_uint vwad_get_archive_comment_size (vwad_handle *wad);
 // can return empty string if there is no comment,
 // or `VWAD_OPEN_NO_MAIN_COMMENT` passed,
 // or if `vwad_free_archive_comment()` was called.
 // WARNING! `dest` must be at least `vwad_get_archive_comment_size()` + 1 bytes!
 //          this is because the comment is terminated with zero byte.
 // will truncate comment if destination buffer is not big enough (with zero byte).
-void vwad_get_archive_comment (vwad_handle *wad, char *dest, unsigned int destsize);
+void vwad_get_archive_comment (vwad_handle *wad, char *dest, vwad_uint destsize);
 
 // never returns NULL
 const char *vwad_get_archive_author (vwad_handle *wad);
@@ -223,9 +243,9 @@ const char *vwad_get_file_name (vwad_handle *wad, vwad_fidx fidx);
 int vwad_get_file_size (vwad_handle *wad, vwad_fidx fidx);
 // returns 0 if there is an error, or the time is not set
 // returned time is in UTC, seconds since Epoch (or 0 if unknown)
-unsigned long long vwad_get_ftime (vwad_handle *wad, vwad_fidx fidx);
+vwad_ftime vwad_get_ftime (vwad_handle *wad, vwad_fidx fidx);
 // get crc32 for the whole file
-unsigned vwad_get_fcrc32 (vwad_handle *wad, vwad_fidx fidx);
+vwad_uint vwad_get_fcrc32 (vwad_handle *wad, vwad_fidx fidx);
 
 // normalize file name: remove "/./", resolve "/../", remove
 // double slashes, etc. it should be safe to pass the result
@@ -270,19 +290,19 @@ int vwad_read (vwad_handle *wad, vwad_fd fd, void *buf, int len);
 // returns -1 on error
 int vwad_get_file_chunk_count (vwad_handle *wad, vwad_fidx fidx);
 // this is used in creator, to copy raw chunks
-// 4 bytes of CRC32 are NOT coupted!
+// 4 bytes of CRC32 are INCLUDED in `pksz` (but not in `upksz`)!
 // `pksz` is never zero; to check if the chunk is packed, use `packed`
-vwad_result vwad_get_file_chunk_size (vwad_handle *wad, vwad_fidx fidx, int chunkidx,
-                                      int *pksz, int *upksz, vwad_bool *packed);
+vwad_result vwad_get_raw_file_chunk_info (vwad_handle *wad, vwad_fidx fidx, int chunkidx,
+                                          int *pksz, int *upksz, vwad_bool *packed);
 // this is used in creator, to copy raw chunks
 // reads chunk WITH CRC32!
 vwad_result vwad_read_raw_file_chunk (vwad_handle *wad, vwad_fidx fidx, int chunkidx, void *buf);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-unsigned vwad_crc32_init (void);
-unsigned vwad_crc32_part (unsigned crc32, const void *src, size_t len);
-unsigned vwad_crc32_final (unsigned crc32);
+vwad_uint vwad_crc32_init (void);
+vwad_uint vwad_crc32_part (vwad_uint crc32, const void *src, vwad_uint len);
+vwad_uint vwad_crc32_final (vwad_uint crc32);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -293,26 +313,26 @@ vwad_bool vwad_str_equ_ci (const char *s0, const char *s1);
 //   -1: malformed pattern
 //    0: equal
 //    1: not equal
-vwad_result vwad_wildmatch (const char *pat, size_t plen, const char *str, size_t slen);
+vwad_result vwad_wildmatch (const char *pat, vwad_uint plen, const char *str, vwad_uint slen);
 
 // this matches individual path parts.
 // exception: if `pat` contains no slashes, match only the name.
 // if `pat` is like "/mask", match only root dir files.
 // masks like "/*/*/" will match anything 2 subdirs or deeper.
 // masks like "/*/*" will match exactly the one subdir.
-vwad_result vwad_wildmatch_path (const char *pat, size_t plen, const char *str, size_t slen);
+vwad_result vwad_wildmatch_path (const char *pat, vwad_uint plen, const char *str, vwad_uint slen);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
 // "invalid char" unicode code
 #define VWAD_REPLACEMENT_CHAR  (0x0FFFD)
 
-uint32_t vwad_utf_char_len (const void *str);
-vwad_bool vwad_is_uni_printable (uint16_t ch);
+vwad_uint vwad_utf_char_len (const void *str);
+vwad_bool vwad_is_uni_printable (vwad_ushort ch);
 // advances `strp` at least by one byte
 // returns `VWAD_REPLACEMENT_CHAR` on invalid char
-uint16_t vwad_utf_decode (const char **strp);
-uint16_t vwad_uni_tolower (uint16_t ch);
+vwad_ushort vwad_utf_decode (const char **strp);
+vwad_ushort vwad_uni_tolower (vwad_ushort ch);
 
 
 #if defined(__cplusplus)

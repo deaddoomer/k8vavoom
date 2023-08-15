@@ -43,8 +43,9 @@ public:
   VV_DISABLE_COPY(VVWadArchive)
 
   // open from disk
-  VVWadArchive (VStr aArchName);
+  //VVWadArchive (VStr aArchName);
   // open from stream; will close owned stream even on open error
+  // stream will be seeked to 0
   VVWadArchive (VStr aArchName, VStream *strm, bool owned);
 
   virtual ~VVWadArchive ();
@@ -99,10 +100,6 @@ private:
   VVWadStreamReader *next;
 
 private:
-  //VVWadStreamReader (VStr aArchName, vwad_handle *vw_handle, vwad_iostream *vw_strm, vwad_fd afd);
-  // if there is no file with this name, the stream set in error state
-  //VVWadStreamReader (VStr aArchName, vwad_handle *vw_handle, vwad_iostream *vw_strm, VStr name);
-
   VVWadStreamReader (VVWadArchive *aarc, vwad_fd afd);
 
   void DoClose ();
@@ -125,17 +122,114 @@ public:
 };
 
 
+
+// ////////////////////////////////////////////////////////////////////////// //
+class VVWadStreamWriter;
+
+// currently cannot be used to create signed archives
+class VVWadNewArchive {
+  friend class VVWadStreamWriter;
+private:
+  VStr archname;  // archive name
+  vwadwr_dir *vw_handle;
+  vwadwr_iostream vw_strm;
+  VStream *destStream;
+  bool destStreamOwn;
+  VVWadStreamWriter *active;
+  bool error;
+
+private:
+  // this also closes the archive handle, and possibly destroys destination stream
+  void SetError ();
+
+  // return `nullptr` on error
+  // otherwise, return unseekable stream suitable for writing
+  // close the stream to finish file
+  VStream *CreateFile (VStr name, int level/* VADWR_COMP_xxx */,
+                       VStr groupname, vwadwr_ftime ftime, bool buffit);
+
+public:
+  VV_DISABLE_COPY(VVWadNewArchive)
+
+  // create to stream; will close owned stream even on open error
+  // stream will be seeked to 0
+  // can set error flag; on error, destroys owned stream
+  VVWadNewArchive (VStr aArchName, VStr author, VStr title, VStream *strm, bool owned);
+
+  virtual ~VVWadNewArchive ();
+
+  inline bool IsError () const noexcept { return error; }
+
+  // finish creating, write final dir, and so on
+  // return success flag
+  bool Close ();
+
+  inline bool IsOpen () const noexcept { return !!vw_handle; }
+  inline VStr GetName () const noexcept { return archname; }
+
+  // return `nullptr` on error
+  // otherwise, return unseekable stream suitable for writing
+  // close the stream to finish file
+  inline VStream *CreateFileBuffered (VStr name, int level/* VADWR_COMP_xxx */,
+                                      VStr groupname=VStr::EmptyString,
+                                      vwadwr_ftime ftime=0)
+  {
+    return CreateFile(name, level, groupname, ftime, true);
+  }
+
+  // return `nullptr` on error
+  // otherwise, return unseekable stream suitable for writing
+  // close the stream to finish file
+  inline VStream *CreateFileDirect (VStr name, int level/* VADWR_COMP_xxx */,
+                                    VStr groupname=VStr::EmptyString,
+                                    vwadwr_ftime ftime=0)
+  {
+    return CreateFile(name, level, groupname, ftime, false);
+  }
+};
+
+
+class VVWadStreamWriter : public VStream {
+  friend class VVWadNewArchive;
+private:
+  VVWadNewArchive *arc;
+  VMemoryStream *stbuf;
+  VStr fname;
+  int currpos; // for `Tell()`
+  int seekpos;
+
+private:
+  VVWadStreamWriter (VVWadNewArchive *aarc, VStr afname, bool buffit=true);
+
+  void DoClose ();
+
+public:
+  VV_DISABLE_COPY(VVWadStreamWriter)
+
+  virtual ~VVWadStreamWriter () override;
+
+  virtual VStr GetName () const override;
+  virtual void SetError () override;
+  virtual void Serialise (void *, int) override;
+  virtual void Seek (int) override;
+  virtual int Tell () override;
+  virtual int TotalSize () override;
+  virtual bool AtEnd () override;
+  virtual bool Close () override;
+};
+
+
 // `dstrm` should be alive until archive is closed!
 // `dstrm` will be seeked to 0
-vwadwr_dir *vwadwr_create_archive_stream (VStream *dstrm, VStr author, VStr title);
+vwadwr_dir *xvwad_create_archive_stream (VStream *dstrm, VStr author, VStr title);
 // will set `vwad` to `nullptr`
-bool vwadwr_finish_archive_stream (vwadwr_dir *&vwad);
+bool xvwad_finish_archive_stream (vwadwr_dir *&vwad);
 // use this to abort writing; will not destroy stream
-void vwadwr_destroy_archive_stream (vwadwr_dir *&vwad);
-VStream *vwadwr_arc_get_archive_stream (vwadwr_dir *vwad);
+void xvwad_destroy_archive_stream (vwadwr_dir *&vwad);
+VStream *xvwad_arc_get_archive_stream (vwadwr_dir *vwad);
 
-// `strm` will be seeked to 0
-vwadwr_result vwadwr_write_vstream (vwadwr_dir *wad, VStream *strm,
+// create stream suitable for
+VStream *xvwad_create_file (vwadwr_dir *wad, VStream *strm,
                                     int level, /* VADWR_COMP_xxx */
                                     const char *pkfname,
                                     const char *groupname = nullptr, /* can be NULL */

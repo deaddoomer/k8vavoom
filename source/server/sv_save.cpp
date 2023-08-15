@@ -84,7 +84,12 @@ enum { NUM_AUTOSAVES = 9 };
 
 #define NEWFTM_FNAME_MAP_NAMES     "names.dat"
 #define NEWFTM_FNAME_MAP_ACSEXPT   "acs_exports.dat"
-#define NEWFTM_FNAME_MAP_THINKERS  "thinkers.dat"
+#define NEWFTM_FNAME_MAP_WORDINFO  "worldinfo.dat"
+#define NEWFTM_FNAME_MAP_ACTPLYS   "active_players.dat"
+#define NEWFTM_FNAME_MAP_EXPOBJNS  "object_nameidx.dat"
+#define NEWFTM_FNAME_MAP_THINKERS  "object_data.dat"
+#define NEWFTM_FNAME_MAP_ACS       "acs_state.dat"
+#define NEWFTM_FNAME_MAP_ACS_DATA  "acs_data.dat"
 #define NEWFTM_FNAME_MAP_SOUNDS    "sounds.dat"
 #define NEWFTM_FNAME_MAP_GINFO     "ginfo.dat"
 
@@ -340,10 +345,6 @@ private:
   bool SaveToSlotOld (int Slot);
   bool SaveToSlotNew (int Slot);
 
-  // will always destroy `strm`, and destroy `vmain` (with its stream) on error
-  // return `true` on success
-  bool PackStream (vwadwr_dir *vmain, VStream *strm, VStr fname);
-
 public:
   VSaveSlot () : SavedSkill(-1), newFormat(true) {}
   ~VSaveSlot () { Clear(true); }
@@ -365,7 +366,6 @@ static VSaveSlot BaseSlot;
 // ////////////////////////////////////////////////////////////////////////// //
 class VSaveLoaderStream : public VStream {
 private:
-public: //DEBUG!
   VStream *Stream;
   VVWadArchive *vwad;
 
@@ -386,38 +386,62 @@ public:
   // close current stream, open a new one, assign it to `Stream`
   void OpenFile (VStr name) {
     if (vwad) {
-      if (Stream) { VStream::Destroy(Stream); Stream = nullptr; }
+      if (Stream) {
+        if (Stream->IsError()) SetError();
+        VStream::Destroy(Stream);
+      }
       Stream = vwad->OpenFile(name);
       if (!Stream) {
-        Sys_Error("cannot find save part named '%s'", *name);
+        // memleak!
+        Host_Error("cannot find save part named '%s'", *name);
       }
     } else {
-      // what a brilliant error message!
-      Sys_Error("trying to read old safe as new save");
+      // what a brilliant error message! also, memleak
+      Host_Error("trying to read old safe as new save");
     }
   }
 
   // stream interface
-  virtual void Serialise (void *Data, int Len) override { Stream->Serialise(Data, Len); }
-  virtual void Seek (int Pos) override { Stream->Seek(Pos); }
-  virtual int Tell () override { return Stream->Tell(); }
-  virtual int TotalSize () override { return Stream->TotalSize(); }
-  virtual bool AtEnd () override { return Stream->AtEnd(); }
-  virtual void Flush () override { Stream->Flush(); }
+  virtual void SetError () override {
+    VStream::Destroy(Stream);
+    VStream::SetError();
+  }
+
+  virtual bool IsError () const noexcept override {
+    return (bError || (Stream && Stream->IsError()));
+  }
+
+  virtual void Serialise (void *Data, int Len) override {
+    if (Stream) Stream->Serialise(Data, Len); else SetError();
+  }
+  virtual void Seek (int Pos) override {
+    if (Stream) Stream->Seek(Pos); else SetError();
+  }
+  virtual int Tell () override {
+    if (Stream) return Stream->Tell(); else { SetError(); return 0; }
+  }
+  virtual int TotalSize () override {
+    if (Stream) return Stream->TotalSize(); else { SetError(); return 0; }
+  }
+  virtual bool AtEnd () override {
+    if (Stream) return Stream->AtEnd(); else { SetError(); return true; }
+  }
+  virtual void Flush () override {
+    if (Stream) Stream->Flush(); else SetError();
+  }
 
   virtual bool Close () override {
-    bool res;
-    if (vwad) {
-      res = true;
-      if (Stream) { res = !Stream->IsError(); VStream::Destroy(Stream); Stream = nullptr; }
-      vwad->Close();
-      delete vwad;
-      vwad = nullptr;
-    } else {
-      if (Stream) res = Stream->Close(); else res = true;
+    bool err = IsError();
+    if (Stream) {
+      if (!err) err = !Stream->Close();
+      VStream::Destroy(Stream);
     }
-    if (!res) SetError();
-    return res;
+    if (vwad) {
+      if (!err) vwad->Close();
+      delete vwad; vwad = nullptr;
+    }
+    if (err) SetError(); // just in case
+    return !err;
   }
 
   virtual void io (VSerialisable *&Ref) override {
@@ -478,9 +502,8 @@ public:
 
 class VSaveWriterStream : public VStream {
 private:
+  VVWadNewArchive *vwad;
   VStream *Stream;
-  vwadwr_dir *vwad;
-  VStr vwadfile; // current opened file name
 
 public:
   TArray<VName> Names;
@@ -490,102 +513,124 @@ public:
   TArray</*VLevelScriptThinker*/VSerialisable *> AcsExports;
   bool skipPlayers;
 
-public:
-  VV_DISABLE_COPY(VSaveWriterStream)
-
-  VSaveWriterStream (VStream *InStream) : Stream(InStream), vwad(nullptr) {
+private:
+  void Init () {
     bLoading = false;
     NamesMap.setLength(VName::GetNumNames());
     for (int i = 0; i < VName::GetNumNames(); ++i) NamesMap[i] = -1;
-  }
-
-  VSaveWriterStream (vwadwr_dir *avwad) : Stream(nullptr), vwad(avwad) {
-    bLoading = false;
-    NamesMap.setLength(VName::GetNumNames());
-    for (int i = 0; i < VName::GetNumNames(); ++i) NamesMap[i] = -1;
-  }
-
-  virtual ~VSaveWriterStream () override { Close(); delete Stream; Stream = nullptr; }
-
-  inline bool IsNewFormat () const noexcept { return !!vwad; }
-
-  void CloseFile () {
-    if (vwad) {
-      if (!vwadfile.IsEmpty()) {
-        #if 0
-        GCon->Logf("SG-WRITER: writing file '%s'...", *vwadfile);
-        #endif
-        vassert(Stream != nullptr);
-        vassert(dynamic_cast<VMemoryStream *>(Stream));
-        bool res = false;
-        Stream->Seek(0);
-        if (!Stream->IsError()) {
-          int level = save_compression_level.asInt();
-          if (level < VADWR_COMP_DISABLE || level > VADWR_COMP_BEST) {
-            level = VADWR_COMP_FAST;
-            save_compression_level = level;
-          }
-          #if 0
-          GCon->Logf("SG-WRITER: ...packing (level: %d)", level);
-          #endif
-          VMemoryStream *mst = (VMemoryStream *)Stream;
-          mst->BeginRead();
-          vwadwr_result xres = vwadwr_write_vstream(vwad, mst, level, *vwadfile);
-          #if 0
-          GCon->Logf("SG-WRITER: ...xres=%d", xres);
-          #endif
-          res = (xres == 0);
-        }
-        VStream::Destroy(Stream); Stream = nullptr;
-        vwadfile.clear();
-        if (!res) SetError();
-      } else {
-        vassert(Stream == nullptr);
-      }
-    }
   }
 
   // this automatically closes old file
-  bool CreateFile (VStr name) {
+  // it is safe to call this in non-vwad mode
+  bool CreateFile (VStr name, bool buffit) {
     if (vwad) {
-      CloseFile();
+      if (Stream != nullptr) CloseFile();
+      #if 0
+      GCon->Logf(NAME_Debug, "CREATE: %s", *name);
+      #endif
       if (!IsError()) {
+        vassert(Stream == nullptr);
         while (name.startsWith("/")) name.chopLeft(1);
-        if (name.IsEmpty()) {
-          SetError();
-        } else {
-          vwadfile = name;
-          Stream = new VMemoryStream();
+
+        int level = save_compression_level.asInt();
+        if (level < VADWR_COMP_DISABLE || level > VADWR_COMP_BEST) {
+          level = VADWR_COMP_FAST;
+          save_compression_level = level;
         }
+        // just in case
+        if (name.endsWithNoCase(".vwad")) level = VADWR_COMP_DISABLE;
+
+        if (buffit) {
+          Stream = vwad->CreateFileBuffered(name, level);
+        } else {
+          Stream = vwad->CreateFileDirect(name, level);
+        }
+        if (!Stream) SetError();
       }
     }
     return !IsError();
   }
 
+
+public:
+  VV_DISABLE_COPY(VSaveWriterStream)
+
+  // takes ownership of the passed stream
+  VSaveWriterStream (VStream *InStream) : vwad(nullptr), Stream(InStream) { Init(); }
+  // takes ownership of the passed archive object,
+  // will properly close and destroy the archive
+  VSaveWriterStream (VVWadNewArchive *avwad) : vwad(avwad), Stream(nullptr) { Init(); }
+
+  virtual ~VSaveWriterStream () override { Close(); delete Stream; Stream = nullptr; }
+
+  inline bool IsNewFormat () const noexcept { return (vwad != nullptr); }
+
+  // it is safe to call this in non-vwad mode
+  void CloseFile () {
+    if (vwad && Stream) {
+      #if 0
+      GCon->Logf(NAME_Debug, "CLOSE: %s", *Stream->GetName());
+      #endif
+      bool err = IsError();
+      if (!err) {
+        Stream->Close();
+        err = Stream->IsError();
+      }
+      delete Stream; Stream = nullptr;
+      if (err) SetError();
+    }
+  }
+
+  // this automatically closes old file
+  // it is safe to call this in non-vwad mode
+  inline bool CreateFileBuffered (VStr name) { return CreateFile(name, true); }
+  inline bool CreateFileDirect (VStr name) { return CreateFile(name, false); }
+
   // stream interface
-  virtual void Serialise (void *Data, int Len) override { Stream->Serialise(Data, Len); }
-  virtual void Seek (int Pos) override { Stream->Seek(Pos); }
-  virtual int Tell () override { return Stream->Tell(); }
-  virtual int TotalSize () override { return Stream->TotalSize(); }
-  virtual bool AtEnd () override { return Stream->AtEnd(); }
-  virtual void Flush () override { Stream->Flush(); }
+  virtual void SetError () override {
+    VStream::Destroy(Stream);
+    if (vwad) { delete vwad; vwad = nullptr; }
+    VStream::SetError();
+  }
+
+  virtual bool IsError () const noexcept override {
+    return (bError || (Stream && Stream->IsError()));
+  }
 
   virtual bool Close () override {
-    bool res = false;
+    bool err = IsError();
     if (vwad) {
-      CloseFile();
-      res = !IsError();
-      if (res) {
-        res = vwadwr_finish_archive_stream(vwad);
-      } else {
-        vwadwr_destroy_archive_stream(vwad);
+      if (!err && Stream) {
+        Stream->Close();
+        err = Stream->IsError();
       }
-      vwad = nullptr;
+      delete Stream; Stream = nullptr;
+      if (!err) err = !vwad->Close();
+      delete vwad; vwad = nullptr;
     } else {
-      if (Stream) { res = Stream->Close(); Stream = nullptr; } else res = true;
+      if (Stream) { err = !Stream->Close(); Stream = nullptr; }
     }
-    if (!res) SetError();
-    return res;
+    if (err) SetError(); // just in case
+    return !err;
+  }
+
+  virtual void Serialise (void *Data, int Len) override {
+    if (Stream) Stream->Serialise(Data, Len); else SetError();
+  }
+  virtual void Seek (int Pos) override {
+    if (Stream) Stream->Seek(Pos); else SetError();
+  }
+  virtual int Tell () override {
+    if (Stream) return Stream->Tell(); else { SetError(); return 0; }
+  }
+  virtual int TotalSize () override {
+    if (Stream) return Stream->TotalSize(); else { SetError(); return 0; }
+  }
+  virtual bool AtEnd () override {
+    if (Stream) return Stream->AtEnd(); else { SetError(); return 0; }
+  }
+  virtual void Flush () override {
+    if (Stream) Stream->Flush(); else SetError();
   }
 
   void RegisterObject (VObject *o) {
@@ -1736,52 +1781,30 @@ bool VSaveSlot::SaveToSlotOld (int Slot) {
 }
 
 
-//==========================================================================
-//
-//  VSaveSlot::PackStream
-//
-//  will destroy stream in any case
-//  will destroy vmain and its stream on error
-//
-//==========================================================================
-bool VSaveSlot::PackStream (vwadwr_dir *vmain, VStream *Strm, VStr fname) {
-  int level;
+#define CLOSE_VWAD_FILE()  do { \
+  vassert(Strm != nullptr); \
+  Strm->Close(); \
+  const bool xserr = Strm->IsError(); \
+  delete Strm; Strm = nullptr; \
+  if (xserr || vmain->IsError()) { \
+    delete vmain; vmain = nullptr; \
+    return false; \
+  } \
+} while (0)
 
-  vassert(vmain);
-  vassert(!fname.isEmpty());
-  if (!Strm || Strm->IsError()) goto error;
 
-  vassert(dynamic_cast<VMemoryStream *>(Strm));
-  ((VMemoryStream *)Strm)->BeginRead();
-
-  level = save_compression_level.asInt();
-  if (level < VADWR_COMP_DISABLE || level > VADWR_COMP_BEST) {
-    level = VADWR_COMP_FAST;
-    save_compression_level = level;
-  }
-
-  // do not compress embedded vwads
-  if (fname.endsWith(".vwad")) level = VADWR_COMP_DISABLE;
-
-  #if 0
-  GCon->Logf(NAME_Debug, "...packing: '%s' (%d)", *fname, Strm->TotalSize());
-  #endif
-  if (vwadwr_write_vstream(vmain, Strm, level, *fname) != 0) goto error;
-  VStream::Destroy(Strm);
-  return true;
-
-error:
-  #if 1
-  if (Strm) {
-    GCon->Logf(NAME_Error, "cannot pack: '%s' (%d)", *fname, Strm->TotalSize());
-  }
-  #endif
-  VStream *mst = vwadwr_arc_get_archive_stream(vmain);
-  vwadwr_destroy_archive_stream(vmain);
-  VStream::Destroy(mst);
-  VStream::Destroy(Strm);
-  return false;
-}
+#define CREATE_VWAD_FILE(xxfname)  do { \
+  vassert(Strm == nullptr); \
+  int level = save_compression_level.asInt(); \
+  if (level < VADWR_COMP_DISABLE || level > VADWR_COMP_BEST) { \
+    level = VADWR_COMP_FAST; \
+    save_compression_level = level; \
+  } \
+  VStr xyname = VStr(xxfname); \
+  if (xyname.endsWithNoCase(".vwad")) level = VADWR_COMP_DISABLE; \
+  Strm = vmain->CreateFileDirect(xyname, level); \
+  vassert(Strm != nullptr); \
+} while (0)
 
 
 //==========================================================================
@@ -1799,58 +1822,55 @@ bool VSaveSlot::SaveToSlotNew (int Slot) {
     return false;
   }
 
-  vwadwr_dir *vmain = vwadwr_create_archive_stream(ArcStrm,
-                                                   "k8vavoom engine (save game)",
-                                                   Description + " | "+TimeVal2Str(&tv));
-  if (!vmain) {
+  VVWadNewArchive *vmain = new VVWadNewArchive("<main-save>",
+                                               "k8vavoom engine (save game)",
+                                               Description + " | "+TimeVal2Str(&tv),
+                                               ArcStrm, true/*owned*/);
+  if (vmain->IsError()) {
+    delete vmain;
     GCon->Logf(NAME_Error, "cannot create save archive for slot %d!", Slot);
     return false;
   }
 
-  VStream *Strm;
+  VStream *Strm = nullptr;
 
   // version
-  Strm = new VMemoryStream();
+  CREATE_VWAD_FILE(NEWFTM_FNAME_SAVE_HEADER);
   vuint8 savever = 0;
   *Strm << savever;
-  if (!PackStream(vmain, Strm, NEWFTM_FNAME_SAVE_HEADER)) return false;
+  CLOSE_VWAD_FILE();
 
-  Strm = new VMemoryStream();
+  CREATE_VWAD_FILE(NEWFTM_FNAME_SAVE_DESCR);
   *Strm << Description;
-  if (!PackStream(vmain, Strm, NEWFTM_FNAME_SAVE_DESCR)) return false;
+  CLOSE_VWAD_FILE();
 
   // extended data: date value and date string
   // date value
-  Strm = new VMemoryStream();
+  CREATE_VWAD_FILE(NEWFTM_FNAME_SAVE_DATE);
   *Strm << tv.secs << tv.usecs << tv.secshi;
-
   // date string (unused, but nice to have)
   VStr dstr = TimeVal2Str(&tv);
   *Strm << dstr;
-
-  if (!PackStream(vmain, Strm, NEWFTM_FNAME_SAVE_DATE)) return false;
+  CLOSE_VWAD_FILE();
 
   // write list of loaded modules
   {
-    Strm = new VMemoryStream();
-
+    CREATE_VWAD_FILE(NEWFTM_FNAME_SAVE_WADLIST);
     auto wadlist = FL_GetWadPk3List();
     vint32 wcount = wadlist.length();
     *Strm << wcount;
-
     for (int f = 0; f < wcount; ++f) *Strm << wadlist[f];
-
-    if (!PackStream(vmain, Strm, NEWFTM_FNAME_SAVE_WADLIST)) return false;
+    CLOSE_VWAD_FILE();
   }
 
   // write current map name
-  Strm = new VMemoryStream();
+  CREATE_VWAD_FILE(NEWFTM_FNAME_SAVE_CURRMAP);
   VStr TmpName(CurrentMap);
   *Strm << TmpName;
-  if (!PackStream(vmain, Strm, NEWFTM_FNAME_SAVE_CURRMAP)) return false;
+  CLOSE_VWAD_FILE();
 
   // write map list
-  Strm = new VMemoryStream();
+  CREATE_VWAD_FILE(NEWFTM_FNAME_SAVE_MAPLIST);
   vint32 NumMaps = Maps.length();
   *Strm << STRM_INDEX(NumMaps);
   for (int i = 0; i < Maps.length(); ++i) {
@@ -1860,7 +1880,7 @@ bool VSaveSlot::SaveToSlotNew (int Slot) {
     TmpName = VStr(Map->Name);
     *Strm << TmpName;
   }
-  if (!PackStream(vmain, Strm, NEWFTM_FNAME_SAVE_MAPLIST)) return false;
+  CLOSE_VWAD_FILE();
 
   // write map vwads
   for (int i = 0; i < NumMaps; ++i) {
@@ -1869,40 +1889,40 @@ bool VSaveSlot::SaveToSlotNew (int Slot) {
     vassert(Map->IsNewFormat());
     vassert(Map->Data.length() >= 16);
     VStr vname = Map->GenVWadName();
-    Strm = new VMemoryStream();
+    CREATE_VWAD_FILE(vname);
     Strm->Serialise(Map->Data.Ptr(), Map->Data.length());
-    if (!PackStream(vmain, Strm, vname)) return false;
+    CLOSE_VWAD_FILE();
   }
 
   //HACK: if `NumMaps` is 0, we're loading a checkpoint
   if (NumMaps == 0) {
     // save players inventory
     VSavedCheckpoint &cp = CheckPoint;
-    Strm = new VMemoryStream();
+    CREATE_VWAD_FILE(NEWFTM_FNAME_SAVE_CPOINT);
     cp.Serialise(Strm);
-    if (!PackStream(vmain, Strm, NEWFTM_FNAME_SAVE_CPOINT)) return false;
+    CLOSE_VWAD_FILE();
     SavedSkill = cp.Skill;
   } else {
     VSavedCheckpoint &cp = CheckPoint;
     cp.Clear();
     // write skill level
     if (SavedSkill >= 0 && SavedSkill < 32) {
-      Strm = new VMemoryStream();
+      CREATE_VWAD_FILE(NEWFTM_FNAME_SAVE_SKILL);
       vint32 sk = SavedSkill;
       *Strm << sk;
-      if (!PackStream(vmain, Strm, NEWFTM_FNAME_SAVE_SKILL)) return false;
+      CLOSE_VWAD_FILE();
     }
   }
 
   // finish vwad
-  bool xres = vwadwr_finish_archive_stream(vmain);
+  const bool xres = vmain->Close();
+  delete vmain;
   #if 0
   GCon->Logf(NAME_Debug, "finished VWAD archive! xres=%d (%s)", (int)xres, *ArcStrm->GetName());
   #endif
   if (!xres) {
     GCon->Logf(NAME_Error, "cannot finish save archive");
   }
-  VStream::Destroy(ArcStrm);
 
   return xres;
 }
@@ -2160,7 +2180,7 @@ static inline void AssertSegment (VStream &Strm, gameArchiveSegment_t segType) {
 //==========================================================================
 static void ArchiveNames (VSaveWriterStream *Saver) {
   if (Saver->IsNewFormat()) {
-    if (!Saver->CreateFile(NEWFTM_FNAME_MAP_NAMES)) return;
+    if (!Saver->CreateFileDirect(NEWFTM_FNAME_MAP_NAMES)) return;
   } else {
     // write offset to the names in the beginning of the file
     vint32 NamesOffset = Saver->Tell();
@@ -2179,14 +2199,12 @@ static void ArchiveNames (VSaveWriterStream *Saver) {
     *Saver << len;
     if (len) Saver->Serialise((void *)EName, len);
   }
+  Saver->CloseFile();
 
-  if (Saver->IsNewFormat()) {
-    if (!Saver->CreateFile(NEWFTM_FNAME_MAP_ACSEXPT)) return;
-  }
+  if (!Saver->CreateFileDirect(NEWFTM_FNAME_MAP_ACSEXPT)) return;
   // serialise number of ACS exports
   vint32 numScripts = Saver->AcsExports.length();
   *Saver << STRM_INDEX(numScripts);
-
   Saver->CloseFile();
 }
 
@@ -2205,33 +2223,13 @@ static void UnarchiveNames (VSaveLoaderStream *Loader) {
   } else {
     *Loader << NamesOffset;
     TmpOffset = Loader->Tell();
-    #if 0
-    FILE *fo = fopen("zzz.$$$", "w");
-    Loader->Seek(0);
-    while (Loader->Tell() != Loader->TotalSize()) {
-      char buf[4096];
-      memset(buf, -1, 4096);
-      int rd = Loader->TotalSize() - Loader->Tell();
-      if (rd > 4096) rd = 4096;
-      Loader->Serialise(buf, rd);
-      fwrite(buf, rd, 1, fo);
-    }
-    fclose(fo);
-    #endif
     Loader->Seek(NamesOffset);
-    #if 0
-    GCon->Logf(NAME_Debug, "  cofs: %d; nofs: %d; pos: %d", TmpOffset, NamesOffset, Loader->Tell());
-    #endif
   }
 
   vint32 Count;
   *Loader << STRM_INDEX(Count);
   Loader->NameRemap.setLength(Count);
   for (int i = 0; i < Count; ++i) {
-    /*
-    VNameEntry E;
-    *Loader << E;
-    */
     char EName[NAME_SIZE+1];
     vuint8 len = 0;
     *Loader << len;
@@ -2242,9 +2240,7 @@ static void UnarchiveNames (VSaveLoaderStream *Loader) {
   }
 
   // unserialise number of ACS exports
-  if (Loader->IsNewFormat()) {
-    Loader->OpenFile(NEWFTM_FNAME_MAP_ACSEXPT);
-  }
+  Loader->OpenFile(NEWFTM_FNAME_MAP_ACSEXPT);
   vint32 numScripts = -1;
   *Loader << STRM_INDEX(numScripts);
   if (numScripts < 0 || numScripts >= 1024*1024*2) Host_Error("invalid number of ACS scripts (%d)", numScripts);
@@ -2265,9 +2261,7 @@ static void UnarchiveNames (VSaveLoaderStream *Loader) {
 //
 //==========================================================================
 static void ArchiveThinkers (VSaveWriterStream *Saver, bool SavingPlayers) {
-  if (Saver->IsNewFormat()) {
-    if (!Saver->CreateFile(NEWFTM_FNAME_MAP_THINKERS)) return;
-  } else {
+  if (!Saver->IsNewFormat()) {
     vint32 Seg = ASEG_WORLD;
     *Saver << Seg;
   }
@@ -2278,10 +2272,13 @@ static void ArchiveThinkers (VSaveWriterStream *Saver, bool SavingPlayers) {
   Saver->RegisterObject(GLevel);
 
   // add world info
+  if (!Saver->CreateFileDirect(NEWFTM_FNAME_MAP_WORDINFO)) return;
   vuint8 WorldInfoSaved = (vuint8)SavingPlayers;
   *Saver << WorldInfoSaved;
   if (WorldInfoSaved) Saver->RegisterObject(GGameInfo->WorldInfo);
+  Saver->CloseFile();
 
+  if (!Saver->CreateFileDirect(NEWFTM_FNAME_MAP_ACTPLYS)) return;
   // add players
   {
     vassert(MAXPLAYERS >= 0 && MAXPLAYERS <= 254);
@@ -2294,6 +2291,7 @@ static void ArchiveThinkers (VSaveWriterStream *Saver, bool SavingPlayers) {
     if (!Active) continue;
     Saver->RegisterObject(GGameInfo->Players[i]);
   }
+  Saver->CloseFile();
 
   // add thinkers
   int ThinkersStart = Saver->Exports.length();
@@ -2308,6 +2306,7 @@ static void ArchiveThinkers (VSaveWriterStream *Saver, bool SavingPlayers) {
     */
   }
 
+  if (!Saver->CreateFileDirect(NEWFTM_FNAME_MAP_EXPOBJNS)) return;
   // write exported object names
   vint32 NumObjects = Saver->Exports.length()-ThinkersStart;
   *Saver << STRM_INDEX(NumObjects);
@@ -2315,21 +2314,28 @@ static void ArchiveThinkers (VSaveWriterStream *Saver, bool SavingPlayers) {
     VName CName = Saver->Exports[i]->GetClass()->GetVName();
     *Saver << CName;
   }
+  Saver->CloseFile();
 
+  if (!Saver->CreateFileBuffered(NEWFTM_FNAME_MAP_THINKERS)) return;
   // serialise objects
   for (int i = 0; i < Saver->Exports.length(); ++i) {
     if (dbg_save_verbose&0x10) GCon->Logf("** SR #%d: <%s>", i, *Saver->Exports[i]->GetClass()->GetFullName());
     Saver->Exports[i]->Serialise(*Saver);
   }
+  Saver->CloseFile();
 
   //GCon->Logf("dbg_save_verbose=0x%04x (%s) %d", dbg_save_verbose.asInt(), *dbg_save_verbose.asStr(), dbg_save_verbose.asInt());
 
+  if (!Saver->CreateFileBuffered(NEWFTM_FNAME_MAP_ACS)) return;
   // collect acs scripts, serialize acs level
   GLevel->Acs->Serialise(*Saver);
+  Saver->CloseFile();
 
   // save collected VAcs objects contents
-  for (vint32 f = 0; f < Saver->AcsExports.length(); ++f) Saver->AcsExports[f]->Serialise(*Saver);
-
+  if (!Saver->CreateFileBuffered(NEWFTM_FNAME_MAP_ACS_DATA)) return;
+  for (vint32 f = 0; f < Saver->AcsExports.length(); ++f) {
+    Saver->AcsExports[f]->Serialise(*Saver);
+  }
   Saver->CloseFile();
 }
 
@@ -2342,9 +2348,7 @@ static void ArchiveThinkers (VSaveWriterStream *Saver, bool SavingPlayers) {
 static void UnarchiveThinkers (VSaveLoaderStream *Loader) {
   VObject *Obj = nullptr;
 
-  if (Loader->IsNewFormat()) {
-    Loader->OpenFile(NEWFTM_FNAME_MAP_THINKERS);
-  } else {
+  if (!Loader->IsNewFormat()) {
     AssertSegment(*Loader, ASEG_WORLD);
   }
 
@@ -2352,11 +2356,13 @@ static void UnarchiveThinkers (VSaveLoaderStream *Loader) {
   Loader->Exports.Append(GLevel);
 
   // add world info
+  Loader->OpenFile(NEWFTM_FNAME_MAP_WORDINFO);
   vuint8 WorldInfoSaved;
   *Loader << WorldInfoSaved;
   if (WorldInfoSaved) Loader->Exports.Append(GGameInfo->WorldInfo);
 
   // add players
+  Loader->OpenFile(NEWFTM_FNAME_MAP_ACTPLYS);
   {
     vuint8 mpl = 255;
     *Loader << mpl;
@@ -2380,6 +2386,7 @@ static void UnarchiveThinkers (VSaveLoaderStream *Loader) {
 
   bool hasSomethingToRemove = false;
 
+  Loader->OpenFile(NEWFTM_FNAME_MAP_EXPOBJNS);
   vint32 NumObjects;
   *Loader << STRM_INDEX(NumObjects);
   if (NumObjects < 0) Host_Error("invalid number of VM objects");
@@ -2430,6 +2437,7 @@ static void UnarchiveThinkers (VSaveLoaderStream *Loader) {
   GLevelInfo->Game = GGameInfo;
   GLevelInfo->World = GGameInfo->WorldInfo;
 
+  Loader->OpenFile(NEWFTM_FNAME_MAP_THINKERS);
   for (int i = 0; i < Loader->Exports.length(); ++i) {
     vassert(Loader->Exports[i]);
     #ifdef VAVOOM_LOADER_CAN_SKIP_CLASSES
@@ -2449,11 +2457,15 @@ static void UnarchiveThinkers (VSaveLoaderStream *Loader) {
   }
   #endif
 
+  Loader->OpenFile(NEWFTM_FNAME_MAP_ACS);
   // unserialise acs script
   GLevel->Acs->Serialise(*Loader);
 
+  Loader->OpenFile(NEWFTM_FNAME_MAP_ACS_DATA);
   // load collected VAcs objects contents
-  for (vint32 f = 0; f < Loader->AcsExports.length(); ++f) Loader->AcsExports[f]->Serialise(*Loader);
+  for (vint32 f = 0; f < Loader->AcsExports.length(); ++f) {
+    Loader->AcsExports[f]->Serialise(*Loader);
+  }
 
   // `LinkToWorld()` in `VEntity::SerialiseOther()` will find the correct floor
 
@@ -2482,7 +2494,7 @@ static void UnarchiveThinkers (VSaveLoaderStream *Loader) {
 static void ArchiveSounds (VSaveWriterStream *Saver) {
   if (Saver->IsNewFormat()) {
     #ifdef CLIENT
-    if (!Saver->CreateFile(NEWFTM_FNAME_MAP_SOUNDS)) return;
+    if (!Saver->CreateFileDirect(NEWFTM_FNAME_MAP_SOUNDS)) return;
     GAudio->SerialiseSounds(*Saver);
     Saver->CloseFile();
     #endif
@@ -2642,8 +2654,10 @@ static void SV_SaveMap (bool savePlayers) {
     vassert(BaseSlot.IsNewFormat());
 
     VMemoryStream *InStrm = new VMemoryStream();
-    vwadwr_dir *vwad = vwadwr_create_archive_stream(InStrm, "k8vavoom engine", "saved map data");
-    if (vwad == nullptr) {
+    VVWadNewArchive *vwad = new VVWadNewArchive("<map-data>", "k8vavoom engine", "saved map data",
+                                                InStrm, false/*not owned*/);
+    if (vwad->IsError()) {
+      delete vwad;
       delete InStrm;
       Host_Error("error creating saved map archive");
     }
@@ -2662,7 +2676,7 @@ static void SV_SaveMap (bool savePlayers) {
     Saver = new VSaveWriterStream(vwad);
 
     // write the level timer
-    if (Saver->CreateFile(NEWFTM_FNAME_MAP_GINFO)) {
+    if (Saver->CreateFileDirect(NEWFTM_FNAME_MAP_GINFO)) {
       *Saver << GLevel->Time << GLevel->TicTime;
       Saver->CloseFile();
     }
@@ -2927,8 +2941,7 @@ static bool SV_LoadMap (VName MapName, bool allowCheckpoints, bool hubTeleport) 
       ZipStrm->Serialise(DecompressedData.Ptr(), DecompressedData.length());
       const bool wasErr = ZipStrm->IsError();
       VStream::Destroy(ZipStrm);
-      ArrStrm->Close();
-      delete ArrStrm;
+      ArrStrm->Close(); delete ArrStrm;
       if (wasErr) Host_Error("error decompressing savegame data");
     }
     Loader = new VSaveLoaderStream(new VArrayStream("<savemap:mapdata>", DecompressedData));

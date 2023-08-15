@@ -219,41 +219,6 @@ static char *fn (const char *name, bool checkdir=false) {
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-typedef struct {
-  const uint8_t *data;
-  int size;
-  int pos;
-} MemBufInfo;
-
-static vwadwr_result bufioseek (vwadwr_iostream *strm, int pos) {
-  MemBufInfo *nfo = (MemBufInfo *)strm->udata;
-  if (pos > nfo->size) return -1;
-  nfo->pos = pos;
-  return 0;
-}
-
-static int bufiotell (vwadwr_iostream *strm) {
-  MemBufInfo *nfo = (MemBufInfo *)strm->udata;
-  return nfo->pos;
-}
-
-static int bufioread (vwadwr_iostream *strm, void *buf, int bufsize) {
-  MemBufInfo *nfo = (MemBufInfo *)strm->udata;
-  const int left = nfo->size - nfo->pos;
-  if (bufsize > left) bufsize = left;
-  if (bufsize != 0) {
-    memcpy(buf, nfo->data + nfo->pos, bufsize);
-    nfo->pos += bufsize;
-  }
-  return bufsize;
-}
-
-static vwadwr_result bufiowrite (vwadwr_iostream *strm, const void *buf, int bufsize) {
-  return -1;
-}
-
-
 //==========================================================================
 //
 //  AddToZip
@@ -267,24 +232,23 @@ static void AddToZip (const char *Name, const void *Data, size_t Size, uint64_t 
       Error("Failed to write file '%s' to VWAD (file too big)", Name);
     }
 
-    int upksize, pksize;
-    MemBufInfo nfo;
-    nfo.data = (const uint8_t *)Data;
-    nfo.size = (int)Size;
-    nfo.pos = 0;
-    vwadwr_iostream instrm;
-    instrm.seek = &bufioseek;
-    instrm.tell = &bufiotell;
-    instrm.read = &bufioread;
-    instrm.write = &bufiowrite;
-    instrm.udata = (void *)&nfo;
-    vwadwr_result res = vwadwr_pack_file(wad_dir, &instrm, comp_level,
-                                         Name, currgroup,
-                                         ftime, &upksize, &pksize,
-                                         NULL, NULL);
+    vwadwr_result res = vwadwr_create_file(wad_dir, comp_level, Name, currgroup, ftime);
     if (res != 0) {
       Error("Failed to write file '%s' to VWAD", Name);
     }
+
+    res = vwadwr_write(wad_dir, Data, (int)Size);
+    if (res != VWADWR_OK) {
+      Sys_Error("cannot write file");
+    }
+
+    res = vwadwr_close_file(wad_dir);
+    if (res != VWADWR_OK) {
+      Error("Failed to write file '%s' to VWAD", Name);
+    }
+
+    int pksize = vwadwr_get_last_file_packed_size(wad_dir);
+
     if (verbose) {
       fprintf(stderr, " %s -> %s (%d%%)\n", comatoze((unsigned)Size), comatoze(pksize),
               (Size ? (int)((uint64_t)100 * (unsigned)pksize / Size) : 100));
