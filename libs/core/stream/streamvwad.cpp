@@ -25,7 +25,7 @@
 //**************************************************************************
 #include "../core.h"
 
-#define VVX_DEBUG_WRITER
+//#define VVX_DEBUG_WRITER
 
 
 static void logger (int type, const char *fmt, ...) {
@@ -206,6 +206,18 @@ void VVWadArchive::Close () {
   srcStream = nullptr;
   srcStreamOwn = false;
   vassert(openlist == nullptr);
+}
+
+
+//==========================================================================
+//
+//  VVWadArchive::FileExists
+//
+//==========================================================================
+bool VVWadArchive::FileExists (VStr name) {
+  bool res = false;
+  if (vw_handle) res = (vwad_find_file(vw_handle, *name) >= 0);
+  return res;
 }
 
 

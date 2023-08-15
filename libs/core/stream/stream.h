@@ -128,6 +128,24 @@ public:
   virtual bool IsFastSeek () const noexcept;
   virtual void SetFastSeek (bool value) noexcept;
 
+  // this is used in VObject serialisers; default is `false`
+  virtual bool IsExtendedFormat () const noexcept;
+  // extended serialisers can write data to separate sections.
+  // for non-extended streams this is noop.
+  // the calls should be balanced. they cannot be nested.
+  // if extended section already opened, it will be replaced with a new one.
+  // call with empty name to close extended section.
+  // note that file position may or may not be changed on section change.
+  // if the section was already opened, on reopening it its last file
+  // position will be restored.
+  // names are case-insensitive for ASCII (and only for ASCII).
+  // returns success flag.
+  virtual bool ExtendedSection (VStr name);
+  virtual VStr CurrentExtendedSection ();
+  // opening non-existing section is error, so check if necessary
+  // asking for empty name still returns `false`
+  virtual bool HasExtendedSection (VStr name);
+
   // not all streams can be cloned; returns `nullptr` if cannot (default option)
   // CANNOT simply return `this`!
   virtual VStream *CloneSelf ();

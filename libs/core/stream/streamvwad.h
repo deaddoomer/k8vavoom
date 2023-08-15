@@ -55,6 +55,8 @@ public:
   inline bool IsOpen () const noexcept { return !!vw_handle; }
   inline VStr GetName () const noexcept { return archname; }
 
+  bool FileExists (VStr name);
+
   inline int GetFilesCount () const noexcept {
     return (vw_handle ? vwad_get_archive_file_count(vw_handle) : 0);
   }

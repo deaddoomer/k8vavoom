@@ -205,6 +205,63 @@ void VStream::SetFastSeek (bool value) noexcept {
 
 //==========================================================================
 //
+//  VStream::IsExtendedFormat
+//
+//  this is used in VObject serialisers; default is `false`
+//
+//==========================================================================
+bool VStream::IsExtendedFormat () const noexcept {
+  return false;
+}
+
+
+//==========================================================================
+//
+//  VStream::ExtendedSection
+//
+//  this is used in VObject serialisers; default is `false`
+//  extended serialisers can write data to separate sections.
+//  for non-extended streams this is noop.
+//  the calls should be balanced. they cannot be nested.
+//  if extended section already opened, it will be replaced with a new one.
+//  call with empty name to close extended section.
+//  note that file position may or may not be changed on section change.
+//  if the section was already opened, on reopening it its last file
+//  position will be restored.
+//  returns success flag.
+//
+//==========================================================================
+bool VStream::ExtendedSection (VStr name) {
+  return !IsError();
+}
+
+
+//==========================================================================
+//
+//  VStream::CurrentExtendedSection
+//
+//  this is used in VObject serialisers; default is `false`
+//
+//==========================================================================
+VStr VStream::CurrentExtendedSection () {
+  return VStr::EmptyString;
+}
+
+
+//==========================================================================
+//
+//  VStream::HasExtendedSection
+//
+//  opening non-existing section is error, so check if necessary
+//
+//==========================================================================
+bool VStream::HasExtendedSection (VStr name) {
+  return false;
+}
+
+
+//==========================================================================
+//
 //  VStream::CloneSelf
 //
 //  not all streams can be cloned
