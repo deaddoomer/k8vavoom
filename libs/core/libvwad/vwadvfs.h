@@ -18,7 +18,7 @@
   any archive can be signed with Ed25519 digital signature. please,
   note that you have to provide good cryptographically strong PRNG
   by yourself (actually, you should use it to generate a private key,
-  the library itself doesn't need any external PRNG generator).
+  the library itself doesn't have any PRNG generator).
 
   note that while archive chunks are "encrypted", this "encryption"
   is not cryptographically strong, and used mostly to hide non-compressed
@@ -32,15 +32,21 @@
   (seconds since Unix Epoch). you can use zero as timestamp if you
   don't care.
 
-  file names can printable unicode chars, and names are case-insensitive.
-  path delimiter is "/".
+  file names can containprintable unicode chars from the first plane
+  (see `vwad_is_uni_printable()`), and names are case-insensitive.
+  all names should be utf-8 encoded. also note that whice case folding
+  is unicode-aware, not all codepoints are implemented. latin-1 and
+  basic cyrillic should be safe, though.
+  path delimiter is "/" (and only "/").
 
   archive can be tagged with author name, short description, and a comment.
-  author name and description can contain unicode chars >= 32.
-  comments can be multiline (only "\x0a" is allowed as a newline char).
+  author name and description can contain unicode chars, but cannot have
+  control chars (with codes < 31).
+  comments can be multiline (only '\x0a' is allowed as a newline char).
+  tabs are allowed too.
 
   currently, only limited subset of the first unicode plane is supported.
-  this limitation will prolly not be lifted. deal with it.
+  deal with it.
 
   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!
   the reader is not thread-safe. i.e. you cannot use opened handle to
@@ -140,6 +146,9 @@ extern void (*vwad_logf) (int type, const char *fmt, ...);
 // assertion; can be NULL, then the lib will simply traps
 extern void (*vwad_assertion_failed) (const char *fmt, ...);
 
+
+// ////////////////////////////////////////////////////////////////////////// //
+// can be used to debug the library. you don't need this.
 extern void (*vwad_debug_open_file) (vwad_handle *wad, vwad_fidx fidx, vwad_fd fd);
 extern void (*vwad_debug_close_file) (vwad_handle *wad, vwad_fidx fidx, vwad_fd fd);
 extern void (*vwad_debug_read_chunk) (vwad_handle *wad, int bidx, vwad_fidx fidx, vwad_fd fd, int chunkidx);
@@ -147,12 +156,14 @@ extern void (*vwad_debug_flush_chunk) (vwad_handle *wad, int bidx, vwad_fidx fid
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+// you can encode keys in printable ASCII chars, and decode them back.
+// encoded key contains a checksum, so mistyped keys could be detected.
 void vwad_z85_encode_key (const vwad_public_key inkey, vwad_z85_key enkey);
 vwad_result vwad_z85_decode_key (const vwad_z85_key enkey, vwad_public_key outkey);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-// flags for `vwad_open_stream()`, to be bitwise ORed
+// flags for `vwad_open_archive()`, to be bitwise ORed
 #define VWAD_OPEN_DEFAULT          (0u)
 // if you are not interested in archive comment, use this flag.
 // it will save some memory.
@@ -172,10 +183,11 @@ vwad_result vwad_z85_decode_key (const vwad_z85_key enkey, vwad_public_key outke
 #define VWAD_OPEN_NO_CRC_CHECKS    (0x8000u)
 
 // on success, will copy stream pointer and memman pointer
-// (i.e. they should be alive until `vwad_close()`).
+// (i.e. they should be alive until `vwad_close_archive()`).
 // if `mman` is `NULL`, use libc memory manager.
-// default cache settings is "global cache, 256KB" (4 buffers)
+// default cache settings is 256KB (4 buffers).
 vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags, vwad_memman *mman);
+
 // will free handle memory, and clean handle pointer.
 void vwad_close_archive (vwad_handle **wadp);
 
@@ -185,29 +197,38 @@ void vwad_close_archive (vwad_handle **wadp);
 // often open/close the same files.
 // this is an advice, not a demand.
 // <=0 means "disable global cache" (each opened file will use one local buffer).
+// (this mode is not heavily tested, and may be removed in the future.)
+// notice: "global" here means that all files opened in this archive
+//         share the cache. different archives has different caches, though.
 void vwad_set_archive_cache (vwad_handle *wad, int bufferCount);
 
 
-#define VWAD_MAX_COMMENT_SIZE  (65535)
+// this includes the trailing 0 byte. i.e. allocating a buffer
+// of this size should be enough to get any comment untruncated.
+#define VWAD_MAX_COMMENT_SIZE  (65536)
 
 // get size of the comment, without the trailing zero byte.
 // returns 0 on error, or on empty comment.
 vwad_uint vwad_get_archive_comment_size (vwad_handle *wad);
+
 // can return empty string if there is no comment,
 // or `VWAD_OPEN_NO_MAIN_COMMENT` passed,
 // or if `vwad_free_archive_comment()` was called.
 // WARNING! `dest` must be at least `vwad_get_archive_comment_size()` + 1 bytes!
 //          this is because the comment is terminated with zero byte.
 // will truncate comment if destination buffer is not big enough (with zero byte).
+// `destsize` if the full buffer size in bytes. returned data is 0-terminated, i.e.
+// it is a valid C string (except when `destsize` is 0).
 void vwad_get_archive_comment (vwad_handle *wad, char *dest, vwad_uint destsize);
+
+// forget main archive comment and free its memory.
+// you will not be able to get archive comment after calling this.
+void vwad_free_archive_comment (vwad_handle *wad);
 
 // never returns NULL
 const char *vwad_get_archive_author (vwad_handle *wad);
 // never returns NULL
 const char *vwad_get_archive_title (vwad_handle *wad);
-
-// forget main archive comment and free its memory.
-void vwad_free_archive_comment (vwad_handle *wad);
 
 // check if the given archive has any files opened with `vwad_fopen()`.
 vwad_bool vwad_has_opened_files (vwad_handle *wad);
@@ -271,19 +292,37 @@ vwad_fidx vwad_find_file (vwad_handle *wad, const char *name);
 // return file handle or negative value on error.
 // (note that 0 is a valid file handle!)
 // note that maximum number of simultaneously opened files is 128.
-vwad_fd vwad_fopen (vwad_handle *wad, vwad_fidx fidx);
+vwad_fd vwad_open_fidx (vwad_handle *wad, vwad_fidx fidx);
+
+// open file by name.
+vwad_fd vwad_open_file (vwad_handle *wad, const char *name);
+
+// close opened file. calling with invalid fd is ok.
+// calling with closed fd may close the file opened elsewhere
+// (because fds are reused).
 void vwad_fclose (vwad_handle *wad, vwad_fd fd);
-// return 0 if fd is valid, but closed, and negative number on error.
+
+// return negative number if fd is invalid.
 vwad_fidx vwad_fdfidx (vwad_handle *wad, vwad_fd fd);
 
+// change current reading position.
 vwad_result vwad_seek (vwad_handle *wad, vwad_fd fd, int pos);
-// return position, or negative number on error.
+
+// return current reading position, or negative number on error.
 int vwad_tell (vwad_handle *wad, vwad_fd fd);
+
 // return number of read bytes, or negative on error.
+// trying to read 0 bytes will return 0 (after performing validity checks).
+// still, trying to read 0 bytes may succeed even if some arguments
+// are invalid, so don't use this as cheap check for "is this fd valid".
+// if you want to know if fd is valid, use `vwad_fdfidx()`, it is faster anyway.
 int vwad_read (vwad_handle *wad, vwad_fd fd, void *buf, int len);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+// reading raw chunks can be used in archive creator to copy data
+// without recompressing it.
+
 #define VWAD_MAX_RAW_CHUNK_SIZE  (65536 + 4)
 
 // this is used in creator, to copy raw chunks
@@ -300,15 +339,18 @@ vwad_result vwad_read_raw_file_chunk (vwad_handle *wad, vwad_fidx fidx, int chun
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+// your bog stadard CRC32 calculator. uses the same poly as zlib.
+
 vwad_uint vwad_crc32_init (void);
 vwad_uint vwad_crc32_part (vwad_uint crc32, const void *src, vwad_uint len);
 vwad_uint vwad_crc32_final (vwad_uint crc32);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+// utf-8 case insensitive string equality check.
 vwad_bool vwad_str_equ_ci (const char *s0, const char *s1);
 
-// case-insensitive wildcard matching
+// case-insensitive utf-8 wildcard matching
 // returns:
 //   -1: malformed pattern
 //    0: equal
@@ -324,14 +366,17 @@ vwad_result vwad_wildmatch_path (const char *pat, vwad_uint plen, const char *st
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+// WARNING! the following API works only with unicode plane 1 -- [0..65535]!
+
 // "invalid char" unicode code
 #define VWAD_REPLACEMENT_CHAR  (0x0FFFD)
 
 vwad_uint vwad_utf_char_len (const void *str);
-vwad_bool vwad_is_uni_printable (vwad_ushort ch);
 // advances `strp` at least by one byte
 // returns `VWAD_REPLACEMENT_CHAR` on invalid char
 vwad_ushort vwad_utf_decode (const char **strp);
+
+vwad_bool vwad_is_uni_printable (vwad_ushort ch);
 vwad_ushort vwad_uni_tolower (vwad_ushort ch);
 
 

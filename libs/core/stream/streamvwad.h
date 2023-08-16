@@ -221,22 +221,4 @@ public:
 };
 
 
-// `dstrm` should be alive until archive is closed!
-// `dstrm` will be seeked to 0
-vwadwr_dir *xvwad_create_archive_stream (VStream *dstrm, VStr author, VStr title);
-// will set `vwad` to `nullptr`
-bool xvwad_finish_archive_stream (vwadwr_dir *&vwad);
-// use this to abort writing; will not destroy stream
-void xvwad_destroy_archive_stream (vwadwr_dir *&vwad);
-VStream *xvwad_arc_get_archive_stream (vwadwr_dir *vwad);
-
-// create stream suitable for
-VStream *xvwad_create_file (vwadwr_dir *wad, VStream *strm,
-                                    int level, /* VADWR_COMP_xxx */
-                                    const char *pkfname,
-                                    const char *groupname = nullptr, /* can be NULL */
-                                    unsigned long long ftime = 0, /* can be 0; seconds since Epoch */
-                                    int *upksizep = nullptr, int *pksizep = nullptr,
-                                    vwadwr_pack_progress progcb = nullptr, void *progudata = nullptr);
-
 #endif

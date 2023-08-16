@@ -118,7 +118,7 @@ VVWadFileReader::VVWadFileReader (VStr afname, const VPakFileInfo &aInfo,
     vwad_debug_read_chunk = &debug_read_chunk;
     vwad_debug_flush_chunk = &debug_flush_chunk;
     #endif
-    fd = vwad_fopen(vw_handle, aInfo.pakdataofs);
+    fd = vwad_open_fidx(vw_handle, aInfo.pakdataofs);
   }
 
   if (fd < 0) {
@@ -156,7 +156,7 @@ VVWadFileReader::VVWadFileReader (VVWadFileReader *src)
 {
   vassert(src->fd >= 0);
   vwad_fidx fidx = vwad_fdfidx(vw_handle, src->fd);
-  fd = vwad_fopen(vw_handle, fidx);
+  fd = vwad_open_fidx(vw_handle, fidx);
   if (fd >= 0) {
     (void)vwad_seek(vw_handle, fd, vwad_tell(vw_handle, src->fd));
   }

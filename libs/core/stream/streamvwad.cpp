@@ -123,38 +123,6 @@ static vwad_result VArch_read (vwad_iostream *strm, void *buf, int bufsize) {
 //  VVWadArchive::VVWadArchive
 //
 //==========================================================================
-/*
-VVWadArchive::VVWadArchive (VStr aArchName)
-  : archname()
-  , vw_handle(nullptr)
-  , srcStream(nullptr)
-  , srcStreamOwn(false)
-  , openlist(nullptr)
-{
-  vw_strm.seek = &VArch_seek;
-  vw_strm.read = &VArch_read;
-  vw_strm.udata = nullptr;
-
-  srcStream = FL_OpenSysFileRead(aArchName);
-  if (srcStream) {
-    srcStreamOwn = true;
-    vw_strm.udata = (void *)srcStream;
-    vw_handle = vwad_open_archive(&vw_strm, VWAD_OPEN_DEFAULT|VWAD_OPEN_NO_MAIN_COMMENT, &memman);
-    if (!vw_handle) {
-      VStream::Destroy(srcStream);
-      vw_strm.udata = nullptr;
-      srcStreamOwn = false;
-    }
-  }
-}
-*/
-
-
-//==========================================================================
-//
-//  VVWadArchive::VVWadArchive
-//
-//==========================================================================
 VVWadArchive::VVWadArchive (VStr aArchName, VStream *strm, bool owned)
   : archname()
   , vw_handle(nullptr)
@@ -231,69 +199,14 @@ bool VVWadArchive::FileExists (VStr name) {
 VStream *VVWadArchive::OpenFile (VStr name) {
   VStream *res = nullptr;
   if (vw_handle) {
-    vwad_fidx fidx = vwad_find_file(vw_handle, *name);
-    //GLog.Logf(NAME_Debug, "name=<%s>; fidx=%d", *name, fidx);
-    if (fidx >= 0) {
-      const int fd = vwad_fopen(vw_handle, fidx);
-      //GLog.Logf(NAME_Debug, "name=<%s>; fd=%d", *name, fd);
-      if (fd >= 0) {
-        res = new VVWadStreamReader(this, fd);
-        if (res->IsError()) VStream::Destroy(res);
-      }
+    const vwad_fd fd = vwad_open_file(vw_handle, *name);
+    if (fd >= 0) {
+      res = new VVWadStreamReader(this, fd);
+      if (res->IsError()) VStream::Destroy(res);
     }
   }
   return res;
 }
-
-
-//==========================================================================
-//
-//  VVWadStreamReader::VVWadStreamReader
-//
-//==========================================================================
-/*
-VVWadStreamReader::VVWadStreamReader (VStr aArchName, vwad_handle *a_vw_handle,
-                                      vwad_iostream *a_vw_strm, vwad_fd afd)
-  : archname(aArchName)
-  , vw_handle(a_vw_handle)
-  , vw_strm(a_vw_strm)
-  , fd(afd)
-{
-  bLoading = true;
-  //fd = vwad_fopen(vw_handle, aInfo.pakdataofs);
-
-  if (afd < 0) {
-    SetError();
-  }
-}
-*/
-
-
-//==========================================================================
-//
-//  VVWadStreamReader::VVWadStreamReader
-//
-//==========================================================================
-/*
-VVWadStreamReader::VVWadStreamReader (VStr aArchName, vwad_handle *a_vw_handle,
-                                      vwad_iostream *a_vw_strm, VStr name)
-  : archname(aArchName)
-  , vw_handle(a_vw_handle)
-  , vw_strm(a_vw_strm)
-  , fd(-1)
-{
-  bLoading = true;
-  vwad_fidx fidx = vwad_find_file(vw_handle, *name);
-  if (fidx < 0) {
-    SetError();
-  } else {
-    fd = vwad_fopen(vw_handle, fidx);
-    if (fd < 0) {
-      SetError();
-    }
-  }
-}
-*/
 
 
 //==========================================================================

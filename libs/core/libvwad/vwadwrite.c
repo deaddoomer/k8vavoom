@@ -1052,13 +1052,13 @@ void vwadwr_z85_encode_key (const vwadwr_public_key inkey, vwadwr_z85_key enkey)
 
 
 vwadwr_result vwadwr_z85_decode_key (const vwadwr_z85_key enkey, vwadwr_public_key outkey) {
-  if (enkey == NULL || outkey == NULL) return VADWR_ERR_ARGS;
+  if (enkey == NULL || outkey == NULL) return VWADWR_ERR_ARGS;
   vwadwr_ubyte ddata[32 + 4];
   vwadwr_uint dpos = 0, spos = 0, value = 0;
   while (spos < (vwadwr_uint)sizeof(vwadwr_z85_key) - 1) {
     char inch = enkey[spos++];
     switch (inch) {
-      case 0: return VADWR_ERR_BAD_ASCII;
+      case 0: return VWADWR_ERR_BAD_ASCII;
       case '\\': inch = '/'; break;
       case '~': inch = '/'; break;
       case '|': inch = '!'; break;
@@ -1066,7 +1066,7 @@ vwadwr_result vwadwr_z85_decode_key (const vwadwr_z85_key enkey, vwadwr_public_k
       case ';': inch = ':'; break;
       default: break;
     }
-    if (!strchr(z85_enc_alphabet, inch)) return VADWR_ERR_BAD_ASCII;
+    if (!strchr(z85_enc_alphabet, inch)) return VWADWR_ERR_BAD_ASCII;
     value = value * 85 + z85_dec_alphabet[(vwadwr_ubyte)inch - 32];
     if (spos % 5u == 0) {
       vwadwr_uint divisor = 256 * 256 * 256;
@@ -1078,9 +1078,9 @@ vwadwr_result vwadwr_z85_decode_key (const vwadwr_z85_key enkey, vwadwr_public_k
     }
   }
   if (dpos != 32 + 4) vwad__builtin_trap();
-  if (enkey[spos] != 0) return VADWR_ERR_BAD_ASCII;
+  if (enkey[spos] != 0) return VWADWR_ERR_BAD_ASCII;
   const vwadwr_uint crc32 = crc32_buf(ddata, 32);
-  if (crc32 != get_u32(&ddata[32])) return VADWR_ERR_BAD_ASCII; // bad checksum
+  if (crc32 != get_u32(&ddata[32])) return VWADWR_ERR_BAD_ASCII; // bad checksum
   memcpy(outkey, ddata, 32);
   return VWADWR_OK;
 }
@@ -1525,8 +1525,8 @@ static int CompressLZFF3 (vwadwr_memman *mman, const void *source, int srclen,
   } while (0)
 
 
-  if (srclen < 1 || srclen > 0x3fffffff) return VADWR_ERR_ARGS;
-  if (dstlen < 1 || dstlen > 0x3fffffff) return VADWR_ERR_ARGS;
+  if (srclen < 1 || srclen > 0x3fffffff) return VWADWR_ERR_ARGS;
+  if (dstlen < 1 || dstlen > 0x3fffffff) return VWADWR_ERR_ARGS;
 
   src = (const vwadwr_ubyte *)source;
   srcsize = (vwadwr_uint)srclen;
@@ -1625,8 +1625,8 @@ static int CompressLZFF3LitOnly (const void *source, int srclen, void *dest, int
   WordPPM ppmLitLen;
   BitPPM ppmLitFlag;
 
-  if (srclen < 1 || srclen > 0x3fffffff) return VADWR_ERR_ARGS;
-  if (dstlen < 1 || dstlen > 0x3fffffff) return VADWR_ERR_ARGS;
+  if (srclen < 1 || srclen > 0x3fffffff) return VWADWR_ERR_ARGS;
+  if (dstlen < 1 || dstlen > 0x3fffffff) return VWADWR_ERR_ARGS;
 
   src = (const vwadwr_ubyte *)source;
   srcsize = (vwadwr_uint)srclen;
@@ -2506,8 +2506,8 @@ vwadwr_iostream *vwadwr_dir_get_outstrm (vwadwr_dir *dir) {
 //
 //==========================================================================
 static vwadwr_result vwadwr_append_chunk (vwadwr_dir *dir, vwadwr_ushort pksize) {
-  if (dir == NULL) return VADWR_ERR_ARGS;
-  if (dir->chunkCount >= 0x3fffffff) return VADWR_ERR_CHUNK_COUNT;
+  if (dir == NULL) return VWADWR_ERR_ARGS;
+  if (dir->chunkCount >= 0x3fffffff) return VWADWR_ERR_CHUNK_COUNT;
   ChunkInfo *ci = zalloc(dir->mman, (vwadwr_uint)sizeof(ChunkInfo));
   if (ci != NULL) {
     ci->pksize = pksize;
@@ -2557,6 +2557,17 @@ vwadwr_bool vwadwr_is_valid_group_name (const char *str) {
 
 //==========================================================================
 //
+//  vwadwr_is_valid_comment
+//
+//==========================================================================
+vwadwr_bool vwadwr_is_valid_comment (const char *str) {
+  if (!str) return 1;
+  return is_valid_string(str, 65535, 0);
+}
+
+
+//==========================================================================
+//
 //  vwadwr_register_group
 //
 //==========================================================================
@@ -2594,7 +2605,7 @@ static vwadwr_result vwadwr_append_file_info (vwadwr_dir *dir,
                                               const char *pkfname, const char *gname,
                                               vwadwr_uint crc32, vwadwr_uint64 ftime)
 {
-  if (dir == NULL || pkfname == NULL || pkfname[0] == 0) return VADWR_ERR_ARGS;
+  if (dir == NULL || pkfname == NULL || pkfname[0] == 0) return VWADWR_ERR_ARGS;
 
   char *fname = normalize_name(dir->mman, pkfname);
   if (fname == NULL) return VWADWR_ERR_MEM;
@@ -2608,7 +2619,7 @@ static vwadwr_result vwadwr_append_file_info (vwadwr_dir *dir,
   if (dir->fileCount >= 0x00ffffffU) {
     xfree(dir->mman, fname);
     logf(ERROR, "too many files");
-    return VADWR_ERR_FILE_COUNT;
+    return VWADWR_ERR_FILE_COUNT;
   }
 
   const vwadwr_uint fnlen = (vwadwr_uint)strlen(fname);
@@ -2623,7 +2634,7 @@ static vwadwr_result vwadwr_append_file_info (vwadwr_dir *dir,
   {
     xfree(dir->mman, fname);
     logf(ERROR, "name table too big");
-    return VADWR_ERR_NAMES_SIZE;
+    return VWADWR_ERR_NAMES_SIZE;
   }
 
   const vwadwr_uint hash = hashStrCI(fname);
@@ -2633,7 +2644,7 @@ static vwadwr_result vwadwr_append_file_info (vwadwr_dir *dir,
     if (fi->nhash == hash && strEquCI(fi->fname->name, fname)) {
       logf(ERROR, "duplicate file name: \"%s\" and \"%s\"", fname, fi->fname->name);
       xfree(dir->mman, fname);
-      return VADWR_ERR_DUP_FILE;
+      return VWADWR_ERR_DUP_FILE;
     }
     fi = fi->bknext;
   }
@@ -2712,11 +2723,11 @@ vwadwr_bool vwadwr_is_valid_dir (const vwadwr_dir *dir) {
 //
 //==========================================================================
 vwadwr_result vwadwr_check_dir (const vwadwr_dir *dir) {
-  if (dir == NULL) return VADWR_ERR_ARGS;
-  if (dir->namesSize < 8) return VADWR_ERR_NAMES_SIZE;
-  if ((dir->namesSize&0x03) != 0) return VADWR_ERR_NAMES_ALIGN;
-  if (/*dir->chunkCount == 0 ||*/ dir->chunkCount > 0x1fffffffU) return VADWR_ERR_CHUNK_COUNT;
-  if (dir->fileCount == 0 || dir->fileCount > 0x00ffffffU) return VADWR_ERR_FILE_COUNT;
+  if (dir == NULL) return VWADWR_ERR_ARGS;
+  if (dir->namesSize < 8) return VWADWR_ERR_NAMES_SIZE;
+  if ((dir->namesSize&0x03) != 0) return VWADWR_ERR_NAMES_ALIGN;
+  if (/*dir->chunkCount == 0 ||*/ dir->chunkCount > 0x1fffffffU) return VWADWR_ERR_CHUNK_COUNT;
+  if (dir->fileCount == 0 || dir->fileCount > 0x00ffffffU) return VWADWR_ERR_FILE_COUNT;
   return VWADWR_OK;
 }
 
@@ -2729,7 +2740,7 @@ vwadwr_result vwadwr_check_dir (const vwadwr_dir *dir) {
 static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *strm,
                                              const vwadwr_uint dirofs)
 {
-  if (strm == NULL || strm->write == NULL) return VADWR_ERR_ARGS;
+  if (strm == NULL || strm->write == NULL) return VWADWR_ERR_ARGS;
   const int dcheck = vwadwr_check_dir(dir);
   if (dcheck != VWADWR_OK) return dcheck;
 
@@ -2740,7 +2751,7 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
 
   if (dirsz64 > 0x04000000) {
     logf(ERROR, "directory too big");
-    return VADWR_ERR_DIR_TOO_BIG;
+    return VWADWR_ERR_DIR_TOO_BIG;
   }
 
   const vwadwr_uint dirsz = (vwadwr_uint)dirsz64;
@@ -2875,7 +2886,7 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
   if (0x7fffffffU - dirofs < (vwadwr_uint)pks) {
     xfree(dir->mman, pkdir);
     logf(ERROR, "directory (%u bytes) is too big", dirsz);
-    return VADWR_ERR_VWAD_TOO_BIG;
+    return VWADWR_ERR_VWAD_TOO_BIG;
   }
 
 
@@ -2896,7 +2907,7 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
   if (strm->write(strm, dirheader, 4 * 4) != 0) {
     xfree(dir->mman, pkdir);
     logf(ERROR, "write error");
-    return VADWR_ERR_IO_ERROR;
+    return VWADWR_ERR_IO_ERROR;
   }
 
   // dir data
@@ -2904,7 +2915,7 @@ static vwadwr_result vwadwr_write_directory (vwadwr_dir *dir, vwadwr_iostream *s
   if (strm->write(strm, pkdir, pks) != 0) {
     xfree(dir->mman, pkdir);
     logf(ERROR, "write error");
-    return VADWR_ERR_IO_ERROR;
+    return VWADWR_ERR_IO_ERROR;
   }
   xfree(dir->mman, pkdir);
 
@@ -2951,14 +2962,14 @@ int vwadwr_get_last_file_chunk_count (vwadwr_dir *dir) {
 //  one file can be created for writing.
 //
 //==========================================================================
-vwadwr_result vwadwr_create_file (vwadwr_dir *dir, int level, /* VADWR_COMP_xxx */
+vwadwr_result vwadwr_create_file (vwadwr_dir *dir, int level, /* VWADWR_COMP_xxx */
                                   const char *pkfname,
                                   const char *groupname, /* can be NULL */
                                   vwadwr_ftime ftime) /* can be 0; seconds since Epoch */
 {
-  if (dir == NULL || pkfname == NULL) return VADWR_ERR_ARGS;
+  if (dir == NULL || pkfname == NULL) return VWADWR_ERR_ARGS;
 
-  if (dir->wrfile != NULL) return VADWR_ERR_FILE_OPEN;
+  if (dir->wrfile != NULL) return VWADWR_ERR_FILE_OPEN;
 
   if (!vwadwr_is_valid_group_name(groupname)) return VWADWR_ERR_GROUP;
 
@@ -2969,22 +2980,22 @@ vwadwr_result vwadwr_create_file (vwadwr_dir *dir, int level, /* VADWR_COMP_xxx 
   dir->allow_lz = 0;
   if (level >= 0) {
     switch (level) {
-      case VADWR_COMP_FASTEST:
+      case VWADWR_COMP_FASTEST:
         dir->allow_litonly = 1;
         dir->allow_lazy = 0;
         dir->allow_lz = 0;
         break;
-      case VADWR_COMP_FAST:
+      case VWADWR_COMP_FAST:
         dir->allow_litonly = 0;
         dir->allow_lazy = 0;
         dir->allow_lz = 1;
         break;
-      case VADWR_COMP_MEDIUM:
+      case VWADWR_COMP_MEDIUM:
         dir->allow_litonly = 0;
         dir->allow_lazy = 1;
         dir->allow_lz = 1;
         break;
-      case VADWR_COMP_BEST:
+      case VWADWR_COMP_BEST:
       default:
         dir->allow_litonly = 1;
         dir->allow_lazy = 1;
@@ -3016,13 +3027,13 @@ vwadwr_result vwadwr_create_file (vwadwr_dir *dir, int level, /* VADWR_COMP_xxx 
 //
 //==========================================================================
 static vwadwr_result vwadwr_flush_chunk (vwadwr_dir *dir) {
-  if (dir == NULL || dir->wrfile == NULL) return VADWR_ERR_ARGS;
+  if (dir == NULL || dir->wrfile == NULL) return VWADWR_ERR_ARGS;
   vassert(dir->wrpos > 0 && dir->wrpos <= 65536);
 
   vwadwr_result rescode;
   FileInfo *fi = dir->wrfile;
 
-  if (fi->chunkCount >= 0x3fffffffU) return VADWR_ERR_CHUNK_COUNT;
+  if (fi->chunkCount >= 0x3fffffffU) return VWADWR_ERR_CHUNK_COUNT;
 
   fi->crc32 = crc32_part(fi->crc32, dir->wrchunk, dir->wrpos);
 
@@ -3071,15 +3082,15 @@ static vwadwr_result vwadwr_flush_chunk (vwadwr_dir *dir) {
   put_u32(dest, crc32);
   crypt_buffer(dir->xorRndSeed, nonce, dest, (vwadwr_uint)pks + 4);
   if (dir->outstrm->write(dir->outstrm, dest, pks + 4) != 0) {
-    return VADWR_ERR_IO_ERROR;
+    return VWADWR_ERR_IO_ERROR;
   }
 
   fi->upksize += dir->wrpos;
   fi->pksize += (vwadwr_uint)pks;
   fi->chunkCount += 1;
 
-  if (fi->upksize > 0x7fffffffU) return VADWR_ERR_FILE_TOO_BIG;
-  if (fi->pksize > 0x7fffffffU) return VADWR_ERR_FILE_TOO_BIG;
+  if (fi->upksize > 0x7fffffffU) return VWADWR_ERR_FILE_TOO_BIG;
+  if (fi->pksize > 0x7fffffffU) return VWADWR_ERR_FILE_TOO_BIG;
 
   dir->wrpos = 0;
 
@@ -3095,17 +3106,17 @@ static vwadwr_result vwadwr_flush_chunk (vwadwr_dir *dir) {
 //
 //==========================================================================
 vwadwr_result vwadwr_write (vwadwr_dir *dir, const void *buf, vwadwr_uint len) {
-  if (dir == NULL) return VADWR_ERR_ARGS;
+  if (dir == NULL) return VWADWR_ERR_ARGS;
 
   FileInfo *fi = dir->wrfile;
-  if (fi == NULL) return VADWR_ERR_FILE_CLOSED;
+  if (fi == NULL) return VWADWR_ERR_FILE_CLOSED;
 
-  if (dir->wrmode != WR_MODE_WRITE) return VADWR_ERR_INVALID_MODE;
+  if (dir->wrmode != WR_MODE_WRITE) return VWADWR_ERR_INVALID_MODE;
 
   if (len == 0 || len > 0x7ffffff0U) return VWADWR_OK;
-  if (buf == NULL) return VADWR_ERR_ARGS;
+  if (buf == NULL) return VWADWR_ERR_ARGS;
 
-  if (0x7ffffff0U - fi->upksize < len) return VADWR_ERR_FILE_TOO_BIG;
+  if (0x7ffffff0U - fi->upksize < len) return VWADWR_ERR_FILE_TOO_BIG;
 
   vwadwr_result rescode;
   const char *src = (const char *)buf;
@@ -3136,12 +3147,12 @@ vwadwr_result vwadwr_write (vwadwr_dir *dir, const void *buf, vwadwr_uint len) {
 //
 //==========================================================================
 vwadwr_result vwadwr_close_file (vwadwr_dir *dir) {
-  if (dir == NULL) return VADWR_ERR_ARGS;
+  if (dir == NULL) return VWADWR_ERR_ARGS;
 
   FileInfo *fi = dir->wrfile;
-  if (fi == NULL) return VADWR_ERR_FILE_CLOSED;
+  if (fi == NULL) return VWADWR_ERR_FILE_CLOSED;
 
-  if (dir->wrmode != WR_MODE_WRITE) return VADWR_ERR_INVALID_MODE;
+  if (dir->wrmode != WR_MODE_WRITE) return VWADWR_ERR_INVALID_MODE;
 
   // flush final chunk
   vwadwr_result rescode;
@@ -3175,9 +3186,9 @@ vwadwr_result vwadwr_create_raw_file (vwadwr_dir *dir,
                                       vwadwr_uint filecrc32,
                                       vwadwr_ftime ftime) /* can be 0; seconds since Epoch */
 {
-  if (dir == NULL || pkfname == NULL) return VADWR_ERR_ARGS;
+  if (dir == NULL || pkfname == NULL) return VWADWR_ERR_ARGS;
 
-  if (dir->wrfile != NULL) return VADWR_ERR_FILE_OPEN;
+  if (dir->wrfile != NULL) return VWADWR_ERR_FILE_OPEN;
 
   if (!vwadwr_is_valid_group_name(groupname)) return VWADWR_ERR_GROUP;
 
@@ -3209,19 +3220,19 @@ vwadwr_result vwadwr_create_raw_file (vwadwr_dir *dir,
 vwadwr_result vwadwr_write_raw_chunk (vwadwr_dir *dir, const void *chunk,
                                       int pksz, int upksz, int packed)
 {
-  if (dir == NULL) return VADWR_ERR_ARGS;
-  if (chunk == NULL) return VADWR_ERR_ARGS;
-  if (pksz < 5 || upksz < 1 || pksz > 65536 + 4 || upksz > 65536) return VADWR_ERR_ARGS;
+  if (dir == NULL) return VWADWR_ERR_ARGS;
+  if (chunk == NULL) return VWADWR_ERR_ARGS;
+  if (pksz < 5 || upksz < 1 || pksz > 65536 + 4 || upksz > 65536) return VWADWR_ERR_ARGS;
 
   FileInfo *fi = dir->wrfile;
 
-  if (fi == NULL) return VADWR_ERR_FILE_CLOSED;
+  if (fi == NULL) return VWADWR_ERR_FILE_CLOSED;
 
-  if (dir->wrmode != WR_MODE_RAW) return VADWR_ERR_INVALID_MODE;
+  if (dir->wrmode != WR_MODE_RAW) return VWADWR_ERR_INVALID_MODE;
 
-  if (0x7ffffff0U - fi->upksize < (vwadwr_uint)pksz) return VADWR_ERR_FILE_TOO_BIG;
+  if (0x7ffffff0U - fi->upksize < (vwadwr_uint)pksz) return VWADWR_ERR_FILE_TOO_BIG;
 
-  if (fi->chunkCount >= 0x3fffffffU) return VADWR_ERR_CHUNK_COUNT;
+  if (fi->chunkCount >= 0x3fffffffU) return VWADWR_ERR_CHUNK_COUNT;
 
   vwadwr_result rescode;
   const vwadwr_uint nonce = 4 + dir->chunkCount;
@@ -3239,7 +3250,7 @@ vwadwr_result vwadwr_write_raw_chunk (vwadwr_dir *dir, const void *chunk,
   memcpy(dir->pkbuf0, chunk, csz);
   crypt_buffer(dir->xorRndSeed, nonce, dir->pkbuf0, csz);
   if (dir->outstrm->write(dir->outstrm, dir->pkbuf0, csz) != 0) {
-    return VADWR_ERR_IO_ERROR;
+    return VWADWR_ERR_IO_ERROR;
   }
   csz -= 4; /* crc32 */
 
@@ -3247,8 +3258,8 @@ vwadwr_result vwadwr_write_raw_chunk (vwadwr_dir *dir, const void *chunk,
   fi->pksize += csz;
   fi->chunkCount += 1;
 
-  if (fi->upksize > 0x7fffffffU) return VADWR_ERR_FILE_TOO_BIG;
-  if (fi->pksize > 0x7fffffffU) return VADWR_ERR_FILE_TOO_BIG;
+  if (fi->upksize > 0x7fffffffU) return VWADWR_ERR_FILE_TOO_BIG;
+  if (fi->pksize > 0x7fffffffU) return VWADWR_ERR_FILE_TOO_BIG;
 
   return VWADWR_OK;
 }
@@ -3262,13 +3273,13 @@ vwadwr_result vwadwr_write_raw_chunk (vwadwr_dir *dir, const void *chunk,
 //
 //==========================================================================
 vwadwr_result vwadwr_close_raw_file (vwadwr_dir *dir) {
-  if (dir == NULL) return VADWR_ERR_ARGS;
+  if (dir == NULL) return VWADWR_ERR_ARGS;
 
   FileInfo *fi = dir->wrfile;
 
-  if (fi == NULL) return VADWR_ERR_FILE_CLOSED;
+  if (fi == NULL) return VWADWR_ERR_FILE_CLOSED;
 
-  if (dir->wrmode != WR_MODE_RAW) return VADWR_ERR_INVALID_MODE;
+  if (dir->wrmode != WR_MODE_RAW) return VWADWR_ERR_INVALID_MODE;
 
   dir->wrfile = NULL;
 
@@ -3319,12 +3330,12 @@ static int ed_read (cc_ed25519_iostream *strm, int startpos, void *buf, int bufs
 //
 //==========================================================================
 vwadwr_result vwadwr_finish (vwadwr_dir **dirp) {
-  if (dirp == NULL || *dirp == NULL) return VADWR_ERR_ARGS;
+  if (dirp == NULL || *dirp == NULL) return VWADWR_ERR_ARGS;
 
   vwadwr_result rescode;
 
   vwadwr_dir *dir = *dirp;
-  if (dir->wrfile != NULL) return VADWR_ERR_FILE_OPEN;
+  if (dir->wrfile != NULL) return VWADWR_ERR_FILE_OPEN;
 
   rescode = vwadwr_check_dir(dir);
   if (rescode != VWADWR_OK) {
@@ -3337,7 +3348,7 @@ vwadwr_result vwadwr_finish (vwadwr_dir **dirp) {
   if (dirofspos <= 4*3+32+64 || dirofspos > 0x6fffffff) {
     vwadwr_free_dir(dirp);
     logf(ERROR, "archive too big");
-    return VADWR_ERR_VWAD_TOO_BIG;
+    return VWADWR_ERR_VWAD_TOO_BIG;
   }
 
   const vwadwr_uint dirofs = (vwadwr_uint)dirofspos;
@@ -3354,7 +3365,7 @@ vwadwr_result vwadwr_finish (vwadwr_dir **dirp) {
   if (fout_size <= 0 || fout_size > 0x7ffffff0) {
     vwadwr_free_dir(dirp);
     logf(ERROR, "output file too big");
-    return VADWR_ERR_VWAD_TOO_BIG;
+    return VWADWR_ERR_VWAD_TOO_BIG;
   }
 
   // write header
@@ -3362,7 +3373,7 @@ vwadwr_result vwadwr_finish (vwadwr_dir **dirp) {
   if (dir->outstrm->seek(dir->outstrm, sofs) != 0) {
     vwadwr_free_dir(dirp);
     logf(ERROR, "cannot seek to header");
-    return VADWR_ERR_IO_ERROR;
+    return VWADWR_ERR_IO_ERROR;
   }
 
   // setup dir offset
@@ -3375,7 +3386,7 @@ vwadwr_result vwadwr_finish (vwadwr_dir **dirp) {
   if (dir->outstrm->write(dir->outstrm, &dir->mhdr, (int)sizeof(dir->mhdr)) != 0) {
     vwadwr_free_dir(dirp);
     logf(ERROR, "write error");
-    return VADWR_ERR_IO_ERROR;
+    return VWADWR_ERR_IO_ERROR;
   }
 
   ed25519_signature edsign;
@@ -3388,7 +3399,7 @@ vwadwr_result vwadwr_finish (vwadwr_dir **dirp) {
     if (nfo.size <= 0) {
       vwadwr_free_dir(dirp);
       logf(ERROR, "tell error");
-      return VADWR_ERR_IO_ERROR;
+      return VWADWR_ERR_IO_ERROR;
     }
     edstrm.udata = &nfo;
     edstrm.total_size = ed_total_size;
@@ -3418,12 +3429,12 @@ vwadwr_result vwadwr_finish (vwadwr_dir **dirp) {
   if (dir->outstrm->seek(dir->outstrm, 4) != 0) {
     vwadwr_free_dir(dirp);
     logf(ERROR, "cannot seek in output file");
-    return VADWR_ERR_IO_ERROR;
+    return VWADWR_ERR_IO_ERROR;
   }
   if (dir->outstrm->write(dir->outstrm, edsign, (int)sizeof(ed25519_signature)) != 0) {
     vwadwr_free_dir(dirp);
     logf(ERROR, "write error");
-    return VADWR_ERR_IO_ERROR;
+    return VWADWR_ERR_IO_ERROR;
   }
 
   // re-encrypt public key
@@ -3444,7 +3455,7 @@ vwadwr_result vwadwr_finish (vwadwr_dir **dirp) {
   if (dir->outstrm->write(dir->outstrm, epk, (int)sizeof(ed25519_public_key)) != 0) {
     vwadwr_free_dir(dirp);
     logf(ERROR, "write error");
-    return VADWR_ERR_IO_ERROR;
+    return VWADWR_ERR_IO_ERROR;
   }
 
   vwadwr_free_dir(dirp);

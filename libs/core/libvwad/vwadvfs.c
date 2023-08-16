@@ -2876,13 +2876,13 @@ vwad_uint vwad_get_fcrc32 (vwad_handle *wad, vwad_fidx fidx) {
 
 //==========================================================================
 //
-//  vwad_fopen
+//  vwad_open_fidx
 //
 //  return file handle or -1
 //  note that maximum number of simultaneously opened files is 128
 //
 //==========================================================================
-vwad_fd vwad_fopen (vwad_handle *wad, vwad_fidx fidx) {
+vwad_fd vwad_open_fidx (vwad_handle *wad, vwad_fidx fidx) {
   if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount) {
     // find free fd
     vwad_fd fd = 0;
@@ -2898,6 +2898,24 @@ vwad_fd vwad_fopen (vwad_handle *wad, vwad_fidx fidx) {
       return fd;
     } else {
       return -2;
+    }
+  }
+  return -1;
+}
+
+
+//==========================================================================
+//
+//  vwad_open_file
+//
+//  open file by name
+//
+//==========================================================================
+vwad_fd vwad_open_file (vwad_handle *wad, const char *name) {
+  if (wad && name && name[0]) {
+    const vwad_fidx fidx = vwad_find_file(wad, name);
+    if (fidx >= 0) {
+      return vwad_open_fidx(wad, fidx);
     }
   }
   return -1;

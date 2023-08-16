@@ -855,12 +855,12 @@ private:
       if (!es->est || es->est->IsError()) { SetError(); break; }
 
       int level = save_compression_level.asInt();
-      if (level < VADWR_COMP_DISABLE || level > VADWR_COMP_BEST) {
-        level = VADWR_COMP_FAST;
+      if (level < VWADWR_COMP_DISABLE || level > VWADWR_COMP_BEST) {
+        level = VWADWR_COMP_FAST;
         save_compression_level = level;
       }
       // just in case
-      if (es->name.endsWithNoCase(".vwad")) level = VADWR_COMP_DISABLE;
+      if (es->name.endsWithNoCase(".vwad")) level = VWADWR_COMP_DISABLE;
 
       #ifdef VXX_DEBUG_SECTION_WRITER
       GCon->Logf(NAME_Debug, "WRX: [%d/%d] flushing section '%s' (%d bytes)",
@@ -904,12 +904,12 @@ private:
         while (name.startsWith("/")) name.chopLeft(1);
 
         int level = save_compression_level.asInt();
-        if (level < VADWR_COMP_DISABLE || level > VADWR_COMP_BEST) {
-          level = VADWR_COMP_FAST;
+        if (level < VWADWR_COMP_DISABLE || level > VWADWR_COMP_BEST) {
+          level = VWADWR_COMP_FAST;
           save_compression_level = level;
         }
         // just in case
-        if (name.endsWithNoCase(".vwad")) level = VADWR_COMP_DISABLE;
+        if (name.endsWithNoCase(".vwad")) level = VWADWR_COMP_DISABLE;
 
         if (buffit) {
           Stream = vwad->CreateFileBuffered(name, level);
@@ -1060,8 +1060,8 @@ public:
       if (!err) {
         if (strMapper) {
           int level = save_compression_level.asInt();
-          if (level < VADWR_COMP_DISABLE || level > VADWR_COMP_BEST) {
-            level = VADWR_COMP_FAST;
+          if (level < VWADWR_COMP_DISABLE || level > VWADWR_COMP_BEST) {
+            level = VWADWR_COMP_FAST;
             save_compression_level = level;
           }
           VStream *wo = vwad->CreateFileDirect(NEWFTM_FNAME_MAP_STRTBL, level);
@@ -2356,12 +2356,12 @@ bool VSaveSlot::SaveToSlotOld (int Slot) {
 #define CREATE_VWAD_FILE(xxfname)  do { \
   vassert(Strm == nullptr); \
   int level = save_compression_level.asInt(); \
-  if (level < VADWR_COMP_DISABLE || level > VADWR_COMP_BEST) { \
-    level = VADWR_COMP_FAST; \
+  if (level < VWADWR_COMP_DISABLE || level > VWADWR_COMP_BEST) { \
+    level = VWADWR_COMP_FAST; \
     save_compression_level = level; \
   } \
   VStr xyname = VStr(xxfname); \
-  if (xyname.endsWithNoCase(".vwad")) level = VADWR_COMP_DISABLE; \
+  if (xyname.endsWithNoCase(".vwad")) level = VWADWR_COMP_DISABLE; \
   Strm = vmain->CreateFileDirect(xyname, level); \
   vassert(Strm != nullptr); \
 } while (0)

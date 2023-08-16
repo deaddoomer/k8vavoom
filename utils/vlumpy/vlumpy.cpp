@@ -98,7 +98,7 @@ struct fon2_char_t {
 };
 
 
-static int comp_level = VADWR_COMP_BEST;
+static int comp_level = VWADWR_COMP_BEST;
 static bool useVWAD = false;
 static bool verbose = false;
 static bool showPackedSize = false;
@@ -257,11 +257,11 @@ static void AddToZip (const char *Name, const void *Data, size_t Size, uint64_t 
     zipTotalPacked += pksize;
   } else {
     switch (comp_level) {
-      case VADWR_COMP_DISABLE: zlib_comp_level = 0;
-      case VADWR_COMP_FASTEST: zlib_comp_level = 1;
-      case VADWR_COMP_FAST: zlib_comp_level = 3;
-      case VADWR_COMP_MEDIUM: zlib_comp_level = 6;
-      case VADWR_COMP_BEST: default: zlib_comp_level = 9;
+      case VWADWR_COMP_DISABLE: zlib_comp_level = 0;
+      case VWADWR_COMP_FASTEST: zlib_comp_level = 1;
+      case VWADWR_COMP_FAST: zlib_comp_level = 3;
+      case VWADWR_COMP_MEDIUM: zlib_comp_level = 6;
+      case VWADWR_COMP_BEST: default: zlib_comp_level = 9;
     }
     //zlib_comp_level = comp_level;
     zip_fileinfo zi;
@@ -1543,12 +1543,12 @@ int main (int argc, char *argv[]) {
           has_privkey = 0;
           continue;
         }
-        if (strcmp(argv[i], "--silly") == 0) { comp_level = VADWR_COMP_FASTEST; continue; }
-        if (strcmp(argv[i], "--fastest") == 0) { comp_level = VADWR_COMP_FASTEST; continue; }
-        if (strcmp(argv[i], "--fast") == 0) { comp_level = VADWR_COMP_FAST; continue; }
-        if (strcmp(argv[i], "--medium") == 0) { comp_level = VADWR_COMP_MEDIUM; continue; }
-        if (strcmp(argv[i], "--max") == 0) { comp_level = VADWR_COMP_BEST; continue; }
-        if (strcmp(argv[i], "--no-compression") == 0) { comp_level = VADWR_COMP_DISABLE; continue; }
+        if (strcmp(argv[i], "--silly") == 0) { comp_level = VWADWR_COMP_FASTEST; continue; }
+        if (strcmp(argv[i], "--fastest") == 0) { comp_level = VWADWR_COMP_FASTEST; continue; }
+        if (strcmp(argv[i], "--fast") == 0) { comp_level = VWADWR_COMP_FAST; continue; }
+        if (strcmp(argv[i], "--medium") == 0) { comp_level = VWADWR_COMP_MEDIUM; continue; }
+        if (strcmp(argv[i], "--max") == 0) { comp_level = VWADWR_COMP_BEST; continue; }
+        if (strcmp(argv[i], "--no-compression") == 0) { comp_level = VWADWR_COMP_DISABLE; continue; }
         if (strcmp(argv[i], "--verbose") == 0) { showPackedSize = true; verbose = true; continue; }
         if (strcmp(argv[i], "--stats") == 0) { showPackedSize = true; continue; }
         if (strcmp(argv[i], "--quiet") == 0) { showPackedSize = false; verbose = false; continue; }
