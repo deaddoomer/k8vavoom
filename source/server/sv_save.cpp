@@ -56,6 +56,7 @@
 #include "sv_save.h"
 
 #include <time.h>
+#include <unistd.h>
 #include <sys/time.h>
 
 #ifdef _WIN32
@@ -347,8 +348,8 @@ private:
   // `vwad` should be set
   bool LoadSlotNew (int Slot, VVWadArchive *vwad);
 
-  bool SaveToSlotOld (int Slot);
-  bool SaveToSlotNew (int Slot);
+  bool SaveToSlotOld (int Slot, VStr &savefilename);
+  bool SaveToSlotNew (int Slot, VStr &savefilename);
 
 public:
   VSaveSlot () : SavedSkill(-1), newFormat(true) {}
@@ -1461,6 +1462,7 @@ static void UpdateSaveDirWadList () {
   svpfx = svpfx.appendPath("wadlist.txt");
   VStream *res = FL_OpenSysFileWrite(svpfx);
   if (res) {
+    res->writef("%s\n", "# automatically generated, and purely informational");
     auto wadlist = FL_GetWadPk3ListSmall();
     for (auto &&wadname : wadlist) {
       //GCon->Logf(NAME_Debug, "  wad=<%s>", *wadname);
@@ -1614,7 +1616,7 @@ static VStream *SV_OpenSlotFileReadWithFmt (int Slot, VVWadArchive *&vwad) {
 //  kill 'em all!
 //
 //==========================================================================
-static bool removeSlotSaveFiles (int slot) {
+static bool removeSlotSaveFiles (int slot, VStr keepFileName) {
   TArray<VStr> tokill;
   if (isBadSlotIndex(slot)) return false;
 
@@ -1631,7 +1633,7 @@ static bool removeSlotSaveFiles (int slot) {
            fname.endsWithNoCase(".vwad") || fname.endsWithNoCase(".vwad.lmap")))
       {
         VStr fn = svdir.appendPath(fname);
-        /*if (fn != fignore && fn != fignore2)*/ tokill.append(fn);
+        if (fn != keepFileName) tokill.append(fn);
       }
     }
     Sys_CloseDir(dir);
@@ -1651,6 +1653,9 @@ static bool removeSlotSaveFiles (int slot) {
 //  create new savegame slot file
 //  also, removes any existing savegame file for the same slot
 //  sets `saveFileBase`
+//
+//  returned stream name should be proper disk file name
+//  it is temporary, and should be renamed on success
 //
 //==========================================================================
 static VStream *SV_CreateSlotFileWrite (int slot, VStr descr, bool asNew) {
@@ -1682,14 +1687,53 @@ static VStream *SV_CreateSlotFileWrite (int slot, VStr descr, bool asNew) {
   if (asNew) svpfx += ".vwad"; else svpfx += ".vsg";
   //GCon->Logf(NAME_Debug, "SAVE: <%s>", *svpfx);
   saveFileBase = svpfx;
-  VStream *res = FL_OpenSysFileWrite(svpfx);
+  VStream *res = FL_OpenSysFileWrite(svpfx + ".$$$");
+  /*
   if (res) {
     VStream::Destroy(res);
     removeSlotSaveFiles(slot);
     res = FL_OpenSysFileWrite(svpfx);
     if (res) UpdateSaveDirWadList();
   }
+  */
   return res;
+}
+
+
+//==========================================================================
+//
+//  SV_SaveFailed
+//
+//  call this to properly close the stream, and remove temp file
+//
+//==========================================================================
+static void SV_SaveFailed (VStr fname, int Slot) {
+  vassert(!fname.IsEmpty());
+  unlink(*fname);
+}
+
+
+//==========================================================================
+//
+//  SV_SaveSuccess
+//
+//  call this to properly close the stream, and rename temp file
+//
+//==========================================================================
+static void SV_SaveSuccess (VStr fname, int Slot) {
+  vassert(!fname.IsEmpty());
+  vassert(!saveFileBase.IsEmpty());
+  if (fname != saveFileBase) {
+    #ifdef WIN32
+    unlink(*saveFileBase);
+    #endif
+    if (rename(*fname, *saveFileBase) != 0) {
+      GCon->Logf(NAME_Error, "Cannot rename save file for slot #%d!", Slot);
+      return;
+    }
+  }
+  removeSlotSaveFiles(Slot, saveFileBase);
+  UpdateSaveDirWadList();
 }
 
 
@@ -1701,7 +1745,7 @@ static VStream *SV_CreateSlotFileWrite (int slot, VStr descr, bool asNew) {
 //==========================================================================
 static bool SV_DeleteSlotFile (int slot) {
   if (isBadSlotIndex(slot)) return false;
-  return removeSlotSaveFiles(slot);
+  return removeSlotSaveFiles(slot, VStr::EmptyString);
 }
 #endif
 
@@ -1912,37 +1956,41 @@ static bool CheckWadCompName (VStr s, VStr wl) {
 
 //==========================================================================
 //
-//  VSaveSlot::LoadSlotOld
+//  CheckModList
 //
-//  doesn't destroy stream on error
+//  load mod list, and compare with the current one
 //
 //==========================================================================
-bool VSaveSlot::LoadSlotOld (int Slot, VStream *Strm) {
-  Clear(false);
+static bool CheckModList (VStream *Strm, int Slot, bool oldFormat=false, bool silent=false) {
+  vassert(Strm != nullptr);
 
-  *Strm << Description;
-  if (Strm->IsError()) return false;
-
-  // skip extended data
-  if (true/*VStr::Cmp(VersionText, SAVE_VERSION_TEXT) == 0*/) {
-    if (!SkipExtData(Strm) || Strm->IsError()) {
-      return false;
-    }
-  }
-
-  // check list of loaded modules
   vint32 wcount = -1;
   *Strm << wcount;
-  TArray<VStr> xwadlist;
+
+  if (Strm->IsError()) {
+    if (!silent) {
+      GCon->Logf(NAME_Error, "Invalid savegame #%d (error reading modlist)", Slot);
+    }
+    return !(oldFormat || !dbg_load_ignore_wadlist.asBool());
+  }
 
   if (wcount < 1 || wcount > 8192) {
-    GCon->Logf(NAME_Error, "Invalid savegame #%d (bad number of mods)", Slot);
+    if (!silent) {
+      GCon->Logf(NAME_Error, "Invalid savegame #%d (bad number of mods: %d)", Slot, wcount);
+    }
     return false;
   }
 
+  TArray<VStr> xwadlist;
   for (int f = 0; f < wcount; ++f) {
     VStr s;
     *Strm << s;
+    if (Strm->IsError()) {
+      if (!silent) {
+        GCon->Logf(NAME_Error, "Invalid savegame #%d (error reading modlist)", Slot);
+      }
+      return !(oldFormat || !dbg_load_ignore_wadlist.asBool());
+    }
     xwadlist.Append(s);
   }
 
@@ -1964,10 +2012,39 @@ bool VSaveSlot::LoadSlotOld (int Slot, VStream *Strm) {
     }
 
     if (!ok) {
-      GCon->Logf(NAME_Error, "Invalid savegame #%d (bad mod)", Slot);
+      if (!silent) {
+        GCon->Logf(NAME_Error, "Invalid savegame #%d (bad modlist)", Slot);
+      }
       return false;
     }
   }
+
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VSaveSlot::LoadSlotOld
+//
+//  doesn't destroy stream on error
+//
+//==========================================================================
+bool VSaveSlot::LoadSlotOld (int Slot, VStream *Strm) {
+  Clear(false);
+
+  *Strm << Description;
+  if (Strm->IsError()) return false;
+
+  // skip extended data
+  if (true/*VStr::Cmp(VersionText, SAVE_VERSION_TEXT) == 0*/) {
+    if (!SkipExtData(Strm) || Strm->IsError()) {
+      return false;
+    }
+  }
+
+  // check list of loaded modules
+  if (!CheckModList(Strm, Slot, true)) return false;
 
   VStr TmpName;
   *Strm << TmpName;
@@ -2080,35 +2157,9 @@ bool VSaveSlot::LoadSlotNew (int Slot, VVWadArchive *vwad) {
   if (!dbg_load_ignore_wadlist.asBool()) {
     Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_WADLIST);
     if (!Strm) return false;
-
-    vint32 wcount = -1;
-    *Strm << wcount;
-
-    if (wcount < 1 || wcount > 8192) {
-      VStream::Destroy(Strm);
-      GCon->Logf(NAME_Error, "Invalid savegame #%d (bad number of mods)", Slot);
-      return false;
-    }
-
-    auto wadlist = FL_GetWadPk3ListSmall();
-
-    if (wcount != wadlist.length()) {
-      VStream::Destroy(Strm);
-      GCon->Logf(NAME_Error, "Invalid savegame #%d (bad number of mods)", Slot);
-      return false;
-    }
-
-    for (int f = 0; f < wcount; ++f) {
-      VStr s;
-      *Strm << s;
-      if (!CheckWadCompName(s, wadlist[f])) {
-        VStream::Destroy(Strm);
-        GCon->Logf(NAME_Error, "Invalid savegame #%d (bad mod)", Slot);
-        return false;
-      }
-    }
-
+    const bool modok = CheckModList(Strm, Slot);
     VStream::Destroy(Strm);
+    if (!modok) return false;
   }
 
   // load current map name
@@ -2236,14 +2287,16 @@ bool VSaveSlot::LoadSlot (int Slot) {
 //  VSaveSlot::SaveToSlotOld
 //
 //==========================================================================
-bool VSaveSlot::SaveToSlotOld (int Slot) {
+bool VSaveSlot::SaveToSlotOld (int Slot, VStr &savefilename) {
   saveFileBase.clear();
+  savefilename.clear();
 
   VStream *Strm = SV_CreateSlotFileWrite(Slot, Description, false);
   if (!Strm) {
-    GCon->Logf(NAME_Error, "cannot save to slot %d!", Slot);
+    GCon->Logf(NAME_Error, "cannot save to slot #%d!", Slot);
     return false;
   }
+  savefilename = Strm->GetName();
 
   // write version info
   char VersionText[SAVE_VERSION_TEXT_LENGTH+1];
@@ -2327,7 +2380,7 @@ bool VSaveSlot::SaveToSlotOld (int Slot) {
   bool err = Strm->IsError();
   Strm->Close();
   err = err || Strm->IsError();
-  delete Strm;
+  delete Strm; // done in failed
 
   Host_ResetSkipFrames();
 
@@ -2372,15 +2425,19 @@ bool VSaveSlot::SaveToSlotOld (int Slot) {
 //  VSaveSlot::SaveToSlotNew
 //
 //==========================================================================
-bool VSaveSlot::SaveToSlotNew (int Slot) {
+bool VSaveSlot::SaveToSlotNew (int Slot, VStr &savefilename) {
   TTimeVal tv;
   GetTimeOfDay(&tv);
+
+  saveFileBase.clear();
+  savefilename.clear();
 
   VStream *ArcStrm = SV_CreateSlotFileWrite(Slot, Description, true);
   if (!ArcStrm) {
     GCon->Logf(NAME_Error, "cannot save to slot %d!", Slot);
     return false;
   }
+  savefilename = ArcStrm->GetName();
 
   VVWadNewArchive *vmain = new VVWadNewArchive("<main-save>",
                                                "k8vavoom engine (save game)",
@@ -2425,6 +2482,7 @@ bool VSaveSlot::SaveToSlotNew (int Slot) {
     // write human-readable list of loaded modules
     // (it is purely informative)
     VStr sres;
+    sres = "# automatically generated, and purely informational\n";
     for (VStr w : wadlist) { sres += w; sres += "\n"; }
     CREATE_VWAD_FILE(NEWFTM_FNAME_SAVE_HWADLIST);
     Strm->Serialise((void *)sres.getCStr(), sres.length());
@@ -2489,7 +2547,7 @@ bool VSaveSlot::SaveToSlotNew (int Slot) {
   GCon->Logf(NAME_Debug, "finished VWAD archive! xres=%d (%s)", (int)xres, *ArcStrm->GetName());
   #endif
   if (!xres) {
-    GCon->Logf(NAME_Error, "cannot finish save archive");
+    GCon->Logf(NAME_Error, "cannot finalize savegame archive");
   }
 
   return xres;
@@ -2502,11 +2560,18 @@ bool VSaveSlot::SaveToSlotNew (int Slot) {
 //
 //==========================================================================
 bool VSaveSlot::SaveToSlot (int Slot) {
-  const bool res = (IsNewFormat() ? SaveToSlotNew(Slot) : SaveToSlotOld(Slot));
+  VStr savefilename;
+
+  const bool res = (IsNewFormat() ? SaveToSlotNew(Slot, savefilename)
+                                  : SaveToSlotOld(Slot, savefilename));
   if (!res) {
+    SV_SaveFailed(savefilename, Slot);
     saveFileBase.clear();
-    removeSlotSaveFiles(Slot);
+    //removeSlotSaveFiles(Slot);
+  } else {
+    SV_SaveSuccess(savefilename, Slot);
   }
+
   return res;
 }
 
@@ -2537,37 +2602,7 @@ static bool SV_GetSaveStringOld (int Slot, VStr &Desc, VStream *Strm) {
   }
   if (goodSave) {
     // check list of loaded modules
-    vint32 wcount = -1;
-    *Strm << wcount;
-
-    if (wcount < 1 || wcount > 8192) {
-      goodSave = false;
-    } else {
-      TArray<VStr> xwadlist;
-      for (int f = 0; f < wcount; ++f) {
-        VStr s;
-        *Strm << s;
-        xwadlist.Append(s);
-      }
-
-      bool ok = false;
-      auto wadlist = FL_GetWadPk3List();
-
-      if (wcount == wadlist.length()) {
-        ok = true;
-        for (int f = 0; ok && f < wcount; ++f) ok = CheckWadCompName(xwadlist[f], wadlist[f]);
-      }
-
-      if (!ok) {
-        auto wadlistNew = FL_GetWadPk3ListSmall();
-        if (wcount == wadlistNew.length()) {
-          ok = true;
-          for (int f = 0; ok && f < wcount; ++f) ok = CheckWadCompName(xwadlist[f], wadlistNew[f]);
-        }
-      }
-
-      goodSave = ok;
-    }
+    goodSave = CheckModList(Strm, Slot, true, true);
   }
   if (!goodSave) Desc = "*"+Desc;
   return /*true*/goodSave;
@@ -2588,25 +2623,12 @@ static bool SV_GetSaveStringNew (int Slot, VStr &Desc, VVWadArchive *vwad) {
   if (Strm->IsError()) { VStream::Destroy(Strm); return false; }
   VStream::Destroy(Strm);
 
-  bool goodSave = true;
   #if 0
-  // check list of loaded modules
-  auto wadlist = FL_GetWadPk3ListSmall();
-  vint32 wcount = -1;
-
+  const bool goodSave = true;
+  #else
   Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_WADLIST);
   if (!Strm) return false;
-  *Strm << wcount;
-  if (wcount != wadlist.length()) {
-    goodSave = false;
-  } else {
-    for (int f = 0; f < wcount; ++f) {
-      VStr s;
-      *Strm << s;
-      if (!CheckWadCompName(s, wadlist[f])) { goodSave = false; break; }
-    }
-  }
-  if (goodSave && Strm->IsError()) goodSave = false;
+  const bool goodSave = CheckModList(Strm, Slot, false, true);
   VStream::Destroy(Strm);
   #endif
 
