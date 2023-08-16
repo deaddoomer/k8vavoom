@@ -286,6 +286,8 @@ void VBasePlayer::SetViewState (int position, VState *InState) {
 
   if (position == PS_WEAPON) WeaponActionFlags = 0;
 
+  if (InState == VState::GetInvalidState()) InState = nullptr;
+
   VViewState &VSt = ViewStates[position];
   VSLOGF("SetViewState(%d): watchcat=%d, vobj=%s, from %s to new %s", position, ViewStates[position].WatchCat, (_stateRouteSelf ? _stateRouteSelf->GetClass()->GetName() : "<none>"), (VSt.State ? *VSt.State->Loc.toStringNoCol() : "<none>"), (InState ? *InState->Loc.toStringNoCol() : "<none>"));
 

@@ -1581,6 +1581,8 @@ void VEntity::RemoveFromTIDList () {
 //
 //==========================================================================
 bool VEntity::SetState (VState *InState) {
+  if (InState == VState::GetInvalidState()) InState = nullptr;
+
   if (!InState || IsGoingToDie()) {
     if (developer) GCon->Logf(NAME_Dev, "   (00):%s: dead (0x%04x) before state actions, state is %s", *GetClass()->GetFullName(), GetFlags(), (InState ? *InState->Loc.toStringNoCol() : "<none>"));
     State = nullptr;
