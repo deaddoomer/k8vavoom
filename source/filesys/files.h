@@ -57,6 +57,7 @@ VStr FL_GetUserDataDir (bool shouldCreate);
 
 // not a real list, but something that can be used to check savegame validity
 const TArray<VStr> &FL_GetWadPk3List ();
+const TArray<VStr> &FL_GetWadPk3ListSmall ();
 
 
 // used to set "preinit" cvars

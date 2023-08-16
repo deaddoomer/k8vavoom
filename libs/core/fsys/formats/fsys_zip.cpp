@@ -319,7 +319,8 @@ void VZipFile::OpenArchive (VStream *fstream, vuint32 cdofs) {
           if (!pakdir.files[i].diskNameIntr.StartsWith(xpfx)) { canHasPrefix = false; break; }
         }
         if (canHasPrefix) {
-          // remove prefix
+          // remove prefix; also, mark this as "lone wad" (because it is)
+          arclonewad = true;
           //GLog.Logf("*** ARK: <%s>:<%s> pfx=<%s>", *PakFileName, *PakFileName.ExtractFileExtension(), *xpfx);
           for (int i = 0; i < pakdir.files.length(); ++i) {
             VStr fn = VStr(pakdir.files[i].diskNameIntr, sli+1, pakdir.files[i].diskNameIntr.length()-sli-1);
@@ -331,6 +332,8 @@ void VZipFile::OpenArchive (VStream *fstream, vuint32 cdofs) {
       }
     }
   }
+
+  if (!arclonewad && pakdir.CheckLoneWad()) arclonewad = true;
 
   // hack for "pk3tovwad"
   if (fsys_simple_archives != FSYS_ARCHIVES_NORMAL) type = PAK;

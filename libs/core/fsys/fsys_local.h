@@ -67,6 +67,8 @@ public:
   bool cosmetic;
   bool required;
   bool hadfilters;
+  // if "extended archive" contains only one wad, it can be ignored in wadlist
+  bool arclonewad;
 
 public:
   VSearchPath ();
@@ -80,6 +82,8 @@ public:
   inline bool IsNonPak () const noexcept { return (type == OTHER); }
 
   inline bool HadFilters () const noexcept { return hadfilters; }
+
+  inline bool IsLoneWadArchive () const noexcept { return arclonewad; }
 
   // checks if the "seek" operation on the given lump is fast
   virtual bool IsFastSeek (int lump) = 0;
@@ -205,6 +209,11 @@ public:
   void append (const VPakFileInfo &fi);
 
   //int appendAndRegister (const VPakFileInfo &fi);
+
+  // check if this archive is "lone wad"
+  // "lone wads" are archives with only wads inside, and with
+  // possible ".txt" and ".deh" files named after those wads
+  bool CheckLoneWad ();
 
   // won't touch entries with `lumpName != NAME_None`
   void buildLumpNames ();

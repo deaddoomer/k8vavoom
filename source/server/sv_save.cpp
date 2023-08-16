@@ -1339,12 +1339,23 @@ static VStr SV_GetSavesDir () {
 //  GetSaveSlotDirectoryPrefixOld
 //
 //==========================================================================
-static VStr GetSaveSlotCommonDirectoryPrefixOld () {
+static VStr GetSaveSlotCommonDirectoryPrefixOld0 () {
   vuint32 hash;
   (void)SV_GetModListHash(&hash);
   VStr pfx = VStr::buf2hex(&hash, 4);
-  //GCon->Logf(NAME_Debug, "SAVE PFX: %s", *pfx);
-  //pfx += "/";
+  return pfx;
+}
+
+
+//==========================================================================
+//
+//  GetSaveSlotCommonDirectoryPrefixOld1
+//
+//==========================================================================
+static VStr GetSaveSlotCommonDirectoryPrefixOld1 () {
+  vuint32 hash;
+  (void)SV_GetModListHashOld(&hash);
+  VStr pfx = VStr::buf2hex(&hash, 4);
   return pfx;
 }
 
@@ -1357,22 +1368,29 @@ static VStr GetSaveSlotCommonDirectoryPrefixOld () {
 static VStr GetSaveSlotCommonDirectoryPrefix () {
   vuint64 hash = SV_GetModListHash(nullptr);
   VStr pfx = VStr::buf2hex(&hash, 8);
-  //GCon->Logf(NAME_Debug, "SAVE PFX: %s", *pfx);
-  //pfx += "/";
   return pfx;
 }
 
 
 //==========================================================================
 //
-//  UpgradeSaveDirectory
+//  UpgradeSaveDirectories
 //
 //  rename old save directory
 //
 //==========================================================================
-static void UpgradeSaveDirectory (VStr oldpath, VStr newpath) {
-  if (!newpath.IsEmpty() && !oldpath.IsEmpty()) {
-    rename(*oldpath, *newpath);
+static void UpgradeSaveDirectories () {
+  VStr xdir = SV_GetSavesDir();
+  VStr newpath = xdir.appendPath(GetSaveSlotCommonDirectoryPrefix());
+
+  if (!newpath.IsEmpty()) {
+    VStr oldpath;
+
+    oldpath = xdir.appendPath(GetSaveSlotCommonDirectoryPrefixOld0());
+    if (!oldpath.IsEmpty() && oldpath != newpath) rename(*oldpath, *newpath);
+
+    oldpath = xdir.appendPath(GetSaveSlotCommonDirectoryPrefixOld1());
+    if (!oldpath.IsEmpty() && oldpath != newpath) rename(*oldpath, *newpath);
   }
 }
 
@@ -1383,11 +1401,8 @@ static void UpgradeSaveDirectory (VStr oldpath, VStr newpath) {
 //
 //==========================================================================
 static VStr GetDiskSavesPath () {
-  VStr xdir = SV_GetSavesDir();
-  VStr svdir = xdir.appendPath(GetSaveSlotCommonDirectoryPrefix());
-  VStr oldpath = xdir.appendPath(GetSaveSlotCommonDirectoryPrefixOld());
-  UpgradeSaveDirectory(oldpath, svdir);
-  return svdir;
+  UpgradeSaveDirectories();
+  return SV_GetSavesDir().appendPath(GetSaveSlotCommonDirectoryPrefix());
 }
 
 
@@ -1397,11 +1412,8 @@ static VStr GetDiskSavesPath () {
 //
 //==========================================================================
 static VStr GetDiskSavesPathNoHash () {
-  VStr xdir = SV_GetSavesDir();
-  VStr svdir = xdir.appendPath(GetSaveSlotCommonDirectoryPrefix());
-  VStr oldpath = xdir.appendPath(GetSaveSlotCommonDirectoryPrefixOld());
-  UpgradeSaveDirectory(oldpath, svdir);
-  return xdir;
+  UpgradeSaveDirectories();
+  return SV_GetSavesDir();
 }
 
 
@@ -1444,7 +1456,7 @@ static void UpdateSaveDirWadList () {
   svpfx = svpfx.appendPath("wadlist.txt");
   VStream *res = FL_OpenSysFileWrite(svpfx);
   if (res) {
-    auto wadlist = FL_GetWadPk3List();
+    auto wadlist = FL_GetWadPk3ListSmall();
     for (auto &&wadname : wadlist) {
       //GCon->Logf(NAME_Debug, "  wad=<%s>", *wadname);
       res->writef("%s\n", *wadname);
@@ -1877,6 +1889,24 @@ void VSaveSlot::Clear (bool asNewFormat) {
 
 //==========================================================================
 //
+//  CheckWadCompName
+//
+//==========================================================================
+static bool CheckWadCompName (VStr s, VStr wl) {
+  if (s == wl) return true;
+  if (s.strEquCI(wl)) return true;
+  VStr sext = s.ExtractFileExtension();
+  if (!s.strEquCI(".pk3") && !s.strEquCI(".vwad")) return false;
+  VStr wext = wl.ExtractFileExtension();
+  if (!wext.strEquCI(".pk3") && !wext.strEquCI(".vwad")) return false;
+  s = s.StripExtension();
+  wl = wl.StripExtension();
+  return s.strEquCI(wl);
+}
+
+
+//==========================================================================
+//
 //  VSaveSlot::LoadSlotOld
 //
 //  doesn't destroy stream on error
@@ -1916,7 +1946,7 @@ bool VSaveSlot::LoadSlotOld (int Slot, VStream *Strm) {
     VStr s;
     *Strm << s;
     if (!dbg_load_ignore_wadlist.asBool()) {
-      if (s != wadlist[f]) {
+      if (!CheckWadCompName(s, wadlist[f])) {
         GCon->Logf(NAME_Error, "Invalid savegame #%d (bad mod)", Slot);
         return false;
       }
@@ -2034,7 +2064,8 @@ bool VSaveSlot::LoadSlotNew (int Slot, VVWadArchive *vwad) {
   if (!dbg_load_ignore_wadlist.asBool()) {
     Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_WADLIST);
     if (!Strm) return false;
-    auto wadlist = FL_GetWadPk3List();
+
+    auto wadlist = FL_GetWadPk3ListSmall();
     vint32 wcount = wadlist.length();
     *Strm << wcount;
 
@@ -2053,7 +2084,7 @@ bool VSaveSlot::LoadSlotNew (int Slot, VVWadArchive *vwad) {
     for (int f = 0; f < wcount; ++f) {
       VStr s;
       *Strm << s;
-      if (s != wadlist[f]) {
+      if (!CheckWadCompName(s, wadlist[f])) {
         VStream::Destroy(Strm);
         GCon->Logf(NAME_Error, "Invalid savegame #%d (bad mod)", Slot);
         return false;
@@ -2368,7 +2399,7 @@ bool VSaveSlot::SaveToSlotNew (int Slot) {
   // write list of loaded modules
   {
     CREATE_VWAD_FILE(NEWFTM_FNAME_SAVE_WADLIST);
-    auto wadlist = FL_GetWadPk3List();
+    auto wadlist = FL_GetWadPk3ListSmall();
     vint32 wcount = wadlist.length();
     *Strm << wcount;
     for (int f = 0; f < wcount; ++f) *Strm << wadlist[f];
@@ -2490,7 +2521,7 @@ static bool SV_GetSaveStringOld (int Slot, VStr &Desc, VStream *Strm) {
       for (int f = 0; f < wcount; ++f) {
         VStr s;
         *Strm << s;
-        if (s != wadlist[f]) { goodSave = false; break; }
+        if (!CheckWadCompName(s, wadlist[f])) { goodSave = false; break; }
       }
     }
   }
@@ -2516,7 +2547,7 @@ static bool SV_GetSaveStringNew (int Slot, VStr &Desc, VVWadArchive *vwad) {
   bool goodSave = true;
   #if 0
   // check list of loaded modules
-  auto wadlist = FL_GetWadPk3List();
+  auto wadlist = FL_GetWadPk3ListSmall();
   vint32 wcount = -1;
 
   Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_WADLIST);
@@ -2528,7 +2559,7 @@ static bool SV_GetSaveStringNew (int Slot, VStr &Desc, VVWadArchive *vwad) {
     for (int f = 0; f < wcount; ++f) {
       VStr s;
       *Strm << s;
-      if (s != wadlist[f]) { goodSave = false; break; }
+      if (!CheckWadCompName(s, wadlist[f])) { goodSave = false; break; }
     }
   }
   if (goodSave && Strm->IsError()) goodSave = false;
@@ -2827,6 +2858,18 @@ static void ArchiveThinkers (VSaveWriterStream *Saver, bool SavingPlayers) {
     *Saver << CName;
   }
   Saver->CloseFile();
+
+  #if 0
+  // purely informational
+  if (!Saver->CreateFileDirect("obj_classes.txt")) return;
+  for (int i = 0; i < Saver->Exports.length(); ++i) {
+    VStr s = VStr(va("%d: ", i)) + Saver->Exports[i]->GetClass()->GetFullName() +
+             " : " + Saver->Exports[i]->GetClass()->Loc.toStringNoCol() +
+             "\n";
+    Saver->Serialise((void *)s.getCStr(), s.length());
+  }
+  Saver->CloseFile();
+  #endif
 
   if (!Saver->CreateFileBuffered(NEWFTM_FNAME_MAP_THINKERS)) return;
   // serialise objects
@@ -4121,8 +4164,12 @@ COMMAND(AutoSaveLeave) {
 //
 //==========================================================================
 COMMAND(ShowSavePrefix) {
-  auto wadlist = FL_GetWadPk3List();
+  auto wadlist = FL_GetWadPk3ListSmall();
   GCon->Log("==== MODS ====");
+  for (auto &&mname: wadlist) GCon->Logf("  %s", *mname);
+  GCon->Log("----");
+  wadlist = FL_GetWadPk3List();
+  GCon->Log("==== MODS (full) ====");
   for (auto &&mname: wadlist) GCon->Logf("  %s", *mname);
   GCon->Log("----");
   vuint64 hash = SV_GetModListHash(nullptr);

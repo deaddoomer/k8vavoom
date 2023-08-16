@@ -317,6 +317,41 @@ void SV_ReplaceCustomDamageFactors () {
 vuint64 SV_GetModListHash (vuint32 *old) {
   VStr modlist;
   // get list of loaded modules
+  auto wadlist = FL_GetWadPk3ListSmall();
+  for (auto &&wadname : wadlist) {
+    modlist += wadname;
+    modlist += "\n";
+  }
+  //GCon->Logf(NAME_Debug, "modlist:\n%s", *modlist);
+  if (old) {
+    *old = XXH32(*modlist, (vint32)modlist.length(), (vuint32)wadlist.length());
+  }
+  RIPEMD160_Ctx ctx;
+  uint8_t hash[RIPEMD160_BYTES];
+  ripemd160_init(&ctx);
+  ripemd160_put(&ctx, *modlist, (unsigned)modlist.length());
+  ripemd160_finish(&ctx, hash);
+  const uint64_t val =
+    ((uint64_t)hash[0])|
+    (((uint64_t)hash[1])<<8)|
+    (((uint64_t)hash[2])<<16)|
+    (((uint64_t)hash[3])<<24)|
+    (((uint64_t)hash[4])<<32)|
+    (((uint64_t)hash[5])<<40)|
+    (((uint64_t)hash[6])<<48)|
+    (((uint64_t)hash[7])<<56);
+  return (vuint64)val;
+}
+
+
+//==========================================================================
+//
+//  SV_GetModListHashOld
+//
+//==========================================================================
+vuint64 SV_GetModListHashOld (vuint32 *old) {
+  VStr modlist;
+  // get list of loaded modules
   auto wadlist = FL_GetWadPk3List();
   for (auto &&wadname : wadlist) {
     modlist += wadname;

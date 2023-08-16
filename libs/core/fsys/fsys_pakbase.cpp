@@ -282,6 +282,7 @@ VSearchPath::VSearchPath ()
   , cosmetic(false)
   , required(false)
   , hadfilters(false)
+  , arclonewad(false)
 {
   if (fsys_mark_as_user) userwad = true;
 }
@@ -424,6 +425,77 @@ static bool IsHideRemoveFilterFileName (VStr &fn) {
     return true;
   }
   return false;
+}
+
+
+//==========================================================================
+//
+//  FilterIt
+//
+//==========================================================================
+static void FilterIt (TArray<VStr> &arr, VStr base) {
+  if (!base.IsEmpty()) {
+    int idx = 0;
+    while (idx < arr.length()) {
+      VStr nx = arr[idx].StripExtension();
+      if (nx.strEquCI(base)) {
+        arr.removeAt(idx);
+      } else {
+        idx += 1;
+      }
+    }
+  }
+}
+
+
+//==========================================================================
+//
+//  VFileDirectory::CheckLoneWad
+//
+//  check if this archive is "lone wad"
+//  "lone wads" are archives with only wads inside, and with
+//  possible ".txt" and ".deh" files named after those wads
+//
+//==========================================================================
+bool VFileDirectory::CheckLoneWad () {
+  if (files.length() == 0) return true; // empty files are always like this
+
+  TArray<VStr> wads;
+  TArray<VStr> txts;
+  TArray<VStr> dehs;
+
+  // check for filters; collect .wad, .txt, .deh
+  for (auto &&fi : files) {
+    VStr fn(fi.fileNameIntr);
+    if (fn.startsWith("filter/")) {
+      if (!FL_CheckFilterName(fn)) continue;
+      if (IsHideRemoveFilterFileName(fn)) continue;
+      return false; // alas; with filters
+    }
+    if (fn.isEmpty() || fn.endsWith("/")) continue;
+    if (fn.indexOf('/') >= 0) return false; // subdirs, don't bother
+    // remember interesting files
+    if (fn.endsWith(".wad")) wads.Append(fn);
+    else if (fn.strEquCI("readme")) continue;
+    else if (fn.strEquCI("readme.txt")) continue;
+    else if (fn.strEquCI("credits.txt")) continue;
+    else if (fn.strEquCI("authors.txt")) continue;
+    else if (fn.strEquCI("license")) continue;
+    else if (fn.strEquCI("license.txt")) continue;
+    else if (fn.endsWith(".txt")) txts.Append(fn);
+    else if (fn.endsWith(".deh")) dehs.Append(fn);
+    else return false;
+  }
+
+  if (wads.length() == 0) return false; // no wads, don't bother
+
+  for (VStr wad : wads) {
+    VStr base = wad.StripExtension();
+    FilterIt(txts, base);
+    FilterIt(dehs, base);
+  }
+
+  return (txts.length() == 0 && dehs.length() == 0);
 }
 
 

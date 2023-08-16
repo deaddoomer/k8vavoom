@@ -1099,6 +1099,28 @@ static void performPWadScan () {
 
 // ////////////////////////////////////////////////////////////////////////// //
 static TArray<VStr> wpklist; // everything is lowercased
+static TArray<VStr> wpklistSmall; // everything is lowercased
+
+
+//==========================================================================
+//
+//  appendWpkSmallName
+//
+//==========================================================================
+static void appendWpkSmallName (VStr fname) {
+  if (fname.IsEmpty()) return;
+  fname = fname.toLowerCase();
+  // yeah, assume that they are the same
+  // (because i will prolly convert them)
+  if (fname.endsWith(".pk3") || fname.endsWith(".zip") ||
+      fname.endsWith(".ipk3"))
+  {
+    fname.chopRight(4);
+    fname += ".vwad";
+  }
+  for (VStr ws : wpklistSmall) if (ws == fname) return; // i found her!
+  wpklistSmall.Append(fname);
+}
 
 
 //==========================================================================
@@ -1108,6 +1130,16 @@ static TArray<VStr> wpklist; // everything is lowercased
 //==========================================================================
 const TArray<VStr> &FL_GetWadPk3List () {
   return wpklist;
+}
+
+
+//==========================================================================
+//
+//  FL_GetWadPk3ListSmall
+//
+//==========================================================================
+const TArray<VStr> &FL_GetWadPk3ListSmall () {
+  return wpklistSmall;
 }
 
 
@@ -1125,17 +1157,9 @@ static void wpkAppend (VStr fname, bool asystem) {
   }
   //if (fname.endsWithCI(".zip")) return; // ignore zip containers
   //GCon->Logf(NAME_Debug, "WPK: %s", *fn);
+  appendWpkSmallName(fn);
   // check for duplicates
-  for (int f = wpklist.length()-1; f >= 0; --f) {
-    if (wpklist[f] != fn) continue;
-    // i found her!
-    return;
-  }
-  /*
-  WadPakInfo &wi = wpklist.Alloc();
-  wi.path = fn;
-  wi.isSystem = asystem;
-  */
+  for (VStr ws : wpklist) if (ws == fn) return; // i found her!
   wpklist.append(fn);
 }
 
@@ -1170,6 +1194,11 @@ static void wpkAddMarked (int idx) {
     if (fn.isEmpty()) continue;
     //GCon->Logf(NAME_Debug, "*** <%s> (%s) ***", *fn, *sp->GetPrefix());
     wpklist.append(fn);
+    // simplified list
+    // lone files marked as paks too
+    if (!sp->IsLoneWadArchive() && sp->IsAnyPak()) {
+      appendWpkSmallName(fn);
+    }
   }
 }
 
@@ -1441,7 +1470,9 @@ static void AddGameDir (VStr basedir, VStr dir) {
   }
 
   // add system dir, if it has any files
-  if (ZipFiles.length() || WadFiles.length()) wpkAppend(dir+"/", true); // don't strip path
+  if (ZipFiles.length() || WadFiles.length()) {
+    wpkAppend(dir+"/", true); // don't strip path
+  }
 
   // now add wads, then pk3s
   for (int i = 0; i < WadFiles.length(); ++i) {
@@ -2099,7 +2130,6 @@ static void ProcessBaseGameDefs (VStr mainiwad) {
   }
 
   knownGames.clear();
-
 }
 
 
@@ -2775,7 +2805,9 @@ void FL_Init () {
   FSysSavedState pwadsSaved;
   pwadsSaved.save();
   TArray<VStr> wpklistSaved = wpklist;
+  TArray<VStr> wpklistSavedSmall = wpklistSmall;
   wpklist.clear();
+  wpklistSmall.clear();
 
 
   ParseUserModes();
@@ -2825,6 +2857,7 @@ void FL_Init () {
     GCon->Logf(NAME_Init, "Forcing gore mod.");
     //AddGameDir("basev/mods/gore"); // not disabled
     wpklist.append("basev/mods/gore/"); // to not invalidate saves
+    //wpklistSmall.append("basev/mods/gore/"); // to not invalidate saves
     cli_GoreMod = cli_GoreModForce;
     k8gore_enabled_override = 1;
     k8gore_enabled_override_decal = 1;
@@ -2842,6 +2875,7 @@ void FL_Init () {
       k8gore_enabled_override_decal = -1;
     } else {
       wpklist.append("basev/mods/gore/"); // to not invalidate saves
+      //wpklistSmall.append("basev/mods/gore/"); // to not invalidate saves
     }
     #endif
   } else {
@@ -2913,6 +2947,7 @@ void FL_Init () {
   } else {
     pwadsSaved.restore();
     for (auto &&it : wpklistSaved) wpklist.append(it);
+    for (auto &&it : wpklistSavedSmall) wpklistSmall.append(it);
   }
 
   // load custom mode pwads

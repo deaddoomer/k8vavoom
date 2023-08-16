@@ -73,6 +73,7 @@ void NET_SendNetworkHeartbeat (bool forced=false);
 void G_LoadVCMods (VName modlistfile, const char *modtypestr, bool serveroptions); // in "sv_main.cpp"
 
 vuint64 SV_GetModListHash (vuint32 *old);
+vuint64 SV_GetModListHashOld (vuint32 *old);
 
 extern server_t sv;
 extern server_static_t svs;

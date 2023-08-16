@@ -232,6 +232,8 @@ void VVWadFile::OpenArchive (VStream *fstream) {
     pakdir.append(fi);
   }
 
+  if (pakdir.CheckLoneWad()) arclonewad = true;
+
   pakdir.buildLumpNames();
   pakdir.buildNameMaps(false, this);
 }
