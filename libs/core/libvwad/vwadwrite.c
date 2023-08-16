@@ -2993,9 +2993,6 @@ vwadwr_result vwadwr_create_file (vwadwr_dir *dir, int level, /* VADWR_COMP_xxx 
     }
   }
 
-  char *xname = normalize_name(dir->mman, pkfname);
-  if (xname == NULL) return VWADWR_ERR_NAME;
-
   // we don't know sizes and such yet, so use zeroes
   vwadwr_result rescode = vwadwr_append_file_info(dir, pkfname, groupname, 0, ftime);
   if (rescode != VWADWR_OK) {
