@@ -438,7 +438,7 @@ static void FilterIt (TArray<VStr> &arr, VStr base) {
     int idx = 0;
     while (idx < arr.length()) {
       VStr nx = arr[idx].StripExtension();
-      if (nx.strEquCI(base)) {
+      if (nx.strEqu(base)) {
         arr.removeAt(idx);
       } else {
         idx += 1;
@@ -475,13 +475,14 @@ bool VFileDirectory::CheckLoneWad () {
     if (fn.isEmpty() || fn.endsWith("/")) continue;
     if (fn.indexOf('/') >= 0) return false; // subdirs, don't bother
     // remember interesting files
+    fn = fn.toLowerCase();
     if (fn.endsWith(".wad")) wads.Append(fn);
-    else if (fn.strEquCI("readme")) continue;
-    else if (fn.strEquCI("readme.txt")) continue;
-    else if (fn.strEquCI("credits.txt")) continue;
-    else if (fn.strEquCI("authors.txt")) continue;
-    else if (fn.strEquCI("license")) continue;
-    else if (fn.strEquCI("license.txt")) continue;
+    else if (fn.strEqu("readme")) continue;
+    else if (fn.strEqu("readme.txt")) continue;
+    else if (fn.strEqu("credits.txt")) continue;
+    else if (fn.strEqu("authors.txt")) continue;
+    else if (fn.strEqu("license")) continue;
+    else if (fn.strEqu("license.txt")) continue;
     else if (fn.endsWith(".txt")) txts.Append(fn);
     else if (fn.endsWith(".deh")) dehs.Append(fn);
     else return false;
