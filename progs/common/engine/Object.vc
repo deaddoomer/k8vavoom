@@ -1398,6 +1398,7 @@ native static final int GetClassInstanceCount (class C) [property(class) Instanc
 native static final int GetClassInstanceCountWithSub (class C) [property(class) InstanceCountWithSub];
 native static final int GetClassInstanceSize (class C) [property(class) InstanceSize];
 native static final state GetNoJumpState ();
+native static final state GetInvalidState ();
 
 
 // ////////////////////////////////////////////////////////////////////////// //

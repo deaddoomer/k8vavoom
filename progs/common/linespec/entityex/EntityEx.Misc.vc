@@ -3892,11 +3892,11 @@ final state ResolveBadState (string who, optional string xmsg) {
 //===========================================================================
 final state ResolveBadStateJump (optional string xmsg) {
   if (!GetStateWarnedFlag(XLevel.CallingState)) {
-    string who = (XLevel.StateCall->Item ? va("item `%C` ", XLevel.StateCall->Item) : "");
+    string who = (XLevel.StateCall && XLevel.StateCall->Item ? va("item `%C` ", XLevel.StateCall->Item) : "(no statecall)");
     if (xmsg!specified && xmsg) {
-      printwarn("unknown %sdecorate label (%s) (actor is `%C`) -- probably broken code!", who, xmsg, self);
+      printwarn("unknown %s decorate label (%s) (actor is `%C`) -- probably broken code!", who, xmsg, self);
     } else {
-      printwarn("unknown %sdecorate label (actor is `%C`) -- probably broken code!", who, self);
+      printwarn("unknown %s decorate label (actor is `%C`) -- probably broken code!", who, self);
     }
     if (XLevel.CallingState) printwarn("... current state: %s", XLevel.CallingState);
     SetStateWarnedFlag(XLevel.CallingState);
@@ -3961,7 +3961,9 @@ final state FindJumpState (name Label/*, optional int offset*/) {
     // `item` is the original caller, we should follow its states here
     state res = XLevel.StateCall->Item.FindState(Label);
     //if (offset && res) res = FindJumpStateOfsForState(res, offset);
-    if (!res) res = ResolveBadStateLabel(Label, va("item `%C`", XLevel.StateCall->Item), "statecall");
+    if (!res && res == GetInvalidState()) {
+      res = ResolveBadStateLabel(Label, va("item `%C`", XLevel.StateCall->Item), "statecall");
+    }
     return res;
   }
 
@@ -3976,7 +3978,9 @@ final state FindJumpState (name Label/*, optional int offset*/) {
       if (!PlayerEx(Player).ReadyWeapon) return none;
       state res = PlayerEx(Player).ReadyWeapon.FindState(Label);
       //if (offset && res) res = FindJumpStateOfsForState(res, offset);
-      if (!res) res = ResolveBadStateLabel(Label, va("weapon `%C`", PlayerEx(Player).ReadyWeapon));
+      if (!res && res == GetInvalidState()) {
+        res = ResolveBadStateLabel(Label, va("weapon `%C`", PlayerEx(Player).ReadyWeapon));
+      }
       return res;
     }
   }
@@ -3984,7 +3988,9 @@ final state FindJumpState (name Label/*, optional int offset*/) {
   // normal state jump
   state res = FindState(Label);
   //if (offset && res) res = FindJumpStateOfsForState(res, offset);
-  if (!res) res = ResolveBadStateLabel(Label, "actor");
+  if (!res && res == GetInvalidState()) {
+    res = ResolveBadStateLabel(Label, "actor");
+  }
   return res;
 }
 
@@ -4062,7 +4068,11 @@ final void PlrSetAngleInterp (ref BasePlayer::VPlrAngleInterp ii, float prevangl
 //
 //===========================================================================
 final void DoJump (state aState, optional bool affectStateCallResult) {
-  if (!aState) aState = ResolveBadStateJump("jumpdest");
+  // k8: do we need this at all?
+  if (!aState && aState == GetInvalidState()) {
+    aState = ResolveBadStateJump("jumpdest");
+  }
+  //
   if (XLevel.StateCall) {
     XLevel.StateCall->State = aState;
     // shoult state jump affect state chain results?
