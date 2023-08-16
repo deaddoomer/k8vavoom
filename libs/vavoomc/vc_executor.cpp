@@ -2228,9 +2228,10 @@ func_loop:
         BOOLOP(p, !=);
         PR_VM_BREAK;
 
+      //FIXME: split this opcode to state and other pointers
       PR_VM_CASE(OPC_PtrToBool)
         ++ip;
-        sp[-1].i = !!sp[-1].p;
+        sp[-1].i = (sp[-1].p != nullptr && !VState::IsInvalidState(sp[-1].p));
         PR_VM_BREAK;
 
       PR_VM_CASE(OPC_PtrSubtract)

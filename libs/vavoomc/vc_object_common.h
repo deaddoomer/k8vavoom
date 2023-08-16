@@ -209,6 +209,7 @@
   DECLARE_FUNCTION(GetClassFirstState)
   DECLARE_FUNCTION(GetClassGameObjName)
   DECLARE_FUNCTION(GetNoJumpState)
+  DECLARE_FUNCTION(GetInvalidState)
 
   DECLARE_FUNCTION(GetClassInstanceCount)
   DECLARE_FUNCTION(GetClassInstanceCountWithSub)

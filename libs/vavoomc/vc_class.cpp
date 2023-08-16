@@ -899,19 +899,34 @@ int VClass::GetMethodIndex (VName AName) const {
 
 //==========================================================================
 //
+//  IsNullStateName
+//
+//==========================================================================
+static inline bool IsNullStateName (const char *name) {
+  return
+    name == nullptr ||
+    name[0] == 0 ||
+    VStr::strEquCI(name, "none") ||
+    VStr::strEquCI(name, "null") ||
+    VStr::strEquCI(name, "nil") ||
+    VStr::strEquCI(name, "false") ||
+    false;
+}
+
+
+//==========================================================================
+//
 //  VClass::FindState
 //
 //==========================================================================
 VState *VClass::FindState (VName AName) {
   if (AName == NAME_None) return nullptr/*VState::GetNoJumpState()*/;
-  //if (VStr::ICmp(*AName, "none") == 0) return /*nullptr*/VState::GetNoJumpState();
-  if (VStr::strEquCI(*AName, "none") || VStr::strEquCI(*AName, "false")) return nullptr/*VState::GetNoJumpState()*/;
+  if (IsNullStateName(*AName)) return nullptr/*VState::GetNoJumpState()*/;
   for (VState *s = States; s; s = s->Next) {
     if (VStr::ICmp(*s->Name, *AName) == 0) return s;
   }
   if (ParentClass) return ParentClass->FindState(AName);
-  //if (VStr::ICmp(*AName, "null") == 0) return nullptr;
-  return nullptr;
+  return VState::GetInvalidState();
 }
 
 
@@ -922,11 +937,11 @@ VState *VClass::FindState (VName AName) {
 //==========================================================================
 VState *VClass::FindStateChecked (VName AName) {
   if (AName == NAME_None) return nullptr/*VState::GetNoJumpState()*/;
-  if (VStr::strEquCI(*AName, "none") || VStr::strEquCI(*AName, "false")) return nullptr/*VState::GetNoJumpState()*/;
+  if (IsNullStateName(*AName)) return nullptr/*VState::GetNoJumpState()*/;
   VState *s = FindState(AName);
   if (!s) {
     //HACK!
-    if (VStr::strEquCI(*AName, "null") || VStr::strEquCI(*AName, "nil")) return nullptr;
+    //if (VStr::strEquCI(*AName, "null") || VStr::strEquCI(*AName, "nil")) return nullptr;
     VPackage::InternalFatalError(va("State `%s` not found in class `%s`", *AName, GetName()));
   }
   return s;
@@ -940,9 +955,7 @@ VState *VClass::FindStateChecked (VName AName) {
 //==========================================================================
 VStateLabel *VClass::FindStateLabel (VName AName, VName SubLabel, bool Exact) {
   if (AName == NAME_None) return nullptr/*VState::GetNoJumpState()*/;
-  //if (VStr::ICmp(*AName, "None") == 0 || VStr::ICmp(*AName, "Null") == 0) return nullptr;
-  if (VStr::strEquCI(*AName, "none") || VStr::strEquCI(*AName, "false")) return nullptr/*VState::GetNoJumpState()*/;
-  if (VStr::strEquCI(*AName, "null") || VStr::strEquCI(*AName, "nil")) return nullptr;
+  if (IsNullStateName(*AName)) return nullptr/*VState::GetNoJumpState()*/;
 
   if (SubLabel == NAME_None) {
     // remap old death state labels to proper names
@@ -953,7 +966,7 @@ VStateLabel *VClass::FindStateLabel (VName AName, VName SubLabel, bool Exact) {
 
     // resolve "Super::", because why not?
     VStr CheckName(AName);
-    int DCol = CheckName.IndexOf("::");
+    const int DCol = CheckName.IndexOf("::");
     if (DCol >= 0) {
       VClass *CheckClass;
       VStr ClassNameStr(CheckName, 0, DCol);
@@ -1011,7 +1024,8 @@ VStateLabel *VClass::FindStateLabel (VName AName, VName SubLabel, bool Exact) {
 //
 //==========================================================================
 VStateLabel *VClass::FindStateLabel (TArray<VName> &Names, bool Exact) {
-  if (Names.length() > 0 && (VStr::ICmp(*Names[0], "None") == 0 || VStr::ICmp(*Names[0], "Null") == 0)) return nullptr;
+  //if (Names.length() > 0 && (VStr::ICmp(*Names[0], "None") == 0 || VStr::ICmp(*Names[0], "Null") == 0)) return nullptr;
+  if (Names.length() > 0 && IsNullStateName(*Names[0])) return nullptr/*VState::GetNoJumpState()*/;
   TArray<VStateLabel> *List = &StateLabels;
   VStateLabel *Best = nullptr;
   for (int ni = 0; ni < Names.length(); ++ni) {
@@ -1927,8 +1941,9 @@ VState *VClass::ResolveStateLabel (const TLocation &Loc, VName LabelName, int Of
     CheckName = VStr(CheckName, DCol+2, CheckName.Length()-DCol-2);
   }
 
-  if (VStr::ICmp(*CheckName, "Null") == 0) return nullptr;
-  if (VStr::ICmp(*CheckName, "None") == 0) return nullptr;
+  //if (VStr::ICmp(*CheckName, "Null") == 0) return nullptr;
+  //if (VStr::ICmp(*CheckName, "None") == 0) return nullptr;
+  if (IsNullStateName(*CheckName)) return nullptr/*VState::GetNoJumpState()*/;
 
   TArray<VName> Names;
   StaticSplitStateLabel(CheckName, Names);

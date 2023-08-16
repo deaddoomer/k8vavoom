@@ -116,6 +116,10 @@ public:
 
 private:
   static VState *mNoJumpState;
+  // this state is noop; it is used in rt state resolver to
+  // indicate an invalid state (because `none` is valid one)
+  // created in `StaticInit()`
+  static VState *mInvalidState;
 
 public:
   VState (VName AName, VMemberBase *AOuter, TLocation ALoc);
@@ -138,8 +142,13 @@ public:
     return res;
   }
 
+  inline operator bool () const noexcept { return (!this || this == mInvalidState); }
+
   inline static VState *GetNoJumpState () noexcept { return mNoJumpState; }
-  inline static bool IsNoJumpState (const VState *st) noexcept { return (st == mNoJumpState); }
+  inline static bool IsNoJumpState (const void *st) noexcept { return (st == (void *)mNoJumpState); }
+
+  inline static VState *GetInvalidState () noexcept { return mInvalidState; }
+  inline static bool IsInvalidState (const void *st) noexcept { return (st == (void *)mInvalidState); }
 
   // called from `VBaseMember::StaticInit()`
   static void StaticInit ();
