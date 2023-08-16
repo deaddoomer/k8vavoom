@@ -77,27 +77,29 @@ enum { NUM_AUTOSAVES = 9 };
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-#define NEWFTM_FNAME_SAVE_HEADER   "k8vavoom_savegame_header.dat"
-#define NEWFTM_FNAME_SAVE_DESCR    "description.dat"
-#define NEWFTM_FNAME_SAVE_WADLIST  "wadlist.dat"
-#define NEWFTM_FNAME_SAVE_HWADLIST "wadlist.txt"
-#define NEWFTM_FNAME_SAVE_CURRMAP  "current_map.dat"
-#define NEWFTM_FNAME_SAVE_MAPLIST  "maplist.dat"
-#define NEWFTM_FNAME_SAVE_CPOINT   "checkpoint.dat"
-#define NEWFTM_FNAME_SAVE_SKILL    "skill.dat"
-#define NEWFTM_FNAME_SAVE_DATE     "datetime.dat"
+#define NEWFMT_VWAD_AUTHOR  "k8vavoom engine (save game)"
 
-#define NEWFTM_FNAME_MAP_STRTBL    "strings.dat"
-#define NEWFTM_FNAME_MAP_NAMES     "names.dat"
-#define NEWFTM_FNAME_MAP_ACSEXPT   "acs_exports.dat"
-#define NEWFTM_FNAME_MAP_WORDINFO  "worldinfo.dat"
-#define NEWFTM_FNAME_MAP_ACTPLYS   "active_players.dat"
-#define NEWFTM_FNAME_MAP_EXPOBJNS  "object_nameidx.dat"
-#define NEWFTM_FNAME_MAP_THINKERS  "object_data.dat"
-#define NEWFTM_FNAME_MAP_ACS       "acs_state.dat"
-#define NEWFTM_FNAME_MAP_ACS_DATA  "acs_data.dat"
-#define NEWFTM_FNAME_MAP_SOUNDS    "sounds.dat"
-#define NEWFTM_FNAME_MAP_GINFO     "ginfo.dat"
+#define NEWFMT_FNAME_SAVE_HEADER   "k8vavoom_savegame_header.dat"
+#define NEWFMT_FNAME_SAVE_DESCR    "description.dat"
+#define NEWFMT_FNAME_SAVE_WADLIST  "wadlist.dat"
+#define NEWFMT_FNAME_SAVE_HWADLIST "wadlist.txt"
+#define NEWFMT_FNAME_SAVE_CURRMAP  "current_map.dat"
+#define NEWFMT_FNAME_SAVE_MAPLIST  "maplist.dat"
+#define NEWFMT_FNAME_SAVE_CPOINT   "checkpoint.dat"
+#define NEWFMT_FNAME_SAVE_SKILL    "skill.dat"
+#define NEWFMT_FNAME_SAVE_DATE     "datetime.dat"
+
+#define NEWFMT_FNAME_MAP_STRTBL    "strings.dat"
+#define NEWFMT_FNAME_MAP_NAMES     "names.dat"
+#define NEWFMT_FNAME_MAP_ACSEXPT   "acs_exports.dat"
+#define NEWFMT_FNAME_MAP_WORDINFO  "worldinfo.dat"
+#define NEWFMT_FNAME_MAP_ACTPLYS   "active_players.dat"
+#define NEWFMT_FNAME_MAP_EXPOBJNS  "object_nameidx.dat"
+#define NEWFMT_FNAME_MAP_THINKERS  "object_data.dat"
+#define NEWFMT_FNAME_MAP_ACS       "acs_state.dat"
+#define NEWFMT_FNAME_MAP_ACS_DATA  "acs_data.dat"
+#define NEWFMT_FNAME_MAP_SOUNDS    "sounds.dat"
+#define NEWFMT_FNAME_MAP_GINFO     "ginfo.dat"
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -483,9 +485,9 @@ private:
 
 private:
   void LoadStringTable () {
-    if (!vwad->FileExists(NEWFTM_FNAME_MAP_STRTBL)) return;
+    if (!vwad->FileExists(NEWFMT_FNAME_MAP_STRTBL)) return;
 
-    VStream *sst = vwad->OpenFile(NEWFTM_FNAME_MAP_STRTBL);
+    VStream *sst = vwad->OpenFile(NEWFMT_FNAME_MAP_STRTBL);
     if (!sst) { SetError(); return; }
 
     strMapper = new VStreamIOStrMapperLoader();
@@ -1065,7 +1067,7 @@ public:
             level = VWADWR_COMP_FAST;
             save_compression_level = level;
           }
-          VStream *wo = vwad->CreateFileDirect(NEWFTM_FNAME_MAP_STRTBL, level);
+          VStream *wo = vwad->CreateFileDirect(NEWFMT_FNAME_MAP_STRTBL, level);
           if (wo) {
             strMapper->WriteStrings(wo);
             err = !wo->Close();
@@ -1584,6 +1586,16 @@ static VStream *SV_OpenSlotFileReadWithFmt (int Slot, VVWadArchive *&vwad) {
       vwad = new VVWadArchive(VStr(va("slot_%02d_main", Slot)), Strm, true);
       if (!vwad->IsOpen()) {
         // the stream is already destroyed
+        delete vwad; vwad = nullptr;
+        saveFileBase.clear();
+        return nullptr;
+      }
+      // check author
+      if (vwad->GetAuthor() != NEWFMT_VWAD_AUTHOR) {
+        #if 0
+        GCon->Log(NAME_Debug, "invalid save VWAD signature");
+        #endif
+        // the stream will be destroyed automatically
         delete vwad; vwad = nullptr;
         saveFileBase.clear();
         return nullptr;
@@ -2130,7 +2142,7 @@ bool VSaveSlot::LoadSlotOld (int Slot, VStream *Strm) {
 bool VSaveSlot::LoadSlotNew (int Slot, VVWadArchive *vwad) {
   Clear(true);
 
-  VStream *Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_HEADER);
+  VStream *Strm = vwad->OpenFile(NEWFMT_FNAME_SAVE_HEADER);
   if (!Strm) return false;
   /*
   if (Strm->GetGroupName() != "<savegame>") {
@@ -2149,7 +2161,7 @@ bool VSaveSlot::LoadSlotNew (int Slot, VVWadArchive *vwad) {
     return false;
   }
 
-  Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_DESCR);
+  Strm = vwad->OpenFile(NEWFMT_FNAME_SAVE_DESCR);
   if (!Strm) return false;
   *Strm << Description;
   if (Strm->IsError()) { VStream::Destroy(Strm); return false; }
@@ -2157,7 +2169,7 @@ bool VSaveSlot::LoadSlotNew (int Slot, VVWadArchive *vwad) {
 
   // check list of loaded modules
   if (!dbg_load_ignore_wadlist.asBool()) {
-    Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_WADLIST);
+    Strm = vwad->OpenFile(NEWFMT_FNAME_SAVE_WADLIST);
     if (!Strm) return false;
     const bool modok = CheckModList(Strm, Slot);
     VStream::Destroy(Strm);
@@ -2165,7 +2177,7 @@ bool VSaveSlot::LoadSlotNew (int Slot, VVWadArchive *vwad) {
   }
 
   // load current map name
-  Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_CURRMAP);
+  Strm = vwad->OpenFile(NEWFMT_FNAME_SAVE_CURRMAP);
   if (!Strm) return false;
   VStr TmpName;
   *Strm << TmpName;
@@ -2176,7 +2188,7 @@ bool VSaveSlot::LoadSlotNew (int Slot, VVWadArchive *vwad) {
 
   // load map list
   vint32 NumMaps = -1;
-  Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_MAPLIST);
+  Strm = vwad->OpenFile(NEWFMT_FNAME_SAVE_MAPLIST);
   if (Strm) {
     *Strm << STRM_INDEX(NumMaps);
     if (Strm->IsError() || NumMaps < 0 || NumMaps > 1024) { VStream::Destroy(Strm); return false; }
@@ -2214,7 +2226,7 @@ bool VSaveSlot::LoadSlotNew (int Slot, VVWadArchive *vwad) {
     // load players inventory
     VSavedCheckpoint &cp = CheckPoint;
     cp.Clear();
-    Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_CPOINT);
+    Strm = vwad->OpenFile(NEWFMT_FNAME_SAVE_CPOINT);
     if (!Strm) return false;
     cp.Serialise(Strm);
     if (Strm->IsError()) { VStream::Destroy(Strm); return false; }
@@ -2225,7 +2237,7 @@ bool VSaveSlot::LoadSlotNew (int Slot, VVWadArchive *vwad) {
     cp.Clear();
     // load skill level
     SavedSkill = -1;
-    Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_SKILL);
+    Strm = vwad->OpenFile(NEWFMT_FNAME_SAVE_SKILL);
     if (Strm) {
       vint32 sk = -1;
       *Strm << sk;
@@ -2442,7 +2454,7 @@ bool VSaveSlot::SaveToSlotNew (int Slot, VStr &savefilename) {
   savefilename = ArcStrm->GetName();
 
   VVWadNewArchive *vmain = new VVWadNewArchive("<main-save>",
-                                               "k8vavoom engine (save game)",
+                                               NEWFMT_VWAD_AUTHOR,
                                                Description + " | "+TimeVal2Str(&tv),
                                                ArcStrm, true/*owned*/);
   if (vmain->IsError()) {
@@ -2454,18 +2466,18 @@ bool VSaveSlot::SaveToSlotNew (int Slot, VStr &savefilename) {
   VStream *Strm = nullptr;
 
   // version
-  CREATE_VWAD_FILE(NEWFTM_FNAME_SAVE_HEADER);
+  CREATE_VWAD_FILE(NEWFMT_FNAME_SAVE_HEADER);
   vuint8 savever = 0;
   *Strm << savever;
   CLOSE_VWAD_FILE();
 
-  CREATE_VWAD_FILE(NEWFTM_FNAME_SAVE_DESCR);
+  CREATE_VWAD_FILE(NEWFMT_FNAME_SAVE_DESCR);
   *Strm << Description;
   CLOSE_VWAD_FILE();
 
   // extended data: date value and date string
   // date value
-  CREATE_VWAD_FILE(NEWFTM_FNAME_SAVE_DATE);
+  CREATE_VWAD_FILE(NEWFMT_FNAME_SAVE_DATE);
   *Strm << tv.secs << tv.usecs << tv.secshi;
   // date string (unused, but nice to have)
   VStr dstr = TimeVal2Str(&tv);
@@ -2474,7 +2486,7 @@ bool VSaveSlot::SaveToSlotNew (int Slot, VStr &savefilename) {
 
   // write list of loaded modules
   {
-    CREATE_VWAD_FILE(NEWFTM_FNAME_SAVE_WADLIST);
+    CREATE_VWAD_FILE(NEWFMT_FNAME_SAVE_WADLIST);
     auto wadlist = FL_GetWadPk3ListSmall();
     vint32 wcount = wadlist.length();
     *Strm << wcount;
@@ -2486,19 +2498,19 @@ bool VSaveSlot::SaveToSlotNew (int Slot, VStr &savefilename) {
     VStr sres;
     sres = "# automatically generated, and purely informational\n";
     for (VStr w : wadlist) { sres += w; sres += "\n"; }
-    CREATE_VWAD_FILE(NEWFTM_FNAME_SAVE_HWADLIST);
+    CREATE_VWAD_FILE(NEWFMT_FNAME_SAVE_HWADLIST);
     Strm->Serialise((void *)sres.getCStr(), sres.length());
     CLOSE_VWAD_FILE();
   }
 
   // write current map name
-  CREATE_VWAD_FILE(NEWFTM_FNAME_SAVE_CURRMAP);
+  CREATE_VWAD_FILE(NEWFMT_FNAME_SAVE_CURRMAP);
   VStr TmpName(CurrentMap);
   *Strm << TmpName;
   CLOSE_VWAD_FILE();
 
   // write map list
-  CREATE_VWAD_FILE(NEWFTM_FNAME_SAVE_MAPLIST);
+  CREATE_VWAD_FILE(NEWFMT_FNAME_SAVE_MAPLIST);
   vint32 NumMaps = Maps.length();
   *Strm << STRM_INDEX(NumMaps);
   for (int i = 0; i < Maps.length(); ++i) {
@@ -2526,7 +2538,7 @@ bool VSaveSlot::SaveToSlotNew (int Slot, VStr &savefilename) {
   if (NumMaps == 0) {
     // save players inventory
     VSavedCheckpoint &cp = CheckPoint;
-    CREATE_VWAD_FILE(NEWFTM_FNAME_SAVE_CPOINT);
+    CREATE_VWAD_FILE(NEWFMT_FNAME_SAVE_CPOINT);
     cp.Serialise(Strm);
     CLOSE_VWAD_FILE();
     SavedSkill = cp.Skill;
@@ -2535,7 +2547,7 @@ bool VSaveSlot::SaveToSlotNew (int Slot, VStr &savefilename) {
     cp.Clear();
     // write skill level
     if (SavedSkill >= 0 && SavedSkill < 32) {
-      CREATE_VWAD_FILE(NEWFTM_FNAME_SAVE_SKILL);
+      CREATE_VWAD_FILE(NEWFMT_FNAME_SAVE_SKILL);
       vint32 sk = SavedSkill;
       *Strm << sk;
       CLOSE_VWAD_FILE();
@@ -2619,7 +2631,7 @@ static bool SV_GetSaveStringOld (int Slot, VStr &Desc, VStream *Strm) {
 static bool SV_GetSaveStringNew (int Slot, VStr &Desc, VVWadArchive *vwad) {
   VStream *Strm;
 
-  Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_DESCR);
+  Strm = vwad->OpenFile(NEWFMT_FNAME_SAVE_DESCR);
   if (!Strm) return false;
   *Strm << Desc;
   if (Strm->IsError()) { VStream::Destroy(Strm); return false; }
@@ -2628,7 +2640,7 @@ static bool SV_GetSaveStringNew (int Slot, VStr &Desc, VVWadArchive *vwad) {
   #if 0
   const bool goodSave = true;
   #else
-  Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_WADLIST);
+  Strm = vwad->OpenFile(NEWFMT_FNAME_SAVE_WADLIST);
   if (!Strm) return false;
   const bool goodSave = CheckModList(Strm, Slot, false, true);
   VStream::Destroy(Strm);
@@ -2675,7 +2687,7 @@ void SV_GetSaveDateString (int Slot, VStr &datestr) {
   bool res;
   if (vwad) {
     res = false;
-    Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_DATE);
+    Strm = vwad->OpenFile(NEWFMT_FNAME_SAVE_DATE);
     if (Strm) {
       TTimeVal tv;
       memset((void *)&tv, 0, sizeof(tv));
@@ -2717,7 +2729,7 @@ static bool SV_GetSaveDateTVal (int Slot, TTimeVal *tv) {
   bool res;
   if (vwad) {
     res = false;
-    Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_DATE);
+    Strm = vwad->OpenFile(NEWFMT_FNAME_SAVE_DATE);
     if (Strm) {
       TTimeVal tv;
       memset((void *)&tv, 0, sizeof(tv));
@@ -2791,7 +2803,7 @@ static inline void AssertSegment (VStream &Strm, gameArchiveSegment_t segType) {
 //==========================================================================
 static void ArchiveNames (VSaveWriterStream *Saver) {
   if (Saver->IsNewFormat()) {
-    if (!Saver->CreateFileDirect(NEWFTM_FNAME_MAP_NAMES)) return;
+    if (!Saver->CreateFileDirect(NEWFMT_FNAME_MAP_NAMES)) return;
   } else {
     // write offset to the names in the beginning of the file
     vint32 NamesOffset = Saver->Tell();
@@ -2812,7 +2824,7 @@ static void ArchiveNames (VSaveWriterStream *Saver) {
   }
   Saver->CloseFile();
 
-  if (!Saver->CreateFileDirect(NEWFTM_FNAME_MAP_ACSEXPT)) return;
+  if (!Saver->CreateFileDirect(NEWFMT_FNAME_MAP_ACSEXPT)) return;
   // serialise number of ACS exports
   vint32 numScripts = Saver->AcsExports.length();
   *Saver << STRM_INDEX(numScripts);
@@ -2830,7 +2842,7 @@ static void UnarchiveNames (VSaveLoaderStream *Loader) {
   vint32 TmpOffset = 0;
 
   if (Loader->IsNewFormat()) {
-    Loader->OpenFile(NEWFTM_FNAME_MAP_NAMES);
+    Loader->OpenFile(NEWFMT_FNAME_MAP_NAMES);
   } else {
     *Loader << NamesOffset;
     TmpOffset = Loader->Tell();
@@ -2851,7 +2863,7 @@ static void UnarchiveNames (VSaveLoaderStream *Loader) {
   }
 
   // unserialise number of ACS exports
-  Loader->OpenFile(NEWFTM_FNAME_MAP_ACSEXPT);
+  Loader->OpenFile(NEWFMT_FNAME_MAP_ACSEXPT);
   vint32 numScripts = -1;
   *Loader << STRM_INDEX(numScripts);
   if (numScripts < 0 || numScripts >= 1024*1024*2) Host_Error("invalid number of ACS scripts (%d)", numScripts);
@@ -2883,13 +2895,13 @@ static void ArchiveThinkers (VSaveWriterStream *Saver, bool SavingPlayers) {
   Saver->RegisterObject(GLevel);
 
   // add world info
-  if (!Saver->CreateFileDirect(NEWFTM_FNAME_MAP_WORDINFO)) return;
+  if (!Saver->CreateFileDirect(NEWFMT_FNAME_MAP_WORDINFO)) return;
   vuint8 WorldInfoSaved = (vuint8)SavingPlayers;
   *Saver << WorldInfoSaved;
   if (WorldInfoSaved) Saver->RegisterObject(GGameInfo->WorldInfo);
   Saver->CloseFile();
 
-  if (!Saver->CreateFileDirect(NEWFTM_FNAME_MAP_ACTPLYS)) return;
+  if (!Saver->CreateFileDirect(NEWFMT_FNAME_MAP_ACTPLYS)) return;
   // add players
   {
     vassert(MAXPLAYERS >= 0 && MAXPLAYERS <= 254);
@@ -2917,7 +2929,7 @@ static void ArchiveThinkers (VSaveWriterStream *Saver, bool SavingPlayers) {
     */
   }
 
-  if (!Saver->CreateFileDirect(NEWFTM_FNAME_MAP_EXPOBJNS)) return;
+  if (!Saver->CreateFileDirect(NEWFMT_FNAME_MAP_EXPOBJNS)) return;
   // write exported object names
   vint32 NumObjects = Saver->Exports.length()-ThinkersStart;
   *Saver << STRM_INDEX(NumObjects);
@@ -2939,7 +2951,7 @@ static void ArchiveThinkers (VSaveWriterStream *Saver, bool SavingPlayers) {
   Saver->CloseFile();
   #endif
 
-  if (!Saver->CreateFileBuffered(NEWFTM_FNAME_MAP_THINKERS)) return;
+  if (!Saver->CreateFileBuffered(NEWFMT_FNAME_MAP_THINKERS)) return;
   // serialise objects
   for (int i = 0; i < Saver->Exports.length(); ++i) {
     if (dbg_save_verbose&0x10) GCon->Logf("** SR #%d: <%s>", i, *Saver->Exports[i]->GetClass()->GetFullName());
@@ -2949,13 +2961,13 @@ static void ArchiveThinkers (VSaveWriterStream *Saver, bool SavingPlayers) {
 
   //GCon->Logf("dbg_save_verbose=0x%04x (%s) %d", dbg_save_verbose.asInt(), *dbg_save_verbose.asStr(), dbg_save_verbose.asInt());
 
-  if (!Saver->CreateFileBuffered(NEWFTM_FNAME_MAP_ACS)) return;
+  if (!Saver->CreateFileBuffered(NEWFMT_FNAME_MAP_ACS)) return;
   // collect acs scripts, serialize acs level
   GLevel->Acs->Serialise(*Saver);
   Saver->CloseFile();
 
   // save collected VAcs objects contents
-  if (!Saver->CreateFileBuffered(NEWFTM_FNAME_MAP_ACS_DATA)) return;
+  if (!Saver->CreateFileBuffered(NEWFMT_FNAME_MAP_ACS_DATA)) return;
   for (vint32 f = 0; f < Saver->AcsExports.length(); ++f) {
     Saver->AcsExports[f]->Serialise(*Saver);
   }
@@ -2979,13 +2991,13 @@ static void UnarchiveThinkers (VSaveLoaderStream *Loader) {
   Loader->Exports.Append(GLevel);
 
   // add world info
-  Loader->OpenFile(NEWFTM_FNAME_MAP_WORDINFO);
+  Loader->OpenFile(NEWFMT_FNAME_MAP_WORDINFO);
   vuint8 WorldInfoSaved;
   *Loader << WorldInfoSaved;
   if (WorldInfoSaved) Loader->Exports.Append(GGameInfo->WorldInfo);
 
   // add players
-  Loader->OpenFile(NEWFTM_FNAME_MAP_ACTPLYS);
+  Loader->OpenFile(NEWFMT_FNAME_MAP_ACTPLYS);
   {
     vuint8 mpl = 255;
     *Loader << mpl;
@@ -3009,7 +3021,7 @@ static void UnarchiveThinkers (VSaveLoaderStream *Loader) {
 
   bool hasSomethingToRemove = false;
 
-  Loader->OpenFile(NEWFTM_FNAME_MAP_EXPOBJNS);
+  Loader->OpenFile(NEWFMT_FNAME_MAP_EXPOBJNS);
   vint32 NumObjects;
   *Loader << STRM_INDEX(NumObjects);
   if (NumObjects < 0) Host_Error("invalid number of VM objects");
@@ -3060,7 +3072,7 @@ static void UnarchiveThinkers (VSaveLoaderStream *Loader) {
   GLevelInfo->Game = GGameInfo;
   GLevelInfo->World = GGameInfo->WorldInfo;
 
-  Loader->OpenFile(NEWFTM_FNAME_MAP_THINKERS);
+  Loader->OpenFile(NEWFMT_FNAME_MAP_THINKERS);
   for (int i = 0; i < Loader->Exports.length(); ++i) {
     vassert(Loader->Exports[i]);
     #ifdef VAVOOM_LOADER_CAN_SKIP_CLASSES
@@ -3080,11 +3092,11 @@ static void UnarchiveThinkers (VSaveLoaderStream *Loader) {
   }
   #endif
 
-  Loader->OpenFile(NEWFTM_FNAME_MAP_ACS);
+  Loader->OpenFile(NEWFMT_FNAME_MAP_ACS);
   // unserialise acs script
   GLevel->Acs->Serialise(*Loader);
 
-  Loader->OpenFile(NEWFTM_FNAME_MAP_ACS_DATA);
+  Loader->OpenFile(NEWFMT_FNAME_MAP_ACS_DATA);
   // load collected VAcs objects contents
   for (vint32 f = 0; f < Loader->AcsExports.length(); ++f) {
     Loader->AcsExports[f]->Serialise(*Loader);
@@ -3117,7 +3129,7 @@ static void UnarchiveThinkers (VSaveLoaderStream *Loader) {
 static void ArchiveSounds (VSaveWriterStream *Saver) {
   if (Saver->IsNewFormat()) {
     #ifdef CLIENT
-    if (!Saver->CreateFileDirect(NEWFTM_FNAME_MAP_SOUNDS)) return;
+    if (!Saver->CreateFileDirect(NEWFMT_FNAME_MAP_SOUNDS)) return;
     GAudio->SerialiseSounds(*Saver);
     Saver->CloseFile();
     #endif
@@ -3142,7 +3154,7 @@ static void ArchiveSounds (VSaveWriterStream *Saver) {
 static void UnarchiveSounds (VSaveLoaderStream *Loader) {
   if (Loader->IsNewFormat()) {
     #ifdef CLIENT
-    Loader->OpenFile(NEWFTM_FNAME_MAP_SOUNDS);
+    Loader->OpenFile(NEWFMT_FNAME_MAP_SOUNDS);
     GAudio->SerialiseSounds(*Loader);
     #endif
   } else {
@@ -3311,7 +3323,7 @@ static void SV_SaveMap (bool savePlayers) {
     Saver = new VSaveWriterStream(vwad);
 
     // write the level timer
-    if (Saver->CreateFileDirect(NEWFTM_FNAME_MAP_GINFO)) {
+    if (Saver->CreateFileDirect(NEWFMT_FNAME_MAP_GINFO)) {
       *Saver << GLevel->Time << GLevel->TicTime;
       Saver->CloseFile();
     }
@@ -3587,7 +3599,7 @@ static bool SV_LoadMap (VName MapName, bool allowCheckpoints, bool hubTeleport) 
 
   // read the level timer
   if (Loader->IsNewFormat()) {
-    Loader->OpenFile(NEWFTM_FNAME_MAP_GINFO);
+    Loader->OpenFile(NEWFMT_FNAME_MAP_GINFO);
   } else {
     AssertSegment(*Loader, ASEG_MAP_HEADER);
   }
