@@ -79,6 +79,7 @@ enum { NUM_AUTOSAVES = 9 };
 #define NEWFTM_FNAME_SAVE_HEADER   "k8vavoom_savegame_header.dat"
 #define NEWFTM_FNAME_SAVE_DESCR    "description.dat"
 #define NEWFTM_FNAME_SAVE_WADLIST  "wadlist.dat"
+#define NEWFTM_FNAME_SAVE_HWADLIST "wadlist.txt"
 #define NEWFTM_FNAME_SAVE_CURRMAP  "current_map.dat"
 #define NEWFTM_FNAME_SAVE_MAPLIST  "maplist.dat"
 #define NEWFTM_FNAME_SAVE_CPOINT   "checkpoint.dat"
@@ -354,6 +355,8 @@ public:
   ~VSaveSlot () { Clear(true); }
 
   inline bool IsNewFormat () const noexcept { return newFormat; }
+  // DO NOT USE!
+  inline void ForceNewFormat () noexcept { newFormat = true; }
 
   void Clear (bool asNewFormat);
   bool LoadSlot (int Slot);
@@ -546,7 +549,8 @@ public:
       }
     } else {
       // what a brilliant error message! also, memleak
-      Host_Error("trying to read old safe as new save");
+      //Host_Error("trying to read old save as new save (vfs: %s)", *name);
+      // nope, this may be called for old saves
     }
   }
 
@@ -1341,7 +1345,7 @@ static VStr SV_GetSavesDir () {
 //==========================================================================
 static VStr GetSaveSlotCommonDirectoryPrefixOld0 () {
   vuint32 hash;
-  (void)SV_GetModListHash(&hash);
+  (void)SV_GetModListHashOld(&hash);
   VStr pfx = VStr::buf2hex(&hash, 4);
   return pfx;
 }
@@ -1353,9 +1357,8 @@ static VStr GetSaveSlotCommonDirectoryPrefixOld0 () {
 //
 //==========================================================================
 static VStr GetSaveSlotCommonDirectoryPrefixOld1 () {
-  vuint32 hash;
-  (void)SV_GetModListHashOld(&hash);
-  VStr pfx = VStr::buf2hex(&hash, 4);
+  vuint64 hash = SV_GetModListHashOld(nullptr);
+  VStr pfx = VStr::buf2hex(&hash, 8);
   return pfx;
 }
 
@@ -1387,9 +1390,11 @@ static void UpgradeSaveDirectories () {
     VStr oldpath;
 
     oldpath = xdir.appendPath(GetSaveSlotCommonDirectoryPrefixOld0());
+    //GCon->Logf("OLD0: <%s> -> <%s>", *oldpath, *newpath);
     if (!oldpath.IsEmpty() && oldpath != newpath) rename(*oldpath, *newpath);
 
     oldpath = xdir.appendPath(GetSaveSlotCommonDirectoryPrefixOld1());
+    //GCon->Logf("OLD1: <%s> -> <%s>", *oldpath, *newpath);
     if (!oldpath.IsEmpty() && oldpath != newpath) rename(*oldpath, *newpath);
   }
 }
@@ -1926,30 +1931,41 @@ bool VSaveSlot::LoadSlotOld (int Slot, VStream *Strm) {
   }
 
   // check list of loaded modules
-  auto wadlist = FL_GetWadPk3List();
-  vint32 wcount = wadlist.length();
+  vint32 wcount = -1;
   *Strm << wcount;
+  TArray<VStr> xwadlist;
 
   if (wcount < 1 || wcount > 8192) {
     GCon->Logf(NAME_Error, "Invalid savegame #%d (bad number of mods)", Slot);
     return false;
   }
 
-  if (!dbg_load_ignore_wadlist.asBool()) {
-    if (wcount != wadlist.length()) {
-      GCon->Logf(NAME_Error, "Invalid savegame #%d (bad number of mods)", Slot);
-      return false;
-    }
-  }
-
   for (int f = 0; f < wcount; ++f) {
     VStr s;
     *Strm << s;
-    if (!dbg_load_ignore_wadlist.asBool()) {
-      if (!CheckWadCompName(s, wadlist[f])) {
-        GCon->Logf(NAME_Error, "Invalid savegame #%d (bad mod)", Slot);
-        return false;
+    xwadlist.Append(s);
+  }
+
+  if (!dbg_load_ignore_wadlist.asBool()) {
+    bool ok = false;
+    auto wadlist = FL_GetWadPk3List();
+
+    if (wcount == wadlist.length()) {
+      ok = true;
+      for (int f = 0; ok && f < wcount; ++f) ok = CheckWadCompName(xwadlist[f], wadlist[f]);
+    }
+
+    if (!ok) {
+      auto wadlistNew = FL_GetWadPk3ListSmall();
+      if (wcount == wadlistNew.length()) {
+        ok = true;
+        for (int f = 0; ok && f < wcount; ++f) ok = CheckWadCompName(xwadlist[f], wadlistNew[f]);
       }
+    }
+
+    if (!ok) {
+      GCon->Logf(NAME_Error, "Invalid savegame #%d (bad mod)", Slot);
+      return false;
     }
   }
 
@@ -2065,8 +2081,7 @@ bool VSaveSlot::LoadSlotNew (int Slot, VVWadArchive *vwad) {
     Strm = vwad->OpenFile(NEWFTM_FNAME_SAVE_WADLIST);
     if (!Strm) return false;
 
-    auto wadlist = FL_GetWadPk3ListSmall();
-    vint32 wcount = wadlist.length();
+    vint32 wcount = -1;
     *Strm << wcount;
 
     if (wcount < 1 || wcount > 8192) {
@@ -2074,6 +2089,8 @@ bool VSaveSlot::LoadSlotNew (int Slot, VVWadArchive *vwad) {
       GCon->Logf(NAME_Error, "Invalid savegame #%d (bad number of mods)", Slot);
       return false;
     }
+
+    auto wadlist = FL_GetWadPk3ListSmall();
 
     if (wcount != wadlist.length()) {
       VStream::Destroy(Strm);
@@ -2262,7 +2279,7 @@ bool VSaveSlot::SaveToSlotOld (int Slot) {
   }
 
   // write list of loaded modules
-  auto wadlist = FL_GetWadPk3List();
+  auto wadlist = FL_GetWadPk3ListSmall();
   //GCon->Logf("====================="); for (int f = 0; f < wadlist.length(); ++f) GCon->Logf("  %d: %s", f, *wadlist[f]);
   vint32 wcount = wadlist.length();
   *Strm << wcount;
@@ -2404,6 +2421,14 @@ bool VSaveSlot::SaveToSlotNew (int Slot) {
     *Strm << wcount;
     for (int f = 0; f < wcount; ++f) *Strm << wadlist[f];
     CLOSE_VWAD_FILE();
+
+    // write human-readable list of loaded modules
+    // (it is purely informative)
+    VStr sres;
+    for (VStr w : wadlist) { sres += w; sres += "\n"; }
+    CREATE_VWAD_FILE(NEWFTM_FNAME_SAVE_HWADLIST);
+    Strm->Serialise((void *)sres.getCStr(), sres.length());
+    CLOSE_VWAD_FILE();
   }
 
   // write current map name
@@ -2512,17 +2537,36 @@ static bool SV_GetSaveStringOld (int Slot, VStr &Desc, VStream *Strm) {
   }
   if (goodSave) {
     // check list of loaded modules
-    auto wadlist = FL_GetWadPk3List();
-    vint32 wcount = wadlist.length();
+    vint32 wcount = -1;
     *Strm << wcount;
-    if (wcount < 1 || wcount > 8192 || wcount != wadlist.length()) {
+
+    if (wcount < 1 || wcount > 8192) {
       goodSave = false;
     } else {
+      TArray<VStr> xwadlist;
       for (int f = 0; f < wcount; ++f) {
         VStr s;
         *Strm << s;
-        if (!CheckWadCompName(s, wadlist[f])) { goodSave = false; break; }
+        xwadlist.Append(s);
       }
+
+      bool ok = false;
+      auto wadlist = FL_GetWadPk3List();
+
+      if (wcount == wadlist.length()) {
+        ok = true;
+        for (int f = 0; ok && f < wcount; ++f) ok = CheckWadCompName(xwadlist[f], wadlist[f]);
+      }
+
+      if (!ok) {
+        auto wadlistNew = FL_GetWadPk3ListSmall();
+        if (wcount == wadlistNew.length()) {
+          ok = true;
+          for (int f = 0; ok && f < wcount; ++f) ok = CheckWadCompName(xwadlist[f], wadlistNew[f]);
+        }
+      }
+
+      goodSave = ok;
     }
   }
   if (!goodSave) Desc = "*"+Desc;
@@ -3140,6 +3184,18 @@ static void SV_SaveMap (bool savePlayers) {
   Host_CollectGarbage(true);
 
   VSaveWriterStream *Saver;
+
+  // if we have no maps, or only one map that we will replace,
+  // convert the save to the new format
+
+  if (!BaseSlot.IsNewFormat()) {
+    if (BaseSlot.Maps.length() == 0 ||
+        (BaseSlot.Maps.length() == 1 && BaseSlot.Maps[0]->Name == GLevel->MapName))
+    {
+      GCon->Logf(NAME_Debug, "converted save game to new format.");
+      BaseSlot.ForceNewFormat();
+    }
+  }
 
   // open the output file
   if (!BaseSlot.IsNewFormat()) {

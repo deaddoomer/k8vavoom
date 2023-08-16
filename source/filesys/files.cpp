@@ -1104,6 +1104,23 @@ static TArray<VStr> wpklistSmall; // everything is lowercased
 
 //==========================================================================
 //
+//  fixWpkFileName
+//
+//==========================================================================
+static VStr fixWpkFileName (VStr fname) {
+  if (fname.IsEmpty()) return VStr::EmptyString;
+  // yeah, assume that they are the same
+  // (because i will prolly convert them)
+  if (fname == "player_zan.vwad") {
+    fname.chopRight(5);
+    fname += ".pk3";
+  }
+  return fname;
+}
+
+
+//==========================================================================
+//
 //  appendWpkSmallName
 //
 //==========================================================================
@@ -1193,7 +1210,7 @@ static void wpkAddMarked (int idx) {
     VStr fn = getNetPath(sp);
     if (fn.isEmpty()) continue;
     //GCon->Logf(NAME_Debug, "*** <%s> (%s) ***", *fn, *sp->GetPrefix());
-    wpklist.append(fn);
+    wpklist.append(fixWpkFileName(fn));
     // simplified list
     // lone files marked as paks too
     if (!sp->IsLoneWadArchive() && sp->IsAnyPak()) {
