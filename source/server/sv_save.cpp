@@ -1629,17 +1629,19 @@ static bool removeSlotSaveFiles (int slot, VStr keepFileName) {
       VStr fname = Sys_ReadDir(dir);
       if (fname.isEmpty()) break;
       if (fname.startsWithNoCase(svpfx) &&
-          (fname.endsWithNoCase(".vsg") || fname.endsWithNoCase(".vsg.lmap") ||
-           fname.endsWithNoCase(".vwad") || fname.endsWithNoCase(".vwad.lmap")))
+          (fname.endsWithNoCase(".vsg") || fname.endsWithNoCase(".vwad") ||
+           fname.endsWithNoCase(".lmap")))
       {
         VStr fn = svdir.appendPath(fname);
         if (fn != keepFileName) tokill.append(fn);
+      } else if (fname.endsWith(".$$$")) {
+        // various broken temp saves
+        VStr fn = svdir.appendPath(fname);
+        tokill.append(fn);
       }
     }
     Sys_CloseDir(dir);
   }
-
-  //if (tokill.length() > 4) return false; // something is VERY wrong here!
 
   for (int f = 0; f < tokill.length(); ++f) Sys_FileDelete(tokill[f]);
   return true;
