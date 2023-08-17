@@ -66,7 +66,7 @@ VVA_FORCEINLINE float fastInvSqrtf (const float n) noexcept {
   ufi.i = 0x5f375a86u-(ufi.i>>1); // Chris Lomont says that this is more accurate constant
   // one step of newton algorithm; can be repeated to increase accuracy
   ufi.f = ufi.f*(1.5f-(ndiv2*ufi.f*ufi.f));
-  // perform one more step; it doesn't really takes much time, but gives alot better accuracy
+  // perform one more step; it doesn't really takes much time, but gives a lot better accuracy
   ufi.f = ufi.f*(1.5f-(ndiv2*ufi.f*ufi.f));
   return ufi.f;
 }

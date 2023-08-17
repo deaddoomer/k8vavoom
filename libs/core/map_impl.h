@@ -813,7 +813,7 @@ public:
     return (newsz < mBSize);
   }
 
-  // call this instead of `rehash()` after alot of deletions
+  // call this instead of `rehash()` after a lot of deletions
   // there is no reason to move entries if no reallocation would occur
   void compact () noexcept {
     if (mBSize == 0) {

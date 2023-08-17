@@ -545,7 +545,7 @@ void VNetConnection::GetMessages (bool asHearbeat) {
     nanosleep(&sleepTime, nullptr);
   }
 
-  // we can have alot of small packets queued, so process them all
+  // we can have a lot of small packets queued, so process them all
   // without this, everything will be delayed
   if (!GetMessage(asHearbeat)) return;
 
@@ -561,7 +561,7 @@ void VNetConnection::GetMessages (bool asHearbeat) {
     //if (Sys_Time()-ctt >= 1.0/1000.0*2.5) break;
   }
   #else
-  // we can have alot of small packets queued, so process them all
+  // we can have a lot of small packets queued, so process them all
   // without this, everything will be delayed
   if (!GetMessage(asHearbeat)) return; // nothing's here
   // spend no more than 2 msecs here

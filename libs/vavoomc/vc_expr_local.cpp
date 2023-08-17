@@ -500,7 +500,7 @@ void VLocalVar::Emit (VEmitContext &ec) {
   }
 
   if (requestedAssAddr) {
-    /* this gives alot of false positives
+    /* this gives a lot of false positives
     if (VMemberBase::WarningUnusedLocals) {
       if (ec.IsLocalWrittenByIdx(num) && !ec.IsLocalReadByIdx(num)) {
         const VLocalVarDef &loc = ec.GetLocalByIndex(num);

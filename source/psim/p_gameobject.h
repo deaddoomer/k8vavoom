@@ -1250,7 +1250,7 @@ struct sector_t {
 //  visible part of the polyobject
 //  this is what resides in subsectors
 //  segs are clipped to the correspoinding subsector
-//  one subsector can contain alot of parts; they're all linked by `nextsub`
+//  one subsector can contain a lot of parts; they're all linked by `nextsub`
 //
 //==========================================================================
 struct polyobjpart_t {

@@ -969,7 +969,7 @@ extend it if new light has bigger radius).
 thus, we can go with "light cachemap" instead, and store all relevant info there.
 also, keep info in cache for several seconds, as player is likely to move around
 the light. do cachemap housekeeping once in 2-3 seconds, for example. it doesn't
-really matter if we'll accumulate alot of lights there.
+really matter if we'll accumulate a lot of lights there.
 
 also, with proper cache implementation, we can drop "static lights" at all.
 just trace and cache "static lights" at level start, and mark 'em as "persistent".

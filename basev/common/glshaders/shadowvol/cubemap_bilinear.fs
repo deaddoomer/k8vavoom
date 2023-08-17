@@ -77,7 +77,7 @@
         //#define CUBE_FIX_EDGES_norm(v_)  v_
         #define CUBE_FIX_EDGES_norm(v_)  normalize(v_)
 
-        // for models, it is better to use bias, otherwise we'll get alot more wrong shadows
+        // for models, it is better to use bias, otherwise we'll get a lot more wrong shadows
         /*
         #ifdef VV_SURFACE_LIGHTING
         valat = compareShadowTexelDistance(ltfdir, origDist);

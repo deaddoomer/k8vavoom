@@ -839,7 +839,7 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
       else // first is string, second is name
       if (op1->Type.Type == TYPE_String && op2->Type.Type == TYPE_Name)
       {
-        // convert second to string (to avoid creating alot of names)
+        // convert second to string (to avoid creating a lot of names)
         VExpression *e = new VCastToString(op2); // it is ok to pass resolved expression here
         op2 = e->Resolve(ec);
         if (!op2) { delete this; return nullptr; } // just in case
@@ -847,7 +847,7 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
       else // first is name, second is string
       if (op1->Type.Type == TYPE_Name && op2->Type.Type == TYPE_String)
       {
-        // convert first to string (to avoid creating alot of names)
+        // convert first to string (to avoid creating a lot of names)
         VExpression *e = new VCastToString(op1); // it is ok to pass resolved expression here
         op1 = e->Resolve(ec);
         if (!op1) { delete this; return nullptr; } // just in case

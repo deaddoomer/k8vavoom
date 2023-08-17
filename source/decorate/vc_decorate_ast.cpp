@@ -848,7 +848,7 @@ bool VDecorateInvocation::HasFloatArg (VEmitContext &ec) {
 //
 //==========================================================================
 void VDecorateInvocation::FixKnownShit (VEmitContext &ec, const char *FuncName) {
-  // alot of dumbfucks cannot into wiki
+  // a lot of dumbfucks cannot into wiki
   if (NumArgs == 4 && Args[3] && VStr::strEquCI(FuncName, "A_CustomMeleeAttack")) {
     VExpression *e;
     {

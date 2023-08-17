@@ -1218,7 +1218,7 @@ void VRenderLevelShared::RenderSecSurface (subsector_t *sub, sec_region_t *secre
 
   // floor/ceiling mirrors
   // check if the surface is visible, to avoid doing excessive work
-  // for some yet unknown (for me) reason this culls out alot of mirror planes. wtf?!
+  // for some yet unknown (for me) reason this culls out a lot of mirror planes. wtf?!
   if (plane.splane->MirrorAlpha < 1.0f /*&& ssurf->surfs && ssurf->surfs->IsVisibleFor(Drawer->vieworg)*/) {
     // mirror
     if (r_allow_mirrors && r_allow_floor_mirrors && MirrorLevel < r_maxmiror_depth) {

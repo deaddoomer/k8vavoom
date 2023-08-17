@@ -588,7 +588,7 @@ private:
   vint32 CurrName;
   vint32 CurrClass;
   bool needOpenMessage; // valid only for local channel (sender)
-  // names are compressed, because we usually have alot (around 400kb)
+  // names are compressed, because we usually have a lot (around 400kb)
   vint32 unpDataSize;
   vint32 cprBufferSize;
   vint32 cprBufferPos;

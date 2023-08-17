@@ -1362,7 +1362,7 @@ void R_AnimateSurfaces () {
   }
   const float dtime = GClLevel->Time-lastSurfAnimGameTime;
   // if less than zero, it means that we're started a new map; do not animate
-  // also, don't allow this to grow alot, so game loading won't do huge fastforwards
+  // also, don't allow this to grow a lot, so game loading won't do huge fastforwards
   if (dtime > 0.0f && dtime < 1.666f) {
     // animate flats and textures
     for (int i = 0; i < AnimDefs.length(); ++i) {

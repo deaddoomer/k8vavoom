@@ -693,7 +693,7 @@ bool VViewClipper::IsSegAClosedSomething (VLevel *level, const TFrustum *Frustum
     {
       // here we can check if midtex is in frustum; if it doesn't,
       // we can add this seg to clipper.
-      // this way, we can clip alot of things when camera looks at
+      // this way, we can clip a lot of things when camera looks at
       // floor/ceiling, and we can clip away too high/low windows.
 
       //TODO: use proper checks for slopes here

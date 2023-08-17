@@ -61,9 +61,9 @@ static VCvarB vm_optimise_statics("vm_optimise_statics", true, "Try to detect so
 extern VCvarB dbg_vm_show_tick_stats;
 
 static VCvarB gm_slide_bodies("gm_slide_bodies", true, "Slide bodies hanging from ledges and such?", CVAR_Archive);
-static VCvarB gm_corpse_slidemove("gm_corpse_slidemove", true, "Should corpses use sliding movement?", CVAR_Archive);
-static VCvarF gm_slide_time_limit("gm_slide_time_limit", "60", "Slide time limit, in seconds?", CVAR_Archive);
 static VCvarB gm_slide_drop_items("gm_slide_drop_items", true, "Slide dropped items hanging from ledges and such?", CVAR_Archive);
+static VCvarF gm_slide_time_limit("gm_slide_time_limit", "60", "Slide time limit, in seconds?", CVAR_Archive);
+static VCvarB gm_corpse_slidemove("gm_corpse_slidemove", true, "Should corpses use sliding movement?", CVAR_Archive);
 
 // k8gore cvars
 VCvarB k8gore_enabled("k8GoreOpt_Enabled", true, "Enable extra blood and gore?", CVAR_Archive);

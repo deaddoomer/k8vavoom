@@ -504,7 +504,7 @@ protected:
 
 public:
   VViewportMats vpmats;
-  // the following is here because alot of code can access it
+  // the following is here because a lot of code can access it
   // current rendering position and angles
   TVec vieworg;
   TAVec viewangles;

@@ -95,7 +95,7 @@
         if (compareShadowTexelDistance(ltfdir, origDist) <= 0.0) discard;
         #define shadowMul  1.0
       #else
-        // for models, it is better to use bias, otherwise we'll get alot more wrong shadows
+        // for models, it is better to use bias, otherwise we'll get a lot more wrong shadows
         float biasBase = VV_CALC_BIAS;
         float sldist = textureCubeFn(ShadowTexture, ltfdir).r+biasBase;
         #ifdef VV_SMAP_SQUARED_DIST

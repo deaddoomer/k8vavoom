@@ -229,7 +229,7 @@ void VArgs::InsertFileArg (const char *filearg) {
       //fprintf(stderr, "NO FILE: <%s>\n", arg);
       continue;
     }
-    // disk file, insert file option (and check other plain options too, so we won't insert alot of fileopts)
+    // disk file, insert file option (and check other plain options too, so we won't insert a lot of fileopts)
     InsertArgAt(pos-1, filearg);
     ++pos; // skip filename
     inFile = true;

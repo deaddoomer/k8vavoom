@@ -42,7 +42,7 @@ static VCvarF r_decal_switch_blood_alpha("r_decal_switch_blood_alpha", "0.36", "
 static VCvarF r_decal_switch_boot_alpha("r_decal_switch_boot_alpha", "0.36", "Force this transparency for boot decals on switches.", CVAR_Archive|CVAR_NoShadow);
 static VCvarF r_decal_switch_other_alpha("r_decal_switch_other_alpha", "0.56", "Force this transparency for decals on switches.", CVAR_Archive|CVAR_NoShadow);
 
-// make renderer life somewhat easier by not allowing alot of decals
+// make renderer life somewhat easier by not allowing a lot of decals
 // main work is done by `VLevel->CleanupSegDecals()`
 VCvarI gl_bigdecal_limit("gl_bigdecal_limit", "16", "Limit for big decals on one seg (usually produced by gore mod).", /*CVAR_PreInit|*/CVAR_Archive|CVAR_NoShadow);
 VCvarI gl_smalldecal_limit("gl_smalldecal_limit", "64", "Limit for small decals on one seg (usually produced by shots).", /*CVAR_PreInit|*/CVAR_Archive|CVAR_NoShadow);

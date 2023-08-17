@@ -1,4 +1,4 @@
-// most code taken from GZDoom; thanks alot!
+// most code taken from GZDoom; thanks a lot!
 // based on GZDoom shaders
 float resFuzzAlpha;
 

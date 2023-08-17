@@ -35,7 +35,7 @@ extern VCvarI r_max_lights;
 static VCvarB r_advlight_sort_static("r_advlight_sort_static", true, "Sort visible static lights, so nearby lights will be rendered first?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
 static VCvarB r_advlight_sort_dynamic("r_advlight_sort_dynamic", true, "Sort visible dynamic lights, so nearby lights will be rendered first?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
 // no need to do this, because light rendering will do it again anyway
-// yet it seems to be slightly faster for complex maps with alot of static lights
+// yet it seems to be slightly faster for complex maps with a lot of static lights
 // 'cmon, `RenderLightShadows()` builds lightvis, and checks this
 static VCvarB r_advlight_flood_check("r_advlight_flood_check", false, "Check static light visibility with floodfill before trying to render it?", CVAR_Archive|CVAR_PreInit|CVAR_NoShadow);
 

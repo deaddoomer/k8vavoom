@@ -5087,7 +5087,7 @@ override void PlayerTick (float deltaTime) {
   // process inventory
   InventoryTick(deltaTime);
 
-  // dead player doesn't have to perform alot of actions ;-)
+  // dead player doesn't have to perform a lot of actions ;-)
   if (PlayerState == PST_DEAD) {
     DeathPlayerTick(deltaTime);
     return;

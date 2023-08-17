@@ -1413,7 +1413,7 @@ static int isPrefixedDigit (const char *s, const char *pfx, int minpfxlen, int m
 int VObject::VKeyFromName (VStr kn) noexcept {
   const int oldlen = kn.length();
   kn = kn.xstrip();
-  if (oldlen > 0 && kn.isEmpty()) kn = " "; // alot of spaces are equal to one space
+  if (oldlen > 0 && kn.isEmpty()) kn = " "; // a lot of spaces are equal to one space
 
   if (kn.isEmpty()) return 0;
 
