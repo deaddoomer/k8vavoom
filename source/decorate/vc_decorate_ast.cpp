@@ -643,10 +643,11 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
               return nullptr;
             }
             ParseWarningAsError((aloc ? *aloc : ALoc), "`%s` argument #%d should be number %d instead of string \"%s\"; PLEASE, FIX THE CODE!", funcName, argnum, lbl, *lblName.quote());
-            VExpression *TmpArgs[1];
+            VExpression *TmpArgs[2];
             TmpArgs[0] = new VIntLiteral(lbl, ALoc);
+            TmpArgs[1] = new VIntLiteral(GetRTRouteUId(), ALoc);
             delete this;
-            return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, ALoc, 1, TmpArgs);
+            return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, ALoc, 2, TmpArgs);
           }
         }
         //k8: don't resolve any "::" here, our dynamic resolver will do this for us
@@ -660,14 +661,15 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
           //GCon->Logf(NAME_Debug, "DECORATE: %s: routing uservar (%s) state with `FindJumpStateOfs()`", *ALoc.toStringNoCol(), *lblName);
           delete this;
           TmpArgs[0] = new VDecorateUserVar(lblName, ALoc);
-          return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, ALoc, 1, TmpArgs);
+          TmpArgs[1] = new VIntLiteral(GetRTRouteUId(), ALoc);
+          return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, ALoc, 2, TmpArgs);
         } else {
-          // final state FindJumpState (name Label/*, optional int offset*/);
+          // final state FindJumpState (name Label, int uniqueId);
           //TmpArgs[0] = this;
           delete this;
           TmpArgs[0] = new VNameLiteral(VName(*lblName), ALoc);
-          //TmpArgs[1] = new VIntLiteral(0, ALoc);
-          return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpState"), nullptr, false, false, ALoc, 1/*2*/, TmpArgs);
+          TmpArgs[1] = new VIntLiteral(GetRTRouteUId(), ALoc);
+          return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpState"), nullptr, false, false, ALoc, 2, TmpArgs);
         }
       }
       // integer?
@@ -679,25 +681,21 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
           delete this;
           return nullptr;
         }
-        VExpression *TmpArgs[1];
+        VExpression *TmpArgs[2];
         TmpArgs[0] = this;
-        return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, ALoc, 1, TmpArgs);
+        TmpArgs[1] = new VIntLiteral(GetRTRouteUId(), ALoc);
+        return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, ALoc, 2, TmpArgs);
       }
       // none as literal? this usually means "no jump"
       // but let rt-router decide
       if (IsNoneLiteral()) {
         const TLocation ALoc = Loc;
         VExpression *TmpArgs[2];
-        /*
-        TmpArgs[0] = new VIntLiteral(0, ALoc);
-        delete this;
-        return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, ALoc, 1, TmpArgs);
-        */
-        // final state FindJumpState (name Label/*, optional int offset*/);
+        // final state FindJumpState (name Label, int uniqueId);
         delete this;
         TmpArgs[0] = new VNameLiteral(VName("none"), ALoc);
-        //TmpArgs[1] = new VIntLiteral(0, ALoc);
-        return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpState"), nullptr, false, false, ALoc, 1/*2*/, TmpArgs);
+        TmpArgs[1] = new VIntLiteral(GetRTRouteUId(), ALoc);
+        return new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpState"), nullptr, false, false, ALoc, 2, TmpArgs);
       }
       // support things like `A_Jump(n, func())`
       if (Type.Type != TYPE_State) {
@@ -710,13 +708,14 @@ VExpression *VExpression::MassageDecorateArg (VEmitContext &ec, VInvocation *inv
             const bool isGoodType = (lx->Type.Type == TYPE_Int || lx->Type.Type == TYPE_Byte || lx->Type.Type == TYPE_Bool || lx->Type.Type == TYPE_Float);
             if (isGoodType) {
               //GCon->Logf("A_Jump: type=%s; expr=<%s>", *lbl->Type.GetName(), *lbl->toString());
-              VExpression *TmpArgs[1];
+              VExpression *TmpArgs[2];
               TmpArgs[0] = this->SyntaxCopy();
               if (lx->Type.Type == TYPE_Float) {
                 ParseWarningAsError(ALoc, "jump offset argument #%d for `%s` should be integer, not float! PLEASE, FIX THE CODE!", argnum, funcName);
                 TmpArgs[0] = new VScalarToInt(TmpArgs[0], false); // not resolved
               }
-              VExpression *eres = new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, ALoc, 1, TmpArgs);
+              TmpArgs[1] = new VIntLiteral(GetRTRouteUId(), ALoc);
+              VExpression *eres = new VInvocation(nullptr, ec.SelfClass->FindMethodChecked("FindJumpStateOfs"), nullptr, false, false, ALoc, 2, TmpArgs);
               //GCon->Logf("   NEW: type=%s; expr=<%s>", *lbl->Type.GetName(), *lbl->toString());
               delete this;
               return eres;

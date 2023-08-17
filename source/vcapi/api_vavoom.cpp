@@ -1031,3 +1031,68 @@ IMPLEMENT_FREE_FUNCTION(VObject, T_GetCursorChar) {
   RET_INT(0);
 #endif
 }
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+// each call to rt-resolver is marked with unique id, so there is no need
+// to perform checks for the source state
+
+struct RTStateInfo {
+  VName Label;
+  VState *State; // result
+  RTStateInfo *next;
+};
+
+// it is never cleared
+static TArray<RTStateInfo *> rtStates;
+
+//native static final void SetRTRouteStateForUId (VName Label, int uid, state State);
+IMPLEMENT_FREE_FUNCTION(VObject, SetRTRouteStateForUId) {
+  VName Label; int uid; VState *State;
+  vobjGetParam(Label, uid, State);
+  // nope, we can use invalid state to invalidate the cache
+  //if (VState::IsInvalidState(State)) State = nullptr;
+  if (uid >= 0) {
+    int rlen = rtStates.length();
+    if (uid >= rlen) {
+      int newlen = ((uid + 0xfff)|0xfff) + 1;
+      vassert(newlen > uid);
+      rtStates.setLength(newlen);
+      while (rlen < rtStates.length()) {
+        rtStates[rlen] = nullptr;
+        rlen += 1;
+      }
+    }
+    RTStateInfo *nfo = rtStates[uid];
+    while (nfo != nullptr && nfo->Label != Label) nfo = nfo->next;
+    if (nfo == nullptr) {
+      nfo = new RTStateInfo();
+      nfo->Label = Label;
+      nfo->next = rtStates[uid];
+      rtStates[uid] = nfo;
+    }
+    nfo->State = State;
+  } else {
+    VPackage::AssertError(va("invalid rt cache id: %d", uid));
+  }
+}
+
+//native static final state GetRTRouteStateForUId (VName Label, int uid);
+// returns "invalid state" object for unknown uid
+IMPLEMENT_FREE_FUNCTION(VObject, GetRTRouteStateForUId) {
+  VName Label; int uid;
+  vobjGetParam(Label, uid);
+  if (uid >= 0) {
+    if (uid < rtStates.length()) {
+      RTStateInfo *nfo = rtStates[uid];
+      while (nfo != nullptr && nfo->Label != Label) nfo = nfo->next;
+      if (nfo == nullptr) {
+        RET_PTR(VState::GetInvalidState());
+      } else {
+        RET_PTR(nfo->State);
+      }
+    } else {
+      RET_PTR(VState::GetInvalidState());
+    }
+  }
+}

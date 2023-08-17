@@ -44,6 +44,11 @@ extern int R_ParseDecorateTranslation (VScriptParser *sc, int GameMax, VStr trna
 extern int R_GetBloodTranslation (int Col, bool allowAdd);
 
 
+static int vcRTRouteUniqueId = 0;
+
+static VVA_FORCEINLINE int GetRTRouteUId () noexcept { return vcRTRouteUniqueId++; }
+
+
 static int dcTotalSourceSize = 0;
 
 static int disableBloodReplaces = 0;
@@ -1811,7 +1816,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
             if (!LastState) {
               // yet if we are in spawn label, demand at least one defined state
               // ah, screw it, just define TNT1
-              VState *dummyState = new VState(va("S_%d", States.length()), Class, TmpLoc);
+              VState *dummyState = new VState(va("<:S_%05d:>", States.length()), Class, TmpLoc);
               States.Append(dummyState);
               dummyState->SpriteName = "tnt1";
               dummyState->Frame = 0|VState::FF_SKIPOFFS|VState::FF_SKIPMODEL|VState::FF_DONTCHANGE|VState::FF_KEEPSPRITE;
@@ -1956,7 +1961,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
     lastWasGoto = false;
 
     // create new state
-    VState *State = new VState(va("S_%d", States.length()), Class, TmpLoc);
+    VState *State = new VState(va("<:S_%05d:>", States.length()), Class, TmpLoc);
     States.Append(State);
 
     // sprite name
@@ -1975,11 +1980,11 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
       if (GotoLabel.isEmpty()) sc->Error(va("empty label in `%s`!", *TmpName));
 
       // call `FindJumpState()`
-      // final state FindJumpState (name Label/*, optional int offset*/);
+      // final state FindJumpState (name Label, int uniqueId);
       VExpression *TmpArgs[2];
       TmpArgs[0] = new VNameLiteral(VName(*GotoLabel), TmpLoc);
-      //TmpArgs[1] = new VIntLiteral(0, TmpLoc);
-      VExpression *exprState = new VInvocation(nullptr, Class->FindMethodChecked("FindJumpState"), nullptr, false, false, TmpLoc, 1/*2*/, TmpArgs);
+      TmpArgs[1] = new VIntLiteral(GetRTRouteUId(), TmpLoc);
+      VExpression *exprState = new VInvocation(nullptr, Class->FindMethodChecked("FindJumpState"), nullptr, false, false, TmpLoc, 2, TmpArgs);
       // call `decorate_A_RetDoJump`
       TmpArgs[0] = exprState;
       VExpression *einv = new VDecorateInvocation(VName("decorate_A_RetDoJump"), TmpLoc, 1, TmpArgs);
@@ -2000,7 +2005,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
 
       if (!LastState) {
         // there were no states after the label, insert dummy one; just in case
-        VState *dupState = new VState(va("S_%d", States.length()), Class, TmpLoc);
+        VState *dupState = new VState(va("<:S_%05d:>", States.length()), Class, TmpLoc);
         States.Append(dupState);
         // copy real state data to duplicate one (it will be used as new "real" state)
         dupState->SpriteName = State->SpriteName;
@@ -2129,7 +2134,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
         // k8: play safe here: add dummy state for any label, just in case
         if (!LastState) {
           // there were no states after the label, insert dummy one
-          VState *dupState = new VState(va("S_%d", States.length()), Class, TmpLoc);
+          VState *dupState = new VState(va("<:S_%05d:>", States.length()), Class, TmpLoc);
           States.Append(dupState);
           // copy real state data to duplicate one (it will be used as new "real" state)
           dupState->SpriteName = State->SpriteName;
@@ -2254,7 +2259,7 @@ static bool ParseStates (VScriptParser *sc, VClass *Class, TArray<VState*> &Stat
       if (keepSpriteBase) frm |= VState::FF_KEEPSPRITE;
 
       // create a new state
-      VState *s2 = new VState(va("S_%d", States.length()), Class, sc->GetVCLoc());
+      VState *s2 = new VState(va("<:S_%05d:>", States.length()), Class, sc->GetVCLoc());
       States.Append(s2);
       s2->SpriteName = State->SpriteName;
       s2->Frame = frm;
@@ -3611,7 +3616,7 @@ static void ParseOldDecStates (VScriptParser *sc, TArray<VState *> &States, VCla
         sc->Error("Frames must be A-Z, [, \\, or ]");
       } else {
         GotState = true;
-        VState *State = new VState(va("S_%d", States.length()), Class, sc->GetVCLoc());
+        VState *State = new VState(va("<:S_%05d:>", States.length()), Class, sc->GetVCLoc());
         States.Append(State);
         State->Frame = cc-'A';
         State->Time = float(Duration)/35.0f;
@@ -3735,7 +3740,7 @@ static void ParseOldDecoration (VScriptParser *sc, int Type) {
       ParseOldDecStates(sc, States, Class);
 
       // make a copy of the last state for A_FreezeDeathChunks
-      VState *State = new VState(va("S_%d", States.length()), Class, sc->GetVCLoc());
+      VState *State = new VState(va("<:S_%05d:>", States.length()), Class, sc->GetVCLoc());
       States.Append(State);
       State->Frame = States[States.length()-2]->Frame;
 

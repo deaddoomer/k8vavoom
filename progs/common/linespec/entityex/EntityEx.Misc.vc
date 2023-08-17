@@ -25,6 +25,10 @@
 //**************************************************************************
 
 //#define VV_DEBUG_USE_LINE
+//#define VV_DEBUG_STATE_CACHE_OFS
+//#define VV_DEBUG_STATE_CACHE
+
+//#define VV_DISABLE_STATE_CACHE
 
 
 //==========================================================================
@@ -3837,32 +3841,6 @@ final bool IsMissile (bool Precise) {
 
 //===========================================================================
 //
-//  FindJumpStateOfsForState
-//
-//===========================================================================
-final state FindJumpStateOfsForState (state res, int offset) {
-  if (!res) return none;
-  if (offset == 0) return GetNextState(res);
-  if (offset < 0) {
-    // abort it, this is a bug
-    printerror("Bad negative jump offset in decorate action for '%C' (%s)", self, res);
-    return none;
-  }
-  res = GetStatePlus(res, offset, IgnoreJump:true);
-  if (!res) {
-    printwarn("Bad jump offset (runaway) in decorate action for '%C' (%s)", self, res);
-  }
-  #if 0
-  else {
-    printdebug("%C: ROUTING WITH `FindJumpStateOfs(%s)`! dest is %s", self, offset, res);
-  }
-  #endif
-  return res;
-}
-
-
-//===========================================================================
-//
 //  ResolveBadState
 //
 //  tries to resolve bad (empty) state to the next one
@@ -3914,16 +3892,27 @@ final state ResolveBadStateJump (optional string xmsg) {
 //
 //===========================================================================
 final state ResolveBadStateLabel (name Label, string who, optional string xmsg) {
-  if (!GetStateWarnedFlag(XLevel.CallingState)) {
-    if (xmsg!specified && xmsg) {
-      printwarn("unknown %s decorate label (%s) '%s' (actor is `%C`) -- probably broken code!", who, xmsg, Label, self);
-    } else {
-      printwarn("unknown %s decorate label '%s' (actor is `%C`) -- probably broken code!", who, Label, self);
+  if (!Label || Label == '::' ||
+      Label.nameEquCI('null') || Label.endsWithCI('::null') ||
+      Label.nameEquCI('none') || Label.endsWithCI('::none') ||
+      Label.nameEquCI('nil') || Label.endsWithCI('::nil') ||
+      Label.nameEquCI('empty') || Label.endsWithCI('::empty') ||
+      /*Label.nameEquCI('Super::') ||*/
+      false)
+  {
+    // do nothing
+  } else {
+    if (!GetStateWarnedFlag(XLevel.CallingState)) {
+      if (xmsg!specified && xmsg) {
+        printwarn("unknown %s decorate label (%s) '%s' (actor is `%C`) -- probably broken code!", who, xmsg, Label, self);
+      } else {
+        printwarn("unknown %s decorate label '%s' (actor is `%C`) -- probably broken code!", who, Label, self);
+      }
+      if (XLevel.CallingState) printwarn("... current state: %s", XLevel.CallingState);
+      SetStateWarnedFlag(XLevel.CallingState);
     }
-    if (XLevel.CallingState) printwarn("... current state: %s", XLevel.CallingState);
-    SetStateWarnedFlag(XLevel.CallingState);
+    if (GetCvarB('dbg_emulate_broken_gozzo_gotos')) return GetNextState(XLevel.CallingState);
   }
-  if (GetCvarB('dbg_emulate_broken_gozzo_gotos')) return GetNextState(XLevel.CallingState);
   return none;
 }
 
@@ -3940,57 +3929,107 @@ final state ResolveBadStateLabel (name Label, string who, optional string xmsg) 
 //  decorate codegen will strip leading and trailing spaces
 //
 //===========================================================================
-final state FindJumpState (name Label/*, optional int offset*/) {
-  // added `!Label` too
-  if (!Label || Label.nameEquCI('null') || Label.endsWithCI('::null')) return none;
+final state FindJumpState (name Label, int uniqueId) {
+  // check resolve cache
+  // we can safely cache resolved states, because actor hierarchy is static
 
-  if (Label.nameEquCI('none') /*|| Label.nameEquCI('nil')*/ || Label.nameEquCI('empty') ||
-      Label.endsWithCI('::none') /*|| Label.endsWithCI('::nil')*/ || Label.endsWithCI('::empty') ||
-      Label == '::' || Label.nameEquCI('Super::'))
-  {
-    // this actually is not right, because some decorate actions expect `none` state
-    #if 0
-    return FindJumpStateOfs(offset);
-    #else
-    return none;
-    #endif
-  }
-
-  // in state call chain?
+  #ifdef VV_DEBUG_STATE_CACHE
   if (XLevel.StateCall) {
-    // `item` is the original caller, we should follow its states here
-    state res = XLevel.StateCall->Item.FindState(Label);
-    //if (offset && res) res = FindJumpStateOfsForState(res, offset);
-    if (!res && res == GetInvalidState()) {
-      res = ResolveBadStateLabel(Label, va("item `%C`", XLevel.StateCall->Item), "statecall");
-    }
-    return res;
+    printdebug("%C: uid=%s; state call `%C`; state: %s", self, uniqueId, XLevel.StateCall.Item, XLevel.CallingState);
+  } else {
+    printdebug("%C: uid=%s; state: %s", self, uniqueId, XLevel.CallingState);
   }
+  #endif
 
-  // special weapon states?
-  if (bIsPlayer) {
-    // weapon/muzzle flash/weapon overlays?
-    if (XLevel.CallingState == Player.ViewStates[PS_WEAPON].State ||
-        XLevel.CallingState == Player.ViewStates[PS_FLASH].State ||
-        XLevel.CallingState == Player.ViewStates[PS_WEAPON_OVL].State ||
-        XLevel.CallingState == Player.ViewStates[PS_WEAPON_OVL_BACK].State)
-    {
-      if (!PlayerEx(Player).ReadyWeapon) return none;
-      state res = PlayerEx(Player).ReadyWeapon.FindState(Label);
-      //if (offset && res) res = FindJumpStateOfsForState(res, offset);
-      if (!res && res == GetInvalidState()) {
-        res = ResolveBadStateLabel(Label, va("weapon `%C`", PlayerEx(Player).ReadyWeapon));
+  state res;
+  #ifndef VV_DISABLE_STATE_CACHE
+  // it is safe to cache item checks (state calls), because calling state is the same in any case.
+  // it is also safe to cache weapon state jumps, because ready weapon cannot change after entering here.
+  // still, play safe, and cache only state calls
+  bool doCache = (!bIsPlayer || XLevel.StateCall);
+
+  if (doCache) {
+    res = GetRTRouteStateForUId(Label, uniqueId);
+    if (res != GetInvalidState()) {
+      #ifdef VV_DEBUG_STATE_CACHE
+      if (XLevel.StateCall) {
+        printdebug(">CACHED< %C: uid=%s; state call `%C`; res: %s || cst: %s", self, uniqueId, XLevel.StateCall.Item, res, XLevel.CallingState);
+      } else {
+        printdebug(">CACHED< %C: uid=%s; res: %s || cst: %s", self, uniqueId, res, XLevel.CallingState);
       }
+      #endif
       return res;
     }
   }
+  #endif
 
-  // normal state jump
-  state res = FindState(Label);
-  //if (offset && res) res = FindJumpStateOfsForState(res, offset);
-  if (!res && res == GetInvalidState()) {
-    res = ResolveBadStateLabel(Label, "actor");
+  // just in case
+  if (!Label) {
+    res = none;
   }
+  // in state call chain?
+  else if (XLevel.StateCall) {
+    // `item` is the original caller, we should follow its states here
+    res = XLevel.StateCall.Item.FindState(Label);
+    if (!res && res == GetInvalidState()) {
+      res = ResolveBadStateLabel(Label, va("item `%C`", XLevel.StateCall.Item), "statecall");
+    }
+  }
+  // special weapon states?
+  else if (bIsPlayer) {
+    // weapon/muzzle/overlay?
+    state cst = XLevel.CallingState;
+    if (cst == Player.ViewStates[PS_WEAPON].State ||
+        cst == Player.ViewStates[PS_FLASH].State ||
+        cst == Player.ViewStates[PS_WEAPON_OVL].State ||
+        cst == Player.ViewStates[PS_WEAPON_OVL_BACK].State)
+    {
+      if (!PlayerEx(Player).ReadyWeapon) {
+        // this is player definition bug, but don't let the pawn die
+        if (!GetStateWarnedFlag(cst)) {
+          SetStateWarnedFlag(cst);
+          printerror("Player Pawn `%C` has invalid state definition (weapon disappeared)", self);
+          printerror("i'll try to continue as if nothing happened, but expect bugs...");
+          printerror("state to blame: %s", cst);
+        }
+        res = GetNextState(cst);
+      } else {
+        res = PlayerEx(Player).ReadyWeapon.FindState(Label);
+        if (!res && res == GetInvalidState()) {
+          res = ResolveBadStateLabel(Label, va("weapon `%C`", PlayerEx(Player).ReadyWeapon));
+        }
+      }
+    } else {
+      // normal state jump
+      res = FindState(Label);
+      if (!res && res == GetInvalidState()) {
+        res = ResolveBadStateLabel(Label, "player pawn");
+        // still, don't let it die
+        if (!res) res = GetNextState(cst);
+      }
+    }
+  }
+  // normal state jump
+  else {
+    res = FindState(Label);
+    if (!res && res == GetInvalidState()) {
+      res = ResolveBadStateLabel(Label, "actor");
+    }
+  }
+
+  #ifdef VV_DEBUG_STATE_CACHE
+  if (XLevel.StateCall) {
+    printdebug(">OUT< %C: uid=%s; state call `%C`; res: %s || cst: %s", self, uniqueId, XLevel.StateCall.Item, res, XLevel.CallingState);
+  } else {
+    printdebug(">OUT< %C: uid=%s; res: %s || cst: %s", self, uniqueId, res, XLevel.CallingState);
+  }
+  #endif
+
+  #ifndef VV_DISABLE_STATE_CACHE
+  // cache it
+  if (doCache) SetRTRouteStateForUId(Label, uniqueId, res);
+  #endif
+
   return res;
 }
 
@@ -4002,9 +4041,52 @@ final state FindJumpState (name Label/*, optional int offset*/) {
 //  this is to support idiocities like `A_Jump(n, func())`
 //
 //===========================================================================
-final state FindJumpStateOfs (int offset) {
+final state FindJumpStateOfs (int offset, int uniqueId) {
+  //return FindJumpStateOfsForState(XLevel.CallingState, offset); -- pasted code here
   //printdebug("%C: ROUTING WITH `FindJumpStateOfs(%s)`!", self, offset);
-  return FindJumpStateOfsForState(XLevel.CallingState, offset);
+  #ifdef VV_DEBUG_STATE_CACHE_OFS
+  if (XLevel.StateCall) {
+    printdebug("%C: uid=%s; **ofs=%s; state call `%C`; state: %s", self, uniqueId, offset, XLevel.StateCall.Item, XLevel.CallingState);
+  } else {
+    printdebug("%C: uid=%s; **ofs=%s; state: %s", self, uniqueId, offset, XLevel.CallingState);
+  }
+  #endif
+
+  state cst = XLevel.CallingState;
+  state res = none;
+  if (!cst) {
+    // wtf? from null/invalid state?
+    res = none;
+  } else if (offset == 0) {
+    // fix for common decorate bug
+    if (!GetStateWarnedFlag(cst)) {
+      SetStateWarnedFlag(cst);
+      printerror("Jump to +0 state is useless in decorate action for '%C' (%s)", self, cst);
+    }
+    res = GetNextState(cst);
+  } else if (offset < 0) {
+    // abort state maching, this is a bug
+    if (!GetStateWarnedFlag(cst)) {
+      SetStateWarnedFlag(cst);
+      printerror("Bad negative jump offset in decorate action for '%C' (%s)", self, cst);
+    }
+    res = none;
+  } else {
+    // do not bother with cache here: getting state with an offset is fast enough
+    res = GetStatePlus(cst, offset, IgnoreJump:true);
+    if (!res && !GetStateWarnedFlag(cst)) {
+      SetStateWarnedFlag(cst);
+      printwarn("Bad jump offset (runaway) in decorate action for '%C' (%s)", self, cst);
+    }
+    #ifdef VV_DEBUG_STATE_CACHE_OFS
+    if (XLevel.StateCall) {
+      printdebug(">OUT<: %C: uid=%s; **ofs=%s; state call `%C`; res: %s", self, uniqueId, offset, XLevel.StateCall.Item, res);
+    } else {
+      printdebug(">OUT<: %C: uid=%s; **ofs=%s; res: %s", self, uniqueId, offset, res);
+    }
+    #endif
+  }
+  return res;
 }
 
 

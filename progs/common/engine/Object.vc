@@ -1397,8 +1397,13 @@ native static final name GetClassGameObjName (class C) [property(class) GameObje
 native static final int GetClassInstanceCount (class C) [property(class) InstanceCount];
 native static final int GetClassInstanceCountWithSub (class C) [property(class) InstanceCountWithSub];
 native static final int GetClassInstanceSize (class C) [property(class) InstanceSize];
+
 native static final state GetNoJumpState ();
 native static final state GetInvalidState ();
+
+native static final void SetRTRouteStateForUId (name Label, int uid, state State);
+// returns "invalid state" object for unknown uid
+native static final state GetRTRouteStateForUId (name Label, int uid);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
