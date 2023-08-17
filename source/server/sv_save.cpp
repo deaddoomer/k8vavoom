@@ -2221,9 +2221,8 @@ bool VSaveSlot::LoadSlotNew (int Slot, VVWadArchive *vwad) {
       *Strm << TmpName;
       if (Strm->IsError()) { VStream::Destroy(Strm); return false; }
       VSavedMap *Map = new VSavedMap(true);
-      if (Strm->IsError()) { VStream::Destroy(Strm); return false; }
-      Map->Name = *TmpName;
       Maps.Append(Map);
+      Map->Name = *TmpName;
       Map->Index = Maps.length() - 1;
     }
     VStream::Destroy(Strm);
@@ -3266,6 +3265,7 @@ static void SV_SaveMap (bool savePlayers) {
       Map = new VSavedMap(false);
       BaseSlot.Maps.Append(Map);
       Map->Name = GLevel->MapName;
+      Map->Index = BaseSlot.Maps.length() - 1;
     } else {
       Map->ClearData(false);
     }
@@ -3340,6 +3340,7 @@ static void SV_SaveMap (bool savePlayers) {
       Map = new VSavedMap(true);
       BaseSlot.Maps.Append(Map);
       Map->Name = GLevel->MapName;
+      Map->Index = BaseSlot.Maps.length() - 1;
     } else {
       Map->ClearData(true);
     }
