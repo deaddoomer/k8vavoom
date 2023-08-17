@@ -697,6 +697,21 @@ static int bchTVecCompare (const void *aa, const void *bb, void *udata) noexcept
 //  uses Andrew's Monotone Chain algo
 //  faster and more stable that gift wrapping
 //
+//  note that this loops over the points twice, which is not what the
+//  original article suggests. but for our case it doesn't matter, and
+//  we have less code this way. (it doesn't matter because our number of
+//  points is usually so small that any additional preprocessing will not
+//  make things significantly faster.)
+//
+//  also note that this correctly process collinear points (by replacing
+//  them with "better", i.e. further points). that's what comparison with
+//  positive epsilon does.
+//
+//  we need to drop collinear points because we will later compute the
+//  center of the hull to calculate sliding vector. it doesn't matter for
+//  "point-in-poly" checks, because we are using the standard ray casting
+//  algo, which doesn't care about concavity (or lack of).
+//
 //==========================================================================
 static void buildConvexHull () {
   const int ptlen = stxPoints.length();
