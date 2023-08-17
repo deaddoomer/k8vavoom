@@ -363,7 +363,6 @@ struct Instr {
       case OPC_PushNameS:
       case OPC_PushString:
       case OPC_PushClassId:
-      //case OPC_PushState:
       case OPC_PushNull:
         spdelta = 1;
         return;

@@ -68,7 +68,6 @@
   DECLARE_OPC(PushNameS, NameS),
   DECLARE_OPC(PushString, String),
   DECLARE_OPC(PushClassId, Member),
-  //DECLARE_OPC(PushState, Member),
   DECLARE_OPC(PushNull, None),
 
   // loading of variables

@@ -279,30 +279,6 @@ protected:
 
 //==========================================================================
 //
-//  VStateConstant
-//
-//==========================================================================
-/*
-class VStateConstant : public VExpression {
-public:
-  VState *State;
-
-  VStateConstant (VState *AState, const TLocation &ALoc);
-  virtual VExpression *SyntaxCopy () override;
-  virtual VExpression *DoResolve (VEmitContext &) override;
-  virtual void Emit (VEmitContext &) override;
-
-  virtual VStr toString () const override;
-
-protected:
-  VStateConstant () {}
-  virtual void DoSyntaxCopyTo (VExpression *e) override;
-};
-*/
-
-
-//==========================================================================
-//
 //  VConstantValue
 //
 //==========================================================================

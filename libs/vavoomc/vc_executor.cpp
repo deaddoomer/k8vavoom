@@ -883,7 +883,6 @@ func_loop:
         PR_VM_BREAK;
 
       PR_VM_CASE(OPC_PushClassId)
-      //PR_VM_CASE(OPC_PushState)
         sp->p = ReadPtr(ip+1);
         ip += 1+sizeof(void *);
         ++sp;
