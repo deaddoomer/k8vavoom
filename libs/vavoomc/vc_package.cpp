@@ -650,3 +650,14 @@ void VPackage::DumpCodeSizeStats () {
 
   VEmitContext::releaseAllEmitBuffers();
 }
+
+
+//==========================================================================
+//
+//  VPackage::AssertError
+//
+//==========================================================================
+__attribute__((noreturn)) __declspec(noreturn) void VPackage::AssertError (VStr msg) {
+  VObject::VMDumpCallStack();
+  VPackage::AssertErrorBuiltin(msg);
+}

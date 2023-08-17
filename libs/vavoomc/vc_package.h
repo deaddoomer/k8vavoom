@@ -104,6 +104,10 @@ public:
   // should be implemented by the host
   static VStream *OpenFileStreamRO (VStr Name);
 
+  // dumps stack trace, and calls `AssertErrorBuiltin()`
+  // it should abort, hence `noreturn`
+  static void AssertError (VStr msg) __attribute__((noreturn)) __declspec(noreturn);
+
   // should be implemented by the host; used in `Object.Error()`
   // it should abort, hence `noreturn`
   static void HostErrorBuiltin (VStr msg) __attribute__((noreturn)) __declspec(noreturn);

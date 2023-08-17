@@ -166,8 +166,7 @@ IMPLEMENT_FUNCTION(VObject, FatalError) {
 IMPLEMENT_FUNCTION(VObject, AssertError) {
   VStr msg;
   vobjGetParam(msg);
-  VObject::VMDumpCallStack();
-  VPackage::AssertErrorBuiltin(msg);
+  VPackage::AssertError(msg);
 }
 
 
