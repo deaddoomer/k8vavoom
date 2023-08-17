@@ -1994,7 +1994,6 @@ static void AM_drawPlayers () {
 
 // sorry!
 static TArrayNC<TVec> stxPoints, stxSubsrc, stxHull;
-static TArrayNC<int> stxHidx;
 static TPlane stxPl[4]; // clip planes
 static TPlane::ClipWorkData stxWk;
 static TVec stxOuterPoint; // set if we have a hull
@@ -2099,103 +2098,80 @@ static VVA_FORCEINLINE TVec CheckCollinear (const TVec &p0, const TVec &p1, cons
 
 //==========================================================================
 //
+//  bchTVecCompare
+//
+//==========================================================================
+static int bchTVecCompare (const void *aa, const void *bb, void *udata) noexcept {
+  const TVec &a = *(const TVec *)aa;
+  const TVec &b = *(const TVec *)bb;
+  const float diffx = a.x - b.x;
+  if (diffx != 0.0f) return (diffx < 0.0f ? -1 : +1);
+  const float diffy = a.y - b.y;
+  return (diffy < 0.0f ? -1 : diffy > 0.0f ? +1 : 0);
+}
+
+
+//==========================================================================
+//
 //  buildConvexHull
 //
-//  this is basically a textbook implementation of gift wrapper algorithm
-//  it is O(h*n), but we won't have a lot of points here, so it's ok
+//  uses Andrew's Monotone Chain algo
+//  faster and more stable that gift wrapping
 //
 //==========================================================================
 static VVA_OKUNUSED void buildConvexHull () {
-  int lesspt = 0, cidx = 0;
-  for (auto &&p : stxPoints) {
-    if (dbg_am_slide_verbose_hull.asBool()) {
-      GCon->Logf("pt #%d: (%g,%g,%g)", cidx, p.x, p.y, p.z);
-    }
-    if (p.x < stxPoints[lesspt].x) lesspt = cidx;
-    else if (p.x == stxPoints[lesspt].x && p.y < stxPoints[lesspt].y) lesspt = cidx;
-    cidx += 1;
-  }
+  const int ptlen = stxPoints.length();
+  int k = 0, t;
 
   stxHull.resetNoDtor();
-  stxHidx.resetNoDtor();
 
-  const int ptlen = stxPoints.length();
-
-  int ptOnHull = lesspt;
-  int i = 0, ep, colp;
-  if (dbg_am_slide_verbose_hull.asBool()) {
-    GCon->Logf("starting: %d", ptOnHull);
-  }
-  do {
-    if (dbg_am_slide_verbose_hull.asBool()) {
-      GCon->Logf("  append #%d: %d", i, ptOnHull);
-    }
-    // check for collinear fail
-    if (stxHidx.length() >= ptlen) return; // no hull
-    stxHidx.append(ptOnHull); i += 1; vassert(i == stxHidx.length());
-    ep = 0; colp = 1;
-    const TVec lpt = stxPoints[ptOnHull];
-    for (int j = 0; j < ptlen; j += 1) {
-      if (ep == ptOnHull) {
-        ep = j;
-      } else {
-        const float sd = PtSide(lpt, stxPoints[ep], stxPoints[j]);
-        if (dbg_am_slide_verbose_hull.asBool()) {
-          GCon->Logf("    check #%d: sd=%g (ep=%d)", j, sd, ep);
-        }
-        // ignore points on the right, but allow collinear points
-        // collinear points will be removed later
-        if (sd < -hullEps) { ep = j; colp = 0; } // non-collinear
-        else if (colp && j != ptOnHull && sd <= hullEps) ep = j;
-      }
-    }
-    if (dbg_am_slide_verbose_hull.asBool()) {
-      GCon->Logf("     done: pto=%d; ep=%d", ptOnHull, ep);
-    }
-    vassert(ep != ptOnHull);
-    ptOnHull = ep;
-  } while (ep != stxHidx[0]);
+  // first, sort points
+  smsort_r(stxPoints.ptr(), (size_t)ptlen, sizeof(stxPoints[0]), &bchTVecCompare, nullptr);
 
   if (dbg_am_slide_verbose_hull.asBool()) {
-    GCon->Logf(" FIN: %d points", i);
-    for (int f = 0; f < i; f += 1) {
-      GCon->Logf("  #%d: (%g,%g,%g)", f, stxPoints[stxHidx[f]].x, stxPoints[stxHidx[f]].y, stxPoints[stxHidx[f]].z);
+    int cidx = 0;
+    for (auto &&p : stxPoints) {
+      GCon->Logf("pt #%d: (%g,%g,%g)", cidx, p.x, p.y, p.z);
+      cidx += 1;
     }
   }
 
-  int hlen;
-  for (int f = 0; f < i; f += 1) {
-    const TVec np = stxPoints[stxHidx[f]];
-    hlen = stxHull.length();
-    if (hlen >= 2) {
-      // check for collinear points
-      const TVec cc = CheckCollinear(stxHull[hlen - 2], stxHull[hlen - 1], np);
-      if (cc.z == 0.0f) {
-        if (dbg_am_slide_verbose_hull.asBool()) {
-          GCon->Logf(" extend with %d", f);
-        }
-        stxHull[hlen - 1] = cc;
-        continue;
-      }
-    }
-    stxHull.append(np);
-  }
-
-  // check last hull point
-  hlen = stxHull.length();
-  while (hlen > 2) {
-    const TVec cc = CheckCollinear(stxHull[hlen - 2], stxHull[hlen - 1], stxHull[0]);
-    if (cc.z == 0.0f) {
-      // collinear, extend
+  // build lower hull
+  for (int f = 0; f < ptlen; f += 1) {
+    while (k >= 2 && PtSide(stxHull[k-2], stxHull[k-1], stxPoints[f]) <= hullEps) {
       if (dbg_am_slide_verbose_hull.asBool()) {
-        GCon->Logf(" remove last");
+        GCon->Logf("  drop-lo: (%g, %g, %g)", stxHull[k-1].x, stxHull[k-1].y, stxHull[k-1].z);
       }
       stxHull.drop();
-      hlen = stxHull.length();
-      stxHull[hlen - 1] = cc;
-    } else {
-      break;
+      k -= 1;
     }
+    if (dbg_am_slide_verbose_hull.asBool()) {
+      GCon->Logf("  apnd-lo: (%g, %g, %g)", stxPoints[f].x, stxPoints[f].y, stxPoints[f].z);
+    }
+    stxHull.Append(stxPoints[f]); k += 1;
+  }
+
+  // build upper hull
+  t = k + 1;
+  for (int f = ptlen - 1; f > 0; f -= 1) {
+    while (k >= t && PtSide(stxHull[k-2], stxHull[k-1], stxPoints[f-1]) <= hullEps) {
+      if (dbg_am_slide_verbose_hull.asBool()) {
+        GCon->Logf("  drop-hi: (%g, %g, %g)", stxHull[k-1].x, stxHull[k-1].y, stxHull[k-1].z);
+      }
+      stxHull.drop();
+      k -= 1;
+    }
+    if (dbg_am_slide_verbose_hull.asBool()) {
+      GCon->Logf("  apnd-hi: (%g, %g, %g)", stxPoints[f-1].x, stxPoints[f-1].y, stxPoints[f-1].z);
+    }
+    stxHull.Append(stxPoints[f-1]); k += 1;
+  }
+
+  if (k) {
+    if (dbg_am_slide_verbose_hull.asBool()) {
+      GCon->Log("  drop last");
+    }
+    stxHull.drop();
   }
 
   if (dbg_am_slide_verbose_hull.asBool()) {
@@ -2251,48 +2227,6 @@ static VVA_OKUNUSED VVA_FORCEINLINE bool pointGtr (const TVec &p0, const TVec &p
 
 //==========================================================================
 //
-//  removeDupPoints
-//
-//==========================================================================
-/*
-static void removeDupPoints () {
-  const int len = stxPoints.length();
-  if (len > 2) {
-    // shellsort 'em
-    TVec p;
-    int h, i, j;
-    h = 1; do { h = h*3 + 1; } while (h <= len);
-    do {
-      h = h / 3; i = h;
-      while (i < len) {
-        p = stxPoints[i]; j = i;
-        while (j >= h && pointGtr(stxPoints[j - h], p)) {
-          stxPoints[j] = stxPoints[j - h]; j -= h;
-        }
-        stxPoints[j] = p;
-        i += 1;
-      }
-    } while (h != 1);
-
-    int s = 1, d = 1;
-    while (s < len) {
-      if (fabs(stxPoints[s - 1].x - stxPoints[s].x) < 0.001f &&
-          fabs(stxPoints[s - 1].y - stxPoints[s].y) < 0.001f)
-      {
-        s += 1;
-      } else {
-        if (s != d) stxPoints[d] = stxPoints[s];
-        s += 1; d += 1;
-      }
-    }
-    if (d != len) stxPoints.setLengthNoResize(d);
-  }
-}
-*/
-
-
-//==========================================================================
-//
 //  addPoint
 //
 //==========================================================================
@@ -2329,7 +2263,6 @@ static VVA_OKUNUSED bool checkStationary (VEntity *mobj) {
   stxPoints.resetNoDtor();
   // just in case
   stxHull.resetNoDtor();
-  stxHidx.resetNoDtor();
 
   // left edge
   stxPl[0].Set2Points(TVec(mybbox[BOX2D_MINX], mybbox[BOX2D_MINY]),
