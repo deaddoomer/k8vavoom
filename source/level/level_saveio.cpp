@@ -318,7 +318,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
 
   // write "extended save" flag
   if (Strm.IsExtendedFormat()) {
-    // extended
+    // extended format
     if (!Strm.IsLoading()) {
       hasSectorDecals = !!subdecalhead;
     } else {
@@ -326,6 +326,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
     }
     extSaveVer = true;
   } else {
+    // write flag
     if (!Strm.IsLoading()) {
       vint32 scflag = EXTSAVE_NUMSEC_MAGIC1;
       Strm << STRM_INDEX(scflag);
@@ -338,8 +339,9 @@ void VLevel::SerialiseOther (VStream &Strm) {
     Strm.ExtendedSection("vlevel/sectors.dat");
 
     vint32 cnt = NumSectors;
-    // check "extended save" magic
     Strm << STRM_INDEX(cnt);
+
+    // check "extended save" magic
     if (Strm.IsLoading() && !Strm.IsExtendedFormat()) {
       if (cnt == EXTSAVE_NUMSEC_MAGIC0 || cnt == EXTSAVE_NUMSEC_MAGIC1) {
         hasSectorDecals = (cnt == EXTSAVE_NUMSEC_MAGIC1);
@@ -937,7 +939,7 @@ void VLevel::SerialiseOther (VStream &Strm) {
     if (Strm.IsLoading()) {
       doAcsThinkers = Strm.HasExtendedSection("vlevel/acs_thinkers.dat");
     } else {
-      // if we don't have ACS lights, don't write them
+      // if we don't have ACS thinkers, don't write them
       doAcsThinkers = (scriptThinkers.length() != 0);
     }
   }

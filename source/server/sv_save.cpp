@@ -91,13 +91,13 @@ enum { NUM_AUTOSAVES = 9 };
 
 #define NEWFMT_FNAME_MAP_STRTBL    "strings.dat"
 #define NEWFMT_FNAME_MAP_NAMES     "names.dat"
-#define NEWFMT_FNAME_MAP_ACSEXPT   "acs_exports.dat"
+#define NEWFMT_FNAME_MAP_ACS_EXPT  "acs_exports.dat"
 #define NEWFMT_FNAME_MAP_WORDINFO  "worldinfo.dat"
 #define NEWFMT_FNAME_MAP_ACTPLYS   "active_players.dat"
 #define NEWFMT_FNAME_MAP_EXPOBJNS  "object_nameidx.dat"
 #define NEWFMT_FNAME_MAP_THINKERS  "object_data.dat"
-#define NEWFMT_FNAME_MAP_ACS       "acs_state.dat"
-#define NEWFMT_FNAME_MAP_ACS_DATA  "acs_data.dat"
+#define NEWFMT_FNAME_MAP_ACS_STATE "acs_state.dat"
+//#define NEWFMT_FNAME_MAP_ACS_DATA  "acs_data.dat"
 #define NEWFMT_FNAME_MAP_SOUNDS    "sounds.dat"
 #define NEWFMT_FNAME_MAP_GINFO     "ginfo.dat"
 
@@ -2848,11 +2848,14 @@ static void ArchiveNames (VSaveWriterStream *Saver) {
   }
   Saver->CloseFile();
 
-  if (!Saver->CreateFileDirect(NEWFMT_FNAME_MAP_ACSEXPT)) return;
-  // serialise number of ACS exports
-  vint32 numScripts = Saver->AcsExports.length();
-  *Saver << STRM_INDEX(numScripts);
-  Saver->CloseFile();
+  // with new format, write it to the single file (i.e. not here)
+  if (!Saver->IsNewFormat()) {
+    vint32 numScripts = Saver->AcsExports.length();
+    //if (!Saver->CreateFileDirect(NEWFMT_FNAME_MAP_ACS_EXPT)) return;
+    // serialise number of ACS exports
+    *Saver << STRM_INDEX(numScripts);
+    //Saver->CloseFile();
+  }
 }
 
 
@@ -2887,10 +2890,20 @@ static void UnarchiveNames (VSaveLoaderStream *Loader) {
   }
 
   // unserialise number of ACS exports
-  Loader->OpenFile(NEWFMT_FNAME_MAP_ACSEXPT);
   vint32 numScripts = -1;
-  *Loader << STRM_INDEX(numScripts);
-  if (numScripts < 0 || numScripts >= 1024*1024*2) Host_Error("invalid number of ACS scripts (%d)", numScripts);
+  if (Loader->IsNewFormat()) {
+    if (Loader->HasExtendedSection(NEWFMT_FNAME_MAP_ACS_EXPT)) {
+      Loader->OpenFile(NEWFMT_FNAME_MAP_ACS_EXPT);
+      *Loader << STRM_INDEX(numScripts);
+    } else {
+      numScripts = 0;
+    }
+  } else {
+    *Loader << STRM_INDEX(numScripts);
+  }
+  if (numScripts < 0 || numScripts >= 1024*1024*2) { // arbitrary limit
+    Host_Error("invalid number of ACS scripts (%d)", numScripts);
+  }
   Loader->AcsExports.setLength(numScripts);
 
   // create empty script objects
@@ -2985,17 +2998,24 @@ static void ArchiveThinkers (VSaveWriterStream *Saver, bool SavingPlayers) {
 
   //GCon->Logf("dbg_save_verbose=0x%04x (%s) %d", dbg_save_verbose.asInt(), *dbg_save_verbose.asStr(), dbg_save_verbose.asInt());
 
-  if (!Saver->CreateFileBuffered(NEWFMT_FNAME_MAP_ACS)) return;
+  if (!Saver->CreateFileBuffered(NEWFMT_FNAME_MAP_ACS_STATE)) return;
   // collect acs scripts, serialize acs level
   GLevel->Acs->Serialise(*Saver);
   Saver->CloseFile();
 
   // save collected VAcs objects contents
-  if (!Saver->CreateFileBuffered(NEWFMT_FNAME_MAP_ACS_DATA)) return;
-  for (vint32 f = 0; f < Saver->AcsExports.length(); ++f) {
-    Saver->AcsExports[f]->Serialise(*Saver);
+  vint32 numASX = Saver->AcsExports.length();
+  if (numASX) {
+    if (!Saver->CreateFileBuffered(NEWFMT_FNAME_MAP_ACS_EXPT)) return;
+    if (Saver->IsNewFormat()) {
+      // write counter for the new format
+      *Saver << STRM_INDEX(numASX);
+    }
+    for (vint32 f = 0; f < numASX; ++f) {
+      Saver->AcsExports[f]->Serialise(*Saver);
+    }
+    Saver->CloseFile();
   }
-  Saver->CloseFile();
 }
 
 
@@ -3116,14 +3136,23 @@ static void UnarchiveThinkers (VSaveLoaderStream *Loader) {
   }
   #endif
 
-  Loader->OpenFile(NEWFMT_FNAME_MAP_ACS);
+  Loader->OpenFile(NEWFMT_FNAME_MAP_ACS_STATE);
   // unserialise acs script
   GLevel->Acs->Serialise(*Loader);
 
-  Loader->OpenFile(NEWFMT_FNAME_MAP_ACS_DATA);
-  // load collected VAcs objects contents
-  for (vint32 f = 0; f < Loader->AcsExports.length(); ++f) {
-    Loader->AcsExports[f]->Serialise(*Loader);
+  if (Loader->AcsExports.length()) {
+    Loader->OpenFile(NEWFMT_FNAME_MAP_ACS_EXPT);
+    vint32 numScripts = -1;
+    if (Loader->IsNewFormat()) {
+      *Loader << STRM_INDEX(numScripts);
+      if (numScripts != Loader->AcsExports.length()) {
+        Host_Error("wtf?!");
+      }
+    }
+    // load collected VAcs objects contents
+    for (vint32 f = 0; f < Loader->AcsExports.length(); ++f) {
+      Loader->AcsExports[f]->Serialise(*Loader);
+    }
   }
 
   // `LinkToWorld()` in `VEntity::SerialiseOther()` will find the correct floor
