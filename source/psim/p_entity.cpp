@@ -678,6 +678,27 @@ static const float hullEps = 0.01f;
 
 //==========================================================================
 //
+//  CheckCollinear
+//
+//  return point with non-zero z if not collinear
+//
+//==========================================================================
+static VVA_FORCEINLINE TVec CheckCollinear (const TVec &p0, const TVec &p1, const TVec &p2) {
+  if (fabsf(PtSide(p0, p1, p2)) <= hullEps) {
+    // collinear, choose furthest point
+    if ((p0 - p1).lengthSquared() < (p0 - p2).lengthSquared()) {
+      return TVec(p2.x, p2.y, 0.0f);
+    } else {
+      return TVec(p1.x, p1.y, 0.0f);
+    }
+  } else {
+    return TVec(0.0f, 0.0f, -1.0f);
+  }
+}
+
+
+//==========================================================================
+//
 //  buildConvexHull
 //
 //  this is basically a textbook implementation of gift wrapper algorithm
@@ -698,8 +719,10 @@ static void buildConvexHull () {
   stxHull.resetNoDtor();
   stxHidx.resetNoDtor();
 
+  const int ptlen = stxPoints.length();
+
   int ptOnHull = lesspt;
-  int i = 0, ep;
+  int i = 0, ep, colp;
   #ifdef VX_DUMP_CONVEX_HULL
   GCon->Logf("starting: %d", ptOnHull);
   #endif
@@ -707,10 +730,12 @@ static void buildConvexHull () {
     #ifdef VX_DUMP_CONVEX_HULL
     GCon->Logf("  append #%d: %d", i, ptOnHull);
     #endif
+    // check for collinear fail
+    if (stxHidx.length() >= ptlen) return; // no hull
     stxHidx.append(ptOnHull); i += 1; vassert(i == stxHidx.length());
-    ep = 0;
+    ep = 0; colp = 1;
     const TVec lpt = stxPoints[ptOnHull];
-    for (int j = 0; j < stxPoints.length(); j += 1) {
+    for (int j = 0; j < ptlen; j += 1) {
       if (ep == ptOnHull) {
         ep = j;
       } else {
@@ -718,9 +743,10 @@ static void buildConvexHull () {
         #ifdef VX_DUMP_CONVEX_HULL
         GCon->Logf("    check #%d: sd=%g (ep=%d)", j, sd, ep);
         #endif
-        // epsilon, to ignore collinear points
-        // i.e. we will ignore points on the right, and collinear points
-        if (sd < -hullEps) ep = j;
+        // ignore points on the right, but allow collinear points
+        // collinear points will be removed later
+        if (sd < -hullEps) { ep = j; colp = 0; } // non-collinear
+        else if (colp && j != ptOnHull && sd <= hullEps) ep = j;
       }
     }
     #ifdef VX_DUMP_CONVEX_HULL
@@ -743,12 +769,12 @@ static void buildConvexHull () {
     hlen = stxHull.length();
     if (hlen >= 2) {
       // check for collinear points
-      if (fabsf(PtSide(stxHull[hlen - 2], stxHull[hlen - 1], np)) <= hullEps) {
-        // collinear, extend
+      const TVec cc = CheckCollinear(stxHull[hlen - 2], stxHull[hlen - 1], np);
+      if (cc.z == 0.0f) {
         #ifdef VX_DUMP_CONVEX_HULL
         GCon->Logf(" extend with %d", f);
         #endif
-        stxHull[hlen - 1] = np;
+        stxHull[hlen - 1] = cc;
         continue;
       }
     }
@@ -757,14 +783,18 @@ static void buildConvexHull () {
 
   // check last hull point
   hlen = stxHull.length();
-  if (hlen > 2) {
-    // check for collinear points
-    if (fabsf(PtSide(stxHull[hlen - 2], stxHull[hlen - 1], stxHull[0])) <= hullEps) {
+  while (hlen > 2) {
+    const TVec cc = CheckCollinear(stxHull[hlen - 2], stxHull[hlen - 1], stxHull[0]);
+    if (cc.z == 0.0f) {
       // collinear, extend
       #ifdef VX_DUMP_CONVEX_HULL
       GCon->Logf(" remove last");
       #endif
       stxHull.drop();
+      hlen = stxHull.length();
+      stxHull[hlen - 1] = cc;
+    } else {
+      break;
     }
   }
 
@@ -1163,7 +1193,27 @@ void VEntity::CorpseSlide (float deltaTime) {
              GetUniqueId(), tm.FloorZ, Origin.z, FloorZ);
   #endif
 
-  if (tm.FloorZ < Origin.z && !checkStationary(this)) {
+  // the same logic as in `checkStationary()`
+
+  bool wasSlope = tm.EFloor.isSlope();
+  bool needCheck = (tm.FloorZ < Origin.z);
+  if (!needCheck && !wasSlope && GetMoveRadius() > 6.0f) {
+    const float nofs = 2.0f;
+    const TVec cvv[4] = {
+      TVec(+nofs, -nofs),
+      TVec(+nofs, +nofs),
+      TVec(-nofs, -nofs),
+      TVec(-nofs, +nofs),
+    };
+    // check more points
+    for (int f = 0; !needCheck && !wasSlope && f < 4; f += 1) {
+      CheckRelPositionPoint(tm, Origin + cvv[f]);
+      wasSlope = wasSlope || tm.EFloor.isSlope();
+      needCheck = (tm.FloorZ < Origin.z);
+    }
+  }
+
+  if (needCheck && !checkStationary(this)) {
     // this corpse is not in a "stable" position (i.e. should slide away)
     // we have built convex hull here too
     #ifdef VV_DEBUG_CSL_VERBOSE
