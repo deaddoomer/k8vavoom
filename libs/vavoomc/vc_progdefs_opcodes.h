@@ -274,6 +274,7 @@
   DECLARE_OPC(PtrEquals, None),
   DECLARE_OPC(PtrNotEquals, None),
   DECLARE_OPC(PtrToBool, None),
+  DECLARE_OPC(StateToBool, None),
   DECLARE_OPC(PtrSubtract, TypeSize),
 
   // conversions

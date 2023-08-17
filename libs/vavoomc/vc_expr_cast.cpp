@@ -492,7 +492,11 @@ VExpression *VPointerToBool::DoResolve (VEmitContext &ec) {
 void VPointerToBool::Emit (VEmitContext &ec) {
   EmitCheckResolved(ec);
   op->Emit(ec);
-  ec.AddStatement(OPC_PtrToBool, Loc);
+  if (op->Type.Type == TYPE_State) {
+    ec.AddStatement(OPC_StateToBool, Loc);
+  } else {
+    ec.AddStatement(OPC_PtrToBool, Loc);
+  }
 }
 
 

@@ -669,6 +669,7 @@ struct Instr {
         spdelta = -1;
         return;
       case OPC_PtrToBool:
+      case OPC_StateToBool:
         return;
 
       // conversions

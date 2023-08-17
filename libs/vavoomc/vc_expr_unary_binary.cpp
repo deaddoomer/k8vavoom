@@ -976,7 +976,7 @@ VExpression *VBinary::DoResolve (VEmitContext &ec) {
       else if (op1->Type.Type == TYPE_Float && op2->Type.Type == TYPE_Float) Type = TYPE_Float;
       else if (op1->Type.Type == TYPE_Vector && op2->Type.Type == TYPE_Vector) Type = TYPE_Vector;
       else if (Oper == Subtract && (op1->Type.IsPointer() && op2->Type.IsPointer())) {
-        // we can subtract pointers to get index, 'cause why not?
+        // we can subtract pointers to calculate index, 'cause why not?
         // still, check if pointers are of the same type
         if (!op1->Type.GetPointerInnerType().Equals(op2->Type.GetPointerInnerType())) {
           ParseError(Loc, "Pointer type mismatch");
