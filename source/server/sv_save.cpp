@@ -785,9 +785,14 @@ public:
     }
   }
 
-  // need to expose others too
-  virtual void io (VStr &s) override { VStream::io(s); }
-  virtual void io (VMemberBase *&o) override { VStream::io(o); }
+  // need to expose others too (all overloaded versions should be explicitly overriden)
+  virtual void io (VStr &s) override {
+    VStream::io(s);
+  }
+
+  virtual void io (VMemberBase *&o) override {
+    VStream::io(o);
+  }
 
   virtual void SerialiseStructPointer (void *&Ptr, VStruct *Struct) override {
     vint32 TmpIdx;
@@ -1159,11 +1164,15 @@ public:
       VEntity *mobj = Cast<VEntity>(o);
       if (mobj != nullptr && (mobj->EntityFlags&VEntity::EF_IsPlayer)) {
         // skipping player mobjs
-        if (dbg_save_verbose&0x01) GCon->Logf("*** SKIP(0) PLAYER MOBJ: <%s>", *mobj->GetClass()->GetFullName());
+        if (dbg_save_verbose&0x01) {
+          GCon->Logf("*** SKIP(0) PLAYER MOBJ: <%s>", *mobj->GetClass()->GetFullName());
+        }
         return;
       }
     }
-    if (dbg_save_verbose&0x02) GCon->Logf("*** unique object (%u : %s)", o->GetUniqueId(), *o->GetClass()->GetFullName());
+    if (dbg_save_verbose&0x02) {
+      GCon->Logf("*** unique object (%u : %s)", o->GetUniqueId(), *o->GetClass()->GetFullName());
+    }
     Exports.Append(o);
     ObjectsMap.put(o->GetUniqueId(), Exports.length());
   }
@@ -1171,7 +1180,9 @@ public:
   virtual void io (VSerialisable *&Ref) override {
     vint32 scpIndex = 0;
     if (Ref) {
-      if (Ref->GetClassName() != "VAcs") Host_Error("trying to save unknown serialisable of class `%s`", *Ref->GetClassName());
+      if (Ref->GetClassName() != "VAcs") {
+        Host_Error("trying to save unknown serialisable of class `%s`", *Ref->GetClassName());
+      }
       while (scpIndex < AcsExports.length() && AcsExports[scpIndex] != Ref) ++scpIndex;
       if (scpIndex >= AcsExports.length()) {
         scpIndex = AcsExports.length();
@@ -1217,7 +1228,7 @@ public:
         if ((dbg_save_verbose&0x08) /*|| true*/) {
           GCon->Logf("*** unknown object (%u : %s) -- THIS IS HARMLESS", Ref->GetUniqueId(), *Ref->GetClass()->GetFullName());
         }
-        TmpIdx = 0; // that is how it was done in previous version of the code
+        TmpIdx = 0; // that is how it was done in the previous version of the code
       } else {
         TmpIdx = *ppp;
       }
@@ -1226,9 +1237,23 @@ public:
     *this << STRM_INDEX(TmpIdx);
   }
 
-  // need to expose others too
-  virtual void io (VStr &s) override { VStream::io(s); }
-  virtual void io (VMemberBase *&o) override { VStream::io(o); }
+  // need to expose others too (all overloaded versions should be explicitly overriden)
+  virtual void io (VStr &s) override {
+    VStream::io(s);
+  }
+
+  // this should not be used (because VObject takes care of serialising its contents)
+  virtual void io (VMemberBase *&o) override {
+    #if 0
+    if (o == nullptr) {
+      GCon->Log(NAME_Debug, "writing `none` VMember");
+    } else {
+      GCon->Logf(NAME_Debug, "writing VMember `%s` from %s",
+                 o->GetName(), *o->Loc.toStringNoCol());
+    }
+    #endif
+    VStream::io(o);
+  }
 
   virtual void SerialiseStructPointer (void *&Ptr, VStruct *Struct) override {
     vint32 TmpIdx;
