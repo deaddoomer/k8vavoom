@@ -2792,7 +2792,7 @@ bool VClass::SetReplacement (VClass *cls) {
 
 //==========================================================================
 //
-//  operator<<
+//  operator <<
 //
 //==========================================================================
 VStream &operator << (VStream &Strm, VStateLabel &Lbl) {

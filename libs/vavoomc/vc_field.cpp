@@ -288,6 +288,25 @@ void VField::SkipSerialisedValue (VStream &Strm) {
 
 //==========================================================================
 //
+//  GetOldStateIndex
+//
+//==========================================================================
+static int GetOldStateIndex (const char *stname) {
+  int res = -1;
+  if (stname && stname[0] == 'S' && stname[1] == '_' && stname[2] != 0) {
+    res = 0; stname += 2;
+    while (res >= 0 && *stname != 0) {
+      const int dig = VStr::digitInBase(*stname);
+      if (dig >= 0) res = res * 10 + dig; else res = -1;
+      stname += 1;
+    }
+  }
+  return res;
+}
+
+
+//==========================================================================
+//
 //  VField::SerialiseFieldValue
 //
 //==========================================================================
@@ -458,12 +477,37 @@ void VField::SerialiseFieldValue (VStream &Strm, vuint8 *Data, const VFieldType 
       break;
     case TYPE_State:
       if (Strm.IsLoading()) {
+        // reading
         VName CName;
         VName SName;
         Strm << CName << SName;
-        if (SName != NAME_None && VStr::ICmp(*SName, "none") != 0) {
+        if (SName != NAME_None /*&& VStr::ICmp(*SName, "none") != 0*/) {
+          VState *stx;
           //*(VState **)Data = VClass::FindClass(*CName)->FindStateChecked(SName);
-          *(VState **)Data = VClass::FindClass(*CName)->FindState(SName);
+          if (SName == "<:nojump_state:>") {
+            stx = VState::GetNoJumpState();
+          } else if (SName == "<:nojump_state:>") {
+            stx = VState::GetInvalidState();
+          } else {
+            stx = VClass::FindClass(*CName)->FindState(SName);
+            // old state name scheme: `S_%d`
+            // old state name scheme: `<:S_%05d:>`
+            if (VState::IsInvalidState(stx)) {
+              int oldidx = GetOldStateIndex(*SName);
+              if (oldidx >= 0) {
+                #if 0
+                VName osnx = SName;
+                #endif
+                SName = VName(va("<:S_%05d:>", oldidx));
+                stx = VClass::FindClass(*CName)->FindState(SName);
+                if (VState::IsInvalidState(stx)) stx = nullptr;
+                #if 0
+                GLog.Logf(NAME_Debug, "translated old state '%s' to new state '%s'", *osnx, *SName);
+                #endif
+              }
+            }
+          }
+          *(VState **)Data = stx;
           if (*(VState **)Data == nullptr) {
             GLog.WriteLine(NAME_Warning, "I/O: state '%s' not found", *SName);
           }
@@ -471,6 +515,7 @@ void VField::SerialiseFieldValue (VStream &Strm, vuint8 *Data, const VFieldType 
           *(VState **)Data = nullptr;
         }
       } else {
+        // writing
         VName CName = NAME_None;
         VName SName = NAME_None;
         if (*(VState **)Data) {

@@ -282,6 +282,7 @@ protected:
 //  VStateConstant
 //
 //==========================================================================
+/*
 class VStateConstant : public VExpression {
 public:
   VState *State;
@@ -297,6 +298,7 @@ protected:
   VStateConstant () {}
   virtual void DoSyntaxCopyTo (VExpression *e) override;
 };
+*/
 
 
 //==========================================================================

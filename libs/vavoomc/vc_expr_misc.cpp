@@ -1425,6 +1425,7 @@ VStr VClassConstant::toString () const {
 
 
 
+/*
 //==========================================================================
 //
 //  VStateConstant::VStateConstant
@@ -1492,6 +1493,7 @@ void VStateConstant::Emit (VEmitContext &ec) {
 VStr VStateConstant::toString () const {
   return VStr("`")+(State ? VStr(State->Name) : e2s(nullptr))+"`";
 }
+*/
 
 
 

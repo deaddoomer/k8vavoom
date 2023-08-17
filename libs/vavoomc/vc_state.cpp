@@ -87,8 +87,8 @@ VState::~VState () {
 //
 //==========================================================================
 void VState::StaticInit () {
-  mNoJumpState = new VState(" __dummy__nojump__state__ ", /*VClass*/nullptr, TLocation());
-  mInvalidState = new VState(" __dummy__invalid__state__ ", /*VClass*/nullptr, TLocation());
+  mNoJumpState = new VState("<:nojump_state:>", /*VClass*/nullptr, TLocation());
+  mInvalidState = new VState("<:invalid_state:>", /*VClass*/nullptr, TLocation());
   //InClass->AddState(mNoJumpState);
   mNoJumpState->SpriteName = NAME_None;
   mNoJumpState->Frame = 0|VState::FF_SKIPOFFS|VState::FF_SKIPMODEL|VState::FF_DONTCHANGE|VState::FF_KEEPSPRITE;

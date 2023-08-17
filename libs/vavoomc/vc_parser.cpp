@@ -2607,7 +2607,7 @@ void VParser::ParseStates (VClass *InClass) {
       if (!PrevState) {
         // yet if we are in spawn label, demand at least one defined state
         // ah, screw it, just define TNT1
-        VState *dummyState = new VState(va("S_%d", StateIdx++), InClass, TmpLoc);
+        VState *dummyState = new VState(va("<:S_%05d:>", StateIdx++), InClass, TmpLoc);
         InClass->AddState(dummyState);
         dummyState->SpriteName = "tnt1";
         dummyState->Frame = 0|VState::FF_SKIPOFFS|VState::FF_SKIPMODEL|VState::FF_DONTCHANGE|VState::FF_KEEPSPRITE;
@@ -2648,7 +2648,7 @@ void VParser::ParseStates (VClass *InClass) {
 
       // see above for the reason to introduce this dummy state
       if (!PrevState) {
-        VState *dummyState = new VState(va("S_%d", StateIdx++), InClass, TmpLoc);
+        VState *dummyState = new VState(va("<:S_%05d:>", StateIdx++), InClass, TmpLoc);
         InClass->AddState(dummyState);
         dummyState->SpriteName = "tnt1";
         dummyState->Frame = 0|VState::FF_SKIPOFFS|VState::FF_SKIPMODEL|VState::FF_DONTCHANGE|VState::FF_KEEPSPRITE;
@@ -2722,7 +2722,7 @@ void VParser::ParseStates (VClass *InClass) {
     }
 
     char StateName[16];
-    snprintf(StateName, sizeof(StateName), "S_%d", StateIdx++);
+    snprintf(StateName, sizeof(StateName), "<:S_%05d:>", StateIdx++);
     VState *State = new VState(StateName, InClass, TmpLoc);
     InClass->AddState(State);
 
@@ -2838,7 +2838,7 @@ void VParser::ParseStates (VClass *InClass) {
         // k8: play safe here: add dummy state for any label, just in case
         if (!PrevState) {
           // there were no states after the label, insert dummy one
-          VState *dupState = new VState(va("S_%d", StateIdx++), InClass, TmpLoc);
+          VState *dupState = new VState(va("<:S_%05d:>", StateIdx++), InClass, TmpLoc);
           InClass->AddState(dupState);
           // copy real state data to duplicate one (it will be used as new "real" state)
           dupState->SpriteName = State->SpriteName;
@@ -2959,7 +2959,7 @@ void VParser::ParseStates (VClass *InClass) {
         frm |= FSChar-'A';
       }
       // create a new state
-      snprintf(StateName, sizeof(StateName), "S_%d", StateIdx++);
+      snprintf(StateName, sizeof(StateName), "<:S_%05d:>", StateIdx++);
       VState *s2 = new VState(StateName, InClass, TmpLoc);
       InClass->AddState(s2);
       s2->SpriteName = State->SpriteName;
@@ -3278,7 +3278,7 @@ void VParser::ParseStatesNewStyleUnused (VClass *inClass) {
 
     // create new state
     char StateName[64];
-    snprintf(StateName, sizeof(StateName), "S_%d", stateIdx);
+    snprintf(StateName, sizeof(StateName), "<:S_%05d:>", stateIdx);
     VState *s = new VState(StateName, inClass, tmpLoc);
     inClass->AddState(s);
 
@@ -3474,7 +3474,7 @@ void VParser::ParseStatesNewStyleUnused (VClass *inClass) {
     // create states for frames
     for (int f = 1; f < frameUsed; ++f) {
       // create a new state
-      snprintf(StateName, sizeof(StateName), "S_%d", stateIdx);
+      snprintf(StateName, sizeof(StateName), "<:S_%05d:>", stateIdx);
       VState *s2 = new VState(StateName, inClass, tmpLoc);
       inClass->AddState(s2);
       s2->SpriteName = s->SpriteName;
@@ -3786,7 +3786,7 @@ void VParser::ParseStatesNewStyle (VClass *inClass) {
 
     // create new state
     char StateName[64];
-    snprintf(StateName, sizeof(StateName), "S_%d", stateIdx);
+    snprintf(StateName, sizeof(StateName), "<:S_%05d:>", stateIdx);
     VState *s = new VState(StateName, inClass, tmpLoc);
     s->Type = VState::D2DF;
     inClass->AddState(s);
@@ -3985,7 +3985,7 @@ void VParser::ParseStatesNewStyle (VClass *inClass) {
     // create states for frames
     for (int f = 1; f < frameUsed; ++f) {
       // create a new state
-      snprintf(StateName, sizeof(StateName), "S_%d", stateIdx);
+      snprintf(StateName, sizeof(StateName), "<:S_%05d:>", stateIdx);
       VState *s2 = new VState(StateName, inClass, tmpLoc);
       inClass->AddState(s2);
       s2->SpriteName = s->SpriteName;
