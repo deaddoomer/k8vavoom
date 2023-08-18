@@ -1992,70 +1992,21 @@ static void AM_drawPlayers () {
 }
 
 
-// sorry!
-static TArrayNC<TVec> stxPoints, stxSubsrc, stxHull;
-static TPlane stxPl[4]; // clip planes
+// ////////////////////////////////////////////////////////////////////////// //
+// corpse sliding debug code
+// sorry for globals!
+//
+
+// collected points
+static TArrayNC<TVec> stxPoints;
+// final convex hull
+static TArrayNC<TVec> stxHullOrig;
+static TArrayNC<TVec> stxHull;
+// planes for each hull edge
+// always contains the plane for [$-1] to [0] edge
+static TArrayNC<TPlane> stxHullPlanes;
+// kept static to avoid needless reallocations
 static TPlane::ClipWorkData stxWk;
-static TVec stxOuterPoint; // set if we have a hull
-
-
-//==========================================================================
-//
-//  SegNormal
-//
-//==========================================================================
-static VVA_OKUNUSED TVec SegNormal (const TVec &v0, const TVec &v1) {
-  const TVec dir = v1 - v0;
-  TVec normal = TVec(dir.y, -dir.x, 0.0f);
-  // use some checks to avoid floating point inexactness on axial planes
-  if (!normal.x) {
-    if (!normal.y) {
-      //k8: what to do here?!
-      normal = TVec(0.0f, 0.0f, 0.0f);
-    } else {
-      // vertical
-      normal.y = floatSign(normal.y);
-    }
-  } else if (!normal.y) {
-    // horizontal
-    normal.x = floatSign(normal.x);
-  } else {
-    // sloped
-    normal.normaliseInPlace();
-  }
-  return normal;
-}
-
-
-//==========================================================================
-//
-//  CheckGoodStanding
-//
-//  check all regions
-//
-//==========================================================================
-static bool CheckGoodStanding (VEntity *mobj, sector_t *sector, TVec morg) {
-  if (sector) {
-    if (sector->floor.GetPointZClamped(morg) == morg.z) return true;
-    else if (sector->Has3DFloors()) {
-      for (const sec_region_t *reg = sector->eregions->next; reg; reg = reg->next) {
-        if (reg->regflags&(sec_region_t::RF_BaseRegion|sec_region_t::RF_OnlyVisual|sec_region_t::RF_NonSolid)) continue;
-        // get opening points
-        const float fz = reg->efloor.GetPointZClamped(morg);
-        const float cz = reg->eceiling.GetPointZClamped(morg);
-        if (fz >= cz) continue; // ignore paper-thin regions
-        #if 0
-        GCon->Logf(NAME_Debug, "%s(%u): fz=%g; cz=%g; z=%g; hit=%d",
-                   mobj->GetClass()->GetName(), mobj->GetUniqueId(),
-                   fz, cz, morg.z, (cz == morg.z));
-        #endif
-        // we are standing on 3d floor ceilings
-        if (cz == morg.z) return true;
-      }
-    }
-  }
-  return false;
-}
 
 
 //==========================================================================
@@ -2072,33 +2023,11 @@ static VVA_OKUNUSED VVA_FORCEINLINE float PtSide (const TVec &a, const TVec &b, 
 }
 
 
-static const float hullEps = 0.01f;
-
-
-//==========================================================================
-//
-//  CheckCollinear
-//
-//  return point with non-zero z if not collinear
-//
-//==========================================================================
-static VVA_FORCEINLINE TVec CheckCollinear (const TVec &p0, const TVec &p1, const TVec &p2) {
-  if (fabsf(PtSide(p0, p1, p2)) <= hullEps) {
-    // collinear, choose furthest point
-    if ((p0 - p1).lengthSquared() < (p0 - p2).lengthSquared()) {
-      return TVec(p2.x, p2.y, 0.0f);
-    } else {
-      return TVec(p1.x, p1.y, 0.0f);
-    }
-  } else {
-    return TVec(0.0f, 0.0f, -1.0f);
-  }
-}
-
-
 //==========================================================================
 //
 //  bchTVecCompare
+//
+//  used to sort points for monotone chain algo
 //
 //==========================================================================
 static int bchTVecCompare (const void *aa, const void *bb, void *udata) noexcept {
@@ -2120,10 +2049,13 @@ static int bchTVecCompare (const void *aa, const void *bb, void *udata) noexcept
 //
 //==========================================================================
 static VVA_OKUNUSED void buildConvexHull () {
+  const float hullEps = 0.01f;
+
   const int ptlen = stxPoints.length();
   int k = 0, t;
 
   stxHull.resetNoDtor();
+  stxHullOrig.resetNoDtor();
 
   // first, sort points
   smsort_r(stxPoints.ptr(), (size_t)ptlen, sizeof(stxPoints[0]), &bchTVecCompare, nullptr);
@@ -2138,12 +2070,11 @@ static VVA_OKUNUSED void buildConvexHull () {
 
   // build lower hull
   for (int f = 0; f < ptlen; f += 1) {
-    while (k >= 2 && PtSide(stxHull[k-2], stxHull[k-1], stxPoints[f]) <= hullEps) {
+    while (k >= 2 && PtSide(stxHull[k-2], stxHull[k-1], stxPoints[f]) >= -hullEps) {
       if (dbg_am_slide_verbose_hull.asBool()) {
         GCon->Logf("  drop-lo: (%g, %g, %g)", stxHull[k-1].x, stxHull[k-1].y, stxHull[k-1].z);
       }
-      stxHull.drop();
-      k -= 1;
+      stxHull.drop(); k -= 1;
     }
     if (dbg_am_slide_verbose_hull.asBool()) {
       GCon->Logf("  apnd-lo: (%g, %g, %g)", stxPoints[f].x, stxPoints[f].y, stxPoints[f].z);
@@ -2154,12 +2085,11 @@ static VVA_OKUNUSED void buildConvexHull () {
   // build upper hull
   t = k + 1;
   for (int f = ptlen - 1; f > 0; f -= 1) {
-    while (k >= t && PtSide(stxHull[k-2], stxHull[k-1], stxPoints[f-1]) <= hullEps) {
+    while (k >= t && PtSide(stxHull[k-2], stxHull[k-1], stxPoints[f-1]) >= -hullEps) {
       if (dbg_am_slide_verbose_hull.asBool()) {
         GCon->Logf("  drop-hi: (%g, %g, %g)", stxHull[k-1].x, stxHull[k-1].y, stxHull[k-1].z);
       }
-      stxHull.drop();
-      k -= 1;
+      stxHull.drop(); k -= 1;
     }
     if (dbg_am_slide_verbose_hull.asBool()) {
       GCon->Logf("  apnd-hi: (%g, %g, %g)", stxPoints[f-1].x, stxPoints[f-1].y, stxPoints[f-1].z);
@@ -2188,7 +2118,7 @@ static VVA_OKUNUSED void buildConvexHull () {
 //  PointInHull
 //
 //==========================================================================
-static bool PointInHull (const TVec morg) {
+static VVA_OKUNUSED bool PointInHull (const TVec morg) {
   bool inside = false;
   const int hlen = stxHull.length();
   if (hlen > 2) {
@@ -2210,31 +2140,32 @@ static bool PointInHull (const TVec morg) {
 
 //==========================================================================
 //
-//  pointGtr
+//  CheckGoodStanding
 //
-//  true if `p0 > p1`
-//
-//==========================================================================
-static VVA_OKUNUSED VVA_FORCEINLINE bool pointGtr (const TVec &p0, const TVec &p1) {
-  const TVec d = p0 - p1;
-  if (d.x != 0.0f) return (d.x > 0.0f);
-  // x is equal
-  if (d.y != 0.0f) return (d.y > 0.0f);
-  // y is equal
-  return (d.z > 0.0f);
-}
-
-
-//==========================================================================
-//
-//  addPoint
+//  check all regions, return `true` if at least one region contains
 //
 //==========================================================================
-static VVA_OKUNUSED VVA_FORCEINLINE void addPoint (const TVec pt) {
-  for (auto &&p : stxPoints) {
-    if (fabsf(p.x-pt.x) < 0.001f && fabsf(p.y-pt.y) < 0.001f) return;
+static bool CheckGoodStanding (VEntity *mobj, sector_t *sector, TVec morg) {
+  if (sector) {
+    if (sector->floor.GetPointZClamped(morg) == morg.z) return true;
+    else if (sector->Has3DFloors()) {
+      for (const sec_region_t *reg = sector->eregions->next; reg; reg = reg->next) {
+        if (reg->regflags&(sec_region_t::RF_BaseRegion|sec_region_t::RF_OnlyVisual|sec_region_t::RF_NonSolid)) continue;
+        // get opening points
+        const float fz = reg->efloor.GetPointZClamped(morg);
+        const float cz = reg->eceiling.GetPointZClamped(morg);
+        if (fz >= cz) continue; // ignore paper-thin regions
+        #if 0
+        GCon->Logf(NAME_Debug, "%s(%u): fz=%g; cz=%g; z=%g; hit=%d",
+                   mobj->GetClass()->GetName(), mobj->GetUniqueId(),
+                   fz, cz, morg.z, (cz == morg.z));
+        #endif
+        // we are standing on 3d floor ceilings
+        if (cz == morg.z) return true;
+      }
+    }
   }
-  stxPoints.append(TVec(pt.x, pt.y));
+  return false;
 }
 
 
@@ -2242,11 +2173,25 @@ static VVA_OKUNUSED VVA_FORCEINLINE void addPoint (const TVec pt) {
 //
 //  checkStationary
 //
-//  debug for body sliding
+//  as we know, the body "lies stable" when convex hull created from all
+//  contact points contains body's center of mass. so let's collect all
+//  points from touching subsectors, and do exactly that check.
 //
-//  idea: check all subsectors, collect points, then build convex hull
-//  we need to check subsectors, because this is the best way to process
-//  intersecting segs.
+//  previous version of the code was clipping each seg against the mobj
+//  bounding box, and sorted out duplicate points. this was required
+//  because convex hull creation algo was unable to cope with duplicates,
+//  and because i wrote it that way.
+//
+//  as we know from our geometry classes, clipping convex poly with another
+//  convex poly gives us a convex poly. so we can simply collect all points,
+//  build convex hull, and then clip that hull with mobj bbox. it will be
+//  faster this way. don't bother applying Akl–Toussaint heuristic, the
+//  price of quadrilateral checing doesn't worth the efforts.
+//
+//  also, instead of using "point in poly" check (several, actually), we
+//  can calculate planes for convex hull edges, and use "box in convex"
+//  check. as we're actually checking if small box is in hull, this will
+//  give us a small speedup.
 //
 //==========================================================================
 static VVA_OKUNUSED bool checkStationary (VEntity *mobj) {
@@ -2260,104 +2205,166 @@ static VVA_OKUNUSED bool checkStationary (VEntity *mobj) {
 
   mobj->Create2DBox(mybbox);
 
+  // there is no need to reset "inner rect"
   stxPoints.resetNoDtor();
   // just in case
   stxHull.resetNoDtor();
 
-  // left edge
-  stxPl[0].Set2Points(TVec(mybbox[BOX2D_MINX], mybbox[BOX2D_MINY]),
-                      TVec(mybbox[BOX2D_MINX], mybbox[BOX2D_MAXY]));
-  // top edge
-  stxPl[1].Set2Points(TVec(mybbox[BOX2D_MINX], mybbox[BOX2D_MAXY]),
-                      TVec(mybbox[BOX2D_MAXX], mybbox[BOX2D_MAXY]));
-  // right edge
-  stxPl[2].Set2Points(TVec(mybbox[BOX2D_MAXX], mybbox[BOX2D_MAXY]),
-                      TVec(mybbox[BOX2D_MAXX], mybbox[BOX2D_MINY]));
-  // bottom edge
-  stxPl[3].Set2Points(TVec(mybbox[BOX2D_MAXX], mybbox[BOX2D_MINY]),
-                      TVec(mybbox[BOX2D_MINX], mybbox[BOX2D_MINY]));
-
-  int fc;
+  // optimisation: if we hit only one subsector, don't bother with
+  // hull building: subsectors are always convex
+  int ssCount = 0;
 
   //GCon->Log(NAME_Debug, ":::::::::::::::::::::");
   // check all touching sectors
   for (msecnode_t *mnode = mobj->TouchingSectorList; mnode; mnode = mnode->TNext) {
+    // if this sector doesn't have any regions we could stand on, ignore it
+    if (!CheckGoodStanding(mobj, mnode->Sector, morg)) continue;
     // check all subsectors
     for (subsector_t *sub = mnode->Sector->subsectors; sub; sub = sub->seclink) {
-      if (!CheckGoodStanding(mobj, sub->sector, morg)) continue;
+      // this is fast, because it is using subsector bounding box, and multiplies only
       if (!XLevel->IsBBox2DTouchingSubsector(sub, mybbox)) continue;
-
-      if (sub->bbox2d[BOX2D_MINX] >= mybbox[BOX2D_MINX] &&
-          sub->bbox2d[BOX2D_MINY] >= mybbox[BOX2D_MINY] &&
-          sub->bbox2d[BOX2D_MAXX] <= mybbox[BOX2D_MAXX] &&
-          sub->bbox2d[BOX2D_MAXY] <= mybbox[BOX2D_MAXY])
-      {
-        // subsector is fully inside, add all seg points
-        const seg_t *seg = &XLevel->Segs[sub->firstline];
-        for (int f = sub->numlines; f--; ++seg) {
-          addPoint(*seg->v1);
-        }
-      } else {
-        // this will not be called when origin is on some good sector
-        #if 0
-        // check if subsector fully contains mobj bbox
-        // this can happen only if subsector bbox contains mobj bbox
-        if (sub->bbox2d[BOX2D_MINX] <= mybbox[BOX2D_MINX] &&
-            sub->bbox2d[BOX2D_MINY] <= mybbox[BOX2D_MINY] &&
-            sub->bbox2d[BOX2D_MAXX] >= mybbox[BOX2D_MAXX] &&
-            sub->bbox2d[BOX2D_MAXY] >= mybbox[BOX2D_MAXY])
-        {
-          // check rect points
-          bool inside = true;
-          const seg_t *xseg = &XLevel->Segs[sub->firstline];
-          for (int f = sub->numlines; inside && f--; ++xseg) {
-            if (xseg->normal.dot2D(xseg->get2DBBoxAcceptPoint(mybbox)) < xseg->dist) {
-              inside = false;
-            }
-          }
-          if (inside) {
-            // no reason to do anything
-            #if 0
-            GCon->Logf(NAME_Debug, "!!! fulins!");
-            #endif
-            return true;
-          }
-        }
-        #endif
-        // clip subsector poly to mobj bbox
-        stxSubsrc.resetNoDtor();
-        const seg_t *seg = &XLevel->Segs[sub->firstline];
-        for (int f = sub->numlines; f--; ++seg) {
-          stxSubsrc.append(*seg->v1);
-        }
-
-        fc = stxSubsrc.length();
-        for (int f = 0; f < 4 && fc >= 3; f += 1) {
-          stxSubsrc.setLengthReserve(fc + 1);
-          stxPl[f].ClipPolyFront(stxWk, stxSubsrc.ptr(), fc, stxSubsrc.ptr(), &fc);
-        }
-
-        if (fc >= 3) {
-          for (int f = 0; f < fc; f += 1) addPoint(stxSubsrc[f]);
-        }
+      // just append all subsector points
+      const seg_t *seg = &XLevel->Segs[sub->firstline];
+      for (int f = sub->numlines; f--; ++seg) {
+        stxPoints.append(TVec(seg->v1->x, seg->v1->y));
       }
+      ssCount += 1;
     }
   }
 
-  // if we didn't get enough points, assume "ok" (same sector)
-  if (stxPoints.length() < 2) return true;
+  // we're done collecting points.
+  // don't do anything if we don't have enough points to build even a triangle.
+  // assume "stationary body" in this case, because we
+  // don't have a hull to calculate a sliding vector.
+  if (stxPoints.length() < 3) return true;
 
-  buildConvexHull();
-  //GCon->Logf(NAME_Debug, "pts:%d; hull:%d", points.length(), hull.length());
-
-  if (stxHull.length() < 3) {
-    #if 0
-    GCon->Logf(NAME_Debug, "=== pts:%d; hull:%d; inside=SHIT! ===", stxPoints.length(), stxHull.length());
-    #endif
-    return true; // wtf?!
+  // build convex hull
+  if (ssCount > 1) {
+    buildConvexHull();
+  } else {
+    // just use original subsector points
+    // for maps with moderate/low details, this is often the case
+    const int slen = stxPoints.length();
+    for (int f = 0; f < slen; f += 1) stxHull.Append(stxPoints[f]);
   }
 
-  #if 1
+  // now clip the hull
+  int fc = stxHull.length();
+
+  stxHullOrig.resetNoDtor();
+  for (int f = 0; f < fc; f += 1) stxHullOrig.Append(stxHull[f]);
+
+  TPlane clipPlane;
+  const int boxCorners[4][4] = {
+    // left edge
+    { BOX2D_MINX, BOX2D_MINY, BOX2D_MINX, BOX2D_MAXY },
+    // top edge
+    { BOX2D_MINX, BOX2D_MAXY, BOX2D_MAXX, BOX2D_MAXY },
+    // right edge
+    { BOX2D_MAXX, BOX2D_MAXY, BOX2D_MAXX, BOX2D_MINY },
+    // bottom edge
+    { BOX2D_MAXX, BOX2D_MINY, BOX2D_MINX, BOX2D_MINY },
+  };
+  for (int edge = 0; fc >= 3 && edge < 4; edge += 1) {
+    clipPlane.Set2Points(TVec(mybbox[boxCorners[edge][0]], mybbox[boxCorners[edge][1]]),
+                         TVec(mybbox[boxCorners[edge][2]], mybbox[boxCorners[edge][3]]));
+    #if 0
+    GCon->Logf(NAME_Debug, "edge: #%d", edge);
+    GCon->Logf(NAME_Debug, "  box: (%g,%g)-(%g, %g)",
+               mybbox[boxCorners[edge][0]], mybbox[boxCorners[edge][1]],
+               mybbox[boxCorners[edge][2]], mybbox[boxCorners[edge][3]]);
+    GCon->Logf(NAME_Debug, "  hull: %d points", fc);
+    for (int f = 0; f < fc; f += 1) {
+      GCon->Logf(NAME_Debug, "    #%d: (%g, %g, %g)", f,
+                 stxHull[f].x, stxHull[f].y, stxHull[f].z);
+    }
+    #endif
+    // always should have room for one more point, it is enough for convex polys
+    // but let's play safe, and reserve more (it is WAY more than needed, but meh)
+    const int newsz = fc + 128;
+    stxHull.setLengthNoResize(newsz);
+    clipPlane.ClipPolyFront(stxWk, stxHull.ptr(), fc, stxHull.ptr(), &fc);
+    vassert(fc <= newsz);
+  }
+
+  // don't do anything if we don't have enough points to build even a triangle.
+  // assume "stationary body" in this case, because we
+  // don't have a hull to calculate a sliding vector.
+  if (fc < 3) {
+    stxHull.resetNoDtor();
+    return true;
+  }
+  stxHull.setLengthNoResize(fc);
+
+  // calculate planes for hull edges
+  // we need plane normals to point inside a hull for "box in poly" checks.
+  stxHullPlanes.setLengthNoResize(fc);
+  for (int f = 0; f < fc - 1; f += 1) {
+    //stxHullPlanes[f].Set2Points(stxHull[f + 1], stxHull[f]);
+    stxHullPlanes[f].Set2Points(stxHull[f], stxHull[f + 1]);
+  }
+  //stxHullPlanes[fc - 1].Set2Points(stxHull[0], stxHull[fc - 1]);
+  stxHullPlanes[fc - 1].Set2Points(stxHull[fc - 1], stxHull[0]);
+
+  // check if a small box arount the center of the mass is inside a hull
+  const float nofs = (rad > 6.0f ? 2.0f : 1.0f);
+  mybbox[BOX2D_MINX] = morg.x - nofs;
+  mybbox[BOX2D_MINY] = morg.y - nofs;
+  mybbox[BOX2D_MAXX] = morg.x + nofs;
+  mybbox[BOX2D_MAXY] = morg.y + nofs;
+
+  bool isInside = true;
+  for (int f = 0; isInside && f < fc; f += 1) {
+    const TPlane &pl = stxHullPlanes[f];
+    if (pl.normal.dot2D(pl.get2DBBoxAcceptPoint(mybbox)) < pl.dist) {
+      isInside = false;
+    }
+  }
+
+  #if 0
+  GCon->Logf(NAME_Debug, "=== pts:%d; hull:%d; inside=%d ===", stxPoints.length(), stxHull.length(), inside);
+  #endif
+  return isInside;
+}
+
+
+//==========================================================================
+//
+//  CalculateSlideUnitVector
+//
+//  move by the vector from the center of hull to origin
+//
+//==========================================================================
+static VVA_OKUNUSED TVec CalculateSlideUnitVector (VEntity *mobj) {
+  TVec snorm, hc;
+
+  const int hlen = stxHull.length();
+  vassert(hlen >= 3);
+
+  // calculate hull centroid: average of all hull vertices
+  // our hull has no collinear points, so it is ok
+
+  hc = TVec(0.0f, 0.0f, 0.0f);
+  for (int f = 0; f < hlen; f += 1) hc += stxHull[f];
+  hc /= hlen;
+
+  AM_DrawBox(hc.x-1, hc.y-1, hc.x+1, hc.y+1, 0xFF007FFF);
+
+  // vector from hc to morg is our new direction
+  snorm = mobj->Origin - hc;
+  snorm.z = 0.0f;
+  if (!snorm.isZero2D()) snorm.normalise2DInPlace();
+
+  return snorm;
+}
+
+
+//==========================================================================
+//
+//  DrawStxHull
+//
+//==========================================================================
+static VVA_OKUNUSED void DrawStxHull () {
   for (int f = 0; f < stxHull.length(); f += 1) {
     int c = (f + 1) % stxHull.length();
     mline_t l;
@@ -2370,184 +2377,42 @@ static VVA_OKUNUSED bool checkStationary (VEntity *mobj) {
       AM_rotatePoint(&l.b.x, &l.b.y);
     }
     AM_drawMline(&l, 0xFF00FF00);
-  }
-  #endif
 
-  bool inside = PointInHull(morg);
-  if (inside && rad > 6.0f) {
-    const float nofs = 2.0f;
-    const TVec cvv[4] = {
-      TVec(+nofs, -nofs),
-      TVec(+nofs, +nofs),
-      TVec(-nofs, -nofs),
-      TVec(-nofs, +nofs),
-    };
-    // check more points
-    for (int f = 0; inside && f < 4; f += 1) {
-      inside = PointInHull(morg+cvv[f]);
-      if (!inside) stxOuterPoint = morg+cvv[f];
+    // draw normal
+    TVec cp = (stxHull[f] + stxHull[c]) * 0.5f;
+    TVec dp = cp + stxHullPlanes[f].normal * 4.0f;
+    l.a.x = cp.x;
+    l.a.y = cp.y;
+    l.b.x = dp.x;
+    l.b.y = dp.y;
+    if (am_rotate) {
+      AM_rotatePoint(&l.a.x, &l.a.y);
+      AM_rotatePoint(&l.b.x, &l.b.y);
     }
-  } else {
-    stxOuterPoint = morg;
+    AM_drawMline(&l, 0xFF00CF00);
   }
-
-  #if 0
-  GCon->Logf(NAME_Debug, "=== pts:%d; hull:%d; inside=%d ===", stxPoints.length(), stxHull.length(), inside);
-  #endif
-  return inside;
 }
 
 
 //==========================================================================
 //
-//  CalculateSlideVector
+//  DrawStxHullOrig
 //
 //==========================================================================
-static VVA_OKUNUSED TVec CalculateSlideVectorMap (VEntity *mobj) {
-  float mybbox[4];
-  const TVec morg = mobj->Origin;
-  TVec snorm = TVec(0.0f, 0.0f, 0.0f);
-  VLevel *XLevel = mobj->XLevel;
-
-  mobj->Create2DBox(mybbox);
-  DeclareMakeBlockMapCoordsBBox2D(mybbox, xl, yl, xh, yh);
-  //GCon->Logf(" rad=%g; xl=%d; yl=%d; xh=%d; yh=%d", rad, xl, yl, xh, yh);
-
-  XLevel->IncrementValidCount(); // used to make sure we only process a line once
-  for (int bx = xl; bx <= xh; ++bx) {
-    for (int by = yl; by <= yh; ++by) {
-      //GCon->Logf("  bx=%d; by=%d", bx, by);
-      for (auto &&it : XLevel->allBlockLines(bx, by)) {
-        line_t *ld = it.line();
-        if ((ld->flags&ML_TWOSIDED) == 0) continue;
-        if (!mobj->LineIntersects(ld)) continue;
-        const bool ok = CheckGoodStanding(mobj, ld->frontsector, morg) ||
-                        CheckGoodStanding(mobj, ld->backsector, morg);
-        if (!ok) continue;
-        const int side = ld->PointOnSide(mobj->Origin);
-        #if 0
-        GCon->Logf("  line: side=%d; norm:(%g,%g,%g)",
-                   side, ld->normal.x, ld->normal.y, ld->normal.z);
-        #endif
-        snorm += (side ? -ld->normal : ld->normal);
-        //snorm = snorm.normalise();
-        #if 0
-        GCon->Logf("  snorm: (%g,%g,%g)", snorm.x, snorm.y, snorm.z);
-        #endif
-      }
+static VVA_OKUNUSED void DrawStxHullOrig () {
+  for (int f = 0; f < stxHullOrig.length(); f += 1) {
+    int c = (f + 1) % stxHullOrig.length();
+    mline_t l;
+    l.a.x = stxHullOrig[f].x;
+    l.a.y = stxHullOrig[f].y;
+    l.b.x = stxHullOrig[c].x;
+    l.b.y = stxHullOrig[c].y;
+    if (am_rotate) {
+      AM_rotatePoint(&l.a.x, &l.a.y);
+      AM_rotatePoint(&l.b.x, &l.b.y);
     }
+    AM_drawMline(&l, 0xFF0000FF);
   }
-
-  if (!snorm.isZero2D()) {
-    float angle = VectorAngleYaw(snorm);
-    angle = AngleMod360(angle-5+10*FRandom/*Full*/());
-    snorm = AngleVectorYaw(angle);
-  }
-
-  return snorm;
-}
-
-
-//==========================================================================
-//
-//  CalculateSlideVectorHullOld
-//
-//==========================================================================
-static VVA_OKUNUSED TVec CalculateSlideVectorHullOld (VEntity *mobj, TVec morg) {
-  TVec snorm = TVec(0.0f, 0.0f, 0.0f);
-  //TVec morg = mobj->Origin;
-
-  const int hlen = stxHull.length();
-  vassert(hlen >= 3);
-  int c = hlen - 1;
-  for (int f = 0; f < hlen; c = f, f += 1) {
-    // from c to f
-    const TVec &v0 = stxHull[c];
-    const TVec &v1 = stxHull[f];
-    if (PtSide(v0, v1, morg) > hullEps) {
-      #if 0
-      snorm -= SegNormal(v0, v1)*(v1 - v0).length2D();
-      #else
-      const TVec dir = v1 - v0;
-      const float ndist = morg.line2DDistanceSquared(v0, v1) * 0.0f + 4.0f;
-      const TVec norm = TVec(dir.y, -dir.x, 0.0f) / (ndist < 0.01f ? 1.0f : sqrtf(ndist));
-      snorm -= norm;
-      #endif
-    }
-  }
-
-  if (snorm.isZero2D()) {
-    // inside or coplanar, just take the longest line
-    float bestlen = -1.0f;
-    c = hlen - 1;
-    for (int f = 0; f < hlen; c = f, f += 1) {
-      // from c to f
-      const TVec &v0 = stxHull[c];
-      const TVec &v1 = stxHull[f];
-      const float xlen = (v1 - v0).length2DSquared();
-      if (xlen > bestlen) {
-        #if 0
-        snorm = SegNormal(v0, v1)*(v1 - v0).length2D();
-        #else
-        const TVec dir = v1 - v0;
-        snorm = TVec(dir.y, -dir.x, 0.0f);
-        #endif
-        bestlen = xlen;
-      }
-    }
-  }
-
-  if (!snorm.isZero2D()) {
-    #if 0
-    //const float speed = 12.0f + 6.0f*((hashU32(GetUniqueId())>>4)&0x3fu)/63.0f;
-    float angle = VectorAngleYaw(snorm);
-    angle = AngleMod360(angle-2+4*FRandom/*Full*/());
-    snorm = AngleVectorYaw(angle);
-    #else
-    snorm.normaliseInPlace();
-    #endif
-  }
-
-  return snorm;
-}
-
-
-//==========================================================================
-//
-//  CalculateSlideVectorHull
-//
-//  move by the vector from the center of hull to origin
-//
-//==========================================================================
-static VVA_OKUNUSED TVec CalculateSlideVectorHull (VEntity *mobj, TVec morg) {
-  TVec snorm, hc;
-  //TVec morg = mobj->Origin;
-
-  const int hlen = stxHull.length();
-  vassert(hlen >= 3);
-
-  // calculate hull centroid: average of all hull vertices
-  // our hull has no collinear points, so it is ok
-
-  hc = TVec(0.0f, 0.0f, 0.0f);
-  for (int f = 0; f < hlen; f += 1) {
-    hc += stxHull[f];
-  }
-  hc /= hlen;
-
-  AM_DrawBox(hc.x-1, hc.y-1, hc.x+1, hc.y+1, 0xFF007FFF);
-
-  // vector from hc to morg is our new direction
-  snorm = morg - hc;
-  snorm.z = 0.0f;
-  // just in case
-  if (!snorm.isZero2D()) {
-    snorm.normaliseInPlace();
-  } else {
-    snorm = CalculateSlideVectorHullOld(mobj, morg);
-  }
-
-  return snorm;
 }
 
 
@@ -2630,6 +2495,7 @@ static void AM_drawOneThing (VEntity *mobj, bool &inSpriteMode) {
     } else {
       AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, color);
     }
+
     if (dbg_am_slide.asBool() || cheatMode >= 14) {
       // DEBUG: draw slide force
       if (mobj->IsRealCorpse() &&
@@ -2640,10 +2506,10 @@ static void AM_drawOneThing (VEntity *mobj, bool &inSpriteMode) {
         tmtrace_t tm;
         TVec snorm = TVec(0.0f, 0.0f, 0.0f);
 
-        mobj->CheckRelPositionPoint(tm, mobj->Origin);
-        if (tm.FloorZ < mobj->Origin.z) {
-          rad += 1.0f;
-          const bool checkStat = checkStationary(mobj);
+        const bool checkStat = checkStationary(mobj);
+        if (!checkStat) {
+          DrawStxHullOrig();
+          DrawStxHull();
           if (cheatMode >= 16) {
             // draw hull points
             for (auto &&p : stxHull) {
@@ -2655,21 +2521,29 @@ static void AM_drawOneThing (VEntity *mobj, bool &inSpriteMode) {
               AM_DrawBox(p.x-1, p.y-1, p.x+1, p.y+1, 0xFFFFFFFF);
             }
           }
-          if (checkStat) {
-            AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, 0xFFFF00FF);
-            return;
-          } else {
-            //if (strcmp(mobj->GetClass()->GetName(), "DoomImp") != 0) return;
-            //GCon->Logf("%s: fz=%g; oz=%g", mobj->GetClass()->GetName(), tm.FloorZ, mobj->Origin.z);
-            AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, 0xFFFF0000);
-          }
+          //if (strcmp(mobj->GetClass()->GetName(), "DoomImp") != 0) return;
+          //GCon->Logf("%s: fz=%g; oz=%g", mobj->GetClass()->GetName(), tm.FloorZ, mobj->Origin.z);
+          // red box means "want to slide"
+          rad += 1.0f;
+          AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, 0xFFFF0000);
           rad -= 1.0f;
 
-          if (stxHull.length() >= 3) {
-            snorm = CalculateSlideVectorHull(mobj, stxOuterPoint);
-          } else {
-            snorm = CalculateSlideVectorMap(mobj);
+          snorm = CalculateSlideUnitVector(mobj);
+        } else {
+          #if 0
+          if (cheatMode < 16) {
+            // draw contact points
+            for (auto &&p : stxPoints) {
+              AM_DrawBox(p.x-1, p.y-1, p.x+1, p.y+1, 0xFFFFFFFF);
+            }
           }
+          #endif
+          #if 0
+          rad += 1.0f;
+          AM_DrawBox(morg.x-rad, morg.y-rad, morg.x+rad, morg.y+rad, 0xFFFF00FF);
+          //rad -= 1.0f;
+          #endif
+          return;
         }
 
         if (dbg_am_slide.asBool()) {
