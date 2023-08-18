@@ -1373,8 +1373,11 @@ static bool W_IsValidMapHeaderLump_NoLock (int lump) {
   int fidx = FILE_INDEX(lump);
   if (fidx < 0 || fidx >= fsysSearchPaths.length()) return false;
   int lidx = LUMP_INDEX(lump);
-  if (fsysSearchPaths[fidx]->LumpName(lidx+1) == NAME_textmap) return W_ValidateUDMFMapLumps_NoLock(lump);
-  return W_ValidateNormalMapLumps_NoLock(lump);
+  if (fsysSearchPaths[fidx]->LumpName(lidx + 1) == NAME_textmap) {
+    return W_ValidateUDMFMapLumps_NoLock(lump);
+  } else {
+    return W_ValidateNormalMapLumps_NoLock(lump);
+  }
 }
 
 

@@ -1079,13 +1079,18 @@ static void performPWadScan () {
       VStr fname = it.getRealName();
       // check for "maps/xxx.wad"
       //GCon->Logf(NAME_Debug, ":: <%s>", *fname);
-      if (!fname.startsWithCI("maps/") || !fname.endsWithCI(".wad")) continue;
-      bool fucked = false;
-      for (const char *s = *fname+5; *s; ++s) if (*s == '/') { fucked = true; break; }
-      if (fucked) continue;
-      fname.chopLeft(5);
-      fname.chopRight(4);
-      processMapName(*fname, it.lump);
+      if (fname.startsWithCI("maps/") &&
+          (fname.endsWithCI(".wad") || fname.endsWithCI(".vwad")))
+      {
+        bool fucked = false;
+        const char *s = fname.getCStr() + 5;
+        while (!fucked && *s) { fucked = (*s == '/'); s += 1; }
+        if (!fucked) {
+          fname.chopLeft(5);
+          if (fname.endsWithCI(".wad")) fname.chopRight(4); else fname.chopRight(5);
+          processMapName(*fname, it.lump);
+        }
+      }
     }
   }
   // sort collected maps
