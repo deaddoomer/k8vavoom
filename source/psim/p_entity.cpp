@@ -1062,7 +1062,7 @@ void VEntity::CorpseSlide (float deltaTime) {
           const TVec fn = tm.EFloor.GetNormal();
           //const float speed = 15.0f;
           const float speed = 12.0f + 6.0f*((hashU32(GetUniqueId())>>4)&0x3fu)/63.0f;
-          cslFlags |= CSL_CorpseSliding|CSL_CorpseSlidingSlope;
+          cslFlags |= CSL_CorpseSliding|CSL_CorpseSlidingSlope|CSL_CorpseWasNudged;
           Velocity.x = fn.x*speed;
           Velocity.y = fn.y*speed;
           #ifdef VV_DEBUG_CSL_VERBOSE
