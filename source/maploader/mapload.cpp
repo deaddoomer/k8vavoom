@@ -240,6 +240,199 @@ static bool hashLump (RIPEMD160_Ctx *ripectx, MD5Context *md5ctx, int lumpnum) {
 }
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+struct MapLumps {
+  int TextMapLump;
+  int ThingsLump;
+  int LinesLump;
+  int SidesLump;
+  int VertexesLump;
+  int SectorsLump;
+  int RejectLump;
+  int BehaviorLump;
+  int DialogueLump;
+  vuint32 LevelFlags;
+  bool mapHashValid;
+  //ripemd-160: k8vavoom hash
+  //md5: gzdoom-compatible hash (only for non-UDMF, UDMF hashes are not compatible)
+  RIPEMD160_Ctx ripectx;
+  MD5Context md5ctx;
+
+  inline MapLumps () noexcept { Clear(); }
+
+  inline void Clear () noexcept {
+    TextMapLump = -1;
+    ThingsLump = -1;
+    LinesLump = -1;
+    SidesLump = -1;
+    VertexesLump = -1;
+    SectorsLump = -1;
+    RejectLump = -1;
+    BehaviorLump = -1;
+    DialogueLump = -1;
+    LevelFlags = 0;
+    mapHashValid = false;
+    ripemd160_init(&ripectx);
+    md5ctx.Init();
+  }
+
+  inline bool IsValid () const noexcept { return mapHashValid; }
+};
+
+
+//==========================================================================
+//
+//  CheckValidMapWad
+//
+//  `lumpbase` is *AT* the header
+//
+//==========================================================================
+static bool CheckValidMapWad (int lumpbase, MapLumps *nfo) {
+  vassert(nfo);
+  nfo->Clear();
+
+  if (lumpbase < 0) return -1;
+
+  // check for UDMF map
+  if (W_LumpName(lumpbase + 1) == NAME_textmap) {
+    #if 1
+    GCon->Log(NAME_Debug, "checking for valid UDMF map...");
+    #endif
+    nfo->LevelFlags |= VLevel::LF_TextMap;
+    nfo->TextMapLump = lumpbase + 1;
+    bool validMap = true;
+    int i = 2;
+    VName LName;
+    do {
+      LName = W_LumpName(lumpbase + i);
+      if (LName == NAME_None || LName == NAME_textmap) validMap = false;
+      else if (LName == NAME_behavior) nfo->BehaviorLump = lumpbase + i;
+      else if (LName == NAME_blockmap) {}
+      else if (LName == NAME_reject) nfo->RejectLump = lumpbase + i;
+      else if (LName == NAME_dialogue) nfo->DialogueLump = lumpbase + i;
+      else if (LName == NAME_znodes) {}
+      i += 1;
+    } while (LName != NAME_endmap && validMap && i < 64);
+    validMap = (validMap && LName == NAME_endmap);
+
+    if (validMap) {
+      bool okhash = hashLump(nullptr, &nfo->md5ctx, lumpbase); // hash map header
+      okhash = okhash && hashLump(&nfo->ripectx, &nfo->md5ctx, lumpbase + 1); // hash map text
+      if (okhash) {
+        nfo->mapHashValid = true;
+      } else {
+        #if 1
+        GCon->Logf(NAME_Debug, "cannot calculate map hash!");
+        #endif
+        nfo->Clear();
+      }
+    }
+  } else {
+    // find all lumps of the Doom/Hexen map
+    #if 1
+    GCon->Log(NAME_Debug, "checking for valid binary map...");
+    #endif
+    int lidx = lumpbase + 1;
+    if (W_LumpName(lidx) == NAME_things) nfo->ThingsLump = lidx++;
+    if (W_LumpName(lidx) == NAME_linedefs) nfo->LinesLump = lidx++;
+    if (W_LumpName(lidx) == NAME_sidedefs) nfo->SidesLump = lidx++;
+    if (W_LumpName(lidx) == NAME_vertexes) nfo->VertexesLump = lidx++;
+    if (W_LumpName(lidx) == NAME_segs) lidx++;
+    if (W_LumpName(lidx) == NAME_ssectors) lidx++;
+    if (W_LumpName(lidx) == NAME_nodes) lidx++;
+    if (W_LumpName(lidx) == NAME_sectors) nfo->SectorsLump = lidx++;
+    if (W_LumpName(lidx) == NAME_reject) nfo->RejectLump = lidx++;
+    if (W_LumpName(lidx) == NAME_blockmap) lidx++;
+    // determine level format: Doom or Hexen?
+    if (W_LumpName(lidx) == NAME_behavior) {
+      nfo->LevelFlags |= VLevel::LF_Extended;
+      nfo->BehaviorLump = lidx++;
+      #if 1
+      GCon->Log(NAME_Debug, "looks like Hexen format binary map.");
+      #endif
+    }
+
+    // verify that it's a valid map
+    if (nfo->ThingsLump == -1 || nfo->LinesLump == -1 || nfo->SidesLump == -1 ||
+        nfo->VertexesLump == -1 || nfo->SectorsLump == -1)
+    {
+      #if 1
+      VStr nf = "missing lumps:";
+      if (nfo->ThingsLump == -1) nf += " things";
+      if (nfo->LinesLump == -1) nf += " lines";
+      if (nfo->SidesLump == -1) nf += " sides";
+      if (nfo->VertexesLump == -1) nf += " vertexes";
+      if (nfo->SectorsLump == -1) nf += " sectors";
+      GCon->Logf(NAME_Debug, "%s!", *nf);
+      #endif
+      nfo->Clear();
+    } else {
+      #if 1
+      GCon->Logf(NAME_Debug, "calculating map hash...");
+      #endif
+      bool okhash = hashLump(nullptr, &nfo->md5ctx, lumpbase); // map header: only in md5
+      okhash = okhash && hashLump(nullptr, &nfo->md5ctx, nfo->ThingsLump); // things: only in md5
+      okhash = okhash && hashLump(&nfo->ripectx, &nfo->md5ctx, nfo->LinesLump); // lines: both
+      okhash = okhash && hashLump(&nfo->ripectx, &nfo->md5ctx, nfo->SidesLump); // sides: both
+      okhash = okhash && hashLump(&nfo->ripectx, nullptr, nfo->VertexesLump); // vertices: only RIPE
+      okhash = okhash && hashLump(&nfo->ripectx, &nfo->md5ctx, nfo->SectorsLump); // sectors: both
+      if (okhash && nfo->BehaviorLump != -1) {
+        okhash = okhash && hashLump(nullptr, &nfo->md5ctx, nfo->BehaviorLump); // compiled scrips: only md5
+      }
+      if (okhash) {
+        nfo->mapHashValid = true;
+      } else {
+        #if 1
+        GCon->Logf(NAME_Debug, "cannot calculate map hash!");
+        #endif
+        nfo->Clear();
+      }
+    }
+  }
+
+  return nfo->IsValid();
+}
+
+
+//==========================================================================
+//
+//  OpenMapContainer
+//
+//  deletes lstrm on error
+//
+//==========================================================================
+static int OpenMapContainer (VStream *lstrm) {
+  int res = -1;
+  if (lstrm != nullptr) {
+    char sign[4];
+    lstrm->Serialise(sign, 4);
+    if (!lstrm->IsError() &&
+        (memcmp(sign, "PWAD", 4) == 0 || memcmp(sign, "VWAD", 4) == 0))
+    {
+      lstrm->Seek(0);
+      if (!lstrm->IsError()) {
+        int lumpnum = W_AddAuxiliaryStream(lstrm,
+                                           (sign[0] == 'P' ? WAuxFileType::VFS_Wad
+                                                           : WAuxFileType::VFS_Archive));
+        if (!lstrm->IsError() && lumpnum >= 0) {
+          res = lumpnum;
+        } else {
+          GCon->Log(NAME_Error, "cannot open map container");
+          if (lumpnum < 0) delete lstrm;
+        }
+      } else {
+        GCon->Log(NAME_Error, "cannot open map container");
+        delete lstrm;
+      }
+    } else {
+      GCon->Log(NAME_Error, "invalid map contaner");
+      delete lstrm;
+    }
+  }
+  return res;
+}
+
+
 //==========================================================================
 //
 //  VLevel::LoadMap
@@ -253,7 +446,7 @@ void VLevel::LoadMap (VName AMapName) {
   cacheFlags = (loader_cache_ignore_one ? CacheFlag_Ignore : 0);
   loader_cache_ignore_one = false;
   bool AuxiliaryMap = false;
-  int lumpnum, xmaplumpnum = -1;
+  int xmaplumpnum = -1;
   VName MapLumpName;
   vassert(!decanimlist);
 
@@ -284,156 +477,118 @@ load_again:
   MapName = AMapName;
   MapHash = VStr();
   MapHashMD5 = VStr();
-  // If working with a devlopment map, reload it.
-  // k8: nope, it doesn't work this way: it looks for "maps/xxx.wad" in zips,
-  //     and "complete.pk3" takes precedence over any pwads
-  //     so let's do it backwards
-  // Find map and GL nodes.
-  lumpnum = W_CheckNumForName(MapName);
-  MapLumpName = MapName;
-  int wadlumpnum = W_CheckNumForFileName(va("maps/%s.wad", *MapName));
-  if (wadlumpnum > lumpnum) lumpnum = -1;
-  // if there is no map lump, try map wad
-  if (lumpnum < 0) {
-    // check if map wad is here
-    VStr aux_file_name = va("maps/%s.wad", *MapName);
-    if (FL_FileExists(aux_file_name)) {
-      // append map wad to list of wads (it will be deleted later)
-      xmaplumpnum = W_CheckNumForFileName(va("maps/%s.wad", *MapName));
-      lumpnum = W_OpenAuxiliary(aux_file_name);
-      if (lumpnum >= 0) {
-        auxCloser.doCloseAux = true;
-        MapLumpName = W_LumpName(lumpnum);
-        AuxiliaryMap = true;
-      }
-    }
-  } else {
-    xmaplumpnum = lumpnum;
-  }
-  if (lumpnum < 0) Host_Error("Map \"%s\" not found", *MapName);
-
-  // some idiots embeds wads into wads
-  if (!AuxiliaryMap && lumpnum >= 0 && W_LumpLength(lumpnum) > 128 && W_LumpLength(lumpnum) < 1024*1024) {
-    VStream *lstrm = W_CreateLumpReaderNum(lumpnum);
-    if (lstrm) {
-      char sign[4];
-      lstrm->Serialise(sign, 4);
-      if (!lstrm->IsError() && memcmp(sign, "PWAD", 4) == 0) {
-        lstrm->Seek(0);
-        xmaplumpnum = lumpnum;
-        lumpnum = W_AddAuxiliaryStream(lstrm, WAuxFileType::VFS_Wad);
-        if (lumpnum >= 0) {
-          auxCloser.doCloseAux = true;
-          MapLumpName = W_LumpName(lumpnum);
-          AuxiliaryMap = true;
-        } else {
-          Host_Error("cannot open pwad for \"%s\"", *MapName);
-        }
-      } else {
-        delete lstrm;
-      }
-    }
-  }
 
   //FIXME: reload saved background screen from FBO
   R_OSDMsgReset(OSD_MapLoading);
   R_OSDMsgShowMain("LOADING");
 
+  // If working with a devlopment map, reload it.
+  // k8: nope, it doesn't work this way: it looks for "maps/xxx.wad" in zips,
+  //     and "complete.pk3" takes precedence over any pwads
+  //     so let's do it backwards
+  xmaplumpnum = W_CheckNumForName(MapName);
+  MapLumpName = MapName;
+
+  bool doCheckEmbeddedWads = true;
+
+  // check for disk file, it may be devmap
+  VStr aux_file_name = va("maps/%s.vwad", *MapName);
+  if (!FL_FileExists(aux_file_name)) {
+    aux_file_name = va("maps/%s.wad", *MapName);
+  }
+
+  if (FL_FileExists(aux_file_name)) {
+    // append map wad to list of wads (it will be deleted later)
+    //xmaplumpnum = W_CheckNumForFileName(va("maps/%s.wad", *MapName));
+    VStream *lstrm = FL_OpenSysFileRead(aux_file_name);
+    int lumpnum = OpenMapContainer(lstrm);
+    if (lumpnum >= 0) {
+      #if 1
+      GCon->Log(NAME_Debug, "using on-disk development map container.");
+      #endif
+      auxCloser.doCloseAux = true;
+      MapLumpName = W_LumpName(lumpnum);
+      AuxiliaryMap = true;
+      doCheckEmbeddedWads = false;
+      xmaplumpnum = lumpnum;
+    }
+  }
+
+  if (doCheckEmbeddedWads) {
+    int lumpnum = W_CheckNumForFileName(va("maps/%s.vwad", *MapName));
+    if (lumpnum < 0) lumpnum = W_CheckNumForFileName(va("maps/%s.wad", *MapName));
+    if (lumpnum >= 0) {
+      const int ctxlump = lumpnum;
+      VStream *lstrm = W_CreateLumpReaderNum(lumpnum);
+      lumpnum = OpenMapContainer(lstrm);
+      // did we found her?
+      if (lumpnum >= 0) {
+        #if 1
+        GCon->Logf(NAME_Debug, "using map container '%s'.", *W_FullLumpName(ctxlump));
+        #endif
+        auxCloser.doCloseAux = true;
+        MapLumpName = W_LumpName(lumpnum);
+        AuxiliaryMap = true;
+        xmaplumpnum = lumpnum;
+      } else {
+        Host_Error("cannot open container for \"%s\"", *MapName);
+      }
+    } else {
+      #if 1
+      GCon->Log(NAME_Debug, "using inline map lumps");
+      #endif
+    }
+  }
+
+  if (xmaplumpnum < 0) Host_Error("Map \"%s\" not found", *MapName);
+
+  // some idiots embed wads into wads
+  if (!AuxiliaryMap && W_LumpLength(xmaplumpnum) > 128) {
+    VStream *lstrm = W_CreateLumpReaderNum(xmaplumpnum);
+    int lumpnum = OpenMapContainer(lstrm);
+    if (lumpnum >= 0) {
+      #if 1
+      GCon->Log(NAME_Debug, "using map container embedded into ordinary WAD");
+      #endif
+      auxCloser.doCloseAux = true;
+      MapLumpName = W_LumpName(lumpnum);
+      AuxiliaryMap = true;
+      xmaplumpnum = lumpnum;
+    }
+  }
+
   bool saveCachedData = false;
-  int ThingsLump = -1;
-  int LinesLump = -1;
-  int SidesLump = -1;
-  int VertexesLump = -1;
-  int SectorsLump = -1;
-  int RejectLump = -1;
-  int BehaviorLump = -1;
-  int DialogueLump = -1;
   bool NeedNodesBuild = true;
-  char GLNodesHdr[4];
   const VMapInfo &MInfo = P_GetMapInfo(MapName);
-  memset(GLNodesHdr, 0, sizeof(GLNodesHdr));
 
-  RIPEMD160_Ctx ripectx;
-  MD5Context md5ctx;
-
-  ripemd160_init(&ripectx);
-  md5ctx.Init();
-
-  //ripemd-160: k8vavoom hash
-  //md5: gzdoom-compatible hash (only for non-UDMF, UDMF hashes are not compatible)
-
-  bool mapHashValid = false;
   VStr cacheFileName;
   VStr cacheDir = getCacheDir();
 
-  // check for UDMF map
-  if (W_LumpName(lumpnum+1) == NAME_textmap) {
-    LevelFlags |= LF_TextMap;
-    NeedNodesBuild = true;
-    for (int i = 2; true; ++i) {
-      VName LName = W_LumpName(lumpnum+i);
-      if (LName == NAME_endmap) break;
-      if (LName == NAME_None || LName == NAME_textmap) Host_Error("Map %s is not a valid UDMF map", *MapName);
-           if (LName == NAME_behavior) BehaviorLump = lumpnum+i;
-      else if (LName == NAME_blockmap) {}
-      else if (LName == NAME_reject) RejectLump = lumpnum+i;
-      else if (LName == NAME_dialogue) DialogueLump = lumpnum+i;
-      else if (LName == NAME_znodes) {}
-    }
-    mapHashValid = hashLump(nullptr, &md5ctx, lumpnum); // hash map header
-    if (mapHashValid) mapHashValid = hashLump(&ripectx, &md5ctx, lumpnum+1); // hash map text
-  } else {
-    // find all lumps
-    int LIdx = lumpnum+1;
-    if (W_LumpName(LIdx) == NAME_things) ThingsLump = LIdx++;
-    if (W_LumpName(LIdx) == NAME_linedefs) LinesLump = LIdx++;
-    if (W_LumpName(LIdx) == NAME_sidedefs) SidesLump = LIdx++;
-    if (W_LumpName(LIdx) == NAME_vertexes) VertexesLump = LIdx++;
-    if (W_LumpName(LIdx) == NAME_segs) LIdx++;
-    if (W_LumpName(LIdx) == NAME_ssectors) LIdx++;
-    if (W_LumpName(LIdx) == NAME_nodes) LIdx++;
-    if (W_LumpName(LIdx) == NAME_sectors) SectorsLump = LIdx++;
-    if (W_LumpName(LIdx) == NAME_reject) RejectLump = LIdx++;
-    if (W_LumpName(LIdx) == NAME_blockmap) LIdx++;
+  //ripemd-160: k8vavoom hash
+  //md5: gzdoom-compatible hash (only for non-UDMF, UDMF hashes are not compatible)
+  MapLumps nfo;
 
-    // verify that it's a valid map
-    if (ThingsLump == -1 || LinesLump == -1 || SidesLump == -1 ||
-        VertexesLump == -1 || SectorsLump == -1)
-    {
-      VStr nf = "missing lumps:";
-      if (ThingsLump == -1) nf += " things";
-      if (LinesLump == -1) nf += " lines";
-      if (SidesLump == -1) nf += " sides";
-      if (VertexesLump == -1) nf += " vertexes";
-      if (SectorsLump == -1) nf += " sectors";
-      Host_Error("Map '%s' is not a valid map (%s), %s", *MapName, *W_FullLumpName(lumpnum), *nf);
-    }
-
-    mapHashValid = hashLump(nullptr, &md5ctx, lumpnum); // map header: only in md5
-    if (mapHashValid) mapHashValid = hashLump(nullptr, &md5ctx, ThingsLump); // things: only in md5
-    if (mapHashValid) mapHashValid = hashLump(&ripectx, &md5ctx, LinesLump); // lines: both
-    if (mapHashValid) mapHashValid = hashLump(&ripectx, &md5ctx, SidesLump); // sides: both
-    if (mapHashValid) mapHashValid = hashLump(&ripectx, nullptr, VertexesLump); // vertices: only sha
-    if (mapHashValid) mapHashValid = hashLump(&ripectx, &md5ctx, SectorsLump); // sectors: both
-
-    // determine level format
-    if (W_LumpName(LIdx) == NAME_behavior) {
-      LevelFlags |= LF_Extended;
-      BehaviorLump = LIdx++;
-      if (mapHashValid) mapHashValid = hashLump(nullptr, &md5ctx, BehaviorLump); // compiled scrips: only md5
+  if (!CheckValidMapWad(xmaplumpnum, &nfo)) {
+    if (AuxiliaryMap) {
+      Host_Error("Map '%s' container doesn't contain a valid map", *MapName);
+    } else {
+      Host_Error("Map '%s' is not a valid map (%s)", *MapName, *W_FullLumpName(xmaplumpnum));
     }
   }
+  LevelFlags |= nfo.LevelFlags;
+
   InitTime += Sys_Time();
 
-  if (AuxiliaryMap) GCon->Log("loading map from nested wad");
+  if (AuxiliaryMap) GCon->Log(NAME_Debug, "loading map from container");
 
-  if (mapHashValid) {
+  vassert(nfo.mapHashValid);
+  {
     vuint8 ripe[RIPEMD160_BYTES];
-    ripemd160_finish(&ripectx, ripe);
+    ripemd160_finish(&nfo.ripectx, ripe);
     MapHash = VStr::buf2hex(ripe, RIPEMD160_BYTES);
 
     vuint8 md5digest[MD5Context::DIGEST_SIZE];
-    md5ctx.Final(md5digest);
+    nfo.md5ctx.Final(md5digest);
     MapHashMD5 = VStr::buf2hex(md5digest, MD5Context::DIGEST_SIZE);
 
     if (dbg_show_map_hash) {
@@ -449,7 +604,9 @@ load_again:
   }
 
   bool cachedDataLoaded = false;
-  if (mapHashValid && cacheDir.length()) {
+  bool mapHashValid = true; //k8: i am too lazy to rename it
+
+  if (cacheDir.length()) {
     cacheFileName = VStr("mapcache_")+MapHash+".cache";
     cacheFileName = cacheDir+"/"+cacheFileName;
   } else {
@@ -486,32 +643,32 @@ load_again:
     // begin processing map lumps
     if (LevelFlags&LF_TextMap) {
       VertexTime = -Sys_Time();
-      LoadTextMap(lumpnum+1, MInfo);
+      LoadTextMap(nfo.TextMapLump, MInfo);
       VertexTime += Sys_Time();
     } else {
       // Note: most of this ordering is important
       VertexTime = -Sys_Time();
-      LoadVertexes(VertexesLump);
+      LoadVertexes(nfo.VertexesLump);
       VertexTime += Sys_Time();
       SectorsTime = -Sys_Time();
-      LoadSectors(SectorsLump);
+      LoadSectors(nfo.SectorsLump);
       SectorsTime += Sys_Time();
       LinesTime = -Sys_Time();
-      if (!(LevelFlags&LF_Extended)) {
-        LoadLineDefs1(LinesLump, MInfo);
+      if ((LevelFlags&LF_Extended) == 0) {
+        LoadLineDefs1(nfo.LinesLump, MInfo);
         LinesTime += Sys_Time();
         ThingsTime = -Sys_Time();
-        LoadThings1(ThingsLump);
+        LoadThings1(nfo.ThingsLump);
       } else {
-        LoadLineDefs2(LinesLump, MInfo);
+        LoadLineDefs2(nfo.LinesLump, MInfo);
         LinesTime += Sys_Time();
         ThingsTime = -Sys_Time();
-        LoadThings2(ThingsLump);
+        LoadThings2(nfo.ThingsLump);
       }
       ThingsTime += Sys_Time();
 
       TranslTime = -Sys_Time();
-      if (!(LevelFlags&LF_Extended)) {
+      if ((LevelFlags&LF_Extended) == 0) {
         // translate level to Hexen format
         GGameInfo->eventTranslateLevel(this);
       }
@@ -519,7 +676,7 @@ load_again:
       // set up textures after loading lines because for some Boom line
       // specials there can be special meaning of some texture names
       SidesTime = -Sys_Time();
-      LoadSideDefs(SidesLump);
+      LoadSideDefs(nfo.SidesLump);
       SidesTime += Sys_Time();
     }
   }
@@ -607,7 +764,7 @@ load_again:
   // load reject table
   double RejectTime = -Sys_Time();
   if (!RejectMatrix) {
-    LoadReject(RejectLump);
+    LoadReject(nfo.RejectLump);
     saveCachedData = true;
   }
   RejectTime += Sys_Time();
@@ -629,7 +786,7 @@ load_again:
 
   // ACS object code
   double AcsTime = -Sys_Time();
-  LoadACScripts(BehaviorLump, xmaplumpnum);
+  LoadACScripts(nfo.BehaviorLump, xmaplumpnum);
   AcsTime += Sys_Time();
 
   double GroupLinesTime = -Sys_Time();
@@ -643,8 +800,8 @@ load_again:
   double ConvTime = -Sys_Time();
   // load conversations
   LoadRogueConScript(GGameInfo->GenericConScript, -1, GenericSpeeches, NumGenericSpeeches);
-  if (DialogueLump >= 0) {
-    LoadRogueConScript(NAME_None, DialogueLump, LevelSpeeches, NumLevelSpeeches);
+  if (nfo.DialogueLump >= 0) {
+    LoadRogueConScript(NAME_None, nfo.DialogueLump, LevelSpeeches, NumLevelSpeeches);
   } else {
     LoadRogueConScript(GGameInfo->eventGetConScriptName(MapName), -1, LevelSpeeches, NumLevelSpeeches);
   }
