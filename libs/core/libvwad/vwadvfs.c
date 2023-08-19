@@ -2198,12 +2198,12 @@ VWAD_PUBLIC vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags
       fcofs += mhdr.u_cmt_size;
       wadcomment = zalloc(mman, mhdr.u_cmt_size + 1); // +1 for reusing
       if (wadcomment == NULL) {
-        logf(DEBUG, "vwad_open_archive: cannot allocate buffer for comment");
+        logf(ERROR, "vwad_open_archive: cannot allocate buffer for comment");
         return NULL;
       }
       if (strm->read(strm, wadcomment, mhdr.u_cmt_size) != VWAD_OK) {
         xfree(mman, wadcomment);
-        logf(DEBUG, "vwad_open_archive: cannot read comment data");
+        logf(ERROR, "vwad_open_archive: cannot read comment data");
         return NULL;
       }
       // update seed
@@ -2213,12 +2213,12 @@ VWAD_PUBLIC vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags
       fcofs += mhdr.p_cmt_size;
       wadcomment = zalloc(mman, mhdr.p_cmt_size);
       if (wadcomment == NULL) {
-        logf(DEBUG, "vwad_open_archive: cannot allocate buffer for comment");
+        logf(ERROR, "vwad_open_archive: cannot allocate buffer for comment");
         return NULL;
       }
       if (strm->read(strm, wadcomment, mhdr.p_cmt_size) != VWAD_OK) {
         xfree(mman, wadcomment);
-        logf(DEBUG, "vwad_open_archive: cannot read comment data");
+        logf(ERROR, "vwad_open_archive: cannot read comment data");
         return NULL;
       }
       // update seed
@@ -2397,7 +2397,7 @@ VWAD_PUBLIC vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags
       wad->chunkCount*(vwad_uint)sizeof(ChunkInfo) >= dhdr.upkdirsize ||
       wad->chunkCount*(vwad_uint)sizeof(ChunkInfo) >= dhdr.upkdirsize - upofs)
   {
-    logf(DEBUG, "invalid chunk count (%u)", wad->chunkCount);
+    logf(ERROR, "invalid chunk count (%u)", wad->chunkCount);
     goto error;
   }
   logf(DEBUG, "chunk count: %u", wad->chunkCount);
@@ -2408,7 +2408,7 @@ VWAD_PUBLIC vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags
     ChunkInfo *ci = &wad->chunks[cidx];
     ci->pksize = get_u16(&ci->pksize);
     if (ci->ofs != 0 || ci->upksize != 0) {
-      logf(DEBUG, "invalid chunk data (0; idx=%u): ofs=%u; upksize=%u",
+      logf(ERROR, "invalid chunk data (0; idx=%u): ofs=%u; upksize=%u",
            cidx, ci->ofs, ci->upksize);
       goto error;
     }
@@ -2417,7 +2417,7 @@ VWAD_PUBLIC vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags
 
   // files
   if (upofs >= dhdr.upkdirsize || dhdr.upkdirsize - upofs < (vwad_uint)sizeof(FileInfo) + 8) {
-    logf(DEBUG, "invalid directory data (files, 0)");
+    logf(ERROR, "invalid directory data (files, 0)");
     goto error;
   }
 
@@ -2425,7 +2425,7 @@ VWAD_PUBLIC vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags
       wad->fileCount * (vwad_uint)sizeof(FileInfo) >= dhdr.upkdirsize ||
       wad->fileCount * (vwad_uint)sizeof(FileInfo) >= dhdr.upkdirsize - upofs)
   {
-    logf(DEBUG, "invalid file count (%u)", wad->fileCount);
+    logf(ERROR, "invalid file count (%u)", wad->fileCount);
     goto error;
   }
   logf(DEBUG, "file count: %u", wad->fileCount);
@@ -2435,11 +2435,12 @@ VWAD_PUBLIC vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags
   // FAT
   if (mhdr.flags & 0x04) {
     if (dhdr.upkdirsize - upofs < wad->chunkCount * 4u + 4u) {
-      logf(DEBUG, "truncated FAT table");
+      logf(ERROR, "truncated FAT table");
       goto error;
     }
     wad->fat = (vwad_uint *)(wad->updir + upofs);
     upofs += wad->chunkCount * 4u;
+    logf(DEBUG, "fat size: %u entries", wad->chunkCount);
     // convert table from deltas to indices
     vwad_uint prev = 0;
     for (vwad_uint f = 0; f < wad->chunkCount; f += 1) {
@@ -2447,7 +2448,7 @@ VWAD_PUBLIC vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags
         wad->fat[f] += prev;
         prev = wad->fat[f];
         if (prev >= wad->chunkCount) {
-          logf(DEBUG, "corrupted FAT table");
+          logf(ERROR, "corrupted FAT table");
           goto error;
         }
       } else {
@@ -2461,12 +2462,12 @@ VWAD_PUBLIC vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags
 
   // names
   if (upofs >= dhdr.upkdirsize || dhdr.upkdirsize - upofs < 4) {
-    logf(DEBUG, "invalid directory data (names, 0)");
+    logf(ERROR, "invalid directory data (names, 0)");
     goto error;
   }
   const vwad_uint namesSize = dhdr.upkdirsize - upofs;
   if (namesSize < 4 || namesSize > 0x3fffffffU || (namesSize&0x03) != 0) {
-    logf(DEBUG, "invalid names size (%u)", namesSize);
+    logf(ERROR, "invalid names size (%u)", namesSize);
     goto error;
   }
   logf(DEBUG, "name table size: %u", namesSize);
@@ -2486,7 +2487,7 @@ VWAD_PUBLIC vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags
         wad->comment = zalloc(mman, mhdr.u_cmt_size + 1);
         if (wad->comment == NULL) {
           xfree(mman, wadcomment);
-          logf(DEBUG, "vwad_open_archive: out of memory for comment data");
+          logf(ERROR, "vwad_open_archive: out of memory for comment data");
           goto error;
         }
         // decrypt comment with pk-seed
@@ -2495,7 +2496,7 @@ VWAD_PUBLIC vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags
                                                  wad->comment, (int)mhdr.u_cmt_size);
         xfree(mman, wadcomment);
         if (!cupres) {
-          logf(DEBUG, "vwad_open_archive: cannot decompress packed comment data");
+          logf(ERROR, "vwad_open_archive: cannot decompress packed comment data");
           goto error;
         }
       }
@@ -2530,7 +2531,7 @@ VWAD_PUBLIC vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags
     fi->gnameofs = get_u32(&fi->gnameofs);
 
     if (fi->nameHash != 0 || fi->hcNext != 0) {
-      logf(DEBUG, "invalid file data (zero fields are non-zero)");
+      logf(ERROR, "invalid file data (zero fields are non-zero)");
       goto error;
     }
 
@@ -2538,12 +2539,12 @@ VWAD_PUBLIC vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags
       if ((fi->chunkCount == 0 && fi->firstChunk != 0) ||
           (fi->chunkCount != 0 && fi->firstChunk >= wad->chunkCount))
       {
-        logf(DEBUG, "invalid file data (zero fields are non-zero)");
+        logf(ERROR, "invalid file data (zero fields are non-zero)");
         goto error;
       }
     } else {
       if (fi->firstChunk != 0) {
-        logf(DEBUG, "invalid file data (zero fields are non-zero)");
+        logf(ERROR, "invalid file data (zero fields are non-zero)");
         goto error;
       }
     }
@@ -2556,46 +2557,46 @@ VWAD_PUBLIC vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags
 
     if (fi->chunkCount == 0) {
       if (fi->upksize != 0) {
-        logf(DEBUG, "invalid file data (file size, !0)");
+        logf(ERROR, "invalid file data (file size, !0)");
         goto error;
       }
     } else {
       if (fi->upksize == 0) {
-        logf(DEBUG, "invalid file data (file size, 0");
+        logf(ERROR, "invalid file data (file size, 0)");
         goto error;
       }
     }
 
     if (fi->upksize > 0x7fffffffU || fi->nameofs >= namesSize) {
-      logf(DEBUG, "invalid file data (name offset)");
+      logf(ERROR, "invalid file data (name offset)");
       goto error;
     }
 
     // should be aligned
     if (fi->nameofs < 4 || (fi->nameofs&0x03) != 0) {
-      logf(DEBUG, "invalid file data (name align)");
+      logf(ERROR, "invalid file data (name align)");
       goto error;
     }
 
     const char *name = wad->names + fi->nameofs;
     if (!is_valid_file_name(name)) {
-      logf(DEBUG, "invalid file data (file name) (%s)", name);
+      logf(ERROR, "invalid file data (file name) (%s)", name);
       goto error;
     }
 
     if (fi->upksize > 0x7fffffffU || fi->gnameofs >= namesSize) {
-      logf(DEBUG, "invalid file data (group name offset)");
+      logf(ERROR, "invalid file data (group name offset)");
       goto error;
     }
 
     // should be aligned
     if (fi->gnameofs&0x03) {
-      logf(DEBUG, "invalid file data (group name align)");
+      logf(ERROR, "invalid file data (group name align)");
       goto error;
     }
 
     if (!is_valid_group_name(wad->names + fi->gnameofs)) {
-      logf(DEBUG, "invalid file data (group name)");
+      logf(ERROR, "invalid file data (group name)");
       goto error;
     }
 
@@ -2609,7 +2610,7 @@ VWAD_PUBLIC vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags
         if (bkfi->hcNext != VWAD_UNONE) bkfi = &wad->files[bkfi->hcNext]; else bkfi = NULL;
       }
       if (bkfi != NULL) {
-        logf(DEBUG, "duplicate file name (%s)", name);
+        logf(ERROR, "duplicate file name (%s)", name);
         goto error;
       }
     }
@@ -2630,19 +2631,19 @@ VWAD_PUBLIC vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags
     // loop over all chunks
     for (vwad_uint cnn = 0; cnn < fi->chunkCount; ++cnn) {
       if (left == 0) {
-        logf(DEBUG, "invalid file data (out of chunks)");
+        logf(ERROR, "invalid file data (out of chunks)");
         goto error;
       }
       if (currChunk >= wad->chunkCount) {
-        logf(DEBUG, "invalid file data (chunks)");
+        logf(ERROR, "invalid file data (chunks)");
         goto error;
       }
       if (wad->chunks[currChunk].ofs != 0xffffffffU) {
-        logf(DEBUG, "invalid file data (chunks, oops)");
+        logf(ERROR, "invalid file data (chunks, oops)");
         goto error;
       }
       if (chunkOfs >= mhdr.dirofs) {
-        logf(DEBUG, "invalid file data (chunk offset); fidx=%u; cofs=0x%08x; dofs=0x%08x",
+        logf(ERROR, "invalid file data (chunk offset); fidx=%u; cofs=0x%08x; dofs=0x%08x",
                     fidx, chunkOfs, mhdr.dirofs);
         goto error;
       }
@@ -2664,7 +2665,7 @@ VWAD_PUBLIC vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags
         chunkOfs += wad->chunks[currChunk].pksize;
       }
       if (chunkOfs > mhdr.dirofs) {
-        logf(DEBUG, "invalid file data (chunk offset 1); fidx=%u/%u; cofs=0x%08x; dofs=0x%08x",
+        logf(ERROR, "invalid file data (chunk offset 1); fidx=%u/%u; cofs=0x%08x; dofs=0x%08x",
                     fidx, wad->fileCount, chunkOfs, mhdr.dirofs);
         goto error;
       }
@@ -2678,15 +2679,25 @@ VWAD_PUBLIC vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags
 
     // final check
     if (fi->chunkCount != 0 && (mhdr.flags & 0x04) != 0 && currChunk != 0xffffffffU) {
-      logf(DEBUG, "invalid file data (extra chunk); cofs=0x%08x; dofs=0x%08x", chunkOfs, mhdr.dirofs);
+      logf(ERROR, "invalid file data (extra chunk); cofs=0x%08x; dofs=0x%08x", chunkOfs, mhdr.dirofs);
       goto error;
     }
   }
 
   // final check
-  if ((mhdr.flags & 0x04) == 0 && chunkOfs != mhdr.dirofs) {
-    logf(DEBUG, "invalid file data (extra chunk); cofs=0x%08x; dofs=0x%08x", chunkOfs, mhdr.dirofs);
-    goto error;
+  if ((mhdr.flags & 0x04) == 0) {
+    if (chunkOfs != mhdr.dirofs) {
+      logf(ERROR, "invalid file data (extra chunk); cofs=0x%08x; dofs=0x%08x", chunkOfs, mhdr.dirofs);
+      goto error;
+    }
+  } else {
+    // check for unused chunks
+    for (vwad_uint cnn = 0; cnn < wad->chunkCount; ++cnn) {
+      if (wad->chunks[cnn].ofs == 0xffffffffU) {
+        logf(ERROR, "orphaned chunk found");
+        goto error;
+      }
+    }
   }
 
   wad->lastera = 1;

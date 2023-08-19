@@ -237,42 +237,27 @@ bool VStream::IsExtendedFormat () const noexcept {
 
 //==========================================================================
 //
-//  VStream::ExtendedSection
-//
-//  this is used in VObject serialisers; default is `false`
-//  extended serialisers can write data to separate sections.
-//  for non-extended streams this is noop.
-//  the calls should be balanced. they cannot be nested.
-//  if extended section already opened, it will be replaced with a new one.
-//  call with empty name to close extended section.
-//  note that file position may or may not be changed on section change.
-//  if the section was already opened, on reopening it its last file
-//  position will be restored.
-//  returns success flag.
+//  VStream::OpenExtendedSection
 //
 //==========================================================================
-bool VStream::ExtendedSection (VStr name) {
+bool VStream::OpenExtendedSection (VStr name, bool seekable) {
   return !IsError();
 }
 
 
 //==========================================================================
 //
-//  VStream::CurrentExtendedSection
-//
-//  this is used in VObject serialisers; default is `false`
+//  VStream::CloseExtendedSection
 //
 //==========================================================================
-VStr VStream::CurrentExtendedSection () {
-  return VStr::EmptyString;
+bool VStream::CloseExtendedSection () {
+  return !IsError();
 }
 
 
 //==========================================================================
 //
 //  VStream::HasExtendedSection
-//
-//  opening non-existing section is error, so check if necessary
 //
 //==========================================================================
 bool VStream::HasExtendedSection (VStr name) {

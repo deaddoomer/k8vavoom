@@ -128,6 +128,9 @@ protected:
   bool bFastSeek;
 
 public:
+  enum { Seekable = true, NonSeekable = false };
+
+public:
   VStreamIOMapper *Mapper;
   VStreamIOStrMapper *StrMapper;
   vuint16 version; // stream version; usually purely informational
@@ -160,20 +163,31 @@ public:
 
   // this is used in VObject serialisers; default is `false`
   virtual bool IsExtendedFormat () const noexcept;
+
   // extended serialisers can write data to separate sections.
-  // for non-extended streams this is noop.
-  // the calls should be balanced. they cannot be nested.
-  // if extended section already opened, it will be replaced with a new one.
-  // call with empty name to close extended section.
-  // note that file position may or may not be changed on section change.
-  // if the section was already opened, on reopening it its last file
-  // position will be restored.
+  // for non-extended streams this is noop (and success).
+  // the calls should be balanced. any extended section cannot
+  // be opened twice (yet implementing stream may, or may not check this).
   // names are case-insensitive for ASCII (and only for ASCII).
+  // if open of the section failed, implementing stream may or may not
+  // be still valid (check with `IsError()`), but in any case you should
+  // not call `CloseExtendedSection()` for failed open.
+  // implementing streams should support at least 4 nested sections.
+  // opening the same section twice for reading may not be an error.
+  // opening the same section twice for writing is error.
   // returns success flag.
-  virtual bool ExtendedSection (VStr name);
-  virtual VStr CurrentExtendedSection ();
-  // opening non-existing section is error, so check if necessary
-  // asking for empty name still returns `false`
+  virtual bool OpenExtendedSection (VStr name, bool seekable);
+
+  // for non-extended streams this is noop (and success).
+  // this may return error code too (due to flushing, for example).
+  // even if error was returned, the section is still closed
+  // (i.e. proper nesting maintained). it doesn't matter, of course,
+  // if the stream itself became invalid (`IsError()` returns `true`).
+  virtual bool CloseExtendedSection ();
+
+  // opening non-existing section is error, hence this checker is here.
+  // asking for empty name returns `false`.
+  // non-extended streams always returns `false`.
   virtual bool HasExtendedSection (VStr name);
 
   // not all streams can be cloned; returns `nullptr` if cannot (default option)

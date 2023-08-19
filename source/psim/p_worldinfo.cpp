@@ -54,8 +54,7 @@ void VWorldInfo::SerialiseOther (VStream &Strm) {
   Super::SerialiseOther(Strm);
 
   // serialise global script info
-  VStr osec = Strm.CurrentExtendedSection();
-  if (!Strm.ExtendedSection("vworldinfo/acs_global.dat")) {
+  if (!Strm.OpenExtendedSection("vworldinfo/acs_global.dat", VStream::NonSeekable)) {
     if (Strm.IsLoading()) {
       GCon->Logf(NAME_Error, "no worldinfo ACS global data");
     }
@@ -68,7 +67,7 @@ void VWorldInfo::SerialiseOther (VStream &Strm) {
     GCon->Logf(NAME_Error, "invalid worldinfo ACS global data version");
   }
   Acs->Serialise(Strm);
-  Strm.ExtendedSection(osec);
+  Strm.CloseExtendedSection();
 }
 
 

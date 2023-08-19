@@ -472,15 +472,27 @@ private:
 
 private:
   // extended sections support
-  // name and position
-  TMap<VStrCI, int> esections;
-  // current section
-  VStr currsection;
-  VStream *currestream;
-  bool esecclosed;
+  struct ExtSection {
+    VStream *strm;
+    VStr name;
+  };
+  TArray<ExtSection> esections;
+
+  void WipeESections (bool setErr) {
+    while (esections.length() != 0) {
+      const int eidx = esections.length() - 1;
+      VStream *strm = esections[eidx].strm;
+      esections[eidx].strm = nullptr; esections[eidx].name.clear();
+      esections.drop();
+      if (strm) {
+        if (setErr) strm->SetError();
+        VStream::Destroy(strm);
+      }
+    }
+  }
 
   inline VStream *GetCurrStream () const {
-    return (!esecclosed ? currestream : Stream);
+    return (esections.length() ? esections[esections.length() - 1].strm : Stream);
   }
 
 private:
@@ -511,7 +523,6 @@ public:
     : Stream(InStream)
     , vwad(nullptr)
     , strMapper(nullptr)
-    , esecclosed(true)
   {
     bLoading = true;
   }
@@ -520,7 +531,6 @@ public:
     : Stream(nullptr)
     , vwad(avwad)
     , strMapper(nullptr)
-    , esecclosed(true)
   {
     bLoading = true;
     LoadStringTable();
@@ -529,7 +539,6 @@ public:
   virtual ~VSaveLoaderStream () override {
     AttachStringMapper(nullptr);
     Close();
-    VStream::Destroy(currestream);
     VStream::Destroy(Stream);
     delete strMapper;
   }
@@ -567,94 +576,66 @@ public:
   virtual bool HasExtendedSection (VStr name) override {
     if (IsNewFormat() && !IsError()) {
       if (name.IsEmpty()) return false;
-      if (currsection.strEquCI(name)) return true;
       return vwad->FileExists(name);
+    } else {
+      return false;
     }
-    return false;
   }
 
-  virtual bool ExtendedSection (VStr name) override {
+  virtual bool OpenExtendedSection (VStr name, bool seekable) override {
     if (IsNewFormat() && !IsError()) {
       if (name.isEmpty()) {
         #ifdef VXX_DEBUG_SECTION_READER
-        if (!esecclosed) {
-          GCon->Logf(NAME_Debug, "RDX: closed section '%s'", *currsection);
-        }
+        GCon->Log(NAME_Debug, "RDX: trying to open nameless section");
         #endif
-        esecclosed = true;
+        SetError();
       } else {
-        // check last used section
-        if (currsection.strEquCI(name)) {
-          vassert(currestream != nullptr);
-          #ifdef VXX_DEBUG_SECTION_READER
-          if (esecclosed) {
-            GCon->Logf(NAME_Debug, "RDX: opened section '%s'", *currsection);
-          }
-          #endif
-          esecclosed = false;
-          return true;
-        }
-        // save current section position
-        if (currestream) {
-          vassert(!currsection.IsEmpty());
-          int pos = currestream->Tell();
-          #ifdef VXX_DEBUG_SECTION_READER
-          GCon->Logf(NAME_Debug, "RDX: saving section '%s' state (pos=%d)", *currsection, pos);
-          #endif
-          if (currestream->IsError() || pos < 0) {
-            SetError();
-            return false;
-          }
-          VStream::Destroy(currestream);
-          esections.put(currsection, pos);
-          currsection.clear();
-          esecclosed = true;
-        }
         // open new section stream
-        currestream = vwad->OpenFile(name);
-        if (currestream == nullptr) {
+        ExtSection es;
+        es.name = name;
+        es.strm = vwad->OpenFile(name);
+        if (es.strm == nullptr) {
           #ifdef VXX_DEBUG_SECTION_READER
           GCon->Logf(NAME_Debug, "RDX: cannot open section '%s'", *name);
           #endif
           SetError();
-          return false;
-        }
-        currestream->AttachStringMapper(strMapper);
-        // restore section position, if there is any
-        auto kv = esections.get(name);
-        if (kv) {
-          vassert(*kv >= 0);
+        } else {
+          es.strm->AttachStringMapper(strMapper);
           #ifdef VXX_DEBUG_SECTION_READER
-          GCon->Logf(NAME_Debug, "RDX: restored section '%s' state (pos=%d)", *name, *kv);
+          GCon->Logf(NAME_Debug, "RDX: opened section '%s'", *name);
           #endif
-          currestream->Seek(*kv);
-          if (currestream->IsError()) {
-            SetError();
-            return false;
-          }
+          esections.Append(es);
         }
-        #ifdef VXX_DEBUG_SECTION_READER
-        GCon->Logf(NAME_Debug, "RDX: opened section '%s'", *name);
-        #endif
-        esecclosed = false;
-        currsection = name;
-        return true;
       }
     }
     return !IsError();
   }
 
-  VStr CurrentExtendedSection () override {
-    return (!esecclosed ? currsection : VStr::EmptyString);
+  bool CloseExtendedSection () override {
+    if (IsNewFormat() && !IsError()) {
+      const int eslen = esections.length();
+      if (eslen == 0) {
+        #ifdef VXX_DEBUG_SECTION_READER
+        GCon->Log(NAME_Debug, "RDX: trying to close non-opened extended section");
+        #endif
+        SetError();
+      } else {
+        VStream *strm = esections[eslen - 1].strm;
+        esections.drop();
+        if (strm->IsError() || !strm->Close()) {
+          delete strm;
+          SetError();
+        } else {
+          delete strm;
+        }
+      }
+    }
+    return !IsError();
   }
 
   virtual void SetError () override {
-    VStream::Destroy(currestream);
-    currsection.clear();
-    esecclosed = true;
-    esections.clear();
+    WipeESections(true);
     VStream::Destroy(Stream);
-
     VStream::SetError();
   }
 
@@ -732,14 +713,12 @@ public:
 
   virtual bool Close () override {
     bool err = IsError();
+    WipeESections(err);
+    err = IsError();
     if (Stream) {
       if (!err) err = !Stream->Close();
       VStream::Destroy(Stream);
     }
-    VStream::Destroy(currestream);
-    currsection.clear();
-    esecclosed = true;
-    esections.clear();
     if (vwad) {
       if (!err) vwad->Close();
       delete vwad; vwad = nullptr;
@@ -819,11 +798,10 @@ private:
 private:
   // extended sections support
   struct ExtSection {
+    VStream *strm;
     VStr name;
-    VMemoryStream *est;
   };
-  TArray<ExtSection *> esections;
-  int currsection;
+  TArray<ExtSection> esections;
 
 public:
   TArray<VName> Names;
@@ -835,68 +813,69 @@ public:
 
 private:
   inline VStream *GetCurrStream () const {
-    return (currsection >= 0 ? esections[currsection]->est : Stream);
+    return (esections.length() ? esections[esections.length() - 1].strm : Stream);
   }
 
-  void WipeESections () {
-    currsection = -1;
-    for (int f = 0; f < esections.length(); f += 1) {
-      ExtSection *es = esections[f];
-      esections[f] = nullptr;
-      if (es) {
-        if (es->est) { es->est->Close(); delete es->est; }
-        delete es;
+  bool CloseLastESection () {
+    bool res = false;
+    const int eidx = esections.length() - 1;
+    if (eidx >= 0) {
+      VStream *strm = esections[eidx].strm;
+      VStr name = esections[eidx].name;
+      esections[eidx].strm = nullptr; esections[eidx].name.clear();
+      esections.drop();
+      if (strm) {
+        if (IsError()) strm->SetError();
+        // write it
+        if (!strm->IsError()) {
+          res = strm->Close();
+          delete strm;
+        }
       }
     }
-    esections.clear();
+    return res;
+  }
+
+  void WipeESections (bool setErr) {
+    while (esections.length() != 0) {
+      const int eidx = esections.length() - 1;
+      VStream *strm = esections[eidx].strm;
+      esections[eidx].strm = nullptr; esections[eidx].name.clear();
+      esections.drop();
+      if (strm) {
+        if (setErr) strm->SetError();
+        VStream::Destroy(strm);
+      }
+    }
   }
 
   // flush and destroy extended sections
   void FlushESections () {
-    if (IsError()) { WipeESections(); return; }
+    if (IsError()) { WipeESections(true); return; }
     if (!vwad) { vassert(esections.length() == 0); return; }
-
-    for (int f = 0; f < esections.length(); f += 1) {
-      ExtSection *es = esections[f];
-      vassert(es != nullptr);
-
-      if (!es->est || es->est->IsError()) { SetError(); break; }
-
-      int level = save_compression_level.asInt();
-      if (level < VWADWR_COMP_DISABLE || level > VWADWR_COMP_BEST) {
-        level = VWADWR_COMP_FAST;
-        save_compression_level = level;
-      }
-      // just in case
-      if (es->name.endsWithNoCase(".vwad")) level = VWADWR_COMP_DISABLE;
-
-      #ifdef VXX_DEBUG_SECTION_WRITER
-      GCon->Logf(NAME_Debug, "WRX: [%d/%d] flushing section '%s' (%d bytes)",
-        f + 1, esections.length(), *es->name, es->est->TotalSize());
-      #endif
-
-      VStream *xst = vwad->CreateFileDirect(es->name, level);
-      if (!xst) {
-        GCon->Logf(NAME_Error, "cannot create save writer subsection '%s'", *es->name);
+    while (esections.length() != 0) {
+      if (!CloseLastESection()) {
+        WipeESections(true);
         SetError();
-        break;
       }
-      if (es->est->TotalSize() != 0) {
-        xst->Serialise(es->est->GetArray().Ptr(), es->est->GetArray().length());
-      }
-      const bool err = !xst->Close();
-      delete xst;
-      if (err) { SetError(); break; }
     }
-
-    WipeESections();
   }
 
   void Init () {
     bLoading = false;
     NamesMap.setLength(VName::GetNumNames());
     for (int i = 0; i < VName::GetNumNames(); ++i) NamesMap[i] = -1;
-    currsection = -1;
+  }
+
+  static int GetCompressionLevel (VStr fname) {
+    int level = save_compression_level.asInt();
+    if (level < VWADWR_COMP_DISABLE || level > VWADWR_COMP_BEST) {
+      level = VWADWR_COMP_FAST;
+      save_compression_level = level;
+    }
+    // just in case
+    if (fname.endsWithNoCase(".vwad")) level = VWADWR_COMP_DISABLE;
+    return level;
   }
 
   // this automatically closes old file
@@ -910,19 +889,10 @@ private:
       if (!IsError()) {
         vassert(Stream == nullptr);
         while (name.startsWith("/")) name.chopLeft(1);
-
-        int level = save_compression_level.asInt();
-        if (level < VWADWR_COMP_DISABLE || level > VWADWR_COMP_BEST) {
-          level = VWADWR_COMP_FAST;
-          save_compression_level = level;
-        }
-        // just in case
-        if (name.endsWithNoCase(".vwad")) level = VWADWR_COMP_DISABLE;
-
         if (buffit) {
-          Stream = vwad->CreateFileBuffered(name, level);
+          Stream = vwad->CreateFileBuffered(name, GetCompressionLevel(name));
         } else {
-          Stream = vwad->CreateFileDirect(name, level);
+          Stream = vwad->CreateFileDirect(name, GetCompressionLevel(name));
         }
         if (Stream) {
           Stream->AttachStringMapper(strMapper);
@@ -995,51 +965,62 @@ public:
     return IsNewFormat();
   }
 
-  virtual bool ExtendedSection (VStr name) override {
+  virtual bool OpenExtendedSection (VStr name, bool seekable) override {
     if (IsNewFormat() && !IsError()) {
       if (name.isEmpty()) {
         #ifdef VXX_DEBUG_SECTION_READER
-        if (currsection >= 0) {
-          GCon->Logf(NAME_Debug, "WRX: closed section '%s'", *esections[currsection]->name);
-        }
+        GCon->Log(NAME_Debug, "WRX: trying to open nameless section");
         #endif
-        currsection = -1;
+        SetError();
       } else {
         int sidx = 0;
-        // early exit for the same section
-        if (currsection >= 0 && esections[currsection]->name.strEquCI(name)) return true;
-        while (sidx < esections.length() && !esections[sidx]->name.strEquCI(name)) {
+        while (sidx < esections.length() && !esections[sidx].name.strEquCI(name)) {
           sidx += 1;
         }
         if (sidx >= esections.length()) {
           // new section
-          ExtSection *es = new ExtSection();
-          es->name = name;
-          es->est = new VMemoryStream();
-          es->est->BeginWrite();
-          es->est->AttachStringMapper(strMapper);
-          sidx = esections.length();
-          esections.Append(es);
+          ExtSection es;
+          es.name = name;
+          if (seekable) {
+            es.strm = vwad->CreateFileBuffered(name, GetCompressionLevel(name));
+          } else {
+            es.strm = vwad->CreateFileDirect(name, GetCompressionLevel(name));
+          }
+          if (es.strm == nullptr) {
+            #ifdef VXX_DEBUG_SECTION_WRITER
+            GCon->Logf(NAME_Debug, "WRX: error creating section '%s'", *name);
+            #endif
+            SetError();
+          } else {
+            #ifdef VXX_DEBUG_SECTION_WRITER
+            GCon->Logf(NAME_Debug, "WRX: created section '%s'", *name);
+            #endif
+            esections.Append(es);
+          }
+        } else {
+          #ifdef VXX_DEBUG_SECTION_READER
+          GCon->Logf(NAME_Debug, "WRX: trying to opened duplicate section '%s'", *name);
+          #endif
+          SetError();
         }
-        currsection = sidx;
-        #ifdef VXX_DEBUG_SECTION_READER
-        if (currsection >= 0) {
-          GCon->Logf(NAME_Debug, "WRX: opened section '%s'", *esections[currsection]->name);
-        }
-        #endif
-        return true;
       }
     }
     return !IsError();
   }
 
-  VStr CurrentExtendedSection () override {
-    return (currsection >= 0 ? esections[currsection]->name : VStr::EmptyString);
+  bool CloseExtendedSection () override {
+    if (IsNewFormat() && !IsError()) {
+      if (!CloseLastESection()) {
+        WipeESections(true);
+        SetError();
+      }
+    }
+    return !IsError();
   }
 
   virtual void SetError () override {
     VStream::Destroy(Stream);
-    WipeESections();
+    WipeESections(true);
     if (vwad) { delete vwad; vwad = nullptr; }
     delete strMapper; strMapper = nullptr;
     VStream::SetError();
@@ -1060,7 +1041,7 @@ public:
       }
       delete Stream; Stream = nullptr;
       if (err) {
-        WipeESections();
+        WipeESections(true);
       } else {
         FlushESections();
         err = IsError();
