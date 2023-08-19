@@ -72,6 +72,7 @@ typedef unsigned long long vwad_uint64;
 
 // size checks
 typedef char vwad_temp_typedef_check_char[(sizeof(char) == 1) ? 1 : -1];
+typedef char vwad_temp_typedef_check_char[(sizeof(int) == 4) ? 1 : -1];
 typedef char vwad_temp_typedef_check_ubyte[(sizeof(vwad_ubyte) == 1) ? 1 : -1];
 typedef char vwad_temp_typedef_check_ushort[(sizeof(vwad_ushort) == 2) ? 1 : -1];
 typedef char vwad_temp_typedef_check_uint[(sizeof(vwad_uint) == 4) ? 1 : -1];

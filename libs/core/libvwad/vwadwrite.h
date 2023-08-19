@@ -84,6 +84,7 @@ typedef unsigned long long vwadwr_uint64;
 
 // size checks
 typedef char vwadwr_temp_typedef_check_char[(sizeof(char) == 1) ? 1 : -1];
+typedef char vwadwr_temp_typedef_check_char[(sizeof(int) == 4) ? 1 : -1];
 typedef char vwadwr_temp_typedef_check_ubyte[(sizeof(vwadwr_ubyte) == 1) ? 1 : -1];
 typedef char vwadwr_temp_typedef_check_ushort[(sizeof(vwadwr_ushort) == 2) ? 1 : -1];
 typedef char vwadwr_temp_typedef_check_uint[(sizeof(vwadwr_uint) == 4) ? 1 : -1];
@@ -107,9 +108,13 @@ typedef int vwadwr_bool;
 // 0 is success, negative value is error
 typedef int vwadwr_result;
 
+// file handle used for writing
+// negative value is error
+typedef int vwadwr_fhandle;
+
 
 // opacue directory handle
-typedef struct vwadwr_dir_t vwadwr_dir;
+typedef struct vwadwr_archive_t vwadwr_archive;
 
 
 // i/o stream
@@ -204,12 +209,11 @@ vwadwr_result vwadwr_z85_decode_key (const vwadwr_z85_key enkey, vwadwr_public_k
 #define VWADWR_ERR_BAD_ASCII    (-17)
 // various i/o errors (i don't care what exactly gone wrong)
 #define VWADWR_ERR_IO_ERROR     (-18)
-// trying to create new file while old one is still open
-#define VWADWR_ERR_FILE_OPEN    (-19)
-// trying to writing new file data (or closing new file) without opening it first
-#define VWADWR_ERR_FILE_CLOSED  (-20)
+// trying to write data using invalid fd
+#define VWADWR_ERR_FILE_INVALID  (-19)
 // trying to write raw chunk to normal file, or vice versa
-#define VWADWR_ERR_INVALID_MODE (-21)
+// also, trying to finish archive when there are still opened files
+#define VWADWR_ERR_INVALID_MODE (-20)
 // function argument error (some pointer is NULL, or such)
 #define VWADWR_ERR_ARGS         (-669)
 // some other error
@@ -242,54 +246,61 @@ vwadwr_bool vwadwr_is_valid_comment (const char *str);
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-/* the algo is like this:
-    vwadwr_new_dir
-    add files
-    finish archive creation with vwadwr_finish, or free dir with vwadwr_free_dir
-*/
-
-// flags for `vwadwr_new_dir()`
+// flags for `vwadwr_new_archive()`
 #define VWADWR_NEW_DEFAULT    (0u)
 #define VWADWR_NEW_DONT_SIGN  (0x4000u)
 
 // if `mman` is `NULL`, use libc memory manager
 // will return `NULL` on any error (including invalid comment)
 // `privkey` cannot be NULL, and should be filled with GOOD random data
-vwadwr_dir *vwadwr_new_dir (vwadwr_memman *mman, vwadwr_iostream *outstrm,
-                            const char *author, /* can be NULL */
-                            const char *title, /* can be NULL */
-                            const char *comment, /* can be NULL */
-                            vwadwr_uint flags,
-                            /* cannot be NULL; must ALWAYS be filled with GOOD random bytes */
-                            const vwadwr_secret_key privkey,
-                            vwadwr_public_key respubkey, /* OUT; can be NULL */
-                            int *error); /* OUT; can be NULL */
+vwadwr_archive *vwadwr_new_archive (vwadwr_memman *mman, vwadwr_iostream *outstrm,
+                                    const char *author, /* can be NULL */
+                                    const char *title, /* can be NULL */
+                                    const char *comment, /* can be NULL */
+                                    vwadwr_uint flags,
+                                    /* cannot be NULL; must ALWAYS be filled with GOOD random bytes */
+                                    const vwadwr_secret_key privkey,
+                                    vwadwr_public_key respubkey, /* OUT; can be NULL */
+                                    int *error); /* OUT; can be NULL */
 
 // this can be used to abort archive creation. it doesn't write FAT,
 // just frees all memory.
-// `*dirp` will be set to NULL.
-// it is safe to pass `NULL` as `dirp` and/or as `*dirp`.
-void vwadwr_free_dir (vwadwr_dir **dirp);
+// `*wadp` will be set to NULL.
+// it is safe to pass `NULL` as `wadp` and/or as `*wadp`.
+void vwadwr_free_archive (vwadwr_archive **wadp);
+
+// return non-zero if `wad` is `NULL`, or some fatal error previously happened.
+vwadwr_bool vwadwr_is_error (const vwadwr_archive *wad);
+
+// force using FAT table for files.
+// usually, FAT is created only if we opened more than one file for writing,
+// and actually wrote some data into both.
+void vwadwr_force_fat (vwadwr_archive *wad);
+
+// check if archive will have a FAT table.
+vwadwr_bool vwadwr_is_fat (vwadwr_archive *wad);
 
 // get memory manager for the given archive
-vwadwr_memman *vwadwr_dir_get_memman (vwadwr_dir *dir);
-// get i/o stream for the given archive.
-vwadwr_iostream *vwadwr_dir_get_outstrm (vwadwr_dir *dir);
+// on any fatal error archive handle will be wiped, and this will return `NULL`.
+vwadwr_memman *vwadwr_get_memman (vwadwr_archive *wad);
 
-// you can call this befire `vwadwr_free_dir()` to perform basic checks.
-vwadwr_bool vwadwr_is_valid_dir (const vwadwr_dir *dir);
+// get i/o stream for the given archive.
+// on any fatal error archive handle will be wiped, and this will return `NULL`.
+vwadwr_iostream *vwadwr_get_outstrm (vwadwr_archive *wad);
+
+// you can call this before `vwadwr_finish()` to perform basic checks.
+vwadwr_bool vwadwr_is_valid_dir (const vwadwr_archive *wad);
 
 // this is the same as above, but returns more detailed failure
 // reason using error code.
-vwadwr_result vwadwr_check_dir (const vwadwr_dir *dir);
+vwadwr_result vwadwr_check_dir (const vwadwr_archive *wad);
 
-// this will write the FAT directory, and call `vwadwr_free_dir()` automatically
+// this will write the FAT directory, and call `vwadwr_free_archive()` automatically
 // (even in case of error). it frees handle because there is not much could be
 // done with it after calling "finish" anyway.
-// `*dirp` will be set to NULL.
-// it is safe to pass `NULL` as `dirp` and/or as `*dirp`.
-vwadwr_result vwadwr_finish (vwadwr_dir **dirp);
-
+// `*wadp` will be set to NULL.
+// it is safe to pass `NULL` as `wadp` and/or as `*wadp`.
+vwadwr_result vwadwr_finish_archive (vwadwr_archive **wadp);
 
 // compression levels.
 // PLEASE, do not use numbers directly, i may change them at any time.
@@ -305,52 +316,62 @@ vwadwr_result vwadwr_finish (vwadwr_dir **dirp);
 #define VWADWR_COMP_BEST     (3)
 
 
-// can be used during file writing to get some stats
-// also, can be used after closing a file to get final stats
-int vwadwr_get_last_file_packed_size (vwadwr_dir *dir);
-int vwadwr_get_last_file_unpacked_size (vwadwr_dir *dir);
-int vwadwr_get_last_file_chunk_count (vwadwr_dir *dir);
+// can be used during file writing to get some stats.
+// if you want to get final stats after compression,
+// flush the file first with `vwadwr_flush_file()`.
+// all functions return negative value on error.
+int vwadwr_get_file_packed_size (vwadwr_archive *wad, vwadwr_fhandle fd);
+int vwadwr_get_file_unpacked_size (vwadwr_archive *wad, vwadwr_fhandle fd);
+int vwadwr_get_file_chunk_count (vwadwr_archive *wad, vwadwr_fhandle fd);
 
 // you can use this API to write files with the usual file write-like API.
-// please note that you cannot seek backwards in this case, and only
-// one file can be created for writing. i.e. you must close the file before
-// creating a new one, and data can be only appended.
+// please note that you cannot seek while writing; but opening several files
+// simultaneously is ok. but if you will write one file at a time, archive
+// will be smaller (because no FAT is required in this case), and seeking in
+// such archives will be faster.
 // this is for `vwadwr_write()`.
-// if this returned error, there is no reason to continue; call `vwadwr_free_dir()`
-vwadwr_result vwadwr_create_file (vwadwr_dir *dir, int level, /* VWADWR_COMP_xxx */
-                                  const char *pkfname,
-                                  const char *groupname, /* can be NULL */
-                                  vwadwr_ftime ftime); /* can be 0; seconds since Epoch */
-
-// if this returned error, there is no reason to continue; call `vwadwr_free_dir()`
-vwadwr_result vwadwr_close_file (vwadwr_dir *dir);
+// if this returned error, there is no reason to continue; call `vwadwr_free_archive()`.
+// note that opening file for writing will not immediately commit file record
+// into archive directory: it is commited only when the file is closed.
+// on error, returns negative error code.
+vwadwr_fhandle vwadwr_create_file (vwadwr_archive *wad, int level, /* VWADWR_COMP_xxx */
+                                   const char *pkfname,
+                                   const char *groupname, /* can be NULL */
+                                   vwadwr_ftime ftime); /* can be 0; seconds since Epoch */
 
 // trying to write 0 bytes is not an error, just a no-op
 // (yet some error checking will still be done).
-// if this returned error, there is no reason to continue; call `vwadwr_free_dir()`
-vwadwr_result vwadwr_write (vwadwr_dir *dir, const void *buf, vwadwr_uint len);
+// if this returned error, there is no reason to continue; call `vwadwr_free_archive()`
+vwadwr_result vwadwr_write (vwadwr_archive *wad, vwadwr_fhandle fd,
+                            const void *buf, vwadwr_uint len);
 
-// you can use this API to write files with the usual file write-like API.
-// please note that you cannot seek backwards in this case, and only
-// one file can be created for writing. i.e. you must close the file before
-// creating a new one, and data can be only appended.
-// this is for `vwadwr_write_raw_chunk()`.
-// if this returned error, there is no reason to continue; call `vwadwr_free_dir()`
-vwadwr_result vwadwr_create_raw_file (vwadwr_dir *dir,
-                                      const char *pkfname,
-                                      const char *groupname, /* can be NULL */
-                                      vwadwr_uint filecrc32,
-                                      vwadwr_ftime ftime); /* can be 0; seconds since Epoch */
+// flush buffered file data (i.e. write the last chunk).
+// you don't need to explicitly call this, but if you want correct
+// final stats (see the API above), you should flush the file
+// before closing, get stats, and then close the file.
+// note that you cannot write anything to the file after flushing.
+// flushing raw files is allowed.
+// flushing already flushed file is not an error.
+vwadwr_result vwadwr_flush_file (vwadwr_archive *wad, vwadwr_fhandle fd);
+
+// if this returned error, there is no reason to continue; call `vwadwr_free_archive()`
+vwadwr_result vwadwr_close_file (vwadwr_archive *wad, vwadwr_fhandle fd);
+
+// the same as `vwadwr_create_file()`, but for raw files.
+// use `vwadwr_write_raw_chunk()` to write raw file data.
+// on error, returns negative error code.
+vwadwr_fhandle vwadwr_create_raw_file (vwadwr_archive *wad,
+                                       const char *pkfname,
+                                       const char *groupname, /* can be NULL */
+                                       vwadwr_uint filecrc32,
+                                       vwadwr_ftime ftime); /* can be 0; seconds since Epoch */
 
 // use to copy raw decrypted chunks from other VWAD(s).
 // use raw reading API in reader to obtain chunk data.
 // `pksz`, `upksz` and `packed` are exactly what `vwad_get_raw_file_chunk_info()` returns
 // `chunk` is what `vwad_read_raw_file_chunk()` read
-vwadwr_result vwadwr_write_raw_chunk (vwadwr_dir *dir, const void *chunk,
-                                      int pksz, int upksz, int packed);
-
-// if this returned error, there is no reason to continue; call `vwadwr_free_dir()`
-vwadwr_result vwadwr_close_raw_file (vwadwr_dir *dir);
+vwadwr_result vwadwr_write_raw_chunk (vwadwr_archive *wad, vwadwr_fhandle fd,
+                                      const void *chunk, int pksz, int upksz, int packed);
 
 
 // ////////////////////////////////////////////////////////////////////////// //

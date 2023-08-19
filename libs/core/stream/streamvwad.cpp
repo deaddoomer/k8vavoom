@@ -468,7 +468,7 @@ VVWadNewArchive::VVWadNewArchive (VStr aArchName, VStr author, VStr title,
   , vw_handle(nullptr)
   , destStream(nullptr)
   , destStreamOwn(owned)
-  , active(nullptr)
+  , openlist(nullptr)
   , error(true)
 {
   if (!vwadwr_logf) vwadwr_logf = logger;
@@ -496,10 +496,10 @@ VVWadNewArchive::VVWadNewArchive (VStr aArchName, VStr author, VStr title,
   vw_strm.write = &VStream_write;
   vw_strm.udata = (void *)dstrm;
 
-  vw_handle = vwadwr_new_dir(&wrmemman, &vw_strm, *author, *title,
-                             NULL, /* no comment */
-                             VWADWR_NEW_DONT_SIGN, privkey,
-                             NULL, NULL);
+  vw_handle = vwadwr_new_archive(&wrmemman, &vw_strm, *author, *title,
+                                 NULL, /* no comment */
+                                 VWADWR_NEW_DONT_SIGN, privkey,
+                                 NULL, NULL);
   if (!vw_handle || dstrm->IsError()) {
     if (owned && dstrm) VStream::Destroy(dstrm);
     return;
@@ -529,9 +529,12 @@ VVWadNewArchive::~VVWadNewArchive () {
 //
 //==========================================================================
 bool VVWadNewArchive::Close () {
-  if (active) active->Close();
+  if (openlist) {
+    SetError();
+    vassert(!openlist);
+  }
   if (vw_handle) {
-    const vwadwr_result xres = vwadwr_finish(&vw_handle);
+    const vwadwr_result xres = vwadwr_finish_archive(&vw_handle);
     vassert(vw_handle == nullptr);
     if (xres != VWADWR_OK) SetError();
   }
@@ -549,14 +552,16 @@ bool VVWadNewArchive::Close () {
 //
 //==========================================================================
 void VVWadNewArchive::SetError () {
-  if (active) {
+  while (openlist) {
+    VVWadStreamWriter *wr = openlist;
+    openlist = wr->next; wr->next = nullptr;
     #ifdef VVX_DEBUG_WRITER
-    GLog.Logf(NAME_Debug, "WARC: SetError: %s", *active->fname);
+    GLog.Logf(NAME_Debug, "WARC: SetError: %s", *wr->fname);
     #endif
-    active->SetError();
+    wr->SetError();
   }
   if (vw_handle) {
-    vwadwr_free_dir(&vw_handle);
+    vwadwr_free_archive(&vw_handle);
     vassert(vw_handle == nullptr);
   }
   if (destStreamOwn && destStream) VStream::Destroy(destStream);
@@ -579,7 +584,7 @@ VStream *VVWadNewArchive::CreateFile (VStr name, int level/* VADWR_COMP_xxx */,
                                       bool buffit)
 {
   if (error) return nullptr;
-  if (!vw_handle || active) {
+  if (!vw_handle) {
     #ifdef VVX_DEBUG_WRITER
     if (active) {
       GLog.Logf(NAME_Debug, "WARC: CreateDup: %s (new: %s)", *active->fname, *name);
@@ -589,16 +594,16 @@ VStream *VVWadNewArchive::CreateFile (VStr name, int level/* VADWR_COMP_xxx */,
     return nullptr;
   }
 
-  const vwadwr_result res = vwadwr_create_file(vw_handle, level, *name, *groupname, ftime);
-  if (res != VWADWR_OK) {
+  const vwadwr_fhandle fd = vwadwr_create_file(vw_handle, level, *name, *groupname, ftime);
+  if (fd < 0) {
     #ifdef VVX_DEBUG_WRITER
-    GLog.Logf(NAME_Debug, "WARC: CreateFileErr: %s; err=%d", *name, res);
+    GLog.Logf(NAME_Debug, "WARC: CreateFileErr: %s; err=%d", *name, fd);
     #endif
     SetError();
     return nullptr;
   }
 
-  return new VVWadStreamWriter(this, name, buffit);
+  return new VVWadStreamWriter(this, name, fd, buffit);
 }
 
 
@@ -607,19 +612,22 @@ VStream *VVWadNewArchive::CreateFile (VStr name, int level/* VADWR_COMP_xxx */,
 //  VVWadStreamWriter::VVWadStreamWriter
 //
 //==========================================================================
-VVWadStreamWriter::VVWadStreamWriter (VVWadNewArchive *aarc, VStr afname, bool buffit)
+VVWadStreamWriter::VVWadStreamWriter (VVWadNewArchive *aarc, VStr afname,
+                                      vwadwr_fhandle afd, bool buffit)
   : arc(aarc)
   , stbuf(nullptr)
+  , fd(afd)
   , fname(afname)
   , currpos(0)
   , seekpos(0)
+  , next(nullptr)
 {
   bLoading = false;
   if (aarc == nullptr || !aarc->IsOpen() || aarc->IsError()) {
     SetError();
   } else {
-    vassert(aarc->active == nullptr);
-    aarc->active = this;
+    next = aarc->openlist;
+    aarc->openlist = this;
     if (buffit) {
       stbuf = new VMemoryStream();
       stbuf->BeginWrite();
@@ -651,19 +659,22 @@ void VVWadStreamWriter::DoClose () {
     #ifdef VVX_DEBUG_WRITER
     GLog.Logf(NAME_Debug, "WR: DoClose: %s", *fname);
     #endif
-    vwadwr_dir *wad = nullptr;
+    vwadwr_archive *wad = nullptr;
     VVWadNewArchive *aarc = arc;
     arc = nullptr;
 
-    if (aarc->active == this) {
+    // remove from the parent list
+    VVWadStreamWriter *prev = nullptr;
+    VVWadStreamWriter *wr = aarc->openlist;
+    while (wr != nullptr && wr != this) { prev = wr; wr = wr->next; }
+    if (wr != nullptr) {
+      if (prev == nullptr) aarc->openlist = next; else prev->next = next;
       wad = aarc->vw_handle;
-      aarc->active = nullptr;
       if (IsError()) aarc->SetError();
     } else {
       #ifdef VVX_DEBUG_WRITER
       GLog.Logf(NAME_Debug, "WR: DoClose: %s -- orphan!", *fname);
       #endif
-      SetError();
     }
 
     if (!IsError()) {
@@ -671,7 +682,8 @@ void VVWadStreamWriter::DoClose () {
         // write buffered stream?
         if (stbuf != nullptr) {
           TArrayNC<vuint8> data = stbuf->GetArray();
-          vwadwr_result wres = vwadwr_write(aarc->vw_handle, data.Ptr(), (vwadwr_uint)data.length());
+          vwadwr_result wres = vwadwr_write(aarc->vw_handle, fd, data.Ptr(),
+                                            (vwadwr_uint)data.length());
           if (wres != VWADWR_OK) {
             #ifdef VVX_DEBUG_WRITER
             GLog.Logf(NAME_Debug, "WR: BUFWRITE ERROR=%d", wres);
@@ -680,7 +692,7 @@ void VVWadStreamWriter::DoClose () {
             SetError();
           }
         }
-        if (vwadwr_close_file(wad) != VWADWR_OK) {
+        if (vwadwr_close_file(wad, fd) != VWADWR_OK) {
           #ifdef VVX_DEBUG_WRITER
           GLog.Logf(NAME_Debug, "WR: DoClose: %s -- close error", *fname);
           #endif
@@ -696,8 +708,10 @@ void VVWadStreamWriter::DoClose () {
       }
     }
   }
+
   // we don't need a buffer anymore
   if (stbuf != nullptr) { stbuf->Close(); delete stbuf; stbuf = nullptr; }
+  fd = -1;
 
   #ifdef VVX_DEBUG_WRITER
   GLog.Logf(NAME_Debug, "WR: DoClose: %s (%d)", *fname, (int)IsError());
@@ -726,15 +740,31 @@ void VVWadStreamWriter::SetError () {
   #ifdef VVX_DEBUG_WRITER
   GLog.Logf(NAME_Debug, "WR: SetError: %s (%d)", *fname, (int)IsError());
   #endif
-  abort();
 
-  if (arc != nullptr && arc->active == this) {
-    arc->active = nullptr;
-    arc->SetError();
-  }
-  arc = nullptr;
   if (stbuf != nullptr) { stbuf->Close(); delete stbuf; stbuf = nullptr; }
+
+  VVWadNewArchive *aarc = arc;
+  arc = nullptr;
+
+  if (aarc != nullptr) {
+    if (fd >= 0) (void)vwadwr_close_file(aarc->vw_handle, fd);
+
+    // remove from the parent list
+    VVWadStreamWriter *prev = nullptr;
+    VVWadStreamWriter *wr = aarc->openlist;
+    while (wr != nullptr && wr != this) { prev = wr; wr = wr->next; }
+    if (wr != nullptr) {
+      if (prev == nullptr) aarc->openlist = next; else prev->next = next;
+      if (IsError()) aarc->SetError();
+    } else {
+      #ifdef VVX_DEBUG_WRITER
+      GLog.Logf(NAME_Debug, "WR: DoClose: %s -- orphan!", *fname);
+      #endif
+    }
+  }
+
   fname.clear();
+  fd = -1;
 
   VStream::SetError();
 }
@@ -812,7 +842,7 @@ void VVWadStreamWriter::Serialise (void *buf, int len) {
       SetError();
     }
 
-    const vwadwr_result res = vwadwr_write(arc->vw_handle, buf, (vwadwr_uint)len);
+    const vwadwr_result res = vwadwr_write(arc->vw_handle, fd, buf, (vwadwr_uint)len);
     if (res != VWADWR_OK) {
       #ifdef VVX_DEBUG_WRITER
       GLog.Logf(NAME_Debug, "WR: ERROR=%d", res);

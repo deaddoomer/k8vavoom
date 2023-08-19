@@ -104,7 +104,7 @@ static bool verbose = false;
 static bool showPackedSize = false;
 static TOWadFile outwad;
 static zipFile Zip = NULL;
-static vwadwr_dir *wad_dir = NULL;
+static vwadwr_archive *vwad = NULL;
 static FILE *wad_file_out = NULL;
 static vwadwr_iostream *wad_outstrm = NULL;
 static unsigned zipTotalUnpacked = 0;
@@ -225,29 +225,34 @@ static char *fn (const char *name, bool checkdir=false) {
 //
 //==========================================================================
 static void AddToZip (const char *Name, const void *Data, size_t Size, uint64_t ftime) {
-  if (wad_dir) {
+  if (vwad) {
     if (verbose) fflush(stderr);
 
     if (Size > 0x3fffffff) {
       Error("Failed to write file '%s' to VWAD (file too big)", Name);
     }
 
-    vwadwr_result res = vwadwr_create_file(wad_dir, comp_level, Name, currgroup, ftime);
-    if (res != 0) {
+    vwadwr_fhandle fd = vwadwr_create_file(vwad, comp_level, Name, currgroup, ftime);
+    if (fd < 0) {
       Error("Failed to write file '%s' to VWAD", Name);
     }
 
-    res = vwadwr_write(wad_dir, Data, (int)Size);
+    vwadwr_result res = vwadwr_write(vwad, fd, Data, (int)Size);
     if (res != VWADWR_OK) {
       Sys_Error("cannot write file");
     }
 
-    res = vwadwr_close_file(wad_dir);
+    res = vwadwr_flush_file(vwad, fd);
     if (res != VWADWR_OK) {
       Error("Failed to write file '%s' to VWAD", Name);
     }
 
-    int pksize = vwadwr_get_last_file_packed_size(wad_dir);
+    int pksize = vwadwr_get_file_packed_size(vwad, fd);
+
+    res = vwadwr_close_file(vwad, fd);
+    if (res != VWADWR_OK) {
+      Error("Failed to write file '%s' to VWAD", Name);
+    }
 
     if (verbose) {
       fprintf(stderr, " %s -> %s (%d%%)\n", comatoze((unsigned)Size), comatoze(pksize),
@@ -359,7 +364,7 @@ static void AddWadFile (const char *name) {
 //==========================================================================
 static void AddWad (const char *name) {
   if (Zip) Error("$wad cannot be used for ZIP file");
-  if (wad_dir) Error("$wad cannot be used for VWAD file");
+  if (vwad) Error("$wad cannot be used for VWAD file");
   if (verbose) fprintf(stderr, "adding wad file '%s'...\n", name);
   char *filename = fn(name);
   DefaultExtension(filename, 256, ".wad"); // arbitrary limit
@@ -376,7 +381,7 @@ static void AddWad (const char *name) {
 //==========================================================================
 static void AddMap (const char *name) {
   if (Zip) Error("$map cannot be used for ZIP file");
-  if (wad_dir) Error("$map cannot be used for VWAD file");
+  if (vwad) Error("$map cannot be used for VWAD file");
 
   if (verbose) fprintf(stderr, "adding map wad '%s'...\n", name);
   char *filename = fn(name);
@@ -420,7 +425,7 @@ static void GrabRGBTable () {
   SetupRGBTable();
   memcpy(tmp, &rgb_table, 32*32*32);
   tmp[32*32*32] = 0;
-  if (Zip || wad_dir) {
+  if (Zip || vwad) {
     if (verbose) fprintf(stderr, "adding rgb table '%s'...", sc_String);
     AddToZip(lumpname, tmp, 32*32*32+1, last_file_time);
   } else {
@@ -462,7 +467,7 @@ static void GrabTranslucencyTable () {
     }
   }
 
-  if (Zip || wad_dir) {
+  if (Zip || vwad) {
     if (verbose) fprintf(stderr, "adding translucency table '%s'...", sc_String);
     AddToZip(lumpname, table, 256*256, last_file_time);
   } else {
@@ -494,7 +499,7 @@ static void GrabScaleMap () {
     map[i] = makecol8((int)(r*col), (int)(g*col), (int)(b*col));
   }
 
-  if (Zip || wad_dir) {
+  if (Zip || vwad) {
     if (verbose) fprintf(stderr, "adding scale map '%s'...", sc_String);
     AddToZip(lumpname, map, 256, last_file_time);
   } else {
@@ -530,7 +535,7 @@ static void GrabRaw () {
     }
   }
 
-  if (Zip || wad_dir) {
+  if (Zip || vwad) {
     if (verbose) fprintf(stderr, "adding raw image '%s'...", sc_String);
     AddToZip(lumpname, data, w*h, last_file_time);
   } else {
@@ -612,7 +617,7 @@ static void GrabPatch () {
     Col = (column_t *)((vuint8 *)Col+4);
   }
 
-  if (Zip || wad_dir) {
+  if (Zip || vwad) {
     if (verbose) fprintf(stderr, "adding patch '%s'...", sc_String);
     AddToZip(lumpname, Patch, (vuint8*)Col-(vuint8*)Patch, last_file_time);
   } else {
@@ -654,7 +659,7 @@ static void GrabPic () {
     }
   }
 
-  if (Zip || wad_dir) {
+  if (Zip || vwad) {
     if (verbose) fprintf(stderr, "adding pic '%s'...", sc_String);
     AddToZip(lumpname, pic, sizeof(vpic_t)+w*h, last_file_time);
   } else {
@@ -706,7 +711,7 @@ static void GrabPic15 () {
     }
   }
 
-  if (Zip || wad_dir) {
+  if (Zip || vwad) {
     if (verbose) fprintf(stderr, "adding pic15 '%s'...", sc_String);
     AddToZip(lumpname, pic, sizeof(vpic_t)+w*h*2, last_file_time);
   } else {
@@ -786,7 +791,7 @@ static void GrabFon1 () {
   }
 
   // write lump and free memory
-  if (Zip || wad_dir) {
+  if (Zip || vwad) {
     if (verbose) fprintf(stderr, "adding fon1 font '%s'...", sc_String);
     AddToZip(lumpname, Font, pDst-(vint8*)Font, last_file_time);
   } else {
@@ -957,7 +962,7 @@ static void GrabFon2 () {
   }
 
   // write lump and free memory
-  if (Zip || wad_dir) {
+  if (Zip || vwad) {
     if (verbose) fprintf(stderr, "adding fon2 font '%s'...", sc_String);
     AddToZip(lumpname, Font, pDst-(vint8*)Font, last_file_time);
   } else {
@@ -1214,10 +1219,10 @@ static void ParseScript (const char *name) {
             } while (!vwadwr_is_good_privkey(privkey));
           }
           int werr;
-          wad_dir = vwadwr_new_dir(NULL, wad_outstrm, destauthor, desttitle, destcomment,
-                                   (has_privkey ? VWADWR_NEW_DEFAULT : VWADWR_NEW_DONT_SIGN),
-                                   privkey, pubkey, &werr);
-          if (!wad_dir) Error("cannot init VWAD (%d)", werr);
+          vwad = vwadwr_new_archive(NULL, wad_outstrm, destauthor, desttitle, destcomment,
+                                    (has_privkey ? VWADWR_NEW_DEFAULT : VWADWR_NEW_DONT_SIGN),
+                                    privkey, pubkey, &werr);
+          if (!vwad) Error("cannot init VWAD (%d)", werr);
           has_pubkey = 1;
         } else {
           Zip = zipOpen(destfile, APPEND_STATUS_CREATE);
@@ -1244,7 +1249,7 @@ static void ParseScript (const char *name) {
 
     if (SC_Compare("$label")) {
       if (Zip) Error("$label cannot be used for ZIP file");
-      if (wad_dir) Error("$label cannot be used for VWAD file");
+      if (vwad) Error("$label cannot be used for VWAD file");
       SC_MustGetString();
       outwad.AddLump(sc_String, nullptr, 0);
       continue;
@@ -1262,7 +1267,7 @@ static void ParseScript (const char *name) {
     if (isScanDir) {
       // $recursedir zippath diskpath
       // $recursedirext zippath diskpath ext
-      if (!Zip && !wad_dir) {
+      if (!Zip && !vwad) {
         Error("$recursedir cannot be used outsize of ZIP or VWAD");
       }
       bool gotExt = false;
@@ -1307,7 +1312,7 @@ static void ParseScript (const char *name) {
     }
 
     if (GrabMode) {
-      if (!Zip && !wad_dir && strlen(sc_String) > 8) {
+      if (!Zip && !vwad && strlen(sc_String) > 8) {
         SC_ScriptError("Lump name is too long.");
       }
       memset(lumpname, 0, sizeof(lumpname));
@@ -1332,7 +1337,7 @@ static void ParseScript (const char *name) {
       int size = XLoadFile(fn(sc_String), &data, &last_file_time);
       AddToZip(lumpname, data, size, last_file_time);
       Z_Free(data);
-    } else if (wad_dir) {
+    } else if (vwad) {
       if (verbose) fprintf(stderr, "adding file '%s'...", sc_String);
       strcpy(lumpname, sc_String);
       SC_MustGetString();
@@ -1356,11 +1361,8 @@ static void ParseScript (const char *name) {
   if (Zip) {
     if (zipClose(Zip, nullptr) != ZIP_OK) Error("Failed to close ZIP file");
   }
-  if (wad_dir) {
-    if (!vwadwr_is_valid_dir(wad_dir)) Error("Failed to create empty VWAD");
-    if (vwadwr_finish(&wad_dir) != 0) {
-      Error("Failed to finalise VWAD file");
-    }
+  if (vwad) {
+    if (vwadwr_finish_archive(&vwad) != VWADWR_OK) Error("Failed to finalise VWAD file");
     vwadwr_free_file_stream(wad_outstrm); wad_outstrm = NULL;
     fclose(wad_file_out); wad_file_out = NULL;
   }

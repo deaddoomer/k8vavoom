@@ -133,11 +133,11 @@ class VVWadNewArchive {
   friend class VVWadStreamWriter;
 private:
   VStr archname;  // archive name
-  vwadwr_dir *vw_handle;
+  vwadwr_archive *vw_handle;
   vwadwr_iostream vw_strm;
   VStream *destStream;
   bool destStreamOwn;
-  VVWadStreamWriter *active;
+  VVWadStreamWriter *openlist;
   bool error;
 
 private:
@@ -195,13 +195,15 @@ class VVWadStreamWriter : public VStream {
   friend class VVWadNewArchive;
 private:
   VVWadNewArchive *arc;
-  VMemoryStream *stbuf;
+  VMemoryStream *stbuf; // can be `NULL` for direct writes
+  vwadwr_fhandle fd;
   VStr fname;
   int currpos; // for `Tell()`
   int seekpos;
+  VVWadStreamWriter *next;
 
 private:
-  VVWadStreamWriter (VVWadNewArchive *aarc, VStr afname, bool buffit=true);
+  VVWadStreamWriter (VVWadNewArchive *aarc, VStr afname, vwadwr_fhandle afd, bool buffit);
 
   void DoClose ();
 

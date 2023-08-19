@@ -22,8 +22,16 @@ extern "C" {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-#define VWAD_NOFIDX  ((vwad_uint)0xffffffffU)
-#define VWAD_UNONE   ((vwad_uint)0xffffffffU)
+#define VWAD_PUBLIC
+
+// WARNING! THIS MUST BE `-1`!
+#define VWAD_ERROR  (-1)
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+#define VWAD_NOFIDX     ((vwad_uint)0xffffffffU)
+#define VWAD_UNONE      ((vwad_uint)0xffffffffU)
+#define VWAD_BAD_CHUNK  ((vwad_uint)0xffffffffU)
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -218,6 +226,11 @@ static const vwad_ubyte z85_dec_alphabet [96] = {
 };
 
 
+//==========================================================================
+//
+//  vwad_z85_encode_key
+//
+//==========================================================================
 void vwad_z85_encode_key (const vwad_public_key inkey, vwad_z85_key enkey) {
   vwad_ubyte sdata[32 + 4];
   memcpy(sdata, inkey, 32);
@@ -242,14 +255,19 @@ void vwad_z85_encode_key (const vwad_public_key inkey, vwad_z85_key enkey) {
 }
 
 
+//==========================================================================
+//
+//  vwad_z85_decode_key
+//
+//==========================================================================
 vwad_result vwad_z85_decode_key (const vwad_z85_key enkey, vwad_public_key outkey) {
-  if (enkey == NULL || outkey == NULL) return -1;
+  if (enkey == NULL || outkey == NULL) return VWAD_ERROR;
   vwad_ubyte ddata[32 + 4];
   vwad_uint dpos = 0, spos = 0, value = 0;
   while (spos < (vwad_uint)sizeof(vwad_z85_key) - 1) {
     char inch = enkey[spos++];
     switch (inch) {
-      case 0: return -1;
+      case 0: return VWAD_ERROR;
       case '\\': inch = '/'; break;
       case '~': inch = '/'; break;
       case '|': inch = '!'; break;
@@ -257,7 +275,7 @@ vwad_result vwad_z85_decode_key (const vwad_z85_key enkey, vwad_public_key outke
       case ';': inch = ':'; break;
       default: break;
     }
-    if (!strchr(z85_enc_alphabet, inch)) return -1;
+    if (!strchr(z85_enc_alphabet, inch)) return VWAD_ERROR;
     value = value * 85 + z85_dec_alphabet[(vwad_ubyte)inch - 32];
     if (spos % 5u == 0) {
       vwad_uint divisor = 256 * 256 * 256;
@@ -269,11 +287,11 @@ vwad_result vwad_z85_decode_key (const vwad_z85_key enkey, vwad_public_key outke
     }
   }
   if (dpos != 32 + 4) vwad__builtin_trap();
-  if (enkey[spos] != 0) return -1;
+  if (enkey[spos] != 0) return VWAD_ERROR;
   const vwad_uint crc32 = crc32_buf(ddata, 32);
-  if (crc32 != get_u32(&ddata[32])) return -1; // bad checksum
+  if (crc32 != get_u32(&ddata[32])) return VWAD_ERROR; // bad checksum
   memcpy(outkey, ddata, 32);
-  return 0;
+  return VWAD_OK;
 }
 
 
@@ -1161,7 +1179,7 @@ static int edsign_verify_stream (const vwad_ubyte *signature, const vwad_ubyte *
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-void (*vwad_logf) (int type, const char *fmt, ...) = NULL;
+VWAD_PUBLIC void (*vwad_logf) (int type, const char *fmt, ...) = NULL;
 
 #define logf(type_,...)  do { \
   if (vwad_logf) { \
@@ -1171,7 +1189,7 @@ void (*vwad_logf) (int type, const char *fmt, ...) = NULL;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-void (*vwad_assertion_failed) (const char *fmt, ...) = NULL;
+VWAD_PUBLIC void (*vwad_assertion_failed) (const char *fmt, ...) = NULL;
 
 static inline const char *SkipPathPartCStr (const char *s) {
   const char *lastSlash = NULL;
@@ -1210,10 +1228,10 @@ static inline const char *SkipPathPartCStr (const char *s) {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-void (*vwad_debug_open_file) (vwad_handle *wad, vwad_fidx fidx, vwad_fd fd) = NULL;
-void (*vwad_debug_close_file) (vwad_handle *wad, vwad_fidx fidx, vwad_fd fd) = NULL;
-void (*vwad_debug_read_chunk) (vwad_handle *wad, int bidx, vwad_fidx fidx, vwad_fd fd, int chunkidx) = NULL;
-void (*vwad_debug_flush_chunk) (vwad_handle *wad, int bidx, vwad_fidx fidx, vwad_fd fd, int chunkidx) = NULL;
+VWAD_PUBLIC void (*vwad_debug_open_file) (vwad_handle *wad, vwad_fidx fidx, vwad_fd fd) = NULL;
+VWAD_PUBLIC void (*vwad_debug_close_file) (vwad_handle *wad, vwad_fidx fidx, vwad_fd fd) = NULL;
+VWAD_PUBLIC void (*vwad_debug_read_chunk) (vwad_handle *wad, int bidx, vwad_fidx fidx, vwad_fd fd, int chunkidx) = NULL;
+VWAD_PUBLIC void (*vwad_debug_flush_chunk) (vwad_handle *wad, int bidx, vwad_fidx fidx, vwad_fd fd, int chunkidx) = NULL;
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -1238,9 +1256,9 @@ static CC25519_INLINE void xfree (vwad_memman *mman, void *p) {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-vwad_uint vwad_crc32_init (void) { return crc32_init; }
-vwad_uint vwad_crc32_part (vwad_uint crc32, const void *src, vwad_uint len) { return crc32_part(crc32, src, len); }
-vwad_uint vwad_crc32_final (vwad_uint crc32) { return crc32_final(crc32); }
+VWAD_PUBLIC vwad_uint vwad_crc32_init (void) { return crc32_init; }
+VWAD_PUBLIC vwad_uint vwad_crc32_part (vwad_uint crc32, const void *src, vwad_uint len) { return crc32_part(crc32, src, len); }
+VWAD_PUBLIC vwad_uint vwad_crc32_final (vwad_uint crc32) { return crc32_final(crc32); }
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -1470,10 +1488,15 @@ static intbool_t DecompressLZFF3 (const void *src, int srclen, void *dest, int u
 }
 
 
-// ////////////////////////////////////////////////////////////////////////// //
-/* is the given codepoint considered printable?
-i restrict it to some useful subset.
-unifuck is unifucked, but i hope that i sorted out all idiotic diactritics and control chars. */
+//==========================================================================
+//
+//  is_uni_printable
+//
+//  is the given codepoint considered printable?
+//  i restrict it to some useful subset.
+//  unifuck is unifucked, but i hope that i sorted out all idiotic diactritics and control chars.
+//
+//==========================================================================
 static CC25519_INLINE vwad_bool is_uni_printable (vwad_ushort ch) {
   return
     (ch >= 0x0001 && ch <= 0x024F) || // basic latin
@@ -1486,9 +1509,15 @@ static CC25519_INLINE vwad_bool is_uni_printable (vwad_ushort ch) {
 }
 
 
-/* determine utf-8 sequence length (in bytes) by its first char.
-returns length (up to 4) or 0 on invalid first char
-doesn't allow overlongs */
+//==========================================================================
+//
+//  utf_char_len
+//
+//  determine utf-8 sequence length (in bytes) by its first char.
+//  returns length (up to 4) or 0 on invalid first char
+//  doesn't allow overlongs
+//
+//==========================================================================
 static CC25519_INLINE vwad_uint utf_char_len (const void *str) {
   const vwad_ubyte ch = *((const vwad_ubyte *)str);
   if (ch < 0x80) return 1;
@@ -1499,6 +1528,11 @@ static CC25519_INLINE vwad_uint utf_char_len (const void *str) {
 }
 
 
+//==========================================================================
+//
+//  utf_decode
+//
+//==========================================================================
 static CC25519_INLINE vwad_ushort utf_decode (const char **strp) {
   const vwad_ubyte *bp = (const vwad_ubyte *)*strp;
   vwad_ushort res = (vwad_ushort)utf_char_len(bp);
@@ -1549,6 +1583,11 @@ static CC25519_INLINE vwad_ushort utf_decode (const char **strp) {
 }
 
 
+//==========================================================================
+//
+//  unilower
+//
+//==========================================================================
 static CC25519_INLINE vwad_ushort unilower (vwad_ushort ch) {
   if ((ch >= 'A' && ch <= 'Z') ||
       (ch >= 0x00C0 && ch <= 0x00D6) ||
@@ -1574,7 +1613,7 @@ static CC25519_INLINE vwad_ushort unilower (vwad_ushort ch) {
 //  vwad_utf_char_len
 //
 //==========================================================================
-vwad_uint vwad_utf_char_len (const void *str) {
+VWAD_PUBLIC vwad_uint vwad_utf_char_len (const void *str) {
   return (str ? utf_char_len(str) : 0);
 }
 
@@ -1584,7 +1623,7 @@ vwad_uint vwad_utf_char_len (const void *str) {
 //  vwad_is_uni_printable
 //
 //==========================================================================
-vwad_bool vwad_is_uni_printable (vwad_ushort ch) {
+VWAD_PUBLIC vwad_bool vwad_is_uni_printable (vwad_ushort ch) {
   return is_uni_printable(ch);
 }
 
@@ -1596,7 +1635,7 @@ vwad_bool vwad_is_uni_printable (vwad_ushort ch) {
 //  advances `strp` at least by one byte
 //
 //==========================================================================
-vwad_ushort vwad_utf_decode (const char **strp) {
+VWAD_PUBLIC vwad_ushort vwad_utf_decode (const char **strp) {
   return utf_decode(strp);
 }
 
@@ -1606,7 +1645,7 @@ vwad_ushort vwad_utf_decode (const char **strp) {
 //  vwad_uni_tolower
 //
 //==========================================================================
-vwad_ushort vwad_uni_tolower (vwad_ushort ch) {
+VWAD_PUBLIC vwad_ushort vwad_uni_tolower (vwad_ushort ch) {
   return unilower(ch);
 }
 
@@ -1653,7 +1692,8 @@ static vwad_bool strEquCI (const char *s0, const char *s1) {
 }
 
 
-vwad_bool vwad_str_equ_ci (const char *s0, const char *s1) { return strEquCI(s0, s1); }
+// ////////////////////////////////////////////////////////////////////////// //
+VWAD_PUBLIC vwad_bool vwad_str_equ_ci (const char *s0, const char *s1) { return strEquCI(s0, s1); }
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -1666,7 +1706,7 @@ vwad_bool vwad_str_equ_ci (const char *s0, const char *s1) { return strEquCI(s0,
 
 vwad_push_pack
 typedef struct vwad_packed_struct {
-  vwad_uint ofs;     // offset in stream
+  vwad_uint ofs;       // offset in stream
   vwad_ushort upksize; // unpacked chunk size-1
   vwad_ushort pksize;  // packed chunk size (0 means "unpacked")
 } ChunkInfo;
@@ -1676,7 +1716,7 @@ typedef struct vwad_packed_struct {
   vwad_uint nameHash;   // name hash
   vwad_uint hcNext;     // next name in bucket chain
   vwad_uint gnameofs;   // group name offset
-  vwad_uint64 ftime;      // since Epoch, 0 is "unknown"
+  vwad_uint64 ftime;    // since Epoch, 0 is "unknown"
   vwad_uint crc32;      // full crc32
   vwad_uint upksize;    // unpacked file size
   vwad_uint chunkCount; // number of chunks
@@ -1702,8 +1742,8 @@ typedef struct vwad_packed_struct {
 vwad_pop_pack
 
 typedef struct {
-  vwad_uint cidx; // chunk number in file
-  vwad_uint size; // 0: the buffer is not used
+  vwad_uint cidx_abs; // chunk number in file (absolute)
+  vwad_uint size;     // 0: the buffer is not used
   vwad_uint era;
   vwad_ubyte data[65536];
 } FileBuffer;
@@ -1712,6 +1752,9 @@ typedef struct {
   vwad_uint fidx;  // file index for this fd; 0 means "unused"
   vwad_uint fofs;  // virtual file offset, in bytes
   vwad_uint bidx;  // current cache buffer index (in `globCache`)
+  // last seen chunk cache (both values could contain `VWAD_BAD_CHUNK`)
+  vwad_uint cidx_rel; // relative chunk index for `cidx_abs`
+  vwad_uint cidx_abs; // absolute chunk index for `cidx_rel`
 } OpenedFile;
 
 
@@ -1721,22 +1764,23 @@ struct vwad_handle_t {
   vwad_memman *mman;
   vwad_uint flags;
   ed25519_public_key pubkey;
-  char *comment;       // can be NULL
-  char author[128];    // author string
-  char title[128];     // title string
-  vwad_ubyte *updir;      // unpacked directory
-  ChunkInfo *chunks;   // points to the unpacked directory
+  char *comment;        // can be NULL
+  char author[128];     // author string
+  char title[128];      // title string
+  vwad_ubyte *updir;    // unpacked directory
+  ChunkInfo *chunks;    // points to the unpacked directory
+  vwad_uint *fat;       // pointer to FAT or `NULL`
   vwad_uint xorRndSeed; // seed for block decryptor
   vwad_uint chunkCount; // number of elements in `chunks` array
   // files (0 is unused)
-  FileInfo *files;     // points to the unpacked directory
+  FileInfo *files;      // points to the unpacked directory
   vwad_uint fileCount;  // number of elements in `files` array
   // file names (0-terminated)
-  const char *names;   // points to the unpacked directory
+  const char *names;    // points to the unpacked directory
   // directory hash table
   vwad_uint buckets[HASH_BUCKETS];
   // public key
-  vwad_uint haspubkey; // bit 0: has key; bit 1: authenticated
+  vwad_uint haspubkey;  // bit 0: has key; bit 1: authenticated
   // opened files
   OpenedFile fds[MAX_OPENED_FILES];
   int fdsUsed; // to avoid excessive scans
@@ -1773,13 +1817,13 @@ static int ed_total_size (cc_ed25519_iostream *strm) {
 //==========================================================================
 static int ed_read (cc_ed25519_iostream *strm, int startpos, void *buf, int bufsize) {
   EdInfo *nfo = (EdInfo *)strm->udata;
-  if (startpos < 0) return -1; // oops
+  if (startpos < 0) return VWAD_ERROR; // oops
   startpos += 4+64+32; // skip header
-  if (startpos >= nfo->size) return -1;
+  if (startpos >= nfo->size) return VWAD_ERROR;
   const int max = nfo->size - startpos;
   if (bufsize > max) bufsize = max;
   if (nfo->currpos != startpos) {
-    if (nfo->strm->seek(nfo->strm, startpos) != VWAD_OK) return -1;
+    if (nfo->strm->seek(nfo->strm, startpos) != VWAD_OK) return VWAD_ERROR;
     nfo->currpos = startpos + bufsize;
   } else {
     nfo->currpos += bufsize;
@@ -1799,8 +1843,8 @@ static CC25519_INLINE vwad_bool is_path_delim (char ch) {
 //  vwad_normalize_file_name
 //
 //==========================================================================
-vwad_result vwad_normalize_file_name (const char *fname, char res[256]) {
-  if (fname == NULL || res == NULL) return -1;
+VWAD_PUBLIC vwad_result vwad_normalize_file_name (const char *fname, char res[256]) {
+  if (fname == NULL || res == NULL) return VWAD_ERROR;
   vwad_uint spos = 0, dpos = 0;
   if (fname[0] == '.' && is_path_delim(fname[1])) ++fname;
   else if (is_path_delim(fname[0])) { res[0] = '/'; dpos = 1; }
@@ -1830,10 +1874,10 @@ vwad_result vwad_normalize_file_name (const char *fname, char res[256]) {
   }
   if (dpos == 0 || dpos > 255) {
     res[0] = 0; // why not
-    return -1;
+    return VWAD_ERROR;
   } else {
     res[dpos] = 0;
-    return 0;
+    return VWAD_OK;
   }
 }
 
@@ -1953,7 +1997,9 @@ static vwad_bool is_valid_group_name (const char *str) {
 //  vwad_open_archive
 //
 //==========================================================================
-vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags, vwad_memman *mman) {
+VWAD_PUBLIC vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags,
+                                            vwad_memman *mman)
+{
   if (!strm || !strm->seek || !strm->read) {
     logf(ERROR, "vwad_open_archive: invalid stream");
     return NULL;
@@ -2120,7 +2166,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags, vwad_memma
     logf(ERROR, "vwad_open_archive: invalid version");
     return NULL;
   }
-  if (mhdr.flags > 0x04u) {
+  if (mhdr.flags > 0x07u) {
     logf(ERROR, "vwad_open_archive: invalid flags");
     return NULL;
   }
@@ -2187,7 +2233,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags, vwad_memma
   #endif
 
   // determine file size
-  if (strm->seek(strm, mhdr.dirofs) != VWAD_OK) {
+  if (strm->seek(strm, (int)mhdr.dirofs) != VWAD_OK) {
     xfree(mman, wadcomment);
     logf(ERROR, "vwad_open_archive: cannot seek to directory");
     return NULL;
@@ -2253,7 +2299,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags, vwad_memma
   }
 
   // read and unpack directory
-  if (strm->seek(strm, mhdr.dirofs + (int)sizeof(dhdr)) != VWAD_OK) {
+  if (strm->seek(strm, (int)mhdr.dirofs + (int)sizeof(dhdr)) != VWAD_OK) {
     xfree(mman, wadcomment);
     logf(ERROR, "vwad_open_archive: cannot seek to directory data");
     return NULL;
@@ -2375,7 +2421,7 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags, vwad_memma
     goto error;
   }
 
-  if (wad->fileCount < 1 || wad->fileCount > /*0xffffU*/0x00ffffffU ||
+  if (/*wad->fileCount < 1 ||*/ wad->fileCount > /*0xffffU*/0x00ffffffU ||
       wad->fileCount * (vwad_uint)sizeof(FileInfo) >= dhdr.upkdirsize ||
       wad->fileCount * (vwad_uint)sizeof(FileInfo) >= dhdr.upkdirsize - upofs)
   {
@@ -2386,13 +2432,40 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags, vwad_memma
   wad->files = (FileInfo *)(wad->updir + upofs);
   upofs += wad->fileCount * (vwad_uint)sizeof(FileInfo);
 
+  // FAT
+  if (mhdr.flags & 0x04) {
+    if (dhdr.upkdirsize - upofs < wad->chunkCount * 4u + 4u) {
+      logf(DEBUG, "truncated FAT table");
+      goto error;
+    }
+    wad->fat = (vwad_uint *)(wad->updir + upofs);
+    upofs += wad->chunkCount * 4u;
+    // convert table from deltas to indices
+    vwad_uint prev = 0;
+    for (vwad_uint f = 0; f < wad->chunkCount; f += 1) {
+      if (wad->fat[f] != 0) {
+        wad->fat[f] += prev;
+        prev = wad->fat[f];
+        if (prev >= wad->chunkCount) {
+          logf(DEBUG, "corrupted FAT table");
+          goto error;
+        }
+      } else {
+        wad->fat[f] = 0xffffffffU;
+        prev = 0;
+      }
+    }
+  } else {
+    wad->fat = NULL;
+  }
+
   // names
-  if (upofs >= dhdr.upkdirsize || dhdr.upkdirsize - upofs < 8) {
+  if (upofs >= dhdr.upkdirsize || dhdr.upkdirsize - upofs < 4) {
     logf(DEBUG, "invalid directory data (names, 0)");
     goto error;
   }
   const vwad_uint namesSize = dhdr.upkdirsize - upofs;
-  if (namesSize < 8 || namesSize > 0x3fffffffU || (namesSize&0x03) != 0) {
+  if (namesSize < 4 || namesSize > 0x3fffffffU || (namesSize&0x03) != 0) {
     logf(DEBUG, "invalid names size (%u)", namesSize);
     goto error;
   }
@@ -2448,17 +2521,32 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags, vwad_memma
   for (vwad_uint fidx = 0; fidx < wad->fileCount; ++fidx) {
     FileInfo *fi = &wad->files[fidx];
 
-    if (fi->nameHash != 0 || fi->hcNext != 0 || fi->firstChunk != 0) {
-      logf(DEBUG, "invalid file data (zero fields are non-zero)");
-      goto error;
-    }
-
+    fi->firstChunk = get_u32(&fi->firstChunk);
     fi->ftime = get_u64(&fi->ftime);
     fi->crc32 = get_u32(&fi->crc32);
     fi->upksize = get_u32(&fi->upksize);
     fi->chunkCount = get_u32(&fi->chunkCount);
     fi->nameofs = get_u32(&fi->nameofs);
     fi->gnameofs = get_u32(&fi->gnameofs);
+
+    if (fi->nameHash != 0 || fi->hcNext != 0) {
+      logf(DEBUG, "invalid file data (zero fields are non-zero)");
+      goto error;
+    }
+
+    if (mhdr.flags & 0x04) {
+      if ((fi->chunkCount == 0 && fi->firstChunk != 0) ||
+          (fi->chunkCount != 0 && fi->firstChunk >= wad->chunkCount))
+      {
+        logf(DEBUG, "invalid file data (zero fields are non-zero)");
+        goto error;
+      }
+    } else {
+      if (fi->firstChunk != 0) {
+        logf(DEBUG, "invalid file data (zero fields are non-zero)");
+        goto error;
+      }
+    }
 
     // lengthes?
     if (fidx != 0 && (mhdr.flags & 0x02) != 0) {
@@ -2531,53 +2619,72 @@ vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags, vwad_memma
 
     // fix chunks
     vwad_uint left = fi->upksize;
-    if (left != 0) {
-      fi->firstChunk = currChunk;
-      for (vwad_uint cnn = 0; cnn < fi->chunkCount; ++cnn) {
-        if (left == 0) {
-          logf(DEBUG, "invalid file data (out of chunks)");
-          goto error;
-        }
-        if (currChunk >= wad->chunkCount) {
-          logf(DEBUG, "invalid file data (chunks)");
-          goto error;
-        }
-        if (wad->chunks[currChunk].ofs != 0xffffffffU) {
-          logf(DEBUG, "invalid file data (chunks, oops)");
-          goto error;
-        }
-        if (chunkOfs >= mhdr.dirofs) {
-          logf(DEBUG, "invalid file data (chunk offset); fidx=%u; cofs=0x%08x; dofs=0x%08x",
-                  fidx, chunkOfs, mhdr.dirofs);
-          goto error;
-        }
-        wad->chunks[currChunk].ofs = chunkOfs;
-        vassert(left != 0);
-        if (left > 65536) {
-          wad->chunks[currChunk].upksize = 65535;
-          left -= 65536;
-        } else {
-          wad->chunks[currChunk].upksize = left - 1;
-          left = 0;
-        }
-        chunkOfs += 4; // crc32
-        if (wad->chunks[currChunk].pksize == 0) {
-          // unpacked chunk
-          chunkOfs += wad->chunks[currChunk].upksize + 1;
-        } else {
-          // packed chunk
-          chunkOfs += wad->chunks[currChunk].pksize;
-        }
-        if (chunkOfs > mhdr.dirofs) {
-          logf(DEBUG, "invalid file data (chunk offset 1); fidx=%u/%u; cofs=0x%08x; dofs=0x%08x",
-                  fidx, wad->fileCount, chunkOfs, mhdr.dirofs);
-          goto error;
-        }
+    if ((mhdr.flags & 0x04) == 0) {
+      vassert(fi->firstChunk == 0);
+      if (left != 0) fi->firstChunk = currChunk;
+      vassert((left == 0 && fi->chunkCount == 0) || (left != 0 && fi->chunkCount != 0));
+    } else {
+      vassert(left != 0 || fi->firstChunk == 0);
+      currChunk = fi->firstChunk;
+    }
+    // loop over all chunks
+    for (vwad_uint cnn = 0; cnn < fi->chunkCount; ++cnn) {
+      if (left == 0) {
+        logf(DEBUG, "invalid file data (out of chunks)");
+        goto error;
+      }
+      if (currChunk >= wad->chunkCount) {
+        logf(DEBUG, "invalid file data (chunks)");
+        goto error;
+      }
+      if (wad->chunks[currChunk].ofs != 0xffffffffU) {
+        logf(DEBUG, "invalid file data (chunks, oops)");
+        goto error;
+      }
+      if (chunkOfs >= mhdr.dirofs) {
+        logf(DEBUG, "invalid file data (chunk offset); fidx=%u; cofs=0x%08x; dofs=0x%08x",
+                    fidx, chunkOfs, mhdr.dirofs);
+        goto error;
+      }
+      wad->chunks[currChunk].ofs = chunkOfs;
+      vassert(left != 0);
+      if (left > 65536) {
+        wad->chunks[currChunk].upksize = 65535;
+        left -= 65536;
+      } else {
+        wad->chunks[currChunk].upksize = left - 1;
+        left = 0;
+      }
+      chunkOfs += 4; // crc32
+      if (wad->chunks[currChunk].pksize == 0) {
+        // unpacked chunk
+        chunkOfs += wad->chunks[currChunk].upksize + 1;
+      } else {
+        // packed chunk
+        chunkOfs += wad->chunks[currChunk].pksize;
+      }
+      if (chunkOfs > mhdr.dirofs) {
+        logf(DEBUG, "invalid file data (chunk offset 1); fidx=%u/%u; cofs=0x%08x; dofs=0x%08x",
+                    fidx, wad->fileCount, chunkOfs, mhdr.dirofs);
+        goto error;
+      }
+
+      if ((mhdr.flags & 0x04) == 0) {
         currChunk += 1;
+      } else {
+        currChunk = wad->fat[currChunk];
       }
     }
+
+    // final check
+    if (fi->chunkCount != 0 && (mhdr.flags & 0x04) != 0 && currChunk != 0xffffffffU) {
+      logf(DEBUG, "invalid file data (extra chunk); cofs=0x%08x; dofs=0x%08x", chunkOfs, mhdr.dirofs);
+      goto error;
+    }
   }
-  if (chunkOfs != mhdr.dirofs) {
+
+  // final check
+  if ((mhdr.flags & 0x04) == 0 && chunkOfs != mhdr.dirofs) {
     logf(DEBUG, "invalid file data (extra chunk); cofs=0x%08x; dofs=0x%08x", chunkOfs, mhdr.dirofs);
     goto error;
   }
@@ -2608,7 +2715,7 @@ error:
 //  vwad_close_archive
 //
 //==========================================================================
-void vwad_close_archive (vwad_handle **wadp) {
+VWAD_PUBLIC void vwad_close_archive (vwad_handle **wadp) {
   if (wadp) {
     vwad_handle *wad = *wadp;
     if (wad) {
@@ -2632,7 +2739,7 @@ void vwad_close_archive (vwad_handle **wadp) {
 //  vwad_set_archive_cache
 //
 //==========================================================================
-void vwad_set_archive_cache (vwad_handle *wad, int chunkCount) {
+VWAD_PUBLIC void vwad_set_archive_cache (vwad_handle *wad, int chunkCount) {
   if (wad != NULL) {
     if (chunkCount < 0) chunkCount = 0;
     else if (chunkCount > MAX_GLOB_BUFFERS) chunkCount = MAX_GLOB_BUFFERS;
@@ -2657,7 +2764,7 @@ void vwad_set_archive_cache (vwad_handle *wad, int chunkCount) {
 //  vwad_get_archive_comment_size
 //
 //==========================================================================
-vwad_uint vwad_get_archive_comment_size (vwad_handle *wad) {
+VWAD_PUBLIC vwad_uint vwad_get_archive_comment_size (vwad_handle *wad) {
   return (wad && wad->comment ? (vwad_uint)strlen(wad->comment) : 0);
 }
 
@@ -2667,7 +2774,7 @@ vwad_uint vwad_get_archive_comment_size (vwad_handle *wad) {
 //  vwad_get_archive_comment
 //
 //==========================================================================
-void vwad_get_archive_comment (vwad_handle *wad, char *dest, vwad_uint destsize) {
+VWAD_PUBLIC void vwad_get_archive_comment (vwad_handle *wad, char *dest, vwad_uint destsize) {
   if (!wad || !wad->comment || destsize < 2 || !dest) {
     if (dest && destsize) dest[0] = 0;
   } else {
@@ -2684,7 +2791,7 @@ void vwad_get_archive_comment (vwad_handle *wad, char *dest, vwad_uint destsize)
 //  vwad_get_archive_author
 //
 //==========================================================================
-const char *vwad_get_archive_author (vwad_handle *wad) {
+VWAD_PUBLIC const char *vwad_get_archive_author (vwad_handle *wad) {
   return (wad ? wad->author : "");
 }
 
@@ -2694,7 +2801,7 @@ const char *vwad_get_archive_author (vwad_handle *wad) {
 //  vwad_get_archive_title
 //
 //==========================================================================
-const char *vwad_get_archive_title (vwad_handle *wad) {
+VWAD_PUBLIC const char *vwad_get_archive_title (vwad_handle *wad) {
   return (wad ? wad->title : "");
 }
 
@@ -2706,7 +2813,7 @@ const char *vwad_get_archive_title (vwad_handle *wad) {
 //  forget main archive comment and free its memory.
 //
 //==========================================================================
-void vwad_free_archive_comment (vwad_handle *wad) {
+VWAD_PUBLIC void vwad_free_archive_comment (vwad_handle *wad) {
   if (wad && wad->comment) {
     xfree(wad->mman, wad->comment);
     wad->comment = NULL;
@@ -2719,7 +2826,7 @@ void vwad_free_archive_comment (vwad_handle *wad) {
 //  vwad_is_authenticated
 //
 //==========================================================================
-vwad_bool vwad_is_authenticated (vwad_handle *wad) {
+VWAD_PUBLIC vwad_bool vwad_is_authenticated (vwad_handle *wad) {
   return (wad && (wad->haspubkey & 0x02) != 0);
 }
 
@@ -2729,7 +2836,7 @@ vwad_bool vwad_is_authenticated (vwad_handle *wad) {
 //  vwad_has_pubkey
 //
 //==========================================================================
-vwad_bool vwad_has_pubkey (vwad_handle *wad) {
+VWAD_PUBLIC vwad_bool vwad_has_pubkey (vwad_handle *wad) {
   return (wad && (wad->haspubkey & 0x01) != 0);
 }
 
@@ -2739,13 +2846,13 @@ vwad_bool vwad_has_pubkey (vwad_handle *wad) {
 //  vwad_get_pubkey
 //
 //==========================================================================
-vwad_result vwad_get_pubkey (vwad_handle *wad, vwad_public_key pubkey) {
+VWAD_PUBLIC vwad_result vwad_get_pubkey (vwad_handle *wad, vwad_public_key pubkey) {
   if (wad && wad->haspubkey) {
     if (pubkey) memcpy(pubkey, wad->pubkey, sizeof(vwad_public_key));
-    return 0;
+    return VWAD_OK;
   } else {
     if (pubkey) memset(pubkey, 0, sizeof(vwad_public_key));
-    return -1;
+    return VWAD_ERROR;
   }
 }
 
@@ -2755,7 +2862,7 @@ vwad_result vwad_get_pubkey (vwad_handle *wad, vwad_public_key pubkey) {
 //  vwad_get_archive_file_count
 //
 //==========================================================================
-vwad_fidx vwad_get_archive_file_count (vwad_handle *wad) {
+VWAD_PUBLIC vwad_fidx vwad_get_archive_file_count (vwad_handle *wad) {
   return (wad ? (vwad_fidx)wad->fileCount : 0);
 }
 
@@ -2765,7 +2872,7 @@ vwad_fidx vwad_get_archive_file_count (vwad_handle *wad) {
 //  vwad_get_file_name
 //
 //==========================================================================
-const char *vwad_get_file_name (vwad_handle *wad, vwad_fidx fidx) {
+VWAD_PUBLIC const char *vwad_get_file_name (vwad_handle *wad, vwad_fidx fidx) {
   if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount) {
     return wad->names + wad->files[fidx].nameofs;
   } else {
@@ -2779,7 +2886,7 @@ const char *vwad_get_file_name (vwad_handle *wad, vwad_fidx fidx) {
 //  vwad_get_file_group_name
 //
 //==========================================================================
-const char *vwad_get_file_group_name (vwad_handle *wad, vwad_fidx fidx) {
+VWAD_PUBLIC const char *vwad_get_file_group_name (vwad_handle *wad, vwad_fidx fidx) {
   if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount) {
     return wad->names + wad->files[fidx].gnameofs;
   } else {
@@ -2793,11 +2900,11 @@ const char *vwad_get_file_group_name (vwad_handle *wad, vwad_fidx fidx) {
 //  vwad_get_file_size
 //
 //==========================================================================
-int vwad_get_file_size (vwad_handle *wad, vwad_fidx fidx) {
+VWAD_PUBLIC int vwad_get_file_size (vwad_handle *wad, vwad_fidx fidx) {
   if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount) {
     return wad->files[fidx].upksize;
   } else {
-    return -1;
+    return VWAD_ERROR;
   }
 }
 
@@ -2828,7 +2935,7 @@ static vwad_fidx find_file (vwad_handle *wad, const char *name) {
       fidx = wad->files[fidx].hcNext;
     }
   }
-  return -1;
+  return VWAD_ERROR;
 }
 
 
@@ -2837,7 +2944,7 @@ static vwad_fidx find_file (vwad_handle *wad, const char *name) {
 //  vwad_has_file
 //
 //==========================================================================
-vwad_fidx vwad_find_file (vwad_handle *wad, const char *name) {
+VWAD_PUBLIC vwad_fidx vwad_find_file (vwad_handle *wad, const char *name) {
   return find_file(wad, name);
 }
 
@@ -2849,7 +2956,7 @@ vwad_fidx vwad_find_file (vwad_handle *wad, const char *name) {
 //  returns 0 if there is an error, or the time is not set
 //
 //==========================================================================
-vwad_ftime vwad_get_ftime (vwad_handle *wad, vwad_fidx fidx) {
+VWAD_PUBLIC vwad_ftime vwad_get_ftime (vwad_handle *wad, vwad_fidx fidx) {
   vwad_uint64 res = 0;
   if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount) {
     res = wad->files[fidx].ftime;
@@ -2865,7 +2972,7 @@ vwad_ftime vwad_get_ftime (vwad_handle *wad, vwad_fidx fidx) {
 //  get crc32 for the whole file
 //
 //==========================================================================
-vwad_uint vwad_get_fcrc32 (vwad_handle *wad, vwad_fidx fidx) {
+VWAD_PUBLIC vwad_uint vwad_get_fcrc32 (vwad_handle *wad, vwad_fidx fidx) {
   vwad_uint res = 0;
   if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount) {
     res = wad->files[fidx].crc32;
@@ -2882,7 +2989,7 @@ vwad_uint vwad_get_fcrc32 (vwad_handle *wad, vwad_fidx fidx) {
 //  note that maximum number of simultaneously opened files is 128
 //
 //==========================================================================
-vwad_fd vwad_open_fidx (vwad_handle *wad, vwad_fidx fidx) {
+VWAD_PUBLIC vwad_fd vwad_open_fidx (vwad_handle *wad, vwad_fidx fidx) {
   if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount) {
     // find free fd
     vwad_fd fd = 0;
@@ -2893,6 +3000,8 @@ vwad_fd vwad_open_fidx (vwad_handle *wad, vwad_fidx fidx) {
       fl->fidx = fidx;
       fl->fofs = 0;
       fl->bidx = 0;
+      fl->cidx_abs = VWAD_BAD_CHUNK;
+      fl->cidx_rel = VWAD_BAD_CHUNK;
       if (wad->fdsUsed < fd) wad->fdsUsed = fd;
       if (vwad_debug_open_file) vwad_debug_open_file(wad, fidx, fd);
       return fd;
@@ -2900,7 +3009,7 @@ vwad_fd vwad_open_fidx (vwad_handle *wad, vwad_fidx fidx) {
       return -2;
     }
   }
-  return -1;
+  return VWAD_ERROR;
 }
 
 
@@ -2911,14 +3020,14 @@ vwad_fd vwad_open_fidx (vwad_handle *wad, vwad_fidx fidx) {
 //  open file by name
 //
 //==========================================================================
-vwad_fd vwad_open_file (vwad_handle *wad, const char *name) {
+VWAD_PUBLIC vwad_fd vwad_open_file (vwad_handle *wad, const char *name) {
   if (wad && name && name[0]) {
     const vwad_fidx fidx = vwad_find_file(wad, name);
     if (fidx >= 0) {
       return vwad_open_fidx(wad, fidx);
     }
   }
-  return -1;
+  return VWAD_ERROR;
 }
 
 
@@ -2927,7 +3036,7 @@ vwad_fd vwad_open_file (vwad_handle *wad, const char *name) {
 //  vwad_fclose
 //
 //==========================================================================
-void vwad_fclose (vwad_handle *wad, vwad_fd fd) {
+VWAD_PUBLIC void vwad_fclose (vwad_handle *wad, vwad_fd fd) {
   if (wad && fd >= 0 && fd < MAX_OPENED_FILES) {
     OpenedFile *fl = &wad->fds[fd];
     if (fl->fidx != VWAD_NOFIDX) {
@@ -2953,8 +3062,62 @@ void vwad_fclose (vwad_handle *wad, vwad_fd fd) {
 //  vwad_has_opened_files
 //
 //==========================================================================
-vwad_bool vwad_has_opened_files (vwad_handle *wad) {
+VWAD_PUBLIC vwad_bool vwad_has_opened_files (vwad_handle *wad) {
   return (wad && wad->fdsUsed > 0);
+}
+
+
+//==========================================================================
+//
+//  vwad_find_chunk
+//
+//  `cc_rel` is the current relative chunk index (or `VWAD_BAD_CHUNK`)
+//  `cc_abs` is the corresponding absolute chunk index (or `VWAD_BAD_CHUNK`)
+//  `cidx` is the relative chunk we want to convert to absolute
+//
+//==========================================================================
+static CC25519_INLINE vwad_uint vwad_find_chunk (vwad_handle *wad, FileInfo *fi,
+                                                 OpenedFile *fo, vwad_uint cidx)
+{
+  if (!wad || !fi || cidx >= fi->chunkCount) return VWAD_BAD_CHUNK;
+  if (wad->fat) {
+    //logf(DEBUG, "FAT: first chunk is %u", fi->firstChunk);
+    // can we follow the chain?
+    vwad_uint cc_rel, cc_abs;
+    if (fo) {
+      cc_rel = fo->cidx_rel;
+      cc_abs = fo->cidx_abs;
+    } else {
+      cc_rel = VWAD_BAD_CHUNK;
+      cc_abs = VWAD_BAD_CHUNK;
+    }
+    if (cidx < cc_rel || cc_rel == VWAD_BAD_CHUNK || cc_abs == VWAD_BAD_CHUNK) {
+      // cannot follow
+      cc_abs = fi->firstChunk;
+      cc_rel = 0;
+      #if 0
+      if (fo) logf(DEBUG, "FAT: rewind to %u", cidx);
+      #endif
+    } else {
+      // can follow
+      #if 0
+      logf(DEBUG, "FAT: follow from %u to %u (%u steps)", cc_rel, cidx, cidx-cc_rel);
+      #endif
+      cidx -= cc_rel;
+    }
+    while (cidx != 0 && cc_abs != VWAD_BAD_CHUNK) {
+      cc_abs = wad->fat[cc_abs];
+      cidx -= 1;
+      cc_rel += 1;
+    }
+    if (fo) {
+      fo->cidx_rel = cc_rel;
+      fo->cidx_abs = cc_abs;
+    }
+    return cc_abs;
+  } else {
+    return fi->firstChunk + cidx;
+  }
 }
 
 
@@ -2962,8 +3125,12 @@ vwad_bool vwad_has_opened_files (vwad_handle *wad) {
 //
 //  read_chunk
 //
+//  `cidx` is absolute chunk number
+//
 //==========================================================================
-static vwad_result read_chunk (vwad_handle *wad, OpenedFile *fl, FileBuffer *buf, vwad_uint cidx) {
+static vwad_result read_chunk (vwad_handle *wad, OpenedFile *fl, FileBuffer *buf,
+                               vwad_uint cidx)
+{
   vassert(wad);
   vassert(cidx < wad->chunkCount);
 
@@ -2972,9 +3139,9 @@ static vwad_result read_chunk (vwad_handle *wad, OpenedFile *fl, FileBuffer *buf
   const vwad_uint cupsize = ci->upksize + 1;
 
   // seek to chunk
-  if (wad->strm->seek(wad->strm, ci->ofs) != VWAD_OK) {
+  if (wad->strm->seek(wad->strm, (int)ci->ofs) != VWAD_OK) {
     logf(ERROR, "read_chunk: cannot seek to chunk %u", cidx);
-    return -1;
+    return VWAD_ERROR;
   }
 
   // read data
@@ -2983,7 +3150,7 @@ static vwad_result read_chunk (vwad_handle *wad, OpenedFile *fl, FileBuffer *buf
     if (wad->strm->read(wad->strm, &wad->pkdata[0], cupsize + 4) != VWAD_OK) {
       buf->size = 0;
       logf(ERROR, "read_chunk: cannot read unpacked chunk %u", cidx);
-      return -1;
+      return VWAD_ERROR;
     }
     crypt_buffer(wad->xorRndSeed, nonce, &wad->pkdata[0], cupsize + 4);
     memcpy(buf->data, &wad->pkdata[4], cupsize);
@@ -2992,14 +3159,14 @@ static vwad_result read_chunk (vwad_handle *wad, OpenedFile *fl, FileBuffer *buf
     if (wad->strm->read(wad->strm, &wad->pkdata[0], ci->pksize + 4) != VWAD_OK) {
       buf->size = 0;
       logf(ERROR, "read_chunk: cannot read packed chunk %u", cidx);
-      return -1;
+      return VWAD_ERROR;
     }
     crypt_buffer(wad->xorRndSeed, nonce, &wad->pkdata[0], ci->pksize + 4);
     if (!DecompressLZFF3(&wad->pkdata[4], ci->pksize, buf->data, cupsize)) {
       buf->size = 0;
       logf(ERROR, "read_chunk: cannot unpack chunk %u (%u -> %u)", cidx,
-           ci->pksize, cupsize);
-      return -1;
+                  ci->pksize, cupsize);
+      return VWAD_ERROR;
     }
   }
 
@@ -3008,14 +3175,14 @@ static vwad_result read_chunk (vwad_handle *wad, OpenedFile *fl, FileBuffer *buf
     if (crc32_buf(buf->data, cupsize) != get_u32(&wad->pkdata[0])) {
       buf->size = 0;
       logf(ERROR, "read_chunk: corrupted chunk %u data (crc32)", cidx);
-      return -1;
+      return VWAD_ERROR;
     }
   }
 
-  buf->cidx = cidx;
+  buf->cidx_abs = cidx;
   buf->size = cupsize;
 
-  return 0;
+  return VWAD_OK;
 }
 
 
@@ -3024,23 +3191,23 @@ static vwad_result read_chunk (vwad_handle *wad, OpenedFile *fl, FileBuffer *buf
 //  ensure_buffer
 //
 //==========================================================================
-static FileBuffer *ensure_buffer (vwad_handle *wad, vwad_fd fd, vwad_uint ofs) {
+static FileBuffer *ensure_buffer (vwad_handle *wad, vwad_fd fd, OpenedFile *fl, vwad_uint ofs) {
   vassert(wad != NULL);
   vassert(fd >= 0 && fd < MAX_OPENED_FILES);
 
-  OpenedFile *fl = &wad->fds[fd];
   vassert(fl->fidx != VWAD_NOFIDX);
 
-  const FileInfo *fi = &wad->files[fl->fidx];
+  FileInfo *fi = &wad->files[fl->fidx];
   if (ofs >= fi->upksize) return NULL;
 
-  const vwad_uint cidx = fi->firstChunk + ofs / 65536;
-  vassert(cidx >= fi->firstChunk && cidx < fi->firstChunk + fi->chunkCount);
+  const vwad_uint cidx = vwad_find_chunk(wad, fi, fl, ofs / 65536u);
   vassert(fl->bidx < MAX_GLOB_BUFFERS);
+  // fix current
+
   FileBuffer *res = wad->globCache[fl->bidx];
 
   // is buffer valid?
-  if (!res || res->cidx != cidx || res->size == 0) {
+  if (!res || res->cidx_abs != cidx || res->size == 0) {
     // no, check if we already have the chunk buffered
     const vwad_uint gbcSize = wad->globCacheSize;
     vwad_uint bidx;
@@ -3053,7 +3220,7 @@ static FileBuffer *ensure_buffer (vwad_handle *wad, vwad_fd fd, vwad_uint ofs) {
     // for local cache, `gbcSize` is 0, so it is ok
     for (bidx = 0; !gfound && bidx < gbcSize; ++bidx) {
       gb = wad->globCache[bidx];
-      if (gb != NULL && gb->size != 0 && gb->cidx == cidx) {
+      if (gb != NULL && gb->size != 0 && gb->cidx_abs == cidx) {
         // i found her!
         fl->bidx = bidx;
         gfound = 1;
@@ -3077,7 +3244,7 @@ static FileBuffer *ensure_buffer (vwad_handle *wad, vwad_fd fd, vwad_uint ofs) {
       }
       gb = wad->globCache[ggevict];
       if (vwad_debug_flush_chunk && gb && gb->size != 0) {
-        vwad_debug_flush_chunk(wad, (int)ggevict, fl->fidx, fd, (int)gb->cidx);
+        vwad_debug_flush_chunk(wad, (int)ggevict, fl->fidx, fd, (int)gb->cidx_abs);
       }
       if (gb == NULL) {
         // new buffer
@@ -3086,7 +3253,7 @@ static FileBuffer *ensure_buffer (vwad_handle *wad, vwad_fd fd, vwad_uint ofs) {
           logf(ERROR, "ensure_buffer: cannot allocate memory for chunk cache");
           return NULL;
         }
-        gb->cidx = 0;
+        gb->cidx_abs = 0;
         gb->size = 0;
         gb->era = 0;
         wad->globCache[ggevict] = gb;
@@ -3105,7 +3272,7 @@ static FileBuffer *ensure_buffer (vwad_handle *wad, vwad_fd fd, vwad_uint ofs) {
   // i found her!
   res = wad->globCache[fl->bidx];
   vassert(res != NULL);
-  vassert(res->cidx == cidx);
+  vassert(res->cidx_abs == cidx);
   vassert(res->size == wad->chunks[cidx].upksize + 1);
 
   // fix buffer era
@@ -3132,40 +3299,44 @@ static FileBuffer *ensure_buffer (vwad_handle *wad, vwad_fd fd, vwad_uint ofs) {
 //  return number of read bytes, or -1 on error
 //
 //==========================================================================
-int vwad_read (vwad_handle *wad, vwad_fd fd, void *dest, int len) {
+VWAD_PUBLIC int vwad_read (vwad_handle *wad, vwad_fd fd, void *dest, int len) {
   int read = -1;
   if (wad && len >= 0 && fd >= 0 && fd < MAX_OPENED_FILES) {
     OpenedFile *fl = &wad->fds[fd];
     if (fl->fidx != VWAD_NOFIDX) {
       vassert(len == 0 || dest != NULL);
-      const FileInfo *fi = &wad->files[fl->fidx];
+      FileInfo *fi = &wad->files[fl->fidx];
       read = 0;
-      while (len != 0 && fl->fofs < wad->files[fl->fidx].upksize) {
-        const FileBuffer *fbuf = ensure_buffer(wad, fd, fl->fofs);
+      while (len != 0 && fl->fofs < fi->upksize) {
+        const FileBuffer *fbuf = ensure_buffer(wad, fd, fl, fl->fofs);
         if (!fbuf) {
           // oops
           read = -1;
           len = 0;
         } else {
-          const vwad_uint left = wad->files[fl->fidx].upksize - fl->fofs;
+          const vwad_uint left = fi->upksize - fl->fofs;
           vwad_uint rd = (vwad_uint)len;
           if (rd > left) rd = left;
           vassert(fbuf->size > 0 && fbuf->size <= 65536);
-          const vwad_uint bufskip = fl->fofs - (fbuf->cidx - fi->firstChunk) * 65536;
-          vassert(bufskip <= fbuf->size);
-          const vwad_uint bufleft = fbuf->size - bufskip;
-          vassert(bufleft > 0);
-          if (rd > bufleft) rd = bufleft;
-          #if 0
-          fprintf(stderr, "READ: ofs=0x%08x; len=%d; rd=%u; bufleft=%u; bufskip=%u\n",
-                  fl->fofs, len, rd, bufleft, bufskip);
-          #endif
-          vassert(rd > 0 && rd <= (vwad_uint)len);
-          memcpy(dest, fbuf->data + bufskip, rd);
-          len -= (int)rd;
-          fl->fofs += rd;
-          read += (int)rd;
-          dest = (void *)((vwad_ubyte *)dest + rd);
+          const vwad_uint bufskip = fl->fofs % 65536u;
+          if (bufskip > fbuf->size) {
+            read = -1;
+            len = 0;
+          } else {
+            const vwad_uint bufleft = fbuf->size - bufskip;
+            vassert(bufleft > 0);
+            if (rd > bufleft) rd = bufleft;
+            #if 0
+            fprintf(stderr, "READ: ofs=0x%08x; len=%d; rd=%u; bufleft=%u; bufskip=%u\n",
+                    fl->fofs, len, rd, bufleft, bufskip);
+            #endif
+            vassert(rd > 0 && rd <= (vwad_uint)len);
+            memcpy(dest, fbuf->data + bufskip, rd);
+            len -= (int)rd;
+            fl->fofs += rd;
+            read += (int)rd;
+            dest = (void *)((vwad_ubyte *)dest + rd);
+          }
         }
       }
     }
@@ -3179,12 +3350,12 @@ int vwad_read (vwad_handle *wad, vwad_fd fd, void *dest, int len) {
 //  vwad_fdfidx
 //
 //==========================================================================
-vwad_fidx vwad_fdfidx (vwad_handle *wad, vwad_fd fd) {
+VWAD_PUBLIC vwad_fidx vwad_fdfidx (vwad_handle *wad, vwad_fd fd) {
   if (wad && fd >= 0 && fd < MAX_OPENED_FILES) {
     OpenedFile *fl = &wad->fds[fd];
     if (fl->fidx != VWAD_NOFIDX) return (vwad_fidx)fl->fidx;
   }
-  return -1;
+  return VWAD_ERROR;
 }
 
 
@@ -3195,7 +3366,7 @@ vwad_fidx vwad_fdfidx (vwad_handle *wad, vwad_fd fd) {
 //  return 0 on success
 //
 //==========================================================================
-vwad_result vwad_seek (vwad_handle *wad, vwad_fd fd, int pos) {
+VWAD_PUBLIC vwad_result vwad_seek (vwad_handle *wad, vwad_fd fd, int pos) {
   int res = -1;
   if (wad && pos >= 0 && fd >= 0 && fd < MAX_OPENED_FILES) {
     OpenedFile *fl = &wad->fds[fd];
@@ -3219,12 +3390,12 @@ vwad_result vwad_seek (vwad_handle *wad, vwad_fd fd, int pos) {
 //  vwad_tell
 //
 //==========================================================================
-int vwad_tell (vwad_handle *wad, vwad_fd fd) {
+VWAD_PUBLIC int vwad_tell (vwad_handle *wad, vwad_fd fd) {
   if (wad && fd >= 0 && fd < MAX_OPENED_FILES) {
     OpenedFile *fl = &wad->fds[fd];
     if (fl->fidx != VWAD_NOFIDX) return (int)fl->fofs;
   }
-  return -1;
+  return VWAD_ERROR;
 }
 
 
@@ -3235,11 +3406,11 @@ int vwad_tell (vwad_handle *wad, vwad_fd fd) {
 //  this is used in creator, to copy raw chunks
 //
 //==========================================================================
-int vwad_get_file_chunk_count (vwad_handle *wad, vwad_fidx fidx) {
+VWAD_PUBLIC int vwad_get_file_chunk_count (vwad_handle *wad, vwad_fidx fidx) {
   if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount) {
     return (int)wad->files[fidx].chunkCount;
   }
-  return -1;
+  return VWAD_ERROR;
 }
 
 
@@ -3250,20 +3421,24 @@ int vwad_get_file_chunk_count (vwad_handle *wad, vwad_fidx fidx) {
 //  this is used in creator, to copy raw chunks
 //
 //==========================================================================
-vwad_result vwad_get_raw_file_chunk_info (vwad_handle *wad, vwad_fidx fidx, int chunkidx,
-                                          int *pksz, int *upksz, vwad_bool *packed)
+VWAD_PUBLIC vwad_result vwad_get_raw_file_chunk_info (vwad_handle *wad, vwad_fidx fidx,
+                                                      int chunkidx,
+                                                      int *pksz, int *upksz, vwad_bool *packed)
 {
   if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount &&
       chunkidx >= 0 && chunkidx < (int)wad->files[fidx].chunkCount)
   {
-    const ChunkInfo *ci = &wad->chunks[wad->files[fidx].firstChunk + (vwad_uint)chunkidx];
-    if (upksz != NULL) *upksz = (int)ci->upksize + 1;
-    // packed size is with CRC32
-    if (pksz != NULL) *pksz = (int)(ci->pksize == 0 ? (int)ci->upksize + 1 : (int)ci->pksize) + 4;
-    if (packed != NULL) *packed = (ci->pksize != 0);
-    return 0;
+    const vwad_uint cc = vwad_find_chunk(wad, &wad->files[fidx], NULL, (vwad_uint)chunkidx);
+    if (cc != VWAD_BAD_CHUNK) {
+      const ChunkInfo *ci = &wad->chunks[cc];
+      if (upksz != NULL) *upksz = (int)ci->upksize + 1;
+      // packed size is with CRC32
+      if (pksz != NULL) *pksz = (int)(ci->pksize == 0 ? (int)ci->upksize + 1 : (int)ci->pksize) + 4;
+      if (packed != NULL) *packed = (ci->pksize != 0);
+      return VWAD_OK;
+    }
   }
-  return -1;
+  return VWAD_ERROR;
 }
 
 
@@ -3274,21 +3449,26 @@ vwad_result vwad_get_raw_file_chunk_info (vwad_handle *wad, vwad_fidx fidx, int 
 //  this is used in creator, to copy raw chunks
 //
 //==========================================================================
-vwad_result vwad_read_raw_file_chunk (vwad_handle *wad, vwad_fidx fidx, int chunkidx, void *buf) {
+VWAD_PUBLIC vwad_result vwad_read_raw_file_chunk (vwad_handle *wad, vwad_fidx fidx, int chunkidx,
+                                                  void *buf)
+{
   if (wad && fidx >= 0 && fidx < (vwad_fidx)wad->fileCount &&
       chunkidx >= 0 && chunkidx < (int)wad->files[fidx].chunkCount && buf != NULL)
   {
-    const FileInfo *fi = &wad->files[fidx];
-    const ChunkInfo *ci = &wad->chunks[fi->firstChunk + (vwad_uint)chunkidx];
-    const vwad_uint csize = (ci->pksize == 0 ? ci->upksize + 1u : ci->pksize) + 4u; /* with CRC32 */
-    if (wad->strm->seek(wad->strm, ci->ofs) != VWAD_OK) return -1;
-    if (wad->strm->read(wad->strm, buf, (int)csize) != VWAD_OK) return -1;
-    // decrypt chunk
-    const vwad_uint nonce = 4 + fi->firstChunk + (vwad_uint)chunkidx;
-    crypt_buffer(wad->xorRndSeed, nonce, buf, csize);
-    return 0;
+    FileInfo *fi = &wad->files[fidx];
+    const vwad_uint cc = vwad_find_chunk(wad, fi, NULL, (vwad_uint)chunkidx);
+    if (cc != VWAD_BAD_CHUNK) {
+      const ChunkInfo *ci = &wad->chunks[cc];
+      const vwad_uint csize = (ci->pksize == 0 ? ci->upksize + 1u : ci->pksize) + 4u; /* with CRC32 */
+      if (wad->strm->seek(wad->strm, (int)ci->ofs) != VWAD_OK) return VWAD_ERROR;
+      if (wad->strm->read(wad->strm, buf, (int)csize) != VWAD_OK) return VWAD_ERROR;
+      // decrypt chunk
+      const vwad_uint nonce = 4 + cc;
+      crypt_buffer(wad->xorRndSeed, nonce, buf, csize);
+      return VWAD_OK;
+    }
   }
-  return -1;
+  return VWAD_ERROR;
 }
 
 
@@ -3302,7 +3482,9 @@ vwad_result vwad_read_raw_file_chunk (vwad_handle *wad, vwad_fidx fidx, int chun
 //     1: not equal
 //
 //==========================================================================
-vwad_result vwad_wildmatch (const char *pat, vwad_uint plen, const char *str, vwad_uint slen) {
+VWAD_PUBLIC vwad_result vwad_wildmatch (const char *pat, vwad_uint plen,
+                                        const char *str, vwad_uint slen)
+{
   #define GETSCH(dst_)  do { \
     const char *stmp = &str[spos]; \
     const vwad_uint uclen = utf_char_len(stmp); \
@@ -3428,7 +3610,9 @@ vwad_result vwad_wildmatch (const char *pat, vwad_uint plen, const char *str, vw
 #ifdef VWAD_DEBUG_WILDPATH
 #include <stdio.h>
 #endif
-vwad_result vwad_wildmatch_path (const char *pat, vwad_uint plen, const char *str, vwad_uint slen) {
+VWAD_PUBLIC vwad_result vwad_wildmatch_path (const char *pat, vwad_uint plen,
+                                             const char *str, vwad_uint slen)
+{
   vwad_uint ppos, spos;
   vwad_bool pat_has_slash = 0;
   vwad_result res;
