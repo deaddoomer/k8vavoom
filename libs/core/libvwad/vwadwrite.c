@@ -21,6 +21,8 @@
 #define VWADWR_FILE_ENTRY_SIZE   (4 * 10)
 #define VWADWR_CHUNK_ENTRY_SIZE  (4 + 2 + 2)
 
+#define VWADWR_NO_CHUNKS  (0xffffffffU)
+
 #define VWADWR_PUBLIC
 
 
@@ -2101,12 +2103,15 @@ static char *normalize_name (vwadwr_memman *mman, const char *s) {
 
 
 // ////////////////////////////////////////////////////////////////////////// //
-#define HASH_BUCKETS  (1024)
+#define HASH_BUCKETS     (1024u)
+#define CHUNK_PAGE_SIZE  (32768u)
 
-typedef struct ChunkInfo_t ChunkInfo;
-struct ChunkInfo_t {
-  vwadwr_ushort pksize;  // packed chunk size (0 means "unpacked")
-  ChunkInfo *next;
+#define CHUNK_PG_MAX     ((CHUNK_PAGE_SIZE/2u)-(unsigned)sizeof(void *))
+
+typedef struct ChunkPage_t ChunkPage;
+struct ChunkPage_t {
+  vwadwr_ushort pksize[CHUNK_PG_MAX];  // packed chunk size (0 means "unpacked")
+  ChunkPage *next;
 };
 
 
@@ -2125,8 +2130,9 @@ struct FileName_t {
 
 typedef struct ChunkFAT_t ChunkFAT;
 struct ChunkFAT_t {
-  vwadwr_uint index; // index of this chunk
-  ChunkFAT *next;   // next chunk in FAT
+  vwadwr_uint findex; // index of the first chunk
+  vwadwr_uint ccount; // number of consecutive chunks
+  ChunkFAT *next;     // next chunk in FAT list
 };
 
 // `FileInfo` flags
@@ -2155,9 +2161,6 @@ struct FileInfo_t {
   vwadwr_uint flags;      // see `FI_xxx` constants
   vwadwr_uint wrpos;      // position in `wrchunk`
   char wrchunk[65536];    // buffered data for the current chunk
-  // two chunk comression buffers (data and CRC32)
-  char pkbuf0[65536 + 4];
-  char pkbuf1[65536 + 4];
   FileInfo *next;
 };
 
@@ -2182,8 +2185,8 @@ struct vwadwr_archive_t {
   vwadwr_bool has_privkey;
   ed25519_public_key pubkey; // this is also chacha20 key
   MainFileHeader mhdr;
-  ChunkInfo *chunksHead;
-  ChunkInfo *chunksTail;
+  ChunkPage *chunkPagesHead;
+  ChunkPage *chunkPagesTail;
   GroupName *groupNames;
   vwadwr_uint xorRndSeed;
   vwadwr_uint xorRndSeedPK;
@@ -2200,6 +2203,10 @@ struct vwadwr_archive_t {
   FileInfo *buckets[HASH_BUCKETS];
   char author[256];
   char title[256];
+  // two chunk comression buffers (data and CRC32)
+  // we can keep them here, because chunk writing is serialised
+  char pkbuf0[65536 + 4];
+  char pkbuf1[65536 + 4];
 };
 
 
@@ -2271,9 +2278,9 @@ static void vwadwr_free_finfo (vwadwr_memman *mman, FileInfo *fi) {
 static void vwadwr_free_archive_memory (vwadwr_archive *wad) {
   vassert(wad);
   vwadwr_memman *mman = wad->mman;
-  ChunkInfo *ci = wad->chunksHead;
+  ChunkPage *ci = wad->chunkPagesHead;
   while (ci != NULL) {
-    ChunkInfo *cx = ci; ci = ci->next;
+    ChunkPage *cx = ci; ci = ci->next;
     xfree(mman, cx);
   }
   FileInfo *fi = wad->filesHead;
@@ -2754,6 +2761,44 @@ VWADWR_PUBLIC vwadwr_result vwadwr_check_dir (const vwadwr_archive *wad) {
 }
 
 
+typedef struct {
+  ChunkFAT *fat;
+  vwadwr_uint cidx; // in current item
+} ChunkIter;
+
+
+//==========================================================================
+//
+//  init_fat_iter
+//
+//==========================================================================
+static CC25519_INLINE void fat_iter_init (ChunkIter *it, ChunkFAT *fatHead) {
+  vassert(it);
+  vassert(!fatHead || fatHead->ccount != 0);
+  it->fat = fatHead;
+  it->cidx = 0;
+}
+
+
+//==========================================================================
+//
+//  fat_iter_next
+//
+//  returns `VWADWR_NO_CHUNKS` if there are no more chunks
+//
+//==========================================================================
+static CC25519_INLINE vwadwr_uint fat_iter_next (ChunkIter *it) {
+  vwadwr_uint res = VWADWR_NO_CHUNKS;
+  vassert(it);
+  if (it->fat) {
+    res = it->fat->findex + it->cidx;
+    it->cidx += 1;
+    if (it->cidx == it->fat->ccount) it->fat = it->fat->next;
+  }
+  return res;
+}
+
+
 //==========================================================================
 //
 //  vwadwr_write_directory
@@ -2813,11 +2858,18 @@ static vwadwr_result vwadwr_write_directory (vwadwr_archive *wad, vwadwr_iostrea
   put_u32(fdir + fdirofs, wad->fileCount); fdirofs += 4;
 
   // put chunks
-  for (ChunkInfo *ci = wad->chunksHead; ci; ci = ci->next) {
-    memcpy(fdir + fdirofs, &z32, 4); fdirofs += 4;
-    memcpy(fdir + fdirofs, &z16, 2); fdirofs += 2;
-    put_u16(fdir + fdirofs, ci->pksize); fdirofs += 2;
+  vwadwr_uint cwleft = wad->chunkCount;
+  for (ChunkPage *ci = wad->chunkPagesHead; cwleft && ci; ci = ci->next) {
+    vwadwr_uint ccx = 0;
+    while (ccx < CHUNK_PG_MAX && cwleft) {
+      memcpy(fdir + fdirofs, &z32, 4); fdirofs += 4;
+      memcpy(fdir + fdirofs, &z16, 2); fdirofs += 2;
+      put_u16(fdir + fdirofs, ci->pksize[ccx]); fdirofs += 2;
+      ccx += 1;
+      cwleft -= 1;
+    }
   }
+  vassert(cwleft == 0);
   vassert(fdirofs = 4+4 + wad->chunkCount*VWADWR_CHUNK_ENTRY_SIZE);
 
   // build fat table
@@ -2826,15 +2878,19 @@ static vwadwr_result vwadwr_write_directory (vwadwr_archive *wad, vwadwr_iostrea
     for (vwadwr_uint f = 0; f < wad->chunkCount; f += 1) fatPtr[f] = 0xfffffffeU;
     // fill the table
     for (FileInfo *fi = wad->filesHead; fi; fi = fi->next) {
-      ChunkFAT *fat = fi->fatHead;
-      while (fat != NULL) {
-        vassert(fat->index < wad->chunkCount);
-        if (fat->next != NULL) {
-          fatPtr[fat->index] = fat->next->index;
-        } else {
-          fatPtr[fat->index] = 0xffffffffU;
-        }
-        fat = fat->next;
+      vwadwr_uint fcc = fi->chunkCount;
+      if (fcc != 0) {
+        ChunkIter it;
+        fat_iter_init(&it, fi->fatHead);
+        vwadwr_uint cc = fat_iter_next(&it);
+        vassert(cc != VWADWR_NO_CHUNKS);
+        do {
+          vwadwr_uint nextcc = fat_iter_next(&it);
+          fatPtr[cc] = nextcc;
+          cc = nextcc;
+          fcc -= 1;
+        } while (cc != VWADWR_NO_CHUNKS);
+        vassert(fcc == 0);
       }
     }
     // convert offsets to deltas, and check the table
@@ -2894,7 +2950,7 @@ static vwadwr_result vwadwr_write_directory (vwadwr_archive *wad, vwadwr_iostrea
   for (FileInfo *fi = wad->filesHead; fi; fi = fi->next) {
     vassert(fi->fname->nameofs != 0);
     if (fatSize && fi->fatHead) {
-      memcpy(fdir + fdirofs, &fi->fatHead->index, 4); // first chunk will be calculated
+      memcpy(fdir + fdirofs, &fi->fatHead->findex, 4);
     } else {
       memcpy(fdir + fdirofs, &z32, 4); // first chunk will be calculated
     }
@@ -3056,25 +3112,26 @@ static vwadwr_result vwadwr_append_chunk (vwadwr_archive *wad, vwadwr_ushort pks
     set_error(wad);
     return VWADWR_ERR_CHUNK_COUNT;
   }
-  ChunkInfo *ci = zalloc(wad->mman, (vwadwr_uint)sizeof(ChunkInfo));
-  if (ci != NULL) {
-    ci->pksize = pksize;
-    ci->next = NULL;
-    if (wad->chunksHead == NULL) {
-      vassert(wad->chunkCount == 0);
-      wad->chunksHead = ci;
-    } else {
-      vassert(wad->chunkCount != 0);
-      wad->chunksTail->next = ci;
+  ChunkPage *pg;
+  vwadwr_uint lppos = wad->chunkCount % CHUNK_PG_MAX;
+  if (lppos == 0) {
+    // need new page
+    pg = zalloc(wad->mman, (vwadwr_uint)sizeof(ChunkPage));
+    if (pg == NULL) {
+      set_error(wad);
+      return VWADWR_ERR_MEM;
     }
-    wad->chunkCount += 1;
-    vassert(wad->chunkCount != 0);
-    wad->chunksTail = ci;
-    return VWADWR_OK;
+    if (wad->chunkPagesTail) wad->chunkPagesTail->next = pg;
+    else wad->chunkPagesHead = pg;
+    pg->next = NULL;
+    wad->chunkPagesTail = pg;
   } else {
-    set_error(wad);
-    return VWADWR_ERR_MEM;
+    pg = wad->chunkPagesTail;
   }
+  pg->pksize[lppos] = pksize;
+  wad->chunkCount += 1;
+  vassert(wad->chunkCount != 0);
+  return VWADWR_OK;
 }
 
 
@@ -3353,6 +3410,62 @@ VWADWR_PUBLIC vwadwr_result vwadwr_create_raw_file (vwadwr_archive *wad,
 
 //==========================================================================
 //
+//  append_fat_chunk
+//
+//  this appends next used chunk to the file FAT
+//
+//==========================================================================
+static vwadwr_result append_fat_chunk (vwadwr_archive *wad, FileInfo *fi) {
+  vassert(wad);
+  vassert(fi);
+
+  const vwadwr_uint nchunk = wad->chunkCount;
+
+  ChunkFAT *seg = fi->fatTail;
+  // check if our file becomes segmented
+  if (seg != NULL) {
+    const vwadwr_uint lchunk = seg->findex + seg->ccount;
+    if (lchunk != nchunk) {
+      // segmented; need new segment
+      if ((fi->flags&FI_SEGMENTED) == 0) {
+        fi->flags |= FI_SEGMENTED;
+        vwadwr_force_fat(wad); // set archive header flag
+      }
+      seg = zalloc(wad->mman, (vwadwr_uint)sizeof(ChunkFAT));
+      if (seg == NULL) {
+        set_error(wad);
+        return VWADWR_ERR_MEM;
+      }
+      seg->findex = nchunk;
+      seg->ccount = 1;
+      seg->next = NULL;
+      if (fi->fatTail != NULL) fi->fatTail->next = seg; else fi->fatHead = seg;
+      fi->fatTail = seg;
+    } else {
+      // grow segment
+      seg->ccount += 1;
+    }
+  } else {
+    // first segment
+    seg = zalloc(wad->mman, (vwadwr_uint)sizeof(ChunkFAT));
+    if (seg == NULL) {
+      set_error(wad);
+      return VWADWR_ERR_MEM;
+    }
+    seg->findex = nchunk;
+    seg->ccount = 1;
+    seg->next = NULL;
+    vassert(fi->fatHead == NULL);
+    fi->fatHead = seg;
+    fi->fatTail = seg;
+  }
+
+  return VWADWR_OK;
+}
+
+
+//==========================================================================
+//
 //  vwadwr_flush_chunk
 //
 //==========================================================================
@@ -3375,7 +3488,7 @@ static vwadwr_result vwadwr_flush_chunk (vwadwr_archive *wad, FileInfo *fi) {
   // compress
   const vwadwr_uint rd = fi->wrpos;
   const vwadwr_uint crc32 = crc32_buf(fi->wrchunk, rd);
-  char *dest = fi->pkbuf0; // compressed buffer
+  char *dest = wad->pkbuf0; // compressed buffer
   int pks;
 
   if (fi->flags&FI_ALLOW_LZ) {
@@ -3389,10 +3502,10 @@ static vwadwr_result vwadwr_flush_chunk (vwadwr_archive *wad, FileInfo *fi) {
     if (fi->flags&FI_ALLOW_LITONLY) {
       int pks1 = pks - 1;
       if (pks1 <= 0) pks1 = 65535;
-      pks1 = CompressLZFF3LitOnly(fi->wrchunk, rd, fi->pkbuf1 + 4, pks1);
+      pks1 = CompressLZFF3LitOnly(fi->wrchunk, rd, wad->pkbuf1 + 4, pks1);
       if (pks1 > 0 && (pks <= 0 || pks1 < pks)) {
         // use this buffer
-        dest = fi->pkbuf1;
+        dest = wad->pkbuf1;
         pks = pks1;
       }
     }
@@ -3406,24 +3519,9 @@ static vwadwr_result vwadwr_flush_chunk (vwadwr_archive *wad, FileInfo *fi) {
     }
   }
 
-  // check if our file becomes segmented
-  if ((fi->flags&FI_SEGMENTED) == 0 && fi->fatTail != NULL &&
-      fi->fatTail->index + 1u != wad->chunkCount)
-  {
-    fi->flags |= FI_SEGMENTED;
-    vwadwr_force_fat(wad); // set archive header flag
-  }
-
   // append new file segment
-  ChunkFAT *seg = zalloc(wad->mman, (vwadwr_uint)sizeof(ChunkFAT));
-  if (seg == NULL) {
-    set_error(wad);
-    return VWADWR_ERR_MEM;
-  }
-  seg->index = wad->chunkCount;
-  seg->next = NULL;
-  if (fi->fatTail != NULL) fi->fatTail->next = seg; else fi->fatHead = seg;
-  fi->fatTail = seg;
+  rescode = append_fat_chunk(wad, fi);
+  if (rescode != VWADWR_OK) return rescode;
 
   // append chunk and write it
   const vwadwr_uint nonce = 4 + wad->chunkCount;
@@ -3613,26 +3711,12 @@ VWADWR_PUBLIC vwadwr_result vwadwr_write_raw_chunk (vwadwr_archive *wad, vwadwr_
     return VWADWR_ERR_CHUNK_COUNT;
   }
 
-  // check if our file becomes segmented
-  if ((fi->flags&FI_SEGMENTED) == 0 && fi->fatTail != NULL &&
-      fi->fatTail->index + 1u != wad->chunkCount)
-  {
-    fi->flags |= FI_SEGMENTED;
-    vwadwr_force_fat(wad); // set archive header flag
-  }
+  vwadwr_result rescode;
 
   // append new file segment
-  ChunkFAT *seg = zalloc(wad->mman, (vwadwr_uint)sizeof(ChunkFAT));
-  if (seg == NULL) {
-    set_error(wad);
-    return VWADWR_ERR_MEM;
-  }
-  seg->index = wad->chunkCount;
-  seg->next = NULL;
-  if (fi->fatTail != NULL) fi->fatTail->next = seg; else fi->fatHead = seg;
-  fi->fatTail = seg;
+  rescode = append_fat_chunk(wad, fi);
+  if (rescode != VWADWR_OK) return rescode;
 
-  vwadwr_result rescode;
   const vwadwr_uint nonce = 4 + wad->chunkCount;
   vwadwr_uint csz = (vwadwr_uint)pksz - 4;
   if (!packed) {
@@ -3645,9 +3729,9 @@ VWADWR_PUBLIC vwadwr_result vwadwr_write_raw_chunk (vwadwr_archive *wad, vwadwr_
     if (rescode != VWADWR_OK) return rescode;
   }
   csz += 4; /* crc32 */
-  memcpy(fi->pkbuf0, chunk, csz);
-  crypt_buffer(wad->xorRndSeed, nonce, fi->pkbuf0, csz);
-  if (wad->outstrm->write(wad->outstrm, fi->pkbuf0, csz) != VWADWR_OK) {
+  memcpy(wad->pkbuf0, chunk, csz);
+  crypt_buffer(wad->xorRndSeed, nonce, wad->pkbuf0, csz);
+  if (wad->outstrm->write(wad->outstrm, wad->pkbuf0, csz) != VWADWR_OK) {
     set_error(wad);
     return VWADWR_ERR_IO_ERROR;
   }
