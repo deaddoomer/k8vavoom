@@ -171,12 +171,22 @@ void VVWadFile::OpenArchive (VStream *fstream) {
   if (vwad_has_pubkey(vw_handle) && vwad_is_authenticated(vw_handle)) {
     vwad_public_key pubkey;
     if (vwad_get_pubkey(vw_handle, pubkey) == 0) {
+      vwad_z85_key asciikey;
+      char finger[64];
+      for (int f = 0; f < 4; f += 1) {
+        snprintf(finger + f*5, 6, ":%02x%02x",
+                 ((const unsigned char *)pubkey)[f*2],
+                 ((const unsigned char *)pubkey)[f*2+1]);
+      }
+      finger[0] = ' ';
+      vwad_z85_encode_key(pubkey, asciikey);
+      GLog.Logf(NAME_Init, "PUBLIC KEY: %s", asciikey);
       if (memcmp(pubkey, k8PubKey, sizeof(pubkey)) == 0) {
-        GLog.Logf(NAME_Init, "SIGNED BY: Ketmar Dark");
+        GLog.Logf(NAME_Init, "SIGNED BY: Ketmar Dark (genuine; fingerprint:%s)", finger);
       } else {
         const char *signer = FSYS_FindPublicKey(pubkey);
         if (signer) {
-          GLog.Logf(NAME_Init, "SIGNED BY: %s", signer);
+          GLog.Logf(NAME_Init, "SIGNED BY: %s (fingerprint:%s)", signer, finger);
         } else {
           GLog.Logf(NAME_Init, "SIGNED ARCHIVE");
         }
