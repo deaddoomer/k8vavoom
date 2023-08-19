@@ -38,6 +38,7 @@
   is unicode-aware, not all codepoints are implemented. latin-1 and
   basic cyrillic should be safe, though.
   path delimiter is "/" (and only "/").
+  file names may not contain chars [1..31], and char 127.
 
   archive can be tagged with author name, short description, and a comment.
   author name and description can contain unicode chars, but cannot have
@@ -250,12 +251,16 @@ vwad_bool vwad_has_pubkey (vwad_handle *wad);
 // it doesn't matter if the archive was authenticated or not.
 vwad_result vwad_get_pubkey (vwad_handle *wad, vwad_public_key pubkey);
 
-// return maximum fidx in this wad.
+// returns maximum fidx in this wad.
 // avaliable files are [0..res).
 // on error, returns 0.
 vwad_fidx vwad_get_archive_file_count (vwad_handle *wad);
 
-// returns NULL on invalid `fidx`; group name can be empty string
+// returns NULL on invalid `fidx`; group name can be empty string.
+// WARNING! while currenly VWAD creation tools will use the same
+//          name (pointer) for the same group name, this is not
+//          enforced, and you should not rely on it. always compare
+//          string contents instead.
 const char *vwad_get_file_group_name (vwad_handle *wad, vwad_fidx fidx);
 
 // first index is 0, last is `vwad_get_file_count() - 1`.
@@ -370,14 +375,19 @@ vwad_result vwad_wildmatch_path (const char *pat, vwad_uint plen, const char *st
 // WARNING! the following API works only with unicode plane 1 -- [0..65535]!
 
 // "invalid char" unicode code
-#define VWAD_REPLACEMENT_CHAR  (0x0FFFD)
+#define VWAD_REPLACEMENT_CHAR  (0x0FFFDu)
 
 vwad_uint vwad_utf_char_len (const void *str);
-// advances `strp` at least by one byte
-// returns `VWAD_REPLACEMENT_CHAR` on invalid char
+// advances `strp` at least by one byte.
+// returns `VWAD_REPLACEMENT_CHAR` on invalid char.
+// invalid chars are thouse with invalid utf-8, 0x7f, and unprintable.
+// printable chars are determined with `vwad_is_uni_printable()`.
 vwad_ushort vwad_utf_decode (const char **strp);
 
+// control chars are not printable, except tab (0x09), and newline (0x0a).
+// del (0x7f) is not printable too.
 vwad_bool vwad_is_uni_printable (vwad_ushort ch);
+// supports only limited set of known chars (mostly latin and slavic).
 vwad_ushort vwad_uni_tolower (vwad_ushort ch);
 
 

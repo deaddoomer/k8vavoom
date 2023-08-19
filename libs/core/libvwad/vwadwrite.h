@@ -38,6 +38,7 @@
   is unicode-aware, not all codepoints are implemented. latin-1 and
   basic cyrillic should be safe, though.
   path delimiter is "/" (and only "/").
+  file names may not contain chars [1..31], and char 127.
   you can use `vwadwr_is_valid_file_name()` to check filename validity,
   and `vwadwr_is_valid_group_name()` to check group name validity.
 
@@ -406,14 +407,19 @@ vwadwr_result vwadwr_wildmatch_path (const char *pat, vwadwr_uint plen, const ch
 // WARNING! the following API works only with unicode plane 1 -- [0..65535]!
 
 // "invalid char" unicode code
-#define VWADWR_REPLACEMENT_CHAR  (0x0FFFD)
+#define VWADWR_REPLACEMENT_CHAR  (0x0FFFDu)
 
 vwadwr_uint vwadwr_utf_char_len (const void *str);
-// advances `strp` at least by one byte
-// returns `VWADWR_REPLACEMENT_CHAR` on invalid char
+// advances `strp` at least by one byte.
+// returns `VWADWR_REPLACEMENT_CHAR` on invalid char.
+// invalid chars are thouse with invalid utf-8, 0x7f, and unprintable.
+// printable chars are determined with `vwad_is_uni_printable()`.
 vwadwr_ushort vwadwr_utf_decode (const char **strp);
 
+// control chars are not printable, except tab (0x09), and newline (0x0a)
+// del (0x7f) is not printable too.
 vwadwr_bool vwadwr_is_uni_printable (vwadwr_ushort ch);
+// supports only limited set of known chars (mostly latin and slavic).
 vwadwr_ushort vwadwr_uni_tolower (vwadwr_ushort ch);
 
 

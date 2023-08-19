@@ -1494,14 +1494,17 @@ static intbool_t DecompressLZFF3 (const void *src, int srclen, void *dest, int u
 //
 //  is the given codepoint considered printable?
 //  i restrict it to some useful subset.
-//  unifuck is unifucked, but i hope that i sorted out all idiotic diactritics and control chars.
+//  unifuck is unifucked, but i hope that i sorted out all
+//  idiotic diactritics and control chars.
 //
 //==========================================================================
 static CC25519_INLINE vwad_bool is_uni_printable (vwad_ushort ch) {
   return
-    (ch >= 0x0001 && ch <= 0x024F) || // basic latin
+    ch == 0x09 || ch == 0x0A || // allow tabs and newlines control chars only
+    (ch >= 0x0020 && ch <= 0x7E) || // ASCII, without 0x7F
+    (ch >= 0x0080 && ch <= 0x024F) || // basic latin
     (ch >= 0x0390 && ch <= 0x0482) || // some greek, and cyrillic w/o combiners
-    (ch >= 0x048A && ch <= 0x052F) ||
+    (ch >= 0x048A && ch <= 0x052F) || // more slavic
     (ch >= 0x1E00 && ch <= 0x1EFF) || // latin extended additional
     (ch >= 0x2000 && ch <= 0x2C7F) || // some general punctuation, extensions, etc.
     (ch >= 0x2E00 && ch <= 0x2E42) || // supplemental punctuation
@@ -1541,7 +1544,7 @@ static CC25519_INLINE vwad_ushort utf_decode (const char **strp) {
     res = VWAD_REPLACEMENT_CHAR;
     *strp += 1;
   } else if (ch < 0x80) {
-    if (ch == 0x7f) res = VWAD_REPLACEMENT_CHAR; else res = ch;
+    res = ch;
     *strp += 1;
   } else if ((ch&0x0E0) == 0x0C0) {
     if (ch == 0x0C0 || ch == 0x0C1) {
@@ -1636,7 +1639,7 @@ VWAD_PUBLIC vwad_bool vwad_is_uni_printable (vwad_ushort ch) {
 //
 //==========================================================================
 VWAD_PUBLIC vwad_ushort vwad_utf_decode (const char **strp) {
-  return utf_decode(strp);
+  return (strp ? utf_decode(strp) : VWAD_REPLACEMENT_CHAR);
 }
 
 

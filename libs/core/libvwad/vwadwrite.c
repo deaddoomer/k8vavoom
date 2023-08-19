@@ -1845,14 +1845,17 @@ VWADWR_PUBLIC vwadwr_uint vwadwr_crc32_final (vwadwr_uint crc32) { return crc32_
 //
 //  is the given codepoint considered printable?
 //  i restrict it to some useful subset.
-//  unifuck is unifucked, but i hope that i sorted out all idiotic diactritics and control chars.
+//  unifuck is unifucked, but i hope that i sorted out all
+//  idiotic diactritics and control chars.
 //
 //==========================================================================
 static CC25519_INLINE vwadwr_bool is_uni_printable (vwadwr_ushort ch) {
   return
-    (ch >= 0x0001 && ch <= 0x024F) || // basic latin
+    ch == 0x09 || ch == 0x0A || // allow tabs and newlines control chars only
+    (ch >= 0x0020 && ch <= 0x7E) || // ASCII, without 0x7F
+    (ch >= 0x0080 && ch <= 0x024F) || // basic latin
     (ch >= 0x0390 && ch <= 0x0482) || // some greek, and cyrillic w/o combiners
-    (ch >= 0x048A && ch <= 0x052F) ||
+    (ch >= 0x048A && ch <= 0x052F) || // more slavic
     (ch >= 0x1E00 && ch <= 0x1EFF) || // latin extended additional
     (ch >= 0x2000 && ch <= 0x2C7F) || // some general punctuation, extensions, etc.
     (ch >= 0x2E00 && ch <= 0x2E42) || // supplemental punctuation
@@ -1892,7 +1895,7 @@ static CC25519_INLINE vwadwr_ushort utf_decode (const char **strp) {
     res = VWADWR_REPLACEMENT_CHAR;
     *strp += 1;
   } else if (ch < 0x80) {
-    if (ch == 0x7f) res = VWADWR_REPLACEMENT_CHAR; else res = ch;
+    res = ch;
     *strp += 1;
   } else if ((ch&0x0E0) == 0x0C0) {
     if (ch == 0x0C0 || ch == 0x0C1) {
@@ -1987,7 +1990,7 @@ VWADWR_PUBLIC vwadwr_bool vwadwr_is_uni_printable (vwadwr_ushort ch) {
 //
 //==========================================================================
 VWADWR_PUBLIC vwadwr_ushort vwadwr_utf_decode (const char **strp) {
-  return utf_decode(strp);
+  return (strp ? utf_decode(strp) : VWADWR_REPLACEMENT_CHAR);
 }
 
 
@@ -2673,11 +2676,6 @@ VWADWR_PUBLIC vwadwr_iostream *vwadwr_get_outstrm (vwadwr_archive *wad) {
 //
 //==========================================================================
 VWADWR_PUBLIC vwadwr_bool vwadwr_is_valid_file_name (const char *str) {
-  if (!str || !str[0] || str[0] == '/') return 0;
-  vwadwr_uint slen = 0;
-  while (slen <= 255 && str[slen] != 0) slen += 1;
-  if (slen > 255) return 0;
-  if (str[slen - 1] == '/') return 0; // should not end with a slash
   return is_valid_file_name(str);
 }
 
