@@ -4,9 +4,12 @@
 /* this will try to use the best PRNG available */
 #include "prng_randombytes.h"
 
-#include <stdint.h>
+/*#include <stdint.h>*/
 #include <stdlib.h>
-#ifndef WIN32
+#include <string.h>
+#ifdef WIN32
+# include <windows.h>
+#else
 # include <unistd.h>
 # include <fcntl.h>
 # include <errno.h>
@@ -26,14 +29,38 @@ extern "C" {
 #endif
 
 
-static inline uint32_t isaac_rra (uint32_t value, unsigned int count) { return (value>>count)|(value<<(32-count)); }
-static inline uint32_t isaac_rla (uint32_t value, unsigned int count) { return (value<<count)|(value>>(32-count)); }
+// this should be 8 bit (i hope so)
+typedef unsigned char xprng_ubyte;
+// this should be 32 bit (i hope so)
+typedef unsigned int xprng_uint;
+// this should be 64 bit (i hope so)
+typedef unsigned long long xprng_uint64;
 
-static inline void isaac_getu32 (uint8_t *p, const uint32_t v) {
-  p[0] = (uint8_t)(v&0xffu);
-  p[1] = (uint8_t)((v>>8)&0xffu);
-  p[2] = (uint8_t)((v>>16)&0xffu);
-  p[3] = (uint8_t)((v>>24)&0xffu);
+// size checks
+typedef char xprng_temp_typedef_check_ubyte[(sizeof(xprng_ubyte) == 1) ? 1 : -1];
+typedef char xprng_temp_typedef_check_uint[(sizeof(xprng_uint) == 4) ? 1 : -1];
+typedef char xprng_temp_typedef_check_uint64[(sizeof(xprng_uint64) == 8) ? 1 : -1];
+
+
+static int g_xrng_strong_seed = 0;
+
+
+/* turning off inlining saves ~5kb of binary code on x86 */
+#ifdef _MSC_VER
+# define XPRNG_INLINE  __forceinline
+#else
+# define XPRNG_INLINE  inline __attribute__((always_inline))
+#endif
+
+
+static XPRNG_INLINE xprng_uint isaac_rra (xprng_uint value, unsigned int count) { return (value>>count)|(value<<(32-count)); }
+static XPRNG_INLINE xprng_uint isaac_rla (xprng_uint value, unsigned int count) { return (value<<count)|(value>>(32-count)); }
+
+static XPRNG_INLINE void isaac_getu32 (xprng_ubyte *p, const xprng_uint v) {
+  p[0] = (xprng_ubyte)(v&0xffu);
+  p[1] = (xprng_ubyte)((v>>8)&0xffu);
+  p[2] = (xprng_ubyte)((v>>16)&0xffu);
+  p[3] = (xprng_ubyte)((v>>24)&0xffu);
 }
 
 /*
@@ -41,12 +68,12 @@ static inline void isaac_getu32 (uint8_t *p, const uint32_t v) {
  * things. This is the "first in, first out" option!
  */
 typedef struct isaacp_state_t {
-  uint32_t state[256];
-  uint8_t buffer[1024];
+  xprng_uint state[256];
+  xprng_ubyte buffer[1024];
   union __attribute__((packed)) {
-    uint32_t abc[3];
+    xprng_uint abc[3];
     struct __attribute__((packed)) {
-      uint32_t a, b, c;
+      xprng_uint a, b, c;
     };
   };
   size_t left;
@@ -60,11 +87,11 @@ typedef struct isaacp_state_t {
   b = (x+a)^mm[(y>>10)&0xffu]; \
   isaac_getu32(out+(i+offset)*4u, b);
 
-static inline void isaacp_mix (isaacp_state *st) {
-  uint32_t x, y;
-  uint32_t a = st->a, b = st->b, c = st->c;
-  uint32_t *mm = st->state;
-  uint8_t *out = st->buffer;
+static XPRNG_INLINE void isaacp_mix (isaacp_state *st) {
+  xprng_uint x, y;
+  xprng_uint a = st->a, b = st->b, c = st->c;
+  xprng_uint *mm = st->state;
+  xprng_ubyte *out = st->buffer;
   c = c+1u;
   b = b+c;
   for (unsigned i = 0u; i < 256u; i += 4u) {
@@ -80,7 +107,7 @@ static inline void isaacp_mix (isaacp_state *st) {
 }
 
 static void isaacp_random (isaacp_state *st, void *p, size_t len) {
-  uint8_t *c = (uint8_t *)p;
+  xprng_ubyte *c = (xprng_ubyte *)p;
   while (len) {
     const size_t use = (len > st->left ? st->left : len);
     memcpy(c, st->buffer+(sizeof(st->buffer)-st->left), use);
@@ -94,17 +121,17 @@ static void isaacp_random (isaacp_state *st, void *p, size_t len) {
 
 // ////////////////////////////////////////////////////////////////////////// //
 // SplitMix; mostly used to generate 64-bit seeds
-static inline uint64_t splitmix64_next (uint64_t *state) {
-  uint64_t result = *state;
-  *state = result+(uint64_t)0x9E3779B97f4A7C15ULL;
-  result = (result^(result>>30))*(uint64_t)0xBF58476D1CE4E5B9ULL;
-  result = (result^(result>>27))*(uint64_t)0x94D049BB133111EBULL;
+static XPRNG_INLINE xprng_uint64 splitmix64_next (xprng_uint64 *state) {
+  xprng_uint64 result = *state;
+  *state = result+(xprng_uint64)0x9E3779B97f4A7C15ULL;
+  result = (result^(result>>30))*(xprng_uint64)0xBF58476D1CE4E5B9ULL;
+  result = (result^(result>>27))*(xprng_uint64)0x94D049BB133111EBULL;
   return result^(result>>31);
 }
 
-static inline void splitmix64_seedU64 (uint64_t *state, uint32_t seed0, uint32_t seed1) {
+static XPRNG_INLINE void splitmix64_seedU64 (xprng_uint64 *state, xprng_uint seed0, xprng_uint seed1) {
   // hashU32
-  uint32_t res = seed0;
+  xprng_uint res = seed0;
   res -= (res<<6);
   res ^= (res>>17);
   res -= (res<<9);
@@ -112,10 +139,10 @@ static inline void splitmix64_seedU64 (uint64_t *state, uint32_t seed0, uint32_t
   res -= (res<<3);
   res ^= (res<<10);
   res ^= (res>>15);
-  uint64_t n = res;
+  xprng_uint64 n = res;
   n <<= 32;
   // hashU32
-  res = seed1;
+  res += seed1; // `+=`!
   res -= (res<<6);
   res ^= (res>>17);
   res -= (res<<9);
@@ -129,8 +156,9 @@ static inline void splitmix64_seedU64 (uint64_t *state, uint32_t seed0, uint32_t
 
 
 #ifdef WIN32
-#include <windows.h>
-typedef BOOLEAN WINAPI (*RtlGenRandomFn) (PVOID RandomBuffer,ULONG RandomBufferLength);
+// ////////////////////////////////////////////////////////////////////////// //
+// use shitdoze `RtlGenRandom()` if possible
+typedef BOOLEAN WINAPI (*RtlGenRandomFn) (PVOID RandomBuffer, ULONG RandomBufferLength);
 
 static void RtlGenRandomX (PVOID RandomBuffer, ULONG RandomBufferLength) {
   if (RandomBufferLength <= 0) return;
@@ -143,24 +171,29 @@ static void RtlGenRandomX (PVOID RandomBuffer, ULONG RandomBufferLength) {
     if (RtlGenRandomXX) {
       BOOLEAN res = RtlGenRandomXX(RandomBuffer, RandomBufferLength);
       FreeLibrary(libh);
-      if (res) return;
+      if (res) {
+        g_xrng_strong_seed = 1;
+        return;
+      }
       //fprintf(stderr, "WARNING: `RtlGenRandom()` fallback for %u bytes!\n", (unsigned)RandomBufferLength);
     }
   }
+  // use some semi-random shit to seed ISAAC+, and ask it for random numbers
   isaacp_state rng;
-  // initialise isaacp with some shit
-  uint32_t smxseed0 = 0;
-  uint32_t smxseed1 = (uint32_t)GetCurrentProcessId();
+  // initialise ISAAC+ with some shit
+  xprng_uint smxseed0 = 0;
+  xprng_uint smxseed1 = (xprng_uint)GetCurrentProcessId();
   SYSTEMTIME st;
   FILETIME ft;
   GetLocalTime(&st);
   if (!SystemTimeToFileTime(&st, &ft)) {
     //fprintf(stderr, "SHIT: `SystemTimeToFileTime()` failed!\n");
-    smxseed0 = (uint32_t)(GetTickCount());
+    smxseed0 = (xprng_uint)(GetTickCount());
   } else {
-    smxseed0 = (uint32_t)(ft.dwLowDateTime);
+    smxseed0 = (xprng_uint)(ft.dwLowDateTime);
   }
-  uint64_t smx;
+  // use SplitMix to generate ISAAC+ seed
+  xprng_uint64 smx;
   splitmix64_seedU64(&smx, smxseed0, smxseed1);
   for (unsigned n = 0; n < 256; ++n) rng.state[n] = splitmix64_next(&smx);
   rng.a = splitmix64_next(&smx);
@@ -171,10 +204,8 @@ static void RtlGenRandomX (PVOID RandomBuffer, ULONG RandomBufferLength) {
   // generate random bytes with ISAAC+
   isaacp_random(&rng, RandomBuffer, RandomBufferLength);
 }
-#endif
 
-
-#if defined(__linux__) && !defined(ANDROID)
+#elif defined(__linux__) && !defined(ANDROID)
 #include <sys/syscall.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -183,29 +214,26 @@ static void RtlGenRandomX (PVOID RandomBuffer, ULONG RandomBufferLength) {
 #include <errno.h>
 /*#include <stdio.h>*/
 
-#ifdef SYS_getrandom
-static unsigned int skip_getrandom = 0; // 0:nope
-#endif
-
 static ssize_t why_glibc_is_so_fucked_get_random (void *buf, size_t bufsize) {
   #ifdef SYS_getrandom
   # ifndef GRND_NONBLOCK
   #  define GRND_NONBLOCK (1)
   # endif
-  if (!skip_getrandom) {
-    for (;;) {
-      ssize_t ret = syscall(SYS_getrandom, buf, bufsize, GRND_NONBLOCK);
-      if (ret >= 0) {
-        /*fprintf(stderr, "*** SYS_getrandom is here! read %u bytes out of %u\n", (unsigned)ret, (unsigned)bufsize);*/
-        return ret;
-      }
-      if (ret != -EINTR) break;
+  for (;;) {
+    ssize_t ret = syscall(SYS_getrandom, buf, bufsize, GRND_NONBLOCK);
+    if (ret >= 0) {
+      /*fprintf(stderr, "*** SYS_getrandom is here! read %u bytes out of %u\n", (unsigned)ret, (unsigned)bufsize);*/
+      return ret;
     }
-    skip_getrandom = 1; // fall back to /dev/urandom
+    if (ret != -EINTR) break;
   }
   #endif
   return -1;
 }
+#elif defined(__linux__) || defined(__SWITCH__)
+/* ok, do nothing */
+#else
+# error "unsupported OS!"
 #endif
 
 
@@ -217,11 +245,12 @@ static ssize_t why_glibc_is_so_fucked_get_random (void *buf, size_t bufsize) {
 //
 //==========================================================================
 static void randombytes_init (isaacp_state *rng) {
-  static __thread uint32_t xstate[256+3]; /* and `abc` */
+  xprng_uint xstate[256+3]; /* and `abc` */
   for (unsigned f = 0u; f < 256u+3u; ++f) xstate[f] = f+666u;
   memset(rng, 0, sizeof(isaacp_state));
   #ifdef __SWITCH__
   randomGet(xstate, sizeof(xstate));
+  g_xrng_strong_seed = 1; /* i hope so */
   #elif defined(WIN32)
   RtlGenRandomX(xstate, sizeof(xstate));
   #else
@@ -231,31 +260,25 @@ static void randombytes_init (isaacp_state *rng) {
   while (pos < sizeof(xstate)) {
     /* reads up to 256 bytes should not be interrupted by signals */
     size_t len = sizeof(xstate)-pos;
-    if (len > 256) len = 256;
-    /*
-    ssize_t rd = getrandom(((uint8_t *)xstate)+pos, len, 0);
-    if (rd < 0) {
-      if (errno != EINTR) break;
-    } else {
-      pos += (size_t)rd;
-    }
-    */
-    ssize_t rd = why_glibc_is_so_fucked_get_random(((uint8_t *)xstate)+pos, len);
+    if (len > 256) len = 256; /* maximum block for syscall; or at least i heard so */
+    ssize_t rd = why_glibc_is_so_fucked_get_random(((xprng_ubyte *)xstate)+pos, len);
     if (rd < 0) break;
     pos += (size_t)rd;
   }
   /* do not mix additional sources if we got all random bytes from kernel */
+  g_xrng_strong_seed = (pos == sizeof(xstate));
   const unsigned mixother = (pos != sizeof(xstate));
   #else
   const unsigned mixother = 1u;
   #endif
   /* fill up what is left with "/dev/urandom" */
+  /* note that "/dev/urandom" is considered strong too, even if it is tampered */
   if (pos < sizeof(xstate)) {
     int fd = open("/dev/urandom", O_RDONLY/*|O_CLOEXEC*/);
     if (fd >= 0) {
       while (pos < sizeof(xstate)) {
         size_t len = sizeof(xstate)-pos;
-        ssize_t rd = read(fd, ((uint8_t *)xstate)+pos, len);
+        ssize_t rd = read(fd, ((xprng_ubyte *)xstate)+pos, len);
         if (rd < 0) {
           if (errno != EINTR) break;
         } else {
@@ -263,12 +286,13 @@ static void randombytes_init (isaacp_state *rng) {
         }
       }
       close(fd);
+      g_xrng_strong_seed = (pos == sizeof(xstate));
     }
   }
   /* mix some other random sources, just in case */
   if (mixother) {
-    uint32_t smxseed0 = 0;
-    uint32_t smxseed1 = (uint32_t)getpid();
+    xprng_uint smxseed0 = 0;
+    xprng_uint smxseed1 = (xprng_uint)getpid();
     #if defined(__linux__)
     struct timespec ts;
     if (clock_gettime(CLOCK_REALTIME, &ts) == 0) {
@@ -285,8 +309,8 @@ static void randombytes_init (isaacp_state *rng) {
     gettimeofday(&tp, &tzp);
     smxseed0 = tp.tv_sec^tp.tv_usec;
     #endif
-    static __thread isaacp_state rngtmp;
-    uint64_t smx;
+    isaacp_state rngtmp;
+    xprng_uint64 smx;
     splitmix64_seedU64(&smx, smxseed0, smxseed1);
     for (unsigned n = 0; n < 256u; ++n) rngtmp.state[n] = splitmix64_next(&smx);
     rngtmp.a = splitmix64_next(&smx);
@@ -306,23 +330,81 @@ static void randombytes_init (isaacp_state *rng) {
 }
 
 
+#ifdef WIN32
+static volatile LONG g_xrng_lock = 0;
+#elif defined(__linux__) || defined(__SWITCH__)
+static volatile unsigned g_xrng_lock = 0;
+#else
+# error "unsupported OS!"
+#endif
+
+static unsigned g_xrng_initialized = 0;
+static isaacp_state g_xrng;
+
+
+//==========================================================================
+//
+//  prng_is_strong_seed
+//
+//==========================================================================
+int prng_is_strong_seed () {
+  int res;
+
+  // spinlock
+  #ifdef WIN32
+  while (InterlockedCompareExchange(&g_xrng_lock, 1, 0)) {}
+  #else
+  while (__atomic_exchange_n(&g_xrng_lock, 1, __ATOMIC_SEQ_CST)) {}
+  #endif
+
+  if (!g_xrng_initialized) {
+    randombytes_init(&g_xrng);
+    g_xrng_initialized = 1;
+  }
+
+  res = g_xrng_strong_seed;
+
+  // release lock
+  #ifdef WIN32
+  // `g_xrng_lock` is definitely `1` here
+  (void)InterlockedCompareExchange(&g_xrng_lock, 0, 1);
+  #else
+  __atomic_store_n(&g_xrng_lock, 0, __ATOMIC_SEQ_CST);
+  #endif
+
+  return res;
+}
+
+
 //==========================================================================
 //
 //  prng_randombytes
 //
 //==========================================================================
 void prng_randombytes (void *p, size_t len) {
-  static __thread unsigned initialized = 0u;
-  static __thread isaacp_state rng;
-
   if (!len || !p) return;
 
-  if (!initialized) {
-    randombytes_init(&rng);
-    initialized = 1u;
+  // spinlock
+  #ifdef WIN32
+  while (InterlockedCompareExchange(&g_xrng_lock, 1, 0)) {}
+  #else
+  while (__atomic_exchange_n(&g_xrng_lock, 1, __ATOMIC_SEQ_CST)) {}
+  #endif
+
+  if (!g_xrng_initialized) {
+    randombytes_init(&g_xrng);
+    g_xrng_initialized = 1;
   }
 
-  isaacp_random(&rng, p, len);
+  isaacp_random(&g_xrng, p, len);
+
+  // release lock
+  #ifdef WIN32
+  // `g_xrng_lock` is definitely `1` here
+  (void)InterlockedCompareExchange(&g_xrng_lock, 0, 1);
+  #else
+  __atomic_store_n(&g_xrng_lock, 0, __ATOMIC_SEQ_CST);
+  #endif
 }
 
 
