@@ -930,6 +930,7 @@ static VVA_OKUNUSED TVec CalculateSlideUnitVector (VEntity *mobj) {
 static VVA_FORCEINLINE void CorpseIdle (VEntity *mobj) {
   mobj->cslFlags &= ~(VEntity::CSL_CorpseSliding|VEntity::CSL_CorpseSlidingSlope);
   mobj->cslCheckDelay = -1.0f;
+  mobj->cslStartTime = 0.2f;
   //mobj->cslLastSub = nullptr;
 }
 
@@ -975,7 +976,12 @@ void VEntity::CorpseSlide (float deltaTime) {
           cslStartTime = XLevel->Time;
         } else if ((cslFlags&CSL_CorpseWasNudged) != 0 && cslLastPos == Origin) {
           // if cannot move since last check, it means that it stuck
-          cslStartTime = XLevel->Time - 1000.0f; // this will freeze it
+          if (cslStartTime > 0.0f) cslStartTime = 0.0f;
+          cslStartTime -= deltaTime;
+          if (cslStartTime < -2.666f) {
+            CorpseIdle(this);
+            return;
+          }
         }
       } else {
         // remember sliding start time
@@ -987,7 +993,7 @@ void VEntity::CorpseSlide (float deltaTime) {
 
       // if slided for too long, don't bother anymore
       const float slm = gm_slide_time_limit.asFloat();
-      if (slm > 0.0f && XLevel->Time - cslStartTime > slm) {
+      if (slm > 0.0f && cslStartTime > 0.0f && XLevel->Time - cslStartTime > slm) {
         CorpseIdle(this);
         #ifdef VV_DEBUG_CSL_VERBOSE
         GCon->Logf("CORPSE IDLE: %s(%u): tm=%g", GetClass()->GetName(),
@@ -1125,6 +1131,7 @@ COMMAND_WITH_AC(dbg_slide_awake_all) {
           (c->FlagsEx&VEntity::EFEX_Monster))
       {
         c->cslCheckDelay = 0.0f;
+        c->cslStartTime = 0.2f;
         c->cslFlags &= ~(VEntity::CSL_CorpseSliding|VEntity::CSL_CorpseSlidingSlope|VEntity::CSL_CorpseWasNudged);
         if (marknudged) c->cslFlags |= VEntity::CSL_CorpseWasNudged;
       }
@@ -1133,6 +1140,7 @@ COMMAND_WITH_AC(dbg_slide_awake_all) {
                (c->EntityFlags&(VEntity::EF_Solid|VEntity::EF_NoBlockmap)) == 0)
       {
         c->cslCheckDelay = 0.0f;
+        c->cslStartTime = 0.2f;
         c->cslFlags &= ~(VEntity::CSL_CorpseSliding|VEntity::CSL_CorpseSlidingSlope|VEntity::CSL_CorpseWasNudged);
         if (marknudged) c->cslFlags |= VEntity::CSL_CorpseWasNudged;
       }
@@ -1268,6 +1276,7 @@ void VEntity::Tick (float deltaTime) {
       // consider this corpse "fresh"
       CorpseIdle(this);
       cslCheckDelay = 0.1f + 0.2f*FRandom();
+      cslStartTime = 0.2f;
     }
 
     // is it not idle?
@@ -1300,6 +1309,7 @@ void VEntity::Tick (float deltaTime) {
       // consider this corpse "fresh"
       CorpseIdle(this);
       cslCheckDelay = 0.1f + 0.2f*FRandom();
+      cslStartTime = 0.2f;
     }
 
     // is it not idle?

@@ -414,7 +414,7 @@ class VEntity : public VThinker {
   };
   vuint32 cslFlags;
 
-  float cslStartTime; // slide starting time
+  float cslStartTime; // slide starting time; negative: accumulated "standing still" time
   float cslCheckDelay; // timeout before next check
   TVec cslLastPos; // need position for slopes and such
   //subsector_t *cslLastSub; // no need to keep sector here
