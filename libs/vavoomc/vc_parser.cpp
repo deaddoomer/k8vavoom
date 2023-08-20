@@ -313,7 +313,9 @@ int VParser::ParseArgList (const TLocation &stloc, VExpression **argv) {
         // omiting arguments is deprecated; use `default` instead
         if (!arg) {
           if (VMemberBase::koraxCompatibility) {
-            if (VMemberBase::koraxCompatibilityWarnings) ParseWarning(argloc, "use `default` to skip optional argument");
+            if (VMemberBase::koraxCompatibilityWarnings) {
+              ParseWarning(argloc, "use `default` to skip optional argument");
+            }
           } else {
             ParseError(argloc, "use `default` to skip optional argument");
           }
@@ -725,7 +727,9 @@ VExpression *VParser::ParseExpressionPriority0 () {
           // class<type> (deprecated)
           if (Lex.Token == TK_Less) {
             if (VMemberBase::koraxCompatibility) {
-              if (VMemberBase::koraxCompatibilityWarnings) ParseWarning(Lex.Location, "class<name> syntax is deprecated");
+              if (VMemberBase::koraxCompatibilityWarnings) {
+                ParseWarning(Lex.Location, "class<name> syntax is deprecated");
+              }
             } else {
               ParseError(Lex.Location, "class<name> syntax is deprecated");
             }
@@ -928,6 +932,7 @@ VExpression *VParser::ParseExpressionPriority1 () {
         }
         // array indexing
         op = new VArrayElement(op, ind, ind2, l);
+        ((VArrayElement *)op)->AllowPointerIndexing = UnsafeExpr;
       }
     } else {
       break;
@@ -1342,7 +1347,10 @@ VStatement *VParser::ParseForeachRange (const TLocation &l, VName aLabel) {
       }
       // fix value var type
       if (vex[vexcount-1].decl && !vex[vexcount-1].decl->Vars[0].TypeOfExpr) {
-        vex[vexcount-1].decl->Vars[0].TypeOfExpr = new VArrayElement(loarr->SyntaxCopy(), new VIntLiteral(0, vex[vexcount-1].decl->Vars[0].Loc), vex[vexcount-1].decl->Vars[0].Loc, true);
+        vex[vexcount-1].decl->Vars[0].TypeOfExpr =
+          new VArrayElement(loarr->SyntaxCopy(),
+                            new VIntLiteral(0, vex[vexcount-1].decl->Vars[0].Loc),
+                            vex[vexcount-1].decl->Vars[0].Loc, true);
       }
       for (int f = 0; f < vexcount; ++f) {
         if (vex[f].decl) {
@@ -1651,7 +1659,9 @@ VStatement *VParser::ParseStatement () {
           Lex.NextToken();
         } else {
           if (VMemberBase::koraxCompatibility) {
-            if (VMemberBase::koraxCompatibilityWarnings) ParseWarning(l, "use `{}` to create an empty statement");
+            if (VMemberBase::koraxCompatibilityWarnings) {
+              ParseWarning(l, "use `{}` to create an empty statement");
+            }
           } else {
             ParseError(l, "use `{}` to create an empty statement");
           }
@@ -1781,7 +1791,9 @@ VExpression *VParser::ParsePrimitiveType () {
         } else if (Lex.Check(TK_Less)) {
           // class<type>; deprecated
           if (VMemberBase::koraxCompatibility) {
-            if (VMemberBase::koraxCompatibilityWarnings) ParseWarning(Lex.Location, "class<name> syntax is deprecated");
+            if (VMemberBase::koraxCompatibilityWarnings) {
+              ParseWarning(Lex.Location, "class<name> syntax is deprecated");
+            }
           } else {
             ParseError(Lex.Location, "class<name> syntax is deprecated");
           }
@@ -1831,7 +1843,9 @@ VExpression *VParser::ParsePrimitiveType () {
           // array<type>; deprecated
           if (Lex.Token == TK_Less) {
             if (VMemberBase::koraxCompatibility) {
-              if (VMemberBase::koraxCompatibilityWarnings) ParseWarning(Lex.Location, "array<type> syntax is deprecated");
+              if (VMemberBase::koraxCompatibilityWarnings) {
+                ParseWarning(Lex.Location, "array<type> syntax is deprecated");
+              }
             } else {
               ParseError(Lex.Location, "array<type> syntax is deprecated");
             }

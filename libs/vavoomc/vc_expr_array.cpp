@@ -68,7 +68,8 @@ VArrayElement::VArrayElement (VExpression *AOp, VExpression *AInd, const TLocati
 //  VArrayElement::VArrayElement
 //
 //==========================================================================
-VArrayElement::VArrayElement (VExpression *AOp, VExpression *AInd, VExpression *AInd2, const TLocation &ALoc, bool aSkipBounds)
+VArrayElement::VArrayElement (VExpression *AOp, VExpression *AInd, VExpression *AInd2,
+                              const TLocation &ALoc, bool aSkipBounds)
   : VExpression(ALoc)
   , opscopy(nullptr)
   , genStringAssign(false)
@@ -79,6 +80,7 @@ VArrayElement::VArrayElement (VExpression *AOp, VExpression *AInd, VExpression *
   , AddressRequested(false)
   , IsAssign(false)
   , skipBoundsChecking(aSkipBounds)
+  , AllowPointerIndexing(false)
 {
   if (!ind) {
     ParseError(Loc, "Expression expected");
@@ -130,6 +132,7 @@ void VArrayElement::DoSyntaxCopyTo (VExpression *e) {
   res->AddressRequested = AddressRequested;
   res->IsAssign = IsAssign;
   res->skipBoundsChecking = skipBoundsChecking;
+  res->AllowPointerIndexing = AllowPointerIndexing;
 }
 
 
@@ -329,7 +332,13 @@ VExpression *VArrayElement::InternalResolve (VEmitContext &ec, bool assTarget) {
     if (ind->IsIntConst() && ind->GetIntConst() == 0) {
       // the only safe case, do nothing
     } else {
-      if (!VMemberBase::unsafeCodeAllowed) {
+      if (!AllowPointerIndexing) {
+        if (!op->Type.IsUntagged()) {
+          ParseError(Loc, "Cannot use pointer indexing on safe type '%s'", *op->Type.GetName());
+          delete this;
+          return nullptr;
+        }
+      } else if (!VMemberBase::unsafeCodeAllowed) {
         ParseError(Loc, "Unsafe pointer access is forbidden");
         delete this;
         return nullptr;
