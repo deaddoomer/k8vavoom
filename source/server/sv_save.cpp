@@ -4292,12 +4292,12 @@ COMMAND(AutoSaveLeave) {
 //
 //==========================================================================
 COMMAND(ShowSavePrefix) {
-  auto wadlist = FL_GetWadPk3ListSmall();
-  GCon->Log("==== MODS ====");
+  auto wadlist = FL_GetWadPk3List();
+  GCon->Log("==== MODS (full) ====");
   for (auto &&mname: wadlist) GCon->Logf("  %s", *mname);
   GCon->Log("----");
-  wadlist = FL_GetWadPk3List();
-  GCon->Log("==== MODS (full) ====");
+  wadlist = FL_GetWadPk3ListSmall();
+  GCon->Log("==== MODS (shortened) ====");
   for (auto &&mname: wadlist) GCon->Logf("  %s", *mname);
   GCon->Log("----");
   vuint64 hash = SV_GetModListHash(nullptr);
