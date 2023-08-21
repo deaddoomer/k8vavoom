@@ -430,26 +430,6 @@ static bool IsHideRemoveFilterFileName (VStr &fn) {
 
 //==========================================================================
 //
-//  FilterIt
-//
-//==========================================================================
-static void FilterIt (TArray<VStr> &arr, VStr base) {
-  if (!base.IsEmpty()) {
-    int idx = 0;
-    while (idx < arr.length()) {
-      VStr nx = arr[idx].StripExtension();
-      if (nx.strEqu(base)) {
-        arr.removeAt(idx);
-      } else {
-        idx += 1;
-      }
-    }
-  }
-}
-
-
-//==========================================================================
-//
 //  VFileDirectory::CheckLoneWad
 //
 //  check if this archive is "lone wad"
@@ -462,7 +442,6 @@ bool VFileDirectory::CheckLoneWad () {
 
   TArray<VStr> wads;
   TArray<VStr> txts;
-  TArray<VStr> dehs;
 
   // check for filters; collect .wad, .txt, .deh
   for (auto &&fi : files) {
@@ -476,27 +455,38 @@ bool VFileDirectory::CheckLoneWad () {
     if (fn.indexOf('/') >= 0) return false; // subdirs, don't bother
     // remember interesting files
     fn = fn.toLowerCase();
-    if (fn.endsWith(".wad")) wads.Append(fn);
-    else if (fn.strEqu("readme")) continue;
-    else if (fn.strEqu("readme.txt")) continue;
-    else if (fn.strEqu("credits.txt")) continue;
-    else if (fn.strEqu("authors.txt")) continue;
-    else if (fn.strEqu("license")) continue;
-    else if (fn.strEqu("license.txt")) continue;
-    else if (fn.endsWith(".txt")) txts.Append(fn);
-    else if (fn.endsWith(".deh")) dehs.Append(fn);
-    else return false;
+    if (fn.endsWith(".wad")) {
+      wads.Append(fn.StripExtension());
+    } else if (fn.strEqu("readme") || fn.strEqu("license") || fn.strEqu("authors")) {
+      // do nothing
+    } else {
+      VStr ext = fn.ExtractFileExtension();
+      if (ext == ".txt" || ext == ".bat" || ext == ".deh" || ext == ".cmd" || ext.IsEmpty()) {
+        txts.Append(fn.StripExtension());
+      } else {
+        return false;
+      }
+    }
   }
 
   if (wads.length() == 0) return false; // no wads, don't bother
 
-  for (VStr wad : wads) {
-    VStr base = wad.StripExtension();
-    FilterIt(txts, base);
-    FilterIt(dehs, base);
+  if (txts.length() != 0) {
+    for (VStr wad : wads) {
+      if (!wad.IsEmpty()) {
+        int idx = 0;
+        while (idx < txts.length()) {
+          if (wad.strEqu(txts[idx])) {
+            txts.removeAt(idx);
+          } else {
+            idx += 1;
+          }
+        }
+      }
+    }
   }
 
-  return (txts.length() == 0 && dehs.length() == 0);
+  return (txts.length() == 0);
 }
 
 
