@@ -537,6 +537,8 @@ if(NOT NO_SSE)
       endif(WITH_OLD_CPU)
     endif(NOT WIN32)
   endif()
+else(NOT NO_SSE)
+  set(K8_SSE "")
 endif(NOT NO_SSE)
 
 set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -mtune=${K8_ARCH} -march=${K8_ARCH} ${K8_SSE}")
