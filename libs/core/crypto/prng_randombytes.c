@@ -381,7 +381,7 @@ int prng_is_strong_seed () {
 //  prng_randombytes
 //
 //==========================================================================
-void prng_randombytes (void *p, size_t len) {
+void prng_randombytes (void *p, unsigned len) {
   if (!len || !p) return;
 
   // spinlock
