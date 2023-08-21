@@ -25,7 +25,77 @@
 //**************************************************************************
 
 // ////////////////////////////////////////////////////////////////////////// //
+class VEmptyStatement;
+class VAssertStatement;
+class VDeleteStatement;
+class VExpressionStatement;
+class VIf;
+class VWhile;
+class VDo;
+class VFor;
+class VForeach;
+class VLoopStatementWithTempLocals;
+class VForeachIota;
+class VForeachArray;
+class VForeachScriptedOuter;
+class VForeachScripted;
 class VSwitch;
+class VSwitchCase;
+class VSwitchDefault;
+class VBreak;
+class VContinue;
+class VReturn;
+class VGotoStmt;
+class VBaseCompoundStatement;
+class VTryFinallyCompound;
+class VLocalVarStatement;
+class VCompound;
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+class VStatementVisitor {
+public:
+  bool stopIt;
+  // for inits
+  int locIdx;
+  // current local definition (if we are inside it)
+  VLocalVarStatement *locDecl;
+
+public:
+  inline VStatementVisitor () : stopIt(false), locIdx(-1), locDecl(nullptr) {}
+  virtual ~VStatementVisitor ();
+
+  virtual void DoVisit (VStatement *stmt) = 0;
+
+  // `stmt` can be `nullptr` for alternate pathes
+  virtual void VisitedExpr (VStatement *stmt, VExpression *expr) = 0;
+  virtual void Visited (VStatement *stmt) = 0;
+
+  // start visiting alternate pathes
+  virtual void StartAlts (VStatement *stmt, int count);
+  // end visiting alternate pathes
+  virtual void EndAlts (VStatement *stmt, int count);
+  // called before visiting each alternative
+  // case default is always last (and may be missing)
+  // `stmt` is the main (owner) statement
+  virtual void Alt (VStatement *stmt, int idx, int count);
+};
+
+
+class VStatementVisitorChildrenFirst : public VStatementVisitor {
+public:
+  virtual void DoVisit (VStatement *stmt) override;
+};
+
+
+class VStatementVisitorChildrenLast : public VStatementVisitor {
+public:
+  // this can be set in `Visited()`/`VisitedExpr()`, and will be autoreset
+  bool skipChildren;
+
+public:
+  virtual void DoVisit (VStatement *stmt) override;
+};
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -90,6 +160,7 @@ public:
 
   // those will manage `UpScope`, and will call dtor/finalizer emiters
   VStatement *Resolve (VEmitContext &ec, VStatement *aUpScope);
+
   void Emit (VEmitContext &ec, VStatement *aUpScope);
 
   // this is used in `scope(*)` to block `return`
@@ -142,6 +213,9 @@ public:
   // this checks for `if (...)\nstat;`
   bool CheckCondIndent (const TLocation &condLoc, VStatement *body);
 
+  virtual void Visit (VStatementVisitor *v);
+  virtual void VisitChildren (VStatementVisitor *v) = 0;
+
   virtual VStr toString () = 0;
 
 public:
@@ -180,6 +254,8 @@ public:
 
   virtual VStr toString () override;
 
+  virtual void VisitChildren (VStatementVisitor *v) override;
+
 protected:
   VInvalidStatement () {}
 };
@@ -197,6 +273,8 @@ public:
   virtual bool IsEmptyStatement () const noexcept override;
 
   virtual VStr toString () override;
+
+  virtual void VisitChildren (VStatementVisitor *v) override;
 
 protected:
   VEmptyStatement () {}
@@ -220,6 +298,8 @@ public:
   virtual void DoEmit (VEmitContext &ec) override;
 
   virtual VStr toString () override;
+
+  virtual void VisitChildren (VStatementVisitor *v) override;
 
 protected:
   VAssertStatement () {}
@@ -247,6 +327,8 @@ public:
 
   virtual VStr toString () override;
 
+  virtual void VisitChildren (VStatementVisitor *v) override;
+
 protected:
   VDeleteStatement () {}
   virtual void DoSyntaxCopyTo (VStatement *e) override;
@@ -266,6 +348,8 @@ public:
   virtual void DoEmit (VEmitContext &ec) override;
 
   virtual VStr toString () override;
+
+  virtual void VisitChildren (VStatementVisitor *v) override;
 
 protected:
   VExpressionStatement () {}
@@ -295,6 +379,8 @@ public:
 
   virtual VStr toString () override;
 
+  virtual void VisitChildren (VStatementVisitor *v) override;
+
 protected:
   VIf () {}
   virtual void DoSyntaxCopyTo (VStatement *e) override;
@@ -322,6 +408,8 @@ public:
 
   virtual VStr toString () override;
 
+  virtual void VisitChildren (VStatementVisitor *v) override;
+
 protected:
   VWhile () {}
   virtual void DoSyntaxCopyTo (VStatement *e) override;
@@ -345,6 +433,8 @@ public:
   virtual bool IsInLoop () const noexcept override;
 
   virtual VStr toString () override;
+
+  virtual void VisitChildren (VStatementVisitor *v) override;
 
 protected:
   VDo () {}
@@ -374,6 +464,8 @@ public:
 
   virtual VStr toString () override;
 
+  virtual void VisitChildren (VStatementVisitor *v) override;
+
 protected:
   VFor () {}
   virtual void DoSyntaxCopyTo (VStatement *e) override;
@@ -400,6 +492,8 @@ public:
 
   virtual VStr toString () override;
 
+  virtual void VisitChildren (VStatementVisitor *v) override;
+
 protected:
   VForeach () {}
   virtual void DoSyntaxCopyTo (VStatement *e) override;
@@ -417,6 +511,8 @@ public:
 
   virtual void EmitCtor (VEmitContext &ec) override;
   virtual void EmitDtor (VEmitContext &ec, bool properLeave) override;
+
+  virtual void VisitChildren (VStatementVisitor *v) override;
 
 protected:
   VLoopStatementWithTempLocals () {}
@@ -448,6 +544,8 @@ public:
   virtual bool IsInLoop () const noexcept override;
 
   virtual VStr toString () override;
+
+  virtual void VisitChildren (VStatementVisitor *v) override;
 
 protected:
   VForeachIota () {}
@@ -489,6 +587,8 @@ public:
 
   virtual VStr toString () override;
 
+  virtual void VisitChildren (VStatementVisitor *v) override;
+
 protected:
   VForeachArray () {}
   virtual void DoSyntaxCopyTo (VStatement *e) override;
@@ -514,6 +614,8 @@ public:
   virtual void EmitDtor (VEmitContext &ec, bool properLeave) override;
 
   virtual VStr toString () override;
+
+  virtual void VisitChildren (VStatementVisitor *v) override;
 
 protected:
   VForeachScriptedOuter () {}
@@ -560,6 +662,8 @@ public:
 
   virtual VStr toString () override;
 
+  virtual void VisitChildren (VStatementVisitor *v) override;
+
 protected:
   VForeachScripted () {}
   virtual void DoSyntaxCopyTo (VStatement *e) override;
@@ -594,6 +698,8 @@ public:
 
   virtual VStr toString () override;
 
+  virtual void VisitChildren (VStatementVisitor *v) override;
+
 protected:
   VSwitch () {}
   virtual void DoSyntaxCopyTo (VStatement *e) override;
@@ -626,6 +732,8 @@ public:
 
   virtual VStr toString () override;
 
+  virtual void VisitChildren (VStatementVisitor *v) override;
+
 protected:
   VSwitchCase () {}
   virtual void DoSyntaxCopyTo (VStatement *e) override;
@@ -649,6 +757,8 @@ public:
   virtual bool IsSwitchDefault () const noexcept override;
 
   virtual VStr toString () override;
+
+  virtual void VisitChildren (VStatementVisitor *v) override;
 
 protected:
   VSwitchDefault () {}
@@ -676,6 +786,8 @@ public:
 
   virtual VStr toString () override;
 
+  virtual void VisitChildren (VStatementVisitor *v) override;
+
 protected:
   VBreak () {}
   virtual void DoSyntaxCopyTo (VStatement *e) override;
@@ -698,6 +810,8 @@ public:
   virtual bool IsProperCaseEnd (const VStatement *ASwitch, VStatement *aUpScope) noexcept override;
 
   virtual VStr toString () override;
+
+  virtual void VisitChildren (VStatementVisitor *v) override;
 
 protected:
   VContinue () {}
@@ -726,6 +840,8 @@ public:
   virtual bool IsInReturn () const noexcept override;
 
   virtual VStr toString () override;
+
+  virtual void VisitChildren (VStatementVisitor *v) override;
 
 protected:
   VReturn () {}
@@ -760,6 +876,8 @@ public:
   virtual bool IsProperCaseEnd (const VStatement *ASwitch, VStatement *aUpScope) noexcept override;
 
   virtual VStr toString () override;
+
+  virtual void VisitChildren (VStatementVisitor *v) override;
 
 protected:
   VGotoStmt () {}
@@ -834,6 +952,8 @@ public:
 
   virtual VStr toString () override;
 
+  virtual void VisitChildren (VStatementVisitor *v) override;
+
 protected:
   VTryFinallyCompound () {}
   virtual void DoSyntaxCopyTo (VStatement *e) override;
@@ -859,6 +979,8 @@ public:
 
   virtual VStr toString () override;
 
+  virtual void VisitChildren (VStatementVisitor *v) override;
+
 protected:
   VLocalVarStatement () {}
   virtual void DoSyntaxCopyTo (VStatement *e) override;
@@ -878,6 +1000,8 @@ public:
   virtual VStatement *SyntaxCopy () override;
 
   virtual bool IsCompound () const noexcept override;
+
+  virtual void VisitChildren (VStatementVisitor *v) override;
 
 protected:
   VCompound () {}

@@ -695,6 +695,36 @@ bool VEmitContext::IsLocalUsedByIdx (int idx) const noexcept {
 
 //==========================================================================
 //
+//  VEmitContext::SaveLocalsReadWrite
+//
+//==========================================================================
+void VEmitContext::SaveLocalsReadWrite (LocalsRWState &state) {
+  state.setLengthNoResize(LocalDefs.length());
+  for (int f = 0; f < LocalDefs.length(); f += 1) {
+    state[f].WasRead = LocalDefs[f].WasRead;
+    state[f].WasWrite = LocalDefs[f].WasWrite;
+    state[f].assign = LocalDefs[f].assign;
+  }
+}
+
+
+//==========================================================================
+//
+//  VEmitContext::RestoreLocalsReadWrite
+//
+//==========================================================================
+void VEmitContext::RestoreLocalsReadWrite (const LocalsRWState &state) {
+  vassert(state.length() == LocalDefs.length());
+  for (int f = 0; f < LocalDefs.length(); f += 1) {
+    LocalDefs[f].WasRead = state[f].WasRead;
+    LocalDefs[f].WasWrite = state[f].WasWrite;
+    LocalDefs[f].assign = state[f].assign;
+  }
+}
+
+
+//==========================================================================
+//
 //  VEmitContext::CheckForLocalVar
 //
 //==========================================================================
@@ -872,7 +902,9 @@ void VEmitContext::AddStatement (int statement, float FloatArg, const TLocation 
   if (StatementInfo[statement].Args != OPCARGS_Int) VCFatalError("Opcode doesn't take float argument");
   FInstruction &I = allocInstruction();
   I.Opcode = statement;
-  I.Arg1 = *(vint32 *)&FloatArg;
+  //I.Arg1 = *(vint32 *)&FloatArg;
+  //memcpy(&I.Arg1, &FloatArg, 4);
+  I.Arg1F = FloatArg;
   I.Arg1IsFloat = true;
   I.loc = aloc;
 }

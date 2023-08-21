@@ -96,6 +96,9 @@ public:
   void EmitInitialisations (VEmitContext &ec, bool inloop);
   void EmitDtors (VEmitContext &ec);
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual bool IsLocalVarDecl () const override;
 
   virtual VStr toString () const override;
@@ -128,6 +131,9 @@ public:
   virtual void RequestAddressOfForAssign () override;
   virtual void Emit (VEmitContext &) override;
   virtual bool IsLocalVarExpr () const override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 

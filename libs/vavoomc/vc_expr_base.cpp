@@ -177,6 +177,43 @@ void VExpression::ReportLeaks (bool detailed) {
 
 //==========================================================================
 //
+//  VExprVisitor::~VExprVisitor
+//
+//==========================================================================
+VExprVisitor::~VExprVisitor () {
+}
+
+
+//==========================================================================
+//
+//  VExprVisitorChildrenFirst::DoVisit
+//
+//==========================================================================
+void VExprVisitorChildrenFirst::DoVisit (VExpression *expr) {
+  if (expr) {
+    if (!stopIt) expr->VisitChildren(this);
+    if (!stopIt) Visited(expr);
+  }
+}
+
+
+//==========================================================================
+//
+//  VExprVisitorChildrenLast::DoVisit
+//
+//==========================================================================
+void VExprVisitorChildrenLast::DoVisit (VExpression *expr) {
+  skipChildren = false;
+  if (expr) {
+    if (!stopIt) Visited(expr);
+    if (!stopIt && !skipChildren) expr->VisitChildren(this);
+    skipChildren = false;
+  }
+}
+
+
+//==========================================================================
+//
 //  VExpression::VExpression
 //
 //==========================================================================
@@ -195,6 +232,16 @@ VExpression::VExpression (const TLocation &ALoc)
 //
 //==========================================================================
 VExpression::~VExpression () {
+}
+
+
+//==========================================================================
+//
+//  VExpression::Visit
+//
+//==========================================================================
+void VExpression::Visit (VExprVisitor *v) {
+  v->DoVisit(this);
 }
 
 

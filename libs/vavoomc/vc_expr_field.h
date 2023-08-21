@@ -38,6 +38,9 @@ public:
   VFieldBase (VExpression *AOp, VName AFieldName, const TLocation &ALoc);
   virtual ~VFieldBase () override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
 protected:
   VFieldBase () {}
   virtual void DoSyntaxCopyTo (VExpression *e) override;
@@ -120,6 +123,9 @@ public:
 
   virtual bool IsFieldAccess () const override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -150,6 +156,9 @@ public:
   virtual VExpression *DoResolve (VEmitContext &) override;
   //virtual void RequestAddressOf () override;
   virtual void Emit (VEmitContext &) override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 
@@ -211,6 +220,9 @@ public:
 
   static VStr SwizzleToStr (int index);
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
 protected:
   // each optimiser returns `true` if something was changed
   // optimisers must be called after resolving `op`
@@ -242,6 +254,9 @@ public:
   virtual void Emit (VEmitContext &) override;
 
   virtual VStr toString () const override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
 protected:
   VDelegateVal () {}

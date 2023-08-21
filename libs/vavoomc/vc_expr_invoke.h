@@ -40,6 +40,9 @@ public:
   virtual VExpression *DoResolve (VEmitContext &ec) override;
   virtual void Emit (VEmitContext &ec) override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VExpression *SyntaxCopy () override;
   virtual VStr toString () const override;
 
@@ -80,6 +83,9 @@ public:
   virtual bool IsNamedArg () const override;
   virtual VName GetArgName () const override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -108,6 +114,9 @@ public:
   virtual bool IsMethodNameChangeable () const = 0;
   virtual VName GetMethodName () const = 0;
   virtual void SetMethodName (VName name) = 0;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
 protected:
   VInvocationBase () {}

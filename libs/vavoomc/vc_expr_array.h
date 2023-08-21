@@ -61,6 +61,9 @@ public:
 
   VExpression *GetOpSyntaxCopy ();
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -89,6 +92,9 @@ public:
   virtual void RequestAddressOf () override;
   virtual void Emit (VEmitContext &ec) override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -112,6 +118,9 @@ public:
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 
@@ -141,6 +150,9 @@ public:
   virtual void Emit (VEmitContext &) override;
   virtual bool IsDynArraySetNum () const override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -165,6 +177,9 @@ public:
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 
@@ -191,6 +206,9 @@ public:
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -213,6 +231,9 @@ public:
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 
@@ -237,6 +258,9 @@ public:
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 
@@ -266,6 +290,9 @@ public:
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -290,6 +317,9 @@ public:
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -312,6 +342,9 @@ public:
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 
@@ -337,6 +370,9 @@ public:
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -360,6 +396,9 @@ public:
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 
@@ -385,6 +424,9 @@ public:
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -409,6 +451,9 @@ public:
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -432,6 +477,9 @@ public:
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 
@@ -458,6 +506,9 @@ public:
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -482,6 +533,9 @@ public:
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 
@@ -508,6 +562,9 @@ public:
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -532,6 +589,9 @@ public:
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 
@@ -559,6 +619,9 @@ public:
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -582,6 +645,9 @@ public:
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 
@@ -607,6 +673,9 @@ public:
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 
@@ -634,6 +703,9 @@ public:
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -658,6 +730,9 @@ public:
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 
@@ -684,6 +759,9 @@ public:
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -707,6 +785,9 @@ public:
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 

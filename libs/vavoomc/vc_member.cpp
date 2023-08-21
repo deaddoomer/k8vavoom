@@ -68,6 +68,27 @@ void *VMemberBase::userdata; // arbitrary pointer, not used by the lexer
 VStream *(*VMemberBase::dgOpenFile) (VStr filename, void *userdata);
 
 
+#ifdef USE_LIBJIT
+static jit_context_t jitc = NULL;
+
+
+//==========================================================================
+//
+//  VMemberBase::GetJITCtx
+//
+//==========================================================================
+jit_context_t VMemberBase::GetJITCtx () {
+  if (!jitc) {
+    jitc = jit_context_create();
+    vassert(jitc != nullptr);
+  }
+  return jitc;
+}
+
+
+#endif
+
+
 //==========================================================================
 //
 //  VMemberBase::VMemberBase

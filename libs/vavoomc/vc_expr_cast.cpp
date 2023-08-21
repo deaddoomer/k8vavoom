@@ -35,6 +35,27 @@ VCastExpressionBase::VCastExpressionBase (VExpression *AOp) : VExpression(AOp->L
 VCastExpressionBase::VCastExpressionBase (const TLocation &ALoc) : VExpression(ALoc), op(nullptr) {}
 VCastExpressionBase::~VCastExpressionBase () { if (op) { delete op; op = nullptr; } }
 
+
+//==========================================================================
+//
+//  VCastExpressionBase::HasSideEffects
+//
+//==========================================================================
+bool VCastExpressionBase::HasSideEffects () {
+  return (op && op->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VCastExpressionBase::VisitChildren
+//
+//==========================================================================
+void VCastExpressionBase::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && op) op->Visit(v);
+}
+
+
 //==========================================================================
 //
 //  VCastExpressionBase::DoSyntaxCopyTo
@@ -1110,6 +1131,16 @@ VStructPtrCast::~VStructPtrCast () {
 
 //==========================================================================
 //
+//  VStructPtrCast::VisitChildren
+//
+//==========================================================================
+void VStructPtrCast::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && dest) dest->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VStructPtrCast::SyntaxCopy
 //
 //==========================================================================
@@ -1122,7 +1153,7 @@ VExpression *VStructPtrCast::SyntaxCopy () {
 
 //==========================================================================
 //
-//  VStructPtrCast::VStructPtrCast
+//  VStructPtrCast::DoSyntaxCopyTo
 //
 //==========================================================================
 void VStructPtrCast::DoSyntaxCopyTo (VExpression *e) {

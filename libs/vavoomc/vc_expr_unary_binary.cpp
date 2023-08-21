@@ -50,6 +50,26 @@ VExprParens::~VExprParens () {
 
 //==========================================================================
 //
+//  VExprParens::HasSideEffects
+//
+//==========================================================================
+bool VExprParens::HasSideEffects () {
+  return (op && op->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VExprParens::VisitChildren
+//
+//==========================================================================
+void VExprParens::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && op) op->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VExprParens::SyntaxCopy
 //
 //==========================================================================
@@ -138,6 +158,26 @@ VUnary::VUnary (EUnaryOp AOper, VExpression *AOp, const TLocation &ALoc, bool ao
 //==========================================================================
 VUnary::~VUnary () {
   if (op) { delete op; op = nullptr; }
+}
+
+
+//==========================================================================
+//
+//  VUnary::HasSideEffects
+//
+//==========================================================================
+bool VUnary::HasSideEffects () {
+  return (op && op->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VUnary::VisitChildren
+//
+//==========================================================================
+void VUnary::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && op) op->Visit(v);
 }
 
 
@@ -453,6 +493,26 @@ VUnaryMutator::~VUnaryMutator () {
 
 //==========================================================================
 //
+//  VUnaryMutator::HasSideEffects
+//
+//==========================================================================
+bool VUnaryMutator::HasSideEffects () {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VUnaryMutator::VisitChildren
+//
+//==========================================================================
+void VUnaryMutator::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && op) op->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VUnaryMutator::IsUnaryMutator
 //
 //==========================================================================
@@ -624,6 +684,29 @@ VBinary::VBinary (EBinOp AOper, VExpression *AOp1, VExpression *AOp2, const TLoc
 VBinary::~VBinary () {
   if (op1) { delete op1; op1 = nullptr; }
   if (op2) { delete op2; op2 = nullptr; }
+}
+
+
+//==========================================================================
+//
+//  VBinary::HasSideEffects
+//
+//==========================================================================
+bool VBinary::HasSideEffects () {
+  return
+    (op1 && op1->HasSideEffects()) ||
+    (op2 && op2->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VBinary::VisitChildren
+//
+//==========================================================================
+void VBinary::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && op1) op1->Visit(v);
+  if (!v->stopIt && op2) op2->Visit(v);
 }
 
 
@@ -1562,6 +1645,29 @@ VBinaryLogical::VBinaryLogical (ELogOp AOper, VExpression *AOp1, VExpression *AO
 VBinaryLogical::~VBinaryLogical () {
   if (op1) { delete op1; op1 = nullptr; }
   if (op2) { delete op2; op2 = nullptr; }
+}
+
+
+//==========================================================================
+//
+//  VBinaryLogical::HasSideEffects
+//
+//==========================================================================
+bool VBinaryLogical::HasSideEffects () {
+  return
+    (op1 && op1->HasSideEffects()) ||
+    (op2 && op2->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VBinaryLogical::VisitChildren
+//
+//==========================================================================
+void VBinaryLogical::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && op1) op1->Visit(v);
+  if (!v->stopIt && op2) op2->Visit(v);
 }
 
 

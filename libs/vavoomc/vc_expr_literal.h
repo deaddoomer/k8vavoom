@@ -24,12 +24,30 @@
 //**
 //**************************************************************************
 
+
+//==========================================================================
+//
+//  VLiteralBase
+//
+//==========================================================================
+class VLiteralBase : public VExpression {
+public:
+  VLiteralBase (const TLocation &ALoc);
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
+protected:
+  VLiteralBase () {}
+};
+
+
 //==========================================================================
 //
 //  VIntLiteral
 //
 //==========================================================================
-class VIntLiteral : public VExpression {
+class VIntLiteral : public VLiteralBase {
 public:
   vint32 Value;
 
@@ -53,7 +71,7 @@ protected:
 //  VFloatLiteral
 //
 //==========================================================================
-class VFloatLiteral : public VExpression {
+class VFloatLiteral : public VLiteralBase {
 public:
   float Value;
 
@@ -77,7 +95,7 @@ protected:
 //  VNameLiteral
 //
 //==========================================================================
-class VNameLiteral : public VExpression {
+class VNameLiteral : public VLiteralBase {
 public:
   VName Value;
 
@@ -121,7 +139,7 @@ protected:
 //  VStringLiteral
 //
 //==========================================================================
-class VStringLiteral : public VExpression {
+class VStringLiteral : public VLiteralBase {
 public:
   vint32 Value;
   VStr strval;
@@ -146,7 +164,7 @@ protected:
 //  VSelf
 //
 //==========================================================================
-class VSelf : public VExpression {
+class VSelf : public VLiteralBase {
 public:
   VSelf (const TLocation &);
   virtual VExpression *SyntaxCopy () override;
@@ -168,7 +186,7 @@ protected:
 //  VSelfClass
 //
 //==========================================================================
-class VSelfClass : public VExpression {
+class VSelfClass : public VLiteralBase {
 public:
   VSelfClass (const TLocation &);
   virtual VExpression *SyntaxCopy () override;
@@ -190,7 +208,7 @@ protected:
 //  VNoneLiteral
 //
 //==========================================================================
-class VNoneLiteral : public VExpression {
+class VNoneLiteral : public VLiteralBase {
 public:
   VNoneLiteral (const TLocation &);
   virtual VExpression *SyntaxCopy () override;
@@ -212,7 +230,7 @@ protected:
 //  VNoneDelegateLiteral
 //
 //==========================================================================
-class VNoneDelegateLiteral : public VExpression {
+class VNoneDelegateLiteral : public VLiteralBase {
 public:
   VNoneDelegateLiteral (const TLocation &);
   virtual VExpression *SyntaxCopy () override;
@@ -234,7 +252,7 @@ protected:
 //  VNullLiteral
 //
 //==========================================================================
-class VNullLiteral : public VExpression {
+class VNullLiteral : public VLiteralBase {
 public:
   VNullLiteral (const TLocation &);
   virtual VExpression *SyntaxCopy () override;
@@ -256,7 +274,7 @@ protected:
 //  VDollar
 //
 //==========================================================================
-class VDollar : public VExpression {
+class VDollar : public VLiteralBase {
 public:
   VDollar (const TLocation &);
   virtual VExpression *SyntaxCopy () override;

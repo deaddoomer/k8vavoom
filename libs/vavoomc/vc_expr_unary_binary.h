@@ -41,6 +41,9 @@ public:
 
   virtual bool IsParens () const override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -83,6 +86,9 @@ public:
 
   const char *getOpName () const;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -121,6 +127,9 @@ public:
   virtual bool IsUnaryMutator () const override;
 
   const char *getOpName () const;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 
@@ -183,6 +192,9 @@ public:
   inline bool IsComparison () const noexcept { return (Oper >= Equals && Oper <= GreaterEquals); }
   inline bool IsBitLogic () const noexcept { return (Oper >= And && Oper <= Or); }
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
 protected:
   VBinary () {}
   virtual void DoSyntaxCopyTo (VExpression *e) override;
@@ -223,6 +235,9 @@ public:
 
   const char *getOpName () const;
   virtual bool IsBinaryLogical () const override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 

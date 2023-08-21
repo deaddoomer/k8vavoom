@@ -64,6 +64,69 @@ template<class T> VStr shitppTypeNameObj (const T &o) {
 #endif
 
 
+//==========================================================================
+//
+//  VStatementVisitor::~VStatementVisitor
+//
+//==========================================================================
+VStatementVisitor::~VStatementVisitor () {
+}
+
+
+//==========================================================================
+//
+//  VStatementVisitor::StartAlts
+//
+//==========================================================================
+void VStatementVisitor::StartAlts (VStatement *stmt, int count) {
+}
+
+
+//==========================================================================
+//
+//  VStatementVisitor::EndAlts
+//
+//==========================================================================
+void VStatementVisitor::EndAlts (VStatement *stmt, int count) {
+}
+
+
+//==========================================================================
+//
+//  VStatementVisitor::Alt
+//
+//==========================================================================
+void VStatementVisitor::Alt (VStatement *stmt, int idx, int count) {
+}
+
+
+//==========================================================================
+//
+//  VStatementVisitorChildrenFirst::DoVisit
+//
+//==========================================================================
+void VStatementVisitorChildrenFirst::DoVisit (VStatement *stmt) {
+  if (stmt) {
+    if (!stopIt) stmt->VisitChildren(this);
+    if (!stopIt) Visited(stmt);
+  }
+}
+
+
+//==========================================================================
+//
+//  VStatementVisitorChildrenLast::DoVisit
+//
+//==========================================================================
+void VStatementVisitorChildrenLast::DoVisit (VStatement *stmt) {
+  skipChildren = false;
+  if (stmt) {
+    if (!stopIt) Visited(stmt);
+    if (!stopIt && !skipChildren) stmt->VisitChildren(this);
+    skipChildren = false;
+  }
+}
+
 
 //**************************************************************************
 //
@@ -125,6 +188,16 @@ bool VStatement::IsReturnAllowed () const noexcept { return true; }
 bool VStatement::IsContBreakAllowed () const noexcept { return true; }
 bool VStatement::IsBreakScope () const noexcept { return false; }
 bool VStatement::IsContinueScope () const noexcept { return false; }
+
+
+//==========================================================================
+//
+//  VStatement::Visit
+//
+//==========================================================================
+void VStatement::Visit (VStatementVisitor *v) {
+  v->DoVisit(this);
+}
 
 
 //==========================================================================
@@ -262,6 +335,15 @@ VInvalidStatement::VInvalidStatement (const TLocation &ALoc)
 
 //==========================================================================
 //
+//  VInvalidStatement::VisitChildren
+//
+//==========================================================================
+void VInvalidStatement::VisitChildren (VStatementVisitor *v) {
+}
+
+
+//==========================================================================
+//
 //  VInvalidStatement::SyntaxCopy
 //
 //==========================================================================
@@ -327,6 +409,15 @@ VStr VInvalidStatement::toString () {
 VEmptyStatement::VEmptyStatement (const TLocation &ALoc)
   : VStatement(ALoc)
 {
+}
+
+
+//==========================================================================
+//
+//  VEmptyStatement::VisitChildren
+//
+//==========================================================================
+void VEmptyStatement::VisitChildren (VStatementVisitor *v) {
 }
 
 
@@ -411,6 +502,18 @@ VAssertStatement::~VAssertStatement () {
   delete Expr; Expr = nullptr;
   delete Message; Message = nullptr;
   delete FatalInvoke; FatalInvoke = nullptr;
+}
+
+
+//==========================================================================
+//
+//  VAssertStatement::VisitChildren
+//
+//==========================================================================
+void VAssertStatement::VisitChildren (VStatementVisitor *v) {
+  if (Expr) v->VisitedExpr(this, Expr);
+  if (Message) v->VisitedExpr(this, Message);
+  if (FatalInvoke) v->VisitedExpr(this, FatalInvoke);
 }
 
 
@@ -557,6 +660,19 @@ VDeleteStatement::~VDeleteStatement () {
 
 //==========================================================================
 //
+//  VDeleteStatement::VisitChildren
+//
+//==========================================================================
+void VDeleteStatement::VisitChildren (VStatementVisitor *v) {
+  if (delexpr) v->VisitedExpr(this, delexpr);
+  if (assexpr) v->VisitedExpr(this, assexpr);
+  if (checkexpr) v->VisitedExpr(this, checkexpr);
+  if (var) v->VisitedExpr(this, var);
+}
+
+
+//==========================================================================
+//
 //  VDeleteStatement::SyntaxCopy
 //
 //==========================================================================
@@ -670,6 +786,16 @@ VExpressionStatement::~VExpressionStatement () {
 
 //==========================================================================
 //
+//  VExpressionStatement::VisitChildren
+//
+//==========================================================================
+void VExpressionStatement::VisitChildren (VStatementVisitor *v) {
+  if (Expr) v->VisitedExpr(this, Expr);
+}
+
+
+//==========================================================================
+//
 //  VExpressionStatement::SyntaxCopy
 //
 //==========================================================================
@@ -775,6 +901,22 @@ VIf::~VIf () {
   delete Expr; Expr = nullptr;
   delete TrueStatement; TrueStatement = nullptr;
   delete FalseStatement; FalseStatement = nullptr;
+}
+
+
+//==========================================================================
+//
+//  VIf::VisitChildren
+//
+//==========================================================================
+void VIf::VisitChildren (VStatementVisitor *v) {
+  if (Expr) v->VisitedExpr(this, Expr);
+  v->StartAlts(this, 2);
+  v->Alt(this, 0, 2);
+  TrueStatement->Visit(v);
+  v->Alt(this, 1, 2);
+  FalseStatement->Visit(v);
+  v->EndAlts(this, 2);
 }
 
 
@@ -952,6 +1094,20 @@ VWhile::~VWhile () {
 
 //==========================================================================
 //
+//  VWhile::VisitChildren
+//
+//==========================================================================
+void VWhile::VisitChildren (VStatementVisitor *v) {
+  if (Expr) v->VisitedExpr(this, Expr);
+  v->StartAlts(this, 1);
+  v->Alt(this, 0, 1);
+  Statement->Visit(v);
+  v->EndAlts(this, 1);
+}
+
+
+//==========================================================================
+//
 //  VWhile::SyntaxCopy
 //
 //==========================================================================
@@ -1093,6 +1249,20 @@ VDo::VDo (VExpression *AExpr, VStatement *AStatement, const TLocation &ALoc, VNa
 //==========================================================================
 VDo::~VDo () {
   delete Expr; Expr = nullptr;
+}
+
+
+//==========================================================================
+//
+//  VDo::VisitChildren
+//
+//==========================================================================
+void VDo::VisitChildren (VStatementVisitor *v) {
+  if (Expr) v->VisitedExpr(this, Expr);
+  v->StartAlts(this, 1);
+  v->Alt(this, 0, 1);
+  Statement->Visit(v);
+  v->EndAlts(this, 1);
 }
 
 
@@ -1250,6 +1420,25 @@ VFor::~VFor () {
   //for (int i = 0; i < InitExpr.length(); ++i) { delete InitExpr[i]; InitExpr[i] = nullptr; }
   for (int i = 0; i < CondExpr.length(); ++i) { delete CondExpr[i]; CondExpr[i] = nullptr; }
   for (int i = 0; i < LoopExpr.length(); ++i) { delete LoopExpr[i]; LoopExpr[i] = nullptr; }
+}
+
+
+//==========================================================================
+//
+//  VFor::VisitChildren
+//
+//==========================================================================
+void VFor::VisitChildren (VStatementVisitor *v) {
+  for (int f = 0; f < CondExpr.length(); f += 1) {
+    if (CondExpr[f]) v->VisitedExpr(this, CondExpr[f]);
+  }
+  for (int f = 0; f < LoopExpr.length(); f += 1) {
+    if (LoopExpr[f]) v->VisitedExpr(this, LoopExpr[f]);
+  }
+  v->StartAlts(this, 1);
+  v->Alt(this, 0, 1);
+  Statement->Visit(v);
+  v->EndAlts(this, 1);
 }
 
 
@@ -1460,6 +1649,20 @@ VStatement *VForeach::SyntaxCopy () {
 
 //==========================================================================
 //
+//  VForeach::VisitChildren
+//
+//==========================================================================
+void VForeach::VisitChildren (VStatementVisitor *v) {
+  if (Expr) v->VisitedExpr(this, Expr);
+  v->StartAlts(this, 1);
+  v->Alt(this, 0, 1);
+  Statement->Visit(v);
+  v->EndAlts(this, 1);
+}
+
+
+//==========================================================================
+//
 //  VForeach::DoSyntaxCopyTo
 //
 //==========================================================================
@@ -1606,6 +1809,16 @@ VLoopStatementWithTempLocals::~VLoopStatementWithTempLocals () {
 
 //==========================================================================
 //
+//  VLoopStatementWithTempLocals::VisitChildren
+//
+//==========================================================================
+void VLoopStatementWithTempLocals::VisitChildren (VStatementVisitor *v) {
+  if (Statement) Statement->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VLoopStatementWithTempLocals::EmitCtor
 //
 //==========================================================================
@@ -1674,6 +1887,25 @@ VForeachIota::~VForeachIota () {
   delete var; var = nullptr;
   delete lo; lo = nullptr;
   delete hi; hi = nullptr;
+}
+
+
+//==========================================================================
+//
+//  VForeachIota::VisitChildren
+//
+//==========================================================================
+void VForeachIota::VisitChildren (VStatementVisitor *v) {
+  if (varinit) v->VisitedExpr(this, varinit);
+  if (varnext) v->VisitedExpr(this, varnext);
+  if (hiinit) v->VisitedExpr(this, hiinit);
+  if (var) v->VisitedExpr(this, var);
+  if (lo) v->VisitedExpr(this, lo);
+  if (hi) v->VisitedExpr(this, hi);
+  v->StartAlts(this, 1);
+  v->Alt(this, 0, 1);
+  Statement->Visit(v);
+  v->EndAlts(this, 1);
 }
 
 
@@ -1946,6 +2178,28 @@ VForeachArray::~VForeachArray () {
   delete idxvar; idxvar = nullptr;
   delete var; var = nullptr;
   delete arr; arr = nullptr;
+}
+
+
+//==========================================================================
+//
+//  VForeachArray::VisitChildren
+//
+//==========================================================================
+void VForeachArray::VisitChildren (VStatementVisitor *v) {
+  if (idxinit) v->VisitedExpr(this, idxinit);
+  if (hiinit) v->VisitedExpr(this, hiinit);
+  if (loopPreCheck) v->VisitedExpr(this, loopPreCheck);
+  if (loopNext) v->VisitedExpr(this, loopNext);
+  if (loopLoad) v->VisitedExpr(this, loopLoad);
+  if (varaddr) v->VisitedExpr(this, varaddr);
+  if (idxvar) v->VisitedExpr(this, idxvar);
+  if (var) v->VisitedExpr(this, var);
+  if (arr) v->VisitedExpr(this, arr);
+  v->StartAlts(this, 1);
+  v->Alt(this, 0, 1);
+  Statement->Visit(v);
+  v->EndAlts(this, 1);
 }
 
 
@@ -2299,6 +2553,30 @@ VForeachScriptedOuter::~VForeachScriptedOuter () {
 
 //==========================================================================
 //
+//  VForeachScriptedOuter::VisitChildren
+//
+//==========================================================================
+void VForeachScriptedOuter::VisitChildren (VStatementVisitor *v) {
+  if (ivInit) {
+    const int oli = v->locIdx;
+    v->locIdx = initLocIdx;
+    v->VisitedExpr(this, ivInit);
+    v->locIdx = oli;
+  }
+  {
+    const int oli = v->locIdx;
+    v->locIdx = initLocIdx;
+    v->StartAlts(this, 1);
+    v->Alt(this, 0, 1);
+    Statement->Visit(v);
+    v->EndAlts(this, 1);
+    v->locIdx = oli;
+  }
+}
+
+
+//==========================================================================
+//
 //  VForeachScriptedOuter::SyntaxCopy
 //
 //==========================================================================
@@ -2439,6 +2717,24 @@ VForeachScripted::~VForeachScripted () {
     delete fevars[f].decl;
   }
   fevarCount = 0;
+}
+
+
+//==========================================================================
+//
+//  VForeachScripted::VisitChildren
+//
+//==========================================================================
+void VForeachScripted::VisitChildren (VStatementVisitor *v) {
+  if (arr) v->VisitedExpr(this, arr);
+  for (int f = 0; f < fevarCount; ++f) {
+    if (fevars[f].var) v->VisitedExpr(this, fevars[f].var);
+    if (fevars[f].decl) v->VisitedExpr(this, fevars[f].decl);
+  }
+  v->StartAlts(this, 1);
+  v->Alt(this, 0, 1);
+  Statement->Visit(v);
+  v->EndAlts(this, 1);
 }
 
 
@@ -2788,6 +3084,40 @@ VSwitch::~VSwitch () {
 
 //==========================================================================
 //
+//  VSwitch::VisitChildren
+//
+//==========================================================================
+void VSwitch::VisitChildren (VStatementVisitor *v) {
+  if (Expr) v->VisitedExpr(this, Expr);
+  v->StartAlts(this, Statements.length());
+  int count = 0;
+  bool seenDef = false;
+  for (int i = 0; i < Statements.length(); ++i) {
+    if (Statements[i] && !Statements[i]->IsSwitchDefault()) {
+      v->Alt(this, count, Statements.length());
+      Statements[i]->Visit(v);
+      count += 1;
+    } else {
+      vassert(!seenDef);
+      seenDef = true;
+    }
+  }
+  if (seenDef) {
+    for (int i = 0; i < Statements.length(); ++i) {
+      if (Statements[i] && Statements[i]->IsSwitchDefault()) {
+        v->Alt(this, count, Statements.length());
+        Statements[i]->Visit(v);
+        count += 1;
+      }
+    }
+  }
+  vassert(count == Statements.length());
+  v->EndAlts(this, Statements.length());
+}
+
+
+//==========================================================================
+//
 //  VSwitch::SyntaxCopy
 //
 //==========================================================================
@@ -3082,6 +3412,17 @@ VSwitchCase::~VSwitchCase () {
 
 //==========================================================================
 //
+//  VSwitch::VisitChildren
+//
+//==========================================================================
+void VSwitchCase::VisitChildren (VStatementVisitor *v) {
+  if (Expr) v->VisitedExpr(this, Expr);
+  if (Statement) Statement->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VSwitch::SyntaxCopy
 //
 //==========================================================================
@@ -3090,7 +3431,6 @@ VStatement *VSwitchCase::SyntaxCopy () {
   DoSyntaxCopyTo(res);
   return res;
 }
-
 
 
 //==========================================================================
@@ -3211,6 +3551,16 @@ VSwitchDefault::VSwitchDefault (VSwitch *ASwitch, const TLocation &ALoc)
 
 //==========================================================================
 //
+//  VSwitchDefault::VisitChildren
+//
+//==========================================================================
+void VSwitchDefault::VisitChildren (VStatementVisitor *v) {
+  if (Statement) Statement->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VSwitchDefault::SyntaxCopy
 //
 //==========================================================================
@@ -3304,6 +3654,16 @@ VBreak::VBreak (const TLocation &ALoc, VName aLoopLabel)
   : VStatement(ALoc)
   , LoopLabel(aLoopLabel)
 {
+}
+
+
+//==========================================================================
+//
+//  VBreak::VisitChildren
+//
+//==========================================================================
+void VBreak::VisitChildren (VStatementVisitor *v) {
+  if (Statement) Statement->Visit(v);
 }
 
 
@@ -3447,6 +3807,16 @@ VContinue::VContinue (const TLocation &ALoc, VName aLoopLabel)
   : VStatement(ALoc)
   , LoopLabel(aLoopLabel)
 {
+}
+
+
+//==========================================================================
+//
+//  VContinue::VisitChildren
+//
+//==========================================================================
+void VContinue::VisitChildren (VStatementVisitor *v) {
+  if (Statement) Statement->Visit(v);
 }
 
 
@@ -3600,6 +3970,16 @@ VReturn::VReturn (VExpression *AExpr, const TLocation &ALoc)
 //==========================================================================
 VReturn::~VReturn () {
   delete Expr; Expr = nullptr;
+}
+
+
+//==========================================================================
+//
+//  VReturn::VisitChildren
+//
+//==========================================================================
+void VReturn::VisitChildren (VStatementVisitor *v) {
+  if (Expr) v->VisitedExpr(this, Expr);
 }
 
 
@@ -3790,6 +4170,15 @@ VGotoStmt::VGotoStmt (VSwitch *ASwitch, VExpression *ACaseValue, int ASwitchStNu
   , GotoType(toDefault ? Default : Case)
   , SwitchStNum(ASwitchStNum)
 {
+}
+
+
+//==========================================================================
+//
+//  VGotoStmt::VisitChildren
+//
+//==========================================================================
+void VGotoStmt::VisitChildren (VStatementVisitor *v) {
 }
 
 
@@ -4262,6 +4651,19 @@ VTryFinallyCompound::~VTryFinallyCompound () {
 
 //==========================================================================
 //
+//  VTryFinallyCompound::VisitChildren
+//
+//==========================================================================
+void VTryFinallyCompound::VisitChildren (VStatementVisitor *v) {
+  for (int f = 0; f < Statements.length(); f += 1) {
+    if (Statements[f]) Statements[f]->Visit(v);
+  }
+  if (Finally) Finally->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VTryFinallyCompound::SyntaxCopy
 //
 //==========================================================================
@@ -4389,6 +4791,24 @@ VLocalVarStatement::VLocalVarStatement (VLocalDecl *ADecl)
 //==========================================================================
 VLocalVarStatement::~VLocalVarStatement () {
   delete Decl; Decl = nullptr;
+}
+
+
+//==========================================================================
+//
+//  VLocalVarStatement::VisitChildren
+//
+//==========================================================================
+void VLocalVarStatement::VisitChildren (VStatementVisitor *v) {
+  if (Decl) {
+    VLocalVarStatement *ost = v->locDecl;
+    v->locDecl = this;
+    v->VisitedExpr(this, Decl);
+    v->locDecl = ost;
+  }
+  for (int f = 0; f < Statements.length(); f += 1) {
+    if (Statements[f]) Statements[f]->Visit(v);
+  }
 }
 
 
@@ -4539,6 +4959,18 @@ VCompound::VCompound (const TLocation &ALoc) : VBaseCompoundStatement(ALoc) {
 //==========================================================================
 bool VCompound::IsCompound () const noexcept {
   return true;
+}
+
+
+//==========================================================================
+//
+//  VCompound::VisitChildren
+//
+//==========================================================================
+void VCompound::VisitChildren (VStatementVisitor *v) {
+  for (int f = 0; f < Statements.length(); f += 1) {
+    if (Statements[f]) Statements[f]->Visit(v);
+  }
 }
 
 

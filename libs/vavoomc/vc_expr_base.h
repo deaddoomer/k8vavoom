@@ -24,8 +24,45 @@
 //**
 //**************************************************************************
 
+class VExpression;
 class VTypeExpr;
 class VInvocation;
+class VLocalDecl;
+
+
+// ////////////////////////////////////////////////////////////////////////// //
+class VExprVisitor {
+public:
+  bool stopIt;
+  // if we are currently in local definition, this is >= 0
+  int locDefIdx;
+  // current local definiotion (if we are inside it)
+  VLocalDecl *locDecl;
+
+public:
+  inline VExprVisitor () : stopIt(false), locDefIdx(-1), locDecl(nullptr) {}
+  virtual ~VExprVisitor ();
+
+  virtual void DoVisit (VExpression *expr) = 0;
+
+  virtual void Visited (VExpression *expr) = 0;
+};
+
+
+class VExprVisitorChildrenFirst : public VExprVisitor {
+public:
+  virtual void DoVisit (VExpression *expr) override;
+};
+
+
+class VExprVisitorChildrenLast : public VExprVisitor {
+public:
+  // this can be set in `Visited()`, and will be autoreset
+  bool skipChildren;
+
+public:
+  virtual void DoVisit (VExpression *expr) override;
+};
 
 
 // ////////////////////////////////////////////////////////////////////////// //
@@ -104,15 +141,20 @@ protected:
 public:
   VExpression (const TLocation &ALoc);
   virtual ~VExpression ();
+
   virtual VVA_CHECKRESULT VExpression *SyntaxCopy () = 0; // this should be called on *UNRESOLVED* expression
+
   virtual VVA_CHECKRESULT VExpression *DoResolve (VEmitContext &ec) = 0; // tho shon't call this twice, neither thrice!
+
   VVA_CHECKRESULT VExpression *Resolve (VEmitContext &ec); // this will usually just call `DoResolve()`
   VVA_CHECKRESULT VExpression *ResolveBoolean (VEmitContext &ec); // actually, *TO* boolean
   VVA_CHECKRESULT VExpression *CoerceToBool (VEmitContext &ec); // expression *MUST* be already resolved
   VVA_CHECKRESULT VExpression *ResolveFloat (VEmitContext &ec); // actually, *TO* float
   VVA_CHECKRESULT VExpression *CoerceToFloat (VEmitContext &ec, bool implicit); // expression *MUST* be already resolved
+
   // returns -1 if cannot determine, or 0/1
   VVA_CHECKRESULT int IsBoolLiteral (VEmitContext &ec) const;
+
   VVA_CHECKRESULT virtual VTypeExpr *ResolveAsType (VEmitContext &ec);
   VVA_CHECKRESULT virtual VExpression *ResolveAssignmentTarget (VEmitContext &ec);
   VVA_CHECKRESULT virtual VExpression *ResolveAssignmentValue (VEmitContext &ec);
@@ -121,17 +163,23 @@ public:
   // return `nullptr` to indicate error, or consume `val` and set `resolved` to `true` if resolved
   // if `nullptr` is returned, both `this` and `val` should be destroyed
   VVA_CHECKRESULT virtual VExpression *ResolveCompleteAssign (VEmitContext &ec, VExpression *val, bool &resolved);
+
   // this coerces ints to floats, and fixes `none`\`nullptr` type
   static void CoerceTypes (VEmitContext &ec, VExpression *&op1, VExpression *&op2, bool coerceNoneDelegate); // expression *MUST* be already resolved
+
   virtual void RequestAddressOf ();
   virtual void RequestAddressOfForAssign (); // most of the time this forwards to `RequestAddressOf()`
+
   void EmitCheckResolved (VEmitContext &ec);
   virtual void Emit (VEmitContext &ec) = 0;
   virtual void EmitBranchable (VEmitContext &ec, VLabel Lbl, bool OnTrue);
   void EmitPushPointedCode (VFieldType type, VEmitContext &ec); // yeah, non-virtual
+
   // return non-nullptr to drop `VDropResult` node, and use the result directly
   // this is called on resolved node
   virtual VExpression *AddDropResult ();
+
+  // type checks
   virtual bool IsValidTypeExpression () const;
   virtual bool IsIntConst () const;
   virtual bool IsFloatConst () const;
@@ -192,6 +240,13 @@ public:
   virtual bool IsCommaRetOp0 () const;
   virtual bool IsDropResult () const;
   virtual bool IsSwizzle () const;
+
+  virtual void Visit (VExprVisitor *v);
+  virtual void VisitChildren (VExprVisitor *v) = 0;
+
+  // note that assign itself has side effect
+  // WARNING! this should be called only on resolved expressions!
+  virtual bool HasSideEffects () = 0;
 
   virtual VStr toString () const = 0;
 

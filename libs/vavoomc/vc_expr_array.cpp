@@ -138,6 +138,31 @@ void VArrayElement::DoSyntaxCopyTo (VExpression *e) {
 
 //==========================================================================
 //
+//  VArrayElement::HasSideEffects
+//
+//==========================================================================
+bool VArrayElement::HasSideEffects () {
+  return
+    (op && op->HasSideEffects()) ||
+    (ind && ind->HasSideEffects()) ||
+    (ind2 && ind2->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VArrayElement::VisitChildren
+//
+//==========================================================================
+void VArrayElement::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && op) op->Visit(v);
+  if (!v->stopIt && ind) ind->Visit(v);
+  if (!v->stopIt && ind2) ind2->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VArrayElement::InternalResolve
 //
 //==========================================================================
@@ -696,6 +721,26 @@ void VSliceOp::DoSyntaxCopyTo (VExpression *e) {
 
 //==========================================================================
 //
+//  VSliceOp::HasSideEffects
+//
+//==========================================================================
+bool VSliceOp::HasSideEffects () {
+  return (hi && hi->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VSliceOp::VisitChildren
+//
+//==========================================================================
+void VSliceOp::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && hi) hi->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VSliceOp::DoResolve
 //
 //==========================================================================
@@ -905,6 +950,26 @@ VDynArrayGetNum::~VDynArrayGetNum () {
 
 //==========================================================================
 //
+//  VDynArrayGetNum::HasSideEffects
+//
+//==========================================================================
+bool VDynArrayGetNum::HasSideEffects () {
+  return (ArrayExpr && ArrayExpr->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VDynArrayGetNum::VisitChildren
+//
+//==========================================================================
+void VDynArrayGetNum::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && ArrayExpr) ArrayExpr->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VDynArrayGetNum::SyntaxCopy
 //
 //==========================================================================
@@ -1000,6 +1065,28 @@ VDynArraySetNum::~VDynArraySetNum () {
   if (ArrayExpr) { delete ArrayExpr; ArrayExpr = nullptr; }
   if (NumExpr2) { delete NumExpr2; NumExpr2 = nullptr; }
   if (NumExpr) { delete NumExpr; NumExpr = nullptr; }
+}
+
+
+//==========================================================================
+//
+//  VDynArraySetNum::HasSideEffects
+//
+//==========================================================================
+bool VDynArraySetNum::HasSideEffects () {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VDynArraySetNum::VisitChildren
+//
+//==========================================================================
+void VDynArraySetNum::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && ArrayExpr) ArrayExpr->Visit(v);
+  if (!v->stopIt && NumExpr) NumExpr->Visit(v);
+  if (!v->stopIt && NumExpr2) NumExpr2->Visit(v);
 }
 
 
@@ -1153,6 +1240,28 @@ VDynArrayInsert::~VDynArrayInsert () {
 
 //==========================================================================
 //
+//  VDynArrayInsert::HasSideEffects
+//
+//==========================================================================
+bool VDynArrayInsert::HasSideEffects () {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VDynArrayInsert::VisitChildren
+//
+//==========================================================================
+void VDynArrayInsert::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && ArrayExpr) ArrayExpr->Visit(v);
+  if (!v->stopIt && IndexExpr) IndexExpr->Visit(v);
+  if (!v->stopIt && CountExpr) CountExpr->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VDynArrayInsert::SyntaxCopy
 //
 //==========================================================================
@@ -1272,6 +1381,28 @@ VDynArrayRemove::~VDynArrayRemove () {
   if (ArrayExpr) { delete ArrayExpr; ArrayExpr = nullptr; }
   if (IndexExpr) { delete IndexExpr; IndexExpr = nullptr; }
   if (CountExpr) { delete CountExpr; CountExpr = nullptr; }
+}
+
+
+//==========================================================================
+//
+//  VDynArrayRemove::HasSideEffects
+//
+//==========================================================================
+bool VDynArrayRemove::HasSideEffects () {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VDynArrayRemove::VisitChildren
+//
+//==========================================================================
+void VDynArrayRemove::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && ArrayExpr) ArrayExpr->Visit(v);
+  if (!v->stopIt && IndexExpr) IndexExpr->Visit(v);
+  if (!v->stopIt && CountExpr) CountExpr->Visit(v);
 }
 
 
@@ -1397,6 +1528,26 @@ VDynArrayClear::~VDynArrayClear () {
 
 //==========================================================================
 //
+//  VDynArrayClear::HasSideEffects
+//
+//==========================================================================
+bool VDynArrayClear::HasSideEffects () {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VDynArrayClear::VisitChildren
+//
+//==========================================================================
+void VDynArrayClear::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && ArrayExpr) ArrayExpr->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VDynArrayClear::SyntaxCopy
 //
 //==========================================================================
@@ -1488,6 +1639,27 @@ VDynArraySort::VDynArraySort (VExpression *AArrayExpr, VExpression *ADgExpr, con
 VDynArraySort::~VDynArraySort () {
   if (ArrayExpr) { delete ArrayExpr; ArrayExpr = nullptr; }
   if (DgExpr) { delete DgExpr; DgExpr = nullptr; }
+}
+
+
+//==========================================================================
+//
+//  VDynArraySort::HasSideEffects
+//
+//==========================================================================
+bool VDynArraySort::HasSideEffects () {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VDynArraySort::VisitChildren
+//
+//==========================================================================
+void VDynArraySort::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && ArrayExpr) ArrayExpr->Visit(v);
+  if (!v->stopIt && DgExpr) DgExpr->Visit(v);
 }
 
 
@@ -1682,6 +1854,28 @@ VDynArraySwap1D::~VDynArraySwap1D () {
 
 //==========================================================================
 //
+//  VDynArraySwap1D::HasSideEffects
+//
+//==========================================================================
+bool VDynArraySwap1D::HasSideEffects () {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VDynArraySwap1D::VisitChildren
+//
+//==========================================================================
+void VDynArraySwap1D::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && ArrayExpr) ArrayExpr->Visit(v);
+  if (!v->stopIt && Index0Expr) Index0Expr->Visit(v);
+  if (!v->stopIt && Index1Expr) Index1Expr->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VDynArraySwap1D::SyntaxCopy
 //
 //==========================================================================
@@ -1804,6 +1998,27 @@ VDynArrayCopyFrom::~VDynArrayCopyFrom () {
 
 //==========================================================================
 //
+//  VDynArrayCopyFrom::HasSideEffects
+//
+//==========================================================================
+bool VDynArrayCopyFrom::HasSideEffects () {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VDynArrayCopyFrom::VisitChildren
+//
+//==========================================================================
+void VDynArrayCopyFrom::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && ArrayExpr) ArrayExpr->Visit(v);
+  if (!v->stopIt && SrcExpr) SrcExpr->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VDynArrayCopyFrom::SyntaxCopy
 //
 //==========================================================================
@@ -1913,6 +2128,26 @@ VDynArrayAllocElement::~VDynArrayAllocElement () {
 
 //==========================================================================
 //
+//  VDynArrayAllocElement::HasSideEffects
+//
+//==========================================================================
+bool VDynArrayAllocElement::HasSideEffects () {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VDynArrayAllocElement::VisitChildren
+//
+//==========================================================================
+void VDynArrayAllocElement::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && ArrayExpr) ArrayExpr->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VDynArrayAllocElement::SyntaxCopy
 //
 //==========================================================================
@@ -2005,6 +2240,26 @@ VStringGetLength::~VStringGetLength () {
     delete StrExpr;
     StrExpr = nullptr;
   }
+}
+
+
+//==========================================================================
+//
+//  VStringGetLength::HasSideEffects
+//
+//==========================================================================
+bool VStringGetLength::HasSideEffects () {
+  return (StrExpr && StrExpr->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VStringGetLength::VisitChildren
+//
+//==========================================================================
+void VStringGetLength::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && StrExpr) StrExpr->Visit(v);
 }
 
 
@@ -2105,6 +2360,26 @@ VSliceGetLength::~VSliceGetLength () {
 
 //==========================================================================
 //
+//  VSliceGetLength::HasSideEffects
+//
+//==========================================================================
+bool VSliceGetLength::HasSideEffects () {
+  return (sexpr && sexpr->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VSliceGetLength::VisitChildren
+//
+//==========================================================================
+void VSliceGetLength::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && sexpr) sexpr->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VSliceGetLength::SyntaxCopy
 //
 //==========================================================================
@@ -2192,6 +2467,26 @@ VSliceGetPtr::VSliceGetPtr (VExpression *asexpr, const TLocation &aloc)
 //==========================================================================
 VSliceGetPtr::~VSliceGetPtr () {
   delete sexpr;
+}
+
+
+//==========================================================================
+//
+//  VSliceGetPtr::HasSideEffects
+//
+//==========================================================================
+bool VSliceGetPtr::HasSideEffects () {
+  return (sexpr && sexpr->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VSliceGetPtr::VisitChildren
+//
+//==========================================================================
+void VSliceGetPtr::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && sexpr) sexpr->Visit(v);
 }
 
 
@@ -2287,6 +2582,26 @@ VDictGetLength::~VDictGetLength () {
 
 //==========================================================================
 //
+//  VDictGetLength::HasSideEffects
+//
+//==========================================================================
+bool VDictGetLength::HasSideEffects () {
+  return (sexpr && sexpr->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VDictGetLength::VisitChildren
+//
+//==========================================================================
+void VDictGetLength::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && sexpr) sexpr->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VDictGetLength::SyntaxCopy
 //
 //==========================================================================
@@ -2370,6 +2685,26 @@ VDictGetCapacity::VDictGetCapacity (VExpression *asexpr, const TLocation &aloc)
 //==========================================================================
 VDictGetCapacity::~VDictGetCapacity () {
   delete sexpr;
+}
+
+
+//==========================================================================
+//
+//  VDictGetCapacity::HasSideEffects
+//
+//==========================================================================
+bool VDictGetCapacity::HasSideEffects () {
+  return (sexpr && sexpr->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VDictGetCapacity::VisitChildren
+//
+//==========================================================================
+void VDictGetCapacity::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && sexpr) sexpr->Visit(v);
 }
 
 
@@ -2459,6 +2794,26 @@ VDictClearOrReset::VDictClearOrReset (VExpression *asexpr, bool aClear, const TL
 //==========================================================================
 VDictClearOrReset::~VDictClearOrReset () {
   delete sexpr;
+}
+
+
+//==========================================================================
+//
+//  VDictClearOrReset::HasSideEffects
+//
+//==========================================================================
+bool VDictClearOrReset::HasSideEffects () {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VDictClearOrReset::VisitChildren
+//
+//==========================================================================
+void VDictClearOrReset::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && sexpr) sexpr->Visit(v);
 }
 
 
@@ -2561,6 +2916,26 @@ VDictRehash::~VDictRehash () {
 
 //==========================================================================
 //
+//  VDictRehash::HasSideEffects
+//
+//==========================================================================
+bool VDictRehash::HasSideEffects () {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VDictRehash::VisitChildren
+//
+//==========================================================================
+void VDictRehash::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && sexpr) sexpr->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VDictRehash::SyntaxCopy
 //
 //==========================================================================
@@ -2654,6 +3029,29 @@ VDictFind::VDictFind (VExpression *asexpr, VExpression *akeyexpr, const TLocatio
 VDictFind::~VDictFind () {
   delete sexpr;
   delete keyexpr;
+}
+
+
+//==========================================================================
+//
+//  VDictFind::HasSideEffects
+//
+//==========================================================================
+bool VDictFind::HasSideEffects () {
+  return
+    (sexpr && sexpr->HasSideEffects()) ||
+    (keyexpr && keyexpr->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VDictFind::VisitChildren
+//
+//==========================================================================
+void VDictFind::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && sexpr) sexpr->Visit(v);
+  if (!v->stopIt && keyexpr) keyexpr->Visit(v);
 }
 
 
@@ -2759,6 +3157,27 @@ VDictDelete::VDictDelete (VExpression *asexpr, VExpression *akeyexpr, const TLoc
 VDictDelete::~VDictDelete () {
   delete sexpr;
   delete keyexpr;
+}
+
+
+//==========================================================================
+//
+//  VDictDelete::HasSideEffects
+//
+//==========================================================================
+bool VDictDelete::HasSideEffects () {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VDictDelete::VisitChildren
+//
+//==========================================================================
+void VDictDelete::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && sexpr) sexpr->Visit(v);
+  if (!v->stopIt && keyexpr) keyexpr->Visit(v);
 }
 
 
@@ -2872,6 +3291,28 @@ VDictPut::~VDictPut () {
   delete sexpr;
   delete keyexpr;
   delete valexpr;
+}
+
+
+//==========================================================================
+//
+//  VDictPut::HasSideEffects
+//
+//==========================================================================
+bool VDictPut::HasSideEffects () {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VDictPut::VisitChildren
+//
+//==========================================================================
+void VDictPut::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && sexpr) sexpr->Visit(v);
+  if (!v->stopIt && keyexpr) keyexpr->Visit(v);
+  if (!v->stopIt && valexpr) valexpr->Visit(v);
 }
 
 
@@ -3003,6 +3444,26 @@ VDictFirstIndex::~VDictFirstIndex () {
 
 //==========================================================================
 //
+//  VDictFirstIndex::HasSideEffects
+//
+//==========================================================================
+bool VDictFirstIndex::HasSideEffects () {
+  return (sexpr && sexpr->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VDictFirstIndex::VisitChildren
+//
+//==========================================================================
+void VDictFirstIndex::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && sexpr) sexpr->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VDictFirstIndex::SyntaxCopy
 //
 //==========================================================================
@@ -3088,6 +3549,29 @@ VDictIsValidIndex::VDictIsValidIndex (VExpression *asexpr, VExpression *aidxexpr
 VDictIsValidIndex::~VDictIsValidIndex () {
   delete sexpr;
   delete idxexpr;
+}
+
+
+//==========================================================================
+//
+//  VDictIsValidIndex::HasSideEffects
+//
+//==========================================================================
+bool VDictIsValidIndex::HasSideEffects () {
+  return
+    (sexpr && sexpr->HasSideEffects()) ||
+    (idxexpr && idxexpr->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VDictIsValidIndex::VisitChildren
+//
+//==========================================================================
+void VDictIsValidIndex::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && sexpr) sexpr->Visit(v);
+  if (!v->stopIt && idxexpr) idxexpr->Visit(v);
 }
 
 
@@ -3191,6 +3675,29 @@ VDictNextIndex::VDictNextIndex (VExpression *asexpr, VExpression *aidxexpr, bool
 VDictNextIndex::~VDictNextIndex () {
   delete sexpr;
   delete idxexpr;
+}
+
+
+//==========================================================================
+//
+//  VDictNextIndex::HasSideEffects
+//
+//==========================================================================
+bool VDictNextIndex::HasSideEffects () {
+  return
+    (sexpr && sexpr->HasSideEffects()) ||
+    (idxexpr && idxexpr->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VDictNextIndex::VisitChildren
+//
+//==========================================================================
+void VDictNextIndex::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && sexpr) sexpr->Visit(v);
+  if (!v->stopIt && idxexpr) idxexpr->Visit(v);
 }
 
 
@@ -3306,6 +3813,29 @@ VDictKeyAtIndex::~VDictKeyAtIndex () {
 
 //==========================================================================
 //
+//  VDictKeyAtIndex::HasSideEffects
+//
+//==========================================================================
+bool VDictKeyAtIndex::HasSideEffects () {
+  return
+    (sexpr && sexpr->HasSideEffects()) ||
+    (idxexpr && idxexpr->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VDictKeyAtIndex::VisitChildren
+//
+//==========================================================================
+void VDictKeyAtIndex::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && sexpr) sexpr->Visit(v);
+  if (!v->stopIt && idxexpr) idxexpr->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VDictKeyAtIndex::SyntaxCopy
 //
 //==========================================================================
@@ -3410,6 +3940,29 @@ VDictValueAtIndex::~VDictValueAtIndex () {
 
 //==========================================================================
 //
+//  VDictValueAtIndex::HasSideEffects
+//
+//==========================================================================
+bool VDictValueAtIndex::HasSideEffects () {
+  return
+    (sexpr && sexpr->HasSideEffects()) ||
+    (idxexpr && idxexpr->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VDictValueAtIndex::VisitChildren
+//
+//==========================================================================
+void VDictValueAtIndex::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && sexpr) sexpr->Visit(v);
+  if (!v->stopIt && idxexpr) idxexpr->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VDictValueAtIndex::SyntaxCopy
 //
 //==========================================================================
@@ -3507,6 +4060,26 @@ VStructZero::VStructZero (VExpression *asexpr, const TLocation &aloc)
 //==========================================================================
 VStructZero::~VStructZero () {
   delete sexpr;
+}
+
+
+//==========================================================================
+//
+//  VStructZero::HasSideEffects
+//
+//==========================================================================
+bool VStructZero::HasSideEffects () {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VStructZero::VisitChildren
+//
+//==========================================================================
+void VStructZero::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && sexpr) sexpr->Visit(v);
 }
 
 

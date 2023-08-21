@@ -65,6 +65,29 @@ VDynCastWithVar::~VDynCastWithVar () {
 
 //==========================================================================
 //
+//  VDynCastWithVar::HasSideEffects
+//
+//==========================================================================
+bool VDynCastWithVar::HasSideEffects () {
+  return
+    (what && what->HasSideEffects()) ||
+    (destclass && destclass->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VDynCastWithVar::VisitChildren
+//
+//==========================================================================
+void VDynCastWithVar::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && what) what->Visit(v);
+  if (!v->stopIt && destclass) destclass->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VDynCastWithVar::SyntaxCopy
 //
 //==========================================================================
@@ -171,6 +194,26 @@ VArgMarshall::VArgMarshall (VName aname, const TLocation &aloc)
   , marshallOpt(false)
   , argName(aname)
 {
+}
+
+
+//==========================================================================
+//
+//  VArgMarshall::HasSideEffects
+//
+//==========================================================================
+bool VArgMarshall::HasSideEffects () {
+  return (e && e->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VArgMarshall::VisitChildren
+//
+//==========================================================================
+void VArgMarshall::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && e) e->Visit(v);
 }
 
 
@@ -346,6 +389,28 @@ VInvocationBase::VInvocationBase (int ANumArgs, VExpression **AArgs, const TLoca
 VInvocationBase::~VInvocationBase () {
   for (int i = 0; i < NumArgs; ++i) { delete Args[i]; Args[i] = nullptr; }
   NumArgs = 0;
+}
+
+
+//==========================================================================
+//
+//  VInvocationBase::HasSideEffects
+//
+//==========================================================================
+bool VInvocationBase::HasSideEffects () {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VInvocationBase::VisitChildren
+//
+//==========================================================================
+void VInvocationBase::VisitChildren (VExprVisitor *v) {
+  for (int f = 0; !v->stopIt && f < NumArgs; f += 1) {
+    if (Args[f]) Args[f]->Visit(v);
+  }
 }
 
 

@@ -522,6 +522,7 @@ VMethod::VMethod (VName AName, VMemberBase *AOuter, TLocation ALoc)
   , SelfTypeClass(nullptr)
   , defineResult(-1)
   , emitCalled(false)
+  , jited(false)
 {
   memset(ParamFlags, 0, sizeof(ParamFlags));
 }
@@ -747,6 +748,195 @@ bool VMethod::Define () {
 }
 
 
+// ////////////////////////////////////////////////////////////////////////// //
+class VLocCollectVisitor;
+class VExprLocVisitor;
+
+class VLocCollectVisitor : public VStatementVisitorChildrenLast {
+public:
+  struct LocInfo {
+    int lidx;
+    int assidx;
+    int setCount;
+    int useCount;
+  };
+
+  VEmitContext *ec;
+  VMethod *mt;
+  int argmaxidx;
+  TMapNC<int, LocInfo> lvars;
+
+  int assidx;
+
+public:
+  VLocCollectVisitor (VEmitContext *aec, VMethod *amt, int amax);
+  virtual ~VLocCollectVisitor ();
+
+  virtual void VisitedExpr (VStatement *stmt, VExpression *expr) override;
+  virtual void Visited (VStatement *stmt) override;
+};
+
+
+class VExprLocVisitor : public VExprVisitorChildrenLast {
+public:
+  VLocCollectVisitor *stv;
+  bool indecl;
+
+public:
+  VExprLocVisitor (VLocCollectVisitor *astv);
+  virtual ~VExprLocVisitor () override;
+
+  virtual void Visited (VExpression *expr) override;
+};
+
+
+//==========================================================================
+//
+//  VExprLocVisitor::VExprLocVisitor
+//
+//==========================================================================
+VExprLocVisitor::VExprLocVisitor (VLocCollectVisitor *astv)
+  : VExprVisitorChildrenLast()
+  , stv(astv)
+  , indecl(false)
+{
+}
+
+
+//==========================================================================
+//
+//  VExprLocVisitor::~VExprLocVisitor
+//
+//==========================================================================
+VExprLocVisitor::~VExprLocVisitor () {
+}
+
+
+
+//==========================================================================
+//
+//  VLocCollectVisitor::VLocCollectVisitor
+//
+//==========================================================================
+VLocCollectVisitor::VLocCollectVisitor (VEmitContext *aec, VMethod *amt, int amax)
+  : VStatementVisitorChildrenLast()
+  , ec(aec)
+  , mt(amt)
+  , argmaxidx(amax)
+  , assidx(0)
+{}
+
+
+//==========================================================================
+//
+//  VExprLocVisitor::Visited
+//
+//==========================================================================
+void VExprLocVisitor::Visited (VExpression *expr) {
+  /*
+  if (expr->IsLocalVarExpr()) {
+    int lvidx = ((VLocalVar *)expr)->num;
+    if (lvidx >= stv->argmaxidx && stv->ec->IsLocalUsedByIdx(lvidx)) {
+      VLocalVarDef &ldef = stv->ec->GetLocalByIndex(lvidx);
+      if (ldef.Name != NAME_None) {
+        while (lvidx >= stv->lvseen.length()) {
+          stv->lvseen.Append(false);
+        }
+        if (!stv->lvseen[lvidx]) {
+          VLocalVarDef &GetLocalByIndex (int idx) noexcept;
+          stv->lvseen[lvidx] = true;
+          VLocCollectVisitor::LocInfo &li = stv->lvars.Alloc();
+          li.lidx = lvidx;
+        }
+      }
+    }
+  }
+  */
+}
+
+
+//==========================================================================
+//
+//  VLocCollectVisitor::~VLocCollectVisitor
+//
+//==========================================================================
+VLocCollectVisitor::~VLocCollectVisitor () {
+}
+
+
+//==========================================================================
+//
+//  VLocCollectVisitor::VisitedExpr
+//
+//==========================================================================
+void VLocCollectVisitor::VisitedExpr (VStatement *stmt, VExpression *expr) {
+  //VExprLocVisitor ev(this);
+  if (this->locDecl && expr->IsLocalVarDecl()) {
+    //ev.indecl = true;
+    //expr->Visit(&ev, ChildrenFirst);
+    VLocalDecl *dc = (VLocalDecl *)expr;
+    for (int f = 0; f < dc->Vars.length(); f += 1) {
+      const VLocalEntry &le = dc->Vars[f];
+      if (le.Name != NAME_None) {
+        vassert(le.locIdx >= 0);
+        VLocalVarDef &ldef = ec->GetLocalByIndex(le.locIdx);
+        if (le.Value) {
+          GLog.Logf(NAME_Debug, "METHOD: %s, local #%d: %s; init=%s",
+                    *mt->GetFullName(), le.locIdx, *ldef.Name,
+                    *le.Value->toString());
+        } else {
+          GLog.Logf(NAME_Debug, "METHOD: %s, local #%d: %s",
+                    *mt->GetFullName(), le.locIdx, *ldef.Name);
+        }
+      }
+    }
+  }
+}
+
+
+//==========================================================================
+//
+//  VLocCollectVisitor::Visited
+//
+//==========================================================================
+void VLocCollectVisitor::Visited (VStatement *stmt) {
+  if (stmt->IsVarDecl()) {
+    /*
+    VLocalVarStatement *ld = (VLocalVarStatement *)stmt;
+    VLocalDecl *Decl;
+    */
+  }
+}
+
+
+//==========================================================================
+//
+//  OptimiseLocals
+//
+//==========================================================================
+static VStatement *OptimiseLocals (VEmitContext *ec, VMethod *mt, VStatement *Statement,
+                                   int argmaxidx)
+{
+  #if 0
+  VLocCollectVisitor stcv(ec, mt, argmaxidx);
+
+  Statement->Visit(&stcv);
+
+  /*
+  if (stcv.lvars.length()) {
+    GLog.Logf(NAME_Debug, "METHOD: %s, locals: %d", *mt->GetFullName(), stcv.lvars.length());
+    for (int f = 0; f < stcv.lvars.length(); f += 1) {
+      VLocalVarDef &ldef = ec->GetLocalByIndex(stcv.lvars[f].lidx);
+      GLog.Logf(NAME_Debug, "  %d: %s", f, *ldef.Name);
+    }
+  }
+  */
+  #endif
+
+  return Statement;
+}
+
+
 //==========================================================================
 //
 //  VMethod::Emit
@@ -815,8 +1005,10 @@ void VMethod::Emit () {
     }
   }
 
+  const int argmaxidx = ec.GetLocalDefCount();
+
   // also, mark arguments as "used" to avoid useless warnings
-  for (int i = 0; i < ec.GetLocalDefCount(); ++i) {
+  for (int i = 0; i < argmaxidx; ++i) {
     ec.MarkLocalUsedByIdx(i);
     // emit "fix" for each non-ref TVec
     VLocalVarDef &loc = ec.GetLocalByIndex(i);
@@ -834,6 +1026,8 @@ void VMethod::Emit () {
     //fprintf(stderr, "===\n%s\n===\n", /*Statement->toString()*/*shitppTypeNameObj(*Statement));
     return;
   }
+
+  Statement = OptimiseLocals(&ec, this, Statement, argmaxidx);
 
   //GLog.Logf(NAME_Debug, "*** METHOD(after): %s ***", *GetFullName());
   //GLog.Logf(NAME_Debug, "%s", *Statement->toString());
@@ -980,7 +1174,7 @@ void VMethod::DumpAsm () {
           break;
         case OPCARGS_Int:
           if (Instructions[s].Arg1IsFloat) {
-            disstr += va(" %f", *(const float *)&Instructions[s].Arg1);
+            disstr += va(" %f", Instructions[s].Arg1F);
           } else {
             disstr += va(" %6d (%x)", Instructions[s].Arg1, Instructions[s].Arg1);
           }
@@ -1433,6 +1627,8 @@ void VMethod::GenerateCode () {
   */
   #endif
 
+  if (vcErrorCount == 0) CompileToNativeCode();
+
   // we don't need instructions anymore
   Instructions.Clear();
   //Statements.condense();
@@ -1576,3 +1772,6 @@ bool VMethod::ReportUnusedBuiltins () {
   }
   return res;
 }
+
+
+#include "vc_method_jit.cpp"

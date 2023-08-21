@@ -53,6 +53,40 @@ VLocalDecl::~VLocalDecl () {
 
 //==========================================================================
 //
+//  VLocalDecl::HasSideEffects
+//
+//==========================================================================
+bool VLocalDecl::HasSideEffects () {
+  bool res = false;
+  for (int i = 0; !res && i < Vars.length(); ++i) {
+    if (Vars[i].Value) res = Vars[i].Value->HasSideEffects();
+  }
+  return res;
+}
+
+
+//==========================================================================
+//
+//  VLocalDecl::VisitChildren
+//
+//==========================================================================
+void VLocalDecl::VisitChildren (VExprVisitor *v) {
+  for (int i = 0; !v->stopIt && i < Vars.length(); ++i) {
+    if (Vars[i].Value) {
+      const int odi = v->locDefIdx;
+      VLocalDecl *odc = v->locDecl;
+      v->locDefIdx = i;
+      v->locDecl = this;
+      Vars[i].Value->Visit(v);
+      v->locDefIdx = odi;
+      v->locDecl = odc;
+    }
+  }
+}
+
+
+//==========================================================================
+//
 //  VLocalDecl::SyntaxCopy
 //
 //==========================================================================
@@ -397,6 +431,25 @@ VLocalVar::VLocalVar (int ANum, bool aUnsafe, const TLocation &ALoc)
   , requestedAssAddr(false)
   , isUnsafe(aUnsafe)
 {
+}
+
+
+//==========================================================================
+//
+//  VLocalVar::HasSideEffects
+//
+//==========================================================================
+bool VLocalVar::HasSideEffects () {
+  return false;
+}
+
+
+//==========================================================================
+//
+//  VLocalVar::VisitChildren
+//
+//==========================================================================
+void VLocalVar::VisitChildren (VExprVisitor *v) {
 }
 
 

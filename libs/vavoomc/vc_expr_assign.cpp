@@ -83,6 +83,27 @@ void VAssignment::DoSyntaxCopyTo (VExpression *e) {
 
 //==========================================================================
 //
+//  VAssignment::HasSideEffects
+//
+//==========================================================================
+bool VAssignment::HasSideEffects () {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VAssignment::VisitChildren
+//
+//==========================================================================
+void VAssignment::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && op1) op1->Visit(v);
+  if (!v->stopIt && op2) op2->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VAssignment::DoResolve
 //
 //==========================================================================
@@ -215,6 +236,12 @@ VExpression *VAssignment::DoResolve (VEmitContext &ec) {
     }
     op1->RequestAddressOfForAssign();
   }
+
+  #if 0
+  if (!op2->HasSideEffects()) {
+    ParseWarning(Loc, "assign without a side effect");
+  }
+  #endif
 
   SetResolved();
   return this;

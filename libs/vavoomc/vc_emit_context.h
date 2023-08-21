@@ -47,6 +47,8 @@ public:
 
 
 // ////////////////////////////////////////////////////////////////////////// //
+class VStatement;
+
 class VLocalVarDef {
 public:
   VName Name;
@@ -61,13 +63,15 @@ public:
   // internal index; DO NOT CHANGE!
   int ldindex;
   bool reused;
+  // latest assign to this local
+  VStatement *assign;
 
 private:
   int stackSize; // for reusing
   bool invalid; // can be set by allocator
 
 public:
-  VLocalVarDef () {}
+  VLocalVarDef () : assign(nullptr) {}
 
   inline int GetIndex () const noexcept { return ldindex; }
 
@@ -111,6 +115,15 @@ private:
   };
 
   TArray<VGotoListItem> GotoLabels;
+
+public:
+  struct LocalRWSaved {
+    bool WasRead; // reading from local will set this
+    bool WasWrite; // writing to local will set this
+    VStatement *assign;
+  };
+
+  typedef TArrayNC<LocalRWSaved> LocalsRWState;
 
 public:
   VMethod *CurrentFunc;
@@ -207,6 +220,10 @@ public:
   bool IsLocalUsedByIdx (int idx) const noexcept;
 
   inline int GetLocalDefCount () const noexcept { return LocalDefs.length(); }
+
+  // used in analysers
+  void SaveLocalsReadWrite (LocalsRWState &state);
+  void RestoreLocalsReadWrite (const LocalsRWState &state);
 
   // returns index in `LocalDefs`
   int CheckForLocalVar (VName Name);

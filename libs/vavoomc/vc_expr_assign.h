@@ -56,6 +56,9 @@ public:
   virtual void Emit (VEmitContext &) override;
   virtual bool IsAssignExpr () const override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:

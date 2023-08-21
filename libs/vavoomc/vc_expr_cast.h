@@ -38,6 +38,9 @@ public:
   virtual ~VCastExpressionBase () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
 protected:
   VCastExpressionBase () {}
   virtual void DoSyntaxCopyTo (VExpression *e) override;
@@ -357,6 +360,8 @@ public:
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
+
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 

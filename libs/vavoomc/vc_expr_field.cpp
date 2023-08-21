@@ -61,6 +61,27 @@ VFieldBase::~VFieldBase () {
   if (op) { delete op; op = nullptr; }
 }
 
+
+//==========================================================================
+//
+//  VFieldBase::HasSideEffects
+//
+//==========================================================================
+bool VFieldBase::HasSideEffects () {
+  return (op && op->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VFieldBase::VisitChildren
+//
+//==========================================================================
+void VFieldBase::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && op) op->Visit(v);
+}
+
+
 //==========================================================================
 //
 //  VFieldBase::DoSyntaxCopyTo
@@ -1050,6 +1071,26 @@ VVectorDirectFieldAccess::~VVectorDirectFieldAccess () {
 
 //==========================================================================
 //
+//  VVectorDirectFieldAccess::HasSideEffects
+//
+//==========================================================================
+bool VVectorDirectFieldAccess::HasSideEffects () {
+  return (op && op->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VVectorDirectFieldAccess::VisitChildren
+//
+//==========================================================================
+void VVectorDirectFieldAccess::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && op) op->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VVectorDirectFieldAccess::SyntaxCopy
 //
 //==========================================================================
@@ -1204,6 +1245,26 @@ VVectorSwizzleExpr::VVectorSwizzleExpr (VExpression *AOp, int ASwizzle, bool ADi
 //==========================================================================
 VVectorSwizzleExpr::~VVectorSwizzleExpr () {
   delete op; op = nullptr;
+}
+
+
+//==========================================================================
+//
+//  VVectorSwizzleExpr::HasSideEffects
+//
+//==========================================================================
+bool VVectorSwizzleExpr::HasSideEffects () {
+  return (op && op->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VVectorSwizzleExpr::VisitChildren
+//
+//==========================================================================
+void VVectorSwizzleExpr::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && op) op->Visit(v);
 }
 
 
@@ -1686,6 +1747,26 @@ VFieldAccess::~VFieldAccess () {
 
 //==========================================================================
 //
+//  VFieldAccess::HasSideEffects
+//
+//==========================================================================
+bool VFieldAccess::HasSideEffects () {
+  return (op && op->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VFieldAccess::VisitChildren
+//
+//==========================================================================
+void VFieldAccess::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && op) op->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VFieldAccess::SyntaxCopy
 //
 //==========================================================================
@@ -1832,6 +1913,26 @@ VDelegateVal::~VDelegateVal () {
     delete op;
     op = nullptr;
   }
+}
+
+
+//==========================================================================
+//
+//  VDelegateVal::HasSideEffects
+//
+//==========================================================================
+bool VDelegateVal::HasSideEffects () {
+  return (op && op->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VDelegateVal::VisitChildren
+//
+//==========================================================================
+void VDelegateVal::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && op) op->Visit(v);
 }
 
 

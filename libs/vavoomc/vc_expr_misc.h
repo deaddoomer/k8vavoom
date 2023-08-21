@@ -52,6 +52,9 @@ public:
   inline VExpression *getOp (int idx) noexcept { return (idx == 0 ? op1 : idx == 1 ? op2 : idx == 2 ? op3 : nullptr); }
   inline void setOp (int idx, VExpression *e) noexcept { vassert(idx >= 0 && idx <= 2); if (idx == 0) op1 = e; else if (idx == 1) op2 = e; else op3 = e; }
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -86,6 +89,9 @@ public:
   virtual bool IsValidTypeExpression () const override;
   virtual bool IsSingleName () const override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -114,6 +120,9 @@ public:
   virtual bool IsValidTypeExpression () const override;
   virtual bool IsDoubleName () const override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -137,6 +146,9 @@ public:
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
   virtual bool IsDefaultObject () const override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 
@@ -162,6 +174,9 @@ public:
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void RequestAddressOf () override;
   virtual void Emit (VEmitContext &) override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 
@@ -189,6 +204,9 @@ public:
   virtual void Emit (VEmitContext &) override;
 
   virtual bool IsTernary () const override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 
@@ -222,6 +240,9 @@ public:
   virtual bool IsComma () const override;
   virtual bool IsCommaRetOp0 () const override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -247,6 +268,9 @@ public:
 
   virtual bool IsDropResult () const override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -268,6 +292,9 @@ public:
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 
@@ -295,6 +322,9 @@ public:
   virtual vint32 GetIntConst () const override;
   virtual float GetFloatConst () const override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -320,6 +350,9 @@ public:
   virtual void Emit (VEmitContext &) override;
   virtual bool IsDecorateSingleName () const override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -343,6 +376,9 @@ public:
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
+
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual VStr toString () const override;
 

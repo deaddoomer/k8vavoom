@@ -49,6 +49,9 @@ public:
   // this one resolves `TYPE_Vector` to `TVec` struct
   static VTypeExpr *NewTypeExprFromAuto (VFieldType atype, const TLocation &aloc);
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
 protected:
@@ -130,6 +133,8 @@ public:
   virtual ~VFixedArrayType () override;
   virtual VExpression *SyntaxCopy () override;
   virtual VTypeExpr *ResolveAsType (VEmitContext &) override;
+
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual bool IsAnyArrayType () const override;
   virtual bool IsStaticArrayType () const override;
@@ -221,6 +226,8 @@ public:
   virtual ~VDictType () override;
   virtual VExpression *SyntaxCopy () override;
   virtual VTypeExpr *ResolveAsType (VEmitContext &) override;
+
+  virtual void VisitChildren (VExprVisitor *v) override;
 
   virtual bool IsDictType () const override;
 

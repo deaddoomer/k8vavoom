@@ -81,7 +81,10 @@ struct Instr {
   // fields from the original
   //vint32 Address;
   vint32 Opcode;
-  vint32 Arg1;
+  union {
+    vint32 Arg1;
+    float Arg1F;
+  };
   vint32 Arg2;
   bool Arg1IsFloat;
   vint32 spcur; // current stack offset (from 0th parameter)
@@ -1119,7 +1122,7 @@ struct Instr {
         break;
       case OPCARGS_Int:
         if (Arg1IsFloat) {
-          fprintf(stderr, " %f", *(const float *)&Arg1);
+          fprintf(stderr, " %f", Arg1F);
         } else {
           fprintf(stderr, " %d (0x%08x)", Arg1, (unsigned)Arg1);
         }

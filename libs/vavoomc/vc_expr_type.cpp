@@ -43,6 +43,26 @@ VTypeExpr::VTypeExpr (VFieldType atype, const TLocation &aloc)
 
 //==========================================================================
 //
+//  VTypeExpr::HasSideEffects
+//
+//==========================================================================
+bool VTypeExpr::HasSideEffects () {
+  return false;
+}
+
+
+//==========================================================================
+//
+//  VTypeExpr::VisitChildren
+//
+//==========================================================================
+void VTypeExpr::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && Expr) Expr->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VTypeExpr::NewTypeExpr
 //
 //==========================================================================
@@ -405,6 +425,18 @@ VFixedArrayType::VFixedArrayType (VExpression *AExpr, VExpression *ASizeExpr, VE
 VFixedArrayType::~VFixedArrayType () {
   if (SizeExpr) { delete SizeExpr; SizeExpr = nullptr; }
   if (SizeExpr2) { delete SizeExpr2; SizeExpr2 = nullptr; }
+}
+
+
+//==========================================================================
+//
+//  VFixedArrayType::VisitChildren
+//
+//==========================================================================
+void VFixedArrayType::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && Expr) Expr->Visit(v);
+  if (!v->stopIt && SizeExpr) SizeExpr->Visit(v);
+  if (!v->stopIt && SizeExpr2) SizeExpr2->Visit(v);
 }
 
 
@@ -798,6 +830,17 @@ VDictType::VDictType (VExpression *AKExpr, VExpression *AVExpr, const TLocation 
 //==========================================================================
 VDictType::~VDictType () {
   delete VExpr; VExpr = nullptr;
+}
+
+
+//==========================================================================
+//
+//  VDictType::VisitChildren
+//
+//==========================================================================
+void VDictType::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && Expr) Expr->Visit(v);
+  if (!v->stopIt && VExpr) VExpr->Visit(v);
 }
 
 

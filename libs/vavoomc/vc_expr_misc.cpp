@@ -71,6 +71,31 @@ VVectorExpr::~VVectorExpr () {
 
 //==========================================================================
 //
+//  VVectorExpr::HasSideEffects
+//
+//==========================================================================
+bool VVectorExpr::HasSideEffects () {
+  return
+    (op1 && op1->HasSideEffects()) ||
+    (op2 && op2->HasSideEffects()) ||
+    (op3 && op3->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VVectorExpr::VisitChildren
+//
+//==========================================================================
+void VVectorExpr::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && op1) op1->Visit(v);
+  if (!v->stopIt && op2) op2->Visit(v);
+  if (!v->stopIt && op3) op3->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VVectorExpr::SyntaxCopy
 //
 //==========================================================================
@@ -222,6 +247,25 @@ VSingleName::VSingleName (VName AName, const TLocation &ALoc, bool aBangSpec)
   , Name(AName)
   , bIsBangSpecified(aBangSpec)
 {
+}
+
+
+//==========================================================================
+//
+//  VSingleName::HasSideEffects
+//
+//==========================================================================
+bool VSingleName::HasSideEffects () {
+  return false;
+}
+
+
+//==========================================================================
+//
+//  VSingleName::VisitChildren
+//
+//==========================================================================
+void VSingleName::VisitChildren (VExprVisitor *v) {
 }
 
 
@@ -607,6 +651,25 @@ VDoubleName::VDoubleName (VName AName1, VName AName2, const TLocation &ALoc)
 
 //==========================================================================
 //
+//  VDoubleName::HasSideEffects
+//
+//==========================================================================
+bool VDoubleName::HasSideEffects () {
+  return false;
+}
+
+
+//==========================================================================
+//
+//  VDoubleName::VisitChildren
+//
+//==========================================================================
+void VDoubleName::VisitChildren (VExprVisitor *v) {
+}
+
+
+//==========================================================================
+//
 //  VDoubleName::SyntaxCopy
 //
 //==========================================================================
@@ -747,6 +810,26 @@ VDefaultObject::VDefaultObject (VExpression *AOp, const TLocation &ALoc)
 
 //==========================================================================
 //
+//  VDefaultObject::HasSideEffects
+//
+//==========================================================================
+bool VDefaultObject::HasSideEffects () {
+  return (op && op->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VDefaultObject::VisitChildren
+//
+//==========================================================================
+void VDefaultObject::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && op) op->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VDefaultObject::~VDefaultObject
 //
 //==========================================================================
@@ -878,6 +961,26 @@ VPushPointed::~VPushPointed () {
 
 //==========================================================================
 //
+//  VPushPointed::HasSideEffects
+//
+//==========================================================================
+bool VPushPointed::HasSideEffects () {
+  return (op && op->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VPushPointed::VisitChildren
+//
+//==========================================================================
+void VPushPointed::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && op) op->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VPushPointed::SyntaxCopy
 //
 //==========================================================================
@@ -990,6 +1093,31 @@ VConditional::~VConditional () {
   if (op) { delete op; op = nullptr; }
   if (op1) { delete op1; op1 = nullptr; }
   if (op2) { delete op2; op2 = nullptr; }
+}
+
+
+//==========================================================================
+//
+//  VConditional::HasSideEffects
+//
+//==========================================================================
+bool VConditional::HasSideEffects () {
+  return
+    (op && op->HasSideEffects()) ||
+    (op1 && op1->HasSideEffects()) ||
+    (op2 && op2->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VConditional::VisitChildren
+//
+//==========================================================================
+void VConditional::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && op) op->Visit(v);
+  if (!v->stopIt && op1) op1->Visit(v);
+  if (!v->stopIt && op2) op2->Visit(v);
 }
 
 
@@ -1137,6 +1265,29 @@ VCommaExprRetOp0::~VCommaExprRetOp0 () {
 
 //==========================================================================
 //
+//  VCommaExprRetOp0::HasSideEffects
+//
+//==========================================================================
+bool VCommaExprRetOp0::HasSideEffects () {
+  return
+    (op0 && op0->HasSideEffects()) ||
+    (op1 && op1->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VCommaExprRetOp0::VisitChildren
+//
+//==========================================================================
+void VCommaExprRetOp0::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && op0) op0->Visit(v);
+  if (!v->stopIt && op1) op1->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VCommaExprRetOp0::SyntaxCopy
 //
 //==========================================================================
@@ -1244,6 +1395,26 @@ VDropResult::VDropResult (VExpression *AOp)
 //==========================================================================
 VDropResult::~VDropResult () {
   if (op) { delete op; op = nullptr; }
+}
+
+
+//==========================================================================
+//
+//  VDropResult::HasSideEffects
+//
+//==========================================================================
+bool VDropResult::HasSideEffects () {
+  return (op && op->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VDropResult::VisitChildren
+//
+//==========================================================================
+void VDropResult::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && op) op->Visit(v);
 }
 
 
@@ -1370,6 +1541,25 @@ VClassConstant::VClassConstant (VClass *AClass, const TLocation &ALoc)
 
 //==========================================================================
 //
+//  VClassConstant::HasSideEffects
+//
+//==========================================================================
+bool VClassConstant::HasSideEffects () {
+  return false;
+}
+
+
+//==========================================================================
+//
+//  VClassConstant::VisitChildren
+//
+//==========================================================================
+void VClassConstant::VisitChildren (VExprVisitor *v) {
+}
+
+
+//==========================================================================
+//
 //  VClassConstant::SyntaxCopy
 //
 //==========================================================================
@@ -1434,6 +1624,25 @@ VConstantValue::VConstantValue (VConstant *AConst, const TLocation &ALoc)
   : VExpression(ALoc)
   , Const(AConst)
 {
+}
+
+
+//==========================================================================
+//
+//  VConstantValue::HasSideEffects
+//
+//==========================================================================
+bool VConstantValue::HasSideEffects () {
+  return false;
+}
+
+
+//==========================================================================
+//
+//  VConstantValue::VisitChildren
+//
+//==========================================================================
+void VConstantValue::VisitChildren (VExprVisitor *v) {
 }
 
 
@@ -1559,6 +1768,26 @@ VObjectPropGetIsDestroyed::~VObjectPropGetIsDestroyed () {
     delete ObjExpr;
     ObjExpr = nullptr;
   }
+}
+
+
+//==========================================================================
+//
+//  VObjectPropGetIsDestroyed::HasSideEffects
+//
+//==========================================================================
+bool VObjectPropGetIsDestroyed::HasSideEffects () {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VObjectPropGetIsDestroyed::VisitChildren
+//
+//==========================================================================
+void VObjectPropGetIsDestroyed::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && ObjExpr) ObjExpr->Visit(v);
 }
 
 

@@ -46,6 +46,9 @@ public:
   virtual VExpression *DoResolve (VEmitContext &) override;
   virtual void Emit (VEmitContext &) override;
 
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
+
   virtual VStr toString () const override;
 
   void FixKnownShit (VEmitContext &ec, const char *FuncName);
@@ -79,6 +82,8 @@ public:
   virtual VExpression *ResolveCompleteAssign (VEmitContext &ec, VExpression *val, bool &resolved) override;
   virtual void Emit (VEmitContext &ec) override;
   virtual bool IsDecorateUserVar () const override;
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
   virtual VStr toString () const override;
 
 protected:
@@ -113,6 +118,8 @@ public:
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &ec) override;
   virtual void Emit (VEmitContext &ec) override;
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
   virtual VStr toString () const override;
 
 protected:
@@ -144,6 +151,8 @@ public:
   virtual VExpression *SyntaxCopy () override;
   virtual VExpression *DoResolve (VEmitContext &ec) override;
   virtual void Emit (VEmitContext &ec) override;
+  virtual bool HasSideEffects () override;
+  virtual void VisitChildren (VExprVisitor *v) override;
   virtual VStr toString () const override;
 
 protected:
@@ -782,6 +791,28 @@ VDecorateInvocation::~VDecorateInvocation () {
 
 //==========================================================================
 //
+//  VDecorateInvocation::HasSideEffects
+//
+//==========================================================================
+bool VDecorateInvocation::HasSideEffects () {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VDecorateInvocation::VisitChildren
+//
+//==========================================================================
+void VDecorateInvocation::VisitChildren (VExprVisitor *v) {
+  for (int f = 0; !v->stopIt && f < NumArgs; f += 1) {
+    if (Args[f]) Args[f]->Visit(v);
+  }
+}
+
+
+//==========================================================================
+//
 //  VDecorateInvocation::toString
 //
 //==========================================================================
@@ -1010,6 +1041,26 @@ VDecorateUserVar::~VDecorateUserVar () {
 
 //==========================================================================
 //
+//  VDecorateUserVar::HasSideEffects
+//
+//==========================================================================
+bool VDecorateUserVar::HasSideEffects () {
+  return (index && index->HasSideEffects());
+}
+
+
+//==========================================================================
+//
+//  VDecorateUserVar::VisitChildren
+//
+//==========================================================================
+void VDecorateUserVar::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && index) index->Visit(v);
+}
+
+
+//==========================================================================
+//
 //  VDecorateUserVar::SyntaxCopy
 //
 //==========================================================================
@@ -1183,6 +1234,25 @@ VDecorateSingleName::VDecorateSingleName (VStr AName, const TLocation &ALoc)
 //
 //==========================================================================
 VDecorateSingleName::VDecorateSingleName () {
+}
+
+
+//==========================================================================
+//
+//  VDecorateSingleName::HasSideEffects
+//
+//==========================================================================
+bool VDecorateSingleName::HasSideEffects () {
+  return false;
+}
+
+
+//==========================================================================
+//
+//  VDecorateSingleName::VisitChildren
+//
+//==========================================================================
+void VDecorateSingleName::VisitChildren (VExprVisitor *v) {
 }
 
 
@@ -1363,6 +1433,31 @@ VDecorateAJump::~VDecorateAJump () {
   for (int f = labels.length()-1; f >= 0; --f) delete labels[f];
   labels.clear();
   CallerState = nullptr;
+}
+
+
+//==========================================================================
+//
+//  VDecorateAJump::HasSideEffects
+//
+//==========================================================================
+bool VDecorateAJump::HasSideEffects () {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VDecorateAJump::VisitChildren
+//
+//==========================================================================
+void VDecorateAJump::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && crnd0) crnd0->Visit(v);
+  if (!v->stopIt && crnd1) crnd1->Visit(v);
+  if (!v->stopIt && prob) prob->Visit(v);
+  for (int f = 0; !v->stopIt && f < labels.length(); f += 1) {
+    labels[f]->Visit(v);
+  }
 }
 
 
@@ -1662,6 +1757,29 @@ VDecorateRndPick::~VDecorateRndPick () {
   delete crnd0; crnd0 = nullptr;
   for (int f = numbers.length()-1; f >= 0; --f) delete numbers[f];
   numbers.clear();
+}
+
+
+//==========================================================================
+//
+//  VDecorateRndPick::HasSideEffects
+//
+//==========================================================================
+bool VDecorateRndPick::HasSideEffects () {
+  return true;
+}
+
+
+//==========================================================================
+//
+//  VDecorateRndPick::VisitChildren
+//
+//==========================================================================
+void VDecorateRndPick::VisitChildren (VExprVisitor *v) {
+  if (!v->stopIt && crnd0) crnd0->Visit(v);
+  for (int f = 0; !v->stopIt && f < numbers.length(); f += 1) {
+    numbers[f]->Visit(v);
+  }
 }
 
 

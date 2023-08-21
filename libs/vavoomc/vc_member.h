@@ -25,6 +25,12 @@
 //**************************************************************************
 
 // ////////////////////////////////////////////////////////////////////////// //
+#ifdef USE_LIBJIT
+#include "jit/jit.h"
+#endif
+
+
+// ////////////////////////////////////////////////////////////////////////// //
 class VExpression;
 class VStatement;
 class VLexer;
@@ -107,6 +113,11 @@ private:
   static void RemoveFromNameHash (VMemberBase *self);
 
   static void DumpNameMap (TMapNC<VName, VMemberBase *> &map, bool caseSensitive);
+
+protected:
+  #ifdef USE_LIBJIT
+  static jit_context_t GetJITCtx ();
+  #endif
 
 protected:
   static bool GSystemInitialised;

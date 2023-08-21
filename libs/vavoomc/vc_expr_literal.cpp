@@ -28,11 +28,41 @@
 
 //==========================================================================
 //
+//  VLiteralBase::VLiteralBase
+//
+//==========================================================================
+VLiteralBase::VLiteralBase (const TLocation &ALoc)
+  : VExpression(ALoc)
+{
+}
+
+
+//==========================================================================
+//
+//  VLiteralBase::HasSideEffects
+//
+//==========================================================================
+bool VLiteralBase::HasSideEffects () {
+  return false;
+}
+
+
+//==========================================================================
+//
+//  VLiteralBase::VisitChildren
+//
+//==========================================================================
+void VLiteralBase::VisitChildren (VExprVisitor *v) {
+}
+
+
+//==========================================================================
+//
 //  VIntLiteral::VIntLiteral
 //
 //==========================================================================
 VIntLiteral::VIntLiteral (vint32 AValue, const TLocation &ALoc)
-  : VExpression(ALoc)
+  : VLiteralBase(ALoc)
   , Value(AValue)
 {
   Type = TYPE_Int;
@@ -122,7 +152,7 @@ VStr VIntLiteral::toString () const {
 //
 //==========================================================================
 VFloatLiteral::VFloatLiteral (float AValue, const TLocation &ALoc)
-  : VExpression(ALoc)
+  : VLiteralBase(ALoc)
   , Value(AValue)
 {
   Type = TYPE_Float;
@@ -212,7 +242,7 @@ VStr VFloatLiteral::toString () const {
 //
 //==========================================================================
 VNameLiteral::VNameLiteral (VName AValue, const TLocation &ALoc)
-  : VExpression(ALoc)
+  : VLiteralBase(ALoc)
   , Value(AValue)
 {
   Type = TYPE_Name;
@@ -382,7 +412,7 @@ VStr VClassNameLiteral::toString () const {
 //
 //==========================================================================
 VStringLiteral::VStringLiteral (VStr asval, vint32 AValue, const TLocation &ALoc)
-  : VExpression(ALoc)
+  : VLiteralBase(ALoc)
   , Value(AValue)
   , strval(asval)
 {
@@ -475,7 +505,7 @@ VStr VStringLiteral::toString () const {
 //  VSelf::VSelf
 //
 //==========================================================================
-VSelf::VSelf (const TLocation &ALoc) : VExpression(ALoc) {
+VSelf::VSelf (const TLocation &ALoc) : VLiteralBase(ALoc) {
 }
 
 
@@ -564,7 +594,7 @@ VStr VSelf::toString () const {
 //  VSelfClass::VSelfClass
 //
 //==========================================================================
-VSelfClass::VSelfClass (const TLocation &ALoc) : VExpression(ALoc) {
+VSelfClass::VSelfClass (const TLocation &ALoc) : VLiteralBase(ALoc) {
 }
 
 
@@ -649,7 +679,7 @@ VStr VSelfClass::toString () const {
 //  VNoneLiteral::VNoneLiteral
 //
 //==========================================================================
-VNoneLiteral::VNoneLiteral (const TLocation &ALoc) : VExpression(ALoc) {
+VNoneLiteral::VNoneLiteral (const TLocation &ALoc) : VLiteralBase(ALoc) {
   Type = VFieldType((VClass *)nullptr);
 }
 
@@ -724,7 +754,7 @@ VStr VNoneLiteral::toString () const {
 //  VNoneDelegateLiteral::VNoneDelegateLiteral
 //
 //==========================================================================
-VNoneDelegateLiteral::VNoneDelegateLiteral (const TLocation &ALoc) : VExpression(ALoc) {
+VNoneDelegateLiteral::VNoneDelegateLiteral (const TLocation &ALoc) : VLiteralBase(ALoc) {
   Type = VFieldType(TYPE_Delegate);
 }
 
@@ -800,7 +830,7 @@ VStr VNoneDelegateLiteral::toString () const {
 //  VNullLiteral::VNullLiteral
 //
 //==========================================================================
-VNullLiteral::VNullLiteral (const TLocation &ALoc) : VExpression(ALoc) {
+VNullLiteral::VNullLiteral (const TLocation &ALoc) : VLiteralBase(ALoc) {
   Type = VFieldType(TYPE_Void).MakePointerType();
 }
 
@@ -875,7 +905,7 @@ VStr VNullLiteral::toString () const {
 //  VDollar::VDollar
 //
 //==========================================================================
-VDollar::VDollar (const TLocation &ALoc) : VExpression(ALoc) {
+VDollar::VDollar (const TLocation &ALoc) : VLiteralBase(ALoc) {
 }
 
 

@@ -118,7 +118,10 @@ public:
 struct FInstruction {
   //vint32 Address;
   vint32 Opcode;
-  vint32 Arg1;
+  union {
+    vint32 Arg1;
+    float Arg1F;
+  };
   vint32 Arg2;
   bool Arg1IsFloat;
   VMemberBase *Member;
@@ -127,7 +130,17 @@ struct FInstruction {
   VFieldType TypeArg1;
   TLocationLine loc;
 
-  FInstruction () : /*Address(0),*/ Opcode(0), Arg1(0), Arg2(0), Arg1IsFloat(false), Member(nullptr), NameArg(NAME_None), TypeArg(TYPE_Unknown), loc(TLocation()) {}
+  inline FInstruction ()
+    /*: Address(0)*/
+    : Opcode(0)
+    , Arg1(0)
+    , Arg2(0)
+    , Arg1IsFloat(false)
+    , Member(nullptr)
+    , NameArg(NAME_None)
+    , TypeArg(TYPE_Unknown)
+    , loc(TLocation())
+  {}
 };
 
 
@@ -223,6 +236,14 @@ public:
   // guard them, why not?
   int defineResult; // -1: not called yet; 0: error; 1: ok; 666: ok, don't show warning
   bool emitCalled;
+
+protected:
+  bool jited;
+  #ifdef USE_LIBJIT
+  static /*jit_context_t*/void *jitc;
+  #endif
+
+  void CompileToNativeCode ();
 
 public:
   static unsigned GetCodePoolCount () noexcept;
