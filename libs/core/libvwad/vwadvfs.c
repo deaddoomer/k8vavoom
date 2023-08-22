@@ -2448,8 +2448,8 @@ VWAD_PUBLIC vwad_handle *vwad_open_archive (vwad_iostream *strm, vwad_uint flags
     vwad_uint prev = 0;
     for (vwad_uint f = 0; f < wad->chunkCount; f += 1) {
       if (wad->fat[f] != 0) {
-        wad->fat[f] += prev;
-        prev = wad->fat[f];
+        prev += get_u32(&wad->fat[f]);
+        wad->fat[f] = prev;
         if (prev >= wad->chunkCount) {
           logf(ERROR, "corrupted FAT table");
           goto error;

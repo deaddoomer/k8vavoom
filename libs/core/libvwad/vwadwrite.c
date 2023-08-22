@@ -2873,7 +2873,9 @@ static vwadwr_result vwadwr_write_directory (vwadwr_archive *wad, vwadwr_iostrea
   // build fat table
   if (fatSize) {
     // init to impossible value
-    for (vwadwr_uint f = 0; f < wad->chunkCount; f += 1) fatPtr[f] = 0xfffffffeU;
+    for (vwadwr_uint f = 0; f < wad->chunkCount; f += 1) {
+      fatPtr[f] = 0xfffffffeU;
+    }
     // fill the table
     for (FileInfo *fi = wad->filesHead; fi; fi = fi->next) {
       vwadwr_uint fcc = fi->chunkCount;
@@ -2897,7 +2899,7 @@ static vwadwr_result vwadwr_write_directory (vwadwr_archive *wad, vwadwr_iostrea
       vwadwr_uint val = fatPtr[f];
       if (val != 0xffffffffU) {
         vassert(val < wad->chunkCount);
-        fatPtr[f] = val - fatPrev;
+        put_u32(&fatPtr[f], val - fatPrev);
         fatPrev = val;
       } else {
         fatPrev = 0;
@@ -2948,7 +2950,7 @@ static vwadwr_result vwadwr_write_directory (vwadwr_archive *wad, vwadwr_iostrea
   for (FileInfo *fi = wad->filesHead; fi; fi = fi->next) {
     vassert(fi->fname->nameofs != 0);
     if (fatSize && fi->fatHead) {
-      memcpy(fdir + fdirofs, &fi->fatHead->findex, 4);
+      put_u32(fdir + fdirofs, fi->fatHead->findex);
     } else {
       memcpy(fdir + fdirofs, &z32, 4); // first chunk will be calculated
     }
