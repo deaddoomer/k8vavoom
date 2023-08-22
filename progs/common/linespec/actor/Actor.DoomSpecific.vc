@@ -160,7 +160,7 @@
   if (NumRays <= 0) NumRays = 40;
   if (DamageAmount <= 0) DamageAmount = 15;
 
-  if (!specified_fov || fov <= 0) fov = 90;
+  if (!fov!specified || fov <= 0) fov = 90;
   if (Distance <= 0) Distance = 1024;
   float fovd2 = fov/2.0;
 

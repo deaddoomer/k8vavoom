@@ -94,7 +94,7 @@ protected final EntityEx doFireMissileProjectile (class!Actor aMissileType, opti
 {
   if (!aMissileType || !bIsPlayer) return none;
 
-  if (!specified_UseAmmo) UseAmmo = true;
+  if (!UseAmmo!specified) UseAmmo = true;
 
   name decal = ''; // default
   Weapon Wpn = PlayerEx(Player).ReadyWeapon;
@@ -168,7 +168,7 @@ protected final void do_A_GunFlash (optional name newstate, optional int flags) 
   }
 
   state flashState;
-  if (!specified_newstate) {
+  if (!newstate!specified) {
     if (Wpn.FireMode == Weapon::FIRE_Secondary) flashState = Wpn.FindState('AltFlash');
     if (!flashState) flashState = Wpn.FindState('Flash');
   } else {
@@ -248,7 +248,7 @@ protected final void do_A_Raise (optional float raisespeed) self(Actor) {
   if (!Wpn) return;
   Wpn.bBobDisabled = true;
 
-  if (!specified_raisespeed) raisespeed = Weapon::RAISESPEED;
+  if (!raisespeed!specified) raisespeed = Weapon::RAISESPEED;
   if (raisespeed <= 0) raisespeed = Weapon::RAISESPEED; //k8: sanity guard
 
   //print("RAISING %C: curr=%s; top=%s; bot=%s; speed=%s; time=%s", Wpn, Player.ViewStateSY, Weapon::WEAPONTOP, Weapon::WEAPONBOTTOM, raisespeed, Player.ViewStates[PS_WEAPON].StateTime);
@@ -320,7 +320,7 @@ protected final void do_A_Lower (optional float lowerspeed) self(Actor) {
   }
   */
 
-  if (!specified_lowerspeed) lowerspeed = Weapon::LOWERSPEED;
+  if (!lowerspeed!specified) lowerspeed = Weapon::LOWERSPEED;
   if (lowerspeed <= 0) lowerspeed = Weapon::LOWERSPEED; //k8: sanity guard
 
   float prevsy = Player.ViewStateSY;
@@ -784,7 +784,7 @@ private final float clampPitch (float newpitch) {
 //==========================================================================
 //float GetDistance (bool checkz [, int ptr_select])
 [decorate] final float decorate_GetDistance (bool checkz, optional int aptr) {
-  if (!specified_aptr || aptr == AAPTR_DEFAULT) aptr = AAPTR_TARGET;
+  if (!aptr!specified || aptr == AAPTR_DEFAULT) aptr = AAPTR_TARGET;
   Entity tgt = DecorDoAAPtr('decorate_GetDistance', aptr);
   if (!tgt) return 0;
   if (tgt == self) return 0;
@@ -799,7 +799,7 @@ private final float clampPitch (float newpitch) {
 //==========================================================================
 //float GetAngle (int flags[, int ptr_select])
 [decorate] final float decorate_GetAngle (optional int flags, optional int aptr) {
-  if (!specified_aptr || aptr == AAPTR_DEFAULT) aptr = AAPTR_TARGET;
+  if (!aptr!specified || aptr == AAPTR_DEFAULT) aptr = AAPTR_TARGET;
   Entity tgt = DecorDoAAPtr('decorate_GetAngle', aptr);
   if (!tgt) return 0;
   if (tgt == self) return 0;
@@ -849,8 +849,8 @@ private final float clampPitch (float newpitch) {
 
   if (tgt.Target || AimMode == 2) {
     if (clsMissileType) {
-      if (!specified_SpawnHeight) SpawnHeight = 32.0;
-      if (!specified_SpawnXYOffset) SpawnXYOffset = 0; // was 1, why?
+      if (!SpawnHeight!specified) SpawnHeight = 32.0;
+      if (!SpawnXYOffset!specified) SpawnXYOffset = 0; // was 1, why?
       TVec Offs = float(SpawnXYOffset)*vector(cos(tgt.Angles.yaw-90.0), sin(tgt.Angles.yaw-90.0), 0.0);
       EntityEx A;
 
@@ -1024,7 +1024,7 @@ final void doDamageSomething (EntityEx dest, int amount, name adamagetype, int f
 {
   /*
   printdebug("%C: A_DamageTarget; amount=%s; dmg=%s(%s); flags=%s; filter=%s(%s); spec=%s(%s); src=%s(%s); infl=%s(%s)",
-    self, amount, damagetype, specified_damagetype, flags, filter, specified_filter, species, specified_species, src, specified_src, inflict, specified_inflict);
+    self, amount, damagetype, damagetype!specified, flags, filter, filter!specified, species, species!specified, src, src!specified, inflict, inflict!specified);
   */
   doDamageSomething(Target, amount, damagetype, flags, filter!optional, species!optional, src!optional, inflict!optional);
 }
@@ -1130,7 +1130,7 @@ final void doDamageSomething (EntityEx dest, int amount, name adamagetype, int f
   if (!item) return;
 
   float dropChance = 1;
-  if (specified_chance) {
+  if (chance!specified) {
     if (chance <= 0) return;
     if (chance < 256) dropChance = float(chance)/256.0;
   }
@@ -1140,7 +1140,7 @@ final void doDamageSomething (EntityEx dest, int amount, name adamagetype, int f
   dip = class!EntityEx(GetClassReplacement(dip));
   if (!dip) return;
 
-  if (specified_dropamount) {
+  if (dropamount!specified) {
     if (dip !isa Inventory) dropamount = 1;
   } else {
     dropamount = 1;
@@ -1264,7 +1264,7 @@ final bool doRemoveSomethingCheck (EntityEx dest, int flags, optional name filte
                                    optional name filter, optional name aspecies, optional float mindist,
                                    optional int limit)
 {
-  if (!specified_limit) limit = int.max;
+  if (!limit!specified) limit = int.max;
   if (limit < 1) return 0;
 
   if (amount < 0) return 0;
@@ -1465,9 +1465,9 @@ final bool doRemoveSomethingCheck (EntityEx dest, int flags, optional name filte
 {
 #if 0
   //k8: this ALMOST works
-  if (!specified_lifetime) lifetime = 35;
+  if (!lifetime!specified) lifetime = 35;
   if (lifetime <= 0) return;
-  if (!specified_startalpha) startalpha = 255;
+  if (!startalpha!specified) startalpha = 255;
   if (startalpha <= 0) return;
   int clr = color1;
   if (!clr) return;
@@ -1506,11 +1506,11 @@ final bool doRemoveSomethingCheck (EntityEx dest, int flags, optional name filte
 {
   KeepChainResult();
   if (!high || !low) return;
-  if (!specified_aptr) aptr = AAPTR_TARGET; // per wiki
+  if (!aptr!specified) aptr = AAPTR_TARGET; // per wiki
   EntityEx tgt = EntityEx(DecorDoAAPtr('A_JumpIfHigherOrLower', aptr));
   if (!tgt || tgt == self) return; // per wiki
 
-  if (!specified_includeHeight) includeHeight = true; // per wiki
+  if (!includeHeight!specified) includeHeight = true; // per wiki
 
   if (high && tgt.Origin.z > (includeHeight ? Height : 0)+Origin.z+offsethigh) {
     DoJump(high);
@@ -1686,7 +1686,7 @@ final bool doRemoveSomethingCheck (EntityEx dest, int flags, optional name filte
       }
       tomove.bIntrJustMoved = !!(flags&WARPF_INTERPOLATE); // disable movement interpolation
     }
-    if (specified_success_state && success_state) DoJump(success_state, affectStateCallResult:true); // chain result is not reset, so it will become `true`
+    if (success_state!specified && success_state) DoJump(success_state, affectStateCallResult:true); // chain result is not reset, so it will become `true`
     return true;
   } else {
     //FIXME: keep interpolation?
@@ -1708,7 +1708,7 @@ final bool doRemoveSomethingCheck (EntityEx dest, int flags, optional name filte
                                    optional int ptr_target, optional float offsetforward)
 {
   KeepChainResult();
-  if (specified_minrange) {
+  if (minrange!specified) {
     printwarn("A_CheckLOF is not fully implemented yet!");
     return none;
   }
@@ -1992,7 +1992,7 @@ final bool doRemoveSomethingCheck (EntityEx dest, int flags, optional name filte
 //
 //===========================================================================
 [decorate] final void A_CopyFriendliness (optional int aptrfrom) {
-  if (!specified_aptrfrom) aptrfrom = AAPTR_MASTER;
+  if (!aptrfrom!specified) aptrfrom = AAPTR_MASTER;
   EntityEx src = EntityEx(DecorDoAAPtr('A_CopyFriendliness', aptrfrom));
   if (!src || src == self) return;
   CopyFriendliness(src, ChangeTarget:true);
@@ -2088,7 +2088,7 @@ const [decorate] int CBF_ABSOLUTEANGLE = 1<<8; // Absolute angle for offsets.
   EntityEx tgt = EntityEx(DecorDoAAPtr('A_CheckBlock', aptr!optional));
   if (!tgt) return;
 
-  //if (!specified_flags) flags = 0;
+  //if (!flags!specified) flags = 0;
 
   if (!(flags&CBF_ABSOLUTEANGLE)) angle += Angles.yaw; //k8: don't even ask me, GZDoom does exactly this
 
@@ -2158,9 +2158,9 @@ const [decorate] int SP_DECAL_2S_ONLY   = 1<<5;
 [decorate] final void A_SprayDecal (name decalname, optional float dist, optional TVec ofs, optional TVec dir, optional int flags,
                                     optional int shadeclr, optional float alpha, optional float angle)
 {
-  if (!specified_alpha) alpha = -2;
+  if (!alpha!specified) alpha = -2;
   int trans = 0;
-  int shade = (specified_shadeclr ? shadeclr : -2);
+  int shade = (shadeclr!specified ? shadeclr : -2);
   name animator;
 
   if (decalname.nameEquCI('BaseBootPrintDecal')) {
@@ -2189,15 +2189,15 @@ const [decorate] int SP_DECAL_2S_ONLY   = 1<<5;
   }
 
   if (!decalname || nameEquCI(decalname, 'none')) return;
-  if (!specified_dist) dist = 172.0f;
+  if (!dist!specified) dist = 172.0f;
   if (dist <= 0) return;
-  if (!specified_dir) {
+  if (!dir!specified) {
     AngleVector(Angles, out dir);
   } else {
     if (dir.isZero) return
     dir = dir.normalize;
   }
-  if (!specified_ofs) ofs = Origin; else ofs += Origin;
+  if (!ofs!specified) ofs = Origin; else ofs += Origin;
   ofs.z += fmax(0.0f, Height)*0.5;
 
   // offset by radius?
@@ -2254,11 +2254,11 @@ const [decorate] int SP_DECAL_2S_ONLY   = 1<<5;
 [decorate] final void A_k8MoveTo (optional float nx, optional float ny, optional float nz) {
   if (!nx.isfinite || !ny.isfinite || !nz.isfinite) return;
   // so link the thing into its new position
-  if (specified_nx || specified_ny) UnlinkFromWorld();
-  if (specified_nx) Origin.x = nx;
-  if (specified_ny) Origin.y = ny;
-  if (specified_nz) Origin.z = nz;
-  if (specified_nx || specified_ny) LinkToWorld(properFloorCheck:true);
+  if (nx!specified || ny!specified) UnlinkFromWorld();
+  if (nx!specified) Origin.x = nx;
+  if (ny!specified) Origin.y = ny;
+  if (nz!specified) Origin.z = nz;
+  if (nx!specified || ny!specified) LinkToWorld(properFloorCheck:true);
   bIntrJustMoved = false; // disable movement interpolation
 }
 

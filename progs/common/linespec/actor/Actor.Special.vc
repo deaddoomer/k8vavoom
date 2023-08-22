@@ -282,18 +282,18 @@
   }
 
   int C1 = ParseColor(Col1, retZeroIfInvalid:true);
-  int C2 = (specified_Col2 ? ParseColor(Col2, retZeroIfInvalid:true) : C1);
+  int C2 = (Col2!specified ? ParseColor(Col2, retZeroIfInvalid:true) : C1);
   if (!C1 || !C2) return; // invalid colors
 
   A = fclamp(A, 0.0f, 1.0f);
-  A2 = (specified_A2 ? fclamp(A2, 0.0f, 1.0f) : 0.0f);
+  A2 = (A2!specified ? fclamp(A2, 0.0f, 1.0f) : 0.0f);
 
   if (A <= 0.0f && A2 <= 0.0f) return; // nothing to do
 
   // huh?
   if (C1 == -1) C1 = 0;
   if (C2 == -1) C2 = 0;
-  if (!specified_Col2) C2 = C1;
+  if (!Col2!specified) C2 = C1;
 
   FlashFader F = SpawnThinker(FlashFader);
   if (!F) return;

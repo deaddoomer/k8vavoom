@@ -137,7 +137,7 @@ static final float CD_SweepLineAABBlpl (const ref CD_LinePlanes linePlanes, TVec
                                         optional out CD_HitType hitType, optional out int hitplanenum,
                                         optional float eps/*=CD_CLIP_EPSILON*/)
 {
-  if (!specified_eps) eps = CD_CLIP_EPSILON;
+  if (!eps!specified) eps = CD_CLIP_EPSILON;
   hitType = CD_HitType.CD_HT_None;
   hitplanenum = -1;
 

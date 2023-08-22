@@ -39,7 +39,7 @@
   if (!Sound) return;
   // use `auto` channel, not body here
   // "body" is default "for historical reasons", but meh
-  if (!specified_Channel) Channel = CHAN_AUTO;
+  if (!Channel!specified) Channel = CHAN_AUTO;
   // also, i don't get how `local` should work
   // it seems that `local` means "play only if client camera is at the current actor
   if (flags&CHANF_OVERLAP) printwarn("%C: A_StartSound: CHANF_OVERLAP is not supported!");
@@ -58,13 +58,13 @@
                                    optional float volume, optional bool looping, optional float attenuation,
                                    optional bool local, optional float pitch)
 {
-  if (!specified_Sound) Sound = 'weapons/pistol';
+  if (!Sound!specified) Sound = 'weapons/pistol';
   if (!Sound) return;
   // use `auto` channel, not body here
   // "body" is default "for historical reasons", but meh
-  if (!specified_Channel) Channel = CHAN_AUTO;
+  if (!Channel!specified) Channel = CHAN_AUTO;
   // hack!
-  if (!specified_looping) looping = (Channel > 0 ? !!(Channel&CHAN_LOOP) : false);
+  if (!looping!specified) looping = (Channel > 0 ? !!(Channel&CHAN_LOOP) : false);
   // also, i don't get how `local` should work
   // it seems that `local` means "play only if client camera is at the current actor
   EntityEx se = (local ? GetLocalSoundEntity() : EntityEx(self));
@@ -155,7 +155,7 @@
 //
 //==========================================================================
 [decorate] final void A_StopSound (optional [soundchannel] int Channel) {
-  if (!specified_Channel) Channel = CHAN_VOICE;
+  if (!Channel!specified) Channel = CHAN_VOICE;
   StopSound(Channel);
 }
 

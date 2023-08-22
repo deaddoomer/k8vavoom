@@ -373,7 +373,7 @@ override void SB_DrawMainBar (bool inAutomap) {
 //==========================================================================
 void DrawAmmo (class!Inventory Type, int Y, optional float alpha) {
   Inventory AmmoItem = EntityEx(cl.MO).FindInventory(Type);
-  if (specified_alpha) {
+  if (alpha!specified) {
     SB_DrawSmallNum(BAR_X+205, BAR_Y+Y, (AmmoItem ? AmmoItem.Amount : 0), alpha);
     SB_DrawSmallNum(BAR_X+238, BAR_Y+Y, (AmmoItem ? AmmoItem.MaxAmount : Type.default.MaxAmount), alpha);
   } else {

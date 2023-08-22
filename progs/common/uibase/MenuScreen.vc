@@ -572,7 +572,7 @@ void SetLastHelp (string help) {
 //==========================================================================
 void SetChoiceInitialSizeSimple (MenuChoiceBase cc, optional bool doCurOffs/*=true*/) {
   if (!cc) return;
-  if (!specified_doCurOffs) doCurOffs = true;
+  if (!doCurOffs!specified) doCurOffs = true;
   cc.Width = Width;
   if (Width > WidthThreshold) {
     //print("[%s] wdt=%d", text, Width);
@@ -655,33 +655,33 @@ MenuChoiceEnum CreateEnumCvar (string text, name cvname,
   auto en = GetItemContainer().NewChild(MenuChoiceEnum);
   SetChoiceInitialSizePos(en);
   en.SetText(text);
-  if (specified_item0) en.AddItem(item0);
-  if (specified_item1) en.AddItem(item1);
-  if (specified_item2) en.AddItem(item2);
-  if (specified_item3) en.AddItem(item3);
-  if (specified_item4) en.AddItem(item4);
-  if (specified_item5) en.AddItem(item5);
-  if (specified_item6) en.AddItem(item6);
-  if (specified_item7) en.AddItem(item7);
-  if (specified_item8) en.AddItem(item8);
-  if (specified_item9) en.AddItem(item9);
-  if (specified_item10) en.AddItem(item10);
-  if (specified_item11) en.AddItem(item11);
-  if (specified_item12) en.AddItem(item12);
-  if (specified_item13) en.AddItem(item13);
-  if (specified_item14) en.AddItem(item14);
-  if (specified_item15) en.AddItem(item15);
-  if (specified_item16) en.AddItem(item16);
-  if (specified_item17) en.AddItem(item17);
-  if (specified_item18) en.AddItem(item18);
-  if (specified_item19) en.AddItem(item19);
-  if (specified_item20) en.AddItem(item20);
-  if (specified_item21) en.AddItem(item21);
-  if (specified_item22) en.AddItem(item22);
-  if (specified_item23) en.AddItem(item23);
-  if (specified_item24) en.AddItem(item24);
-  if (specified_item25) en.AddItem(item25);
-  if (specified_item26) en.AddItem(item26);
+  if (item0!specified) en.AddItem(item0);
+  if (item1!specified) en.AddItem(item1);
+  if (item2!specified) en.AddItem(item2);
+  if (item3!specified) en.AddItem(item3);
+  if (item4!specified) en.AddItem(item4);
+  if (item5!specified) en.AddItem(item5);
+  if (item6!specified) en.AddItem(item6);
+  if (item7!specified) en.AddItem(item7);
+  if (item8!specified) en.AddItem(item8);
+  if (item9!specified) en.AddItem(item9);
+  if (item10!specified) en.AddItem(item10);
+  if (item11!specified) en.AddItem(item11);
+  if (item12!specified) en.AddItem(item12);
+  if (item13!specified) en.AddItem(item13);
+  if (item14!specified) en.AddItem(item14);
+  if (item15!specified) en.AddItem(item15);
+  if (item16!specified) en.AddItem(item16);
+  if (item17!specified) en.AddItem(item17);
+  if (item18!specified) en.AddItem(item18);
+  if (item19!specified) en.AddItem(item19);
+  if (item20!specified) en.AddItem(item20);
+  if (item21!specified) en.AddItem(item21);
+  if (item22!specified) en.AddItem(item22);
+  if (item23!specified) en.AddItem(item23);
+  if (item24!specified) en.AddItem(item24);
+  if (item25!specified) en.AddItem(item25);
+  if (item26!specified) en.AddItem(item26);
   en.SetSessionCvar(cvname);
   //currentY += en.Height;
   return en;
@@ -707,8 +707,8 @@ MenuChoiceSlider CreateFloatSliderCvar (string text, name cvname, float delta, o
   slider.SetText(text);
   slider.cvarSession = cvname;
   slider.ValueDelta = delta;
-  if (specified_min) slider.MinValue = min;
-  if (specified_max) slider.MaxValue = max;
+  if (min!specified) slider.MinValue = min;
+  if (max!specified) slider.MaxValue = max;
   slider.SetSessionCvar(cvname);
   //currentY += slider.Height;
   return slider;
@@ -728,8 +728,8 @@ MenuChoiceNumeric CreateFloatNumericCvar (string text, name cvname, float delta,
   slider.SetText(text);
   slider.cvarSession = cvname;
   slider.ValueDelta = delta;
-  if (specified_min) slider.MinValue = min;
-  if (specified_max) slider.MaxValue = max;
+  if (min!specified) slider.MinValue = min;
+  if (max!specified) slider.MaxValue = max;
   slider.SetSessionCvar(cvname);
   //currentY += slider.Height;
   return slider;
@@ -757,7 +757,7 @@ MenuTextButton CreateChoiceSubHeader (string text, optional int color) {
   }
   btn.SetText(text);
   btn.Focusable = false;
-  if (specified_color) {
+  if (color!specified) {
     btn.TextColor = color;
     btn.TextColorFocus = color;
   } else {

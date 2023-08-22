@@ -670,7 +670,7 @@ override void CopyTranslations (Entity src) {
 //==========================================================================
 void CopyBloodTranslations (Entity src, bool copyNormalTranslation) {
   if (!src || bDontTranslate) return;
-  if (copyNormalTranslation /*|| !specified_copyNormalTranslation*/) CopyTranslations(src);
+  if (copyNormalTranslation /*|| !copyNormalTranslation!specified*/) CopyTranslations(src);
   EntityEx ee = EntityEx(src);
   if (!ee) return;
   if (ee.BloodColor) {
@@ -746,7 +746,7 @@ override Entity eventFindTargetForACS () {
 //
 //==========================================================================
 final void VerifyTargetChain (optional bool preciseMissileCheck) {
-  if (!specified_preciseMissileCheck) preciseMissileCheck = true;
+  if (!preciseMissileCheck!specified) preciseMissileCheck = true;
   if (IsMissile(preciseMissileCheck)) return;
 
   EntityEx eeorigin = self;
@@ -871,12 +871,12 @@ final EntityEx decoRearrangePtrGetPtr (int aptr, EntityEx defval,
   Target = decoRearrangePtrGetPtr(aptrtarget, oldTarget, oldTarget, oldMaster, oldTracer);
   if (!(flags&PTROP_UNSAFETARGET)) VerifyTargetChain();
 
-  if (specified_aptrmaster) {
+  if (aptrmaster!specified) {
     Master = decoRearrangePtrGetPtr(aptrmaster, oldMaster, oldTarget, oldMaster, oldTracer);
     if (!(flags&PTROP_UNSAFEMASTER)) VerifyMasterChain();
   }
 
-  if (specified_aptrtracer) {
+  if (aptrtracer!specified) {
     Tracer = decoRearrangePtrGetPtr(aptrtracer, oldTracer, oldTarget, oldMaster, oldTracer);
   }
 }
@@ -932,7 +932,7 @@ override Entity eventDoAAPtr (int ptr) {
 //
 //==========================================================================
 final Entity DecorDoAAPtr (name methodname, optional int ptr) {
-  if (!specified_ptr || ptr == AAPTR_DEFAULT) return self;
+  if (!ptr!specified || ptr == AAPTR_DEFAULT) return self;
   // category 1
   if (bIsPlayer) {
     if (ptr&AAPTR_PLAYER_GETTARGET) {
@@ -1014,14 +1014,14 @@ final Entity DecorDoAAPtr (name methodname, optional int ptr) {
 final bool DecorFilterCheck (bool invertFilter, bool invertSpecies, bool either,
                              optional name filter, optional name aspecies)
 {
-  if (!specified_filter && !specified_aspecies) return true;
+  if (!filter!specified && !aspecies!specified) return true;
 
   // 0: unknown (considered true, lol); -1: filter didn't hit; 1: filter hit
   int flt = 0, spc = 0;
 
   // check filters
-  if (specified_filter /*&& filter*/) flt = (nameicmp(GetClassName(Class), filter) != 0 ? 1 : -1); //k8: should we check replacements or inheritance chain?
-  if (specified_aspecies /*&& aspecies*/) spc = (nameicmp(GetSpecies(), aspecies) != 0 ? 1 : -1);
+  if (filter!specified /*&& filter*/) flt = (nameicmp(GetClassName(Class), filter) != 0 ? 1 : -1); //k8: should we check replacements or inheritance chain?
+  if (aspecies!specified /*&& aspecies*/) spc = (nameicmp(GetSpecies(), aspecies) != 0 ? 1 : -1);
 
   // invert filters, if necessary
   if (invertFilter) flt = -flt;
@@ -1312,7 +1312,7 @@ static final class!EntityEx ChooseFromDropItemList (class!EntityEx origSpc, opti
                                                     optional int delegate (const ref array!DropItemInfo list) Chooser)
 {
   if (!origSpc) { error = true; return none; }
-  if (!specified_AllowReplace) AllowReplace = true;
+  if (!AllowReplace!specified) AllowReplace = true;
   //if (!class!EntityEx(allowedClass)) { error = true; return none; }
 
   error = false;
@@ -1331,7 +1331,7 @@ static final class!EntityEx ChooseFromDropItemList (class!EntityEx origSpc, opti
     if (!len) return none;
 
     int i;
-    if (specified_Chooser && Chooser) {
+    if (Chooser!specified && Chooser) {
       i = Chooser(spc.default.DropItemList);
     } else {
       // default chooser

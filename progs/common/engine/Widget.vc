@@ -193,13 +193,13 @@ final bool SetFullScaledSize (int mywdt, int myhgt, optional bool proportional/*
   auto par = ParentWidget;
   if (!par) return false;
   if (mywdt < 1 || myhgt < 1) return false;
-  if (!specified_aspect) aspect = 1.0f;
-  if (!specified_proportional) proportional = true;
+  if (!aspect!specified) aspect = 1.0f;
+  if (!proportional!specified) proportional = true;
   if (!proportional) aspect = 1.0f;
   //aspect = 1.0f;
   float scaleX = float(par.Width)/float(mywdt);
   float scaleY = float(par.Height)/float(myhgt);
-  if (proportional || !specified_proportional) {
+  if (proportional || !proportional!specified) {
     //float scale = fmin(scaleX, scaleY);
     //printdebug("*** before scales=(%s,%s)", scaleX, scaleY);
     // use vertical scale as base
@@ -949,7 +949,7 @@ static final int ConvertBoundKey (int key, optional bool useBindings/*=true*/) {
 
   int key1, key2;
 
-  if (!specified_useBindings || useBindings) {
+  if (!useBindings!specified || useBindings) {
     wgGetBindingKeys("+Forward", out key1, out key2);
     if (key == key1 || key == key2) return K_UPARROW;
 

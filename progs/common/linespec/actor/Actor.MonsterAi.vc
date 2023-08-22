@@ -184,7 +184,7 @@ final void SetSeeOrWanderState () {
 
   // fix optional args
   if (!fov && bLookAllAround) fov = 360; // use default value if zero
-  if (!specified_wakestate) wakestate = SeeState;
+  if (!wakestate!specified) wakestate = SeeState;
 
   bool dojump = !(flags&LOF_NOJUMP);
   bool doSightCheck = !(flags&LOF_NOSIGHTCHECK);
@@ -807,9 +807,9 @@ final void DoChasePerfectHatred () {
 //
 //==========================================================================
 [decorate] final void decorate_A_Chase (optional state AMeleeState, optional state AMissileState, optional int Flags) {
-  if (!specified_AMeleeState) AMeleeState = MeleeState;
-  if (!specified_AMissileState) AMissileState = MissileState;
-  if (!specified_Flags) {
+  if (!AMeleeState!specified) AMeleeState = MeleeState;
+  if (!AMissileState!specified) AMissileState = MissileState;
+  if (!Flags!specified) {
     DoChase(FastChase:false, MeleeState, MissileState, NightmareFast:LineSpecialGameInfo(Level.Game).bNightmareFastChase, PlayActive:true, DontMove:false);
   } else {
     //printdebug("%C: ams=%s; ams=%s", self, AMeleeState, AMissileState);
@@ -828,7 +828,7 @@ final void DoChasePerfectHatred () {
   // in "perfect hatred" mode, switch target if we haven't seen it for long enough
   if (bMonster && (Level.PerfectHatredMode&LevelInfo::PHM_HUNT_MONSTERS)) DoChasePerfectHatred();
   /*
-  if (specified_AMeleeState) {
+  if (AMeleeState!specified) {
     if ((Flags&8) && CheckForResurrect(false)) return;
     DoChase(FastChase:!!(Flags&1), AMeleeState, AMissileState,
             NightmareFast:!!(Flags&4), PlayActive:!(Flags&2), DontMove:!!(Flags&16),
@@ -868,7 +868,7 @@ final void DoChasePerfectHatred () {
 //
 //==========================================================================
 [decorate] final void A_ExtChase (bool UseMelee, bool UseMissile, optional bool PlayActive, optional bool NightmareFast) {
-  if (!specified_PlayActive) PlayActive = true;
+  if (!PlayActive!specified) PlayActive = true;
   state Melee = (UseMelee ? MeleeState : none);
   state Missile = (UseMissile ? MissileState : none);
   //printdebug("%C: A_ExtChase", self);
@@ -952,14 +952,14 @@ final void common_A_FaceSomething (EntityEx Tgt, optional float max_turn, option
   float newyaw = AngleTo(Tgt);
   float adiff = AngleDelta(Angles.yaw, newyaw);
 
-  if (specified_max_turn && max_turn < adiff) {
+  if (max_turn!specified && max_turn < adiff) {
     if (adiff < 0) Angles.yaw -= max_turn+ang_offset; else Angles.yaw += max_turn+ang_offset;
   } else {
     Angles.yaw = newyaw+ang_offset;
   }
   Angles.yaw = AngleMod360(Angles.yaw);
 
-  if (specified_max_pitch && max_pitch <= 180) {
+  if (max_pitch!specified && max_pitch <= 180) {
     TVec dist = Tgt.Origin-Origin;
     dist.z = 0;
 
@@ -1016,7 +1016,7 @@ final void common_A_FaceSomething (EntityEx Tgt, optional float max_turn, option
 //
 //==========================================================================
 [decorate] final void A_Die (optional name adamagetype) {
-  if (!specified_adamagetype) {
+  if (!adamagetype!specified) {
     Damage(none, none, Health, forced:true);
   } else {
     Damage(none, none, Health, adamagetype, forced:true);
@@ -1339,7 +1339,7 @@ final void doKillXXX (EntityEx dest, name adamagetype, int flags, optional name 
 //==========================================================================
 override bool do_CheckProximity (name classname, float distance, optional int count, optional int flags, optional int aptr) {
   EntityEx tgt = EntityEx(DecorDoAAPtr('A_CheckProximity', aptr!optional));
-  //if (!specified_aptr && tgt != Target) Error("WUTA?! in `A_CheckProximity`");
+  //if (!aptr!specified && tgt != Target) Error("WUTA?! in `A_CheckProximity`");
   if (!tgt) return false;
 
   if (flags&CPXF_SETONPTR) {
@@ -1355,7 +1355,7 @@ override bool do_CheckProximity (name classname, float distance, optional int co
 
   distance = fmax(0.1, distance);
 
-  if (!specified_count) count = 1;
+  if (!count!specified) count = 1;
   if (count < 1) return false; // oops
   if (!classname) return false; // oops
 

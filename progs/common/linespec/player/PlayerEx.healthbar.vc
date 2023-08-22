@@ -307,8 +307,8 @@ private final bool MObjSet_FloatProperty (string propname, ref float propvalue, 
   if (Cmd_GetArgC() == 2) { printdebug("selected entity with class '%C', uid=%s: %s is %s", ee, ee.ServerUId, propname, propvalue); return true; }
   float fval;
   if (!MObjSet_GetFloatArg(out fval)) return true;
-  if (specified_minval && fval < minval) { printwarn("value %s for property '%s' is too small (min is %s)", fval, propname, minval); return true; }
-  if (specified_maxval && fval > maxval) { printwarn("value %s for property '%s' is too big (max is %s)", fval, propname, maxval); return true; }
+  if (minval!specified && fval < minval) { printwarn("value %s for property '%s' is too small (min is %s)", fval, propname, minval); return true; }
+  if (maxval!specified && fval > maxval) { printwarn("value %s for property '%s' is too big (max is %s)", fval, propname, maxval); return true; }
   if (propvalue != fval) {
     printdebug("selected entity with class '%C', uid=%s: %s changed from %s to %s", ee, ee.ServerUId, propname, propvalue, fval);
     propvalue = fval;
@@ -330,8 +330,8 @@ private final bool MObjSet_IntProperty (string propname, ref int propvalue, opti
   if (Cmd_GetArgC() == 2) { printdebug("selected entity with class '%C', uid=%s: %s is %s", ee, ee.ServerUId, propname, propvalue); return true; }
   int ival;
   if (!MObjSet_GetIntArg(out ival)) return true;
-  if (specified_minval && ival < minval) { printwarn("value %s for property '%s' is too small (min is %s)", ival, propname, minval); return true; }
-  if (specified_maxval && ival > maxval) { printwarn("value %s for property '%s' is too big (max is %s)", ival, propname, maxval); return true; }
+  if (minval!specified && ival < minval) { printwarn("value %s for property '%s' is too small (min is %s)", ival, propname, minval); return true; }
+  if (maxval!specified && ival > maxval) { printwarn("value %s for property '%s' is too big (max is %s)", ival, propname, maxval); return true; }
   if (propvalue != ival) {
     printdebug("selected entity with class '%C', uid=%s: %s changed from %s to %s", ee, ee.ServerUId, propname, propvalue, ival);
     propvalue = ival;

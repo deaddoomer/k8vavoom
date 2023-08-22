@@ -320,9 +320,9 @@ static float StaticIntensityToRadius (float Val) {
 */
 
 static float GZSizeToRadius (float Val, bool attenuated, optional float attmult/*=1.04*/) {
-  //printdebug("GZSizeToRadius: Val=%s; attenuated=%s; attmult=%s:%s", Val, attenuated, specified_attmult, attmult);
+  //printdebug("GZSizeToRadius: Val=%s; attenuated=%s; attmult=%s:%s", Val, attenuated, attmult!specified, attmult);
   if (attenuated) {
-    if (!specified_attmult) attmult = 1.04; // size in map units; k8: 1.04f is just because i feel it
+    if (!attmult!specified) attmult = 1.04; // size in map units; k8: 1.04f is just because i feel it
     return fmax(0, Val*attmult);
   } else {
     Val = fmax(0, Val);
@@ -1272,7 +1272,7 @@ void CopyMThing (mthing_t *from, mthing_t *to) {
 //
 //==========================================================================
 mthing_t *GetPlayerStart (int PNum, int Position, optional bool failIfNotFound) {
-  if (!specified_failIfNotFound) failIfNotFound = true;
+  if (!failIfNotFound!specified) failIfNotFound = true;
   ++PNum;
   mthing_t *Best = nullptr;
   foreach (int i; 0..PlayerStarts.length; reverse) {

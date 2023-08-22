@@ -288,7 +288,7 @@ final void DoSPosAttack () {
 //==========================================================================
 [decorate] final void decorate_A_SkullAttack (optional float aSkullSpeed) {
   if (!Target) return;
-  if (!specified_aSkullSpeed) aSkullSpeed = SKULLSPEED; else aSkullSpeed *= 35.0;
+  if (!aSkullSpeed!specified) aSkullSpeed = SKULLSPEED; else aSkullSpeed *= 35.0;
 
   bSkullFly = true;
   PlaySound(AttackSound, CHAN_VOICE);
@@ -358,7 +358,7 @@ final void DoSPosAttack () {
   if (limit <= 0) limit = -1; // disable limit check?
 
   if (!(flags&PAF_AIMFACING)) A_FaceTarget();
-  if (!specified_angle) angle = Angles.yaw;
+  if (!angle!specified) angle = Angles.yaw;
   PainShootSkull(SpawnType, angle, noattack:!!(flags&PAF_NOSKULLATTACK), notarget:!!(flags&PAF_NOTARGET), limitCheck:limit);
 }
 
@@ -587,7 +587,7 @@ final void DoSPosAttack () {
   A_FaceTarget();
 
   class!EntityEx fireClass = ArchvileFire;
-  if (specified_firetype) {
+  if (firetype!specified) {
     if (firetype) {
       fireClass = class!EntityEx(FindClassNoCase(firetype));
     } else {
@@ -638,17 +638,17 @@ final void DoSPosAttack () {
 
   if (!CanSee(Target)) return;
 
-  if (!specified_adamagetype) adamagetype = 'Fire';
+  if (!adamagetype!specified) adamagetype = 'Fire';
   if (!adamagetype) adamagetype = 'None';
 
-  if (specified_sound) {
+  if (sound!specified) {
     if (sound.length > 0) {
       PlaySound(name(sound), CHAN_WEAPON);
     }
   } else {
     PlaySound('vile/stop', CHAN_WEAPON);
   }
-  if (!specified_initialdamage) initialdamage = 20;
+  if (!initialdamage!specified) initialdamage = 20;
   if (initialdamage < 0) initialdamage = 0;
   Target.Damage(self, self, /*20*/initialdamage, (flags&1 ? adamagetype : 'None'), spawnBlood:true);
 
@@ -662,17 +662,17 @@ final void DoSPosAttack () {
   fire.bIntrJustMoved = false; // disable movement interpolation
   fire.LinkToWorld();
 
-  if (!specified_blastdamage) blastdamage = 70;
+  if (!blastdamage!specified) blastdamage = 70;
   if (blastdamage < 0) blastdamage = 0;
 
-  if (!specified_blastradius) blastradius = 70;
+  if (!blastradius!specified) blastradius = 70;
   if (blastradius < 0) blastradius = 0;
   if (blastradius > 0) {
     fire.RadiusAttack(self, blastdamage, float(blastradius), true, adamagetype);
   }
 
   // change velocity Z component before doing RadiusAttack
-  if (!specified_thrustfactor) thrustfactor = 1.0;
+  if (!thrustfactor!specified) thrustfactor = 1.0;
   if (thrustfactor > 0) {
     Target.Velocity.z = (1000.0*thrustfactor/fmax(1, Target.Mass))*35.0;
   }
@@ -720,7 +720,7 @@ final void DoSPosAttack () {
   BState.TargetOn = (BState.TargetOn+1)%BState.Targets.length;
 
   class!Actor brnmiss = SpawnShot;
-  if (specified_actname) {
+  if (actname!specified) {
     if (!actname) return;
     brnmiss = class!Actor(FindClassNoCase(actname));
     if (!brnmiss) return;
@@ -973,10 +973,10 @@ final void BrainishExplosion (TVec org) {
 
   if (!Target) return;
 
-  if (!specified_fullsound) fullsound = 'weapons/sawfull';
-  if (!specified_hitsound) hitsound = 'weapons/sawhit';
+  if (!fullsound!specified) fullsound = 'weapons/sawfull';
+  if (!hitsound!specified) hitsound = 'weapons/sawhit';
   if (!damage) damage = 2;
-  if (!specified_pufftype) pufftype = BulletPuff;
+  if (!pufftype!specified) pufftype = BulletPuff;
 
   A_FaceTarget();
   if (CheckMeleeRange()) {
@@ -1046,14 +1046,14 @@ final void BrainishExplosion (TVec org) {
   // can we see a target?
   if (!CanSee(Target, disableBetterSight:true)) return;
 
-  if (!specified_whattoplay) whattoplay = 'weapons/pistol';
-  if (!specified_snipe) snipe = 1.0f;
-  if (!specified_maxdamage) maxdamage = 64;
-  if (!specified_blocksize || blocksize < 1) blocksize = 128;
-  if (!specified_pointblank) pointblank = 2;
-  if (!specified_longrange) longrange = 4;
-  if (!specified_runspeed) runspeed = 160.0f;
-  if (!specified_puffType) puffType = BulletPuff;
+  if (!whattoplay!specified) whattoplay = 'weapons/pistol';
+  if (!snipe!specified) snipe = 1.0f;
+  if (!maxdamage!specified) maxdamage = 64;
+  if (!blocksize!specified || blocksize < 1) blocksize = 128;
+  if (!pointblank!specified) pointblank = 2;
+  if (!longrange!specified) longrange = 4;
+  if (!runspeed!specified) runspeed = 160.0f;
+  if (!puffType!specified) puffType = BulletPuff;
 
   A_FaceTarget();
 

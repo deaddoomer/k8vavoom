@@ -91,7 +91,7 @@ override Inventory CreateTossable (optional int DropAmount) {
 
   if (bUndroppable || !Owner || Amount <= 0) return none;
 
-  if (!specified_DropAmount || DropAmount < 0) {
+  if (!DropAmount!specified || DropAmount < 0) {
     //k8: this is quite special, i guess
     //DropAmount = 50+25+10+1; // this is what the old code could drop at max, and i believe that it is a bug
     DropAmount = Amount;

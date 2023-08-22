@@ -123,9 +123,9 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
 //
 //==========================================================================
 [decorate] final int decorate_random2 (optional int Mask) {
-  return (specified_Mask ? (P_Random()&Mask)-(P_Random()&Mask) : P_Random()-P_Random());
+  return (Mask!specified ? (P_Random()&Mask)-(P_Random()&Mask) : P_Random()-P_Random());
   /*
-  if (specified_Mask) return (P_Random()&Mask)-(P_Random()&Mask);
+  if (Mask!specified) return (P_Random()&Mask)-(P_Random()&Mask);
   return P_Random()-P_Random();
   */
 }
@@ -161,33 +161,33 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
   int[32] values;
   int vcount = 1;
   values[0] = v0;
-  if (specified_v1) values[vcount++] = v1;
-  if (specified_v2) values[vcount++] = v2;
-  if (specified_v3) values[vcount++] = v3;
-  if (specified_v4) values[vcount++] = v4;
-  if (specified_v5) values[vcount++] = v5;
-  if (specified_v6) values[vcount++] = v6;
-  if (specified_v7) values[vcount++] = v7;
-  if (specified_v8) values[vcount++] = v8;
-  if (specified_v9) values[vcount++] = v9;
-  if (specified_v10) values[vcount++] = v10;
-  if (specified_v11) values[vcount++] = v11;
-  if (specified_v12) values[vcount++] = v12;
-  if (specified_v13) values[vcount++] = v13;
-  if (specified_v14) values[vcount++] = v14;
-  if (specified_v15) values[vcount++] = v15;
-  if (specified_v16) values[vcount++] = v16;
-  if (specified_v17) values[vcount++] = v17;
-  if (specified_v18) values[vcount++] = v18;
-  if (specified_v19) values[vcount++] = v19;
-  if (specified_v20) values[vcount++] = v20;
-  if (specified_v21) values[vcount++] = v21;
-  if (specified_v22) values[vcount++] = v22;
-  if (specified_v23) values[vcount++] = v23;
-  if (specified_v24) values[vcount++] = v24;
-  if (specified_v25) values[vcount++] = v25;
-  if (specified_v26) values[vcount++] = v26;
-  if (specified_v27) values[vcount++] = v27;
+  if (v1!specified) values[vcount++] = v1;
+  if (v2!specified) values[vcount++] = v2;
+  if (v3!specified) values[vcount++] = v3;
+  if (v4!specified) values[vcount++] = v4;
+  if (v5!specified) values[vcount++] = v5;
+  if (v6!specified) values[vcount++] = v6;
+  if (v7!specified) values[vcount++] = v7;
+  if (v8!specified) values[vcount++] = v8;
+  if (v9!specified) values[vcount++] = v9;
+  if (v10!specified) values[vcount++] = v10;
+  if (v11!specified) values[vcount++] = v11;
+  if (v12!specified) values[vcount++] = v12;
+  if (v13!specified) values[vcount++] = v13;
+  if (v14!specified) values[vcount++] = v14;
+  if (v15!specified) values[vcount++] = v15;
+  if (v16!specified) values[vcount++] = v16;
+  if (v17!specified) values[vcount++] = v17;
+  if (v18!specified) values[vcount++] = v18;
+  if (v19!specified) values[vcount++] = v19;
+  if (v20!specified) values[vcount++] = v20;
+  if (v21!specified) values[vcount++] = v21;
+  if (v22!specified) values[vcount++] = v22;
+  if (v23!specified) values[vcount++] = v23;
+  if (v24!specified) values[vcount++] = v24;
+  if (v25!specified) values[vcount++] = v25;
+  if (v26!specified) values[vcount++] = v26;
+  if (v27!specified) values[vcount++] = v27;
   return values[P_Random()%vcount];
 }
 */
@@ -208,21 +208,21 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
   float[18] values;
   int vcount = 1;
   values[0] = v0;
-  if (specified_v1) values[vcount++] = v1;
-  if (specified_v2) values[vcount++] = v2;
-  if (specified_v3) values[vcount++] = v3;
-  if (specified_v4) values[vcount++] = v4;
-  if (specified_v5) values[vcount++] = v5;
-  if (specified_v6) values[vcount++] = v6;
-  if (specified_v7) values[vcount++] = v7;
-  if (specified_v8) values[vcount++] = v8;
-  if (specified_v9) values[vcount++] = v9;
-  if (specified_v10) values[vcount++] = v10;
-  if (specified_v11) values[vcount++] = v11;
-  if (specified_v12) values[vcount++] = v12;
-  if (specified_v13) values[vcount++] = v13;
-  if (specified_v14) values[vcount++] = v14;
-  if (specified_v15) values[vcount++] = v15;
+  if (v1!specified) values[vcount++] = v1;
+  if (v2!specified) values[vcount++] = v2;
+  if (v3!specified) values[vcount++] = v3;
+  if (v4!specified) values[vcount++] = v4;
+  if (v5!specified) values[vcount++] = v5;
+  if (v6!specified) values[vcount++] = v6;
+  if (v7!specified) values[vcount++] = v7;
+  if (v8!specified) values[vcount++] = v8;
+  if (v9!specified) values[vcount++] = v9;
+  if (v10!specified) values[vcount++] = v10;
+  if (v11!specified) values[vcount++] = v11;
+  if (v12!specified) values[vcount++] = v12;
+  if (v13!specified) values[vcount++] = v13;
+  if (v14!specified) values[vcount++] = v14;
+  if (v15!specified) values[vcount++] = v15;
   return values[P_Random()%vcount];
 }
 */
@@ -390,7 +390,7 @@ const [decorate] int AAPTR_OWNER = 0x10_0000;
 
 
 private final EntityEx dccDoAPtr (optional int aptr0) {
-  if (!specified_aptr0) aptr0 = AAPTR_DEFAULT;
+  if (!aptr0!specified) aptr0 = AAPTR_DEFAULT;
   EntityEx sex = EntityEx(self);
   if (sex) sex = EntityEx(sex.DecorDoAAPtr('dccDoAPtr', aptr0));
   return sex;
@@ -482,7 +482,7 @@ private final EntityEx dccDoAPtr (optional int aptr0) {
 //
 //==========================================================================
 [decorate] final float decorate_GetCrouchFactor (optional int aptr0) {
-  if (!specified_aptr0) aptr0 = AAPTR_DEFAULT;
+  if (!aptr0!specified) aptr0 = AAPTR_DEFAULT;
   EntityEx sex = EntityEx(self);
   if (!sex) return 1.0;
   sex = EntityEx(sex.DecorDoAAPtr('GetCrouchFactor', aptr0));

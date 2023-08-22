@@ -241,14 +241,14 @@
     printwarn("extra `A_Saw()` parameters ignored!");
   }
 
-  if (!specified_FullSound) {
+  if (!FullSound!specified) {
     FullSound = 'weapons/sawfull';
     HitSound = 'weapons/sawhit';
   }
 
   if (!SawDamage) SawDamage = 2;
   if (!PuffType) PuffType = BulletPuff;
-  if (!specified_range || !range) range = SAWRANGE;
+  if (!range!specified || !range) range = SAWRANGE;
   range = fmax(1.0, range); // just in case
 
   int oldAmmo1, oldAmmo2;
@@ -360,7 +360,7 @@
   if (Range < 0) return; //k8: sanity check
   if (!Range) Range = DEFAULT_MELEERANGE; //SAWRANGE; // use saw range instead of melee range here, for puffs
 
-  bool UseAmmo = (specified_Flags ? !!(Flags&CPF_USEAMMO) : false);
+  bool UseAmmo = (Flags!specified ? !!(Flags&CPF_USEAMMO) : false);
   if (!PuffType) PuffType = BulletPuff;
 
   Weapon Wpn = PlayerEx(Player).ReadyWeapon;
@@ -375,7 +375,7 @@
   }
 
   if (!NoRandom) PunchDamage *= (P_Random()%8+1);
-  if (specified_berserkerMult) {
+  if (berserkerMult!specified) {
     if (FindInventory(PowerStrength)) {
       //printdebug("%C: old punch: %s; mult=%s", self, PunchDamage, berserkerMult);
       PunchDamage = roundi(PunchDamage*berserkerMult);
@@ -427,15 +427,15 @@
   int damage;
   TAVec rot;
   TVec aimDir;
-  bool UseAmmo = (specified_Flags ? !!(Flags&FBF_USEAMMO) : true);
+  bool UseAmmo = (Flags!specified ? !!(Flags&FBF_USEAMMO) : true);
   bool randDamage = true;
   bool randSpread = true;
   bool noAimPitch = false;
   //!bool doFlash = false; // not implemented yet
   bool doRandPuffZ = false; // not implemented yet
 
-  if (!PuffType || !specified_PuffType) PuffType = BulletPuff;
-  if (!specified_Range || !Range) Range = 8192; //MISSILERANGE;
+  if (!PuffType || !PuffType!specified) PuffType = BulletPuff;
+  if (!Range!specified || !Range) Range = 8192; //MISSILERANGE;
 
   if (Flags&FBF_DISABLEMISSILE) missile = none;
   if (missile && (Flags&FBF_NOMISSILENO3D) && !GetCvarB('r_models')) missile = none;
@@ -448,7 +448,7 @@
     if (!Wpn.DepleteAmmo(Wpn.FireMode)) return;
   }
 
-  if (specified_Flags) {
+  if (Flags!specified) {
     randDamage = !(Flags&FBF_NORANDOM);
     randSpread = !(Flags&FBF_EXPLICITANGLE);
     noAimPitch = !!(Flags&FBF_NOPITCH);
@@ -467,7 +467,7 @@
 
   Aim(aimDir, 16.0*64.0, default, noAAim, noAimPitch);
 
-  if (missile && !specified_spawnheight) spawnheight = CalculateLineAttackZOfs(); // fix missile height
+  if (missile && !spawnheight!specified) spawnheight = CalculateLineAttackZOfs(); // fix missile height
 
   EntityEx puff;
   TVec hitPoint; // used to aim a missile
@@ -562,7 +562,7 @@
 //
 //===========================================================================
 [decorate] final void A_FireSTGrenade (optional class!Actor GrenadeType) self(Actor) {
-  if (!specified_GrenadeType) {
+  if (!GrenadeType!specified) {
     class!Actor gc = class!Actor(FindClassNoCase('Grenade'));
     if (!gc) return;
     GrenadeType = gc;
@@ -603,13 +603,13 @@
   optional class!Actor spawnclass, // for particles
   optional float spawnofs_z, optional int spiraloffset, optional int limit) self(Actor)
 {
-  if (!specified_UseAmmo) UseAmmo = true;
+  if (!UseAmmo!specified) UseAmmo = true;
 
   if (!bIsPlayer) return;
   Weapon Wpn = PlayerEx(Player).ReadyWeapon;
   if (!Wpn) return;
 
-  if ((specified_Flags && (Flags&1)) || UseAmmo) {
+  if ((Flags!specified && (Flags&1)) || UseAmmo) {
     if (!Wpn.DepleteAmmo(Wpn.FireMode, default, 1)) return;
   }
 

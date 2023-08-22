@@ -441,7 +441,7 @@ final void TestFindPathTo (TVec dest) {
 //==========================================================================
 final void PutItemToIgnoreList (Actor aitem, optional float timeoutMult) {
   if (!aitem || !aitem.IsDestroyed) return;
-  if (!specified_timeoutMult) timeoutMult = 1;
+  if (!timeoutMult!specified) timeoutMult = 1;
   float currTime = botmo.XLevel.Time;
   float timeout = ITEM_IGNORE_TIME+(FRandomFull()-0.5)*(ITEM_IGNORE_TIME_DEVIATION*2);
   if (!player.Level.Game.deathmatch) {

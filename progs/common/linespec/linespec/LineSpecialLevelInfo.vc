@@ -2295,9 +2295,9 @@ override int AcsPolyRotateEx (int po, int speed, float deltaangle, int moveflags
   // no z movement for non-3d pobjs
   if (!poly->posector) { vspeed = 0; floatVDist = 0; vdist = 0; }
 
-  if (!specified_deltaangle) deltaangle = 0; // just in case
+  if (!deltaangle!specified) deltaangle = 0; // just in case
 
-  float realDist = (specified_floatDist ? floatDist : float(Arg4)*(timesEight ? 8.0 : 1.0));
+  float realDist = (floatDist!specified ? floatDist : float(Arg4)*(timesEight ? 8.0 : 1.0));
   float realSpeed = float(Arg2)*4.0;
   if (fabs(realDist) < 0.00001) realDist = 0.0; //FIXME
 
@@ -2305,9 +2305,9 @@ override int AcsPolyRotateEx (int po, int speed, float deltaangle, int moveflags
   // hack: if vdist is negative, force negative vspeed, otherwise leave vspeed as is
   float realVDist, realVSpeed;
   if (poly->posector) {
-    realVDist = (specified_floatVDist ? floatVDist : float(abs(vdist))*(timesEight ? 8.0 : 1.0));
+    realVDist = (floatVDist!specified ? floatVDist : float(abs(vdist))*(timesEight ? 8.0 : 1.0));
     if (fabs(realVDist) < 0.00001) realVDist = 0.0; //FIXME
-    if (specified_vspeed) {
+    if (vspeed!specified) {
       // we have known vspeed, use it as is (the sign will be fixed later, if necessary)
       realVSpeed = float(vspeed)*4.0;
       //printdebug("000: move pobj #%s: vspeed=%s; realVSpeed=%s", polyNum, vspeed, realVSpeed);
@@ -2356,21 +2356,21 @@ override int AcsPolyRotateEx (int po, int speed, float deltaangle, int moveflags
   //pe.ignoreThings = ignoreThings;
   //pe.polyobj = polyNum;
   pe.dist = realDist;
-  //if (specified_floatDist) pe.dist = floatDist;
+  //if (floatDist!specified) pe.dist = floatDist;
   pe.speed = realSpeed;
   pe.thrust_force = pe.speed/8.0; //THRUST
   if (realVSpeed && realVDist) { pe.vspeed = realVSpeed; pe.vdist = realVDist; }
 
-  float an = (specified_floatAngle ? floatAngle : float(Arg3)*(90.0/64.0));
+  float an = (floatAngle!specified ? floatAngle : float(Arg3)*(90.0/64.0));
   if (!Arg2) an = 0;
   pe.angle = an;
   pe.nolink = nolink;
-  pe.bUsePobjAngleToMove = (specified_mvflags && !!(mvflags&POBJ_MOVE_POANGLE));
+  pe.bUsePobjAngleToMove = (mvflags!specified && !!(mvflags&POBJ_MOVE_POANGLE));
   PolyobjStartSequence(poly, GetSeqTrans(poly->seqType, SEQ_Door), 0);
 
   if (deltaangle) {
     PolyobjMoverRotator(pe).deltaAngle = deltaangle;
-    PolyobjMoverRotator(pe).bIndRot = (specified_mvflags && !!(mvflags&POBJ_MOVE_INDROT));
+    PolyobjMoverRotator(pe).bIndRot = (mvflags!specified && !!(mvflags&POBJ_MOVE_INDROT));
   }
   pe.AppendTo(poly);
   //poly->SpecialData = pe;
@@ -2403,12 +2403,12 @@ override int AcsPolyRotateEx (int po, int speed, float deltaangle, int moveflags
     if (Arg2) an = AngleMod360(an+180.0); // reverse the angle
     pe.angle = an;
     pe.nolink = nolink;
-    pe.bUsePobjAngleToMove = (specified_mvflags && !!(mvflags&POBJ_MOVE_POANGLE));
+    pe.bUsePobjAngleToMove = (mvflags!specified && !!(mvflags&POBJ_MOVE_POANGLE));
     PolyobjStartSequence(poly, GetSeqTrans(poly->seqType, SEQ_Door), 0);
 
     if (deltaangle) {
       PolyobjMoverRotator(pe).deltaAngle = deltaangle;
-      PolyobjMoverRotator(pe).bIndRot = (specified_mvflags && !!(mvflags&POBJ_MOVE_INDROT));
+      PolyobjMoverRotator(pe).bIndRot = (mvflags!specified && !!(mvflags&POBJ_MOVE_INDROT));
     }
     pe.AppendTo(poly);
     //poly->SpecialData = pe;
@@ -4995,7 +4995,7 @@ private transient array!Entity recSoundSectorEntities; // will be collected in n
 
   if (tgt && tgt.bIsPlayer && PlayerEx(tgt.Player).bNoTarget) return;
 
-  //if (!specified_Splash) Splash = false; // `false` is default
+  //if (!Splash!specified) Splash = false; // `false` is default
   RecursiveSound(emt.Sector, tgt, Splash, maxdist!optional, emt);
 }
 

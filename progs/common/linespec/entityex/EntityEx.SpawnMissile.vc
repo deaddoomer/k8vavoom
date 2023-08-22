@@ -362,7 +362,7 @@ final void MultProjSpeed (EntityEx proj) {
 //==========================================================================
 final EntityEx SpawnMissile (EntityEx dest, class!EntityEx type, optional float spawnheight) {
   TVec org = Origin;
-       if (specified_spawnheight) org.z += spawnheight;
+       if (spawnheight!specified) org.z += spawnheight;
   else if (type.default.bIgnoreFloorStep) org.z = ONFLOORZ+FloorClip;
   else if (type.default.bIgnoreCeilingStep) org.z = ONCEILINGZ;
   else org.z += 32.0;
@@ -470,14 +470,14 @@ final EntityEx SpawnMissileAngles (class!EntityEx type, float yaw, float pitch,
   if (!type) return none;
   TVec dir;
 
-  TVec org = (specified_customOrigin ? customOrigin : Origin);
+  TVec org = (customOrigin!specified ? customOrigin : Origin);
 
   if (spawnxyofs) {
     TVec right = AngleYawVector(Angles.yaw+90); //k8: or -90?
     org += right*spawnxyofs;
   }
 
-       if (specified_spawnheight) org.z += spawnheight;
+       if (spawnheight!specified) org.z += spawnheight;
   else if (type.default.bIgnoreFloorStep) org.z = ONFLOORZ+FloorClip;
   else if (type.default.bIgnoreCeilingStep) org.z = ONCEILINGZ;
   else org.z += 32.0;
@@ -487,7 +487,7 @@ final EntityEx SpawnMissileAngles (class!EntityEx type, float yaw, float pitch,
   EntityEx A = Spawn(type, org);
   if (!A) return none;
   if (!A.DecalName) A.DecalName = type.default.DecalName;
-  if (specified_speedOverride && speedOverride.isFinite && speedOverride >= 0) A.Speed = speedOverride;
+  if (speedOverride!specified && speedOverride.isFinite && speedOverride >= 0) A.Speed = speedOverride;
   A.CarryBloodTranslations(self);
   A.PlayMissileSpawnSound(self);
   A.Target = self; // originator
@@ -516,7 +516,7 @@ final EntityEx SpawnMissileAngle (class!EntityEx type, float angle,
   if (!type) return none;
 
   TVec org = Origin;
-       if (specified_spawnheight) org.z += spawnheight;
+       if (spawnheight!specified) org.z += spawnheight;
   else if (type.default.bIgnoreFloorStep) org.z = ONFLOORZ+FloorClip; // minotaur floor fire missile
   else if (type.default.bIgnoreCeilingStep) org.z = ONCEILINGZ;
   else org.z += 32.0;
@@ -650,13 +650,13 @@ final EntityEx SpawnPlayerMissileEx (class!EntityEx type, bool RetExploded,
   TVec dir;
 
   // try to find a target
-  if (specified_angle) {
+  if (angle!specified) {
     AimTarget = Aim(dir, 16.0*64.0, angle, noAutoaim:noAutoAim!optional, rocketType:type);
   } else {
     AimTarget = Aim(dir, 16.0*64.0, noAutoaim:noAutoAim!optional, rocketType:type);
   }
 
-  TVec org = (specified_SpawnOrg ? SpawnOrg : Origin);
+  TVec org = (SpawnOrg!specified ? SpawnOrg : Origin);
   bool zofsfix;
 
   if (type.default.bIgnoreFloorStep) {
@@ -688,7 +688,7 @@ final EntityEx SpawnPlayerMissileEx (class!EntityEx type, bool RetExploded,
   if (!A) return none;
   if (!A.DecalName) A.DecalName = type.default.DecalName;
   A.CarryBloodTranslations(self);
-  if (specified_decalType && decalType) {
+  if (decalType!specified && decalType) {
     //if (GetCvarB('k8ExplodeMissleTest')) print("missile decal set to <%n>", decalType);
     A.DecalName = decalType;
   }

@@ -3277,8 +3277,8 @@ void DisplayObituary (EntityEx inflictor, EntityEx source, name DmgType) {
 //
 //==========================================================================
 void ClientRailTrail (TVec From, TVec To, optional int Col1, optional int Col2, float MaxDiff) {
-  if (!specified_Col1) Col1 = RGBA(255, 255, 255, 255);
-  if (!specified_Col2) Col2 = RGBA(0, 0, 255, 255);
+  if (!Col1!specified) Col1 = RGBA(255, 255, 255, 255);
+  if (!Col2!specified) Col2 = RGBA(0, 0, 255, 255);
 
   if (!Col1 && !Col2) return;
 
@@ -3942,7 +3942,7 @@ override void ResetInventory () {
 override void RemoveKeysVerbose (optional bool verbose) {
   EntityEx PP = EntityEx(MO);
   if (!PP) return;
-  if (!specified_verbose) verbose = true;
+  if (!verbose!specified) verbose = true;
 
   //bool again = true;
   int count = 0;

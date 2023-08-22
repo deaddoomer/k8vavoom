@@ -407,7 +407,7 @@ override void TouchSpecial (EntityEx Toucher, optional bool noflash) {
 
   if (!TryPickup(Toucher)) return;
 
-  if (!bQuiet && (!specified_noflash || !noflash)) {
+  if (!bQuiet && (!noflash!specified || !noflash)) {
     if (Toucher.bIsPlayer) Toucher.Player.cprint("%s", GetPickupMessage());
     PlayPickupSound(Toucher);
     if (Toucher.bIsPlayer) PlayerEx(Toucher.Player).BonusFlash += BONUSADD;
@@ -567,7 +567,7 @@ Inventory CreateCopy (EntityEx Toucher) {
 Inventory CreateTossable (optional int DropAmount) {
   if (!IdleState) return none; // this item has no spawn state so it cannot be seen
 
-  if (!specified_DropAmount || DropAmount < 0) DropAmount = 1; // drop one by default
+  if (!DropAmount!specified || DropAmount < 0) DropAmount = 1; // drop one by default
 
   if (bUndroppable || !Owner || Amount <= 0 || DropAmount == 0) return none;
 

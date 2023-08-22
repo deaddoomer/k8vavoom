@@ -913,7 +913,7 @@ struct WadDirIteratorInfoName {
 }
 
 static final bool WadIterateDirectory_opIterInit (out WadDirIteratorInfoName it, string dirname, optional bool allowSubdirs/*=true*/) {
-  if (!specified_allowSubdirs) allowSubdirs = true;
+  if (!allowSubdirs!specified) allowSubdirs = true;
   it.dirname = dirname;
   it.allowSubdirs = allowSubdirs;
   it.curr = W_IterateDirectory(-1, dirname, allowSubdirs);

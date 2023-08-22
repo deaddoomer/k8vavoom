@@ -496,8 +496,8 @@ override void Destroyed () {
 [decorate] final bool A_SetSize (optional float newradius, optional float newheight, optional bool testpos) {
   auto oldRadius = Radius;
   auto oldHeight = Height;
-  if (specified_newradius && newradius >= 0) Radius = newradius;
-  if (specified_newheight && newheight >= 0) Height = newheight;
+  if (newradius!specified && newradius >= 0) Radius = newradius;
+  if (newheight!specified && newheight >= 0) Height = newheight;
   if (!testpos || TestLocation()) return true;
   // revert
   Radius = oldRadius;
@@ -533,7 +533,7 @@ override void Destroyed () {
 //==========================================================================
 [decorate] final void A_ChangeScaleXExt (float delta, optional float killLimit) {
   ScaleX = fmax(0, ScaleX+delta);
-  if (specified_killLimit && ScaleX < killLimit) Destroy();
+  if (killLimit!specified && ScaleX < killLimit) Destroy();
 }
 
 
@@ -544,7 +544,7 @@ override void Destroyed () {
 //==========================================================================
 [decorate] final void A_ChangeScaleYExt (float delta, optional float killLimit) {
   ScaleY = fmax(0, ScaleY+delta);
-  if (specified_killLimit && ScaleY < killLimit) Destroy();
+  if (killLimit!specified && ScaleY < killLimit) Destroy();
 }
 
 

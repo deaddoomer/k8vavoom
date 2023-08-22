@@ -437,7 +437,7 @@ const float HammerRange = DEFAULT_MELEERANGE+DEFAULT_MELEERANGE/2.0;
   if (!Wpn) return;
 
   class!Actor fll = LightningFloor;
-  if (specified_flrname && flrname.length) {
+  if (flrname!specified && flrname.length) {
     // find which type to spawn
     auto moClass = class!Actor(FindClassNoCaseStr(flrname));
     if (moClass) {
@@ -448,7 +448,7 @@ const float HammerRange = DEFAULT_MELEERANGE+DEFAULT_MELEERANGE/2.0;
   }
 
   class!Actor cll = LightningCeiling;
-  if (specified_ceilname && ceilname.length) {
+  if (ceilname!specified && ceilname.length) {
     // find which type to spawn
     auto moClass = class!Actor(FindClassNoCaseStr(ceilname));
     if (moClass) {

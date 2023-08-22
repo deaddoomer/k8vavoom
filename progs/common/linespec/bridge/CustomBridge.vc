@@ -61,7 +61,7 @@ Arg 5: Rotation radius of bridge balls, in bridge radius %. 0 is Hexen-default (
 
   Special1 = 0;
 
-  if (!specified_balltype) balltype = BridgeBall;
+  if (!balltype!specified) balltype = BridgeBall;
 
   if (!Args[2]) Args[2] = 3;
 

@@ -211,7 +211,7 @@ final void InitSpawnedItem (EntityEx A, bool TransTransl, bool SetMaster,
                                    optional float ZHeight, optional bool UseAmmo,
                                    optional bool TransTransl)
 {
-  if (!specified_UseAmmo) UseAmmo = true;
+  if (!UseAmmo!specified) UseAmmo = true;
 
   if (!ItemType) { KeepChainResult(); return false; }
 
@@ -365,7 +365,7 @@ final void InitSpawnedItem (EntityEx A, bool TransTransl, bool SetMaster,
     if (Flags&SXF_ISTRACER) Tracer = A;
     if (Flags&SXF_TRANSFERSPECIAL) { A.Special = Special; foreach (auto f; 0..Args.length) A.Args[f] = Args[f]; }
     if (Flags&SXF_CLEARCALLERSPECIAL) { Special = 0; foreach (auto f; 0..Args.length) Args[f] = 0; }
-    if (specified_newtid && newtid >= 0) A.SetTID(newtid);
+    if (newtid!specified && newtid >= 0) A.SetTID(newtid);
     //if (Flags&SXF_SETMASTER) printdebug("*** %C: spawned `%C` with SetMaster; A.Master=%C; uid=%s", self, A, A.Master, A.UniqueId);
     //printdebug("A_SpawnItemEx(%C):002: angles=%s (%s)", A, A.Angles, Angle);
     return true;

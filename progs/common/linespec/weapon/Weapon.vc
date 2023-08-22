@@ -835,8 +835,8 @@ bool DepleteAmmo (ubyte Mode, optional bool CheckEnough, optional int DehackedUs
   }
 
   // default parameter values
-  if (!specified_CheckEnough) CheckEnough = true;
-  if (!specified_DehackedUse) DehackedUse = AmmoUse1;
+  if (!CheckEnough!specified) CheckEnough = true;
+  if (!DehackedUse!specified) DehackedUse = AmmoUse1;
 
   if (CheckEnough && !CheckAmmo(Mode, false)) return false;
 

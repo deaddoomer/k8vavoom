@@ -1003,7 +1003,7 @@ static final bool CalcLinesIntersection (TVec lav1, TVec lav2, TVec lbv1, TVec l
   mul = -(dx2*dyy-dy2*dxx);
   if (mul < 0.0 || mul > -div) return false; // second line crossing out of limits
 
-  if (specified_crosspt) {
+  if (crosspt!specified) {
     float factor = (dx2*dyy-dy2*dxx)/div;
     crosspt = vector(x11+factor*(x21-x11), y11+factor*(y21-y11));
   }

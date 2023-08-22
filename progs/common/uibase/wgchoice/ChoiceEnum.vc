@@ -116,7 +116,7 @@ void ClearAndReset () {
 //
 //==========================================================================
 void AddItem (string AValue, optional float val) {
-  if (!specified_val && vallist.length) val = int(vallist[$-1].value)+1;
+  if (!val!specified && vallist.length) val = int(vallist[$-1].value)+1;
   vallist.length += 1;
   vallist[$-1].caption = TranslateString(AValue);
   vallist[$-1].value = val;
@@ -229,14 +229,14 @@ void OpenComboPopup (optional int X, optional int Y) {
   /*MenuComboBoxPopup*/ cbox = MenuComboBoxPopup(GetRootWidget.NewChild(MenuComboBoxPopup));
   if (!cbox) return;
   cbox.choice = self;
-  if (!specified_X) {
+  if (!X!specified) {
     auto oldFont = GetFont();
     scope(exit) SetFont(oldFont);
     SetFont(FontName);
     int xx = (bLeftAlign ? TextWidth(Text)+8 : CursorXOffs+10);
     X = xx;
   }
-  if (!specified_Y) Y = -2;
+  if (!Y!specified) Y = -2;
   LocalXYToRoot(out cbox.xbase, out cbox.ybase, X, Y);
   foreach (int c, const ref auto vv; vallist) cbox.addItem(vv.caption, (c == idx));
   LocalSound('menu/change');

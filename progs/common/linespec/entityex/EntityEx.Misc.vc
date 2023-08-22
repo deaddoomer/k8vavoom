@@ -108,8 +108,8 @@ final void PerformVanillaLineAttack (TVec dir, float distance, int LADamage,
     pj.CarryBloodTranslations(self);
     //pj.PlayMissileSpawnSound(self);
     // setup decal, damage, damage type, and puff
-    if (specified_decalType) pj.DecalName = decalType;
-    if (specified_DmgType) pj.DamageType = DmgType;
+    if (decalType!specified) pj.DecalName = decalType;
+    if (DmgType!specified) pj.DamageType = DmgType;
     if (PuffType) {
       class!EntityEx ovc = class!EntityEx(GetClassReplacement(PuffType));
       if (ovc) PuffType = ovc;
@@ -168,11 +168,11 @@ void FixLightPosition (sector_t *asector, ref TVec org, optional int thingidx) {
     //printdebug("light thing #%s: fz=%s; cz=%s; z=%s; fdist=%s, cdist=%s", thingidx, fz, cz, org.z, org.z-fz, cz-org.z);
     if (z <= fz+4) {
       float res = (cz-fz <= 8 ? (cz+fz)/2 : fz+4);
-      if (specified_thingidx) printdebug("fixed z floor position for `%C` thing #%s (%s -> %s : %s)", self, thingidx, z, res, fz);
+      if (thingidx!specified) printdebug("fixed z floor position for `%C` thing #%s (%s -> %s : %s)", self, thingidx, z, res, fz);
       org.z = res;
     } else if (z >= cz-4) {
       float res = (cz-fz <= 8 ? (cz+fz)/2 : cz-4);
-      if (specified_thingidx) printdebug("fixed z ceiling position for `%C` thing #%s (%s -> %s : %s)", self, thingidx, z, res, cz);
+      if (thingidx!specified) printdebug("fixed z ceiling position for `%C` thing #%s (%s -> %s : %s)", self, thingidx, z, res, cz);
       org.z = res;
     }
   }
@@ -219,7 +219,7 @@ final void SetOrigin2 (TVec aorigin, optional int properFloorCheck, optional flo
 
   if (properFloorCheck != -666) {
          if (bIsPlayer) properFloorCheck = true;
-    else if (!specified_properFloorCheck && bMonster) properFloorCheck = true;
+    else if (!properFloorCheck!specified && bMonster) properFloorCheck = true;
 
     if (properFloorCheck) {
       if (aorigin.z == ONFLOORZ || aorigin.z == ONCEILINGZ) {
@@ -269,7 +269,7 @@ final void SetOrigin2 (TVec aorigin, optional int properFloorCheck, optional flo
       if (FloorZ < tmtrace.FloorZ && tmtrace.FloorZ <= Origin.z) {
         #ifdef K8_DEVELOPER
         // `moreHeight` specified only for map things
-        if (specified_moreHeight) {
+        if (moreHeight!specified) {
           print("FIXED z for `%C`: z=%s; flrz=%s; FloorZ=%s; newFloorZ=%s; Radius=%s", self, Origin.z, flrz, FloorZ, tmtrace.FloorZ, Radius);
         }
         #endif
@@ -317,9 +317,9 @@ final int RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
 
   if (!Level.Game.IsAuthority) return 0;
 
-  if (!specified_thrustZ) thrustZ = DoDamage; //k8: see below
-  if (!specified_DoDamage) DoDamage = true;
-  if (!specified_noAllies) noAllies = false; // just in case
+  if (!thrustZ!specified) thrustZ = DoDamage; //k8: see below
+  if (!DoDamage!specified) DoDamage = true;
+  if (!noAllies!specified) noAllies = false; // just in case
 
   if (onlyThisSpecie && nameEquCI(onlyThisSpecie, 'None')) onlyThisSpecie = '';
 
@@ -350,7 +350,7 @@ final int RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
     if (noAllies && Source && Source.IsFriend(Other)) continue;
 
     //printdebug("%C:001: Other=%C", self, Other);
-    if (specified_onlyThisSpecie && !nameEquCI(onlyThisSpecie, Other.GetSpecies())) continue;
+    if (onlyThisSpecie!specified && !nameEquCI(onlyThisSpecie, Other.GetSpecies())) continue;
 
     //printdebug("%C:002: Other=%C", self, Other);
     // option for monsters that fire explosive projectiles not to hurt
@@ -407,7 +407,7 @@ final int RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
       float dist2;
 
       // OK to damage, target is in direct path
-      if (!specified_damagedistance) {
+      if (!damagedistance!specified) {
         dist2 = dist;
       } else {
         dist2 = fclamp(dist-float(damagedistance), 0.0, dist);
@@ -436,7 +436,7 @@ final int RadiusAttack (EntityEx Source, int BombDamage, float BombDistance,
 
       if (!thrustless && !bDontThrust && !Other.bIceCorpse && (!DoDamage || !bNoDamageThrust)) {
         float Thrust = dmgfloat*0.5;
-        if (specified_fullthrustdistance && fullthrustdistance != 0 && dist <= fullthrustdistance) {
+        if (fullthrustdistance!specified && fullthrustdistance != 0 && dist <= fullthrustdistance) {
           Thrust = BombDamage*Other.RDFactor*0.5;
         }
         //k8: this is purely experimental, and prolly not right at all
@@ -2086,7 +2086,7 @@ EntityEx DropItem (class!EntityEx type, int amount, float chance,
 
   float DropZ = 0.0;
   if (!Level.CompatNoTossDrops) DropZ = Height/2.0;
-  if (!specified_dropofs) {
+  if (!dropofs!specified) {
     dropofs = vector(0.0, 0.0, DropZ);
     // move it forward a little, to avoid z-fighting with a body
     TVec v = AngleYawVector(Angles.yaw);
@@ -2996,7 +2996,7 @@ final EntityEx SpawnPuff (TVec Org, float Range, class!EntityEx PuffType,
   }
 
   if (puff && !puff.IsDestroyed) {
-    //printdebug("%C: puff `%C`; decal=%s; passed_decal:(%B)=%s", self, puff, puff.DecalName, specified_decalType, decalType);
+    //printdebug("%C: puff `%C`; decal=%s; passed_decal:(%B)=%s", self, puff, puff.DecalName, decalType!specified, decalType);
 
     if (puff.bPuffParticles && GetCvarB('r_particle_puffs')) {
       int c = P_Random()>>1;
@@ -3014,25 +3014,25 @@ final EntityEx SpawnPuff (TVec Org, float Range, class!EntityEx PuffType,
     } else {
       if (puff.bPuffForceDecals) {
         decalType = puff.DecalName; // override it
-      } else if (!specified_decalType || !decalType) {
+      } else if (!decalType!specified || !decalType) {
         // empty `decalType` is passed from line attacks, if weapon has no decal
         decalType = puff.DecalName;
       }
       if (nameicmp(decalType, 'none') == 0) decalType = ''; // prevent error spam
     }
     /*
-    if (specified_decalType) {
+    if (decalType!specified) {
       if (!decalType) doDecal = false;
     } else {
       if (!PuffType || !puff.DecalName) doDecal = false;
     }*/
 
-    //print("SpawnPuff: Range=%s; PuffType=%C; decalType=%s(%B); puffdecal=%s; doDecal=%B", Range, PuffType, decalType, specified_decalType, (PuffType ? puff.DecalName : '<none>'), doDecal);
+    //print("SpawnPuff: Range=%s; PuffType=%C; decalType=%s(%B); puffdecal=%s; doDecal=%B", Range, PuffType, decalType, decalType!specified, (PuffType ? puff.DecalName : '<none>'), doDecal);
 
     if (decalType) {
-      name flatDName = (specified_decalType && decalType ? decalType : puff.bSeparateFlatDecal ? puff.FlatDecalName : puff.DecalName);
+      name flatDName = (decalType!specified && decalType ? decalType : puff.bSeparateFlatDecal ? puff.FlatDecalName : puff.DecalName);
       if (flatDName && !nameEquCI(flatDName, 'none')) {
-        if (!specified_realOrg) realOrg = Org;
+        if (!realOrg!specified) realOrg = Org;
         float fdrange = fmax(1.0, fabs(Height)*0.5);
         TVec forg = realOrg;
         forg.z += fdrange;
@@ -3049,8 +3049,8 @@ final EntityEx SpawnPuff (TVec Org, float Range, class!EntityEx PuffType,
 
     if (decalType && sec && li) {
       //k8:TODO: this should be strictly client-side
-      if (!specified_realOrg) realOrg = Org;
-      name dcname = (specified_decalType && decalType ? decalType : puff.DecalName);
+      if (!realOrg!specified) realOrg = Org;
+      name dcname = (decalType!specified && decalType ? decalType : puff.DecalName);
       SpawnDecal(realOrg, dcname, (sec == li->frontsector ? 0 : 1), li);
     }
   }
@@ -3808,13 +3808,13 @@ final void GunShot (bool accurate, TVec dir, name DmgType, bool secondary, optio
                     optional float range, optional float spreadYaw, optional float spreadPitch)
 {
   if (!Level.Game.IsAuthority) return;
-  if (!specified_range || range <= 0) range = MISSILERANGE;
+  if (!range!specified || range <= 0) range = MISSILERANGE;
 
   // make a copy of angles because inacurate shoot will modify them
   if (!accurate) {
     TAVec aimangles;
     VectorAngles(dir, out aimangles);
-    if (!specified_spreadYaw) {
+    if (!spreadYaw!specified) {
       aimangles.yaw = AngleMod360(aimangles.yaw+(FRandomFull()-FRandomFull())*45.0/8.0);
     } else {
       if (spreadYaw) aimangles.yaw = AngleMod360(aimangles.yaw+(FRandomFull()-FRandomFull())*spreadYaw);

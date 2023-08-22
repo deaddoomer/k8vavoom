@@ -43,8 +43,8 @@ const float TRACE2ANGLE = 7.0*45.0/16.0;
        if (TurnMax < 0) TurnMax = 0;
   else if (TurnMax > 90) TurnMax = 90;
 
-  if (!specified_chance) chance = 50;
-  if (!specified_distance) distance = 10;
+  if (!chance!specified) chance = 50;
+  if (!distance!specified) distance = 10;
 
   if ((flags&SMF_LOOK) && !Tracer && P_Random() < chance) {
     //printdebug("%C: looking for a target...", self);
@@ -188,7 +188,7 @@ const float TRACE2ANGLE = 7.0*45.0/16.0;
   UnlinkFromWorld();
   Origin.x = Tracer.Origin.x+24.0*cos(Tracer.Angles.yaw);
   Origin.y = Tracer.Origin.y+24.0*sin(Tracer.Angles.yaw);
-  if (!specified_aHeight) {
+  if (!aHeight!specified) {
     Origin.z = Tracer.Origin.z;
   } else {
     Origin.z = Tracer.Origin.z+float(aHeight);

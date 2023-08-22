@@ -210,7 +210,7 @@
   FRogueConSpeech *Speech;
   class!EntityEx DropItemType;
 
-  if (!specified_drop) drop = true;
+  if (!drop!specified) drop = true;
 
   // Andy Baker's stealth monsters
   if (bStealth) {
@@ -375,7 +375,7 @@
   if (RenderStyle == STYLE_Normal) RenderStyle = STYLE_Translucent;
   if (!Val) Val = 0.1;
   Alpha += Val;
-  if (specified_flags) {
+  if (flags!specified) {
     if (flags&FTF_CLAMP) Alpha = fclamp(Alpha, 0, 1);
     if ((flags&FTF_REMOVE) && Alpha >= 1) { Destroy(); return; }
   }
@@ -392,7 +392,7 @@
   if (RenderStyle == STYLE_Normal) RenderStyle = STYLE_Translucent;
   if (!Val) Val = 0.1;
   Alpha -= Val;
-  if (!specified_flags) flags = FTF_REMOVE;
+  if (!flags!specified) flags = FTF_REMOVE;
   if (flags&FTF_CLAMP) Alpha = fclamp(Alpha, 0, 1);
   if ((flags&FTF_REMOVE) && Alpha <= 0) { Destroy(); return; }
 }

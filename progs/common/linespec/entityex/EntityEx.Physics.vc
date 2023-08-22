@@ -1716,14 +1716,14 @@ bool HitFloorType (optional bool justLanded) {
         }
         if (doIt) Damage(none, none, TInfo->DamageAmount, TInfo->DamageType/*, spawnBlood:true*/);
       }
-      if (specified_justLanded && justLanded && TInfo->bDamageOnLand) {
+      if (justLanded!specified && justLanded && TInfo->bDamageOnLand) {
         // just landed, damage if the corresponding terrain flag is set
         Damage(none, none, TInfo->DamageAmount, TInfo->DamageType/*, spawnBlood:true*/);
       }
     }
 
     // play landing sound (but not for Voodoo Dolls)
-    if (specified_justLanded && justLanded && pex.MO == self) {
+    if (justLanded!specified && justLanded && pex.MO == self) {
       if (smallsplash) {
         if (TInfo->SmallLandSound && TInfo->SmallLandVolume > 0.0f) {
           PlaySound(TInfo->SmallLandSound, CHAN_SPLASH, fmin(1.0f, TInfo->SmallLandVolume));
@@ -1740,7 +1740,7 @@ bool HitFloorType (optional bool justLanded) {
   if (!SInfo) return TInfo->bLiquid;
 
   // called from Z movement, perform some checks
-  if (specified_justLanded) {
+  if (justLanded!specified) {
     if (!justLanded) {
       // stayed on the floor; check if it is the same floor
       if (tmp_phys_last_floor_pic == EFloor.splane->pic) {

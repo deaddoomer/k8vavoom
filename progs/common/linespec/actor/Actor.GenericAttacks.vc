@@ -68,9 +68,9 @@ final EntityEx helperSpawnShotSupplementalMissile (class!Actor missile, TVec hit
                             optional int SpawnXYOffset, optional float Angle, optional int Flags/*AimMode*/,
                             optional float Pitch, optional int aptr)
 {
-  if (!specified_aptr) aptr = AAPTR_TARGET;
+  if (!aptr!specified) aptr = AAPTR_TARGET;
   EntityEx tgt = EntityEx(DecorDoAAPtr('A_CustomMissile', aptr));
-  if (!specified_aptr && tgt != Target) Error("WUTA?! in `A_CustomMissile`");
+  if (!aptr!specified && tgt != Target) Error("WUTA?! in `A_CustomMissile`");
 
   //int Flags = AimMode&~3;
   int AimMode = Flags&3;
@@ -91,8 +91,8 @@ final EntityEx helperSpawnShotSupplementalMissile (class!Actor missile, TVec hit
   if (tgt || AimMode == 2) {
     Angle = AngleMod360(Angle);
 
-    if (!specified_SpawnHeight) SpawnHeight = 32.0;
-    if (!specified_SpawnXYOffset) SpawnXYOffset = 1;
+    if (!SpawnHeight!specified) SpawnHeight = 32.0;
+    if (!SpawnXYOffset!specified) SpawnXYOffset = 1;
     TVec Offs = float(SpawnXYOffset)*vector(cos(Angles.yaw-90.0), sin(Angles.yaw-90.0), 0.0);
 
     EntityEx A;
@@ -179,12 +179,12 @@ final void FireSuperBullet () {
                                  optional float Range, optional int Flags, optional int aptr,
                                  optional class!Actor missile, optional float spawnheight, optional float spawnofsxy)
 {
-  if (!specified_aptr) aptr = AAPTR_TARGET;
+  if (!aptr!specified) aptr = AAPTR_TARGET;
   EntityEx tgt = EntityEx(DecorDoAAPtr('A_CustomBulletAttack', aptr));
 
   if (!Range) Range = (bIsPlayer ? 8192.0 : MISSILERANGE);
   //FIXME: not specified and none are two different things
-  if (!PuffType || !specified_PuffType) PuffType = BulletPuff;
+  if (!PuffType || !PuffType!specified) PuffType = BulletPuff;
 
   if (Flags&CBAF_DISABLEMISSILE) missile = none;
   if (missile && (Flags&CBAF_NOMISSILENO3D) && !GetCvarB('r_models')) missile = none;
@@ -206,7 +206,7 @@ final void FireSuperBullet () {
     AimLineAttack(aimDir, Angles, MISSILERANGE);
   }
 
-  if (missile && !specified_spawnheight) spawnheight = CalculateLineAttackZOfs(); // fix missile height
+  if (missile && !spawnheight!specified) spawnheight = CalculateLineAttackZOfs(); // fix missile height
 
   TAVec rot;
   EntityEx puff;
@@ -269,7 +269,7 @@ final void FireSuperBullet () {
   // Andy Baker's stealth monsters
   if (bStealth) VisDir = 1;
 
-  if (!specified_veleffect) veleffect = 3.0;
+  if (!veleffect!specified) veleffect = 3.0;
 
   bAmbush = false;
 
@@ -499,8 +499,8 @@ final int DoExplode (int damage, float distance, bool damageSelf, optional int d
 {
   if (!Level.Game.IsAuthority) return 0;
 
-  if (!specified_dmgsource) dmgsource = Target;
-  if (!specified_dmgtype) dmgtype = DamageType;
+  if (!dmgsource!specified) dmgsource = Target;
+  if (!dmgtype!specified) dmgtype = DamageType;
 
   // Zan hack (emulate old bug)
   if (damageSelf && Target && Target.bIsPlayer &&
@@ -515,7 +515,7 @@ final int DoExplode (int damage, float distance, bool damageSelf, optional int d
 
   int res;
 
-  if (specified_dmgdistance && dmgdistance > 0) {
+  if (dmgdistance!specified && dmgdistance > 0) {
     res = RadiusAttack(dmgsource, damage, distance, damageSelf, dmgtype,
                        DoDamage:true, damagedistance:dmgdistance,
                        thrustless:thrustless!optional, noAllies:noAllies!optional);
@@ -565,9 +565,9 @@ final int DoExplode (int damage, float distance, bool damageSelf, optional int d
 //
 //==========================================================================
 final int do_simple_A_Explode (optional int damage, optional float aradius, optional int flags) {
-  bool damageSelf = (specified_flags ? !!(flags&XF_HURTSOURCE) : true);
-  if (!specified_damage) damage = 128;
-  float distance = (specified_aradius ? aradius : cast(float)damage);
+  bool damageSelf = (flags!specified ? !!(flags&XF_HURTSOURCE) : true);
+  if (!damage!specified) damage = 128;
+  float distance = (aradius!specified ? aradius : cast(float)damage);
 
   PreExplode();
   GetExplodeParms(damage, distance, damageSelf);
@@ -626,11 +626,11 @@ final int do_simple_A_Explode (optional int damage, optional float aradius, opti
     XF_EXPLICITDAMAGETYPE -- The damagetype parameter will never change to the actor's damagetype.
     XF_NOSPLASH -- No splash: if set, the explosion does not create any terrain splashes.
   */
-  if (!specified_flags) flags = XF_HURTSOURCE;
+  if (!flags!specified) flags = XF_HURTSOURCE;
   bool damageSelf = !!(flags&XF_HURTSOURCE);
   name NailDamageType = 'Nail';
 
-  if (!specified_dmgType) {
+  if (!dmgType!specified) {
     //k8: dunno if this is right
     if (!(flags&XF_EXPLICITDAMAGETYPE)) dmgType = DamageType;
   } else {
@@ -639,13 +639,13 @@ final int do_simple_A_Explode (optional int damage, optional float aradius, opti
     NailDamageType = dmgType; //k8: dunno
   }
 
-  if (!specified_damage || damage < 0) {
+  if (!damage!specified || damage < 0) {
     damage = ExplosionDamage;
     //if (!damage) damage = 128;
     Alert = false; // per ZDoom wiki
   }
 
-  if (!specified_distance || distance < 0) distance = ExplosionRadius;
+  if (!distance!specified || distance < 0) distance = ExplosionRadius;
 
   if (damage <= 0) damage = 128;
   if (distance <= 0) distance = damage;
@@ -653,8 +653,8 @@ final int do_simple_A_Explode (optional int damage, optional float aradius, opti
   // NailBomb effect, from SMMU but not from its source code: instead it was
   // implemented and generalized from the documentation at
   // http://www.doomworld.com/eternity/engine/codeptrs.html
-  if (specified_nails && nails > 0) {
-    if (!specified_PuffType) PuffType = BulletPuff; //k8: why?
+  if (nails!specified && nails > 0) {
+    if (!PuffType!specified) PuffType = BulletPuff; //k8: why?
     TAVec Ang;
     TVec adir;
     foreach (auto i; 0..nails) {
@@ -674,7 +674,7 @@ final int do_simple_A_Explode (optional int damage, optional float aradius, opti
 
   int res;
 
-  if (specified_dmgdistance && dmgdistance > 0) {
+  if (dmgdistance!specified && dmgdistance > 0) {
     //printdebug("%C: damage=%s; distance=%s; damageSelf=%B; src=%C; type=%s", self, damage, distance, damageSelf, dmgsource, dmgType);
     res = DoExplode(damage, distance, damageSelf, dmgdistance, dmgsource:dmgsource, dmgtype:dmgType,
                     thrustless:!!(flags&XF_THRUSTLESS), noAllies:!!(flags&XF_NOALLIES));
@@ -704,9 +704,9 @@ final int do_simple_A_Explode (optional int damage, optional float aradius, opti
   if (!Force) Force = 128;
   if (!Distance) Distance = Force;
 
-  if (!specified_flags) flags = RTF_AFFECTSOURCE; //???
+  if (!flags!specified) flags = RTF_AFFECTSOURCE; //???
   bool AffectSelf = !!(flags&RTF_AFFECTSOURCE);
-  //???if (!specified_AffectSelf) AffectSelf = true;
+  //???if (!AffectSelf!specified) AffectSelf = true;
 
   //printdebug("%C: A_RadiusThrust: Force=%s; Distance=%s; flags=0x%08x; fullthrustdistance=%s", self, Force, Distance, flags, fullthrustdistance);
 
@@ -750,7 +750,7 @@ final int do_simple_A_Explode (optional int damage, optional float aradius, opti
 [decorate] final void A_ThrowGrenade (class!Actor ItemType, optional float SpawnHeight,
                                       optional float XYVel, optional float ZVel, optional bool UseAmmo)
 {
-  if (!specified_UseAmmo) UseAmmo = true;
+  if (!UseAmmo!specified) UseAmmo = true;
 
   //print("bIsPlayer: %B", bIsPlayer);
   Entity owo = Owner;
@@ -802,7 +802,7 @@ final int do_simple_A_Explode (optional int damage, optional float aradius, opti
     if (!Wpn) return;
 
     int ReloadCounter = Wpn.ReloadCounter;
-    if (!specified_dontIncrement) dontIncrement = false;
+    if (!dontIncrement!specified) dontIncrement = false;
 
     if (!dontIncrement || ReloadCounter != 0) {
       ReloadCounter = (Wpn.ReloadCounter+1)%Count;
@@ -846,7 +846,7 @@ final int do_simple_A_Explode (optional int damage, optional float aradius, opti
 [decorate] final void A_ZoomFactor (optional float zoom, optional int flags) {
   Weapon Wpn = PlayerEx(Player).ReadyWeapon;
   if (Wpn && bIsPlayer) {
-    if (!zoom || !specified_zoom) zoom = 1.0;
+    if (!zoom || !zoom!specified) zoom = 1.0;
     zoom = fclamp(zoom, 0.1, 50);
     zoom = 1.0/zoom;
 
@@ -948,8 +948,8 @@ final void BlastActor (Actor victim, Actor source, float aspeed, class!Actor Bla
 
   if (!aRadius) aRadius = 255; // default radius
   if (!aSpeed) aSpeed = 20; // default speed
-  if (!specified_BlastEffect) BlastEffect = class!Actor(FindClassNoCase('BlastEffect'));
-  if (!specified_BlastSound) BlastSound = 'BlastRadius';
+  if (!BlastEffect!specified) BlastEffect = class!Actor(FindClassNoCase('BlastEffect'));
+  if (!BlastSound!specified) BlastSound = 'BlastRadius';
 
   if (bIsPlayer && (BlastFlags&BF_USEAMMO)) {
     Weapon Wpn = PlayerEx(Player).ReadyWeapon;

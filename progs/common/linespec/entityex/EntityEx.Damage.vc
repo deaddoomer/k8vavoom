@@ -39,7 +39,7 @@ void DamageEx (EntityEx inflictor, EntityEx source, int damage, name DmgType, bo
   //printdebug("THP:(%s,%s,%s); dmg=%s; type='%s'", hitp.x, hitp.y, hitp.z, damage, "FUCK!");
   if (!secondary) {
     //printdebug("%C: first shot; spawnBlood=%B", self, spawnBlood);
-    if (!specified_spawnBlood && inflictor && inflictor.bIsPlayer) {
+    if (!spawnBlood!specified && inflictor && inflictor.bIsPlayer) {
       auto pp = PlayerPawn(inflictor);
       if (pp) {
         spawnBlood = pp.IsPrimaryBloodSpawnAllowed(self, newdmg, DmgType);
@@ -50,8 +50,8 @@ void DamageEx (EntityEx inflictor, EntityEx source, int damage, name DmgType, bo
     Damage(inflictor, source, /*damage*/newdmg, DmgType, NoArmor, spawnBlood:spawnBlood!optional);
   } else {
     // secondary shots won't spawn blood
-    //printdebug("%C: secondary shot; spawnBlood=%B (%B); inflictor=%C; source=%C", self, spawnBlood, specified_spawnBlood, inflictor, source);
-    if (!specified_spawnBlood && inflictor && inflictor.bIsPlayer) {
+    //printdebug("%C: secondary shot; spawnBlood=%B (%B); inflictor=%C; source=%C", self, spawnBlood, spawnBlood!specified, inflictor, source);
+    if (!spawnBlood!specified && inflictor && inflictor.bIsPlayer) {
       auto pp = PlayerPawn(inflictor);
       if (pp) {
         spawnBlood = pp.IsSecondaryBloodSpawnAllowed(self, newdmg, DmgType);

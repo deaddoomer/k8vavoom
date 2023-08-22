@@ -224,7 +224,7 @@ void SetSprite (class!EntityEx SrcClass) {
 
   if (Role != ROLE_Authority) return; // for simulated proxies
   if (!Target) return;
-  if (!specified_force) force = 1;
+  if (!force!specified) force = 1;
 
   int damage = ((P_Random()%10+1)<<1)*force;
 
@@ -339,7 +339,7 @@ void SetSprite (class!EntityEx SrcClass) {
   if (Role != ROLE_Authority) return; // for simulated proxies
   if (!Target) return;
 
-  if (!specified_accurate) accurate = true;
+  if (!accurate!specified) accurate = true;
 
   A_FaceTarget();
   PlaySound('weapons/pistol', CHAN_WEAPON);

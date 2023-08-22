@@ -109,12 +109,12 @@ float CalculateMissileAttackZOfs (class!EntityEx type) {
 override Entity PickActor (optional TVec org, TVec dir, float distance, optional int actorMask, optional int wallMask) {
   if (distance <= 0.0) return none; // just in case
 
-  if (!specified_actorMask) actorMask = MF_SHOOTABLE;
-  if (!specified_wallMask) wallMask = ML_BLOCKEVERYTHING|ML_BLOCKHITSCAN;
+  if (!actorMask!specified) actorMask = MF_SHOOTABLE;
+  if (!wallMask!specified) wallMask = ML_BLOCKEVERYTHING|ML_BLOCKHITSCAN;
 
   if (actorMask == 0) return none; // cannot realisticaly hit anything at all
 
-  if (!specified_org) {
+  if (!org!specified) {
     org = Origin;
     org.z += CalculateLineAttackZOfs();
   }
@@ -307,7 +307,7 @@ final EntityEx Aim (out TVec OutDir, float distance, optional float yaw,
 
   if (bIsPlayer) {
     aaim = PlayerEx(Player).bAutoAim;
-    if (aaim && specified_noAutoaim) {
+    if (aaim && noAutoaim!specified) {
       //printdebug("AIM<%C>: noaa=%s", self, (noAutoaim ? "tan" : "ona"));
       if (noAutoaim) aaim = false;
     }
@@ -317,7 +317,7 @@ final EntityEx Aim (out TVec OutDir, float distance, optional float yaw,
 
   // see which target is to be aimed at
   ang = Angles;
-  if (specified_yaw) ang.yaw = yaw;
+  if (yaw!specified) ang.yaw = yaw;
   if (!aaim) {
     //ang.pitch = AngleMod360(ang.pitch-4);
     AngleVector(ang, out dir);
@@ -595,9 +595,9 @@ final void RailAttack (TVec dir, float Offset, int RailDamage,
   if (!Level.Game.IsAuthority) return;
   if (!Silent) PlaySound('weapons/railgf', CHAN_WEAPON);
 
-  if (!specified_PuffType) PuffType = BulletPuff;
+  if (!PuffType!specified) PuffType = BulletPuff;
 
-  if (!specified_pierceLimit) pierceLimit = int.max;
+  if (!pierceLimit!specified) pierceLimit = int.max;
 
   name DmgType = 'Railgun';
   if (PuffType && PuffType.default.DamageType) DmgType = PuffType.default.DamageType;
@@ -611,7 +611,7 @@ final void RailAttack (TVec dir, float Offset, int RailDamage,
   shootOrigin.y += Offset*sina;
 
   //float distance = 8192.0;
-  if (!specified_distance || !distance) distance = 8192.0;
+  if (!distance!specified || !distance) distance = 8192.0;
   TVec dst = shootOrigin+distance*dir;
 
   TVec hitPoint, realHitPoint;
@@ -693,7 +693,7 @@ final void RailAttack (TVec dir, float Offset, int RailDamage,
   }
 
   // yep, "not specified" is processed in client trail code
-  if (Col1 || Col2 || !specified_Col1 || !specified_Col2) {
+  if (Col1 || Col2 || !Col1!specified || !Col2!specified) {
     PlayerEx P;
     foreach AllActivePlayers(P) {
       P.ClientRailTrail(shootOrigin, lineEnd, Col1!optional, Col2!optional, MaxDiff);

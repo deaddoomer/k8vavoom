@@ -615,7 +615,7 @@ final void DrawPicFit (int maxw, int maxh, int x, int y, int handle, optional fl
 //==========================================================================
 final void DrawPicFitCenter (int maxw, int maxh, int x, int ybot, int handle, optional float alpha, optional bool shadowed) {
   // scale it to the appropriate size
-  if (!specified_alpha || shadowed) alpha = 1.0;
+  if (!alpha!specified || shadowed) alpha = 1.0;
   if (handle <= 0 || alpha <= 0) return;
   if (maxh < 0) { ybot -= maxh; maxh = -maxh; }
   picinfo_t pinf;

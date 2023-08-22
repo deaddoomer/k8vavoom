@@ -791,7 +791,7 @@ bool Do_LineAlignFlatByLine (line_t *line, int side, bool doFloor, bool doCeilin
   sector_t *sec = (side ? line->backsector : line->frontsector);
   if (!sec) return false;
 
-  bool isEDGE = (specified_scale && scale);
+  bool isEDGE = (scale!specified && scale);
 
   TVec v1 = *line->v1;
   TVec v2 = *line->v2;
@@ -804,7 +804,7 @@ bool Do_LineAlignFlatByLine (line_t *line, int side, bool doFloor, bool doCeilin
 
     printdebug("flat align: line #%s, side=%s; floor=%B; ceiling=%B; scale=%s (%B); angle=%s; normAngle=%s; dist=%s (%s)",
                cast([unsafe])(line-&Lines[0]),
-               side, doFloor, doCeiling, scale, specified_scale, angle, normAngle, dist, fmod(dist, 4096.0));
+               side, doFloor, doCeiling, scale, scale!specified, angle, normAngle, dist, fmod(dist, 4096.0));
 
     if (doFloor) {
       sec->floor.BaseAngle = angle;

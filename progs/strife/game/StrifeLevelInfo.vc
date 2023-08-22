@@ -111,7 +111,7 @@ int StrifeCheckInv (Entity ent, name invName) {
 //==========================================================================
 int StrifeCheckQuestInv (Entity ent, line_t *line, optional int side) {
   if (!line) return 0;
-  if (!specified_side) side = 0; // just in case
+  if (!side!specified) side = 0; // just in case
   int qidx = int(XLevel.Sides[line.sidenum[side]].Mid.RowOffset);
   return StrifeCheckInv(ent, GetQuestItemName(qidx&31));
 }
@@ -126,7 +126,7 @@ void StrifeGiveInv (Entity ent, name invName, optional int amount) {
   if (!invName) return;
   EntityEx e = EntityEx(ent);
   if (!e) return;
-  if (!specified_amount) amount = 1;
+  if (!amount!specified) amount = 1;
   e.GiveInventory(invName, amount, allowReplacement:false);
 }
 
