@@ -50,10 +50,12 @@ public:
     Flag_Escape = 1u<<1,
     Flag_AllowNumSign = 1u<<2,
     Flag_EDGEMode = 1u<<3,
+    Flag_SemiComments = 1u<<4,
+    Flag_HashComments = 1u<<5,
     //
-    Flag_End = 1u<<4,
-    Flag_Crossed = 1u<<5,
-    Flag_QuotedString = 1u<<6,
+    Flag_End = 1u<<6,
+    Flag_Crossed = 1u<<7,
+    Flag_QuotedString = 1u<<8,
   };
   vuint32 flags;
 
@@ -125,6 +127,8 @@ private:
   bool Escape;
   bool AllowNumSign;
   bool EDGEMode; // ignore underscores in indentifiers?
+  bool SemiComments;
+  bool HashComments;
 
 public:
   int SourceLump; // usually -1
@@ -186,6 +190,14 @@ public:
   // for C mode
   inline bool IsAllowNumSign () const noexcept { return AllowNumSign; }
   inline void SetAllowNumSign (bool v) noexcept { AllowNumSign = v; }
+
+  // for C mode only, non-C mode always treats ";" as a comment
+  inline bool IsSemicolonComments () const noexcept { return SemiComments; }
+  inline void SetSemicolonComments (bool val) noexcept { SemiComments = val; }
+
+  // for all modes; defaults to `false`
+  inline bool IsHashComments () const noexcept { return HashComments; }
+  inline void SetHashComments (bool val) noexcept { HashComments = val; }
 
   bool AtEnd () noexcept;
   bool GetString () noexcept;

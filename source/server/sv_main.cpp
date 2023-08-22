@@ -243,45 +243,251 @@ VLevel *VServerNetContext::GetLevel () {
 
 //==========================================================================
 //
+//  ProcessServerModOption
+//
+//==========================================================================
+static void ProcessServerModOption (VScriptParser *sc, bool single) {
+  sc->ExpectString();
+  if (single && sc->Crossed) sc->Error("option expected");
+  //sc->String = sc->String.xstrip();
+  if (sc->String.strEquCI("skipbdw")) {
+    if (!decorateSkipBDWClasses) {
+      GCon->Logf(NAME_Init, "server option: skip BDW");
+      decorateSkipBDWClasses = true;
+    }
+  } else {
+    sc->Error(va("unknown server mod option '%s'", *sc->String));
+  }
+}
+
+
+//==========================================================================
+//
+//  ParseModListLine
+//
+//==========================================================================
+static void ParseModListLine (VScriptParser *sc, int mode, const char *modtypestr) {
+  bool doLoad;
+  if (mode != VCMODS_CLIENT) {
+    // server mods
+    if (sc->Check("option")) {
+      ProcessServerModOption(sc, true);
+      return;
+    } else if (sc->Check("options")) {
+      sc->Expect("{");
+      while (!sc->Check("}")) {
+        if (sc->AtEnd()) sc->Error("unclosed options block");
+        ProcessServerModOption(sc, false);
+      }
+      return;
+    } else {
+      #if 0
+      GCon->Logf(NAME_Debug, "  <%s>\n", *sc->String.quote());
+      #endif
+      bool doSection = false;
+      if (sc->Check("pre")) {
+        doLoad = (mode == VCMODS_SERVER_PRE);
+        doSection = true;
+      } else if (sc->Check("post")) {
+        doLoad = (mode == VCMODS_SERVER_POST);
+        doSection = true;
+      } else {
+        doLoad = (mode == VCMODS_SERVER_PRE);
+      }
+      #if 0
+      GCon->Logf(NAME_Debug, "  :<%s> (doSection=%d; doLoad=%d)\n", *sc->String.quote(),
+                 (int)doSection, (int)doLoad);
+      #endif
+      // section?
+      if (doSection) {
+        sc->Expect("{");
+        if (doLoad) {
+          // load
+          while (!sc->Check("}")) {
+            if (sc->AtEnd()) sc->Error("unclosed mods block");
+            sc->ExpectString();
+            if (sc->String == "{" || sc->String == "}") sc->Error("wtf?!");
+            //sc->String = sc->String.xstrip();
+            GCon->Logf(NAME_Init, "loading %s Vavoom C mod '%s'", modtypestr, *sc->String);
+            VMemberBase::StaticLoadPackage(VName(*sc->String), TLocation());
+          }
+        } else {
+          sc->SkipBracketed(true);
+        }
+        return;
+      }
+    }
+  } else {
+    // client
+    doLoad = true;
+  }
+  sc->ExpectString();
+  if (sc->String == "{" || sc->String == "}") sc->Error("wtf?!");
+  if (doLoad) {
+    //sc->String = sc->String.xstrip();
+    GCon->Logf(NAME_Init, "loading %s Vavoom C mod '%s'", modtypestr, *sc->String);
+    VMemberBase::StaticLoadPackage(VName(*sc->String), TLocation());
+  }
+}
+
+
+//==========================================================================
+//
+//  LoadModList
+//
+//==========================================================================
+static void LoadModList (const int ScLump, int mode, bool newStyle) {
+  const char *modtypestr;
+  switch (mode) {
+    case VCMODS_SERVER_PRE:
+      modtypestr = "server (pre)";
+      break;
+    case VCMODS_SERVER_POST:
+      modtypestr = "server (post)";
+      break;
+    case VCMODS_CLIENT:
+      modtypestr = "client";
+      break;
+    default:
+      Sys_Error("G_LoadVCMods: invalid mode %d (internal error)", mode);
+  }
+
+  //vcmodCurrFile = W_LumpFile(ScLump);
+  vcmodCurrFileLump = ScLump;
+  VScriptParser *sc = VScriptParser::NewWithLump(ScLump);
+  sc->SetCMode(false);
+  sc->SetEscape(false);
+  sc->SetSemicolonComments(true);
+  sc->SetHashComments(true);
+
+  if (newStyle) {
+    GCon->Logf(NAME_Init, "parsing Vavoom C mod list from '%s'", *W_FullLumpName(ScLump));
+  } else {
+    GCon->Logf(NAME_Init, "parsing old-style Vavoom C mod list from '%s'", *W_FullLumpName(ScLump));
+  }
+
+  if (newStyle) {
+    while (!sc->AtEnd()) {
+      if (sc->Check("client")) {
+        if (mode != VCMODS_CLIENT) {
+          sc->SkipBracketed(false);
+          continue;
+        }
+      } else if (sc->Check("server")) {
+        if (mode == VCMODS_CLIENT) {
+          sc->SkipBracketed(false);
+          continue;
+        }
+      } else {
+        sc->Error(va("invalid modlist section '%s'", *sc->String));
+      }
+      sc->Expect("{");
+      while (!sc->Check("}")) {
+        if (sc->AtEnd()) sc->Error("unfinished section");
+        ParseModListLine(sc, mode, modtypestr);
+      }
+    }
+  } else {
+    while (!sc->AtEnd()) {
+      ParseModListLine(sc, mode, modtypestr);
+      if (!sc->GetString()) break;
+      sc->UnGet();
+    }
+  }
+
+  delete sc;
+}
+
+
+struct ModListInfo {
+  int lump;
+  bool newStyle;
+};
+
+
+//==========================================================================
+//
+//  nslist_cmp
+//
+//  module list lump compare
+//
+//==========================================================================
+static int nslist_cmp (const void *aa, const void *bb, void *udata) {
+  const ModListInfo *a = (const ModListInfo *)aa;
+  const ModListInfo *b = (const ModListInfo *)bb;
+  int diff = W_LumpFile(a->lump) - W_LumpFile(b->lump);
+  if (diff != 0) return (diff < 0 ? -1 : +1);
+  diff = a->lump - b->lump;
+  return (diff < 0 ? -1 : diff > 0 ? +1 : 0);
+}
+
+
+//==========================================================================
+//
 //  G_LoadVCMods
 //
 //  loading mods, take list from modlistfile
 //  load user-specified Vavoom C script files
 //
 //==========================================================================
-void G_LoadVCMods (VName modlistfile, const char *modtypestr, bool serveroptions) {
+void G_LoadVCMods (int mode) {
+  VName modlistfile;
+  switch (mode) {
+    case VCMODS_SERVER_PRE:
+      modlistfile = "loadvcs";
+      break;
+    case VCMODS_SERVER_POST:
+      modlistfile = "loadvcs";
+      break;
+    case VCMODS_CLIENT:
+      modlistfile = "loadvcc";
+      break;
+    default:
+      Sys_Error("G_LoadVCMods: invalid mode %d (internal error)", mode);
+  }
   //for (unsigned f = 0; f < MAXPLAYERS; ++f) GPlayersBase[f] = nullptr;
-  if (modlistfile == NAME_None) return;
-  if (!modtypestr && !modtypestr[0]) modtypestr = "common";
-  VCVFSSaver saver;
-  VMemberBase::dgOpenFile = &vcmodOpenFile;
-  for (auto &&it : WadNSNameIterator(modlistfile, WADNS_Global)) {
-    const int ScLump = it.lump;
-    //vcmodCurrFile = W_LumpFile(ScLump);
-    vcmodCurrFileLump = ScLump;
-    VScriptParser *sc = VScriptParser::NewWithLump(ScLump);
-    GCon->Logf(NAME_Init, "parsing Vavoom C mod list from '%s'", *W_FullLumpName(ScLump));
-    while (!sc->AtEnd()) {
-      sc->ExpectString();
-      //fprintf(stderr, "  <%s>\n", *sc->String.quote());
-      sc->String = sc->String.xstrip();
-      if (sc->String.length() == 0 || sc->String[0] == '#' || sc->String[0] == ';') continue;
-      if (serveroptions) {
-        if (sc->String.strEquCI("option")) {
-          sc->ExpectString();
-          sc->String = sc->String.xstrip();
-          if (sc->String.strEquCI("skipbdw")) {
-            decorateSkipBDWClasses = true;
-            GCon->Logf(NAME_Init, "server option: skip BDW");
-            continue;
-          }
-          sc->Error(va("unknown server mod option '%s'", *sc->String));
-        }
-      }
-      GCon->Logf(NAME_Init, "loading %s Vavoom C mod '%s'", modtypestr, *sc->String);
-      VMemberBase::StaticLoadPackage(VName(*sc->String), TLocation());
+
+  // collect new-style lumps
+  TArrayNC<ModListInfo> nslist;
+  for (auto &&it : WadFileIterator("vavoomc_mods.rc")) {
+    int f = 0;
+    while (f < nslist.length() && W_LumpFile(nslist[f].lump) != W_LumpFile(it.lump)) {
+      f += 1;
     }
-    delete sc;
+    if (f == nslist.length()) {
+      ModListInfo &nfo = nslist.Alloc();
+      nfo.lump = it.lump;
+      nfo.newStyle = true;
+    } else {
+      nslist[f].lump = it.lump;
+    }
+  }
+
+  // collect old-style lumps
+  for (auto &&it : WadNSNameIterator(modlistfile, WADNS_Global)) {
+    int f = 0;
+    while (f < nslist.length() && W_LumpFile(nslist[f].lump) != W_LumpFile(it.lump)) {
+      f += 1;
+    }
+    if (f == nslist.length()) {
+      ModListInfo &nfo = nslist.Alloc();
+      nfo.lump = it.lump;
+      nfo.newStyle = false;
+    } else if (!nslist[f].newStyle) {
+      nslist[f].lump = it.lump;
+    }
+  }
+
+  // sort
+  if (nslist.length()) {
+    smsort_r(nslist.ptr(), (size_t)nslist.length(), sizeof(nslist[0]), nslist_cmp, nullptr);
+
+    VCVFSSaver saver;
+    VMemberBase::dgOpenFile = &vcmodOpenFile;
+
+    for (const ModListInfo &nfo : nslist) {
+      LoadModList(nfo.lump, mode, nfo.newStyle);
+    }
   }
 }
 
@@ -381,16 +587,19 @@ vuint64 SV_GetModListHashOld (vuint32 *old) {
 
 //==========================================================================
 //
-//  SV_Init
+//  SV_LoadMods
 //
 //==========================================================================
-void SV_Init () {
+void SV_LoadMods () {
   svs.max_clients = 1;
 
   VMemberBase::StaticLoadPackage(NAME_game, TLocation());
   // load user-specified Vavoom C script files
-  G_LoadVCMods("loadvcs", "server", true); // allow server options
-  // this emits code for all `PackagesToEmit()`
+  G_LoadVCMods(VCMODS_SERVER_PRE);
+
+  // sadly, we have to emit the code as this stage.
+  // this is because DECORATE compiler wants it this way
+  // (i.e. it wants classes and defaults created).
   VPackage::StaticEmitPackages();
 
   GGameInfo = (VGameInfo *)VObject::StaticSpawnWithReplace(VClass::FindClass("MainGameInfo"));
@@ -400,13 +609,40 @@ void SV_Init () {
   ProcessDecorateScripts();
   ProcessDecalDefs();
   ProcessDehackedFiles();
-  VPackage::StaticEmitPackages(); // just in case
+
+  G_LoadVCMods(VCMODS_SERVER_POST);
+}
+
+
+//==========================================================================
+//
+//  SV_CompileScripts
+//
+//==========================================================================
+void SV_CompileScripts () {
+  // just in case; DECORATE should not left uncompiled things, but...
+  VPackage::StaticEmitPackages();
 
   GGameInfo->eventPostDecorateInit();
 
   if (cli_SVDumpDoomEd > 0) VClass::StaticDumpMObjInfo();
   if (cli_SVDumpScriptId > 0) VClass::StaticDumpScriptIds();
 
+  // reports
+  if (VMethod::ReportUnusedBuiltins()) Sys_Error("found some unused builtins (internal engine error)");
+  VPackage::DumpCodeSizeStats();
+
+  VMemberBase::StaticCompilerShutdown();
+  CompilerReportMemory();
+}
+
+
+//==========================================================================
+//
+//  SV_Init
+//
+//==========================================================================
+void SV_Init () {
   GCon->Logf(NAME_Init, "registering %d sprites", VClass::GetSpriteCount());
   for (int i = 0; i < VClass::GetSpriteCount(); ++i) R_InstallSprite(*VClass::GetSpriteNameAt(i), i);
   R_InstallSpriteComplete(); // why not?
@@ -427,9 +663,6 @@ void SV_Init () {
   P_InitSwitchList();
   P_InitTerrainTypes();
   InitLockDefs();
-
-  VMemberBase::StaticCompilerShutdown();
-  CompilerReportMemory();
 }
 
 

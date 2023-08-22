@@ -70,6 +70,10 @@ class VScriptsParser : public VObject {
   DECLARE_FUNCTION(get_EDGEMode)
   DECLARE_FUNCTION(set_EDGEMode)
   DECLARE_FUNCTION(get_EndOfText)
+  DECLARE_FUNCTION(get_SemicolonComments)
+  DECLARE_FUNCTION(set_SemicolonComments)
+  DECLARE_FUNCTION(get_HashComments)
+  DECLARE_FUNCTION(set_HashComments)
   DECLARE_FUNCTION(IsText)
   DECLARE_FUNCTION(IsAtEol)
   DECLARE_FUNCTION(IsCMode)
@@ -126,7 +130,7 @@ struct CharClassifier {
   static VVA_FORCEINLINE bool isC2Spec (char ch) noexcept { return (c2spec[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
   static VVA_FORCEINLINE bool isCIdTerm (char ch) noexcept { return (cidterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
   static VVA_FORCEINLINE bool isCNumTerm (char ch) noexcept { return (cnumterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
-  static VVA_FORCEINLINE bool isNCIdTerm (char ch) noexcept { return (ncidterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))); }
+  static VVA_FORCEINLINE bool isNCIdTerm (char ch, bool hashCmt) noexcept { return (ncidterm[(ch>>5)&0x07]&(1U<<(ch&0x1f))) || (hashCmt && ch == '#'); }
 
   static VVA_FORCEINLINE void setCharBit (vuint32 *set, char ch) noexcept { set[(ch>>5)&0x07] |= (1U<<(ch&0x1f)); }
 
@@ -201,6 +205,8 @@ void VScriptSavedPos::saveFrom (const VScriptParser &par) noexcept {
     (par.Escape ? Flag_Escape : Flag_None)|
     (par.AllowNumSign ? Flag_AllowNumSign : Flag_None)|
     (par.EDGEMode ? Flag_EDGEMode : Flag_None)|
+    (par.SemiComments ? Flag_SemiComments : Flag_None)|
+    (par.HashComments ? Flag_HashComments : Flag_None)|
     //
     (par.End ? Flag_End : Flag_None)|
     (par.Crossed ? Flag_Crossed : Flag_None)|
@@ -231,6 +237,8 @@ void VScriptSavedPos::restoreTo (VScriptParser &par) const noexcept {
   par.Escape = !!(flags&Flag_Escape);
   par.AllowNumSign = !!(flags&Flag_AllowNumSign);
   par.EDGEMode = !!(flags&Flag_EDGEMode);
+  par.SemiComments = !!(flags&Flag_SemiComments);
+  par.HashComments = !!(flags&Flag_HashComments);
   par.End = !!(flags&Flag_End);
   par.Crossed = !!(flags&Flag_Crossed);
   par.QuotedString = !!(flags&Flag_QuotedString);
@@ -255,6 +263,8 @@ VScriptParser::VScriptParser (VStr name, VStream *Strm, int aSourceLump)
   , Escape(true)
   , AllowNumSign(false)
   , EDGEMode(false)
+  , SemiComments(false)
+  , HashComments(false)
   , SourceLump(aSourceLump)
 {
   if (!Strm) {
@@ -306,6 +316,8 @@ VScriptParser::VScriptParser (VStr name, const char *atext, int aSourceLump) noe
   , Escape(true)
   , AllowNumSign(false)
   , EDGEMode(false)
+  , SemiComments(false)
+  , HashComments(false)
   , SourceLump(aSourceLump)
 {
   if (atext && atext[0]) {
@@ -391,6 +403,8 @@ VScriptParser *VScriptParser::clone () const noexcept {
   res->Escape = Escape;
   res->AllowNumSign = AllowNumSign;
   res->EDGEMode = EDGEMode;
+  res->SemiComments = SemiComments;
+  res->HashComments = HashComments;
   res->SourceLump = SourceLump;
 
   return res;
@@ -455,7 +469,8 @@ bool VScriptParser::IsAtEol () noexcept {
     if (ch == '\r' && s[1] == '\n') return true;
     if (ch == '\n') return true;
     if (!commentLevel) {
-      if (!CMode && ch == ';') return true; // this is single-line comment, it always ends with EOL
+      if ((!CMode || SemiComments) && ch == ';') return true; // this is single-line comment, it always ends with EOL
+      if (HashComments && ch == '#') return true; // this is single-line comment, it always ends with EOL
       const char c1 = s[1];
       if (ch == '/' && c1 == '/') return true; // this is single-line comment, it always ends with EOL
       if (ch == '/' && c1 == '*') {
@@ -506,7 +521,9 @@ void VScriptParser::SkipComments (bool changeFlags) noexcept {
     const char c0 = *ScriptPtr;
     const char c1 = (ScriptPtr+1 < ScriptEndPtr ? ScriptPtr[1] : 0);
     // single-line comment?
-    if ((!CMode && c0 == ';') || (c0 == '/' && c1 == '/')) {
+    if (((!CMode || SemiComments) && c0 == ';') || (c0 == '/' && c1 == '/') ||
+        (HashComments && c0 == '#'))
+    {
       while (*ScriptPtr++ != '\n') if (ScriptPtr >= ScriptEndPtr) break;
       if (changeFlags) { ++Line; Crossed = true; }
       continue;
@@ -610,7 +627,7 @@ void VScriptParser::ParseQuotedString (const char qch) noexcept {
     // quote char?
     if (ch == qch) {
       if (!CMode) break;
-      // double quote is string continuation in c mode
+      // double quote is string continuation in C mode
       if (*ScriptPtr != qch) break;
       // check next char
       if ((vuint8)ScriptPtr[1] < ' ') break;
@@ -848,7 +865,7 @@ void VScriptParser::ParseCMode () noexcept {
 //==========================================================================
 void VScriptParser::ParseNonCMode () noexcept {
   // special single-character tokens
-  if (CharClassifier::isNCIdTerm(*ScriptPtr)) {
+  if (CharClassifier::isNCIdTerm(*ScriptPtr, HashComments)) {
     String += *ScriptPtr++;
     return;
   }
@@ -857,11 +874,11 @@ void VScriptParser::ParseNonCMode () noexcept {
   while (ScriptPtr < ScriptEndPtr) {
     const char ch = *ScriptPtr++;
     // eh... allow single quote inside an identifier
-    if (ch == '\'' && !String.isEmpty() && ScriptPtr[0] && !CharClassifier::isNCIdTerm(ScriptPtr[0])) {
+    if (ch == '\'' && !String.isEmpty() && ScriptPtr[0] && !CharClassifier::isNCIdTerm(ScriptPtr[0], HashComments)) {
       String += ch;
       continue;
     }
-    if (CharClassifier::isNCIdTerm(ch)) { --ScriptPtr; break; }
+    if (CharClassifier::isNCIdTerm(ch, HashComments)) { --ScriptPtr; break; }
     // check for comments
     if (ch == '/') {
       const char c1 = *ScriptPtr;
@@ -2025,6 +2042,32 @@ IMPLEMENT_FUNCTION(VScriptsParser, set_EDGEMode) {
   vobjGetParamSelf(value);
   Self->CheckInterface();
   Self->Int->SetEDGEMode(value);
+}
+
+IMPLEMENT_FUNCTION(VScriptsParser, get_SemicolonComments) {
+  vobjGetParamSelf();
+  Self->CheckInterface();
+  RET_BOOL(Self->Int->IsSemicolonComments());
+}
+
+IMPLEMENT_FUNCTION(VScriptsParser, set_SemicolonComments) {
+  bool value;
+  vobjGetParamSelf(value);
+  Self->CheckInterface();
+  Self->Int->SetSemicolonComments(value);
+}
+
+IMPLEMENT_FUNCTION(VScriptsParser, get_HashComments) {
+  vobjGetParamSelf();
+  Self->CheckInterface();
+  RET_BOOL(Self->Int->IsHashComments());
+}
+
+IMPLEMENT_FUNCTION(VScriptsParser, set_HashComments) {
+  bool value;
+  vobjGetParamSelf(value);
+  Self->CheckInterface();
+  Self->Int->SetHashComments(value);
 }
 
 IMPLEMENT_FUNCTION(VScriptsParser, get_EndOfText) {

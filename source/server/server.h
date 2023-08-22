@@ -45,6 +45,8 @@ struct server_static_t {
   VStr serverinfo;
 };
 
+void SV_LoadMods ();
+void SV_CompileScripts ();
 void SV_Init ();
 void SV_Shutdown ();
 void SV_ServerFrame ();
@@ -68,9 +70,19 @@ void SV_SendAfterSaveEvent (bool isAutosave, bool isCheckpoint);
 // call this on map loading
 void NET_SendNetworkHeartbeat (bool forced=false);
 
+// mods loading mode
+enum {
+  // this loads after the main packages, but before decorate
+  VCMODS_SERVER_PRE, // "loadvcs"
+  // this loads after decorate
+  VCMODS_SERVER_POST, // "loadvcs"
+  // this loads last
+  VCMODS_CLIENT, // "loadvcc"
+};
+
 // loading mods, take list from modlistfile
 // `modtypestr` is used to show loading messages
-void G_LoadVCMods (VName modlistfile, const char *modtypestr, bool serveroptions); // in "sv_main.cpp"
+void G_LoadVCMods (int mode); // in "sv_main.cpp"
 
 vuint64 SV_GetModListHash (vuint32 *old);
 vuint64 SV_GetModListHashOld (vuint32 *old);

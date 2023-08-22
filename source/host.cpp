@@ -438,22 +438,29 @@ void Host_Init () {
 
   ReadLineSpecialInfos();
 
-#ifdef SERVER
-  SV_Init();
-#endif
+  #ifdef SERVER
+  // this creates GameInfo, and then loads DECORATE
+  SV_LoadMods();
+  #endif
+  #ifdef CLIENT
+  CL_LoadMods();
+  #endif
 
-#ifdef CLIENT
-  CL_Init();
-#endif
-
-  if (VMethod::ReportUnusedBuiltins()) Sys_Error("found some unused builtins (internal engine error)");
-
-  VPackage::DumpCodeSizeStats();
+  // now compile loaded VavoomC code
+  SV_CompileScripts();
 
   // "compile only"
   if (cli_CompileAndExit) {
     Z_Exit(0);
   }
+
+  #ifdef SERVER
+  SV_Init();
+  #endif
+  #ifdef CLIENT
+  CL_Init();
+  #endif
+
 
   VThinker::ThinkerStaticInit();
   VEntity::EntityStaticInit();

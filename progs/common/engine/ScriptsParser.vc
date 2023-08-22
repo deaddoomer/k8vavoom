@@ -71,6 +71,8 @@ struct ScriptSavedPos {
   bool Escape;
   bool AllowNumSign;
   bool EDGEMode;
+  bool SemiComments;
+  bool HashComments;
 
   bool End;
   bool Crossed;
@@ -90,7 +92,9 @@ native final int SourceLump { get; set; }
 native final bool Escape { get; set; } // process escapes in quoted strings?
 native final bool CMode { get; set; }
 native final bool AllowNumSign { get; set; } // has meaning only for c-mode
-native final bool EDGEMode { get; set; } // ignore underscores in indentifiers?
+native final bool EDGEMode { get; set; }
+native final bool SemicolonComments { get; set; } // has meaning only for c-mode
+native final bool HashComments { get; set; }
 
 #ifndef VCC_STANDALONE_EXECUTOR
 native final void OpenLumpName (name Name);

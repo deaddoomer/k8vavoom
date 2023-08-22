@@ -82,6 +82,21 @@ static double ClientLastKeepAliveTime = 0.0;
 
 //==========================================================================
 //
+//  CL_LoadMods
+//
+//==========================================================================
+void CL_LoadMods () {
+  VMemberBase::StaticLoadPackage(NAME_cgame, TLocation());
+  // load user-specified Vavoom C script files
+  G_LoadVCMods(VCMODS_CLIENT);
+  // this emits code for all `PackagesToEmit()`
+  VPackage::StaticEmitPackages();
+  //!TLocation::ClearSourceFiles();
+}
+
+
+//==========================================================================
+//
 //  CL_Init
 //
 //==========================================================================
@@ -89,12 +104,7 @@ void CL_Init () {
   cl_name.Set(Sys_GetUserName()); // why not?
   cl_name.SetDefault(cl_name.asStr());
   if (developer) GCon->Logf(NAME_Dev, "Default user name is '%s'", *cl_name.asStr());
-  VMemberBase::StaticLoadPackage(NAME_cgame, TLocation());
-  // load user-specified Vavoom C script files
-  G_LoadVCMods("loadvcc", "client", false); // client options
-  // this emits code for all `PackagesToEmit()`
-  VPackage::StaticEmitPackages();
-  //!TLocation::ClearSourceFiles();
+
   ClientNetContext = new VClientNetContext();
   GClGame = (VClientGameBase *)VObject::StaticSpawnWithReplace(VClass::FindClass("ClientGame"));
   GClGame->Game = GGameInfo;
@@ -105,6 +115,7 @@ void CL_Init () {
     int handle = GTextureManager.AddPatch(VName(va("croshai%x", cnum), VName::AddLower8), TEXTYPE_Pic, true/*silent*/);
     if (handle > 0 && developer) GCon->Logf(NAME_Debug, "found crosshair #%d", cnum);
   }
+
   R_FuckOffShitdoze();
 }
 

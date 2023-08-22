@@ -64,6 +64,7 @@ struct client_static_t {
 };
 
 
+void CL_LoadMods ();
 void CL_Init ();
 void CL_Shutdown ();
 void CL_SendMove ();
