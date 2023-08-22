@@ -262,11 +262,11 @@ static void AddToZip (const char *Name, const void *Data, size_t Size, uint64_t 
     zipTotalPacked += pksize;
   } else {
     switch (comp_level) {
-      case VWADWR_COMP_DISABLE: zlib_comp_level = 0;
-      case VWADWR_COMP_FASTEST: zlib_comp_level = 1;
-      case VWADWR_COMP_FAST: zlib_comp_level = 3;
-      case VWADWR_COMP_MEDIUM: zlib_comp_level = 6;
-      case VWADWR_COMP_BEST: default: zlib_comp_level = 9;
+      case VWADWR_COMP_DISABLE: zlib_comp_level = 0; break;
+      case VWADWR_COMP_FASTEST: zlib_comp_level = 1; break;
+      case VWADWR_COMP_FAST: zlib_comp_level = 3; break;
+      case VWADWR_COMP_MEDIUM: zlib_comp_level = 6; break;
+      case VWADWR_COMP_BEST: default: zlib_comp_level = 9; break;
     }
     //zlib_comp_level = comp_level;
     zip_fileinfo zi;
