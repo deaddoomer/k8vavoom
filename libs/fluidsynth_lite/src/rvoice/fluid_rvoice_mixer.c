@@ -893,18 +893,18 @@ fluid_rvoice_mixer_set_threads(fluid_rvoice_mixer_t* mixer, int thread_count,
 
     // Kill all existing threads first
     if (fluid_atomic_int_get(&mixer->thread_count)) {
-        int thread_count;
+        int old_thread_count;
 
         fluid_atomic_int_set(&mixer->threads_should_terminate, 1);
         // Signal threads to wake up
         fluid_cond_mutex_lock(mixer->wakeup_threads_m);
-        thread_count = fluid_atomic_int_get(&mixer->thread_count);
-        for (i=0; i < thread_count; i++)
+        old_thread_count = fluid_atomic_int_get(&mixer->thread_count);
+        for (i=0; i < old_thread_count; i++)
             fluid_atomic_int_set(&mixer->threads[i].ready, THREAD_BUF_TERMINATE);
         fluid_cond_broadcast(mixer->wakeup_threads);
         fluid_cond_mutex_unlock(mixer->wakeup_threads_m);
 
-        for (i=0; i < thread_count; i++) {
+        for (i=0; i < old_thread_count; i++) {
             if (mixer->threads[i].thread) {
                 fluid_thread_join(mixer->threads[i].thread);
                 delete_fluid_thread(mixer->threads[i].thread);
