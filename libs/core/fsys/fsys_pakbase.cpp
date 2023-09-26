@@ -430,6 +430,83 @@ static bool IsHideRemoveFilterFileName (VStr &fn) {
 
 //==========================================================================
 //
+//  IsTeamCredits
+//
+//==========================================================================
+static bool IsTeamCredits (VStr base, VStr fn) {
+  for (;;) {
+    if (fn.endsWith("_team")) fn.chopRight(5);
+    else if (fn.endsWith("_credits")) fn.chopRight(8);
+    else if (fn.endsWith("_readme")) fn.chopRight(7);
+    else if (fn.endsWith("_changelog")) fn.chopRight(10);
+    else if (fn.endsWith("credits")) fn.chopRight(7);
+    else if (fn.endsWith("readme")) fn.chopRight(6);
+    else if (fn.endsWith("changelog")) fn.chopRight(9);
+    else break;
+  }
+  return base.strEqu(fn);
+}
+
+
+//==========================================================================
+//
+//  IsSkipExt
+//
+//==========================================================================
+static bool IsSkipExt (VStr ext) {
+  return
+    ext == ".bat" ||
+    ext == ".cmd" ||
+    ext == ".exe" ||
+    ext == ".nfo" ||
+    ext == ".diz" ||
+    ext == ".ico" ||
+    ext == ".gif" ||
+    ext == ".cur" ||
+    ext == ".rtf" ||
+    ext == ".doc" ||
+    ext == ".url" ||
+    ext == ".htm" ||
+    ext == ".html" ||
+    ext == ".me" ||
+    false;
+}
+
+
+//==========================================================================
+//
+//  IsIgnoredExt
+//
+//==========================================================================
+static bool IsIgnoredExt (VStr ext) {
+  return
+    ext == ".txt" ||
+    ext == ".deh" ||
+    false;
+}
+
+
+//==========================================================================
+//
+//  IsIgnoredName
+//
+//==========================================================================
+static bool IsIgnoredName (VStr fn) {
+  return
+    fn == "readme" ||
+    fn == "template" ||
+    fn == "license" ||
+    fn == "authors" ||
+    fn == "cc4-tex" ||
+    fn == "cc4_tex" ||
+    fn == "changelog" ||
+    fn.startsWith("dtexman") ||
+    false;
+}
+
+
+//==========================================================================
+//
 //  VFileDirectory::CheckLoneWad
 //
 //  check if this archive is "lone wad"
@@ -457,13 +534,14 @@ bool VFileDirectory::CheckLoneWad () {
     fn = fn.toLowerCase();
     if (fn.endsWith(".wad")) {
       wads.Append(fn.StripExtension());
-    } else if (fn.strEqu("readme") || fn.strEqu("license") || fn.strEqu("authors")) {
+    } else if (IsIgnoredName(fn)) {
       // do nothing
     } else {
       VStr ext = fn.ExtractFileExtension();
-      if (ext == ".txt" || ext == ".bat" || ext == ".deh" || ext == ".cmd" || ext.IsEmpty()) {
-        txts.Append(fn.StripExtension());
-      } else {
+      if (ext.IsEmpty() || IsIgnoredExt(ext)) {
+        if (!ext.IsEmpty()) fn = fn.StripExtension();
+        if (!IsIgnoredName(fn)) txts.Append(fn);
+      } else if (!IsSkipExt(ext)) {
         return false;
       }
     }
@@ -476,7 +554,7 @@ bool VFileDirectory::CheckLoneWad () {
       if (!wad.IsEmpty()) {
         int idx = 0;
         while (idx < txts.length()) {
-          if (wad.strEqu(txts[idx])) {
+          if (wad.strEqu(txts[idx]) || IsTeamCredits(wad, txts[idx])) {
             txts.removeAt(idx);
           } else {
             idx += 1;
