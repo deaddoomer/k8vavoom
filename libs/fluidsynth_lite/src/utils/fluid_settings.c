@@ -1064,7 +1064,6 @@ fluid_settings_setnum(fluid_settings_t* settings, const char *name, double val)
         }
     } else {
         /* insert a new setting */
-        fluid_num_setting_t* setting;
         setting = new_fluid_num_setting(-1e10, 1e10, 0.0f, 0, NULL, NULL);
         setting->value = val;
         retval = fluid_settings_set(settings, name, setting);
