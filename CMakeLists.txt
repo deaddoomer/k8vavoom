@@ -402,25 +402,12 @@ set(UNFUCK_GXX_FLAGS "${UNFUCK_GXX_FLAGS} -Wsign-promo")
 set(UNFUCK_GXX_FLAGS "${UNFUCK_GXX_FLAGS} -Wmultiple-inheritance")
 set(UNFUCK_GXX_FLAGS "${UNFUCK_GXX_FLAGS} -Wvirtual-inheritance")
 
-# this protects some shitpp classes from MT code; we don't need this
-set(UNFUCK_GXX_FLAGS "${UNFUCK_GXX_FLAGS} -fno-threadsafe-statics")
-# who cares, i don't use std
-set(UNFUCK_GXX_FLAGS "${UNFUCK_GXX_FLAGS} -fno-use-cxa-get-exception-ptr")
-
-
-###########################
-## some math/FPU options ##
-###########################
-
-if(NOT DEBUG_FPU_CHECKS AND NOT NSWITCH)
-  # use -ffast-math, 'cause why not?
-  # k8: nope, i command my former self to not do this
-  #set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -ffast-math")
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0)
-    # on gcc 5.x leads to internal compiler errors
-    set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fno-math-errno")
-  endif()
-endif(NOT DEBUG_FPU_CHECKS AND NOT NSWITCH)
+if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13.0)
+  # this protects some shitpp classes from MT code; we don't need this
+  set(UNFUCK_GXX_FLAGS "${UNFUCK_GXX_FLAGS} -fno-threadsafe-statics")
+  # who cares, i don't use std
+  set(UNFUCK_GXX_FLAGS "${UNFUCK_GXX_FLAGS} -fno-use-cxa-get-exception-ptr")
+endif()
 
 
 ##########################################
@@ -433,6 +420,7 @@ endif(NOT DEBUG_FPU_CHECKS AND NOT NSWITCH)
 # actually, we don't need strict floating point math compliance, so let's use "-ffast-math"
 # no, no fuckin' way. with "-ffast-math" not-a-number is EQUAL TO ZERO!
 # fuck you, gcc.
+set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fno-fast-math")
 set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fno-unsafe-math-optimizations")
 set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fno-associative-math")
 set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fno-reciprocal-math")
@@ -441,9 +429,14 @@ set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fsigned-zeros")
 set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fsignaling-nans") # do not touch my NaNs!
 set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -frounding-math") # get lost!
 set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -ffp-contract=off") # do not use fused fmadd, even if it is available
-# we don't need strict standards compliance
-# note that this may modify NaNs, so if we'll use NaN-boxing, we should put "-fsignaling-nans" after fastmath
-#set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -ffast-math")
+if(NOT DEBUG_FPU_CHECKS AND NOT NSWITCH)
+  # on gcc 5.x leads to internal compiler errors
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0)
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13.0)
+      set(UNFUCK_GCC_FLAGS "${UNFUCK_GCC_FLAGS} -fno-math-errno")
+    endif()
+  endif()
+endif(NOT DEBUG_FPU_CHECKS AND NOT NSWITCH)
 
 # force gcc to unroll some loops
 set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -funroll-loops")
@@ -457,6 +450,23 @@ set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -fpredictive-commoning")
 set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -fno-tree-vectorize")
 set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -fvect-cost-model=cheap")
 set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -fsimd-cost-model=cheap")
+
+# kill VRP
+if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13.0)
+  message(STATUS "Your GCC is broken. Deactivating some optimisations.")
+  set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -fno-ipa-pure-const")
+  set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -fno-ipa-reference")
+  set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -fno-ipa-reference-addressable")
+  set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -fno-ipa-stack-alignment")
+  set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -fno-ipa-modref")
+  set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -fno-ipa-cp")
+  set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -fno-ipa-cp-clone")
+  set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -fno-ipa-bit-cp")
+  set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -fno-ipa-vrp")
+  set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -fno-ipa-icf")
+  set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -fno-tree-vrp")
+  set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -fexcess-precision=fast")
+endif()
 
 # pointer alias analysis; no wai
 set(K8_OPT_GCC_FLAGS "${K8_OPT_GCC_FLAGS} -fno-tree-pta")
