@@ -1131,7 +1131,7 @@ static int op_bisect_forward_serialno(OggOpusFile *_of,
     opus_int64  bisect;
     opus_int64  next;
     opus_int64  last;
-    ogg_int64_t end_offset;
+    ogg_int64_t end_offset = 0; // shut the fuck up, gshitcc!
     ogg_int64_t end_gp;
     int         sri;
     serialnos=*_serialnos;

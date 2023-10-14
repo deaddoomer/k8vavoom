@@ -166,8 +166,13 @@ static void DumpLoadingTimings () {
     const LoadingTiming &lt = loadingTimings[f];
     if (lt.msecs == 0) continue;
     memset(buf, 32, sizeof(buf));
-    strcpy(buf, lt.name);
-    buf[strlen(lt.name)] = 32;
+    // shut the fuck up, gshitcc!
+    //strcpy(buf, lt.name);
+    //buf[strlen(lt.name)] = 32;
+    size_t ltlen = strlen(lt.name);
+    if (ltlen > maxLabelLength) ltlen = maxLabelLength;
+    if (ltlen != 0) memcpy(buf, lt.name, ltlen);
+    buf[ltlen] = 32;
     snprintf(buf+maxLabelLength+1, sizeof(buf)-maxLabelLength-1, "%3d.%03d", lt.msecs/1000, lt.msecs%1000);
     GCon->Log(buf);
   }

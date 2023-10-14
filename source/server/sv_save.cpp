@@ -2731,14 +2731,12 @@ static bool SV_GetSaveDateTVal (int Slot, TTimeVal *tv) {
 
   VVWadArchive *vwad = nullptr;
   VStream *Strm = SV_OpenSlotFileReadWithFmt(Slot, vwad);
-  bool res;
+  bool res = false;
   if (vwad) {
-    res = false;
     Strm = vwad->OpenFile(NEWFMT_FNAME_SAVE_DATE);
     if (Strm) {
-      TTimeVal tv;
-      memset((void *)&tv, 0, sizeof(tv));
-      *Strm << tv.secs << tv.usecs << tv.secshi;
+      memset((void *)tv, 0, sizeof(*tv));
+      *Strm << tv->secs << tv->usecs << tv->secshi;
       res = !Strm->IsError();
       VStream::Destroy(Strm);
     }
@@ -2751,8 +2749,6 @@ static bool SV_GetSaveDateTVal (int Slot, TTimeVal *tv) {
       res = LoadDateTValExtData(Strm, tv);
     }
     VStream::Destroy(Strm);
-  } else {
-    res = false;
   }
   if (!res) memset((void *)tv, 0, sizeof(*tv));
   return res;
