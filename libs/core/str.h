@@ -64,7 +64,7 @@ public:
     vint32 dummy; // this is to get natural align on 8-byte boundary
   };
   static_assert(sizeof(Store) == 8*2, "invalid size for `VStr::Store` struct");
-  static_assert(__builtin_offsetof(Store, rc)%8 == 0, "invalid rc alignent for `VStr::Store` struct");
+  static_assert(__builtin_offsetof(Store, rc)%8 == 0, "invalid rc alignment for `VStr::Store` struct");
 
   char *dataptr; // string, 0-terminated (0 is not in length); can be null
 
