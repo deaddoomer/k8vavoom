@@ -617,12 +617,17 @@ bool VMethod::Define () {
     ParamTypes[i] = type;
     //if ((ParamFlags[i]&FPARM_Optional) != 0 && (ParamFlags[i]&FPARM_Out) != 0) ParseError(P.Loc, "Modifiers `optional` and `out` are mutually exclusive");
     //if ((ParamFlags[i]&FPARM_Optional) != 0 && (ParamFlags[i]&FPARM_Ref) != 0) ParseError(P.Loc, "Modifiers `optional` and `ref` are mutually exclusive");
-    if ((ParamFlags[i]&FPARM_Out) != 0 && (ParamFlags[i]&FPARM_Ref) != 0) ParseError(P.Loc, "Modifiers `out` and `ref` are mutually exclusive");
+    if ((ParamFlags[i]&FPARM_Out) != 0 && (ParamFlags[i]&FPARM_Ref) != 0) {
+      ParseError(P.Loc, "Modifiers `out` and `ref` are mutually exclusive");
+    }
 
     if (ParamFlags[i]&(FPARM_Out|FPARM_Ref)) {
       ParamsSize += 1;
     } else {
-      if (!type.CheckPassable(P.TypeExpr->Loc, false)) ParseError(P.TypeExpr->Loc, "Invalid parameter #%d type '%s' in method '%s'", i+1, *type.GetName(), *GetFullName());
+      if (!type.CheckPassable(P.TypeExpr->Loc, false)) {
+        ParseError(P.TypeExpr->Loc, "Invalid parameter #%d type '%s' in method '%s'", i+1,
+                   *type.GetName(), *GetFullName());
+      }
       ParamsSize += type.GetStackSize();
     }
     if (ParamFlags[i]&FPARM_Optional) ParamsSize += 1;
@@ -990,6 +995,18 @@ void VMethod::Emit () {
       VLocalVarDef &L = ec.NewLocal(P.Name, ParamTypes[i], VEmitContext::Safe, P.Loc, ParamFlags[i]);
       L.Visible = true;
       ec.ReserveLocalSlot(L.GetIndex());
+      // mark created local as used, to avoid useless warnings
+      ec.MarkLocalUsedByIdx(L.GetIndex());
+      // k8: and we have to emit argument fixer there, because doing it in the loop below
+      // will desync on the first optional arg. and it did this for years, lol.
+      if (L.Type.Type == TYPE_Vector && (ParamFlags[i]&(FPARM_Out|FPARM_Ref)) == 0) {
+        #if 0
+        GLog.Logf(NAME_Debug, "MT:%s; VectorFix: arg:%d (%s) : (%s); locofs: %d; flags:0x%08x\n",
+                  *GetFullName(), i, *Params[i].Name, *L.Name, L.Offset,
+                  (unsigned)ParamFlags[i]);
+        #endif
+        ec.AddStatement(OPC_VFixVecParam, L.Offset, Loc);
+      }
       // create optional
       if (ParamFlags[i]&FPARM_Optional) {
         VName specName(va("specified_%s", *P.Name));
@@ -997,23 +1014,14 @@ void VMethod::Emit () {
         VLocalVarDef &SL = ec.NewLocal(specName, TYPE_Int, VEmitContext::Safe, P.Loc);
         SL.Visible = true;
         ec.ReserveLocalSlot(SL.GetIndex());
+        // mark created local as used, to avoid useless warnings
+        ec.MarkLocalUsedByIdx(SL.GetIndex());
       }
     } else {
       // skip unnamed
+      //FIXME: k8: how the fuck we could get an unnamed arg? the parser doesn't allow this.
       ec.ReserveStack(ParamFlags[i]&(FPARM_Out|FPARM_Ref) ? 1 : ParamTypes[i].GetStackSize());
       if (ParamFlags[i]&FPARM_Optional) ec.ReserveStack(1);
-    }
-  }
-
-  const int argmaxidx = ec.GetLocalDefCount();
-
-  // also, mark arguments as "used" to avoid useless warnings
-  for (int i = 0; i < argmaxidx; ++i) {
-    ec.MarkLocalUsedByIdx(i);
-    // emit "fix" for each non-ref TVec
-    VLocalVarDef &loc = ec.GetLocalByIndex(i);
-    if (loc.Type.Type == TYPE_Vector && (ParamFlags[i]&(FPARM_Out|FPARM_Ref)) == 0) {
-      ec.AddStatement(OPC_VFixVecParam, loc.Offset, Loc);
     }
   }
 
@@ -1027,14 +1035,14 @@ void VMethod::Emit () {
     return;
   }
 
-  Statement = OptimiseLocals(&ec, this, Statement, argmaxidx);
+  Statement = OptimiseLocals(&ec, this, Statement, ec.GetLocalDefCount());
 
   //GLog.Logf(NAME_Debug, "*** METHOD(after): %s ***", *GetFullName());
   //GLog.Logf(NAME_Debug, "%s", *Statement->toString());
 
   Statement->Emit(ec, nullptr);
 
-  // just in case; also, we should not have any alive finalizers here, but just in case...
+  // just in case; also, we should not have any alive finalizers here, but, again, just in case...
   if (ReturnType.Type == TYPE_Void) {
     Statement->EmitDtor(ec, true); // proper leaving
     ec.AddStatement(OPC_Return, Loc);

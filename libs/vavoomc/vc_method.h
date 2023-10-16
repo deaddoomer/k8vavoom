@@ -69,10 +69,10 @@ enum {
 //
 //==========================================================================
 enum {
-  FPARM_Optional = 0x01,
-  FPARM_Out      = 0x02,
-  FPARM_Ref      = 0x04,
-  FPARM_Const    = 0x08,
+  FPARM_Optional = (1u<<0),
+  FPARM_Out      = (1u<<1),
+  FPARM_Ref      = (1u<<2),
+  FPARM_Const    = (1u<<3),
 };
 
 

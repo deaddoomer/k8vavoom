@@ -1942,7 +1942,9 @@ VExpression *VParser::ParseType (bool allowDelegates, int *constref) {
       do {
         VMethodParam &P = dg->Params[dg->NumParams];
         int ParmModifiers = TModifiers::Parse(Lex/*, &dg->Params[dg->NumParams].NamedFlags*/); // no, not for delegates
-        dg->ParamFlags[dg->NumParams] = TModifiers::ParmAttr(TModifiers::Check(ParmModifiers, TModifiers::ParamSet, Lex.Location));
+        dg->ParamFlags[dg->NumParams] = TModifiers::ParmAttr(TModifiers::Check(ParmModifiers,
+                                                                               TModifiers::ParamSet,
+                                                                               Lex.Location));
         P.TypeExpr = ParseTypeWithPtrs(true);
         if (!P.TypeExpr && dg->NumParams == 0) break;
         if (Lex.Token == TK_Identifier) {
@@ -2052,7 +2054,9 @@ void VParser::ParseMethodDef (VExpression *RetType, VName MName, const TLocation
     VMethodParam &P = Func->Params[Func->NumParams];
 
     int ParmModifiers = TModifiers::Parse(Lex, &Func->Params[Func->NumParams].NamedFlags);
-    Func->ParamFlags[Func->NumParams] = TModifiers::ParmAttr(TModifiers::Check(ParmModifiers, TModifiers::ParamSet, Lex.Location));
+    Func->ParamFlags[Func->NumParams] = TModifiers::ParmAttr(TModifiers::Check(ParmModifiers,
+                                                                               TModifiers::ParamSet,
+                                                                               Lex.Location));
 
     P.TypeExpr = ParseTypeWithPtrs(true);
     if (!P.TypeExpr && Func->NumParams == 0) break;
@@ -2063,11 +2067,16 @@ void VParser::ParseMethodDef (VExpression *RetType, VName MName, const TLocation
     } else {
       ParseError(Lex.Location, "Missing parameter name for parameter #%d", Func->NumParams+1);
     }
+    #if 0
+    GLog.Logf(NAME_Debug, "mt '%s': param #%d (%s): mods:0x%08x; pflags:0x%08x",
+              *MName, Func->NumParams, *P.Name, (unsigned)ParmModifiers,
+              (unsigned)Func->ParamFlags[Func->NumParams]);
+    #endif
     if (Func->NumParams == VMethod::MAX_PARAMS) {
       ParseError(Lex.Location, "Method parameters overflow");
       continue;
     }
-    ++Func->NumParams;
+    Func->NumParams += 1;
   } while (Lex.Check(TK_Comma));
   Lex.Expect(TK_RParen, ERR_MISSING_RPAREN);
 
@@ -2209,7 +2218,9 @@ void VParser::ParseDelegate (VExpression *RetType, VField *Delegate) {
   do {
     VMethodParam &P = Func->Params[Func->NumParams];
     int ParmModifiers = TModifiers::Parse(Lex/*, &Func->Params[Func->NumParams].NamedFlags*/); // no, not for delegate
-    Func->ParamFlags[Func->NumParams] = TModifiers::ParmAttr(TModifiers::Check(ParmModifiers, TModifiers::ParamSet, Lex.Location));
+    Func->ParamFlags[Func->NumParams] = TModifiers::ParmAttr(TModifiers::Check(ParmModifiers,
+                                                                               TModifiers::ParamSet,
+                                                                               Lex.Location));
     P.TypeExpr = ParseTypeWithPtrs(true);
     if (!P.TypeExpr && Func->NumParams == 0) break;
     if (Lex.Token == TK_Identifier) {
@@ -2260,7 +2271,9 @@ VExpression *VParser::ParseLambda () {
     for (;;) {
       VMethodParam &P = Func->Params[Func->NumParams];
       int ParmModifiers = TModifiers::Parse(Lex/*, &Func->Params[Func->NumParams].NamedFlags*/); // no, not for lambda
-      Func->ParamFlags[Func->NumParams] = TModifiers::ParmAttr(TModifiers::Check(ParmModifiers, TModifiers::ParamSet, Lex.Location));
+      Func->ParamFlags[Func->NumParams] = TModifiers::ParmAttr(TModifiers::Check(ParmModifiers,
+                                                                                 TModifiers::ParamSet,
+                                                                                 Lex.Location));
       P.TypeExpr = ParseTypeWithPtrs(true);
       if (!P.TypeExpr) break;
       if (Lex.Token == TK_Identifier) {

@@ -2179,7 +2179,7 @@ VExpression *VInvocation::DoResolve (VEmitContext &ec) {
         break;
       }
       if (Args[i]->IsOutArg() && (i >= requiredParams || (Func->ParamFlags[i]&FPARM_Out) == 0)) {
-        ParseError(Args[i]->Loc, "`out` argument for non-ref parameter #%d", i+1);
+        ParseError(Args[i]->Loc, "`out` argument for non-out parameter #%d", i+1);
         ArgsOk = false;
         break;
       }

@@ -2963,7 +2963,7 @@ VFuncRes VObject::ExecuteFunctionNoArgs (VObject *Self, VMethod *func, bool allo
   // placeholders for "ref" args
   VSimpleTypePool<int32_t> rints;
   VSimpleTypePool<float> rfloats; // for vectors too
-  VSimpleTypePool<VName> rnames; // for vectors too
+  VSimpleTypePool<VName> rnames; // for names too
   VSimpleTypePool<void *> rptrs; // various pointers (including delegates)
   VStrPool rstrs;
 
@@ -2971,7 +2971,9 @@ VFuncRes VObject::ExecuteFunctionNoArgs (VObject *Self, VMethod *func, bool allo
   for (int f = 0; f < func->NumParams; ++f) {
     // out/ref arg
     if ((func->ParamFlags[f]&(FPARM_Out|FPARM_Ref)) != 0) {
-      if (func->ParamTypes[f].IsAnyArrayOrStruct()) VPackage::InternalFatalError(va("ExecuteFunctionNoArgs: function `%s`, argument #%d is ref/out array/struct, this is not supported yet", *func->GetFullName(), f+1));
+      if (func->ParamTypes[f].IsAnyArrayOrStruct()) {
+        VPackage::InternalFatalError(va("ExecuteFunctionNoArgs: function `%s`, argument #%d is ref/out array/struct, this is not supported yet", *func->GetFullName(), f+1));
+      }
       switch (func->ParamTypes[f].Type) {
         case TYPE_Int:
         case TYPE_Byte:
